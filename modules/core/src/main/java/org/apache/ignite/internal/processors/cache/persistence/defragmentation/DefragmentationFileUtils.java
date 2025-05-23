@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -127,8 +128,8 @@ public class DefragmentationFileUtils {
      * Checks whether partition has already been defragmented or not. Cleans corrupted data if previous failed
      * defragmentation attempt was found.
      *
-     * @param workDir Cache group working directory.
-     * @param grpId Cache group Id of cache group belonging to the given working directory.
+     * @param ft Node file tree.
+     * @param gctx Group context.
      * @param partId Partition index to check.
      * @param log Logger to write messages.
      * @return {@code true} if given partition is already defragmented.
@@ -138,7 +139,13 @@ public class DefragmentationFileUtils {
      * @see DefragmentationFileTreeUtils#defragmentedPartFile(File, int)
      * @see DefragmentationFileTreeUtils#defragmentedPartMappingFile(File, int)
      */
-    public static boolean skipAlreadyDefragmentedPartition(File workDir, int grpId, int partId, IgniteLogger log) throws IgniteException {
+    public static boolean skipAlreadyDefragmentedPartition(
+        NodeFileTree ft,
+        CacheGroupContext gctx,
+        int partId,
+        IgniteLogger log
+    ) throws IgniteException {
+        File workDir = ft.cacheStorage(gctx.config());
         File defragmentedPartFile = defragmentedPartFile(workDir, partId);
         File defragmentedPartMappingFile = defragmentedPartMappingFile(workDir, partId);
 
@@ -146,7 +153,7 @@ public class DefragmentationFileUtils {
             if (log.isInfoEnabled()) {
                 log.info(S.toString(
                     "Skipping already defragmented partition",
-                    "grpId", grpId, false,
+                    "grpId", gctx.groupId(), false,
                     "partId", partId, false,
                     "partFileName", defragmentedPartFile.getName(), false,
                     "mappingFileName", defragmentedPartMappingFile.getName(), false,
@@ -187,7 +194,7 @@ public class DefragmentationFileUtils {
      * @param log Logger to write messages.
      * @throws IgniteException If {@link IOException} occurred.
      *
-     * @see DefragmentationFileUtils#writeDefragmentationCompletionMarker(FileIOFactory, File, IgniteLogger)
+     * @see DefragmentationFileUtils#writeDefragmentationCompletionMarker(FileIOFactory, NodeFileTree, CacheGroupContext, IgniteLogger)
      */
     public static void batchRenameDefragmentedCacheGroupPartitions(File workDir, IgniteLogger log) throws IgniteException {
         File completionMarkerFile = defragmentationCompletionMarkerFile(workDir);
@@ -223,14 +230,16 @@ public class DefragmentationFileUtils {
     /**
      * Rename temporary index defragmentation file to a finalized one.
      *
-     * @param workDir Cache group working directory.
+     * @param ft Node file tree.
+     * @param gctx Group context.
      * @throws IgniteException If {@link IOException} occurred.
      *
-     * @see DefragmentationFileTreeUtils#defragmentedIndexTmpFile(File)
+     * @see DefragmentationFileTreeUtils#defragmentedIndexTmpFile(NodeFileTree, CacheConfiguration)
      * @see DefragmentationFileTreeUtils#defragmentedIndexFile(File)
      */
-    public static void renameTempIndexFile(File workDir) throws IgniteException {
-        File defragmentedIdxTmpFile = defragmentedIndexTmpFile(workDir);
+    public static void renameTempIndexFile(NodeFileTree ft, CacheGroupContext gctx) throws IgniteException {
+        File workDir = ft.cacheStorage(gctx.config());
+        File defragmentedIdxTmpFile = defragmentedIndexTmpFile(ft, gctx.config());
         File defragmentedIdxFile = defragmentedIndexFile(workDir);
 
         try {
@@ -246,14 +255,16 @@ public class DefragmentationFileUtils {
     /**
      * Rename temporary partition defragmentation file to a finalized one.
      *
-     * @param workDir Cache group working directory.
+     * @param ft Node file tree.
+     * @param gctx Group context.
      * @param partId Partition index.
      * @throws IgniteException If {@link IOException} occurred.
      *
      * @see DefragmentationFileTreeUtils#defragmentedPartTmpFile(File, int)
      * @see DefragmentationFileTreeUtils#defragmentedPartFile(File, int)
      */
-    public static void renameTempPartitionFile(File workDir, int partId) throws IgniteException {
+    public static void renameTempPartitionFile(NodeFileTree ft, CacheGroupContext gctx, int partId) throws IgniteException {
+        File workDir = ft.cacheStorage(gctx.config());
         File defragmentedPartTmpFile = defragmentedPartTmpFile(workDir, partId);
         File defragmentedPartFile = defragmentedPartFile(workDir, partId);
 
@@ -271,7 +282,8 @@ public class DefragmentationFileUtils {
      * Creates empty completion marker file in given directory.
      *
      * @param ioFactory File IO factory.
-     * @param workDir Cache group working directory.
+     * @param ft Node file tree.
+     * @param gctx Group context.
      * @param log Logger to write messages.
      * @throws IgniteException If {@link IOException} occurred.
      *
@@ -279,9 +291,11 @@ public class DefragmentationFileUtils {
      */
     public static void writeDefragmentationCompletionMarker(
         FileIOFactory ioFactory,
-        File workDir,
+        NodeFileTree ft,
+        CacheGroupContext gctx,
         IgniteLogger log
     ) throws IgniteException {
+        File workDir = ft.cacheStorage(gctx.config());
         File completionMarker = defragmentationCompletionMarkerFile(workDir);
 
         try (FileIO io = ioFactory.create(completionMarker, CREATE_NEW, WRITE)) {

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
@@ -107,8 +108,8 @@ public class DefragmentationFileTreeUtils {
      *
      * @see #defragmentedIndexFile(File)
      */
-    public static File defragmentedIndexTmpFile(File workDir) {
-        return new File(workDir, DFRG_INDEX_TMP_FILE_NAME);
+    public static File defragmentedIndexTmpFile(NodeFileTree ft, CacheConfiguration<?, ? > ccfg) {
+        return new File(ft.cacheStorage(ccfg), DFRG_INDEX_TMP_FILE_NAME);
     }
 
     /**
@@ -118,7 +119,7 @@ public class DefragmentationFileTreeUtils {
      * @param workDir Cache group working directory.
      * @return File.
      *
-     * @see #defragmentedIndexTmpFile(File)
+     * @see #defragmentedIndexTmpFile(NodeFileTree, CacheConfiguration)
      */
     public static File defragmentedIndexFile(File workDir) {
         return new File(workDir, DFRG_INDEX_FILE_NAME);

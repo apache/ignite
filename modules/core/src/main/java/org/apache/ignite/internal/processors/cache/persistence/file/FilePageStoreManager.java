@@ -378,23 +378,21 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void initializeForMetastorage() throws IgniteCheckedException {
-        int grpId = MetaStorage.METASTORAGE_CACHE_ID;
-
-        if (!idxCacheStores.containsKey(grpId)) {
+        if (!idxCacheStores.containsKey(MetaStorage.METASTORAGE_CACHE_ID)) {
             DataRegion dataRegion = cctx.database().dataRegion(GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME);
-            PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpId);
+            PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(MetaStorage.METASTORAGE_CACHE_ID);
 
             CacheStoreHolder holder = initDir(
-                ft.metaStorage(),
-                p -> ft.metaStoragePartition(p).toPath(),
-                grpId,
-                MetaStorage.METASTORAGE_CACHE_NAME,
+                ft,
+                true,
+                null,
+                MetaStorage.METASTORAGE_CACHE_ID,
                 MetaStorage.METASTORAGE_PARTITIONS.size(),
                 pageMetrics,
                 false,
                 null);
 
-            CacheStoreHolder old = idxCacheStores.put(grpId, holder);
+            CacheStoreHolder old = idxCacheStores.put(MetaStorage.METASTORAGE_CACHE_ID, holder);
 
             assert old == null : "Non-null old store holder for metastorage";
         }
@@ -481,10 +479,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpDesc.groupId());
 
         return initDir(
-            ft.cacheStorage(ccfg),
-            p -> ft.partitionFile(ccfg, p).toPath(),
+            ft,
+            false,
+            ccfg,
             grpDesc.groupId(),
-            ccfg.getName(),
             grpDesc.config().getAffinity().partitions(),
             pageMetrics,
             ccfg.isEncryptionEnabled(),
@@ -555,9 +553,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param cacheWorkDir Cache work dir.
      * @param grpId Group ID.
-     * @param cacheName Cache name.
      * @param partitions Number of partitions.
      * @param pageMetrics Page metrics.
      * @param encrypted {@code True} if this cache encrypted.
@@ -565,14 +561,27 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     private CacheStoreHolder initDir(
-        File cacheWorkDir,
-        IntFunction<Path> partitionFile,
+        NodeFileTree ft,
+        boolean isMetastorage,
+        CacheConfiguration<?, ?> ccfg,
         int grpId,
-        String cacheName,
         int partitions,
         PageMetrics pageMetrics,
         boolean encrypted,
         Collection<String> grpCaches) throws IgniteCheckedException {
+
+        File cacheWorkDir = isMetastorage
+            ? ft.metaStorage()
+            : ft.cacheStorage(ccfg);
+
+        IntFunction<File> partitionFile = isMetastorage
+            ? ft::metaStoragePartition
+            : p -> ft.partitionFile(ccfg, p);
+
+        String cacheName = isMetastorage
+            ? MetaStorage.METASTORAGE_CACHE_NAME
+            : ccfg.getName();
+
         try {
             boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir, log);
 
@@ -583,7 +592,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     DefragmentationFileUtils.beforeInitPageStores(cacheWorkDir, log);
             }
 
-            File idxFile = partitionFile.apply(INDEX_PARTITION).toFile();
+            File idxFile = partitionFile.apply(INDEX_PARTITION);
 
             GridQueryProcessor qryProc = cctx.kernalContext().query();
 
@@ -623,7 +632,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 PageStore partStore =
                     pageStoreFactory.createPageStore(
                         PageStore.TYPE_DATA,
-                        () -> partitionFile.apply(p),
+                        () -> partitionFile.apply(p).toPath(),
                         pageMetrics.totalPages()::add);
 
                 partStores[partId] = partStore;

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -62,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -362,7 +362,8 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailoverRestartWithoutDefragmentation() throws Exception {
-        testFailover(workDir -> {
+        testFailover((ft, ccfg) -> {
+            File workDir = ft.cacheStorage(ccfg);
             try {
                 File mntcRecFile = new File(workDir.getParent(), MaintenanceFileStore.MAINTENANCE_FILE_NAME);
 
@@ -392,7 +393,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailoverOnLastStage() throws Exception {
-        testFailover(workDir -> {});
+        testFailover((ft, ccfg) -> {});
     }
 
     /**
@@ -402,10 +403,13 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailoverIncompletedIndex() throws Exception {
-        testFailover(workDir -> move(
-            defragmentedIndexFile(workDir),
-            DefragmentationFileTreeUtils.defragmentedIndexTmpFile(workDir)
-        ));
+        testFailover((ft, ccfg) -> {
+            File workDir = ft.cacheStorage(ccfg);
+            move(
+                defragmentedIndexFile(workDir),
+                DefragmentationFileTreeUtils.defragmentedIndexTmpFile(ft, ccfg)
+            );
+        });
     }
 
     /**
@@ -415,7 +419,8 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailoverIncompletedPartition1() throws Exception {
-        testFailover(workDir -> {
+        testFailover((ft, ccfg) -> {
+            File workDir = ft.cacheStorage(ccfg);
             defragmentedIndexFile(workDir).delete();
 
             move(
@@ -432,7 +437,8 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailoverIncompletedPartition2() throws Exception {
-        testFailover(workDir -> {
+        testFailover((ft, ccfg) -> {
+            File workDir = ft.cacheStorage(ccfg);
             defragmentedIndexFile(workDir).delete();
 
             defragmentedPartMappingFile(workDir, PARTS - 1).delete();
@@ -450,7 +456,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void testFailover(IgniteThrowableConsumer<File> c) throws Exception {
+    private void testFailover(IgniteThrowableBiConsumer<NodeFileTree, CacheConfiguration<?, ?>> c) throws Exception {
         IgniteEx ig = startGrid(0);
 
         ig.cluster().state(ClusterState.ACTIVE);
@@ -461,14 +467,15 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         createMaintenanceRecord();
 
-        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(ig.cachex(DEFAULT_CACHE_NAME).configuration());
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
+        File workDir = ft.cacheStorage(ig.cachex(DEFAULT_CACHE_NAME).configuration());
 
         stopGrid(0);
 
         //Defragmentation should fail when node starts.
         startAndAwaitNodeFail(workDir);
 
-        c.accept(workDir);
+        c.accept(ft, ig.cachex(DEFAULT_CACHE_NAME).configuration());
 
         startGrid(0); // Fails here VERY rarely. WTF?
 
@@ -675,5 +682,13 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
             assertTrue(atLeastOneSmaller);
         }
+    }
+
+    /** */
+    @FunctionalInterface
+    public interface IgniteThrowableBiConsumer<E1, E2> extends Serializable {
+        /**
+         */
+        public void accept(E1 e1, E2 e2) throws IgniteCheckedException;
     }
 }
