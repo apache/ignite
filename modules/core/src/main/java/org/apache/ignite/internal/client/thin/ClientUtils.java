@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -51,12 +52,12 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
@@ -172,15 +173,15 @@ public final class ClientUtils {
 
             Map<String, Integer> enumValues = isEnum ? ClientUtils.map(in, unsed -> reader.readString(), unsed2 -> reader.readInt()) : null;
 
-            Collection<BinarySchema> schemas = ClientUtils.collection(
+            Collection<T2<Integer, List<Integer>>> schemas = ClientUtils.collection(
                 in,
-                unused -> new BinarySchema(
+                unused -> new T2<>(
                     reader.readInt(),
                     new ArrayList<>(ClientUtils.collection(in, unused2 -> reader.readInt()))
                 )
             );
 
-            return new BinaryMetadata(
+            return BinaryUtils.binaryMetadata(
                 typeId,
                 typeName,
                 fields,
@@ -222,13 +223,13 @@ public final class ClientUtils {
                 );
 
             collection(
-                meta.schemas(),
+                BinaryUtils.schemasAndFieldsIds(meta),
                 out,
                 (unused, s) -> {
-                    w.writeInt(s.schemaId());
+                    w.writeInt(s.get1());
 
                     collection(
-                        Arrays.stream(s.fieldIds()).boxed().collect(Collectors.toList()),
+                        Arrays.stream(s.get2()).boxed().collect(Collectors.toList()),
                         out,
                         (unused2, i) -> w.writeInt(i)
                     );

@@ -158,11 +158,11 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             false,
             false,
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(sft)) {
-                @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
+                @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
                     try {
                         U.await(slowCopy);
 
-                        delegate.sendPart0(from, to, drName, pair, length);
+                        delegate.sendPart0(from, to, storagePath, pair, length);
                     }
                     catch (IgniteInterruptedCheckedException e) {
                         throw new IgniteException(e);
@@ -309,11 +309,11 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             encryption,
             new DelegateSnapshotSender(log, mgr0.snapshotExecutorService(),
                 mgr0.localSnapshotSenderFactory().apply(sft)) {
-                @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
+                @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException(err_msg + pair);
 
-                    delegate.sendPart0(from, to, drName, pair, length);
+                    delegate.sendPart0(from, to, storagePath, pair, length);
                 }
             });
 
@@ -346,11 +346,11 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(sft)) {
-                @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long length) {
+                @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
                     try {
                         U.await(cpLatch);
 
-                        delegate.sendPart0(from, to, drName, pair, length);
+                        delegate.sendPart0(from, to, storagePath, pair, length);
                     }
                     catch (IgniteInterruptedCheckedException e) {
                         throw new IgniteException(e);

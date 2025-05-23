@@ -159,7 +159,7 @@ public class ClientBinary implements IgniteBinary {
 
         int typeId = ctx.typeId(typeName);
 
-        ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, null, null, null, true, vals), false);
+        ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, null, null, true, vals), false);
 
         return ctx.metadata(typeId);
     }
