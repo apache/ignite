@@ -20,6 +20,8 @@ package org.apache.ignite.util;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
@@ -32,7 +34,6 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -84,16 +85,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.management.IgniteCommandRegistry;
-import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.OfflineCommand;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.ClusterStateTestUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -3875,48 +3874,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         System.setOut(new PrintStream(testOut));
 
-        startGrid(0);
-
         try {
-            TestCommandHandler cmdHnd = newCommandHandler(createTestLogger());
+            startGrid(0);
 
-            IgniteCommandRegistry registry;
+            autoConfirmation = false;
 
-            if (cliCommandHandler()) {
-                Field fieldHnd = cmdHnd.getClass().getDeclaredField("hnd");
-                fieldHnd.setAccessible(true);
+            String testInput = "Test offline command";
 
-                CommandHandler hnd = (CommandHandler)fieldHnd.get(cmdHnd);
+            assertEquals(EXIT_CODE_OK, execute(List.of("--offline-test", "--input", testInput)));
 
-                Field fieldRegistry = hnd.getClass().getDeclaredField("registry");
-                fieldRegistry.setAccessible(true);
-
-                registry = (IgniteCommandRegistry)fieldRegistry.get(hnd);
-            }
-            else {
-                Field field = grid(0).getClass().getDeclaredField("mBeansMgr");
-                field.setAccessible(true);
-
-                IgniteMBeansManager mBeansMgr = (IgniteMBeansManager)field.get(grid(0));
-
-                mBeansMgr.register("OfflineTest", new LinkedList<>(), new OfflineTestCommand());
-
-                Field fieldRegistry = cmdHnd.getClass().getDeclaredField("registry");
-                fieldRegistry.setAccessible(true);
-
-                registry = (IgniteCommandRegistry)fieldRegistry.get(cmdHnd);
-            }
-
-            registry.register(new OfflineTestCommand());
-
-            testOut.reset();
-
-            assertEquals(EXIT_CODE_OK, cmdHnd.execute(List.of("--offline-test")));
-
-            if (!cliCommandHandler())
-                cmdHnd.flushLogger();
-
-            assertTrue(testOut.toString().contains(new OfflineTestCommand().description()));
+            assertTrue(testOut.toString().contains(testInput));
         }
         finally {
             System.setOut(sysOut);
@@ -4021,22 +3988,50 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    private static class OfflineTestCommand implements OfflineCommand<NoArg, Void> {
+    public static class OfflineTestCommand implements OfflineCommand<OfflineTestCommandArg, Void> {
         /** {@inheritDoc} */
         @Override public String description() {
-            return "Test offline command";
+            return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Class<? extends NoArg> argClass() {
-            return NoArg.class;
+        @Override public Class<OfflineTestCommandArg> argClass() {
+            return OfflineTestCommandArg.class;
         }
 
         /** {@inheritDoc} */
-        @Override public Void execute(NoArg arg, Consumer<String> printer) {
-            printer.accept(description());
+        @Override public Void execute(OfflineTestCommandArg arg, Consumer<String> printer) {
+            printer.accept(arg.input());
 
             return null;
+        }
+    }
+
+    /** */
+    public static class OfflineTestCommandArg extends IgniteDataTransferObject {
+        /** */
+        @Argument
+        private String input;
+
+        /** */
+        public String input() {
+            return input;
+        }
+
+        /** */
+        public void input(String input) {
+            this.input = input;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            U.writeString(out, input);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(ObjectInput in) throws IOException {
+            input = U.readString(in);
         }
     }
 }
