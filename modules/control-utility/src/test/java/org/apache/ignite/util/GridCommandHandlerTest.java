@@ -4387,7 +4387,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         /** {@inheritDoc} */
         @Override protected void writeExternalData(ObjectOutput out) throws IOException {
             U.writeString(out, input);
-
         }
 
         /** {@inheritDoc} */
