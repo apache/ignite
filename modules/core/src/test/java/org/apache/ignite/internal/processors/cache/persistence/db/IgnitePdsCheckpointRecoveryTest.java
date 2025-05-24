@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeTestUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -57,7 +58,6 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CP_RECOVERY_DATA_COMRESSION;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointRecoveryFileStorage.FILE_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
 
 /**
  * Class containing tests for applying checkpoint recovery data.
@@ -130,7 +130,7 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRecoverFromCheckpointRecoveryFiles() throws Exception {
-        spoilFilePattern = Pattern.compile('^' + Pattern.quote(PART_FILE_PREFIX) + ".*");
+        spoilFilePattern = FileTreeTestUtils.partitionFilePattern();
 
         IgniteEx ignite = initIgnite();
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -189,7 +189,7 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testFailToRecoverFromSpoiledCheckpointRecoveryFiles() throws Exception {
-        spoilFilePattern = Pattern.compile('^' + Pattern.quote(PART_FILE_PREFIX) + ".*");
+        spoilFilePattern = FileTreeTestUtils.partitionFilePattern();
 
         IgniteEx ignite = initIgnite();
 
