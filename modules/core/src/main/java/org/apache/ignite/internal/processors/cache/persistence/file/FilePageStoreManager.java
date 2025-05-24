@@ -555,10 +555,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
 
                 if (!mntcReg.isMaintenanceMode())
-                    DefragmentationFileUtils.beforeInitPageStores(cft.storage(), log);
+                    DefragmentationFileUtils.beforeInitPageStores(cft, log);
             }
 
-            File idxFile = cft.partition(INDEX_PARTITION);
+            File idxFile = cft.partitionFile(INDEX_PARTITION);
 
             GridQueryProcessor qryProc = cctx.kernalContext().query();
 
@@ -607,7 +607,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 PageStore partStore =
                     pageStoreFactory.createPageStore(
                         PageStore.TYPE_DATA,
-                        () -> cft.partition(p).toPath(),
+                        () -> cft.partitionFile(p).toPath(),
                         pageMetrics.totalPages()::add);
 
                 partStores[partId] = partStore;
