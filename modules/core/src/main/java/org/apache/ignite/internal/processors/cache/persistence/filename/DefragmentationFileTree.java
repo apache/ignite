@@ -20,16 +20,14 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 import java.io.File;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 
-/**
- * Utility classes for defragmentation files.
- */
-public class DefragmentationFileTreeUtils {
+public class DefragmentationFileTree {
     /** Prefix for link mapping files. */
     private static final String DFRG_LINK_MAPPING_FILE_PREFIX = PART_FILE_PREFIX + "map-";
 
@@ -53,6 +51,12 @@ public class DefragmentationFileTreeUtils {
 
     /** Defragmented partition temp file template. */
     private static final String DFRG_PARTITION_TMP_FILE_TEMPLATE = DFRG_PARTITION_FILE_TEMPLATE + TMP_SUFFIX;
+
+    private final NodeFileTree ft;
+
+    public DefragmentationFileTree(NodeFileTree ft) {
+        this.ft = ft;
+    }
 
     /**
      * @param f File to check.
@@ -173,10 +177,19 @@ public class DefragmentationFileTreeUtils {
      * defragmented and renamed from their original {@code *.tmp} versions. Presence of this file signals that no data
      * will be lost if original partitions are deleted and batch rename process can be safely initiated.
      *
-     * @param workDir Cache group working directory.
      * @return File.
      */
-    public static File defragmentationCompletionMarkerFile(File workDir) {
-        return new File(workDir, DFRG_COMPLETION_MARKER_FILE_NAME);
+    public File defragmentationCompletionMarkerFile(boolean metaStore, @Nullable CacheConfiguration<?, ?> ccfg) {
+        return new File(cacheStorage(metaStore, ccfg), DFRG_COMPLETION_MARKER_FILE_NAME);
+    }
+
+    /**
+     * @param ft
+     * @param metaStore
+     * @param ccfg
+     * @return
+     */
+    public File cacheStorage(boolean metaStore, @Nullable CacheConfiguration<?, ?> ccfg) {
+        return metaStore ? ft.metaStorage() : ft.cacheStorage(ccfg);
     }
 }

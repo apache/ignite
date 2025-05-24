@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -101,11 +102,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.defragment
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.skipAlreadyDefragmentedCacheGroup;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.skipAlreadyDefragmentedPartition;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.writeDefragmentationCompletionMarker;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedIndexFile;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedIndexTmpFile;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedPartFile;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedPartMappingFile;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTreeUtils.defragmentedPartTmpFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTree.defragmentedIndexFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTree.defragmentedIndexTmpFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTree.defragmentedPartFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTree.defragmentedPartMappingFile;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTree.defragmentedPartTmpFile;
 
 /**
  * Defragmentation manager is the core class that contains main defragmentation procedure.
@@ -292,6 +293,7 @@ public class CachePartitionDefragmentationManager {
             DataPageEvictionMode prevPageEvictionMode = null;
 
             NodeFileTree ft = sharedCtx.kernalContext().pdsFolderResolver().fileTree();
+            DefragmentationFileTree dft = new DefragmentationFileTree(ft);
 
             for (CacheGroupContext oldGrpCtx : cacheGrpCtxsForDefragmentation) {
                 int grpId = oldGrpCtx.groupId();
@@ -300,7 +302,7 @@ public class CachePartitionDefragmentationManager {
 
                 List<CacheDataStore> oldCacheDataStores = oldStores.get(grpId);
 
-                if (skipAlreadyDefragmentedCacheGroup(ft, oldGrpCtx, log)) {
+                if (skipAlreadyDefragmentedCacheGroup(dft, oldGrpCtx, log)) {
                     status.onCacheGroupSkipped(oldGrpCtx, oldCacheDataStores.size());
 
                     continue;
@@ -455,7 +457,7 @@ public class CachePartitionDefragmentationManager {
 
                         renameTempIndexFile(ft, oldGrpCtx);
 
-                        writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), ft, oldGrpCtx, log);
+                        writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), dft, oldGrpCtx.config(), log);
 
                         try {
                             for (PageStore store : filePageStoreMgr.getStores(grpId))
@@ -465,7 +467,7 @@ public class CachePartitionDefragmentationManager {
                             throw new IgniteException("Failed to stop page store for group " + grpId, e);
                         }
 
-                        batchRenameDefragmentedCacheGroupPartitions(workDir, log);
+                        batchRenameDefragmentedCacheGroupPartitions(dft, false, oldGrpCtx.config(), log);
 
                         return null;
                     });
@@ -477,7 +479,7 @@ public class CachePartitionDefragmentationManager {
                     );
                 }
                 catch (DefragmentationCancelledException e) {
-                    DefragmentationFileUtils.deleteLeftovers(workDir);
+                    DefragmentationFileUtils.deleteLeftovers(dft, false, oldGrpCtx.config());
 
                     throw e;
                 }

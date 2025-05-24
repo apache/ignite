@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
+import org.apache.ignite.internal.processors.cache.persistence.filename.DefragmentationFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -542,7 +543,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /**
      * @param ft Node file tree.
-     * @param isMetastorage {@code True} if creating directory for metastorage, {@code false} otherwise.
+     * @param metaStore {@code True} if creating directory for metastorage, {@code false} otherwise.
      * @param ccfg Cache configuration.
      * @param grpDesc Cache group description.
      * @param dataRegion Data region.
@@ -551,28 +552,28 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     private CacheStoreHolder initDir(
         NodeFileTree ft,
-        boolean isMetastorage,
+        boolean metaStore,
         @Nullable CacheConfiguration<?, ?> ccfg,
         @Nullable CacheGroupDescriptor grpDesc,
         DataRegion dataRegion
     ) throws IgniteCheckedException {
-        assert (ccfg != null && grpDesc != null) || isMetastorage;
+        assert (ccfg != null && grpDesc != null) || metaStore;
 
         try {
-            boolean dirExisted = checkAndInitCacheWorkDir(ft, isMetastorage, ccfg, log);
+            boolean dirExisted = checkAndInitCacheWorkDir(ft, metaStore, ccfg, log);
 
             if (dirExisted) {
                 MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
 
                 if (!mntcReg.isMaintenanceMode())
-                    DefragmentationFileUtils.beforeInitPageStores(ft, isMetastorage, ccfg, log);
+                    DefragmentationFileUtils.beforeInitPageStores(new DefragmentationFileTree(ft), metaStore, ccfg, log);
             }
 
-            int grpId = isMetastorage
+            int grpId = metaStore
                 ? MetaStorage.METASTORAGE_CACHE_ID
                 : grpDesc.groupId();
 
-            IntFunction<File> partitionFile = isMetastorage
+            IntFunction<File> partitionFile = metaStore
                 ? ft::metaStoragePartition
                 : p -> ft.partitionFile(ccfg, p);
 
@@ -581,11 +582,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             GridQueryProcessor qryProc = cctx.kernalContext().query();
 
             if (qryProc.moduleEnabled()) {
-                String cacheName = isMetastorage
+                String cacheName = metaStore
                     ? MetaStorage.METASTORAGE_CACHE_NAME
                     : ccfg.getName();
 
-                boolean idxRecreating = isMetastorage
+                boolean idxRecreating = metaStore
                     ? !qryProc.recreateCompleted(cacheName)
                     : grpDesc.caches().keySet().stream().anyMatch(name -> !qryProc.recreateCompleted(name));
 
@@ -604,7 +605,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (dirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);
 
-            FileVersionCheckingFactory pageStoreFactory = getPageStoreFactory(grpId, !isMetastorage && ccfg.isEncryptionEnabled());
+            FileVersionCheckingFactory pageStoreFactory = getPageStoreFactory(grpId, !metaStore && ccfg.isEncryptionEnabled());
 
             PageMetrics pageMetrics = dataRegion.metrics().cacheGrpPageMetrics(grpId);
 
@@ -614,7 +615,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     idxFile,
                     pageMetrics.totalPages()::add);
 
-            PageStore[] partStores = new PageStore[isMetastorage
+            PageStore[] partStores = new PageStore[metaStore
                 ? MetaStorage.METASTORAGE_PARTITIONS.size()
                 : grpDesc.config().getAffinity().partitions()];
 
@@ -642,21 +643,19 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /**
      * @param ft Node file tree.
-     * @param isMetastorage {@code True} if creating directory for metastorage, {@code false} otherwise.
+     * @param metaStore {@code True} if creating directory for metastorage, {@code false} otherwise.
      * @param ccfg Cache configuration.
      * @param log Logger.
      */
     public static boolean checkAndInitCacheWorkDir(
         NodeFileTree ft,
-        boolean isMetastorage,
+        boolean metaStore,
         @Nullable CacheConfiguration<?, ?> ccfg,
         IgniteLogger log
     ) throws IgniteCheckedException {
-        assert ccfg != null || isMetastorage;
+        assert ccfg != null || metaStore;
 
-        File cacheWorkDir = isMetastorage
-            ? ft.metaStorage()
-            : ft.cacheStorage(ccfg);
+        File cacheWorkDir = metaStore ? ft.metaStorage() : ft.cacheStorage(ccfg);
 
         boolean dirExisted = false;
 
