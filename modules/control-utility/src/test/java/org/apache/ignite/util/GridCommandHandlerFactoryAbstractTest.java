@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
+import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.management.DynamicMBean;
@@ -323,16 +324,12 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
                 if (val.getClass() == char[].class)
                     return new String((char[])val);
 
-                StringBuffer sb = new StringBuffer();
+                StringJoiner sj = new StringJoiner(",");
 
-                for (int i = 0; i < length; i++) {
-                    if (i != 0)
-                        sb.append(',');
+                for (int i = 0; i < length; i++)
+                    sj.add(toString(Array.get(val, i)));
 
-                    sb.append(toString(Array.get(val, i)));
-                }
-
-                return sb.toString();
+                return sj.toString();
             }
 
             return Objects.toString(val);
