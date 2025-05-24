@@ -72,7 +72,9 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
     public <R> R invoke(Consumer<String> printer) throws Exception {
         R res;
 
-        if (cmd instanceof LocalCommand)
+        if (cmd instanceof OfflineCommand)
+            res = ((OfflineCommand<A, R>)cmd).execute(arg, printer);
+        else if (cmd instanceof LocalCommand)
             res = ((LocalCommand<A, R>)cmd).execute(igniteClient(), ignite, arg, printer);
         else if (cmd instanceof ComputeCommand) {
             ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
