@@ -209,7 +209,7 @@ public class DefragmentationFileUtils {
     /**
      * Rename temporary index defragmentation file to a finalized one.
      *
-     * @param workDir Cache group working directory.
+     * @param cft Cache file tree.
      * @throws IgniteException If {@link IOException} occurred.
      *
      * @see CacheFileTree#defragmentedIndexTmpFile()
@@ -257,7 +257,7 @@ public class DefragmentationFileUtils {
      * Creates empty completion marker file in given directory.
      *
      * @param ioFactory File IO factory.
-     * @param workDir Cache group working directory.
+     * @param cft Cache file tree.
      * @param log Logger to write messages.
      * @throws IgniteException If {@link IOException} occurred.
      *

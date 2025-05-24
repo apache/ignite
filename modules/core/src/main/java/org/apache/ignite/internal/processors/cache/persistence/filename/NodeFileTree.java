@@ -205,10 +205,10 @@ public class NodeFileTree extends SharedFileTree {
             dir.getName().equals(METASTORAGE_DIR_NAME);
 
     /** Partition file prefix. */
-    public static final String PART_FILE_PREFIX = "part-";
+    static final String PART_FILE_PREFIX = "part-";
 
     /** Index file prefix. */
-    public static final String INDEX_FILE_PREFIX = "index";
+    static final String INDEX_FILE_PREFIX = "index";
 
     /** Index file name. */
     protected static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;

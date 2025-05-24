@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 
 /**
- *
+ * Class to be used in common code: for metastorage or regular cache.
  */
 public class CacheFileTree {
     /** Prefix for link mapping files. */
@@ -63,6 +63,9 @@ public class CacheFileTree {
     /** Node file tree. */
     private final NodeFileTree ft;
 
+    /** Cache storage. */
+    private final File storage;
+
     /** {@code True} if tree for metastore, {@code false} otherwise. */
     private final boolean metastore;
 
@@ -83,6 +86,7 @@ public class CacheFileTree {
 
         this.ft = ft;
         this.metastore = metastore;
+        this.storage = metastore ? ft.metaStorage() : ft.cacheStorage(ccfg);
         this.ccfg = ccfg;
         this.grpId = metastore ? MetaStorage.METASTORAGE_CACHE_ID : CU.cacheGroupId(ccfg);
     }
@@ -91,7 +95,7 @@ public class CacheFileTree {
      * @return Storage for cache.
      */
     public File storage() {
-        return metastore ? ft.metaStorage() : ft.cacheStorage(ccfg);
+        return storage;
     }
 
     /**
