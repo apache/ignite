@@ -3879,11 +3879,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             autoConfirmation = false;
 
-            String testInput = "Test offline command";
+            String input = "Test Offline Command";
 
-            assertEquals(EXIT_CODE_OK, execute(List.of("--offline-test", "--input", testInput)));
+            assertEquals(EXIT_CODE_OK, execute(List.of("--offline-test", "--input", input)));
 
-            assertTrue(testOut.toString().contains(testInput));
+            assertTrue(testOut.toString().contains(input));
         }
         finally {
             System.setOut(sysOut);

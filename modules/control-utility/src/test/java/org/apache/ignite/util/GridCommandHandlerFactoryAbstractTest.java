@@ -181,9 +181,6 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     /** */
     public static class JmxCommandHandler implements TestCommandHandler {
         /** */
-        private final IgniteCommandRegistry registry = new IgniteCommandRegistry();
-
-        /** */
         private int port;
 
         /** */
@@ -210,7 +207,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
             String cmdName = null;
 
             try {
-                ArgumentParser parser = new ArgumentParser(log, registry, null);
+                ArgumentParser parser = new ArgumentParser(log, new IgniteCommandRegistry(), null);
 
                 ConnectionAndSslParameters<IgniteDataTransferObject> p = parser.parseAndValidate(value);
 
