@@ -114,50 +114,10 @@ public class BinaryUtils {
     public static final String MAPPING_FILE_EXTENSION = ".classname";
 
     /** */
-    public static final Map<Class<?>, Byte> PLAIN_CLASS_TO_FLAG = Map.ofEntries(
-        entry(Byte.class, GridBinaryMarshaller.BYTE),
-        entry(Short.class, GridBinaryMarshaller.SHORT),
-        entry(Integer.class, GridBinaryMarshaller.INT),
-        entry(Long.class, GridBinaryMarshaller.LONG),
-        entry(Float.class, GridBinaryMarshaller.FLOAT),
-        entry(Double.class, GridBinaryMarshaller.DOUBLE),
-        entry(Character.class, GridBinaryMarshaller.CHAR),
-        entry(Boolean.class, GridBinaryMarshaller.BOOLEAN),
-        entry(BigDecimal.class, GridBinaryMarshaller.DECIMAL),
-        entry(String.class, GridBinaryMarshaller.STRING),
-        entry(UUID.class, GridBinaryMarshaller.UUID),
-        entry(Date.class, GridBinaryMarshaller.DATE),
-        entry(Timestamp.class, GridBinaryMarshaller.TIMESTAMP),
-        entry(Time.class, GridBinaryMarshaller.TIME),
-        entry(byte[].class, GridBinaryMarshaller.BYTE_ARR),
-        entry(short[].class, GridBinaryMarshaller.SHORT_ARR),
-        entry(int[].class, GridBinaryMarshaller.INT_ARR),
-        entry(long[].class, GridBinaryMarshaller.LONG_ARR),
-        entry(float[].class, GridBinaryMarshaller.FLOAT_ARR),
-        entry(double[].class, GridBinaryMarshaller.DOUBLE_ARR),
-        entry(char[].class, GridBinaryMarshaller.CHAR_ARR),
-        entry(boolean[].class, GridBinaryMarshaller.BOOLEAN_ARR),
-        entry(BigDecimal[].class, GridBinaryMarshaller.DECIMAL_ARR),
-        entry(String[].class, GridBinaryMarshaller.STRING_ARR),
-        entry(UUID[].class, GridBinaryMarshaller.UUID_ARR),
-        entry(Date[].class, GridBinaryMarshaller.DATE_ARR),
-        entry(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR),
-        entry(Time[].class, GridBinaryMarshaller.TIME_ARR),
-        entry(byte.class, GridBinaryMarshaller.BYTE),
-        entry(short.class, GridBinaryMarshaller.SHORT),
-        entry(int.class, GridBinaryMarshaller.INT),
-        entry(long.class, GridBinaryMarshaller.LONG),
-        entry(float.class, GridBinaryMarshaller.FLOAT),
-        entry(double.class, GridBinaryMarshaller.DOUBLE),
-        entry(char.class, GridBinaryMarshaller.CHAR),
-        entry(boolean.class, GridBinaryMarshaller.BOOLEAN)
-    );
+    public static final Map<Class<?>, Byte> PLAIN_CLASS_TO_FLAG;
 
     /** */
-    public static final Map<Byte, Class<?>> FLAG_TO_CLASS = PLAIN_CLASS_TO_FLAG.entrySet()
-        .stream()
-        .filter(e -> !e.getKey().isPrimitive())
-        .collect(Collectors.toUnmodifiableMap(Map.Entry::getValue, Map.Entry::getKey));
+    public static final Map<Byte, Class<?>> FLAG_TO_CLASS;
 
     /** */
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
@@ -180,7 +140,7 @@ public class BinaryUtils {
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
 
     /** Binary classes. */
-    private static final Collection<Class<?>> BINARY_CLS = Set.copyOf(FLAG_TO_CLASS.values());
+    private static final Collection<Class<?>> BINARY_CLS;
 
     /** Class for SingletonList obtained at runtime. */
     public static final Class<? extends Collection> SINGLETON_LIST_CLS = Collections.singletonList(null).getClass();
@@ -236,6 +196,56 @@ public class BinaryUtils {
      * Static class initializer.
      */
     static {
+        Map<Class<?>, Byte> clsToFlag = new HashMap<>();
+
+        clsToFlag.put(Byte.class, GridBinaryMarshaller.BYTE);
+        clsToFlag.put(Short.class, GridBinaryMarshaller.SHORT);
+        clsToFlag.put(Integer.class, GridBinaryMarshaller.INT);
+        clsToFlag.put(Long.class, GridBinaryMarshaller.LONG);
+        clsToFlag.put(Float.class, GridBinaryMarshaller.FLOAT);
+        clsToFlag.put(Double.class, GridBinaryMarshaller.DOUBLE);
+        clsToFlag.put(Character.class, GridBinaryMarshaller.CHAR);
+        clsToFlag.put(Boolean.class, GridBinaryMarshaller.BOOLEAN);
+        clsToFlag.put(BigDecimal.class, GridBinaryMarshaller.DECIMAL);
+        clsToFlag.put(String.class, GridBinaryMarshaller.STRING);
+        clsToFlag.put(UUID.class, GridBinaryMarshaller.UUID);
+        clsToFlag.put(Date.class, GridBinaryMarshaller.DATE);
+        clsToFlag.put(Timestamp.class, GridBinaryMarshaller.TIMESTAMP);
+        clsToFlag.put(Time.class, GridBinaryMarshaller.TIME);
+
+        clsToFlag.put(byte[].class, GridBinaryMarshaller.BYTE_ARR);
+        clsToFlag.put(short[].class, GridBinaryMarshaller.SHORT_ARR);
+        clsToFlag.put(int[].class, GridBinaryMarshaller.INT_ARR);
+        clsToFlag.put(long[].class, GridBinaryMarshaller.LONG_ARR);
+        clsToFlag.put(float[].class, GridBinaryMarshaller.FLOAT_ARR);
+        clsToFlag.put(double[].class, GridBinaryMarshaller.DOUBLE_ARR);
+        clsToFlag.put(char[].class, GridBinaryMarshaller.CHAR_ARR);
+        clsToFlag.put(boolean[].class, GridBinaryMarshaller.BOOLEAN_ARR);
+        clsToFlag.put(BigDecimal[].class, GridBinaryMarshaller.DECIMAL_ARR);
+        clsToFlag.put(String[].class, GridBinaryMarshaller.STRING_ARR);
+        clsToFlag.put(UUID[].class, GridBinaryMarshaller.UUID_ARR);
+        clsToFlag.put(Date[].class, GridBinaryMarshaller.DATE_ARR);
+        clsToFlag.put(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
+        clsToFlag.put(Time[].class, GridBinaryMarshaller.TIME_ARR);
+
+        clsToFlag.put(byte.class, GridBinaryMarshaller.BYTE);
+        clsToFlag.put(short.class, GridBinaryMarshaller.SHORT);
+        clsToFlag.put(int.class, GridBinaryMarshaller.INT);
+        clsToFlag.put(long.class, GridBinaryMarshaller.LONG);
+        clsToFlag.put(float.class, GridBinaryMarshaller.FLOAT);
+        clsToFlag.put(double.class, GridBinaryMarshaller.DOUBLE);
+        clsToFlag.put(char.class, GridBinaryMarshaller.CHAR);
+        clsToFlag.put(boolean.class, GridBinaryMarshaller.BOOLEAN);
+
+        PLAIN_CLASS_TO_FLAG = Map.copyOf(clsToFlag);
+
+        FLAG_TO_CLASS = PLAIN_CLASS_TO_FLAG.entrySet()
+            .stream()
+            .filter(e -> !e.getKey().isPrimitive())
+            .collect(Collectors.toUnmodifiableMap(Map.Entry::getValue, Map.Entry::getKey));
+
+        BINARY_CLS = Set.copyOf(FLAG_TO_CLASS.values());
+
         for (byte b : new byte[] {
             GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG,
             GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE, GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN,
