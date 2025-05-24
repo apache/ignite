@@ -56,6 +56,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.CacheFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.F;
@@ -269,9 +270,11 @@ public class GridLocalConfigManager {
         if (!CU.storeCacheConfig(cacheProcessor.context(), ccfg))
             return;
 
-        FilePageStoreManager.checkAndInitCacheWorkDir(ft, false, ccfg, log);
+        CacheFileTree cft = ft.cacheTree(ccfg);
 
-        assert ft.cacheStorage(ccfg).exists() : "Work directory does not exist: " + ft.cacheStorage(ccfg);
+        FilePageStoreManager.checkAndInitCacheWorkDir(cft, log);
+
+        assert cft.storage().exists() : "Work directory does not exist: " + cft.storage();
 
         File file = ft.cacheConfigurationFile(ccfg);
         Path filePath = file.toPath();

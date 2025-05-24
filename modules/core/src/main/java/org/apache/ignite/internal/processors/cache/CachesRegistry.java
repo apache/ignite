@@ -273,9 +273,7 @@ public class CachesRegistry {
         for (StoredCacheData data : cacheConfigsToPersist) {
             try {
                 FilePageStoreManager.checkAndInitCacheWorkDir(
-                    cctx.kernalContext().pdsFolderResolver().fileTree(),
-                    false,
-                    data.config(),
+                    cctx.kernalContext().pdsFolderResolver().fileTree().cacheTree(data.config()),
                     log
                 );
             }
