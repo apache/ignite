@@ -208,6 +208,9 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static final String CDC_MODE_FILE_NAME = "cdc-mode" + FILE_SUFFIX;
 
+    /** WAL state file name. */
+    public static final String WAL_STATE_FILE_NAME = "cdc-wal-state" + FILE_SUFFIX;
+
     /** Filter out all cache directories. */
     private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
@@ -242,9 +245,6 @@ public class NodeFileTree extends SharedFileTree {
 
     /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group. */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
-
-    /** WAL state file name. */
-    private static final String WAL_STATE_FILE_NAME = "cdc-wal-state" + FILE_SUFFIX;
 
     /** Types state file name. */
     private static final String TYPES_STATE_FILE_NAME = "cdc-types-state" + FILE_SUFFIX;
