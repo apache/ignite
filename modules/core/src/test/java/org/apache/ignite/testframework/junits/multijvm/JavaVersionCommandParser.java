@@ -19,7 +19,7 @@ package org.apache.ignite.testframework.junits.multijvm;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Parses output of 'java -version'.
@@ -43,6 +43,6 @@ class JavaVersionCommandParser {
 
         String fullJavaVer = matcher.group(2);
 
-        return CommonUtils.majorJavaVersion(fullJavaVer);
+        return U.majorJavaVersion(fullJavaVer);
     }
 }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.platform;
 
-import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Test utils.
@@ -29,7 +29,7 @@ public class PlatformTestUtils {
      * @return Major version.
      */
     public static int majorJavaVersion() {
-        return CommonUtils.majorJavaVersion(System.getProperty("java.version"));
+        return U.majorJavaVersion(System.getProperty("java.version"));
     }
 
     /**
