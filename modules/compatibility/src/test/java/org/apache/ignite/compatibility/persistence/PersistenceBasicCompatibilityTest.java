@@ -38,7 +38,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
-import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.junit.Assume;
@@ -102,14 +102,14 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
      */
     @Test
     public void testNodeStartByOldVersionPersistenceData() throws Exception {
-        int majorJavaVer = CommonUtils.majorJavaVersion(CommonUtils.jdkVersion());
+        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
         if (majorJavaVer > 11) {
-            Assume.assumeTrue("Skipped on jdk " + CommonUtils.jdkVersion(),
+            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
                 VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(version)) < 0);
         }
         else if (majorJavaVer == 11) {
-            Assume.assumeTrue("Skipped on jdk " + CommonUtils.jdkVersion(),
+            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
                 VER_2_3_0.compareTo(IgniteReleasedVersion.fromString(version)) < 0);
         }
 

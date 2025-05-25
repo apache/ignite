@@ -30,8 +30,8 @@ import org.apache.ignite.internal.mem.UnsafeChunk;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import sun.nio.ch.FileChannelImpl;
 
-import static org.apache.ignite.internal.util.CommonUtils.jdkVersion;
-import static org.apache.ignite.internal.util.CommonUtils.majorJavaVersion;
+import static org.apache.ignite.internal.util.IgniteUtils.jdkVersion;
+import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
 
 /** */
 public class MappedFile implements Closeable, DirectMemoryRegion {

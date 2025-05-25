@@ -62,7 +62,6 @@ import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
-import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
@@ -108,10 +107,10 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        int majorJavaVer = CommonUtils.majorJavaVersion(CommonUtils.jdkVersion());
+        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
         if (majorJavaVer > 11) {
-            Assume.assumeTrue("Skipped on jdk " + CommonUtils.jdkVersion(),
+            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
                     VER_2_12_0.compareTo(IgniteProductVersion.fromString(verFormatted)) < 0);
         }
     }
