@@ -296,7 +296,7 @@ final class ReliableChannel implements AutoCloseable {
                                     if (retryErr == null)
                                         fut.complete(retryRes);
                                     else
-                                        fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures);
+                                        fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures, retryErr);
 
                                     return null;
                                 });
@@ -316,7 +316,7 @@ final class ReliableChannel implements AutoCloseable {
                 catch (ClientConnectionException reconnectEx) {
                     onChannelFailure(hld, ch, reconnectEx, failures);
 
-                    fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures);
+                    fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures, reconnectEx);
                 }
                 catch (Throwable ex) {
                     fut.completeExceptionally(ex);
@@ -337,17 +337,16 @@ final class ReliableChannel implements AutoCloseable {
         ClientOperation op,
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader,
-        List<ClientConnectionException> failures
+        List<ClientConnectionException> failures,
+        Throwable err
     ) {
-        ClientConnectionException err = failures.get(failures.size() - 1);
-
-        if (err != null && !(err instanceof ClientConnectionException)) {
+        if (!(err instanceof ClientConnectionException)) {
             fut.completeExceptionally(err);
 
             return;
         }
 
-        if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, err)) {
+        if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, (ClientConnectionException)err)) {
             try {
                 handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
             }
