@@ -645,7 +645,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
     /** */
     private static class SemiJoin<Row> extends NestedLoopJoinNode<Row> {
         /**
-         * @param ctx  Execution context.
+         * @param ctx Execution context.
          * @param cond Join expression.
          */
         public SemiJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
