@@ -103,7 +103,6 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
         doNodeFileTreeTest(false, false, this::snapshotNodeFileTreeChecker);
     }
 
-
     /** */
     @Test
     public void testNodeFileTreeForIncrementalSnapshot() throws Exception {
