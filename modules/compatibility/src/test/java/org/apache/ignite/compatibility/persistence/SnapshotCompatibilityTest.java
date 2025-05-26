@@ -152,7 +152,9 @@ public class SnapshotCompatibilityTest extends SnapshotCompatibilityAbstractTest
                     }
                 };
 
-                new DumpReader(new DumpReaderConfiguration(CACHE_DUMP_NAME, snpPathResolver.snpDir(false), node.configuration(), consumer), log).run();
+                new DumpReader(
+                    new DumpReaderConfiguration(CACHE_DUMP_NAME, snpPathResolver.snpDir(false), node.configuration(), consumer), log
+                ).run();
 
                 assertEquals(cacheGrpsCfg, foundCacheGrpsInfo);
 
