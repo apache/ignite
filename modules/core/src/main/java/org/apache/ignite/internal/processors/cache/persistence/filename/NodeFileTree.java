@@ -199,18 +199,6 @@ public class NodeFileTree extends SharedFileTree {
     /** File extension of temp zipped WAL segment. */
     public static final String TMP_ZIP_WAL_SEG_FILE_EXT = ZIP_WAL_SEG_FILE_EXT + TMP_SUFFIX;
 
-    /**
-     * The file stores state of CDC mode. Content of the file is a {@link CdcMode} value:
-     * <ul>
-     *     <li>{@link CdcMode#CDC_UTILITY_ACTIVE} means that {@link CdcMain} utility captures data.</li>
-     *     <li>{@link CdcMode#IGNITE_NODE_ACTIVE} means that {@link CdcManager} captures data within Ignite node.</li>
-     * </ul>
-     */
-    public static final String CDC_MODE_FILE_NAME = "cdc-mode" + FILE_SUFFIX;
-
-    /** CDC state directory name. */
-    public static final String STATE_DIR = "state";
-
     /** Filter out all cache directories. */
     private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
@@ -245,6 +233,18 @@ public class NodeFileTree extends SharedFileTree {
 
     /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group. */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
+
+    /** CDC state directory name. */
+    private static final String STATE_DIR = "state";
+
+    /**
+     * The file stores state of CDC mode. Content of the file is a {@link CdcMode} value:
+     * <ul>
+     *     <li>{@link CdcMode#CDC_UTILITY_ACTIVE} means that {@link CdcMain} utility captures data.</li>
+     *     <li>{@link CdcMode#IGNITE_NODE_ACTIVE} means that {@link CdcManager} captures data within Ignite node.</li>
+     * </ul>
+     */
+    private static final String CDC_MODE_FILE_NAME = "cdc-mode" + FILE_SUFFIX;
 
     /** WAL state file name. */
     private static final String WAL_STATE_FILE_NAME = "cdc-wal-state" + FILE_SUFFIX;
