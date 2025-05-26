@@ -492,9 +492,10 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
             FileIOFactory delegate = dsCfg.getFileIOFactory();
+            File marker = cft.defragmentationCompletionMarkerFile();
 
             dsCfg.setFileIOFactory((file, modes) -> {
-                if (file.equals(cft.defragmentationCompletionMarkerFile())) {
+                if (file.equals(marker)) {
                     errOccurred.set(true);
 
                     throw new IOException(errMsg);
