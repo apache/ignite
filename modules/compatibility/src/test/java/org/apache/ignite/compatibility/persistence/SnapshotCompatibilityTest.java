@@ -139,7 +139,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         else
             checkSnapshot(node);
 
-        checkDump(node);
+        checkCacheDump(node);
     }
 
     /** */
@@ -159,68 +159,63 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     }
 
     /** */
-    private void checkDump(IgniteEx node) {
-        try {
-            CacheGroupsConfig foundCacheGrpsInfo = new CacheGroupsConfig();
+    private void checkCacheDump(IgniteEx node) throws IgniteCheckedException {
+        CacheGroupsConfig foundCacheGrpsInfo = new CacheGroupsConfig();
 
-            Map<String, Integer> foundCacheSizes = new HashMap<>();
+        Map<String, Integer> foundCacheSizes = new HashMap<>();
 
-            DumpConsumer consumer = new DumpConsumer() {
-                @Override public void start() {
-                    // No-op.
-                }
+        DumpConsumer consumer = new DumpConsumer() {
+            @Override public void start() {
+                // No-op.
+            }
 
-                @Override public void onMappings(Iterator<TypeMapping> mappings) {
-                    // No-op.
-                }
+            @Override public void onMappings(Iterator<TypeMapping> mappings) {
+                // No-op.
+            }
 
-                @Override public void onTypes(Iterator<BinaryType> types) {
-                    // No-op.
-                }
+            @Override public void onTypes(Iterator<BinaryType> types) {
+                // No-op.
+            }
 
-                @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
-                    caches.forEachRemaining(cache -> {
-                        CacheConfiguration<?, ?> ccfg = cache.config();
+            @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+                caches.forEachRemaining(cache -> {
+                    CacheConfiguration<?, ?> ccfg = cache.config();
 
-                        assertNotNull(ccfg);
+                    assertNotNull(ccfg);
 
-                        foundCacheGrpsInfo.addCache(ccfg.getGroupName(), ccfg.getName());
-                    });
-                }
+                    foundCacheGrpsInfo.addCache(ccfg.getGroupName(), ccfg.getName());
+                });
+            }
 
-                @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
-                    data.forEachRemaining(dumpEntry -> {
-                        assertNotNull(dumpEntry);
+            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                data.forEachRemaining(dumpEntry -> {
+                    assertNotNull(dumpEntry);
 
-                        Integer key = (Integer)dumpEntry.key();
-                        String val = (String)dumpEntry.value();
+                    Integer key = (Integer)dumpEntry.key();
+                    String val = (String)dumpEntry.value();
 
-                        Optional<String> cacheName = cacheGrpsCfg.cacheNames().stream().filter(val::startsWith).findFirst();
+                    Optional<String> cacheName = cacheGrpsCfg.cacheNames().stream().filter(val::startsWith).findFirst();
 
-                        assertTrue(cacheName.isPresent());
+                    assertTrue(cacheName.isPresent());
 
-                        assertEquals(CacheGroupInfo.calcValue(cacheName.get(), key), val);
+                    assertEquals(CacheGroupInfo.calcValue(cacheName.get(), key), val);
 
-                        foundCacheSizes.merge(cacheName.get(), 1, Integer::sum);
-                    });
-                }
+                    foundCacheSizes.merge(cacheName.get(), 1, Integer::sum);
+                });
+            }
 
-                @Override public void stop() {
-                    // No-op.
-                }
-            };
+            @Override public void stop() {
+                // No-op.
+            }
+        };
 
-            new DumpReader(new DumpReaderConfiguration(CACHE_DUMP_NAME, snpDir(false), node.configuration(), consumer), log).run();
+        new DumpReader(new DumpReaderConfiguration(CACHE_DUMP_NAME, snpDir(false), node.configuration(), consumer), log).run();
 
-            assertEquals(cacheGrpsCfg.cacheGrpInfos, foundCacheGrpsInfo.cacheGrpInfos);
+        assertEquals(cacheGrpsCfg.cacheGrpInfos, foundCacheGrpsInfo.cacheGrpInfos);
 
-            cacheGrpsCfg.cacheNames().forEach(
-                cacheName -> assertEquals(BASE_CACHE_SIZE, foundCacheSizes.get(cacheName).intValue())
-            );
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
+        cacheGrpsCfg.cacheNames().forEach(
+            cacheName -> assertEquals(BASE_CACHE_SIZE, foundCacheSizes.get(cacheName).intValue())
+        );
     }
 
     /** */
