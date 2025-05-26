@@ -110,14 +110,12 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     /** */
     @Test
     public void testSnapshotRestore() throws Exception {
-        boolean incSnp = customConsId && oldNodesCnt == 1;
-
         for (int i = 1; i <= oldNodesCnt; ++i) {
             startGrid(
                 i,
                 OLD_IGNITE_VERSION,
                 new ConfigurationClosure(consId(i), snpDir(true), true, cacheGrpsCfg),
-                i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheGrpsCfg) : null
+                i == oldNodesCnt ? new CreateSnapshotClosure(cacheGrpsCfg) : null
             );
         }
 
@@ -134,7 +132,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
         node.cluster().state(ClusterState.ACTIVE);
 
-        if (incSnp)
+        if (customConsId && oldNodesCnt == 1)
             checkIncrementalSnapshot(node);
         else
             checkSnapshot(node);
@@ -299,14 +297,10 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     /** Snapshot creating closure both for old and current Ignite version. */
     private static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
         /** */
-        private final boolean incSnp;
-
-        /** */
         private final CacheGroupsConfig cacheGrpsCfg;
 
         /** */
-        public CreateSnapshotClosure(boolean incSnp, CacheGroupsConfig cacheGrpsCfg) {
-            this.incSnp = incSnp;
+        public CreateSnapshotClosure(CacheGroupsConfig cacheGrpsCfg) {
             this.cacheGrpsCfg = cacheGrpsCfg;
         }
 
@@ -320,7 +314,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
             ign.snapshot().createDump(CACHE_DUMP_NAME, cacheGrpsCfg.cacheGroupNames()).get();
 
-            if (incSnp) {
+            if (ign.configuration().getConsistentId() != null && ign.cluster().nodes().size() == 1) {
                 cacheGrpsCfg.cacheGroupInfos().forEach(
                     cacheGrpInfo -> cacheGrpInfo.addItemsToCacheGrp(ign, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT)
                 );
