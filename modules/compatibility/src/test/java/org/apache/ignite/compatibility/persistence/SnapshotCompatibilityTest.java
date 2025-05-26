@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -52,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -93,7 +93,12 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     public int oldNodesCnt;
 
     /** */
-    private CacheGroupsConfig cacheGrpsCfg;
+    private final CacheGroupsConfig cacheGrpsCfg = new CacheGroupsConfig(
+        Set.of(
+            new CacheGroupInfo("singleCache", Collections.singleton("singleCache")),
+            new CacheGroupInfo("testCacheGrp", Set.of("testCache1", "testCache2"))
+        )
+    );
 
     /** */
     @Parameterized.Parameters(name = "customConsId={0}, customSnpDir={1}, oldNodesCnt={2}")
@@ -102,17 +107,6 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
             List.of(true, false),
             List.of(true, false),
             List.of(1, 3)
-        );
-    }
-
-    /** */
-    @Before
-    public void setUp() {
-        cacheGrpsCfg = new CacheGroupsConfig(
-            Set.of(
-                new CacheGroupInfo("singleCache", Collections.singleton("singleCache")),
-                new CacheGroupInfo("testCacheGrp", Set.of("testCache1", "testCache2"))
-            )
         );
     }
 
@@ -165,8 +159,6 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                     }
 
                     @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
-                        assertNotNull(cacheGrpsCfg);
-
                         caches.forEachRemaining(cache -> {
                             CacheConfiguration<?, ?> ccfg = cache.config();
 
@@ -177,11 +169,11 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                     }
 
                     @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
-                        data.forEachRemaining(de -> {
-                            assertNotNull(de);
+                        data.forEachRemaining(dumpEntry -> {
+                            assertNotNull(dumpEntry);
 
-                            Integer key = (Integer)de.key();
-                            String val = (String)de.value();
+                            Integer key = (Integer)dumpEntry.key();
+                            String val = (String)dumpEntry.value();
 
                             Optional<String> cacheName = cacheGrpsCfg.cacheNames().stream().filter(val::startsWith).findFirst();
 
@@ -202,10 +194,12 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
                 assertEquals(cacheGrpsCfg, foundCacheGrpsInfo);
 
-                cacheGrpsCfg.cacheNames().forEach(cacheName -> assertEquals(BASE_CACHE_SIZE, (int)foundCacheSizes.get(cacheName)));
+                cacheGrpsCfg.cacheNames().forEach(
+                    cacheName -> assertEquals(BASE_CACHE_SIZE, foundCacheSizes.get(cacheName).intValue())
+                );
             }
-            catch (IgniteCheckedException ex) {
-                throw new RuntimeException(ex);
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
             }
         });
     }
@@ -402,12 +396,12 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
             if (!(o instanceof CacheGroupsConfig))
                 return false;
 
-            return cacheGrpInfos.equals(((CacheGroupsConfig)o).cacheGrpInfos);
+            return Objects.equals(cacheGrpInfos, ((CacheGroupsConfig)o).cacheGrpInfos);
         }
 
         /** */
         @Override public int hashCode() {
-            return cacheGrpInfos.hashCode();
+            return Objects.hashCode(cacheGrpInfos);
         }
     }
 
@@ -479,12 +473,12 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
             CacheGroupInfo that = (CacheGroupInfo)o;
 
-            return name.equals(that.name) && cacheNames.equals(that.cacheNames);
+            return Objects.equals(name, that.name) && Objects.equals(cacheNames, that.cacheNames);
         }
 
         /** */
         @Override public int hashCode() {
-            return name.hashCode();
+            return Objects.hashCode(name);
         }
 
         /** */
