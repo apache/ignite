@@ -49,7 +49,6 @@ import static java.lang.String.format;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
@@ -183,7 +182,7 @@ public class NodeFileTree extends SharedFileTree {
     public static final String WAL_SEGMENT_FILE_EXT = ".wal";
 
     /** File suffix. */
-    public static final String FILE_SUFFIX = ".bin";
+    static final String FILE_SUFFIX = ".bin";
 
     /** Suffix for tmp files */
     public static final String TMP_SUFFIX = ".tmp";
@@ -208,6 +207,9 @@ public class NodeFileTree extends SharedFileTree {
      * </ul>
      */
     public static final String CDC_MODE_FILE_NAME = "cdc-mode" + FILE_SUFFIX;
+
+    /** CDC state directory name. */
+    public static final String STATE_DIR = "state";
 
     /** Filter out all cache directories. */
     private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
