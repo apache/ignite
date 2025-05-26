@@ -74,7 +74,7 @@ public class FileTreeUtils {
         if (csp == null)
             return null;
 
-        return csp[part % csp.length];
+        return oneOf(csp, part);
     }
 
     /**
@@ -122,7 +122,7 @@ public class FileTreeUtils {
      * @param part Partition.
      * @return Storage for partition.
      */
-    static File oneOf(File[] storages, int part) {
+    static <T> T oneOf(T[] storages, int part) {
         return storages[(part + 1) % storages.length];
     }
 }
