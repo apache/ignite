@@ -136,9 +136,6 @@ public class CdcMain implements Runnable {
     /** */
     public static final String ERR_MSG = "Persistence and CDC disabled. Capture Data Change can't run!";
 
-    /** State dir. */
-    public static final String STATE_DIR = "state";
-
     /** Current segment index metric name. */
     public static final String CUR_SEG_IDX = "CurrentSegmentIndex";
 
@@ -315,7 +312,7 @@ public class CdcMain implements Runnable {
         }
 
         try (CdcFileLockHolder lock = lockPds()) {
-            Files.createDirectories(ft.walCdc().toPath().resolve(STATE_DIR));
+            Files.createDirectories(ft.cdcState());
 
             if (log.isInfoEnabled()) {
                 log.info("Change Data Capture [dir=" + ft.walCdc() + ']');
@@ -330,7 +327,7 @@ public class CdcMain implements Runnable {
             try {
                 kctx.resource().injectGeneric(consumer.consumer());
 
-                state = createState(ft.walCdc().toPath().resolve(STATE_DIR));
+                state = createState(ft);
 
                 walState = state.loadWalState();
                 typesState = state.loadTypesState();
@@ -364,8 +361,8 @@ public class CdcMain implements Runnable {
     }
 
     /** Creates consumer state. */
-    protected CdcConsumerState createState(Path stateDir) {
-        return new CdcConsumerState(log, stateDir);
+    protected CdcConsumerState createState(NodeFileTree ft) {
+        return new CdcConsumerState(log, ft);
     }
 
     /**
