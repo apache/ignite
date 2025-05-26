@@ -350,7 +350,10 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         return addrs.stream()
             .filter(addr -> {
                 try {
-                    InetAddress inet = InetAddress.getByName(addr);
+                    // Skips optional IPv6 zone ID (e.g., fe80::1%lo0) because InetAddress#getByName might fail to parse it.
+                    String[] parts = addr.split("%", 2);
+
+                    InetAddress inet = InetAddress.getByName(parts[0]);
 
                     return !(inet instanceof Inet6Address) && !(inet instanceof Inet4Address);
                 }
