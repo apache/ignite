@@ -168,8 +168,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  └── jmx-invoker.9.log
  * └── snapshots                                                                ← snpsRoot (shared between all local nodes).
  * </pre>
- *
- * TODO: use search for existing configs and partitions
  */
 public class NodeFileTree extends SharedFileTree {
     /** Default snapshot directory for loading remote snapshots. */
@@ -518,7 +516,6 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * @param ccfg Cache configuration.
      * @return Store dir for given cache.
-     * TODO: SCS
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
         return cacheStorages(ccfg)[0];

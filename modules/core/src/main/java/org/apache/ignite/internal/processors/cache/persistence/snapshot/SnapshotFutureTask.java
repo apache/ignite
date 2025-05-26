@@ -629,7 +629,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 if (sent || fromTemp)
                     return;
 
-                File cfgTmpRoot = sft.tempFileTree().cacheStorages(ccfg)[0];
+                File cfgTmpRoot = sft.tempFileTree().cacheConfigurationFile(ccfg).getParentFile();
 
                 if (!U.mkdirs(cfgTmpRoot))
                     throw new IOException("Unable to create temp directory to copy original configuration file: " + cfgTmpRoot);

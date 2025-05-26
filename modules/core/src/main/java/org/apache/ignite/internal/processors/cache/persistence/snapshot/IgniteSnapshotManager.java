@@ -2851,7 +2851,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             cacheChangedException(snpCacheData.cacheId(), snpCacheData.config().getName())
                         );
                     }
-
                 }
             }
         }
