@@ -58,7 +58,7 @@ public class MetadataRequestMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -100,11 +100,6 @@ public class MetadataRequestMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 80;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

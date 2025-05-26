@@ -164,11 +164,6 @@ public class HandshakeMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(HandshakeMessage.class, this);
     }

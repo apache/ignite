@@ -191,7 +191,7 @@ public class CacheInvokeDirectResult implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -256,11 +256,6 @@ public class CacheInvokeDirectResult implements Message {
         }
 
         return reader.afterMessageRead(CacheInvokeDirectResult.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

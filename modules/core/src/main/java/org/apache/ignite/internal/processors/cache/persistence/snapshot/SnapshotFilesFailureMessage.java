@@ -79,7 +79,7 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -115,11 +115,6 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
         }
 
         return reader.afterMessageRead(SnapshotFilesFailureMessage.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

@@ -217,7 +217,7 @@ public class GridIoUserMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -347,11 +347,6 @@ public class GridIoUserMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 9;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 7;
     }
 
     /** {@inheritDoc} */

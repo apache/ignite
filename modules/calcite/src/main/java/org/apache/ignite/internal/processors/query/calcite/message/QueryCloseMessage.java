@@ -51,7 +51,7 @@ public class QueryCloseMessage implements CalciteMessage {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -92,10 +92,5 @@ public class QueryCloseMessage implements CalciteMessage {
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.QUERY_CLOSE_MESSAGE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 }

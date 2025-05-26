@@ -177,7 +177,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -233,11 +233,6 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     /** {@inheritDoc} */
     @Override public short directType() {
         return 111;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

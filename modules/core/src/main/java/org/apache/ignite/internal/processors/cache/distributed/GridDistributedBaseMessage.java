@@ -154,7 +154,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
