@@ -549,7 +549,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         DataRegion dataRegion
     ) throws IgniteCheckedException {
         try {
-            boolean dirExisted = checkAndInitCacheWorkDir(cft, log);
+            boolean dirExisted = checkAndInitCacheWorkDir(cft);
 
             if (dirExisted) {
                 MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
