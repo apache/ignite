@@ -132,6 +132,8 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
         node.cluster().state(ClusterState.ACTIVE);
 
+        // Incremental snapshots require same consistentID
+        // https://issues.apache.org/jira/browse/IGNITE-25096
         if (customConsId && oldNodesCnt == 1)
             checkIncrementalSnapshot(node);
         else
@@ -314,6 +316,8 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
             ign.snapshot().createDump(CACHE_DUMP_NAME, cacheGrpsCfg.cacheGroupNames()).get();
 
+            // Incremental snapshots require same consistentID
+            // https://issues.apache.org/jira/browse/IGNITE-25096
             if (ign.configuration().getConsistentId() != null && ign.cluster().nodes().size() == 1) {
                 cacheGrpsCfg.cacheGroupInfos().forEach(
                     cacheGrpInfo -> cacheGrpInfo.addItemsToCacheGrp(ign, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT)
