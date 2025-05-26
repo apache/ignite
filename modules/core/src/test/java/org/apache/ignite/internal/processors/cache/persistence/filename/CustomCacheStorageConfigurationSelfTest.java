@@ -216,4 +216,29 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                 .setGroupName("grp").setStoragePath(myPath3.getAbsolutePath()));
         }
     }
+
+    /** */
+    @Test
+    public void testClientNodeJoin() throws Exception {
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setStoragePath(myPath.getAbsolutePath())
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setStoragePath(myPath.getAbsolutePath());
+
+        try (IgniteEx srv = startGrid(getConfiguration("srv")
+            .setDataStorageConfiguration(dsCfg)
+            .setCacheConfiguration(ccfg)
+        )) {
+            srv.cluster().state(ClusterState.ACTIVE);
+
+            try (IgniteEx cliNode = startGrid(getConfiguration("client")
+                .setClientMode(true)
+                .setCacheConfiguration(ccfg)
+            )) {
+                assertTrue(cliNode.cacheNames().contains(DEFAULT_CACHE_NAME));
+            }
+        }
+    }
 }

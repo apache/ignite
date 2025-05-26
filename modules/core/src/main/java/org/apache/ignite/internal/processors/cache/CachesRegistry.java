@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -273,8 +272,7 @@ public class CachesRegistry {
         // Pre-create cache work directories if they don't exist.
         for (StoredCacheData data : cacheConfigsToPersist) {
             try {
-                for (File cacheStorage : cctx.kernalContext().pdsFolderResolver().fileTree().cacheStorages(data.config()))
-                    FilePageStoreManager.checkAndInitCacheWorkDir(cacheStorage, log);
+                FilePageStoreManager.checkAndInitCacheWorkDir(cctx.kernalContext().pdsFolderResolver().fileTree().cacheTree(data.config()));
             }
             catch (IgniteCheckedException e) {
                 if (!cctx.kernalContext().isStopping()) {

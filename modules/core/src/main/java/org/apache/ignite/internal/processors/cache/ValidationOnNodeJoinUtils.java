@@ -393,7 +393,7 @@ public class ValidationOnNodeJoinUtils {
                     cacheSpec.toString());
         }
 
-        if (!F.isEmpty(cc.getStoragePath())) {
+        if (!F.isEmpty(cc.getStoragePath()) && !ctx.clientNode()) {
             DataStorageConfiguration dsCfg = c.getDataStorageConfiguration();
 
             List<String> csp = Arrays.asList(cc.getStoragePath());
