@@ -99,48 +99,20 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
 
     /** */
     @Test
-    public void testNodeFileTreeForSnapshot() throws Exception {
-        doNodeFileTreeTest(false, false, this::snapshotNodeFileTreeChecker);
-    }
-
-    /** */
-    @Test
-    public void testNodeFileTreeForIncrementalSnapshot() throws Exception {
-        doNodeFileTreeTest(true, false, this::snapshotNodeFileTreeChecker);
-    }
-
-    /** */
-    @Test
-    public void testNodeFileTreeForCacheDump() throws Exception {
-        doNodeFileTreeTest(false, true, () -> {
-            try {
-                assertEquals(
-                    scanFileTree(oldSnpPathResolver.snpPath(CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX),
-                    scanFileTree(curSnpPathResolver.snpPath(CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX)
-                );
-            }
-            catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
-    /** */
-    private void doNodeFileTreeTest(boolean incSnp, boolean cacheDump, Runnable fileTreeChecker) throws Exception {
+    public void testNodeFileTree() throws Exception {
         try {
             for (int i = 1; i <= nodesCnt; ++i) {
                 startGrid(
                     i,
                     OLD_IGNITE_VERSION,
                     new ConfigurationClosure(
-                        incSnp,
                         consId(customConsId, i),
                         oldSnpPathResolver.snpDir(true),
                         true,
                         cacheGrpsCfg,
                         oldWorkDir
                     ),
-                    i == nodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpsCfg) : null
+                    i == nodesCnt ? new CreateSnapshotClosure(cacheGrpsCfg) : null
                 );
             }
 
@@ -153,7 +125,6 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
                     startGrid(
                         i,
                         new ConfigurationClosure(
-                            incSnp,
                             consId(customConsId, i),
                             curSnpPathResolver.snpDir(true),
                             true,
@@ -163,27 +134,22 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
                 );
             }
 
-            new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpsCfg).apply(curNodes.get(0));
+            new CreateSnapshotClosure(cacheGrpsCfg).apply(curNodes.get(0));
 
             assertEquals(scanFileTree(oldWorkDir, SNP_PART_SUFFIX), scanFileTree(U.defaultWorkDirectory(), SNP_PART_SUFFIX));
 
-            fileTreeChecker.run();
-        }
-        finally {
-            FileUtils.deleteDirectory(new File(oldWorkDir));
-        }
-    }
+            assertEquals(
+                scanFileTree(oldSnpPathResolver.snpPath(CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX),
+                scanFileTree(curSnpPathResolver.snpPath(CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX)
+            );
 
-    /** */
-    private void snapshotNodeFileTreeChecker() {
-        try {
             assertEquals(
                 scanSnp(oldSnpPathResolver.snpPath(SNAPSHOT_NAME, false)),
                 scanSnp(curSnpPathResolver.snpPath(SNAPSHOT_NAME, false))
             );
         }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
+        finally {
+            FileUtils.deleteDirectory(new File(oldWorkDir));
         }
     }
 
@@ -288,6 +254,11 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
             SnpScanResult other = (SnpScanResult)o;
 
             return incsCnt == other.incsCnt && Objects.equals(cacheGrpScans, other.cacheGrpScans);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(incsCnt, cacheGrpScans);
         }
     }
 

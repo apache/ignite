@@ -17,32 +17,18 @@
 
 package org.apache.ignite.compatibility.persistence;
 
-import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.compatibility.IgniteReleasedVersion;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpConsumer;
 import org.apache.ignite.dump.DumpEntry;
@@ -50,14 +36,11 @@ import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.junit.Assume.assumeTrue;
 
 /** */
 @RunWith(Parameterized.class)
@@ -94,7 +77,7 @@ public class SnapshotCompatibilityTest extends SnapshotCompatibilityAbstractTest
             startGrid(
                 i,
                 OLD_IGNITE_VERSION,
-                new ConfigurationClosure(consId(i), snpDir(true), true, cacheGrpsCfg),
+                new ConfigurationClosure(consId(customConsId, i), snpPathResolver.snpDir(true), true, cacheGrpsCfg),
                 i == oldNodesCnt ? new CreateSnapshotClosure(cacheGrpsCfg) : null
             );
         }
@@ -106,7 +89,7 @@ public class SnapshotCompatibilityTest extends SnapshotCompatibilityAbstractTest
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 
         // We configure current Ignite version in the same way as the old one.
-        new ConfigurationClosure(consId(1), snpDir(false), false, cacheGrpsCfg).apply(cfg);
+        new ConfigurationClosure(consId(customConsId, 1), snpPathResolver.snpDir(false), false, cacheGrpsCfg).apply(cfg);
 
         IgniteEx node = startGrid(cfg);
 
@@ -189,44 +172,14 @@ public class SnapshotCompatibilityTest extends SnapshotCompatibilityAbstractTest
             }
         };
 
-        new DumpReader(new DumpReaderConfiguration(CACHE_DUMP_NAME, snpDir(false), node.configuration(), consumer), log).run();
+        new DumpReader(
+            new DumpReaderConfiguration(CACHE_DUMP_NAME, snpPathResolver.snpDir(false), node.configuration(), consumer), log
+        ).run();
 
-        assertEquals(cacheGrpsCfg.cacheGrpInfos, foundCacheGrpsInfo.cacheGrpInfos);
+        assertEquals(cacheGrpsCfg, foundCacheGrpsInfo);
 
         cacheGrpsCfg.cacheNames().forEach(
             cacheName -> assertEquals(BASE_CACHE_SIZE, foundCacheSizes.get(cacheName).intValue())
         );
-    }
-
-    /** */
-    private void doRestoreTest(boolean incSnp, boolean cacheDump, Consumer<IgniteEx> curNodeChecker) throws Exception {
-        for (int i = 1; i <= oldNodesCnt; ++i) {
-            startGrid(
-                i,
-                OLD_IGNITE_VERSION,
-                new ConfigurationClosure(incSnp, consId(i), snpDir(true), true, cacheGrpsCfg),
-                i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpsCfg) : null
-            );
-        }
-
-        stopAllGrids();
-
-        cleanPersistenceDir(true);
-
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
-
-        // We configure current Ignite version in the same way as the old one.
-        new ConfigurationClosure(incSnp, consId(1), snpDir(false), false, cacheGrpsCfg).apply(cfg);
-
-        IgniteEx node = startGrid(cfg);
-
-        node.cluster().state(ClusterState.ACTIVE);
-
-        curNodeChecker.accept(node);
-    }
-
-    /** */
-    private String consId(int nodeIdx) {
-        return customConsId ? "node-" + nodeIdx : null;
     }
 }

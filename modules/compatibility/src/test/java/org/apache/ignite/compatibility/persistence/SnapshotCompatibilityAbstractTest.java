@@ -75,7 +75,7 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
     }
 
     /** */
-    public static class SnapshotPathResolver {
+    protected static class SnapshotPathResolver {
         /** */
         private final boolean customSnpDir;
 
@@ -114,9 +114,6 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
     /** Configuration closure both for old and current Ignite version. */
     protected static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** */
-        private final boolean incSnp;
-
-        /** */
         private final String consId;
 
         /** */
@@ -133,14 +130,12 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
 
         /** */
         public ConfigurationClosure(
-            boolean incSnp,
             String consId,
             String snpDir,
             boolean delIfExist,
             CacheGroupsConfig cacheGrpsCfg,
             String workDir
-        ) throws IgniteCheckedException {
-            this.incSnp = incSnp;
+        ) {
             this.consId = consId;
             this.snpDir = snpDir;
             this.delIfExist = delIfExist;
@@ -150,13 +145,11 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
 
         /** */
         public ConfigurationClosure(
-            boolean incSnp,
             String consId,
             String snpDir,
             boolean delIfExist,
             CacheGroupsConfig cacheGrpsCfg
         ) throws IgniteCheckedException {
-            this.incSnp = incSnp;
             this.consId = consId;
             this.snpDir = snpDir;
             this.delIfExist = delIfExist;
@@ -176,17 +169,17 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
 
             cfg.setConsistentId(consId);
 
-            storageCfg.setWalCompactionEnabled(incSnp);
+            storageCfg.setWalCompactionEnabled(true);
 
             if (delIfExist) {
                 cfg.setCacheConfiguration(
                     cacheGrpsCfg.cacheGroupInfos().stream()
                         .flatMap(cacheGrpInfo ->
                             cacheGrpInfo.cacheNames().stream()
-                            .map(cacheName -> new CacheConfiguration<Integer, String>(cacheName)
-                                .setGroupName(cacheGrpInfo.name())
-                                .setAffinity(new RendezvousAffinityFunction(false, 10))
-                            )
+                                .map(cacheName -> new CacheConfiguration<Integer, String>(cacheName)
+                                    .setGroupName(cacheGrpInfo.name())
+                                    .setAffinity(new RendezvousAffinityFunction(false, 10))
+                                )
                         )
                         .toArray(CacheConfiguration[]::new)
                 );
@@ -199,18 +192,10 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
     /** Snapshot creating closure both for old and current Ignite version. */
     protected static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
         /** */
-        private final boolean incSnp;
-
-        /** */
-        private final boolean cacheDump;
-
-        /** */
         private final CacheGroupsConfig cacheGrpsCfg;
 
         /** */
-        public CreateSnapshotClosure(boolean incSnp, boolean cacheDump, CacheGroupsConfig cacheGrpsCfg) {
-            this.incSnp = incSnp;
-            this.cacheDump = cacheDump;
+        public CreateSnapshotClosure(CacheGroupsConfig cacheGrpsCfg) {
             this.cacheGrpsCfg = cacheGrpsCfg;
         }
 
@@ -220,12 +205,13 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
 
             cacheGrpsCfg.cacheGroupInfos().forEach(cacheGrpInfo -> cacheGrpInfo.addItemsToCacheGrp(ign, 0, BASE_CACHE_SIZE));
 
-            if (cacheDump)
-                ign.snapshot().createDump(CACHE_DUMP_NAME, cacheGrpsCfg.cacheGroupNames()).get();
-            else
-                ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+            ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-            if (incSnp) {
+            ign.snapshot().createDump(CACHE_DUMP_NAME, cacheGrpsCfg.cacheGroupNames()).get();
+
+            // Incremental snapshots require same consistentID
+            // https://issues.apache.org/jira/browse/IGNITE-25096
+            if (ign.configuration().getConsistentId() != null && ign.cluster().nodes().size() == 1) {
                 cacheGrpsCfg.cacheGroupInfos().forEach(
                     cacheGrpInfo -> cacheGrpInfo.addItemsToCacheGrp(ign, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT)
                 );
@@ -270,7 +256,7 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
             cacheGrpInfos.computeIfAbsent(cacheGrpName, CacheGroupInfo::new).addCacheName(cacheName);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -281,7 +267,7 @@ public abstract class SnapshotCompatibilityAbstractTest extends IgnitePersistenc
             return Objects.equals(cacheGrpInfos, ((CacheGroupsConfig)o).cacheGrpInfos);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hashCode(cacheGrpInfos);
         }
