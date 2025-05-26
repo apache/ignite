@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.ignite.Ignite;
@@ -56,8 +55,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import static org.junit.Assume.assumeTrue;
 
 /** */
 @RunWith(Parameterized.class)
@@ -113,105 +110,14 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     /** */
     @Test
     public void testSnapshotRestore() throws Exception {
-        doRestoreTest(false, false, node -> {
-            node.snapshot().restoreSnapshot(SNAPSHOT_NAME, cacheGrpsCfg.cacheGroupNames()).get();
+        boolean incSnp = customConsId && oldNodesCnt == 1;
 
-            cacheGrpsCfg.cacheGroupInfos().forEach(cacheGrpInfo -> cacheGrpInfo.checkCaches(node, BASE_CACHE_SIZE));
-        });
-    }
-
-    /** */
-    @Test
-    public void testIncrementalSnapshotRestore() throws Exception {
-        assumeTrue("Incremental snapshots require same consistentID", customConsId);
-
-        assumeTrue("https://issues.apache.org/jira/browse/IGNITE-25096", oldNodesCnt == 1);
-
-        doRestoreTest(true, false, node -> {
-            node.snapshot().restoreSnapshot(SNAPSHOT_NAME, cacheGrpsCfg.cacheGroupNames(), 1).get();
-
-            cacheGrpsCfg.cacheGroupInfos().forEach(
-                cacheGrpInfo -> cacheGrpInfo.checkCaches(node, BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT)
-            );
-        });
-    }
-
-    /** */
-    @Test
-    public void testDumpRestore() throws Exception {
-        doRestoreTest(false, true, node -> {
-            try {
-                CacheGroupsConfig foundCacheGrpsInfo = new CacheGroupsConfig();
-
-                Map<String, Integer> foundCacheSizes = new HashMap<>();
-
-                DumpConsumer consumer = new DumpConsumer() {
-                    @Override public void start() {
-                        // No-op.
-                    }
-
-                    @Override public void onMappings(Iterator<TypeMapping> mappings) {
-                        // No-op.
-                    }
-
-                    @Override public void onTypes(Iterator<BinaryType> types) {
-                        // No-op.
-                    }
-
-                    @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
-                        caches.forEachRemaining(cache -> {
-                            CacheConfiguration<?, ?> ccfg = cache.config();
-
-                            assertNotNull(ccfg);
-
-                            foundCacheGrpsInfo.addCache(ccfg.getGroupName(), ccfg.getName());
-                        });
-                    }
-
-                    @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
-                        data.forEachRemaining(dumpEntry -> {
-                            assertNotNull(dumpEntry);
-
-                            Integer key = (Integer)dumpEntry.key();
-                            String val = (String)dumpEntry.value();
-
-                            Optional<String> cacheName = cacheGrpsCfg.cacheNames().stream().filter(val::startsWith).findFirst();
-
-                            assertTrue(cacheName.isPresent());
-
-                            assertEquals(CacheGroupInfo.calcValue(cacheName.get(), key), val);
-
-                            foundCacheSizes.merge(cacheName.get(), 1, Integer::sum);
-                        });
-                    }
-
-                    @Override public void stop() {
-                        // No-op.
-                    }
-                };
-
-                new DumpReader(new DumpReaderConfiguration(CACHE_DUMP_NAME, snpDir(false), node.configuration(), consumer), log).run();
-
-                assertEquals(cacheGrpsCfg, foundCacheGrpsInfo);
-
-                cacheGrpsCfg.cacheNames().forEach(
-                    cacheName -> assertEquals(BASE_CACHE_SIZE, foundCacheSizes.get(cacheName).intValue())
-                );
-            }
-            catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
-    /** */
-    private void doRestoreTest(boolean incSnp, boolean cacheDump, Consumer<IgniteEx> curNodeChecker) throws Exception {
         for (int i = 1; i <= oldNodesCnt; ++i) {
             startGrid(
                 i,
                 OLD_IGNITE_VERSION,
-                new ConfigurationClosure(incSnp, consId(i), snpDir(true), true, cacheGrpsCfg),
-                i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheDump, cacheGrpsCfg) : null
+                new ConfigurationClosure(consId(i), snpDir(true), true, cacheGrpsCfg),
+                i == oldNodesCnt ? new CreateSnapshotClosure(incSnp, cacheGrpsCfg) : null
             );
         }
 
@@ -222,13 +128,99 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 
         // We configure current Ignite version in the same way as the old one.
-        new ConfigurationClosure(incSnp, consId(1), snpDir(false), false, cacheGrpsCfg).apply(cfg);
+        new ConfigurationClosure(consId(1), snpDir(false), false, cacheGrpsCfg).apply(cfg);
 
         IgniteEx node = startGrid(cfg);
 
         node.cluster().state(ClusterState.ACTIVE);
 
-        curNodeChecker.accept(node);
+        if (incSnp)
+            checkIncrementalSnapshot(node);
+        else
+            checkSnapshot(node);
+
+        checkDump(node);
+    }
+
+    /** */
+    private void checkSnapshot(IgniteEx node) {
+        node.snapshot().restoreSnapshot(SNAPSHOT_NAME, cacheGrpsCfg.cacheGroupNames()).get();
+
+        cacheGrpsCfg.cacheGroupInfos().forEach(cacheGrpInfo -> cacheGrpInfo.checkCaches(node, BASE_CACHE_SIZE));
+    }
+
+    /** */
+    private void checkIncrementalSnapshot(IgniteEx node) {
+        node.snapshot().restoreSnapshot(SNAPSHOT_NAME, cacheGrpsCfg.cacheGroupNames(), 1).get();
+
+        cacheGrpsCfg.cacheGroupInfos().forEach(
+            cacheGrpInfo -> cacheGrpInfo.checkCaches(node, BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT)
+        );
+    }
+
+    /** */
+    private void checkDump(IgniteEx node) {
+        try {
+            CacheGroupsConfig foundCacheGrpsInfo = new CacheGroupsConfig();
+
+            Map<String, Integer> foundCacheSizes = new HashMap<>();
+
+            DumpConsumer consumer = new DumpConsumer() {
+                @Override public void start() {
+                    // No-op.
+                }
+
+                @Override public void onMappings(Iterator<TypeMapping> mappings) {
+                    // No-op.
+                }
+
+                @Override public void onTypes(Iterator<BinaryType> types) {
+                    // No-op.
+                }
+
+                @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+                    caches.forEachRemaining(cache -> {
+                        CacheConfiguration<?, ?> ccfg = cache.config();
+
+                        assertNotNull(ccfg);
+
+                        foundCacheGrpsInfo.addCache(ccfg.getGroupName(), ccfg.getName());
+                    });
+                }
+
+                @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                    data.forEachRemaining(dumpEntry -> {
+                        assertNotNull(dumpEntry);
+
+                        Integer key = (Integer)dumpEntry.key();
+                        String val = (String)dumpEntry.value();
+
+                        Optional<String> cacheName = cacheGrpsCfg.cacheNames().stream().filter(val::startsWith).findFirst();
+
+                        assertTrue(cacheName.isPresent());
+
+                        assertEquals(CacheGroupInfo.calcValue(cacheName.get(), key), val);
+
+                        foundCacheSizes.merge(cacheName.get(), 1, Integer::sum);
+                    });
+                }
+
+                @Override public void stop() {
+                    // No-op.
+                }
+            };
+
+            new DumpReader(new DumpReaderConfiguration(CACHE_DUMP_NAME, snpDir(false), node.configuration(), consumer), log).run();
+
+            assertEquals(cacheGrpsCfg.cacheGrpInfos, foundCacheGrpsInfo.cacheGrpInfos);
+
+            cacheGrpsCfg.cacheNames().forEach(
+                cacheName -> assertEquals(BASE_CACHE_SIZE, foundCacheSizes.get(cacheName).intValue())
+            );
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** */
@@ -249,9 +241,6 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     /** Configuration closure both for old and current Ignite version. */
     private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** */
-        private final boolean incSnp;
-
-        /** */
         private final String consId;
 
         /** */
@@ -268,13 +257,11 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
         /** */
         public ConfigurationClosure(
-            boolean incSnp,
             String consId,
             String snpDir,
             boolean delIfExist,
             CacheGroupsConfig cacheGrpsCfg
         ) throws IgniteCheckedException {
-            this.incSnp = incSnp;
             this.consId = consId;
             this.snpDir = snpDir;
             this.delIfExist = delIfExist;
@@ -294,7 +281,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
             cfg.setConsistentId(consId);
 
-            storageCfg.setWalCompactionEnabled(incSnp);
+            storageCfg.setWalCompactionEnabled(true);
 
             if (delIfExist) {
                 cfg.setCacheConfiguration(
@@ -320,15 +307,11 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         private final boolean incSnp;
 
         /** */
-        private final boolean cacheDump;
-
-        /** */
         private final CacheGroupsConfig cacheGrpsCfg;
 
         /** */
-        public CreateSnapshotClosure(boolean incSnp, boolean cacheDump, CacheGroupsConfig cacheGrpsCfg) {
+        public CreateSnapshotClosure(boolean incSnp, CacheGroupsConfig cacheGrpsCfg) {
             this.incSnp = incSnp;
-            this.cacheDump = cacheDump;
             this.cacheGrpsCfg = cacheGrpsCfg;
         }
 
@@ -338,10 +321,9 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
             cacheGrpsCfg.cacheGroupInfos().forEach(cacheGrpInfo -> cacheGrpInfo.addItemsToCacheGrp(ign, 0, BASE_CACHE_SIZE));
 
-            if (cacheDump)
-                ign.snapshot().createDump(CACHE_DUMP_NAME, cacheGrpsCfg.cacheGroupNames()).get();
-            else
-                ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+            ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+            ign.snapshot().createDump(CACHE_DUMP_NAME, cacheGrpsCfg.cacheGroupNames()).get();
 
             if (incSnp) {
                 cacheGrpsCfg.cacheGroupInfos().forEach(
@@ -386,22 +368,6 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         /** */
         public void addCache(String cacheGrpName, String cacheName) {
             cacheGrpInfos.computeIfAbsent(cacheGrpName, CacheGroupInfo::new).addCacheName(cacheName);
-        }
-
-        /** */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (!(o instanceof CacheGroupsConfig))
-                return false;
-
-            return Objects.equals(cacheGrpInfos, ((CacheGroupsConfig)o).cacheGrpInfos);
-        }
-
-        /** */
-        @Override public int hashCode() {
-            return Objects.hashCode(cacheGrpInfos);
         }
     }
 
