@@ -161,10 +161,11 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         if (persistence)
             cfg.getDataStorageConfiguration().setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
 
-        cfg.getDataStorageConfiguration().setDataRegionConfigurations(new DataRegionConfiguration()
+        cfg.getDataStorageConfiguration()
+            .setExtraStoragePathes(CUSTOM_LOCATION)
+            .setDataRegionConfigurations(new DataRegionConfiguration()
             .setPersistenceEnabled(persistence)
-            .setName(CUSTOM_LOCATION)
-            .setStoragePath(CUSTOM_LOCATION));
+            .setName(CUSTOM_LOCATION));
 
         cfg.setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT);
 
@@ -220,7 +221,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         IgniteEx cli = startClientGrid(G.allGrids().size());
 
-        cli.createCache(defaultCacheConfiguration().setDataRegionName(dataCustomLocation ? CUSTOM_LOCATION : null));
+        cli.createCache(defaultCacheConfiguration().setStoragePath(dataCustomLocation ? CUSTOM_LOCATION : null));
 
         for (int i = 0; i < KEYS_CNT; ++i)
             cli.cache(DEFAULT_CACHE_NAME).put(i, USER_FACTORY.apply(i));
@@ -346,7 +347,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         ign0.cluster().state(ClusterState.ACTIVE);
 
-        ign0.createCache(defaultCacheConfiguration().setDataRegionName(dataCustomLocation ? CUSTOM_LOCATION : null));
+        ign0.createCache(defaultCacheConfiguration().setStoragePath(dataCustomLocation ? CUSTOM_LOCATION : null));
 
         try (IgniteDataStreamer<Integer, String> ds = ign0.dataStreamer(DEFAULT_CACHE_NAME)) {
             IgniteCache<Integer, String> cache = ign0.cache(DEFAULT_CACHE_NAME);
@@ -691,7 +692,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 .setName("test-cache-0")
                 .setBackups(1)
                 .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-                .setDataRegionName(dataCustomLocation ? CUSTOM_LOCATION : null));
+                .setStoragePath(dataCustomLocation ? CUSTOM_LOCATION : null));
 
             IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
 

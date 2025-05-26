@@ -38,7 +38,7 @@ import org.apache.ignite.spi.communication.tcp.internal.CommunicationWorker;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.communication.tcp.internal.InboundConnectionHandler;
-import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.TestDependencyResolver;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -224,7 +224,7 @@ public class TxDeadlockOnEntryToStringTest extends GridCommonAbstractTest {
                 }
 
                 @Override public void onMessage(GridNioSession ses, Message msg) {
-                    if (rejectHandshake.get() && msg instanceof HandshakeMessage2) {
+                    if (rejectHandshake.get() && msg instanceof HandshakeMessage) {
                         rejectHandshake.set(false);
 
                         ses.close();

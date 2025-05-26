@@ -41,7 +41,7 @@ public class FileTreeUtils {
     public static void createCacheStorages(NodeFileTree ft, IgniteLogger log) throws IgniteCheckedException {
         createAndCheck(ft.nodeStorage(), "page store work directory", log);
 
-        for (Map.Entry<String, File> e : ft.dataRegionStorages().entrySet())
+        for (Map.Entry<String, File> e : ft.extraStorages().entrySet())
             createAndCheck(e.getValue(), "page store work directory [dataRegion=" + e.getKey() + ']', log);
     }
 
@@ -57,7 +57,7 @@ public class FileTreeUtils {
 
         removeTmpDir(tmpFt.root(), err, log);
 
-        for (File tmpDrStorage : tmpFt.dataRegionStorages().values())
+        for (File tmpDrStorage : tmpFt.extraStorages().values())
             removeTmpDir(tmpDrStorage.getParentFile(), err, log);
     }
 
