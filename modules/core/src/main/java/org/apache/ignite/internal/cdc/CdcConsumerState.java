@@ -62,12 +62,12 @@ public class CdcConsumerState {
     /** Log. */
     private final IgniteLogger log;
 
-    /** Ignite folders. */
+    /** Node file tree. */
     private final NodeFileTree ft;
 
     /**
      * @param log Logger.
-     * @param ft Ignite folders.
+     * @param ft Node file tree.
      */
     public CdcConsumerState(IgniteLogger log, NodeFileTree ft) {
         this.log = log.getLogger(CdcConsumerState.class);

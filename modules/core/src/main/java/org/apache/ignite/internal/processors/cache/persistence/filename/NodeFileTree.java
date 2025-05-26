@@ -844,6 +844,61 @@ public class NodeFileTree extends SharedFileTree {
         return new CacheFileTree(this, false, ccfg);
     }
 
+    /** @return CDC state directory path. */
+    public Path cdcState() {
+        return walCdc().toPath().resolve(STATE_DIR);
+    }
+
+    /** @return CDC WAL state file path. */
+    public Path cdcWalState() {
+        return cdcState().resolve(WAL_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC WAL state file path. */
+    public Path tmpCdcWalState() {
+        return cdcState().resolve(WAL_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC types state file path. */
+    public Path cdcTypesState() {
+        return cdcState().resolve(TYPES_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC types state file path. */
+    public Path tmpCdcTypesState() {
+        return cdcState().resolve(TYPES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC mappings state file path. */
+    public Path cdcMappingsState() {
+        return cdcState().resolve(MAPPINGS_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC mappings state file path. */
+    public Path tmpCdcMappingsState() {
+        return cdcState().resolve(MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC caches state file path. */
+    public Path cdcCachesState() {
+        return cdcState().resolve(CACHES_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC caches state file path. */
+    public Path tmpCdcCachesState() {
+        return cdcState().resolve(CACHES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC manager mode state file path. */
+    public Path cdcModeState() {
+        return cdcState().resolve(CDC_MODE_FILE_NAME);
+    }
+
+    /** @return Temp CDC manager mode state file path. */
+    public Path tmpCdcModeState() {
+        return cdcState().resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
+    }
+
     /**
      * @param includeMeta If {@code true} then include metadata directory into results.
      * @param filter Cache group names to filter.
@@ -919,61 +974,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static int typeId(String fileName) {
         return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
-    }
-
-    /** @return CDC state directory path. */
-    public Path cdcState() {
-        return walCdc().toPath().resolve(STATE_DIR);
-    }
-
-    /** @return CDC WAL state file path. */
-    public Path cdcWalState() {
-        return cdcState().resolve(WAL_STATE_FILE_NAME);
-    }
-
-    /** @return Temp CDC WAL state file path. */
-    public Path tmpCdcWalState() {
-        return cdcState().resolve(WAL_STATE_FILE_NAME + TMP_SUFFIX);
-    }
-
-    /** @return CDC types state file path. */
-    public Path cdcTypesState() {
-        return cdcState().resolve(TYPES_STATE_FILE_NAME);
-    }
-
-    /** @return Temp CDC types state file path. */
-    public Path tmpCdcTypesState() {
-        return cdcState().resolve(TYPES_STATE_FILE_NAME + TMP_SUFFIX);
-    }
-
-    /** @return CDC mappings state file path. */
-    public Path cdcMappingsState() {
-        return cdcState().resolve(MAPPINGS_STATE_FILE_NAME);
-    }
-
-    /** @return Temp CDC mappings state file path. */
-    public Path tmpCdcMappingsState() {
-        return cdcState().resolve(MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
-    }
-
-    /** @return CDC caches state file path. */
-    public Path cdcCachesState() {
-        return cdcState().resolve(CACHES_STATE_FILE_NAME);
-    }
-
-    /** @return Temp CDC caches state file path. */
-    public Path tmpCdcCachesState() {
-        return cdcState().resolve(CACHES_STATE_FILE_NAME + TMP_SUFFIX);
-    }
-
-    /** @return CDC manager mode state file path. */
-    public Path cdcModeState() {
-        return cdcState().resolve(CDC_MODE_FILE_NAME);
-    }
-
-    /** @return Temp CDC manager mode state file path. */
-    public Path tmpCdcModeState() {
-        return cdcState().resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
     }
 
     /** {@inheritDoc} */
