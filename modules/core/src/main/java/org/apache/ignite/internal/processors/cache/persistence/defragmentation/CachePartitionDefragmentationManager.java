@@ -460,7 +460,7 @@ public class CachePartitionDefragmentationManager {
                             throw new IgniteException("Failed to stop page store for group " + grpId, e);
                         }
 
-                        batchRenameDefragmentedCacheGroupPartitions(cft, log);
+                        batchRenameDefragmentedCacheGroupPartitions(cft);
 
                         return null;
                     });

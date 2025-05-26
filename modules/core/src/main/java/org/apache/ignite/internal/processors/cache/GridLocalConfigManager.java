@@ -272,7 +272,7 @@ public class GridLocalConfigManager {
 
         CacheFileTree cft = ft.cacheTree(ccfg);
 
-        FilePageStoreManager.checkAndInitCacheWorkDir(cft, log);
+        FilePageStoreManager.checkAndInitCacheWorkDir(cft);
 
         assert cft.storage().exists() : "Work directory does not exist: " + cft.storage();
 

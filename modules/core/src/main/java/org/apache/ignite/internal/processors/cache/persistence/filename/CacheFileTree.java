@@ -76,7 +76,6 @@ public class CacheFileTree {
     private final int grpId;
 
     /**
-     *
      * @param ft Node file tree.
      * @param metastore {@code True} if tree for metastore, {@code false} otherwise.
      * @param ccfg Cache configuration. {@code Null} only if {@code metastore == true}.
@@ -207,7 +206,7 @@ public class CacheFileTree {
      * @return File.
      *
      * @see DefragmentationFileUtils#writeDefragmentationCompletionMarker(FileIOFactory, CacheFileTree, IgniteLogger)
-     * @see DefragmentationFileUtils#batchRenameDefragmentedCacheGroupPartitions(CacheFileTree, IgniteLogger)
+     * @see DefragmentationFileUtils#batchRenameDefragmentedCacheGroupPartitions(CacheFileTree)
      */
     public File defragmentationCompletionMarkerFile() {
         return new File(storage(), DFRG_COMPLETION_MARKER_FILE_NAME);

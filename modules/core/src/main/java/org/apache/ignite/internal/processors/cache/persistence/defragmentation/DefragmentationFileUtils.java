@@ -45,12 +45,11 @@ public class DefragmentationFileUtils {
      * Will finish batch renaming if defragmentation was completed or delete garbage if it wasn't.
      *
      * @param cft Cache file tree.
-     * @param log Logger to write messages.
      * @throws IgniteCheckedException If {@link IOException} occurred.
      */
-    public static void beforeInitPageStores(CacheFileTree cft, IgniteLogger log) throws IgniteCheckedException {
+    public static void beforeInitPageStores(CacheFileTree cft) throws IgniteCheckedException {
         try {
-            batchRenameDefragmentedCacheGroupPartitions(cft, log);
+            batchRenameDefragmentedCacheGroupPartitions(cft);
 
             U.delete(cft.defragmentationCompletionMarkerFile());
 
@@ -102,7 +101,7 @@ public class DefragmentationFileUtils {
                 ));
             }
 
-            batchRenameDefragmentedCacheGroupPartitions(cft, log);
+            batchRenameDefragmentedCacheGroupPartitions(cft);
 
             return true;
         }
@@ -170,12 +169,11 @@ public class DefragmentationFileUtils {
      * several times in case of failures.
      *
      * @param cft Cache file tree.
-     * @param log Logger to write messages.
      * @throws IgniteException If {@link IOException} occurred.
      *
      * @see DefragmentationFileUtils#writeDefragmentationCompletionMarker(FileIOFactory, CacheFileTree, IgniteLogger)
      */
-    public static void batchRenameDefragmentedCacheGroupPartitions(CacheFileTree cft, IgniteLogger log) throws IgniteException {
+    public static void batchRenameDefragmentedCacheGroupPartitions(CacheFileTree cft) throws IgniteException {
         File completionMarkerFile = cft.defragmentationCompletionMarkerFile();
 
         if (!completionMarkerFile.exists())

@@ -555,7 +555,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
 
                 if (!mntcReg.isMaintenanceMode())
-                    DefragmentationFileUtils.beforeInitPageStores(cft, log);
+                    DefragmentationFileUtils.beforeInitPageStores(cft);
             }
 
             File idxFile = cft.partitionFile(INDEX_PARTITION);
@@ -625,12 +625,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /**
      * @param cft Cache file tree.
-     * @param log Logger.
      */
-    public static boolean checkAndInitCacheWorkDir(
-        CacheFileTree cft,
-        IgniteLogger log
-    ) throws IgniteCheckedException {
+    public static boolean checkAndInitCacheWorkDir(CacheFileTree cft) throws IgniteCheckedException {
         File cacheWorkDir = cft.storage();
 
         boolean dirExisted = false;
