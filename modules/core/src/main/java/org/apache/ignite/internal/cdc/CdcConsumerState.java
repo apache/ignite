@@ -38,16 +38,12 @@ import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.T2;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cachesStateFilePath;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cdcModeStateFilePath;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.mappingsStateFilePath;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.typesStateFilePath;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.walStateFilePath;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer.POINTER_SIZE;
 
 /**
@@ -66,16 +62,16 @@ public class CdcConsumerState {
     /** Log. */
     private final IgniteLogger log;
 
-    /** State directory. */
-    private final Path stateDir;
+    /** Ignite folders. */
+    private final NodeFileTree ft;
 
     /**
      * @param log Logger.
-     * @param stateDir State directory.
+     * @param ft Ignite folders.
      */
-    public CdcConsumerState(IgniteLogger log, Path stateDir) {
+    public CdcConsumerState(IgniteLogger log, NodeFileTree ft) {
         this.log = log.getLogger(CdcConsumerState.class);
-        this.stateDir = stateDir;
+        this.ft = ft;
     }
 
     /**
@@ -91,7 +87,7 @@ public class CdcConsumerState {
         buf.putInt(state.get2());
         buf.flip();
 
-        Path tmpWalPtr = walStateFilePath(stateDir, true);
+        Path tmpWalPtr = ft.tmpCdcWalState();
 
         try (FileChannel ch = FileChannel.open(tmpWalPtr, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             ch.write(buf);
@@ -99,7 +95,7 @@ public class CdcConsumerState {
             ch.force(true);
         }
 
-        Files.move(tmpWalPtr, walStateFilePath(stateDir, false), ATOMIC_MOVE, REPLACE_EXISTING);
+        Files.move(tmpWalPtr, ft.cdcWalState(), ATOMIC_MOVE, REPLACE_EXISTING);
     }
 
     /**
@@ -108,7 +104,7 @@ public class CdcConsumerState {
      * @param typesState State of types.
      */
     public void saveTypes(Map<Integer, Long> typesState) throws IOException {
-        save(typesState, typesStateFilePath(stateDir, true), typesStateFilePath(stateDir, false));
+        save(typesState, ft.tmpCdcTypesState(), ft.cdcTypesState());
     }
 
     /**
@@ -117,7 +113,7 @@ public class CdcConsumerState {
      * @param mappingsState Mappings state.
      */
     public void saveMappings(Set<T2<Integer, Byte>> mappingsState) throws IOException {
-        save(mappingsState, mappingsStateFilePath(stateDir, true), mappingsStateFilePath(stateDir, false));
+        save(mappingsState, ft.tmpCdcMappingsState(), ft.cdcMappingsState());
     }
 
     /**
@@ -126,7 +122,7 @@ public class CdcConsumerState {
      * @return Saved state.
      */
     public T2<WALPointer, Integer> loadWalState() {
-        Path walPtr = walStateFilePath(stateDir, false);
+        Path walPtr = ft.cdcWalState();
 
         if (!Files.exists(walPtr))
             return null;
@@ -165,7 +161,7 @@ public class CdcConsumerState {
      * @return Saved state.
      */
     public Map<Integer, Long> loadCaches() {
-        Map<Integer, Long> state = load(cachesStateFilePath(stateDir, false), HashMap::new);
+        Map<Integer, Long> state = load(ft.cdcCachesState(), HashMap::new);
 
         log.info("Initial caches state loaded [cachesCnt=" + state.size() + ']');
 
@@ -182,7 +178,7 @@ public class CdcConsumerState {
      * @param cachesState State of caches.
      */
     public void saveCaches(Map<Integer, Long> cachesState) throws IOException {
-        save(cachesState, cachesStateFilePath(stateDir, true), cachesStateFilePath(stateDir, false));
+        save(cachesState, ft.tmpCdcCachesState(), ft.cdcCachesState());
     }
 
     /**
@@ -191,7 +187,7 @@ public class CdcConsumerState {
      * @return Saved state.
      */
     public Set<T2<Integer, Byte>> loadMappingsState() {
-        Set<T2<Integer, Byte>> state = load(mappingsStateFilePath(stateDir, false), HashSet::new);
+        Set<T2<Integer, Byte>> state = load(ft.cdcMappingsState(), HashSet::new);
 
         assert state != null;
 
@@ -211,7 +207,7 @@ public class CdcConsumerState {
      * @return Saved state.
      */
     public Map<Integer, Long> loadTypesState() {
-        Map<Integer, Long> state = load(typesStateFilePath(stateDir, false), HashMap::new);
+        Map<Integer, Long> state = load(ft.cdcTypesState(), HashMap::new);
 
         assert state != null;
 
@@ -254,7 +250,7 @@ public class CdcConsumerState {
      * @return CDC mode state.
      */
     public CdcMode loadCdcMode() {
-        CdcMode state = load(cdcModeStateFilePath(stateDir, false), () -> CdcMode.IGNITE_NODE_ACTIVE);
+        CdcMode state = load(ft.cdcModeState(), () -> CdcMode.IGNITE_NODE_ACTIVE);
 
         log.info("CDC mode loaded [" + state + ']');
 
@@ -267,6 +263,6 @@ public class CdcConsumerState {
      * @param mode CDC mode.
      */
     public void saveCdcMode(CdcMode mode) throws IOException {
-        save(mode, cdcModeStateFilePath(stateDir, true), cdcModeStateFilePath(stateDir, false));
+        save(mode, ft.tmpCdcModeState(), ft.cdcModeState());
     }
 }

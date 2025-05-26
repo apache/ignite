@@ -49,6 +49,7 @@ import static java.lang.String.format;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_CDC_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
+import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
@@ -208,9 +209,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static final String CDC_MODE_FILE_NAME = "cdc-mode" + FILE_SUFFIX;
 
-    /** WAL state file name. */
-    public static final String WAL_STATE_FILE_NAME = "cdc-wal-state" + FILE_SUFFIX;
-
     /** Filter out all cache directories. */
     private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
@@ -245,6 +243,9 @@ public class NodeFileTree extends SharedFileTree {
 
     /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group. */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
+
+    /** WAL state file name. */
+    private static final String WAL_STATE_FILE_NAME = "cdc-wal-state" + FILE_SUFFIX;
 
     /** Types state file name. */
     private static final String TYPES_STATE_FILE_NAME = "cdc-types-state" + FILE_SUFFIX;
@@ -918,49 +919,59 @@ public class NodeFileTree extends SharedFileTree {
         return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
     }
 
-    /**
-     * @param stateDir State directory.
-     * @param isTmp {@code True} if the temporary file.
-     * @return WAL state file path.
-     */
-    public static Path walStateFilePath(Path stateDir, boolean isTmp) {
-        return stateDir.resolve(WAL_STATE_FILE_NAME + (isTmp ? TMP_SUFFIX : ""));
+    /** @return CDC state directory path. */
+    public Path cdcState() {
+        return walCdc().toPath().resolve(STATE_DIR);
     }
 
-    /**
-     * @param stateDir State directory.
-     * @param isTmp {@code True} if the temporary file.
-     * @return Types state file path.
-     */
-    public static Path typesStateFilePath(Path stateDir, boolean isTmp) {
-        return stateDir.resolve(TYPES_STATE_FILE_NAME + (isTmp ? TMP_SUFFIX : ""));
+    /** @return CDC WAL state file path. */
+    public Path cdcWalState() {
+        return cdcState().resolve(WAL_STATE_FILE_NAME);
     }
 
-    /**
-     * @param stateDir State directory.
-     * @param isTmp {@code True} if the temporary file.
-     * @return Mappings state file path.
-     */
-    public static Path mappingsStateFilePath(Path stateDir, boolean isTmp) {
-        return stateDir.resolve(MAPPINGS_STATE_FILE_NAME + (isTmp ? TMP_SUFFIX : ""));
+    /** @return Temp CDC WAL state file path. */
+    public Path tmpCdcWalState() {
+        return cdcState().resolve(WAL_STATE_FILE_NAME + TMP_SUFFIX);
     }
 
-    /**
-     * @param stateDir State directory.
-     * @param isTmp {@code True} if the temporary file.
-     * @return Caches state file path.
-     */
-    public static Path cachesStateFilePath(Path stateDir, boolean isTmp) {
-        return stateDir.resolve(CACHES_STATE_FILE_NAME + (isTmp ? TMP_SUFFIX : ""));
+    /** @return CDC types state file path. */
+    public Path cdcTypesState() {
+        return cdcState().resolve(TYPES_STATE_FILE_NAME);
     }
 
-    /**
-     * @param stateDir State directory.
-     * @param isTmp {@code True} if the temporary file.
-     * @return CDC manager mode state file path.
-     */
-    public static Path cdcModeStateFilePath(Path stateDir, boolean isTmp) {
-        return stateDir.resolve(CDC_MODE_FILE_NAME + (isTmp ? TMP_SUFFIX : ""));
+    /** @return Temp CDC types state file path. */
+    public Path tmpCdcTypesState() {
+        return cdcState().resolve(TYPES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC mappings state file path. */
+    public Path cdcMappingsState() {
+        return cdcState().resolve(MAPPINGS_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC mappings state file path. */
+    public Path tmpCdcMappingsState() {
+        return cdcState().resolve(MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC caches state file path. */
+    public Path cdcCachesState() {
+        return cdcState().resolve(CACHES_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC caches state file path. */
+    public Path tmpCdcCachesState() {
+        return cdcState().resolve(CACHES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC manager mode state file path. */
+    public Path cdcModeState() {
+        return cdcState().resolve(CDC_MODE_FILE_NAME);
+    }
+
+    /** @return Temp CDC manager mode state file path. */
+    public Path tmpCdcModeState() {
+        return cdcState().resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
     }
 
     /** {@inheritDoc} */
