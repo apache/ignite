@@ -63,7 +63,8 @@ public class IgniteRexBuilder extends RexBuilder {
                     && typeFactory.getTypeSystem().getDefaultScale(SqlTypeName.DECIMAL) == type.getScale()
                     && typeFactory.getTypeSystem().getDefaultPrecision(SqlTypeName.DECIMAL) == type.getPrecision();
 
-                // Keeps scaled values for literals like DECIMAL (converted to DECIMAL(32676, 0)) like in Postgres.
+                // Keeps scaled values for literals like DECIMAL (converted to DECIMAL(32676, 0)) like in Postgres,
+                // keeping actual scale. Example: 2::FLOAT is "2", not "2.0".
                 if (dfltDecimal) {
                     int precision = Math.max(bd.precision(), bd.scale());
 

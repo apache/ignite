@@ -393,9 +393,7 @@ class RelJson {
                         new SqlIntervalQualifier(startUnit, endUnit, SqlParserPos.ZERO));
                 }
                 else if (sqlTypeName == SqlTypeName.ARRAY) {
-                    RelDataType elementType = toType(typeFactory, map.get("elementType"));
-
-                    type = typeFactory.createArrayType(elementType, -1);
+                    type = typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
 
                     if (Boolean.TRUE == map.get("nullable"))
                         type = typeFactory.createTypeWithNullability(type, true);

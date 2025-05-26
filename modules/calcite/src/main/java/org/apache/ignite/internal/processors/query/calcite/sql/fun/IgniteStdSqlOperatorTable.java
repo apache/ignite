@@ -230,6 +230,7 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlLibraryOperators.REGEXP_REPLACE_3);
         register(SqlLibraryOperators.REGEXP_REPLACE_4);
         register(SqlLibraryOperators.REGEXP_REPLACE_5);
+        register(SqlLibraryOperators.REGEXP_REPLACE_6);
 
         // Collections.
         register(SqlStdOperatorTable.MAP_VALUE_CONSTRUCTOR);
