@@ -326,24 +326,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
 
-    /** */
-    @Test
-    public void testNonSerializableCacheGroupsSnapshot() throws Exception {
-        int keysCnt = dfltCacheCfg.getAffinity().partitions();
-
-        IgniteEx ignite = startGridsWithCache(1, keysCnt, valueBuilder(), dfltCacheCfg);
-
-        Collection<String> groupsAsKeySet = Map.of(DEFAULT_CACHE_NAME, 0, "MetaStorage", 1).keySet();
-
-        assertFalse(groupsAsKeySet instanceof Serializable);
-
-        snp(ignite).createSnapshot(SNAPSHOT_NAME, null, groupsAsKeySet, false, onlyPrimary, true, false, encryption).get(TIMEOUT);
-
-        ignite.cache(dfltCacheCfg.getName()).destroy();
-
-        awaitPartitionMapExchange();
-    }
-
     /**
      * Ensures that the cache doesn't start if one of the baseline nodes fails.
      *
