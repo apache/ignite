@@ -23,6 +23,7 @@ import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -814,6 +815,29 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         }, getTestTimeout());
 
         ign.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
+
+        assertCacheKeys(ign.cache(DEFAULT_CACHE_NAME), keysCnt);
+    }
+
+    /** */
+    @Test
+    public void testNonSerializableCacheGroupsRestore() throws Exception {
+        int nodes = 3;
+        int keysCnt = 1_000;
+
+        Map<String, Integer> groups = Map.of(DEFAULT_CACHE_NAME, 0);
+
+        startGridsWithSnapshot(nodes, keysCnt, false, true);
+
+        stopAllGrids();
+
+        cleanPersistenceDir(true);
+
+        IgniteEx ign = startGrids(nodes);
+
+        ign.cluster().state(ClusterState.ACTIVE);
+
+        ign.snapshot().restoreSnapshot(SNAPSHOT_NAME, groups.keySet()).get(TIMEOUT);
 
         assertCacheKeys(ign.cache(DEFAULT_CACHE_NAME), keysCnt);
     }
