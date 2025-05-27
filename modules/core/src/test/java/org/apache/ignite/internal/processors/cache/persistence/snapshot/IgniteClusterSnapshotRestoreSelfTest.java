@@ -830,11 +830,11 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         Ignite ignite = startGridsWithSnapshot(1, keysCnt, false, true);
 
-        Collection<String> groupsAsKeySet = Map.of(DEFAULT_CACHE_NAME, 0).keySet();
+        Collection<String> grpsAsKeySet = Map.of(DEFAULT_CACHE_NAME, 0).keySet();
 
-        assertFalse(groupsAsKeySet instanceof Serializable);
+        assertFalse(grpsAsKeySet instanceof Serializable);
 
-        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, groupsAsKeySet).get(TIMEOUT);
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, grpsAsKeySet).get(TIMEOUT);
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
     }
