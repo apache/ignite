@@ -154,8 +154,7 @@ public abstract class PagesList extends DataStructure {
 
             long tailId = io.getNextId(pageAddr);
 
-            if (tailId == 0)
-                throw corruptedFreeListException("nextId is 0 in non-tail page [pageId=" + U.hexLong(pageId) + "]", pageId);
+            assert tailId != 0;
 
             io.setNextId(pageAddr, 0L);
 
