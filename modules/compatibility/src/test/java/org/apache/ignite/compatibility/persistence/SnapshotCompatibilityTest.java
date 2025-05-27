@@ -17,7 +17,6 @@
 
 package org.apache.ignite.compatibility.persistence;
 
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -83,10 +82,6 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
     /** */
     @Parameterized.Parameter(1)
-    public boolean customSnpDir;
-
-    /** */
-    @Parameterized.Parameter(2)
     public int oldNodesCnt;
 
     /** */
@@ -98,10 +93,9 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     );
 
     /** */
-    @Parameterized.Parameters(name = "customConsId={0}, customSnpDir={1}, oldNodesCnt={2}")
+    @Parameterized.Parameters(name = "customConsId={0}, oldNodesCnt={1}")
     public static Collection<Object[]> data() {
         return GridTestUtils.cartesianProduct(
-            List.of(true, false),
             List.of(true, false),
             List.of(1, 3)
         );
@@ -114,7 +108,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
             startGrid(
                 i,
                 OLD_IGNITE_VERSION,
-                new ConfigurationClosure(consId(i), snpDir(true), true, cacheGrpsCfg),
+                new ConfigurationClosure(consId(i), true, cacheGrpsCfg),
                 i == oldNodesCnt ? new CreateSnapshotClosure(cacheGrpsCfg) : null
             );
         }
@@ -126,7 +120,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 
         // We configure current Ignite version in the same way as the old one.
-        new ConfigurationClosure(consId(1), snpDir(false), false, cacheGrpsCfg).apply(cfg);
+        new ConfigurationClosure(consId(1), false, cacheGrpsCfg).apply(cfg);
 
         IgniteEx node = startGrid(cfg);
 
@@ -140,6 +134,13 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
             checkSnapshot(node);
 
         checkCacheDump(node);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        cleanPersistenceDir();
     }
 
     /** */
@@ -209,7 +210,15 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
             }
         };
 
-        new DumpReader(new DumpReaderConfiguration(CACHE_DUMP_NAME, snpDir(false), node.configuration(), consumer), log).run();
+        new DumpReader(
+            new DumpReaderConfiguration(
+                CACHE_DUMP_NAME,
+                U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshots", false).getAbsolutePath(),
+                node.configuration(),
+                consumer
+            ),
+            log
+        ).run();
 
         assertEquals(cacheGrpsCfg.cacheGrpInfos, foundCacheGrpsInfo.cacheGrpInfos);
 
@@ -223,23 +232,10 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         return customConsId ? "node-" + nodeIdx : null;
     }
 
-    /** */
-    private String snpDir(boolean delIfExist) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(U.defaultWorkDirectory(), customSnpDir ? "ex_snapshots" : "snapshots", delIfExist).getAbsolutePath();
-    }
-
-    /** */
-    private String snpPath(String snpName, boolean delIfExist) throws IgniteCheckedException {
-        return Paths.get(snpDir(delIfExist), snpName).toString();
-    }
-
     /** Configuration closure both for old and current Ignite version. */
     private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** */
         private final String consId;
-
-        /** */
-        private final String snpDir;
 
         /** */
         private final boolean delIfExist;
@@ -253,12 +249,10 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         /** */
         public ConfigurationClosure(
             String consId,
-            String snpDir,
             boolean delIfExist,
             CacheGroupsConfig cacheGrpsCfg
         ) throws IgniteCheckedException {
             this.consId = consId;
-            this.snpDir = snpDir;
             this.delIfExist = delIfExist;
             this.cacheGrpsCfg = cacheGrpsCfg;
             workDir = U.defaultWorkDirectory();
@@ -291,8 +285,6 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                         .toArray(CacheConfiguration[]::new)
                 );
             }
-
-            cfg.setSnapshotPath(snpDir);
         }
     }
 
