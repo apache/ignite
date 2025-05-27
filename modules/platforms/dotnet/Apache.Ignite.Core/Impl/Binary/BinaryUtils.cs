@@ -845,21 +845,34 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (scale < 0)
             {
-                // Java BigDecimal:
-                // "if negative, the unscaled value is multiplied by ten to the power of the negation of the scale"
-                // (https://docs.oracle.com/javase/8/docs/api/java/math/BigDecimal.html).
-                var res = new decimal(lo, mid, hi, neg, 0);
+                var unscaled = new decimal(lo, mid, hi, neg, 0);
+                return SetNegativeScale(unscaled, scale);
+            }
 
-                // There is no Pow for decimals, and using double Math.Pow(10, -scale) might be inaccurate.
+            return new decimal(lo, mid, hi, neg, (byte)scale);
+        }
+
+        private static decimal SetNegativeScale(decimal unscaled, int scale)
+        {
+            // Java BigDecimal:
+            // "if negative, the unscaled value is multiplied by ten to the power of the negation of the scale"
+            // (https://docs.oracle.com/javase/8/docs/api/java/math/BigDecimal.html).
+            var res = unscaled;
+
+            // There is no Pow for decimals, and using double Math.Pow(10, -scale) might be inaccurate.
+            try
+            {
                 for (int i = 0; i < -scale; i++)
                 {
                     res *= 10;
                 }
-
-                return res;
+            }
+            catch (OverflowException e)
+            {
+                throw new BinaryObjectException($"Decimal value overflow [unscaled={unscaled}, scale={scale}]", e);
             }
 
-            return new decimal(lo, mid, hi, neg, (byte)scale);
+            return res;
         }
 
         /**
