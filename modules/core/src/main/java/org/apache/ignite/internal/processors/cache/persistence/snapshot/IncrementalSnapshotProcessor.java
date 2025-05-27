@@ -53,7 +53,6 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TX_RECORD;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 
 /** Processes incremental snapshot: parse WAL segments and handles records. */
 abstract class IncrementalSnapshotProcessor {
@@ -227,7 +226,7 @@ abstract class IncrementalSnapshotProcessor {
             if (!ift.wal().exists())
                 throw new IgniteCheckedException("Incremental snapshot WAL directory doesn't exists [dir=" + ift.wal() + ']');
 
-            File[] incSegs = ift.wal().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+            File[] incSegs = ift.walCompactedOrRawFiles();
 
             if (incSegs == null)
                 throw new IgniteCheckedException("Failed to list WAL segments from snapshot directory [dir=" + ift.root() + ']');

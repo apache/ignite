@@ -47,7 +47,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 
 /**
  *
@@ -146,7 +145,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         long idxBefore = fhBefore.getSegmentId();
 
-        File[] files = ft.walArchive().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+        File[] files = ft.walArchiveCompactedOrRawFiles();
 
         Arrays.sort(files);
 

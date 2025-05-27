@@ -47,9 +47,6 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
-
 /**
  * Performs WAL cleanup clusterwide.
  */
@@ -61,8 +58,8 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
     /** WAL archive file filter. */
     private static final FileFilter WAL_ARCHIVE_FILE_FILTER = new FileFilter() {
         @Override public boolean accept(File file) {
-            return !file.isDirectory() && (WAL_NAME_PATTERN.matcher(file.getName()).matches() ||
-                    WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
+            return !file.isDirectory() && (NodeFileTree.isWalFileName(file.getName()) ||
+                    NodeFileTree.isWalCompactedFileName(file.getName()));
         }
     };
 

@@ -41,8 +41,6 @@ import org.junit.Test;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.WAL_SEGMENT_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.isSegmentFileName;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -214,7 +212,7 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
 
         Map<Long, Long> expSegmentSize = new HashMap<>();
 
-        F.asList(ft.walArchive().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER))
+        F.asList(ft.walArchiveCompactedOrRawFiles())
             .stream()
             .map(FileDescriptor::new)
             .forEach(fd -> {
@@ -245,5 +243,16 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
         });
 
         assertEquals(0, walMgr(n).segmentSize(currHnd.getSegmentId() + 1));
+    }
+
+    /**
+     * Check that file name matches segment name.
+     *
+     * @param name File name.
+     * @return {@code True} if file name matches segment name.
+     */
+    private static boolean isSegmentFileName(@Nullable String name) {
+        return name != null && (NodeFileTree.isWalFileName(name) ||
+                NodeFileTree.isWalCompactedFileName(name));
     }
 }

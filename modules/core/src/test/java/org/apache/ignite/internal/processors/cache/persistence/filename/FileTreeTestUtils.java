@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
+import java.io.File;
 import java.util.regex.Pattern;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.WAL_SEGMENT_FILE_COMPACTED_FILTER;
 
 /** */
 public class FileTreeTestUtils {
@@ -28,5 +31,21 @@ public class FileTreeTestUtils {
      */
     public static Pattern partitionFilePattern() {
         return Pattern.compile('^' + Pattern.quote(PART_FILE_PREFIX) + ".*");
+    }
+
+    /**
+     * @param f Directory to scan for WAL compacted or raw files.
+     * @return WAL compacted or raw files.
+     */
+    public static File[] walCompactedOrRawFiles(File f) {
+        return f.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+    }
+
+    /**
+     * @param ft Node file tree.
+     * @return WAL archive compacted files.
+     */
+    public static File[] walArchiveCompactedFiles(NodeFileTree ft) {
+        return ft.walArchive().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
     }
 }
