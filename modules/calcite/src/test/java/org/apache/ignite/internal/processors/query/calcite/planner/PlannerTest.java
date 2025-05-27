@@ -89,7 +89,7 @@ public class PlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSplitterColocatedPartitionedPartitioned() throws Exception {
+    public void testSplitterColocatedPartitioned() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable developer = new TestTable(
@@ -97,7 +97,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
-                .build()) {
+                .build(), 5) {
             @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
@@ -118,7 +118,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
-                .build()) {
+                .build(), 5) {
             @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
