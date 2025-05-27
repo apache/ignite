@@ -291,6 +291,9 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
 
         Map<StatisticsKey, Collection<ObjectPartitionStatisticsImpl>> res = new HashMap<>();
 
+        if (!checkMetastore("Unable to get local partition statistics."))
+            return Collections.emptyMap();
+
         try {
             iterateMeta(prefix, (k, v) -> {
                 StatisticsKey key = getStatsKey(k);
