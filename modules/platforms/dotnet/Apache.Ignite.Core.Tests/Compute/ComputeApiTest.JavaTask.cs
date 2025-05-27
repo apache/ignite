@@ -263,6 +263,19 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Test decimal values where the scale is within the allowed range,
+        /// but the resulting value can't be represented by .NET decimal type.
+        /// </summary>
+        [Test]
+        public void TestEchoDecimalNegativeScaleOverflow()
+        {
+            var ex = Assert.Throws<BinaryObjectException>(() => ExecuteDecimalTask(null, "12345E+25"));
+
+            Assert.AreEqual("Decimal value overflow [unscaled=12345, scale=-25]", ex.Message);
+            Assert.IsInstanceOf<OverflowException>(ex.InnerException);
+        }
+
+        /// <summary>
         /// Test echo task returning null.
         /// </summary>
         [Test]
