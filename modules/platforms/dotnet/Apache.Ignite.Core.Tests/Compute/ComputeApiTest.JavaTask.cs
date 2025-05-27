@@ -254,10 +254,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// 1E+1 results in "1 scale -1" representation in Java.
         /// </summary>
         [Test]
-        public void TestEchoDecimalNegativeScale()
+        [TestCase("1E+1", 10)]
+        [TestCase("1.23E+4", 12300)]
+        [TestCase("123E+6", 123000000)]
+        public void TestEchoDecimalNegativeScale(string javaStr, decimal expected)
         {
-            Assert.AreEqual(10, ExecuteDecimalTask(null, "1E+1"));
-            Assert.AreEqual(12300, ExecuteDecimalTask(null, "1.23E+4"));
+            Assert.AreEqual(expected, ExecuteDecimalTask(null, javaStr));
         }
 
         /// <summary>
