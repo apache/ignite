@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -66,15 +67,17 @@ public class DefragmentationFileUtils {
      * @param cft Cache file tree.
      */
     public static void deleteLeftovers(CacheFileTree cft) {
-        for (File file : cft.storage().listFiles()) {
-            String fileName = file.getName();
+        for (File storage : cft.storages()) {
+            for (File file : storage.listFiles()) {
+                String fileName = file.getName();
 
-            if (
-                CacheFileTree.isDefragmentPartition(fileName)
-                    || CacheFileTree.isDefragmentIndex(fileName)
-                    || CacheFileTree.isDefragmentLinkMapping(fileName)
-            )
-                U.delete(file);
+                if (
+                    CacheFileTree.isDefragmentPartition(fileName)
+                        || CacheFileTree.isDefragmentIndex(fileName)
+                        || CacheFileTree.isDefragmentLinkMapping(fileName)
+                )
+                    U.delete(file);
+            }
         }
     }
 
@@ -97,7 +100,7 @@ public class DefragmentationFileUtils {
                     "Skipping already defragmented page group",
                     "grpId", cft.groupId(), false,
                     "markerFileName", completionMarkerFile.getName(), false,
-                    "workDir", cft.storage().getAbsolutePath(), false
+                    "workDir", Arrays.toString(cft.storages()), false
                 ));
             }
 
@@ -135,7 +138,7 @@ public class DefragmentationFileUtils {
                     "partId", partId, false,
                     "partFileName", defragmentedPartFile.getName(), false,
                     "mappingFileName", defragmentedPartMappingFile.getName(), false,
-                    "workDir", cft.storage().getAbsolutePath(), false
+                    "workDir", Arrays.toString(cft.storages()), false
                 ));
             }
 
@@ -180,15 +183,17 @@ public class DefragmentationFileUtils {
             return;
 
         try {
-            for (File mappingFile : cft.storage().listFiles((dir, name) -> CacheFileTree.isDefragmentLinkMapping(name)))
-                Files.delete(mappingFile.toPath());
+            for (File storage : cft.storages()) {
+                    for (File mappingFile : storage.listFiles((dir, name) -> CacheFileTree.isDefragmentLinkMapping(name)))
+                        Files.delete(mappingFile.toPath());
 
-            for (File partFile : cft.storage().listFiles((dir, name) -> CacheFileTree.isDefragmentPartition(name))) {
-                int partId = extractPartId(partFile.getName());
+                    for (File partFile : storage.listFiles((dir, name) -> CacheFileTree.isDefragmentPartition(name))) {
+                        int partId = extractPartId(partFile.getName());
 
-                File oldPartFile = cft.partitionFile(partId);
+                        File oldPartFile = cft.partitionFile(partId);
 
-                Files.move(partFile.toPath(), oldPartFile.toPath(), ATOMIC_MOVE, REPLACE_EXISTING);
+                        Files.move(partFile.toPath(), oldPartFile.toPath(), ATOMIC_MOVE, REPLACE_EXISTING);
+                    }
             }
 
             File idxFile = cft.defragmentedIndexFile();

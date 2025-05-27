@@ -63,8 +63,8 @@ public class CacheFileTree {
     /** Node file tree. */
     private final NodeFileTree ft;
 
-    /** Cache storage. */
-    private final File storage;
+    /** Cache storages. */
+    private final File[] storages;
 
     /** {@code True} if tree for metastore, {@code false} otherwise. */
     private final boolean metastore;
@@ -85,7 +85,7 @@ public class CacheFileTree {
 
         this.ft = ft;
         this.metastore = metastore;
-        this.storage = metastore ? ft.metaStorage() : ft.cacheStorage(ccfg);
+        this.storages = metastore ? new File[] {ft.metaStorage()} : ft.cacheStorages(ccfg);
         this.ccfg = ccfg;
         this.grpId = metastore ? MetaStorage.METASTORAGE_CACHE_ID : CU.cacheGroupId(ccfg);
     }
@@ -94,7 +94,14 @@ public class CacheFileTree {
      * @return Storage for cache.
      */
     public File storage() {
-        return storage;
+        return storages[0];
+    }
+
+    /**
+     * @return Storages for cache.
+     */
+    public File[] storages() {
+        return storages;
     }
 
     /**
@@ -209,7 +216,7 @@ public class CacheFileTree {
      * @see DefragmentationFileUtils#batchRenameDefragmentedCacheGroupPartitions(CacheFileTree)
      */
     public File defragmentationCompletionMarkerFile() {
-        return new File(storage(), DFRG_COMPLETION_MARKER_FILE_NAME);
+        return new File(storages()[0], DFRG_COMPLETION_MARKER_FILE_NAME);
     }
 
     /**

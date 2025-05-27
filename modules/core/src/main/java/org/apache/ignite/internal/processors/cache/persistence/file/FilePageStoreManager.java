@@ -549,7 +549,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         DataRegion dataRegion
     ) throws IgniteCheckedException {
         try {
-            boolean dirExisted = checkAndInitCacheWorkDir(cft);
+            boolean dirExisted = false;
+
+            for (File storage : cft.storages()) {
+                if (storage.exists()) {
+                    dirExisted = true;
+                    break;
+                }
+            }
+
+            checkAndInitCacheWorkDir(cft);
 
             if (dirExisted) {
                 MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
@@ -626,51 +635,46 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @param cft Cache file tree.
      */
-    public static boolean checkAndInitCacheWorkDir(CacheFileTree cft) throws IgniteCheckedException {
-        File cacheWorkDir = cft.storage();
+    public static void checkAndInitCacheWorkDir(CacheFileTree cft) throws IgniteCheckedException {
+        for (File cacheWorkDir : cft.storages()) {
+            ReadWriteLock lock = initDirLock.getLock(cacheWorkDir.getName().hashCode());
 
-        boolean dirExisted = false;
+            lock.writeLock().lock();
 
-        ReadWriteLock lock = initDirLock.getLock(cacheWorkDir.getName().hashCode());
-
-        lock.writeLock().lock();
-
-        try {
-            if (!Files.exists(cacheWorkDir.toPath())) {
-                try {
-                    Files.createDirectory(cacheWorkDir.toPath());
+            try {
+                if (!Files.exists(cacheWorkDir.toPath())) {
+                    try {
+                        Files.createDirectory(cacheWorkDir.toPath());
+                    }
+                    catch (IOException e) {
+                        throw new IgniteCheckedException("Failed to initialize cache working directory " +
+                            "(failed to create, make sure the work folder has correct permissions): " +
+                            cacheWorkDir.getAbsolutePath(), e);
+                    }
                 }
-                catch (IOException e) {
-                    throw new IgniteCheckedException("Failed to initialize cache working directory " +
-                        "(failed to create, make sure the work folder has correct permissions): " +
-                        cacheWorkDir.getAbsolutePath(), e);
+                else {
+                    if (cacheWorkDir.isFile())
+                        throw new IgniteCheckedException("Failed to initialize cache working directory " +
+                            "(a file with the same name already exists): " + cacheWorkDir.getAbsolutePath());
+
+                    Path cacheWorkDirPath = cacheWorkDir.toPath();
+
+                    Path tmp = cacheWorkDirPath.getParent().resolve(cacheWorkDir.getName() + TMP_SUFFIX);
+
+                    if (!cacheWorkDir.exists())
+                        throw new IgniteCheckedException("Failed to initialize cache working directory " +
+                            "(failed to create, make sure the work folder has correct permissions): " +
+                            cacheWorkDir.getAbsolutePath());
+
+                    if (Files.exists(tmp))
+                        U.delete(tmp);
                 }
             }
-            else {
-                if (cacheWorkDir.isFile())
-                    throw new IgniteCheckedException("Failed to initialize cache working directory " +
-                        "(a file with the same name already exists): " + cacheWorkDir.getAbsolutePath());
-
-                Path cacheWorkDirPath = cacheWorkDir.toPath();
-
-                Path tmp = cacheWorkDirPath.getParent().resolve(cacheWorkDir.getName() + TMP_SUFFIX);
-
-                dirExisted = true;
-
-                if (!cacheWorkDir.exists())
-                    throw new IgniteCheckedException("Failed to initialize cache working directory " +
-                        "(failed to create, make sure the work folder has correct permissions): " +
-                        cacheWorkDir.getAbsolutePath());
-
-                if (Files.exists(tmp))
-                    U.delete(tmp);
+            finally {
+                lock.writeLock().unlock();
             }
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
 
-        return dirExisted;
+        }
     }
 
     /** {@inheritDoc} */

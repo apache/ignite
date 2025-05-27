@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -274,7 +275,7 @@ public class GridLocalConfigManager {
 
         FilePageStoreManager.checkAndInitCacheWorkDir(cft);
 
-        assert cft.storage().exists() : "Work directory does not exist: " + cft.storage();
+        assert Arrays.stream(cft.storages()).allMatch(File::exists) : "Work directory does not exist: " + Arrays.toString(cft.storages());
 
         File file = ft.cacheConfigurationFile(ccfg);
         Path filePath = file.toPath();

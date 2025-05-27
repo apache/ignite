@@ -360,7 +360,8 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     public void testFailoverRestartWithoutDefragmentation() throws Exception {
         testFailover(cft -> {
             try {
-                File mntcRecFile = new File(cft.storage().getParent(), MaintenanceFileStore.MAINTENANCE_FILE_NAME);
+                NodeFileTree ft = GridTestUtils.getFieldValue(cft, "ft");
+                File mntcRecFile = new File(ft.nodeStorage(), MaintenanceFileStore.MAINTENANCE_FILE_NAME);
 
                 assertTrue(mntcRecFile.exists());
 
