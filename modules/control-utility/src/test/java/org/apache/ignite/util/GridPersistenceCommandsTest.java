@@ -372,10 +372,12 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
     /** */
     private CacheConfiguration cacheConfiguration(String cacheName) {
         CacheConfiguration ccfg = new CacheConfiguration(cacheName)
-            .setStoragePath(separateStorage ? storagePath(cacheName) : null)
             .setAtomicityMode(TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setBackups(1);
+
+        if (separateStorage)
+            ccfg.setStoragePath(storagePath(cacheName));
 
         return ccfg;
     }

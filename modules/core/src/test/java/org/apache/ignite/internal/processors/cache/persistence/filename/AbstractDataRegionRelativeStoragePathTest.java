@@ -169,10 +169,14 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
     /** */
     CacheConfiguration<?, ?> ccfg(String name, String grp, String storagePath) {
-        return new CacheConfiguration<>(name)
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(name)
             .setGroupName(grp)
-            .setStoragePath(storagePath)
             .setAffinity(new RendezvousAffinityFunction().setPartitions(PARTS_CNT));
+
+        if (storagePath != null)
+            ccfg.setStoragePath(storagePath);
+
+        return ccfg;
     }
 
     /** */

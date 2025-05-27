@@ -221,7 +221,12 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         IgniteEx cli = startClientGrid(G.allGrids().size());
 
-        cli.createCache(defaultCacheConfiguration().setStoragePath(dataCustomLocation ? CUSTOM_LOCATION : null));
+        CacheConfiguration<Object, Object> ccfg = defaultCacheConfiguration();
+
+        if (dataCustomLocation)
+            ccfg.setStoragePath(CUSTOM_LOCATION);
+
+        cli.createCache(ccfg);
 
         for (int i = 0; i < KEYS_CNT; ++i)
             cli.cache(DEFAULT_CACHE_NAME).put(i, USER_FACTORY.apply(i));
@@ -347,7 +352,12 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         ign0.cluster().state(ClusterState.ACTIVE);
 
-        ign0.createCache(defaultCacheConfiguration().setStoragePath(dataCustomLocation ? CUSTOM_LOCATION : null));
+        CacheConfiguration<Object, Object> ccfg = defaultCacheConfiguration();
+
+        if (dataCustomLocation)
+            ccfg.setStoragePath(CUSTOM_LOCATION);
+
+        ign0.createCache(ccfg);
 
         try (IgniteDataStreamer<Integer, String> ds = ign0.dataStreamer(DEFAULT_CACHE_NAME)) {
             IgniteCache<Integer, String> cache = ign0.cache(DEFAULT_CACHE_NAME);
@@ -688,11 +698,15 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** */
     private void doTestCustomLocation(boolean dataCustomLocation) throws Exception {
         try (IgniteEx ign = startGrid()) {
-            IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
+            CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>()
                 .setName("test-cache-0")
                 .setBackups(1)
-                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-                .setStoragePath(dataCustomLocation ? CUSTOM_LOCATION : null));
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC);
+
+            if (dataCustomLocation)
+                ccfg.setStoragePath(CUSTOM_LOCATION);
+
+            IgniteCache<Integer, Integer> cache = ign.createCache(ccfg);
 
             IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
 
