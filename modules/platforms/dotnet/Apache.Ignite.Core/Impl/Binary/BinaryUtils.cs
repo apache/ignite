@@ -808,8 +808,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 neg = true;
             }
 
-            if (scale < 0 || scale > 28)
-                throw new BinaryObjectException("Decimal value scale overflow (must be between 0 and 28): " + scale);
+            if (-28 > scale || scale > 28)
+                throw new BinaryObjectException("Decimal value scale overflow (must be between -28 and 28, inclusive): " + scale);
 
             if (mag.Length > 13)
                 throw new BinaryObjectException("Decimal magnitude overflow (must be less than 96 bits): " +
@@ -841,6 +841,15 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (i >= 0)
                     lo = (lo << 8) + mag[i];
+            }
+
+            if (scale < 0)
+            {
+                // Java BigDecimal:
+                // "if negative, the unscaled value is multiplied by ten to the power of the negation of the scale"
+                // (https://docs.oracle.com/javase/8/docs/api/java/math/BigDecimal.html).
+                var res = new decimal(lo, mid, hi, neg, 0);
+                return res * (decimal)Math.Pow(10, scale);
             }
 
             return new decimal(lo, mid, hi, neg, (byte)scale);
