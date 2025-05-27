@@ -445,8 +445,8 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
             "JOIN (SELECT deptid, COUNT(*) AS cnt FROM emp GROUP BY deptid) AS agg ON dept.deptid = agg.deptid";
 
         assertPlan(sql, schema, hasChildThat(isInstanceOf(Join.class)
-            .and(input(0, hasDistribution(IgniteDistributions.affinity(0, null, "hash"))))
-            .and(input(1, hasDistribution(IgniteDistributions.affinity(0, null, "hash"))))),
+            .and(input(0, hasChildThat(hasDistribution(IgniteDistributions.affinity(0, null, "hash")))))
+            .and(input(1, hasChildThat(hasDistribution(IgniteDistributions.affinity(0, null, "hash")))))),
             algo.rulesToDisable);
     }
 

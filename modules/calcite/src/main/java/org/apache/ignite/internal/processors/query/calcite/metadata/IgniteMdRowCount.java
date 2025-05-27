@@ -30,9 +30,7 @@ import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.BuiltInMethod;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
@@ -96,16 +94,6 @@ public class IgniteMdRowCount extends RelMdRowCount {
             return left * right * selectivity;
 
         double rowsCnt = left * right * selectivity;
-
-        double leftDistinct = Util.first(
-            mq.getDistinctRowCount(rel.getLeft(), ImmutableBitSet.of(leftKeys), null), left);
-        double rightDistinct = Util.first(
-            mq.getDistinctRowCount(rel.getRight(), ImmutableBitSet.of(rightKeys), null), right);
-
-        double leftCardinality = leftDistinct / left;
-        double rightCardinality = rightDistinct / right;
-
-       // rowsCnt = (Math.min(left, right) / (leftCardinality * rightCardinality)) * selectivity;
 
         JoinRelType type = rel.getJoinType();
 
