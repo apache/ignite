@@ -821,7 +821,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         assertCacheKeys(ign.cache(DEFAULT_CACHE_NAME), keysCnt);
     }
 
-    /** */
+    /**
+     * @throws Exception if failed.
+     */
     @Test
     public void testNonSerializableCacheGroupsRestore() throws Exception {
         int keysCnt = dfltCacheCfg.getAffinity().partitions();
