@@ -515,14 +515,6 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param ccfg Cache configuration.
-     * @return Store dir for given cache.
-     */
-    public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return cacheStorages(ccfg)[0];
-    }
-
-    /**
-     * @param ccfg Cache configuration.
      * @return Store dirs for given cache.
      * TODO: return single storage for snapshot with absolute path.
      */
