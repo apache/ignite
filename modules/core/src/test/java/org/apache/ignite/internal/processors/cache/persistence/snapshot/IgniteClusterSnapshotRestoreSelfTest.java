@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -822,24 +824,17 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** */
     @Test
     public void testNonSerializableCacheGroupsRestore() throws Exception {
-        int nodes = 3;
-        int keysCnt = 1_000;
+        int keysCnt = dfltCacheCfg.getAffinity().partitions();
 
-        Map<String, Integer> groups = Map.of(DEFAULT_CACHE_NAME, 0);
+        Ignite ignite = startGridsWithSnapshot(1, keysCnt, false, true);
 
-        startGridsWithSnapshot(nodes, keysCnt, false, true);
+        Collection<String> groupsAsKeySet = Map.of(DEFAULT_CACHE_NAME, 0).keySet();
 
-        stopAllGrids();
+        assertFalse(groupsAsKeySet instanceof Serializable);
 
-        cleanPersistenceDir(true);
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, groupsAsKeySet).get(TIMEOUT);
 
-        IgniteEx ign = startGrids(nodes);
-
-        ign.cluster().state(ClusterState.ACTIVE);
-
-        ign.snapshot().restoreSnapshot(SNAPSHOT_NAME, groups.keySet()).get(TIMEOUT);
-
-        assertCacheKeys(ign.cache(DEFAULT_CACHE_NAME), keysCnt);
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
     }
 
     /**
