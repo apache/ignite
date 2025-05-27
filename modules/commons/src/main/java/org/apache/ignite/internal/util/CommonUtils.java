@@ -33,6 +33,11 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.io.UTFDataFormatException;
+import java.lang.annotation.Annotation;
+import java.lang.management.CompilationMXBean;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -56,18 +61,26 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -102,6 +115,9 @@ public abstract class CommonUtils {
     /** @see IgniteCommonsSystemProperties#IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD */
     public static final long DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD = 0L;
 
+    /** Ignite package. */
+    public static final String IGNITE_PKG = "org.apache.ignite.";
+
     /** Sun-specific JDK constructor factory for objects that don't have empty constructor. */
     private static final Method CTOR_FACTORY;
 
@@ -135,7 +151,103 @@ public abstract class CommonUtils {
     /** Alphanumeric with underscore regexp pattern. */
     private static final Pattern ALPHANUMERIC_UNDERSCORE_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
 
+    /** OS string. */
+    private static final String osStr;
+
+    /** JDK string. */
+    private static String jdkStr;
+
+    /** Indicates whether current OS is some version of Windows. */
+    private static boolean win;
+
+    /** Indicates whether current OS is UNIX flavor. */
+    private static boolean unix;
+
+    /** Indicates whether current OS is Linux flavor. */
+    private static boolean linux;
+
+    /** Indicates whether current OS is Mac OS. */
+    private static boolean mac;
+
+    /** Name of the JDK. */
+    private static String jdkName;
+
+    /** Version of the JDK. */
+    private static String jdkVer;
+
+    /** Name of the JVM implementation. */
+    private static String jvmImplName;
+
+    /** Will be set to {@code true} if detected a 32-bit JVM. */
+    private static final boolean jvm32Bit;
+
+    /** */
+    private static final boolean assertionsEnabled;
+
     static {
+        boolean assertionsEnabled0 = true;
+
+        try {
+            assert false;
+
+            assertionsEnabled0 = false;
+        }
+        catch (AssertionError ignored) {
+            assertionsEnabled0 = true;
+        }
+        finally {
+            assertionsEnabled = assertionsEnabled0;
+        }
+
+        String osName = System.getProperty("os.name");
+
+        String osLow = osName.toLowerCase();
+
+        // OS type detection.
+        if (osLow.contains("win"))
+            win = true;
+        else if (osLow.contains("mac os"))
+            mac = true;
+        else {
+            // UNIXs flavors tokens.
+            for (CharSequence os : new String[] {"ix", "inux", "olaris", "un", "ux", "sco", "bsd", "att"})
+                if (osLow.contains(os)) {
+                    unix = true;
+
+                    break;
+                }
+
+            if (osLow.contains("inux"))
+                linux = true;
+        }
+
+        String osArch = System.getProperty("os.arch");
+
+        String javaRtName = System.getProperty("java.runtime.name");
+        String javaRtVer = System.getProperty("java.runtime.version");
+        String jdkName = System.getProperty("java.specification.name");
+        String jdkVer = System.getProperty("java.specification.version");
+        String osVer = System.getProperty("os.version");
+        String jvmImplVer = System.getProperty("java.vm.version");
+        String jvmImplVendor = System.getProperty("java.vm.vendor");
+        String jvmImplName = System.getProperty("java.vm.name");
+
+        // Best effort to detect a 32-bit JVM.
+        String jvmArchDataModel = System.getProperty("sun.arch.data.model");
+
+        String jdkStr = javaRtName + ' ' + javaRtVer + ' ' + jvmImplVendor + ' ' + jvmImplName + ' ' +
+            jvmImplVer;
+
+        osStr = osName + ' ' + osVer + ' ' + osArch;
+
+        // Copy auto variables to static ones.
+        CommonUtils.jdkName = jdkName;
+        CommonUtils.jdkVer = jdkVer;
+        CommonUtils.jdkStr = jdkStr;
+        CommonUtils.jvmImplName = jvmImplName;
+
+        jvm32Bit = "32".equals(jvmArchDataModel);
+
         try {
             OBJECT_CTOR = Object.class.getConstructor();
         }
@@ -1922,4 +2034,843 @@ public abstract class CommonUtils {
             out.writeLong(uid.getLeastSignificantBits());
         }
     }
+
+    /**
+     * Writes int array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws IOException If write failed.
+     */
+    public static void writeIntArray(DataOutput out, @Nullable int[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            for (int b : arr)
+                out.writeInt(b);
+        }
+    }
+
+    /**
+     * Writes long array to output stream.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write.
+     * @throws IOException If write failed.
+     */
+    public static void writeLongArray(DataOutput out, @Nullable long[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            for (long b : arr)
+                out.writeLong(b);
+        }
+    }
+
+    /**
+     * Reads int array from input stream accounting for <tt>null</tt> values.
+     *
+     * @param in Stream to read from.
+     * @return Read byte array, possibly <tt>null</tt>.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static int[] readIntArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        int[] res = new int[len];
+
+        for (int i = 0; i < len; i++)
+            res[i] = in.readInt();
+
+        return res;
+    }
+
+    /**
+     * Reads long array from input stream.
+     *
+     * @param in Stream to read from.
+     * @return Read long array, possibly <tt>null</tt>.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static long[] readLongArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        long[] res = new long[len];
+
+        for (int i = 0; i < len; i++)
+            res[i] = in.readLong();
+
+        return res;
+    }
+
+    /**
+     * @param out Output.
+     * @param map Map to write.
+     * @throws IOException If write failed.
+     */
+    public static void writeMap(ObjectOutput out, Map<?, ?> map) throws IOException {
+        if (map != null) {
+            out.writeInt(map.size());
+
+            for (Map.Entry<?, ?> e : map.entrySet()) {
+                out.writeObject(e.getKey());
+                out.writeObject(e.getValue());
+            }
+        }
+        else
+            out.writeInt(-1);
+    }
+
+    /**
+     *
+     * @param in Input.
+     * @return Read map.
+     * @throws IOException If de-serialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @Nullable public static <K, V> Map<K, V> readMap(ObjectInput in) throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        if (size == -1)
+            return null;
+
+        Map<K, V> map = new HashMap<>(size, 1.0f);
+
+        for (int i = 0; i < size; i++)
+            map.put((K)in.readObject(), (V)in.readObject());
+
+        return map;
+    }
+
+    /**
+     * Calculate a hashCode for an array.
+     *
+     * @param obj Object.
+     */
+    public static int hashCode(Object obj) {
+        if (obj == null)
+            return 0;
+
+        if (obj.getClass().isArray()) {
+            if (obj instanceof byte[])
+                return Arrays.hashCode((byte[])obj);
+            if (obj instanceof short[])
+                return Arrays.hashCode((short[])obj);
+            if (obj instanceof int[])
+                return Arrays.hashCode((int[])obj);
+            if (obj instanceof long[])
+                return Arrays.hashCode((long[])obj);
+            if (obj instanceof float[])
+                return Arrays.hashCode((float[])obj);
+            if (obj instanceof double[])
+                return Arrays.hashCode((double[])obj);
+            if (obj instanceof char[])
+                return Arrays.hashCode((char[])obj);
+            if (obj instanceof boolean[])
+                return Arrays.hashCode((boolean[])obj);
+
+            int result = 1;
+
+            for (Object element : (Object[])obj)
+                result = 31 * result + hashCode(element);
+
+            return result;
+        }
+        else
+            return obj.hashCode();
+    }
+
+    /**
+     * @param in Input.
+     * @return Read map.
+     * @throws IOException If de-serialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @Nullable public static <K, V> TreeMap<K, V> readTreeMap(
+        ObjectInput in) throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        if (size == -1)
+            return null;
+
+        TreeMap<K, V> map = new TreeMap<>();
+
+        for (int i = 0; i < size; i++)
+            map.put((K)in.readObject(), (V)in.readObject());
+
+        return map;
+    }
+
+    /**
+     * Read hash map.
+     *
+     * @param in Input.
+     * @return Read map.
+     * @throws IOException If de-serialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @Nullable public static <K, V> HashMap<K, V> readHashMap(ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            return null;
+
+        HashMap<K, V> map = newHashMap(size);
+
+        for (int i = 0; i < size; i++)
+            map.put((K)in.readObject(), (V)in.readObject());
+
+        return map;
+    }
+
+    /**
+     *
+     * @param in Input.
+     * @return Read map.
+     * @throws IOException If de-serialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @Nullable public static <K, V> LinkedHashMap<K, V> readLinkedMap(ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            return null;
+
+        LinkedHashMap<K, V> map = new LinkedHashMap<>(size, 1.0f);
+
+        for (int i = 0; i < size; i++)
+            map.put((K)in.readObject(), (V)in.readObject());
+
+        return map;
+    }
+
+    /**
+     * @param in Input.
+     * @return Deserialized list.
+     * @throws IOException If deserialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @Nullable public static <E> List<E> readList(ObjectInput in) throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            return null;
+
+        List<E> col = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++)
+            col.add((E)in.readObject());
+
+        return col;
+    }
+
+    /**
+     * @param in Input.
+     * @return Deserialized set.
+     * @throws IOException If deserialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @SuppressWarnings({"unchecked"})
+    @Nullable public static <E> Set<E> readSet(ObjectInput in) throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            return null;
+
+        Set<E> set = new HashSet(size, 1.0f);
+
+        for (int i = 0; i < size; i++)
+            set.add((E)in.readObject());
+
+        return set;
+    }
+
+    /**
+     * Writes string to output stream accounting for {@code null} values.
+     * <p>
+     * Limitation for max string lenght of <code>65535</code> bytes is caused by {@link DataOutput#writeUTF}
+     * used under the hood to perform an actual write.
+     * </p>
+     * <p>
+     * If longer string is passes a {@link UTFDataFormatException} exception will be thrown.
+     * </p>
+     * <p>
+     * To write longer strings use {@link #writeLongString(DataOutput, String)} writes string as is converting it into binary array of UTF-8
+     * encoded characters.
+     * To read the value back {@link #readLongString(DataInput)} should be used.
+     * </p>
+     *
+     * @param out Output stream to write to.
+     * @param s String to write, possibly {@code null}.
+     * @throws IOException If write failed.
+     */
+    public static void writeString(DataOutput out, String s) throws IOException {
+        // Write null flag.
+        out.writeBoolean(s == null);
+
+        if (s != null)
+            out.writeUTF(s);
+    }
+
+    /**
+     * Reads string from input stream accounting for {@code null} values.
+     *
+     * Method enables to read strings shorter than <code>65535</code> bytes in UTF-8 otherwise an exception will be thrown.
+     *
+     * Strings written by {@link #writeString(DataOutput, String)} can be read by this method.
+     *
+     * @see #writeString(DataOutput, String) for more information about writing strings.
+     *
+     * @param in Stream to read from.
+     * @return Read string, possibly {@code null}.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static String readString(DataInput in) throws IOException {
+        // If value is not null, then read it. Otherwise return null.
+        return !in.readBoolean() ? in.readUTF() : null;
+    }
+
+    /**
+     * Writes enum to output stream accounting for {@code null} values.
+     * Note: method writes only one byte for every enum. Therefore, this method
+     * only for Enums with maximum count of values equals to 128.
+     *
+     * @param out Output stream to write to.
+     * @param e Enum value to write, possibly {@code null}.
+     * @throws IOException If write failed.
+     */
+    public static <E extends Enum<E>> void writeEnum(DataOutput out, E e) throws IOException {
+        out.writeByte(e == null ? -1 : e.ordinal());
+    }
+
+    /** */
+    public static <E extends Enum<E>> E readEnum(DataInput in, Class<E> enumCls) throws IOException {
+        byte ordinal = in.readByte();
+
+        if (ordinal == (byte)-1)
+            return null;
+
+        int idx = ordinal & 0xFF;
+
+        E[] values = enumCls.getEnumConstants();
+
+        return idx < values.length ? values[idx] : null;
+    }
+
+    /**
+     * Gets annotation for a class.
+     *
+     * @param <T> Type of annotation to return.
+     * @param cls Class to get annotation from.
+     * @param annCls Annotation to get.
+     * @return Instance of annotation, or {@code null} if not found.
+     */
+    @Nullable public static <T extends Annotation> T getAnnotation(Class<?> cls, Class<T> annCls) {
+        if (cls == Object.class)
+            return null;
+
+        T ann = cls.getAnnotation(annCls);
+
+        if (ann != null)
+            return ann;
+
+        for (Class<?> itf : cls.getInterfaces()) {
+            ann = getAnnotation(itf, annCls); // Recursion.
+
+            if (ann != null)
+                return ann;
+        }
+
+        if (!cls.isInterface()) {
+            ann = getAnnotation(cls.getSuperclass(), annCls);
+
+            if (ann != null)
+                return ann;
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets declared annotation for a class.
+     *
+     * @param <T> Type of annotation to return.
+     * @param cls Class to get annotation from.
+     * @param annCls Annotation to get.
+     * @return Instance of annotation, or {@code null} if not found.
+     */
+    @Nullable public static <T extends Annotation> T getDeclaredAnnotation(Class<?> cls, Class<T> annCls) {
+        if (cls == Object.class)
+            return null;
+
+        return cls.getDeclaredAnnotation(annCls);
+    }
+
+    /**
+     * Indicates if class has given declared annotation.
+     *
+     * @param <T> Annotation type.
+     * @param cls Class to get annotation from.
+     * @param annCls Annotation to get.
+     * @return {@code true} if class has annotation or {@code false} otherwise.
+     */
+    public static <T extends Annotation> boolean hasDeclaredAnnotation(Class<?> cls, Class<T> annCls) {
+        return getDeclaredAnnotation(cls, annCls) != null;
+    }
+
+    /**
+     * Indicates if class has given annotation.
+     *
+     * @param o Object to get annotation from.
+     * @param annCls Annotation to get.
+     * @return {@code true} if class has annotation or {@code false} otherwise.
+     */
+    public static <T extends Annotation> boolean hasDeclaredAnnotation(Object o, Class<T> annCls) {
+        return o != null && hasDeclaredAnnotation(o.getClass(), annCls);
+    }
+
+    /**
+     * Indicates if class has given annotation.
+     *
+     * @param <T> Annotation type.
+     * @param cls Class to get annotation from.
+     * @param annCls Annotation to get.
+     * @return {@code true} if class has annotation or {@code false} otherwise.
+     */
+    public static <T extends Annotation> boolean hasAnnotation(Class<?> cls, Class<T> annCls) {
+        return getAnnotation(cls, annCls) != null;
+    }
+
+    /**
+     * Indicates if class has given annotation.
+     *
+     * @param o Object to get annotation from.
+     * @param annCls Annotation to get.
+     * @return {@code true} if class has annotation or {@code false} otherwise.
+     */
+    public static <T extends Annotation> boolean hasAnnotation(Object o, Class<T> annCls) {
+        return o != null && hasAnnotation(o.getClass(), annCls);
+    }
+
+    /**
+     * Provides all interfaces of {@code cls} including inherited ones. Excludes duplicated ones in case of multiple
+     * inheritance.
+     *
+     * @param cls Class to search for interfaces.
+     * @return Collection of interfaces of {@code cls}.
+     */
+    public static Collection<Class<?>> allInterfaces(Class<?> cls) {
+        Set<Class<?>> interfaces = new HashSet<>();
+
+        while (cls != null) {
+            interfaces.addAll(Arrays.asList(cls.getInterfaces()));
+
+            cls = cls.getSuperclass();
+        }
+
+        return interfaces;
+    }
+
+    /**
+     * Gets simple class name taking care of empty names.
+     *
+     * @param cls Class to get the name for.
+     * @return Simple class name.
+     */
+    public static String getSimpleName(Class<?> cls) {
+        String name = cls.getSimpleName();
+
+        if (F.isEmpty(name))
+            name = cls.getName().substring(cls.getPackage().getName().length() + 1);
+
+        return name;
+    }
+
+    /**
+     * Checks if the map passed in is contained in base map.
+     *
+     * @param base Base map.
+     * @param map Map to check.
+     * @return {@code True} if all entries within map are contained in base map,
+     *      {@code false} otherwise.
+     */
+    public static boolean containsAll(Map<?, ?> base, Map<?, ?> map) {
+        assert base != null;
+        assert map != null;
+
+        for (Map.Entry<?, ?> entry : map.entrySet())
+            if (base.containsKey(entry.getKey())) {
+                Object val = base.get(entry.getKey());
+
+                if (val == null && entry.getValue() == null)
+                    continue;
+
+                if (val == null || entry.getValue() == null || !val.equals(entry.getValue()))
+                    // Mismatch found.
+                    return false;
+            }
+            else
+                return false;
+
+        // All entries in 'map' are contained in base map.
+        return true;
+    }
+
+    /**
+     * Gets resource path for the class.
+     *
+     * @param clsName Class name.
+     * @return Resource name for the class.
+     */
+    public static String classNameToResourceName(String clsName) {
+        return clsName.replaceAll("\\.", "/") + ".class";
+    }
+
+    /**
+     * Gets threading MBean.
+     *
+     * @return Threading MBean.
+     */
+    public static ThreadMXBean getThreadMx() {
+        return ManagementFactory.getThreadMXBean();
+    }
+
+    /**
+     * Gets amount of RAM memory available on this machine.
+     *
+     * @return Total amount of memory in bytes or -1 if any exception happened.
+     */
+    public static long getTotalMemoryAvailable() {
+        MBeanServer mBeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+        Object attr;
+
+        try {
+            attr = mBeanSrv.getAttribute(
+                ObjectName.getInstance("java.lang", "type", "OperatingSystem"),
+                "TotalPhysicalMemorySize");
+        }
+        catch (Exception e) {
+            return -1;
+        }
+
+        return (attr instanceof Long) ? (Long)attr : -1;
+    }
+
+    /**
+     * Gets compilation MBean.
+     *
+     * @return Compilation MBean.
+     */
+    public static CompilationMXBean getCompilerMx() {
+        return ManagementFactory.getCompilationMXBean();
+    }
+
+    /**
+     * Tests whether or not given class is loadable provided class loader.
+     *
+     * @param clsName Class name to test.
+     * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead.
+     *      If System class loader is not set - this method will return {@code false}.
+     * @return {@code True} if class is loadable, {@code false} otherwise.
+     */
+    public static boolean isLoadableBy(String clsName, @Nullable ClassLoader ldr) {
+        assert clsName != null;
+
+        if (ldr == null)
+            ldr = gridClassLoader();
+
+        String lambdaParent = lambdaEnclosingClassName(clsName);
+
+        try {
+            ldr.loadClass(lambdaParent == null ? clsName : lambdaParent);
+
+            return true;
+        }
+        catch (ClassNotFoundException ignore) {
+            return false;
+        }
+    }
+
+    /**
+     * Checks if given class is of {@code Ignite} type.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if given class is of {@code Ignite} type.
+     */
+    public static boolean isIgnite(Class<?> cls) {
+        String name = cls.getName();
+
+        return name.startsWith("org.apache.ignite") || name.startsWith("org.jsr166");
+    }
+
+    /**
+     * Checks if given class is of {@code Grid} type.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if given class is of {@code Grid} type.
+     */
+    public static boolean isGrid(Class<?> cls) {
+        return cls.getName().startsWith("org.apache.ignite.internal");
+    }
+
+    /**
+     * Replaces all occurrences of {@code org.apache.ignite.} with {@code o.a.i.},
+     * {@code org.apache.ignite.internal.} with {@code o.a.i.i.},
+     * {@code org.apache.ignite.internal.visor.} with {@code o.a.i.i.v.} and
+     *
+     * @param s String to replace in.
+     * @return Replaces string.
+     */
+    public static String compact(String s) {
+        return s.replace("org.apache.ignite.internal.visor.", "o.a.i.i.v.").
+            replace("org.apache.ignite.internal.", "o.a.i.i.").
+            replace(IGNITE_PKG, "o.a.i.");
+    }
+
+    /**
+     * Check if given class is of JDK type.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if object is JDK type.
+     */
+    public static boolean isJdk(Class<?> cls) {
+        if (cls.isPrimitive())
+            return true;
+
+        String s = cls.getName();
+
+        return s.startsWith("java.") || s.startsWith("javax.");
+    }
+
+    /**
+     * Check if given class represents a Enum.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if this is a Enum class.
+     */
+    public static boolean isEnum(Class cls) {
+        if (cls.isEnum())
+            return true;
+
+        Class sCls = cls.getSuperclass();
+
+        return sCls != null && sCls.isEnum();
+    }
+
+    /**
+     * @return {@code True} if assertions enabled.
+     */
+    public static boolean assertionsEnabled() {
+        return assertionsEnabled;
+    }
+
+    /**
+     * Gets OS string.
+     *
+     * @return OS string.
+     */
+    public static String osString() {
+        return osStr;
+    }
+
+    /**
+     * Gets JDK string.
+     *
+     * @return JDK string.
+     */
+    public static String jdkString() {
+        return jdkStr;
+    }
+
+    /**
+     * Indicates whether current OS is Linux flavor.
+     *
+     * @return {@code true} if current OS is Linux - {@code false} otherwise.
+     */
+    public static boolean isLinux() {
+        return linux;
+    }
+
+    /**
+     * Gets JDK version.
+     *
+     * @return JDK version.
+     */
+    public static String jdkVersion() {
+        return jdkVer;
+    }
+
+    /**
+     * Indicates whether current OS is Mac OS.
+     *
+     * @return {@code true} if current OS is Mac OS - {@code false} otherwise.
+     */
+    public static boolean isMacOs() {
+        return mac;
+    }
+
+    /**
+     * Indicates whether current OS is UNIX flavor.
+     *
+     * @return {@code true} if current OS is UNIX - {@code false} otherwise.
+     */
+    public static boolean isUnix() {
+        return unix;
+    }
+
+    /**
+     * Indicates whether current OS is Windows.
+     *
+     * @return {@code true} if current OS is Windows (any versions) - {@code false} otherwise.
+     */
+    public static boolean isWindows() {
+        return win;
+    }
+
+    /**
+     * Gets JVM implementation name.
+     *
+     * @return JVM implementation name.
+     */
+    public static String jvmName() {
+        return jvmImplName;
+    }
+
+    /**
+     * Does a best effort to detect if we a running on a 32-bit JVM.
+     *
+     * @return {@code true} if detected that we are running on a 32-bit JVM.
+     */
+    public static boolean jvm32Bit() {
+        return jvm32Bit;
+    }
+
+    /**
+     * Get major Java version from string.
+     *
+     * @param verStr Version string.
+     * @return Major version or zero if failed to resolve.
+     */
+    public static int majorJavaVersion(String verStr) {
+        if (F.isEmpty(verStr))
+            return 0;
+
+        try {
+            String[] parts = verStr.split("\\.");
+
+            int major = Integer.parseInt(parts[0]);
+
+            if (parts.length == 1)
+                return major;
+
+            int minor = Integer.parseInt(parts[1]);
+
+            return major == 1 ? minor : major;
+        }
+        catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Sets thread context class loader to the given loader, executes the closure, and then
+     * resets thread context class loader to its initial value.
+     *
+     * @param ldr Class loader to run the closure under.
+     * @param c Callable to run.
+     * @param <R> Return type.
+     * @return Return value.
+     * @throws IgniteCheckedException If call failed.
+     */
+    @Nullable public static <R> R wrapThreadLoader(ClassLoader ldr, Callable<R> c) throws IgniteCheckedException {
+        Thread curThread = Thread.currentThread();
+
+        // Get original context class loader.
+        ClassLoader ctxLdr = curThread.getContextClassLoader();
+
+        try {
+            curThread.setContextClassLoader(ldr);
+
+            return c.call();
+        }
+        catch (IgniteCheckedException | RuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+        finally {
+            // Set the original class loader back.
+            curThread.setContextClassLoader(ctxLdr);
+        }
+    }
+
+    /**
+     * Sets thread context class loader to the given loader, executes the closure, and then
+     * resets thread context class loader to its initial value.
+     *
+     * @param ldr Class loader to run the closure under.
+     * @param c Closure to run.
+     * @param <R> Return type.
+     * @return Return value.
+     */
+    @Nullable public static <R> R wrapThreadLoader(ClassLoader ldr, IgniteOutClosure<R> c) {
+        Thread curThread = Thread.currentThread();
+
+        // Get original context class loader.
+        ClassLoader ctxLdr = curThread.getContextClassLoader();
+
+        try {
+            curThread.setContextClassLoader(ldr);
+
+            return c.apply();
+        }
+        finally {
+            // Set the original class loader back.
+            curThread.setContextClassLoader(ctxLdr);
+        }
+    }
+
+    /**
+     * Sets thread context class loader to the given loader, executes the closure, and then
+     * resets thread context class loader to its initial value.
+     *
+     * @param ldr Class loader to run the closure under.
+     * @param c Closure to run.
+     */
+    public static void wrapThreadLoader(ClassLoader ldr, Runnable c) {
+        Thread curThread = Thread.currentThread();
+
+        // Get original context class loader.
+        ClassLoader ctxLdr = curThread.getContextClassLoader();
+
+        try {
+            curThread.setContextClassLoader(ldr);
+
+            c.run();
+        }
+        finally {
+            // Set the original class loader back.
+            curThread.setContextClassLoader(ctxLdr);
+        }
+    }
+
+
 }
