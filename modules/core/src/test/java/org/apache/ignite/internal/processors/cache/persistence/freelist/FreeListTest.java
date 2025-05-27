@@ -17,91 +17,257 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.CallbackExecutorLogListener;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
-
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList.IGNITE_PAGES_LIST_STRIPES_PER_BUCKET;
-import static org.apache.ignite.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
- * Test freelists.
+ * Test freelists ensuring that the optimization by the C2 Jit compilator was done.
  */
+@RunWith(Parameterized.class)
 @WithSystemProperty(key = IGNITE_PAGES_LIST_STRIPES_PER_BUCKET, value = "1")
 public class FreeListTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS_COUNT = 5_000;
 
+    /** Signals once method under test is C2 Jit compiled in server node. */
+    CountDownLatch c2JitCompiled = new CountDownLatch(1);
+
+    /** JVM options to start the server node in remote JVM. */
+    @Parameterized.Parameter
+    public List<String> jvmOpts;
+
+    /** */
+    @Parameterized.Parameters(name = "{0}")
+    public static Iterable<List<String>> params() {
+        ArrayList<List<String>> params = new ArrayList<>(List.of(
+            List.of("-XX:+UseShenandoahGC"),
+            List.of("-XX:+UseShenandoahGC", "-ea"),
+
+            List.of("-XX:+UseG1GC"),
+            List.of("-XX:+UseG1GC", "-ea")
+        ));
+
+        if (Runtime.version().feature() >= 17 || U.isLinux())
+            addZgc(params);
+
+        return params;
+    }
+
+    /**
+     * Ensure that the PagesList$CutTail::run handler is not broken if C2 Jit-compiled.
+     * With various garbage collectors and with assertions both turned on and off.
+     */
+    @Test
+    public void testCutTail() throws Exception {
+        try (Ignite ignite = prepareCluster(jvmOpts,
+            "org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList$CutTail::run")) {
+            IgniteFuture<Void> jobFut = ignite.compute().runAsync(new TestCutTailJob());
+
+            assertTrue(c2JitCompiled.await(getTestTimeout() / 2, TimeUnit.MILLISECONDS));
+
+            try {
+                // Let it work for 2 seconds with the optimized C2 Jit-compiled variant of the
+                // PagesList$CutTail::run method. It's enough to reproduce problem if it is broken.
+                jobFut.get(2000, TimeUnit.MILLISECONDS);
+            }
+            catch (IgniteFutureTimeoutException e) {
+                jobFut.cancel();
+            }
+        }
+    }
+
+    /**
+     * Starts server node in remote JVM with the JVM options passed.
+     * Registers listener to signal once the method passed is C2 Jit-compiled in server node.
+     * Starts client node in local JVM.
+     *
+     * @param jvmOpts JVM options for the server node.
+     * @param method Fully qualified name of method.
+     * @return Client node.
+     */
+    private Ignite prepareCluster(List<String> jvmOpts, String method) throws Exception {
+        CountDownLatch remoteJvmServerStarted = new CountDownLatch(1);
+
+        ListeningTestLogger lsnrLog = new ListeningTestLogger(log);
+
+        lsnrLog.registerListener(new CallbackExecutorLogListener(".*Topology snapshot \\[ver=1,.*",
+            remoteJvmServerStarted::countDown));
+
+        lsnrLog.registerListener(new CallbackExecutorLogListener(
+            ".*Compiled method \\(c2\\).*" + method.replace("$", "\\$") + ".*",
+            c2JitCompiled::countDown));
+
+        IgniteConfiguration cfg = optimize(getConfiguration("remote-jvm-server"));
+
+        new IgniteProcessProxy(cfg, lsnrLog, null, false) {
+            @Override protected Collection<String> filteredJvmArgs() throws Exception {
+                Collection<String> args = super.filteredJvmArgs();
+
+                args.remove("-ea");
+
+                args.add("-XX:+UnlockDiagnosticVMOptions");
+                args.add("-XX:PrintAssemblyOptions=intel");
+                args.add("-XX:CompileCommand=print," + method);
+
+                args.addAll(jvmOpts);
+
+                return args;
+            }
+        };
+
+        remoteJvmServerStarted.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+        return startClientGrid("local-jvm-client");
+    }
+
+    /**
+     * Perfrom concurrent updates and deletes ensuring the CutTail called enough
+     * times to invoke the C2 optimizing Jit compiler.
+     */
+    private static class TestCutTailJob implements IgniteRunnable {
+        /** */
+        @IgniteInstanceResource
+        Ignite ignite;
+
+        /** */
+        Random random = new Random(3793);
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+            for (int i = 0; i < KEYS_COUNT; i++)
+                cache.put(i, value());
+
+            AtomicBoolean stop = new AtomicBoolean(false);
+
+            CyclicBarrier barrier = new CyclicBarrier(6);
+
+            IgniteInternalFuture<Long> updateFut = runMultiThreadedAsync(() -> {
+                while (!stop.get()) {
+                    try {
+                        barrier.await(100, TimeUnit.MILLISECONDS);
+
+                        cache.put(key(), value());
+                    }
+                    catch (InterruptedException | BrokenBarrierException ignored) {
+                        stop.set(true);
+                    }
+                    catch (TimeoutException ignored) {
+                        // No-op.
+                    }
+                    catch (Exception ex) {
+                        stop.set(true);
+
+                        throw ex;
+                    }
+                }
+            }, 24, "update");
+
+            while (!stop.get())
+                cache.remove(key());
+
+            barrier.reset();
+
+            try {
+                updateFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /** */
+        private int key() {
+            return random.nextInt(KEYS_COUNT);
+        }
+
+        /** */
+        private byte[] value() {
+            return new byte[random.nextInt(12000) + 3000];
+        }
+    }
+
+    /**
+     * Add test parameters for the ZGC garbage collector.
+     */
+    private static void addZgc(ArrayList<List<String>> params) {
+        ArrayList<String> opts = new ArrayList<>();
+
+        if (Runtime.version().feature() < 12)
+            opts.add("-XX:+UnlockExperimentalVMOptions");
+
+        opts.add("-XX:+UseZGC");
+        params.add(new ArrayList<>(opts));
+
+        opts.add("-ea");
+        params.add(new ArrayList<>(opts));
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+            .setDiscoverySpi(new TcpDiscoverySpi()
+                .setLocalAddress("127.0.0.1")
+                .setIpFinder(new TcpDiscoveryVmIpFinder()
+                    .setAddresses(Collections.singleton("127.0.0.1:" +
+                        TcpDiscoverySpi.DFLT_PORT + ".." + (TcpDiscoverySpi.DFLT_PORT + 1)))
+                ));;
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
         int pageSize = dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize();
 
         dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(false)
-                .setMaxSize(pageSize * 3L * KEYS_COUNT));
+            .setPersistenceEnabled(false)
+            .setMaxSize(pageSize * 10L * KEYS_COUNT));
 
         cfg.setDataStorageConfiguration(dsCfg);
 
         return cfg;
     }
 
-    /** */
-    @Test
-    public void testConcurrentUpdatesAndRemoves() throws Exception {
-        IgniteEx ignite = startGrid(0);
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
 
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+        stopAllGrids();
 
-        Random random = new Random(3793);
-
-        for (int i = 0; i < KEYS_COUNT; i++)
-            cache.put(i, getRecord(random));
-
-        AtomicBoolean stop = new AtomicBoolean(false);
-
-        IgniteInternalFuture<Long> updateFuture = runMultiThreadedAsync(() -> {
-            while (!stop.get()) {
-                try {
-                    cache.put(random.nextInt(KEYS_COUNT), getRecord(random));
-                }
-                catch (Exception ex) {
-                    stop.set(true);
-
-                    throw ex;
-                }
-            }
-        }, 24, "update");
-
-        for (int i = 0; i < KEYS_COUNT * 200 && !stop.get(); i++) {
-            if (i % 50000 == 0)
-                ignite.log().info(String.format("Remove [i=%d, cachSize=%d]", i, cache.size()));
-
-            cache.remove(random.nextInt(KEYS_COUNT));
-        }
-
-        stop.set(true);
-
-        updateFuture.get();
-    }
-
-    /** */
-    private static byte[] getRecord(Random random) {
-        return new byte[random.nextInt(3000, 15000)];
+        IgniteProcessProxy.killAll();
     }
 }
