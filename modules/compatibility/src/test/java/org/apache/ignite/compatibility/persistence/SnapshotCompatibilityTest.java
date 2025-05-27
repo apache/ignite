@@ -101,6 +101,13 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         );
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        cleanPersistenceDir();
+    }
+
     /** */
     @Test
     public void testSnapshotRestore() throws Exception {
@@ -134,13 +141,6 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
             checkSnapshot(node);
 
         checkCacheDump(node);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        cleanPersistenceDir();
     }
 
     /** */
