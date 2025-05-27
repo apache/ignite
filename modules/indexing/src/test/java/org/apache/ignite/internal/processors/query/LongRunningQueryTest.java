@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -34,11 +36,13 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
+import org.apache.ignite.internal.processors.query.running.TrackableQuery;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -398,30 +402,95 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Verifies that while a lazy query is not fully fetched, its {@link H2QueryInfo} is kept in
+     * Verifies that while a query is not fully fetched, its {@link H2QueryInfo} is kept in
      * {@link HeavyQueriesTracker} and its {@link H2QueryInfo#isSuspended()} returns {@code true}. It also verifies that
      * once the query is fully fetched, its {@link H2QueryInfo} is removed from {@link HeavyQueriesTracker}.
      */
     @Test
-    public void testLazyQueriesMemoryLeak() {
-        local = false;
-        lazy = true;
-        pageSize = 1;
+    public void testEmptyHeavyQueriesTrackerWithFullyFetchedIterator() {
+        Iterator<?> it = ignite.cache("test").query(
+            new SqlFieldsQuery("select * from test")
+                .setLocal(false)
+                .setPageSize(1))
+            .iterator();
 
-        try {
-            Iterator<?> it = sql("test", "select * from test").iterator();
+        H2QueryInfo qry = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
 
-            H2QueryInfo qry = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
+        assertFalse(heavyQueriesTracker().getQueries().isEmpty());
 
-            assertFalse(heavyQueriesTracker().getQueries().isEmpty());
+        assertTrue(qry.isSuspended());
 
-            assertTrue(qry.isSuspended());
+        it.forEachRemaining(x -> {});
+    }
 
-            it.forEachRemaining(x -> {});
-        }
-        finally {
-            pageSize = DEFAULT_PAGE_SIZE;
-        }
+    /**
+     * Verifies that when a not fully fetched query cursor is closed, its {@link H2QueryInfo} is removed from
+     * {@link HeavyQueriesTracker}.
+     */
+    @Test
+    public void testEmptyHeavyQueriesTrackerWithClosedCursor() {
+        FieldsQueryCursor<List<?>> cursor = ignite.cache("test").query(
+            new SqlFieldsQuery("select * from test")
+                .setLocal(false)
+                .setPageSize(1));
+
+        cursor.iterator().next();
+
+        H2QueryInfo qryInfo = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
+
+        assertFalse(heavyQueriesTracker().getQueries().isEmpty());
+
+        assertTrue(qryInfo.isSuspended());
+
+        cursor.close();
+    }
+
+    /**
+     * Verifies that when a not fully fetched query is cancelled, its {@link H2QueryInfo} is removed from
+     * {@link HeavyQueriesTracker}.
+     */
+    @Test
+    public void testEmptyHeavyQueriesTrackerWithCancelledQuery() {
+        cancelQueries(runNotFullyFetchedQuery(false));
+    }
+
+    /**
+     * Verifies that when a local not fully fetched query is cancelled, its {@link H2QueryInfo} is removed from
+     * {@link HeavyQueriesTracker}.
+     */
+    @Test
+    public void testEmptyHeavyQueriesTrackerWithCancelledLocalQuery() {
+        long qryId = runNotFullyFetchedQuery(true);
+
+        ((IgniteEx)ignite).context().query().cancelLocalQueries(Set.of(qryId));
+    }
+
+    /**
+     * Verifies that when there are multiple not fully fetched queries, and they are cancelled separately, corresponding
+     * {@link H2QueryInfo} instances are removed from {@link HeavyQueriesTracker}.
+     * */
+    @Test
+    public void testEmptyHeavyQueriesTrackerWithMultipleCancelledQueries() {
+        for (int i = 0; i < 4; i++)
+            runNotFullyFetchedQuery(false);
+
+        Set<TrackableQuery> qrys = heavyQueriesTracker().getQueries();
+
+        assertEquals(4, qrys.size());
+
+        List<H2QueryInfo> qrysList = qrys.stream().map(q -> (H2QueryInfo)q).collect(Collectors.toList());
+
+        cancelQueries(qrysList.get(0).queryId(), qrysList.get(1).queryId());
+
+        assertEquals(2, qrys.size());
+
+        assertFalse(qrys.stream().anyMatch(qryInfo -> {
+            long id = ((H2QueryInfo)qryInfo).queryId();
+
+            return id == qrysList.get(0).queryId() || id == qrysList.get(1).queryId();
+        }));
+
+        cancelQueries(qrysList.get(2).queryId(), qrysList.get(3).queryId());
     }
 
     /**
@@ -615,6 +684,34 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         assertTrue((U.currentTimeMillis() - start) > LONG_QUERY_WARNING_TIMEOUT);
 
         assertTrue(lsnrDml.check());
+    }
+
+    /**
+     * @param loc Flag indicating if query should be local.
+     * @return Query id.
+     */
+    public long runNotFullyFetchedQuery(boolean loc) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("select * from test")
+            .setLocal(loc)
+            .setPageSize(1);
+
+        ignite.cache("test").query(qry).iterator().next();
+
+        H2QueryInfo qryInfo = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
+
+        assertFalse(heavyQueriesTracker().getQueries().isEmpty());
+
+        assertTrue(qryInfo.isSuspended());
+
+        return qryInfo.queryId();
+    }
+
+    /**
+     * @param qryIds Query ids.
+     */
+    public void cancelQueries(long... qryIds) {
+        for (long id : qryIds)
+            ((IgniteEx)ignite).context().query().cancelQuery(id, ignite.cluster().node().id(), false);
     }
 
     /**

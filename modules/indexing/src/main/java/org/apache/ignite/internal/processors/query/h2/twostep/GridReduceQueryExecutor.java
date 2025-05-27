@@ -438,7 +438,8 @@ public class GridReduceQueryExecutor {
                         .flags(queryFlags(qry, enforceJoinOrder, lazy, dataPageScanEnabled))
                         .timeout(timeoutMillis)
                         .explicitTimeout(true)
-                        .schemaName(schemaName);
+                        .schemaName(schemaName)
+                        .originalSql(qry.originalSql());
 
                     final C2<ClusterNode, Message, Message> spec =
                         parts == null ? null : new ReducePartitionsSpecializer(mapping.queryPartitionsMap());

@@ -158,6 +158,10 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** */
     private boolean explicitTimeout;
 
+    /** */
+    @GridToStringInclude
+    private String originalSql;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -184,6 +188,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         schemaName = req.schemaName;
         qryId = req.qryId;
         explicitTimeout = req.explicitTimeout;
+        originalSql = req.originalSql;
     }
 
     /**
@@ -488,6 +493,23 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         return this;
     }
 
+    /** Returns original Sql query. */
+    public String originalSql() {
+        return originalSql;
+    }
+
+    /**
+     * Sets the value for the original Sql query.
+     *
+     * @param originalSql Original sql query.
+     * @return {@code this} for chaining.
+     */
+    public GridH2QueryRequest originalSql(String originalSql) {
+        this.originalSql = originalSql;
+
+        return this;
+    }
+
     /**
      * Checks if data page scan enabled.
      *
@@ -636,6 +658,12 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                     return false;
 
                 writer.incrementState();
+
+            case 14:
+                if (!writer.writeString("originalSql", originalSql))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -755,6 +783,14 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
             case 13:
                 qryId = reader.readLong("qryId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 14:
+                originalSql = reader.readString("originalSql");
 
                 if (!reader.isLastRead())
                     return false;

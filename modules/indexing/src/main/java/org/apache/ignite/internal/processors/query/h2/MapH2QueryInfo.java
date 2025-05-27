@@ -30,6 +30,9 @@ public class MapH2QueryInfo extends H2QueryInfo {
     /** Segment. */
     private final int segment;
 
+    /** Sql query to be executed on this particular map node. */
+    private final String mapSql;
+
     /**
      * @param stmt Query statement.
      * @param sql Query statement.
@@ -39,16 +42,18 @@ public class MapH2QueryInfo extends H2QueryInfo {
      * @param segment Segment.
      */
     public MapH2QueryInfo(PreparedStatement stmt, String sql, UUID nodeId, long qryId, long reqId,
-        int segment) {
+        int segment, String mapSql) {
         super(QueryType.MAP, stmt, sql, nodeId, qryId);
 
         this.reqId = reqId;
         this.segment = segment;
+        this.mapSql = mapSql;
     }
 
     /** {@inheritDoc} */
     @Override protected void printInfo(StringBuilder msg) {
-        msg.append(", reqId=").append(reqId)
+        msg.append(", mapSql='").append(mapSql)
+            .append("', reqId=").append(reqId)
             .append(", segment=").append(segment);
     }
 }
