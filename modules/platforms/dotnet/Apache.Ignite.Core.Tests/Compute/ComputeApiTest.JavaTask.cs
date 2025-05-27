@@ -128,114 +128,114 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             decimal val;
 
-            Assert.AreEqual(val = decimal.Zero, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
+            Assert.AreEqual(val = decimal.Zero, ExecuteDecimalTask(val));
 
-            Assert.AreEqual(val = new decimal(0, 0, 1, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, 1, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, 1, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, 1, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, 1, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, 1, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
+            Assert.AreEqual(val = new decimal(0, 0, 1, false, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, 1, true, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, 1, false, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, 1, true, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, 1, false, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, 1, true, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, false, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, true, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, false, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, true, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, false, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, true, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, false, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, true, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, false, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, true, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, false, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, true, 0) + 1, ExecuteDecimalTask(val));
 
-            Assert.AreEqual(val = new decimal(0, 1, 0, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 1, 0, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 1, 0, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 1, 0, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 1, 0, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 1, 0, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
+            Assert.AreEqual(val = new decimal(0, 1, 0, false, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 1, 0, true, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 1, 0, false, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 1, 0, true, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 1, 0, false, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, 1, 0, true, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, false, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, true, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, false, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, true, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, false, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, true, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, false, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, true, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, false, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, true, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, false, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, true, 0) + 1, ExecuteDecimalTask(val));
 
-            Assert.AreEqual(val = new decimal(1, 0, 0, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 0, 0, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 0, 0, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 0, 0, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 0, 0, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 0, 0, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
+            Assert.AreEqual(val = new decimal(1, 0, 0, false, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(1, 0, 0, true, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(1, 0, 0, false, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(1, 0, 0, true, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(1, 0, 0, false, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(1, 0, 0, true, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, false, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, true, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, false, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, true, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, false, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, true, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, false, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, true, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, false, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, true, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, false, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, true, 0) + 1, ExecuteDecimalTask(val));
 
-            Assert.AreEqual(val = new decimal(1, 1, 1, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 1, 1, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 1, 1, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 1, 1, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 1, 1, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 1, 1, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
+            Assert.AreEqual(val = new decimal(1, 1, 1, false, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(1, 1, 1, true, 0), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(1, 1, 1, false, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(1, 1, 1, true, 0) - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(1, 1, 1, false, 0) + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = new decimal(1, 1, 1, true, 0) + 1, ExecuteDecimalTask(val));
 
-            Assert.AreEqual(val = decimal.Parse("65536"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-65536"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("65536") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-65536") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("65536") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-65536") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
+            Assert.AreEqual(val = decimal.Parse("65536"), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-65536"), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("65536") - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-65536") - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("65536") + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-65536") + 1, ExecuteDecimalTask(val));
 
-            Assert.AreEqual(val = decimal.Parse("4294967296"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-4294967296"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("4294967296") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-4294967296") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("4294967296") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-4294967296") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
+            Assert.AreEqual(val = decimal.Parse("4294967296"), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-4294967296"), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("4294967296") - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-4294967296") - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("4294967296") + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-4294967296") + 1, ExecuteDecimalTask(val));
 
-            Assert.AreEqual(val = decimal.Parse("281474976710656"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-281474976710656"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("281474976710656") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-281474976710656") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("281474976710656") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-281474976710656") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
+            Assert.AreEqual(val = decimal.Parse("281474976710656"), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-281474976710656"), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("281474976710656") - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-281474976710656") - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("281474976710656") + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-281474976710656") + 1, ExecuteDecimalTask(val));
 
-            Assert.AreEqual(val = decimal.Parse("18446744073709551616"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-18446744073709551616"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("18446744073709551616") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-18446744073709551616") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("18446744073709551616") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-18446744073709551616") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
+            Assert.AreEqual(val = decimal.Parse("18446744073709551616"), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-18446744073709551616"), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("18446744073709551616") - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-18446744073709551616") - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("18446744073709551616") + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-18446744073709551616") + 1, ExecuteDecimalTask(val));
 
-            Assert.AreEqual(val = decimal.Parse("1208925819614629174706176"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-1208925819614629174706176"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("1208925819614629174706176") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-1208925819614629174706176") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("1208925819614629174706176") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-1208925819614629174706176") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
+            Assert.AreEqual(val = decimal.Parse("1208925819614629174706176"), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-1208925819614629174706176"), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("1208925819614629174706176") - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-1208925819614629174706176") - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("1208925819614629174706176") + 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-1208925819614629174706176") + 1, ExecuteDecimalTask(val));
 
-            Assert.AreEqual(val = decimal.MaxValue, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.MinValue, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.MaxValue - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.MinValue + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
+            Assert.AreEqual(val = decimal.MaxValue, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.MinValue, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.MaxValue - 1, ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.MinValue + 1, ExecuteDecimalTask(val));
 
-            Assert.AreEqual(val = decimal.Parse("11,12"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-11,12"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
+            Assert.AreEqual(val = decimal.Parse("11,12"), ExecuteDecimalTask(val));
+            Assert.AreEqual(val = decimal.Parse("-11,12"), ExecuteDecimalTask(val));
 
             // Test echo with overflow.
             var ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
@@ -245,9 +245,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             // Negative scale. 1E+1 parses to "1 scale -1" on Java side.
             ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
-                .ExecuteJavaTask<object>(DecimalTask, new object[] { null, "1E+1" }));
+                .ExecuteJavaTask<object>(DecimalTask, new object[] { null, "1E+29" }));
 
-            Assert.AreEqual("Decimal value scale overflow (must be between 0 and 28): -1", ex.Message);
+            Assert.AreEqual("Decimal value scale overflow (must be between -28 and 28, inclusive): -29", ex.Message);
         }
 
         /// <summary>
@@ -579,6 +579,11 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(2, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
+        }
+
+        private object ExecuteDecimalTask(decimal val)
+        {
+            return _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() });
         }
     }
 }
