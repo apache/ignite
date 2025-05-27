@@ -849,7 +849,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // "if negative, the unscaled value is multiplied by ten to the power of the negation of the scale"
                 // (https://docs.oracle.com/javase/8/docs/api/java/math/BigDecimal.html).
                 var res = new decimal(lo, mid, hi, neg, 0);
-                return res * (decimal)Math.Pow(10, scale);
+                return res * (decimal)Math.Pow(10, -scale);
             }
 
             return new decimal(lo, mid, hi, neg, (byte)scale);

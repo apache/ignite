@@ -243,11 +243,21 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual("Decimal magnitude overflow (must be less than 96 bits): 104", ex.Message);
 
-            // Negative scale. 1E+1 parses to "1 scale -1" on Java side.
             ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
                 .ExecuteJavaTask<object>(DecimalTask, new object[] { null, "1E+29" }));
 
             Assert.AreEqual("Decimal value scale overflow (must be between -28 and 28, inclusive): -29", ex.Message);
+        }
+
+        /// <summary>
+        /// Test echo with decimals with a negative scale.
+        /// 1E+1 results in "1 scale -1" representation in Java.
+        /// </summary>
+        [Test]
+        public void TestEchoDecimalNegativeScale()
+        {
+            Assert.AreEqual(10, ExecuteDecimalTask(null, "1E+1"));
+            Assert.AreEqual(12300, ExecuteDecimalTask(null, "1.23E+4"));
         }
 
         /// <summary>
@@ -583,7 +593,12 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         private object ExecuteDecimalTask(decimal val)
         {
-            return _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() });
+            return ExecuteDecimalTask(val, val.ToString());
+        }
+
+        private object ExecuteDecimalTask(decimal? val, string str)
+        {
+            return _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, str });
         }
     }
 }
