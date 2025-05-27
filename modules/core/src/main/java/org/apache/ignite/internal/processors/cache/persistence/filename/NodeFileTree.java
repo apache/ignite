@@ -259,6 +259,9 @@ public class NodeFileTree extends SharedFileTree {
     /** CDC caches state file name. */
     private static final String CDC_CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
 
+    /** */
+    public static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
+
     /** Folder name for consistent id. */
     private final String folderName;
 
@@ -516,7 +519,6 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * @param ccfg Cache configuration.
      * @return Store dirs for given cache.
-     * TODO: return single storage for snapshot with absolute path.
      */
     public File[] cacheStorages(CacheConfiguration<?, ?> ccfg) {
         String cacheDirName = ccfg.getGroupName() != null
@@ -598,7 +600,6 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * @param ccfg Cache configuration.
      * @return Store directory for given cache.
-     * TODO: SCS
      */
     public File[] tmpCacheStorages(CacheConfiguration<?, ?> ccfg) {
         File[] cacheStorages = cacheStorages(ccfg);
@@ -618,7 +619,6 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheDirName Cache directory name.
      * @return Temp store directory for given cache.
      * @see CacheConfiguration#getStoragePath()
-     * TODO: SCS - accept all cache storages from remote node.
      */
     public File tmpCacheStorage(@Nullable String storagePath, String cacheDirName) {
         return new File(cacheStorageRoot(storagePath), TMP_CACHE_DIR_PREFIX + cacheDirName);
@@ -630,7 +630,6 @@ public class NodeFileTree extends SharedFileTree {
      *
      * @param cacheStorage cache storage.
      * @return Temp store directory for given cache storage.
-     * TODO: SCS
      */
     public static File tmpCacheStorage(File cacheStorage) {
         return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
@@ -655,7 +654,6 @@ public class NodeFileTree extends SharedFileTree {
      * @param ccfg Cache configuration.
      * @param partId partition id.
      * @return Path to the temp partition file.
-     * TODO: SCS
      */
     public File tmpPartition(CacheConfiguration<?, ?> ccfg, int partId) {
         return new File(oneOf(tmpCacheStorages(ccfg), partId), partitionFileName(partId));
@@ -669,7 +667,6 @@ public class NodeFileTree extends SharedFileTree {
      * @param partId partition id.
      * @return Path to the temp partition file.
      * @see CacheConfiguration#getStoragePath()
-     * TODO: SCS
      */
     public File tmpPartition(@Nullable String storagePath, String cacheDirName, int partId) {
         return new File(tmpCacheStorage(storagePath, cacheDirName), partitionFileName(partId));
@@ -921,6 +918,11 @@ public class NodeFileTree extends SharedFileTree {
     /** @return Temp CDC manager mode state file path. */
     public Path tmpCdcModeState() {
         return cdcState().resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return Maintenance file. */
+    public File maintenance() {
+        return new File(nodeStorage, MAINTENANCE_FILE_NAME);
     }
 
     /**

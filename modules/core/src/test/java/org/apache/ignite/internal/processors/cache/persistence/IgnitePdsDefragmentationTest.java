@@ -55,7 +55,6 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.maintenance.MaintenanceFileStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -63,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.filename.CacheFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -361,11 +361,12 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         testFailover(cft -> {
             try {
                 NodeFileTree ft = GridTestUtils.getFieldValue(cft, "ft");
-                File mntcRecFile = new File(ft.nodeStorage(), MaintenanceFileStore.MAINTENANCE_FILE_NAME);
+
+                File mntcRecFile = ft.maintenance();
 
                 assertTrue(mntcRecFile.exists());
 
-                Files.delete(mntcRecFile.toPath());
+                U.delete(mntcRecFile);
 
                 startGrid(0);
 

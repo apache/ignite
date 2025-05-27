@@ -184,16 +184,16 @@ public class DefragmentationFileUtils {
 
         try {
             for (File storage : cft.storages()) {
-                    for (File mappingFile : storage.listFiles((dir, name) -> CacheFileTree.isDefragmentLinkMapping(name)))
-                        Files.delete(mappingFile.toPath());
+                for (File mappingFile : storage.listFiles((dir, name) -> CacheFileTree.isDefragmentLinkMapping(name)))
+                    Files.delete(mappingFile.toPath());
 
-                    for (File partFile : storage.listFiles((dir, name) -> CacheFileTree.isDefragmentPartition(name))) {
-                        int partId = extractPartId(partFile.getName());
+                for (File partFile : storage.listFiles((dir, name) -> CacheFileTree.isDefragmentPartition(name))) {
+                    int partId = extractPartId(partFile.getName());
 
-                        File oldPartFile = cft.partitionFile(partId);
+                    File oldPartFile = cft.partitionFile(partId);
 
-                        Files.move(partFile.toPath(), oldPartFile.toPath(), ATOMIC_MOVE, REPLACE_EXISTING);
-                    }
+                    Files.move(partFile.toPath(), oldPartFile.toPath(), ATOMIC_MOVE, REPLACE_EXISTING);
+                }
             }
 
             File idxFile = cft.defragmentedIndexFile();
