@@ -17,12 +17,10 @@
 
 package org.apache.ignite.util;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -3868,26 +3866,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     @Test
     public void testOfflineCommand() throws Exception {
-        ByteArrayOutputStream testOut = new ByteArrayOutputStream(16 * 1024);
+        startGrid(0);
 
-        PrintStream sysOut = System.out;
+        injectTestSystemOut();
 
-        System.setOut(new PrintStream(testOut));
+        String input = "Test Offline Command";
 
-        try {
-            startGrid(0);
+        assertEquals(EXIT_CODE_OK, execute("--offline-test", "--input", input));
 
-            autoConfirmation = false;
-
-            String input = "Test Offline Command";
-
-            assertEquals(EXIT_CODE_OK, execute(List.of("--offline-test", "--input", input)));
-
-            assertTrue(testOut.toString().contains(input));
-        }
-        finally {
-            System.setOut(sysOut);
-        }
+        assertTrue(testOut.toString().contains(input));
     }
 
     /**
