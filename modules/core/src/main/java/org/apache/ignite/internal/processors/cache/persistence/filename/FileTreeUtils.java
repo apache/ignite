@@ -44,7 +44,7 @@ public class FileTreeUtils {
         createAndCheck(ft.nodeStorage(), "page store work directory", log);
 
         for (Map.Entry<String, File> e : ft.extraStorages().entrySet())
-            createAndCheck(e.getValue(), "page store work directory [dataRegion=" + e.getKey() + ']', log);
+            createAndCheck(e.getValue(), "page store work directory [storagePath=" + e.getKey() + ']', log);
     }
 
     /**

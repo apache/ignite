@@ -99,9 +99,9 @@ public class MaintenanceFileStore {
 
         NodeFileTree ft = pdsFoldersResolver.fileTree();
 
-        U.ensureDirectory(ft.nodeStorage(), "store directory for node persistent data", log);
-
         mntcTasksFile = ft.maintenance();
+
+        U.ensureDirectory(mntcTasksFile.getParentFile(), "store directory for node persistent data", log);
 
         if (!mntcTasksFile.exists())
             mntcTasksFile.createNewFile();

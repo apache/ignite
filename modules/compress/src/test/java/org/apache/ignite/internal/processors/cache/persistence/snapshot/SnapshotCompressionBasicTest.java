@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -402,7 +403,8 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     protected long persistenseSize(Collection<Ignite> grids) {
         return grids.stream()
-            .map(ig -> ((IgniteEx)ig).context().pdsFolderResolver().fileTree().nodeStorage().toPath())
+            .flatMap(ig -> ((IgniteEx)ig).context().pdsFolderResolver().fileTree().allStorages())
+            .map(File::toPath)
             .reduce(0L, (acc, p) -> acc + directorySize(p), Long::sum);
     }
 

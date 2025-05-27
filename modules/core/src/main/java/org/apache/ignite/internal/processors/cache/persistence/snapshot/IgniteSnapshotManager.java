@@ -2375,8 +2375,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!sft.root().exists())
             throw new IgniteCheckedException("Snapshot directory doesn't exists: " + sft.root().getAbsolutePath());
 
-        if (!sft.nodeStorage().exists())
-            throw new IgniteCheckedException("Consistent id directory doesn't exists: " + sft.nodeStorage().getAbsolutePath());
+        if (!sft.allStorages().allMatch(File::exists)) {
+            throw new IgniteCheckedException("Consistent id directory doesn't exists: " +
+                sft.allStorages().map(File::getAbsolutePath).collect(Collectors.joining()));
+        }
 
         File snpPart = sft.partitionFile(ccfg, partId);
 
@@ -3824,19 +3826,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override protected void init(int partsCnt) {
-            if (sft.nodeStorage().exists()) {
+            if (sft.allStorages().anyMatch(File::exists)) {
                 throw new IgniteException("Snapshot with given name already exists " +
-                    "[snpName=" + sft.name() + ", absPath=" + sft.nodeStorage().getAbsolutePath() + ']');
+                    "[snpName=" + sft.name() + ", absPath=" +
+                    sft.allStorages().map(File::getAbsolutePath).collect(Collectors.joining(",")) + ']');
             }
 
             writeSnapshotDirectoryToMetastorage(sft.root());
 
-            try {
-                U.ensureDirectory(sft.nodeStorage(), "snapshot work directory for a local snapshot sender", log);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            sft.allStorages().forEach(s -> {
+                try {
+                    U.ensureDirectory(s, "snapshot work directory for a local snapshot sender", log);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            });
         }
 
         /** {@inheritDoc} */

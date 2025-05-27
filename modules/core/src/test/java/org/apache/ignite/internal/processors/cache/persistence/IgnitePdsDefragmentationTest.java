@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
@@ -574,32 +575,35 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
         AtomicReference<File> cachePartFile = new AtomicReference<>();
         AtomicReference<File> defragCachePartFile = new AtomicReference<>();
 
-        Files.walkFileTree(ft.nodeStorage().toPath(), new FileVisitor<Path>() {
-            @Override public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-                if (path.toString().contains(grpDirName)) {
-                    File file = path.toFile();
-
-                    if (file.getName().contains("part-dfrg-"))
-                        cachePartFile.set(file);
-                    else if (NodeFileTree.partitionFile(file))
-                        defragCachePartFile.set(file);
+        for (Path s : ft.allStorages().map(File::toPath).collect(Collectors.toList())) {
+            Files.walkFileTree(s, new FileVisitor<Path>() {
+                @Override public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+                    return FileVisitResult.CONTINUE;
                 }
 
-                return FileVisitResult.CONTINUE;
-            }
+                @Override public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+                    if (path.toString().contains(grpDirName)) {
+                        File file = path.toFile();
 
-            @Override public FileVisitResult visitFileFailed(Path path, IOException e) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
+                        if (file.getName().contains("part-dfrg-"))
+                            cachePartFile.set(file);
+                        else if (NodeFileTree.partitionFile(file))
+                            defragCachePartFile.set(file);
+                    }
 
-            @Override public FileVisitResult postVisitDirectory(Path path, IOException e) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-        });
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult visitFileFailed(Path path, IOException e) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult postVisitDirectory(Path path, IOException e) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+        }
 
         assertNull(cachePartFile.get()); //TODO Fails.
         assertNotNull(defragCachePartFile.get());

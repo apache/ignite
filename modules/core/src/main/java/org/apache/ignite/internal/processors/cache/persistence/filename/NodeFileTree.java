@@ -260,7 +260,7 @@ public class NodeFileTree extends SharedFileTree {
     private static final String CDC_CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
 
     /** */
-    public static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
+    private static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
 
     /** Folder name for consistent id. */
     private final String folderName;
