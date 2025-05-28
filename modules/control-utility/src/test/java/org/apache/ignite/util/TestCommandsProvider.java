@@ -19,24 +19,44 @@ package org.apache.ignite.util;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsProvider;
-import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.util.GridCommandHandlerTest.ENABLE_TEST_COMMANDS;
-
-/**
- * Enables registration of additional commands for testing purposes. Commands are only registered when
- * the {@code ENABLE_TEST_COMMANDS} system property is set to {@code true}.
- */
+/** Enables registration of additional commands for testing purposes. */
 public class TestCommandsProvider implements CommandsProvider {
+    /** Commands. */
+    private static final Set<Class<? extends Command<?, ?>>> COMMANDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    /**
+     * Registers a new command.
+     *
+     * @param cmdCls Command class.
+     */
+    public static void registerCommand(Class<? extends Command<?, ?>> cmdCls) {
+        COMMANDS.add(cmdCls);
+    }
+
+    /** Unregisters all registered commands. */
+    public static void unregisterAll() {
+        COMMANDS.clear();
+    }
+
     /** {@inheritDoc} */
     @Override public Collection<Command<?, ?>> commands() {
-        if (!Boolean.getBoolean(ENABLE_TEST_COMMANDS))
-            return Collections.emptyList();
+        try {
+            Set<Command<?, ?>> cmds = new HashSet<>();
 
-        return F.asList(
-            new GridCommandHandlerTest.OfflineTestCommand()
-        );
+            for (Class<? extends Command<?, ?>> clazz : COMMANDS)
+                cmds.add(clazz.getDeclaredConstructor().newInstance());
+
+            return cmds;
+        }
+        catch (Exception e) {
+            throw new IgniteException("Failed to register test commands", e);
+        }
     }
 }

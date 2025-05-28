@@ -67,7 +67,7 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
 
         super.afterTest();
 
-        if (!offlineCmdRule.isOfflineCmd())
+        if (!offlineCmdTestRule.isOfflineCmd())
             assertTrue(factoryUsed);
 
         factoryUsed = false;
