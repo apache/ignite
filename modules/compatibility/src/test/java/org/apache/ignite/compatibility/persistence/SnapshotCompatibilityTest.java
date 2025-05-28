@@ -145,22 +145,15 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     }
 
     /** */
-    private static void addItemsToCache(IgniteCache<Integer, String> cache, int startIdx, int cnt) {
-        for (int i = startIdx; i < startIdx + cnt; ++i)
-            cache.put(i, calcValue(cache.getName(), i));
-    }
-
-    /** */
-    private static void checkCache(IgniteCache<Integer, String> cache, int expectedSize) {
-        assertEquals(expectedSize, cache.size());
-
-        for (int i = 0; i < expectedSize; ++i)
-            assertEquals(calcValue(cache.getName(), i), cache.get(i));
-    }
-
-    /** */
     private void checkCaches(Ignite ign, int expectedCacheSize) {
-        cacheToGrp.keySet().forEach(cacheName -> checkCache(ign.cache(cacheName), expectedCacheSize));
+        cacheToGrp.keySet().forEach(cacheName -> {
+            IgniteCache<Integer, String> cache = ign.cache(cacheName);
+
+            assertEquals(expectedCacheSize, cache.size());
+
+            for (int i = 0; i < expectedCacheSize; ++i)
+                assertEquals(calcValue(cache.getName(), i), cache.get(i));
+        });
     }
 
     /** */
@@ -330,6 +323,12 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
                 ign.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
             }
+        }
+
+        /** */
+        private static void addItemsToCache(IgniteCache<Integer, String> cache, int startIdx, int cnt) {
+            for (int i = startIdx; i < startIdx + cnt; ++i)
+                cache.put(i, calcValue(cache.getName(), i));
         }
     }
 }
