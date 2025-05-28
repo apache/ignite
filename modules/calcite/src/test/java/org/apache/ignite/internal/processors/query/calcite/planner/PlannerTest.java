@@ -99,7 +99,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
-                .build(), 5) {
+                .build()) {
             @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
@@ -120,7 +120,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
-                .build(), 5) {
+                .build()) {
             @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
