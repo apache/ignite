@@ -31,7 +31,6 @@ import java.util.Optional;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cdc.TypeMapping;
@@ -165,7 +164,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     }
 
     /** */
-    private void checkCacheDump(IgniteEx node) throws IgniteCheckedException {
+    private void checkCacheDump(IgniteEx node) {
         Map<String, String> foundCacheToGrp = new HashMap<>();
 
         Map<String, Integer> foundCacheSizes = new HashMap<>();
@@ -264,7 +263,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         private final int nodeIdx;
 
         /** */
-        public ConfigurationClosure(int nodeIdx) throws IgniteCheckedException {
+        public ConfigurationClosure(int nodeIdx) {
             this.nodeIdx = nodeIdx;
         }
 
