@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -841,7 +842,7 @@ public class SnapshotRestoreProcess {
                 for (StoredCacheData cacheData : e.getValue().ccfgs) {
                     globalCfgs.put(CU.cacheId(cacheData.config().getName()), cacheData);
 
-                    opCtx0.dirs.add(ft.cacheStorages(cacheData.config())[0]);
+                    opCtx0.dirs.addAll(Arrays.asList(ft.cacheStorages(cacheData.config())));
                 }
             }
 
@@ -938,7 +939,7 @@ public class SnapshotRestoreProcess {
                 log.info("Starting snapshot preload operation to restore cache groups " +
                     "[reqId=" + reqId +
                     ", snapshot=" + opCtx0.snpName +
-                    ", caches=" + F.transform(opCtx0.dirs, NodeFileTree::cacheName) + ']');
+                    ", caches=" + new HashSet<>(F.transform(opCtx0.dirs, NodeFileTree::cacheName)) + ']');
             }
 
             CompletableFuture<Void> metaFut = ctx.localNodeId().equals(opCtx0.opNodeId) ?

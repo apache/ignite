@@ -187,13 +187,23 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
 
             seenGrps.add(cname);
 
-            File expRoot = snpRootF.apply(F.isEmpty(ccfg.getStoragePath()) ? null : ccfg.getStoragePath()[0]);
+            Set<Integer> parts = new HashSet<>();
 
-            assertTrue(cname + " must be found", snpFiles.containsKey(expRoot));
+            String[] storagePaths = ccfg.getStoragePath();
 
-            Set<Integer> parts = snpFiles.get(expRoot).get(cname);
+            if (F.isEmpty(storagePaths)) {
+                storagePaths = new String[1];
+            }
 
-            assertNotNull(cname + " partitions must be found", parts);
+            for (String storagePath : storagePaths) {
+                File expRoot = snpRootF.apply(storagePath);
+
+                assertTrue(cname + " must be found", snpFiles.containsKey(expRoot));
+
+                parts.addAll(snpFiles.get(expRoot).get(cname));
+            }
+
+            assertFalse(cname + " partitions must be found", parts.isEmpty());
             assertEquals("All partitions for " + cname + " must be found", PARTS_CNT, parts.size());
 
             IntStream.range(0, PARTS_CNT).forEach(i -> assertTrue(i + " partition must be found", parts.contains(i)));
