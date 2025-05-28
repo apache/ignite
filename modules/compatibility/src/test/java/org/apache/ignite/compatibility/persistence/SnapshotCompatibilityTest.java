@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -77,20 +76,18 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     private static final int ENTRIES_CNT_FOR_INCREMENT = 100;
 
     /** */
+    private static final Map<String, CacheGroupInfo> cacheGrpsCfg = Map.of(
+        "singleCache", new CacheGroupInfo("singleCache", Set.of("singleCache")),
+        "testCacheGrp", new CacheGroupInfo("testCacheGrp", Set.of("testCache1", "testCache2"))
+    );
+
+    /** */
     @Parameterized.Parameter
     public boolean customConsId;
 
     /** */
     @Parameterized.Parameter(1)
     public int oldNodesCnt;
-
-    /** */
-    private final CacheGroupsConfig cacheGrpsCfg = new CacheGroupsConfig(
-        Set.of(
-            new CacheGroupInfo("singleCache", Collections.singleton("singleCache")),
-            new CacheGroupInfo("testCacheGrp", Set.of("testCache1", "testCache2"))
-        )
-    );
 
     /** */
     @Parameterized.Parameters(name = "customConsId={0}, oldNodesCnt={1}")
@@ -145,23 +142,23 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
     /** */
     private void checkSnapshot(IgniteEx node) {
-        node.snapshot().restoreSnapshot(SNAPSHOT_NAME, cacheGrpsCfg.cacheGroupNames()).get();
+        node.snapshot().restoreSnapshot(SNAPSHOT_NAME, cacheGrpsCfg.keySet()).get();
 
-        cacheGrpsCfg.cacheGroupInfos().forEach(cacheGrpInfo -> cacheGrpInfo.checkCaches(node, BASE_CACHE_SIZE));
+        cacheGrpsCfg.values().forEach(cacheGrpInfo -> cacheGrpInfo.checkCaches(node, BASE_CACHE_SIZE));
     }
 
     /** */
     private void checkIncrementalSnapshot(IgniteEx node) {
-        node.snapshot().restoreSnapshot(SNAPSHOT_NAME, cacheGrpsCfg.cacheGroupNames(), 1).get();
+        node.snapshot().restoreSnapshot(SNAPSHOT_NAME, cacheGrpsCfg.keySet(), 1).get();
 
-        cacheGrpsCfg.cacheGroupInfos().forEach(
+        cacheGrpsCfg.values().forEach(
             cacheGrpInfo -> cacheGrpInfo.checkCaches(node, BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT)
         );
     }
 
     /** */
     private void checkCacheDump(IgniteEx node) throws IgniteCheckedException {
-        CacheGroupsConfig foundCacheGrpsInfo = new CacheGroupsConfig();
+        Map<String, CacheGroupInfo> foundCacheGrpsInfo = new HashMap<>();
 
         Map<String, Integer> foundCacheSizes = new HashMap<>();
 
@@ -184,7 +181,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
                     assertNotNull(ccfg);
 
-                    foundCacheGrpsInfo.addCache(ccfg.getGroupName(), ccfg.getName());
+                    foundCacheGrpsInfo.computeIfAbsent(ccfg.getGroupName(), CacheGroupInfo::new).addCacheName(ccfg.getName());
                 });
             }
 
@@ -195,7 +192,10 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                     Integer key = (Integer)dumpEntry.key();
                     String val = (String)dumpEntry.value();
 
-                    Optional<String> cacheName = cacheGrpsCfg.cacheNames().stream().filter(val::startsWith).findFirst();
+                    Optional<String> cacheName = cacheGrpsCfg.values().stream()
+                        .flatMap(info -> info.cacheNames().stream())
+                        .filter(val::startsWith)
+                        .findFirst();
 
                     assertTrue(cacheName.isPresent());
 
@@ -205,9 +205,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                 });
             }
 
-            @Override public void stop() {
-                // No-op.
-            }
+            @Override public void stop() {}
         };
 
         new DumpReader(
@@ -220,11 +218,11 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
             log
         ).run();
 
-        assertEquals(cacheGrpsCfg.cacheGrpInfos, foundCacheGrpsInfo.cacheGrpInfos);
+        assertEquals(new HashSet<>(cacheGrpsCfg.values()), new HashSet<>(foundCacheGrpsInfo.values()));
 
-        cacheGrpsCfg.cacheNames().forEach(
-            cacheName -> assertEquals(BASE_CACHE_SIZE, foundCacheSizes.get(cacheName).intValue())
-        );
+        cacheGrpsCfg.values().stream()
+            .flatMap(info -> info.cacheNames().stream())
+            .forEach(name -> assertEquals(BASE_CACHE_SIZE, foundCacheSizes.get(name).intValue()));
     }
 
     /** */
@@ -241,16 +239,15 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         private final boolean delIfExist;
 
         /** */
-        private final CacheGroupsConfig cacheGrpsCfg;
+        private final Map<String, CacheGroupInfo> cacheGrpsCfg;
 
         /** */
         private final String workDir;
 
-        /** */
         public ConfigurationClosure(
             String consId,
             boolean delIfExist,
-            CacheGroupsConfig cacheGrpsCfg
+            Map<String, CacheGroupInfo> cacheGrpsCfg
         ) throws IgniteCheckedException {
             this.consId = consId;
             this.delIfExist = delIfExist;
@@ -274,13 +271,12 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
             if (delIfExist) {
                 cfg.setCacheConfiguration(
-                    cacheGrpsCfg.cacheGroupInfos().stream()
-                        .flatMap(cacheGrpInfo ->
-                            cacheGrpInfo.cacheNames().stream()
-                                .map(cacheName -> new CacheConfiguration<Integer, String>(cacheName)
-                                    .setGroupName(cacheGrpInfo.name())
-                                    .setAffinity(new RendezvousAffinityFunction(false, 10))
-                                )
+                    cacheGrpsCfg.values().stream()
+                        .flatMap(info -> info.cacheNames().stream()
+                            .map(name -> new CacheConfiguration<Integer, String>(name)
+                                .setGroupName(info.name())
+                                .setAffinity(new RendezvousAffinityFunction(false, 10))
+                            )
                         )
                         .toArray(CacheConfiguration[]::new)
                 );
@@ -291,10 +287,10 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     /** Snapshot creating closure both for old and current Ignite version. */
     private static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
         /** */
-        private final CacheGroupsConfig cacheGrpsCfg;
+        private final Map<String, CacheGroupInfo> cacheGrpsCfg;
 
         /** */
-        public CreateSnapshotClosure(CacheGroupsConfig cacheGrpsCfg) {
+        public CreateSnapshotClosure(Map<String, CacheGroupInfo> cacheGrpsCfg) {
             this.cacheGrpsCfg = cacheGrpsCfg;
         }
 
@@ -302,57 +298,21 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         @Override public void apply(Ignite ign) {
             ign.cluster().state(ClusterState.ACTIVE);
 
-            cacheGrpsCfg.cacheGroupInfos().forEach(cacheGrpInfo -> cacheGrpInfo.addItemsToCacheGrp(ign, 0, BASE_CACHE_SIZE));
+            cacheGrpsCfg.values().forEach(info -> info.addItemsToCacheGrp(ign, 0, BASE_CACHE_SIZE));
 
             ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-            ign.snapshot().createDump(CACHE_DUMP_NAME, cacheGrpsCfg.cacheGroupNames()).get();
+            ign.snapshot().createDump(CACHE_DUMP_NAME, cacheGrpsCfg.keySet()).get();
 
             // Incremental snapshots require same consistentID
             // https://issues.apache.org/jira/browse/IGNITE-25096
             if (ign.configuration().getConsistentId() != null && ign.cluster().nodes().size() == 1) {
-                cacheGrpsCfg.cacheGroupInfos().forEach(
-                    cacheGrpInfo -> cacheGrpInfo.addItemsToCacheGrp(ign, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT)
+                cacheGrpsCfg.values().forEach(
+                    info -> info.addItemsToCacheGrp(ign, BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT)
                 );
 
                 ign.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
             }
-        }
-    }
-
-    /** */
-    private static class CacheGroupsConfig {
-        /** */
-        private final Map<String, CacheGroupInfo> cacheGrpInfos = new HashMap<>();
-
-        /** */
-        public CacheGroupsConfig() {
-            // No-op
-        }
-
-        /** */
-        public CacheGroupsConfig(Set<CacheGroupInfo> cacheGrpInfos) {
-            cacheGrpInfos.forEach(cacheGrpInfo -> this.cacheGrpInfos.put(cacheGrpInfo.name(), cacheGrpInfo));
-        }
-
-        /** */
-        public Collection<CacheGroupInfo> cacheGroupInfos() {
-            return cacheGrpInfos.values();
-        }
-
-        /** */
-        public Set<String> cacheGroupNames() {
-            return cacheGrpInfos.keySet();
-        }
-
-        /** */
-        public Set<String> cacheNames() {
-            return cacheGrpInfos.values().stream().flatMap(cacheGrpInfo -> cacheGrpInfo.cacheNames().stream()).collect(Collectors.toSet());
-        }
-
-        /** */
-        public void addCache(String cacheGrpName, String cacheName) {
-            cacheGrpInfos.computeIfAbsent(cacheGrpName, CacheGroupInfo::new).addCacheName(cacheName);
         }
     }
 
