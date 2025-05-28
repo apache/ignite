@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -141,6 +142,11 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     }
 
     /** */
+    private static Set<String> cacheNames(Map<String, CacheGroupInfo> cacheGrpsCfg) {
+        return cacheGrpsCfg.values().stream().flatMap(cacheGrpInfo -> cacheGrpInfo.cacheNames().stream()).collect(Collectors.toSet());
+    }
+
+    /** */
     private void checkSnapshot(IgniteEx node) {
         node.snapshot().restoreSnapshot(SNAPSHOT_NAME, cacheGrpsCfg.keySet()).get();
 
@@ -192,10 +198,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                     Integer key = (Integer)dumpEntry.key();
                     String val = (String)dumpEntry.value();
 
-                    Optional<String> cacheName = cacheGrpsCfg.values().stream()
-                        .flatMap(info -> info.cacheNames().stream())
-                        .filter(val::startsWith)
-                        .findFirst();
+                    Optional<String> cacheName = cacheNames(cacheGrpsCfg).stream().filter(val::startsWith).findFirst();
 
                     assertTrue(cacheName.isPresent());
 
@@ -205,7 +208,9 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                 });
             }
 
-            @Override public void stop() {}
+            @Override public void stop() {
+                // No-op
+            }
         };
 
         new DumpReader(
@@ -220,9 +225,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
         assertEquals(new HashSet<>(cacheGrpsCfg.values()), new HashSet<>(foundCacheGrpsInfo.values()));
 
-        cacheGrpsCfg.values().stream()
-            .flatMap(info -> info.cacheNames().stream())
-            .forEach(name -> assertEquals(BASE_CACHE_SIZE, foundCacheSizes.get(name).intValue()));
+        cacheNames(cacheGrpsCfg).forEach(name -> assertEquals(BASE_CACHE_SIZE, foundCacheSizes.get(name).intValue()));
     }
 
     /** */
