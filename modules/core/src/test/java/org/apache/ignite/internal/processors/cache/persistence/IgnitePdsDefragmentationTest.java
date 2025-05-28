@@ -363,7 +363,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             try {
                 NodeFileTree ft = GridTestUtils.getFieldValue(cft, "ft");
 
-                File mntcRecFile = ft.maintenance();
+                File mntcRecFile = ft.maintenanceFile();
 
                 assertTrue(mntcRecFile.exists());
 
