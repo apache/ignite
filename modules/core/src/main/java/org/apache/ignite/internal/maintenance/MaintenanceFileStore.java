@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceTask;
@@ -49,9 +50,6 @@ import org.apache.ignite.maintenance.MaintenanceTask;
  * </ol>
  */
 public class MaintenanceFileStore {
-    /** */
-    public static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
-
     /** */
     private static final String TASKS_SEPARATOR = System.lineSeparator();
 
@@ -99,10 +97,11 @@ public class MaintenanceFileStore {
         if (disabled)
             return;
 
-        File storeDir = pdsFoldersResolver.fileTree().nodeStorage();
-        U.ensureDirectory(storeDir, "store directory for node persistent data", log);
+        NodeFileTree ft = pdsFoldersResolver.fileTree();
 
-        mntcTasksFile = new File(storeDir, MAINTENANCE_FILE_NAME);
+        U.ensureDirectory(ft.nodeStorage(), "store directory for node persistent data", log);
+
+        mntcTasksFile = ft.maintenanceFile();
 
         if (!mntcTasksFile.exists())
             mntcTasksFile.createNewFile();
