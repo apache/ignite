@@ -287,7 +287,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                 cfg.setCacheConfiguration(
                     cacheToGrp.entrySet().stream()
                         .map(e -> new CacheConfiguration<Integer, String>(e.getKey())
-                            .setGroupName(Objects.equals(e.getKey(), e.getValue()) ? null :  e.getValue())
+                            .setGroupName(Objects.equals(e.getKey(), e.getValue()) ? null : e.getValue())
                             .setAffinity(new RendezvousAffinityFunction(false, 10))
                         )
                         .toArray(CacheConfiguration[]::new)
