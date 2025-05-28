@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.apache.ignite.Ignite;
@@ -285,7 +286,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                 cfg.setCacheConfiguration(
                     cacheToGrp.entrySet().stream()
                         .map(e -> new CacheConfiguration<Integer, String>(e.getKey())
-                            .setGroupName(e.getValue())
+                            .setGroupName(Objects.equals(e.getKey(), e.getValue()) ? null :  e.getValue())
                             .setAffinity(new RendezvousAffinityFunction(false, 10))
                         )
                         .toArray(CacheConfiguration[]::new)
