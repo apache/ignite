@@ -48,6 +48,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -131,13 +132,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
         node.cluster().state(ClusterState.ACTIVE);
 
-        // Incremental snapshots require same consistentID
-        // https://issues.apache.org/jira/browse/IGNITE-25096
-        if (customConsId && oldNodesCnt == 1)
-            checkIncrementalSnapshot(node);
-        else
-            checkSnapshot(node);
-
+        checkSnapshot(node);
         checkCacheDump(node);
     }
 
@@ -147,29 +142,27 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     }
 
     /** */
-    private void checkCaches(Ignite ign, int expectedCacheSize) {
+    private void checkSnapshot(IgniteEx node) {
+        // Incremental snapshots require same consistentID
+        // https://issues.apache.org/jira/browse/IGNITE-25096
+        boolean incSnpSupported = customConsId && oldNodesCnt == 1;
+
+        IgniteFuture<Void> fut = incSnpSupported
+                ? node.snapshot().restoreSnapshot(SNAPSHOT_NAME, new HashSet<>(cacheToGrp.values()), 1)
+                : node.snapshot().restoreSnapshot(SNAPSHOT_NAME, new HashSet<>(cacheToGrp.values()));
+
+        fut.get();
+
+        int expCacheSz = BASE_CACHE_SIZE + (incSnpSupported ? ENTRIES_CNT_FOR_INCREMENT : 0);
+
         cacheToGrp.keySet().forEach(cacheName -> {
-            IgniteCache<Integer, String> cache = ign.cache(cacheName);
+            IgniteCache<Integer, String> cache = node.cache(cacheName);
 
-            assertEquals(expectedCacheSize, cache.size());
+            assertEquals(expCacheSz, cache.size());
 
-            for (int i = 0; i < expectedCacheSize; ++i)
+            for (int i = 0; i < expCacheSz; ++i)
                 assertEquals(calcValue(cache.getName(), i), cache.get(i));
         });
-    }
-
-    /** */
-    private void checkSnapshot(IgniteEx node) {
-        node.snapshot().restoreSnapshot(SNAPSHOT_NAME, new HashSet<>(cacheToGrp.values())).get();
-
-        checkCaches(node, BASE_CACHE_SIZE);
-    }
-
-    /** */
-    private void checkIncrementalSnapshot(IgniteEx node) {
-        node.snapshot().restoreSnapshot(SNAPSHOT_NAME, new HashSet<>(cacheToGrp.values()), 1).get();
-
-        checkCaches(node, BASE_CACHE_SIZE + ENTRIES_CNT_FOR_INCREMENT);
     }
 
     /** */
