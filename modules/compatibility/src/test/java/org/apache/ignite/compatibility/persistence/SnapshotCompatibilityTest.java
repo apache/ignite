@@ -342,7 +342,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
         /** */
         public Set<String> cacheGroupNames() {
-            return new HashSet<>(cacheGrpInfos.keySet());
+            return cacheGrpInfos.keySet();
         }
 
         /** */
