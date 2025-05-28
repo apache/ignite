@@ -3130,6 +3130,14 @@ public class BinaryUtils {
     }
 
     /**
+     * @param type BinaryType.
+     * @return {@link BinaryMetadata}.
+     */
+    public static BinaryMetadata binaryMetadataFromType(BinaryType type) {
+        return ((BinaryTypeImpl)type).metadata();
+    }
+
+    /**
      * Enum type.
      */
     private static class EnumType {
