@@ -110,6 +110,8 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
         for (CacheConfiguration<?, ?> ccfg : ccfgs())
             grid(0).destroyCache(ccfg.getName());
 
+        awaitPartitionMapExchange();
+
         assertTrue(GridTestUtils.waitForCondition(() -> {
             for (NodeFileTree ft : fts) {
                 for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
