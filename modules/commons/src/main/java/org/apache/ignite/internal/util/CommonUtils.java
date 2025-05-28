@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Collection of utility methods used in 'ignite-commons' and throughout the system.
  */
-public class CommonUtils {
+public abstract class CommonUtils {
     /**
      * The maximum size of array to allocate.
      * Some VMs reserve some header words in an array.
