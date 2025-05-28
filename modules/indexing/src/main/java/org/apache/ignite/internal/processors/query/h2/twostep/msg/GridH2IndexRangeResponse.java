@@ -184,7 +184,7 @@ public class GridH2IndexRangeResponse implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -322,11 +322,6 @@ public class GridH2IndexRangeResponse implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -31;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 8;
     }
 
     /** {@inheritDoc} */

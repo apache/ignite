@@ -424,7 +424,7 @@ public class GridByteArrayList implements Message, Externalizable {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -480,11 +480,6 @@ public class GridByteArrayList implements Message, Externalizable {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 84;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

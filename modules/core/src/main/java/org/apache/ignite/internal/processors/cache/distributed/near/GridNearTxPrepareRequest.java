@@ -315,7 +315,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -430,11 +430,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 55;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 27;
     }
 
     /** {@inheritDoc} */

@@ -69,7 +69,7 @@ public final class GenericValueMessage implements ValueMessage {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -111,10 +111,5 @@ public final class GenericValueMessage implements ValueMessage {
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.GENERIC_VALUE_MESSAGE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 }

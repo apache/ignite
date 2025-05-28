@@ -108,7 +108,7 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -164,11 +164,6 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
     /** {@inheritDoc} */
     @Override public short directType() {
         return 95;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

@@ -55,7 +55,7 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -102,11 +102,6 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
     /** {@inheritDoc} */
     @Override public short directType() {
         return 177;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

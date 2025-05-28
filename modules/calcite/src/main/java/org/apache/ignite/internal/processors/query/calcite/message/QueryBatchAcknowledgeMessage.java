@@ -81,7 +81,7 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -165,10 +165,5 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.QUERY_ACKNOWLEDGE_MESSAGE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 }

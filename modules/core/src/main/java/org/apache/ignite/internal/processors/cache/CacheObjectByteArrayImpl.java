@@ -133,7 +133,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -185,11 +185,6 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 105;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

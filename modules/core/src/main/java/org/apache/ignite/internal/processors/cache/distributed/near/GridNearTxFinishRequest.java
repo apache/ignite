@@ -160,7 +160,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -205,11 +205,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 53;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 22;
     }
 
     /** {@inheritDoc} */
