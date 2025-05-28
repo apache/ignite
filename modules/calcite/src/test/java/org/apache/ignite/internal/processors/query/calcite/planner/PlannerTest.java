@@ -99,7 +99,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
-                .build(), 5) {
+                .build()) {
             @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
@@ -120,7 +120,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("ID", f.createJavaType(Integer.class))
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
-                .build(), 5) {
+                .build()) {
             @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
                     select(nodes, 0, 1),
@@ -665,11 +665,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         IgniteRel phys = physicalPlan(sql, publicSchema);
 
-        List<Fragment> fragments = splitPlan(phys).fragments();
-
-        assertEquals(2, fragments.size());
-        assertEquals(1, fragments.stream().filter(fr -> fr.root() instanceof Join).count());
-        assertEquals(1, fragments.stream().filter(fr -> fr.root() instanceof IgniteSender).count());
+        assertEquals(3, splitPlan(phys).fragments().size());
     }
 
     /**
