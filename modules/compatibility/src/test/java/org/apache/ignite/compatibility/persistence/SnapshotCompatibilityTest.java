@@ -115,7 +115,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                 i,
                 OLD_IGNITE_VERSION,
                 new ConfigurationClosure(i),
-                i == oldNodesCnt ? new CreateSnapshotClosure(cacheToGrp) : null
+                i == oldNodesCnt ? new CreateSnapshotClosure() : null
             );
         }
 
@@ -216,15 +216,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
             }
         };
 
-        new DumpReader(
-            new DumpReaderConfiguration(
-                CACHE_DUMP_NAME,
-                U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshots", false).getAbsolutePath(),
-                node.configuration(),
-                consumer
-            ),
-            log
-        ).run();
+        new DumpReader(new DumpReaderConfiguration(CACHE_DUMP_NAME, null, node.configuration(), consumer), log).run();
 
         assertEquals(cacheToGrp, foundCacheToGrp);
 
