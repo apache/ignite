@@ -108,7 +108,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
                 String storagePath = F.isEmpty(ccfg.getStoragePath()) ? null : ccfg.getStoragePath()[0];
 
-                File customRoot = storagePath == null ? ft.root() : ensureExists(useAbsStoragePath
+                File customRoot = storagePath == null ? ft.root() : ensureExists(absPath
                     ? new File(storagePath)
                     : new File(ft.root(), storagePath)
                 );
@@ -135,7 +135,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
             else if (storage == null)
                 snpRoot = ft.snapshotsRoot();
             else {
-                File nodeStorage = useAbsStoragePath
+                File nodeStorage = absPath
                     ? new File(storage)
                     : new File(ft.root(), storage);
 

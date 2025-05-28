@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.ObjIntConsumer;
@@ -56,12 +57,24 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
     /** */
     @Parameterized.Parameter()
-    public boolean useAbsStoragePath;
+    public boolean absPath;
 
     /** */
-    @Parameterized.Parameters(name = "useAbsStoragePath={0}")
-    public static Object[] params() {
-        return new Object[]{true, false};
+    @Parameterized.Parameter(1)
+    public boolean severalCacheStorages;
+
+    /** */
+    @Parameterized.Parameters(name = "absPath={0},severalCacheStorages={1}")
+    public static List<Object[]> params() {
+        List<Object[]> res = new ArrayList<>();
+
+        for (boolean absPath : new boolean[]{true, false}) {
+            for (boolean severalCacheStorages : new boolean[]{true, false}) {
+                res.add(new Object[] {absPath, severalCacheStorages});
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -72,7 +85,7 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
         cleanPersistenceDir();
 
-        if (useAbsStoragePath)
+        if (absPath)
             U.delete(new File(storagePath(STORAGE_PATH)).getParentFile());
         else {
             U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH));
@@ -184,7 +197,7 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     /** */
     String storagePath(String storagePath) {
         try {
-            return useAbsStoragePath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
+            return absPath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
         }
         catch (IgniteCheckedException e) {
             throw new RuntimeException(e);

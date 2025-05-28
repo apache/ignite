@@ -79,7 +79,7 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
                 String storagePath = STORAGE_PATH;
 
-                File customRoot = ensureExists(useAbsStoragePath
+                File customRoot = ensureExists(absPath
                     ? new File(storagePath(storagePath))
                     : new File(ft.root(), storagePath)
                 );
