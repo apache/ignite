@@ -299,27 +299,27 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     /** Snapshot creating closure both for old and current Ignite version. */
     private static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
         /** */
-        private final Map<String, String> cacheToCacheGrp;
+        private final Map<String, String> cacheToGrp;
 
         /** */
-        public CreateSnapshotClosure(Map<String, String> cacheToCacheGrp) {
-            this.cacheToCacheGrp = cacheToCacheGrp;
+        public CreateSnapshotClosure(Map<String, String> cacheToGrp) {
+            this.cacheToGrp = cacheToGrp;
         }
 
         /** {@inheritDoc} */
         @Override public void apply(Ignite ign) {
             ign.cluster().state(ClusterState.ACTIVE);
 
-            cacheToCacheGrp.keySet().forEach(cacheName -> addItemsToCache(ign.cache(cacheName), 0, BASE_CACHE_SIZE));
+            cacheToGrp.keySet().forEach(cacheName -> addItemsToCache(ign.cache(cacheName), 0, BASE_CACHE_SIZE));
 
             ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-            ign.snapshot().createDump(CACHE_DUMP_NAME, cacheToCacheGrp.values()).get();
+            ign.snapshot().createDump(CACHE_DUMP_NAME, cacheToGrp.values()).get();
 
             // Incremental snapshots require same consistentID
             // https://issues.apache.org/jira/browse/IGNITE-25096
             if (ign.configuration().getConsistentId() != null && ign.cluster().nodes().size() == 1) {
-                cacheToCacheGrp.keySet().forEach(
+                cacheToGrp.keySet().forEach(
                     cacheName -> addItemsToCache(ign.cache(cacheName), BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT)
                 );
 
