@@ -236,8 +236,6 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                 addItemsToCache(cache, 0, BASE_CACHE_SIZE);
             });
 
-            cacheToGrp.keySet().forEach(cacheName -> addItemsToCache(ign.cache(cacheName), 0, BASE_CACHE_SIZE));
-
             ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
             ign.snapshot().createDump(CACHE_DUMP_NAME, cacheToGrp.values()).get();
