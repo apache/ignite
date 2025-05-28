@@ -763,7 +763,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         final String newTag = "new_tag";
 
         Ignite ignite = startGrids(2);
-
+        
         startClientGrid("client");
 
         assertFalse(ignite.cluster().state().active());
