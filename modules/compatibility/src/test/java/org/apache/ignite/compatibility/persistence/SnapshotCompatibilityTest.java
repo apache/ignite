@@ -113,7 +113,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
             startGrid(
                 i,
                 OLD_IGNITE_VERSION,
-                new ConfigurationClosure(consId(i), true, cacheToGrp),
+                new ConfigurationClosure(i),
                 i == oldNodesCnt ? new CreateSnapshotClosure(cacheToGrp) : null
             );
         }
@@ -125,7 +125,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 
         // We configure current Ignite version in the same way as the old one.
-        new ConfigurationClosure(consId(1), false, cacheToGrp).apply(cfg);
+        new ConfigurationClosure(1).apply(cfg);
 
         IgniteEx node = startGrid(cfg);
 
@@ -238,64 +238,6 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         cacheToGrp.keySet().forEach(name -> assertEquals(BASE_CACHE_SIZE, foundCacheSizes.get(name).intValue()));
     }
 
-    /** */
-    private String consId(int nodeIdx) {
-        return customConsId ? "node-" + nodeIdx : null;
-    }
-
-    /** Configuration closure both for old and current Ignite version. */
-    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
-        /** */
-        private final String consId;
-
-        /** */
-        private final boolean delIfExist;
-
-        /** */
-        private final Map<String, String> cacheToGrp;
-
-        /** */
-        private final String workDir;
-
-        /** */
-        public ConfigurationClosure(
-            String consId,
-            boolean delIfExist,
-            Map<String, String> cacheToGrp
-        ) throws IgniteCheckedException {
-            this.consId = consId;
-            this.delIfExist = delIfExist;
-            this.cacheToGrp = cacheToGrp;
-            workDir = U.defaultWorkDirectory();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteConfiguration cfg) {
-            cfg.setWorkDirectory(workDir);
-
-            DataStorageConfiguration storageCfg = new DataStorageConfiguration();
-
-            storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
-
-            cfg.setDataStorageConfiguration(storageCfg);
-
-            cfg.setConsistentId(consId);
-
-            storageCfg.setWalCompactionEnabled(true);
-
-            if (delIfExist) {
-                cfg.setCacheConfiguration(
-                    cacheToGrp.entrySet().stream()
-                        .map(e -> new CacheConfiguration<Integer, String>(e.getKey())
-                            .setGroupName(Objects.equals(e.getKey(), e.getValue()) ? null : e.getValue())
-                            .setAffinity(new RendezvousAffinityFunction(false, 10))
-                        )
-                        .toArray(CacheConfiguration[]::new)
-                );
-            }
-        }
-    }
-
     /** Snapshot creating closure both for old and current Ignite version. */
     private static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
         /** */
@@ -309,6 +251,14 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         /** {@inheritDoc} */
         @Override public void apply(Ignite ign) {
             ign.cluster().state(ClusterState.ACTIVE);
+
+            cacheToGrp.forEach((key, value) -> {
+                IgniteCache<Integer, String> cache = ign.createCache(new CacheConfiguration<Integer, String>(key)
+                        .setGroupName(Objects.equals(key, value) ? null : value)
+                        .setAffinity(new RendezvousAffinityFunction(false, 10)));
+
+                addItemsToCache(cache, 0, BASE_CACHE_SIZE);
+            });
 
             cacheToGrp.keySet().forEach(cacheName -> addItemsToCache(ign.cache(cacheName), 0, BASE_CACHE_SIZE));
 
@@ -331,6 +281,30 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         private static void addItemsToCache(IgniteCache<Integer, String> cache, int startIdx, int cnt) {
             for (int i = startIdx; i < startIdx + cnt; ++i)
                 cache.put(i, calcValue(cache.getName(), i));
+        }
+    }
+
+    /** Configuration closure both for old and current Ignite version. */
+    private class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+        /** */
+        private final int nodeIdx;
+
+        /** */
+        public ConfigurationClosure(int nodeIdx) throws IgniteCheckedException {
+            this.nodeIdx = nodeIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(IgniteConfiguration cfg) {
+            DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+
+            storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+
+            cfg.setDataStorageConfiguration(storageCfg);
+
+            cfg.setConsistentId(customConsId ? "node-" + nodeIdx : null);
+
+            storageCfg.setWalCompactionEnabled(true);
         }
     }
 }
