@@ -113,7 +113,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  │  │  ├── 1737804007693-96128bb0-5361-495a-b593-53dc4339a56d-END.bin
  * │  │  │  └── 1737804007693-96128bb0-5361-495a-b593-53dc4339a56d-START.bin
  * │  │  ├── lock
- * │  │  ├── maintenance_tasks.mntc
+ * │  │  ├── maintenance_tasks.mntc                                             ← maintenance file (node 0).
  * │  │  ├── metastorage
  * │  │  │  ├── part-0.bin
  * │  │  │  └── part-1.bin
@@ -128,7 +128,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  │  ├── cp                                                                 ← checkpoint (node 1).
  * ...
  * │  │  ├── lock
- * │  │  ├── maintenance_tasks.mntc
+ * │  │  ├── maintenance_tasks.mntc                                             ← maintenance file (node 1).
  * │  │  ├── metastorage
  * ...
  * │  │  └── snp                                                                ← snpTmp (node 1)
@@ -257,6 +257,9 @@ public class NodeFileTree extends SharedFileTree {
 
     /** CDC caches state file name. */
     private static final String CDC_CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
+
+    /** Maintenance file name. */
+    private static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
 
     /** Folder name for consistent id. */
     private final String folderName;
@@ -897,6 +900,11 @@ public class NodeFileTree extends SharedFileTree {
     /** @return Temp CDC manager mode state file path. */
     public Path tmpCdcModeState() {
         return cdcState().resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return Maintenance file. */
+    public File maintenanceFile() {
+        return new File(nodeStorage, MAINTENANCE_FILE_NAME);
     }
 
     /**
