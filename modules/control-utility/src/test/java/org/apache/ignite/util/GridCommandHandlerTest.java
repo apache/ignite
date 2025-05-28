@@ -253,7 +253,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** */
     @Rule
-    public final EnableTestCommandsRule enableTestCommandsRule = new EnableTestCommandsRule();
+    public final EnableTestCommandsRule enableTestCmdsRule = new EnableTestCommandsRule();
 
     /** */
     @Rule
@@ -775,7 +775,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         final String newTag = "new_tag";
 
         Ignite ignite = startGrids(2);
-        
+
         startClientGrid("client");
 
         assertFalse(ignite.cluster().state().active());
@@ -4045,9 +4045,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
-     * JUnit {@code TestRule} that allows to selectively set the {@code ENABLE_TEST_COMMANDS} property for specific
-     * test methods when enabled via {@link EnableTestCommands} annotation. The property enables registration of
-     * additional commands via {@link TestCommandsProvider}.
+     * Allows to selectively set the {@code ENABLE_TEST_COMMANDS} property for specific test methods via
+     * {@link EnableTestCommands} annotation. The property enables registration of additional commands by means of
+     * {@link TestCommandsProvider}.
      */
     public class EnableTestCommandsRule implements TestRule {
         /** {@inheritDoc} */
@@ -4077,8 +4077,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
-     * JUnit {@code TestRule} that identifies test methods using {@link OfflineCommand} by detecting
-     * the {@link OfflineCommandTest} annotation.
+     * Identifies test methods that execute commands implementing the {@link OfflineCommand} interface. Uses
+     * the {@link OfflineCommandTest} annotation for identification.
      */
     public static class OfflineCommandRule extends TestWatcher {
         /** */

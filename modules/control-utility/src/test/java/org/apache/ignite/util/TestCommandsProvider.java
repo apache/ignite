@@ -25,7 +25,10 @@ import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.util.GridCommandHandlerTest.ENABLE_TEST_COMMANDS;
 
-/** */
+/**
+ * Enables registration of additional commands for testing purposes. Commands are only registered when
+ * the {@code ENABLE_TEST_COMMANDS} system property is set to {@code true}.
+ */
 public class TestCommandsProvider implements CommandsProvider {
     /** {@inheritDoc} */
     @Override public Collection<Command<?, ?>> commands() {
