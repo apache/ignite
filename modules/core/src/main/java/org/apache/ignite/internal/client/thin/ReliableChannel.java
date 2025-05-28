@@ -295,8 +295,11 @@ final class ReliableChannel implements AutoCloseable {
                                 .handle((retryRes, retryErr) -> {
                                     if (retryErr == null)
                                         fut.complete(retryRes);
-                                    else
+                                    else {
+                                        failures.add((ClientConnectionException)retryErr);
+
                                         fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures, retryErr);
+                                    }
 
                                     return null;
                                 });
