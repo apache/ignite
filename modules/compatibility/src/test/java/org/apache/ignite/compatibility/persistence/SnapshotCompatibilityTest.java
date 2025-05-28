@@ -254,8 +254,8 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
             cacheToGrp.forEach((key, value) -> {
                 IgniteCache<Integer, String> cache = ign.createCache(new CacheConfiguration<Integer, String>(key)
-                        .setGroupName(Objects.equals(key, value) ? null : value)
-                        .setAffinity(new RendezvousAffinityFunction(false, 10)));
+                    .setGroupName(Objects.equals(key, value) ? null : value)
+                    .setAffinity(new RendezvousAffinityFunction(false, 10)));
 
                 addItemsToCache(cache, 0, BASE_CACHE_SIZE);
             });
