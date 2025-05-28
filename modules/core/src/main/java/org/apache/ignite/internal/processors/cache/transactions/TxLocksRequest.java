@@ -142,7 +142,7 @@ public class TxLocksRequest extends GridCacheMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -201,10 +201,5 @@ public class TxLocksRequest extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -24;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 5;
     }
 }

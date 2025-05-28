@@ -151,9 +151,6 @@ public class MessageCodeGenerator {
     private final String srcDir;
 
     /** */
-    private int totalFieldCnt;
-
-    /** */
     private List<Field> fields;
 
     /** */
@@ -331,13 +328,6 @@ public class MessageCodeGenerator {
 
                         readFound = true;
                     }
-                    else if (line.contains("public byte fieldsCount()")) {
-                        src.add(TAB + TAB + "return " + totalFieldCnt + ";");
-
-                        skip = true;
-
-                        fieldCntFound = true;
-                    }
                 }
                 else if (line.startsWith(TAB + "}")) {
                     src.add(line);
@@ -351,9 +341,6 @@ public class MessageCodeGenerator {
 
             if (!readFound)
                 System.out.println("    readFrom method doesn't exist.");
-
-            if (!fieldCntFound)
-                System.out.println("    fieldCount method doesn't exist.");
         }
         finally {
             if (rdr != null)
@@ -406,8 +393,6 @@ public class MessageCodeGenerator {
         Collections.sort(fields, FIELD_CMP);
 
         int state = startState(cls);
-
-        totalFieldCnt = state + fields.size();
 
         indent = 2;
 
@@ -495,7 +480,7 @@ public class MessageCodeGenerator {
 
             indent++;
 
-            returnFalseIfFailed(code, "writer.writeHeader", "directType()", "fieldsCount()");
+            returnFalseIfFailed(code, "writer.writeHeader", "directType()");
 
             code.add(EMPTY);
             code.add(builder().a("writer.onHeaderWritten();").toString());

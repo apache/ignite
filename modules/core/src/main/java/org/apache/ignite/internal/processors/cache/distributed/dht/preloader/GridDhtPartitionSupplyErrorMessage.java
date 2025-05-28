@@ -90,7 +90,7 @@ public class GridDhtPartitionSupplyErrorMessage extends GridDhtPartitionSupplyMe
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -140,10 +140,5 @@ public class GridDhtPartitionSupplyErrorMessage extends GridDhtPartitionSupplyMe
     /** {@inheritDoc} */
     @Override public short directType() {
         return 158;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 14;
     }
 }

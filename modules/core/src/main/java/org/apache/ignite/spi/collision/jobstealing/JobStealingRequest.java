@@ -65,7 +65,7 @@ public class JobStealingRequest implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -107,11 +107,6 @@ public class JobStealingRequest implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 82;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

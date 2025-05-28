@@ -101,7 +101,7 @@ public class FragmentDescription implements MarshalableMessage {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -180,11 +180,6 @@ public class FragmentDescription implements MarshalableMessage {
         }
 
         return reader.afterMessageRead(FragmentDescription.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 
     /** {@inheritDoc} */

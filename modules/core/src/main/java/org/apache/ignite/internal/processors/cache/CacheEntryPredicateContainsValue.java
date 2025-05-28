@@ -97,7 +97,7 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -142,11 +142,6 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
     /** {@inheritDoc} */
     @Override public short directType() {
         return 98;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

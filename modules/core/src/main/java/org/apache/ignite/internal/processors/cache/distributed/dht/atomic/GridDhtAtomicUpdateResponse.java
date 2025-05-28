@@ -172,7 +172,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -259,11 +259,6 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     /** {@inheritDoc} */
     @Override public short directType() {
         return 39;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 8;
     }
 
     /** {@inheritDoc} */

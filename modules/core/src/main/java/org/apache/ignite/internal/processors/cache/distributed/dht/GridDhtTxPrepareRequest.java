@@ -403,7 +403,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -630,11 +630,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 34;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 35;
     }
 
     /** {@inheritDoc} */
