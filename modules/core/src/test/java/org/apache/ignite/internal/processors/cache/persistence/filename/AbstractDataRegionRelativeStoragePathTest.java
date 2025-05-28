@@ -85,8 +85,10 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
         cleanPersistenceDir();
 
-        if (absPath)
+        if (absPath) {
             U.delete(new File(storagePath(STORAGE_PATH)).getParentFile());
+            U.delete(new File(storagePath(STORAGE_PATH_2)).getParentFile());
+        }
         else {
             U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH));
             U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH_2));
@@ -183,18 +185,31 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     }
 
     /** */
-    CacheConfiguration<?, ?> ccfg(String name, String grp, String storagePath) {
+    CacheConfiguration<?, ?> ccfg(String name, String grp, String... storagePath) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(name)
             .setGroupName(grp)
             .setAffinity(new RendezvousAffinityFunction().setPartitions(PARTS_CNT));
 
-        if (storagePath != null)
+        if (!F.isEmpty(storagePath))
             ccfg.setStoragePath(storagePath);
 
         return ccfg;
     }
 
     /** */
+    String[] storagePaths(String... storagePath) {
+        if (severalCacheStorages) {
+            String[] res = new String[storagePath.length];
+
+            for (int i=0; i<storagePath.length; i++)
+                res[i] = storagePath(storagePath[i]);
+
+            return res;
+        }
+
+        return new String[] {storagePath(storagePath[0])};
+    }
+
     String storagePath(String storagePath) {
         try {
             return absPath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;

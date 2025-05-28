@@ -50,7 +50,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setExtraStoragePathes(storagePath(STORAGE_PATH), storagePath(STORAGE_PATH_2));
+            .setExtraStoragePathes(storagePaths(STORAGE_PATH, STORAGE_PATH_2));
 
         dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
@@ -63,14 +63,14 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
     /** {@inheritDoc} */
     @Override CacheConfiguration[] ccfgs() {
         return new CacheConfiguration[]{
-            ccfg("cache0", null, null),
-            ccfg("cache1", "grp1", null),
-            ccfg("cache2", "grp1", null),
-            ccfg("cache3", null, storagePath(STORAGE_PATH)),
-            ccfg("cache4", "grp2", storagePath(STORAGE_PATH)),
-            ccfg("cache5", null, storagePath(STORAGE_PATH_2)),
-            ccfg("cache6", "grp3", storagePath(STORAGE_PATH_2)),
-            ccfg("cache7", "grp3", storagePath(STORAGE_PATH_2))
+            ccfg("cache0", null),
+            ccfg("cache1", "grp1"),
+            ccfg("cache2", "grp1"),
+            ccfg("cache3", null, storagePaths(STORAGE_PATH, STORAGE_PATH_2)),
+            ccfg("cache4", "grp2", storagePaths(STORAGE_PATH)),
+            ccfg("cache5", null, storagePaths(STORAGE_PATH_2)),
+            ccfg("cache6", "grp3", storagePaths(STORAGE_PATH_2)),
+            ccfg("cache7", "grp3", storagePaths(STORAGE_PATH_2))
         };
     }
 

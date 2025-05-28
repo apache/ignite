@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -125,7 +126,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         Set<File> partFiles = new HashSet<>();
 
-        Map<Integer, File> grpDirs = new HashMap<>();
+        Map<Integer, List<File>> grpDirs = new HashMap<>();
 
         for (File dir : opCtx.snapshotFileTree().existingCacheDirs()) {
             int grpId = CU.cacheId(cacheName(dir));
@@ -133,8 +134,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             if (!grps.remove(grpId))
                 continue;
 
-            Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
-                new HashSet<>(meta.partitions().get(grpId));
+            Set<Integer> parts = meta.partitions().get(grpId) == null
+                ? Collections.emptySet()
+                : new HashSet<>(meta.partitions().get(grpId));
 
             for (File part : opCtx.snapshotFileTree().existingCachePartitionFiles(dir, meta.dump(), meta.compressPartitions())) {
                 int partId = partId(part);
@@ -151,7 +153,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     ", missed=" + parts + ", meta=" + meta + ']');
             }
 
-            grpDirs.put(grpId, dir);
+            grpDirs.compute(grpId, (k, v) -> v == null ? new ArrayList<>() : v).add(dir);
         }
 
         if (!grps.isEmpty()) {
