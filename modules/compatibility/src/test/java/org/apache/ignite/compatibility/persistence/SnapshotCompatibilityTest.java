@@ -46,6 +46,7 @@ import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -196,7 +197,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
                     assertNotNull(ccfg);
 
-                    foundCacheToGrp.put(ccfg.getName(), ccfg.getGroupName());
+                    foundCacheToGrp.put(ccfg.getName(), CU.cacheOrGroupName(ccfg));
                 });
             }
 
