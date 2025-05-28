@@ -18,14 +18,20 @@
 package org.apache.ignite.util;
 
 import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsProvider;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.util.GridCommandHandlerTest.ENABLE_TEST_COMMANDS;
 
 /** */
 public class TestCommandsProvider implements CommandsProvider {
     /** {@inheritDoc} */
     @Override public Collection<Command<?, ?>> commands() {
+        if (!Boolean.getBoolean(ENABLE_TEST_COMMANDS))
+            return Collections.emptyList();
+
         return F.asList(
             new GridCommandHandlerTest.OfflineTestCommand()
         );

@@ -23,6 +23,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
@@ -151,7 +155,12 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import static java.io.File.separatorChar;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
@@ -224,22 +233,34 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public static final String REENCRYPTION_SUSPEND = "suspend_reencryption";
 
     /** */
+    public static final String ENABLE_TEST_COMMANDS = "enable_test_commands";
+
+    /** */
     protected static File defaultDiagnosticDir;
 
     /** */
     protected static File customDiagnosticDir;
 
+    /** Annotation for the {@link EnableTestCommandsRule}. */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    public @interface EnableTestCommands {}
+
+    /** Annotation for the {@link OfflineCommandRule}. */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    public @interface OfflineCommandTest {}
+
+    /** */
+    @Rule
+    public final EnableTestCommandsRule enableTestCommandsRule = new EnableTestCommandsRule();
+
+    /** */
+    @Rule
+    public final OfflineCommandRule offlineCmdRule = new OfflineCommandRule();
+
     /** */
     protected ListeningTestLogger listeningLog;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        initDiagnosticDir();
-
-        cleanDiagnosticDir();
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -754,7 +775,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         final String newTag = "new_tag";
 
         Ignite ignite = startGrids(2);
-        
+
         startClientGrid("client");
 
         assertFalse(ignite.cluster().state().active());
@@ -3865,6 +3886,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** */
     @Test
+    @EnableTestCommands
+    @OfflineCommandTest
     public void testOfflineCommand() throws Exception {
         startGrid(0);
 
@@ -4018,6 +4041,57 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         /** {@inheritDoc} */
         @Override protected void readExternalData(ObjectInput in) throws IOException {
             input = U.readString(in);
+        }
+    }
+
+    /**
+     * JUnit {@code TestRule} that allows to selectively set the {@code ENABLE_TEST_COMMANDS} property for specific
+     * test methods when enabled via {@link EnableTestCommands} annotation. The property enables registration of
+     * additional commands via {@link TestCommandsProvider}.
+     */
+    public class EnableTestCommandsRule implements TestRule {
+        /** {@inheritDoc} */
+        @Override public Statement apply(Statement base, Description description) {
+            return new Statement() {
+                /** {@inheritDoc} */
+                @Override public void evaluate() throws Throwable {
+                    boolean testCmdsEnabled = description.getAnnotation(EnableTestCommands.class) != null;
+
+                    try {
+                        if (testCmdsEnabled)
+                            System.setProperty(ENABLE_TEST_COMMANDS, "true");
+
+                        initDiagnosticDir();
+
+                        cleanDiagnosticDir();
+
+                        base.evaluate();
+                    }
+                    finally {
+                        if (testCmdsEnabled)
+                            System.clearProperty(ENABLE_TEST_COMMANDS);
+                    }
+                }
+            };
+        }
+    }
+
+    /**
+     * JUnit {@code TestRule} that identifies test methods using {@link OfflineCommand} by detecting
+     * the {@link OfflineCommandTest} annotation.
+     */
+    public static class OfflineCommandRule extends TestWatcher {
+        /** */
+        private boolean isOfflineCmd;
+
+        /** {@inheritDoc} */
+        @Override protected void starting(Description description) {
+            isOfflineCmd = description.getAnnotation(OfflineCommandTest.class) != null;
+        }
+
+        /** */
+        public boolean isOfflineCmd() {
+            return isOfflineCmd;
         }
     }
 }
