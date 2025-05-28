@@ -400,7 +400,7 @@ public class SnapshotRestoreProcess {
                 F.first(dataNodes),
                 snpName,
                 snpPath,
-                cacheGrpNames,
+                cacheGrpNames == null ? null : new HashSet<>(cacheGrpNames),
                 new HashSet<>(bltNodes),
                 false,
                 incIdx,
