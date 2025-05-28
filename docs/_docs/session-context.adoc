@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= SessionContext API
+= Session Context
 
 :javaFile: {javaCodeDir}/IgniteSessionContext.java
 
@@ -53,7 +53,7 @@ include::{javaFile}[tags=cache-interceptor,indent=0]
 
 === Ignite
 
-You can set attributes using `Ignite.withApplicationAttributes(...)`. It returns an Ignite instance aware of the attributes. Application attributes are propagated with all messages sent within operations to remote nodes.
+You can set attributes using `Ignite.withApplicationAttributes(...)`. It returns an Ignite instance aware of the attributes. Application attributes are propagated to remote nodes:
 
 [source, java]
 ----
@@ -61,7 +61,7 @@ include::{javaFile}[tags=ignite-context,indent=0]
 ----
 
 === JDBC
-The standard JDBC protocol provides the method `Connection.setClientInfo(...)` to set client attributes, which are available during the connection’s lifetime:
+The standard JDBC protocol provides the method `Connection.setClientInfo(...)` to set client attributes, which are available during the connection’s lifetime. Attributes can be overriden by invoking `Connection.setClientInfo(...)` again with new parameters:
 
 [source, java]
 ----

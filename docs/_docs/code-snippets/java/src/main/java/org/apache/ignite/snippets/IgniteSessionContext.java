@@ -76,27 +76,17 @@ public class IgniteSessionContext {
         }
 
         /** */
-        @Override public void onAfterPut(Cache.Entry<Integer, String> entry) {
-
-        }
-
-        /** */
         @Override public @Nullable IgniteBiTuple<Boolean, String> onBeforeRemove(Cache.Entry<Integer, String> entry) {
             String ret = sesCtxPrv.getSessionContext().getAttribute("onBeforeRemove");;
 
             return new IgniteBiTuple<>(ret != null, entry.getValue());
         }
-
-        /** */
-        @Override public void onAfterRemove(Cache.Entry<Integer, String> entry) {
-
-        }
     }
     //end::cache-interceptor[]
 
     public void igniteSessContext() {
-        //tag::ignite-context[]
         IgniteConfiguration ignCfg = new IgniteConfiguration();
+        //tag::ignite-context[]
         try (Ignite ign = Ignition.start(ignCfg)) {
 
             Map<String, String> appAttrs = F.asMap("SESSION_ID", "1234");
