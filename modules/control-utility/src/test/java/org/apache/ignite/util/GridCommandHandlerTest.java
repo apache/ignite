@@ -233,7 +233,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public static final String REENCRYPTION_SUSPEND = "suspend_reencryption";
 
     /** */
-    public static final String ENABLE_TEST_COMMANDS = "enable_test_commands";
+    public static final String ENABLE_TEST_COMMANDS = "enable.test.commands";
 
     /** */
     protected static File defaultDiagnosticDir;
@@ -775,7 +775,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         final String newTag = "new_tag";
 
         Ignite ignite = startGrids(2);
-
+        
         startClientGrid("client");
 
         assertFalse(ignite.cluster().state().active());
