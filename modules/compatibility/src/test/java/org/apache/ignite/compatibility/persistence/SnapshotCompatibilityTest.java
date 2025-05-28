@@ -233,14 +233,6 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
     /** Snapshot creating closure both for old and current Ignite version. */
     private static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
-        /** */
-        private final Map<String, String> cacheToGrp;
-
-        /** */
-        public CreateSnapshotClosure(Map<String, String> cacheToGrp) {
-            this.cacheToGrp = cacheToGrp;
-        }
-
         /** {@inheritDoc} */
         @Override public void apply(Ignite ign) {
             ign.cluster().state(ClusterState.ACTIVE);
