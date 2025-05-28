@@ -55,7 +55,6 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.maintenance.MaintenanceFileStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -360,7 +359,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     public void testFailoverRestartWithoutDefragmentation() throws Exception {
         testFailover(cft -> {
             try {
-                File mntcRecFile = new File(cft.storage().getParent(), MaintenanceFileStore.MAINTENANCE_FILE_NAME);
+                NodeFileTree ft = GridTestUtils.getFieldValue(cft, "ft");
+
+                File mntcRecFile = ft.maintenanceFile();
 
                 assertTrue(mntcRecFile.exists());
 
