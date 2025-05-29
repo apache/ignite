@@ -164,9 +164,6 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         @Override public void setBuffer(ByteBuffer buf) {}
 
         /** {@inheritDoc} */
-        @Override public void setCurrentWriteClass(Class<? extends Message> msgCls) {}
-
-        /** {@inheritDoc} */
         @Override public boolean writeHeader(short type, byte fieldCnt) {
             return true;
         }
