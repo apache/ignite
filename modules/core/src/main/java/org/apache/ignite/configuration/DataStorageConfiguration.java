@@ -589,10 +589,10 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Sets a pathes to the root directories where the Persistent Store can persist data and indexes.
+     * Sets a paths to the root directories where the Persistent Store can persist data and indexes.
      * By default, {@link #getStoragePath()} used.
      *
-     * @param extraStoragePaths Extra storage pathes where persistent data can be stored.
+     * @param extraStoragePaths Extra storage paths where persistent data can be stored.
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setExtraStoragePaths(String... extraStoragePaths) {

@@ -30,15 +30,11 @@ import org.junit.Test;
  * Test snapshot can be created when {@link DataStorageConfiguration#setStoragePath(String)} used.
  */
 public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
-    /** */
-    private final CacheConfiguration[] ccfgs = new CacheConfiguration[] {
-        ccfg("cache0", null, null)
-    };
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setStoragePath(storagePath(STORAGE_PATH));
+            .setStoragePath(storagePath(STORAGE_PATH))
+            .setExtraStoragePaths(storagePath(STORAGE_PATH_2));
 
         dsCfg.getDefaultDataRegionConfiguration()
             .setPersistenceEnabled(true);
@@ -46,12 +42,14 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
         return super.getConfiguration(igniteInstanceName)
             .setConsistentId(U.maskForFileName(igniteInstanceName))
             .setDataStorageConfiguration(dsCfg)
-            .setCacheConfiguration(ccfgs);
+            .setCacheConfiguration(ccfgs());
     }
 
     /** {@inheritDoc} */
     @Override CacheConfiguration[] ccfgs() {
-        return ccfgs;
+        return new CacheConfiguration[] {
+            ccfg("cache0", null, storagePaths(STORAGE_PATH_2, STORAGE_PATH))
+        };
     }
 
     /** */
@@ -77,15 +75,16 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
     @Override void checkFileTrees(List<NodeFileTree> fts) {
         for (NodeFileTree ft : fts) {
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
-                String storagePath = STORAGE_PATH;
+                for (String cs : ccfg.getStoragePaths()) {
+                    File customRoot = ensureExists(absPath
+                        ? new File(cs)
+                        : new File(ft.root(), cs)
+                    );
 
-                File customRoot = ensureExists(absPath
-                    ? new File(storagePath(storagePath))
-                    : new File(ft.root(), storagePath)
-                );
-                File nodeStorage = ensureExists(new File(customRoot, ft.folderName()));
+                    File nodeStorage = ensureExists(new File(customRoot, ft.folderName()));
 
-                ensureExists(new File(nodeStorage, ft.cacheStorages(ccfg)[0].getName()));
+                    ensureExists(new File(nodeStorage, ft.cacheStorages(ccfg)[0].getName()));
+                }
             }
         }
     }

@@ -24,7 +24,6 @@ import org.apache.ignite.internal.management.persistence.PersistenceCommand.Pers
 import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceCleanCorruptedTaskArg;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceTaskArg;
 import org.apache.ignite.lang.IgniteBiTuple;
-
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** */

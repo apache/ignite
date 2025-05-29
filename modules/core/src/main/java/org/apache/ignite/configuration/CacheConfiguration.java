@@ -436,7 +436,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Root directories where partition files are stored.
-     *
      * @see DataStorageConfiguration#setStoragePath(String)
      * @see DataStorageConfiguration#setExtraStoragePaths(String[])
      */

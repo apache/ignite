@@ -194,7 +194,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         try {
             for (File cacheWorkDir : ft.cacheStorages(cacheConfiguration)) {
                 if (!cacheWorkDir.exists())
-                    return;
+                    continue;
 
                 try (DirectoryStream<Path> files = newDirectoryStream(cacheWorkDir.toPath(),
                     new DirectoryStream.Filter<Path>() {
