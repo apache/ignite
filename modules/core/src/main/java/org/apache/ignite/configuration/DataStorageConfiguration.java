@@ -222,7 +222,7 @@ public class DataStorageConfiguration implements Serializable {
      * @see CacheConfiguration#setStoragePath(String)
      */
     @IgniteExperimental
-    private String[] extraStoragePathes;
+    private String[] extraStoragePaths;
 
     /** Checkpoint frequency. */
     private long checkpointFreq = DFLT_CHECKPOINT_FREQ;
@@ -570,8 +570,8 @@ public class DataStorageConfiguration implements Serializable {
      * @return Additional directories where index and partition files are stored.
      */
     @IgniteExperimental
-    public String[] getExtraStoragePathes() {
-        return extraStoragePathes;
+    public String[] getExtraStoragePaths() {
+        return extraStoragePaths;
     }
 
     /**
@@ -589,14 +589,14 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Sets a pathes to the root directories where the Persistent Store can persist data and indexes.
+     * Sets a paths to the root directories where the Persistent Store can persist data and indexes.
      * By default, {@link #getStoragePath()} used.
      *
-     * @param extraStoragePathes Extra storage pathes where persistent data can be stored.
+     * @param extraStoragePaths Extra storage pathes where persistent data can be stored.
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setExtraStoragePathes(String... extraStoragePathes) {
-        this.extraStoragePathes = extraStoragePathes;
+    public DataStorageConfiguration setExtraStoragePaths(String... extraStoragePaths) {
+        this.extraStoragePaths = extraStoragePaths;
 
         return this;
     }

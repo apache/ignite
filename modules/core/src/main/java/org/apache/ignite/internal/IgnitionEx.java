@@ -1952,7 +1952,7 @@ public class IgnitionEx {
                         "but not both.");
                 }
 
-                List<String> extraStorages = F.asList(dsCfg.getExtraStoragePathes());
+                List<String> extraStorages = F.asList(dsCfg.getExtraStoragePaths());
 
                 if (extraStorages.size() != new HashSet<>(extraStorages).size()
                     || extraStorages.contains(dsCfg.getStoragePath())) {

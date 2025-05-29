@@ -162,7 +162,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             cfg.getDataStorageConfiguration().setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
 
         cfg.getDataStorageConfiguration()
-            .setExtraStoragePathes(CUSTOM_LOCATION)
+            .setExtraStoragePaths(CUSTOM_LOCATION)
             .setDataRegionConfigurations(new DataRegionConfiguration()
             .setPersistenceEnabled(persistence)
             .setName(CUSTOM_LOCATION));
