@@ -2575,8 +2575,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             StringBuilder dirs = new StringBuilder(sft.root().getAbsolutePath());
 
-            for (File value : sft.extraStorages().values())
-                dirs.append(File.pathSeparator).append(value.getAbsolutePath());
+            for (File es : sft.extraStorages().values())
+                dirs.append(File.pathSeparator).append(es.getAbsolutePath());
 
             metaStorage.write(SNP_RUNNING_DIR_KEY, dirs.toString());
         }
