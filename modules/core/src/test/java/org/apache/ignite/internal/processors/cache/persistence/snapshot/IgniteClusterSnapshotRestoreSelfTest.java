@@ -840,6 +840,22 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void reproduceCacheGroupsDuplicationError() throws Exception {
+        int keysCnt = dfltCacheCfg.getAffinity().partitions();
+
+        Ignite ignite = startGridsWithSnapshot(1, keysCnt, false, true);
+
+        Collection<String> duplicatedGrps = Arrays.asList(DEFAULT_CACHE_NAME, DEFAULT_CACHE_NAME);
+
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, duplicatedGrps).get(TIMEOUT);
+
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
+    }
+
+    /**
      * @param state Cluster state.
      * @param procType The type of distributed process on which communication is blocked.
      * @param exCls Expected exception class.
