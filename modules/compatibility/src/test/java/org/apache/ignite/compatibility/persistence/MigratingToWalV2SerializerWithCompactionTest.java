@@ -123,7 +123,7 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
 
             NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-            File[] compressedSegments = NodeFileTree.listcompactedSegmentWalFiles(ft.walArchive());
+            File[] compressedSegments = NodeFileTree.listCompactedWalFiles(ft.walArchive());
 
             final int actualCompressedWalSegments = compressedSegments == null ? 0 : compressedSegments.length;
 
