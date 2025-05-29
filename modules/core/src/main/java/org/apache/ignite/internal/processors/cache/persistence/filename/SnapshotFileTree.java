@@ -392,7 +392,7 @@ public class SnapshotFileTree extends NodeFileTree {
         Map<String, File> snpExtraStorages = new HashMap<>();
 
         ft.extraStorages().forEach((cfgStoragePath, storagePath) -> {
-            // In case we want to make snapshot in several folders the pathes will be the following:
+            // In case we want to make snapshot in several folders the paths will be the following:
             // {storage_path}/db/{folder_name} - node cache storage.
             // {storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
             snpExtraStorages.put(
