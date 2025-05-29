@@ -1888,7 +1888,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.warning("Maintenance task found, stop restoring memory");
 
             mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
-                new CorruptedPdsMaintenanceCallback(cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage(),
+                new CorruptedPdsMaintenanceCallback(cctx.kernalContext().pdsFolderResolver().fileTree(),
                     Arrays.asList(mntcTask.parameters().split(Pattern.quote(File.separator))))
             );
 

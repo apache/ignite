@@ -130,8 +130,8 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /** {@inheritDoc} */
-    @Override public BinarySchema createSchema() {
-        return reader(null, false).getOrCreateSchema();
+    @Override BinarySchema createSchema() {
+        return ((BinaryReaderExImpl)reader(null, false)).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -142,11 +142,6 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     /** {@inheritDoc} */
     @Override public int start() {
         return start;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte[] array() {
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -176,7 +171,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasArray() {
+    @Override public boolean hasBytes() {
         return false;
     }
 

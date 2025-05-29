@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * for quick comparisons performed within already fetched L1 cache line.
  * - When there are more fields, we store them inside a hash map.
  */
-public class BinarySchema implements Externalizable {
+class BinarySchema implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -431,7 +431,7 @@ public class BinarySchema implements Externalizable {
     /**
      * Schema builder.
      */
-    public static class Builder {
+    static class Builder {
         /** Schema ID. */
         private int schemaId = BinaryUtils.schemaInitialId();
 
@@ -443,7 +443,7 @@ public class BinarySchema implements Externalizable {
          *
          * @return Schema builder.
          */
-        public static Builder newBuilder() {
+        static Builder newBuilder() {
             return new Builder();
         }
 
@@ -459,7 +459,7 @@ public class BinarySchema implements Externalizable {
          *
          * @param fieldId Field ID.
          */
-        public void addField(int fieldId) {
+        void addField(int fieldId) {
             fields.add(fieldId);
 
             schemaId = BinaryUtils.updateSchemaId(schemaId, fieldId);
@@ -470,7 +470,7 @@ public class BinarySchema implements Externalizable {
          *
          * @return Schema.
          */
-        public BinarySchema build() {
+        BinarySchema build() {
             return new BinarySchema(schemaId, fields);
         }
     }
@@ -478,7 +478,7 @@ public class BinarySchema implements Externalizable {
     /**
      * Order confirmation result.
      */
-    public enum Confirmation {
+    enum Confirmation {
         /** Confirmed. */
         CONFIRMED,
 

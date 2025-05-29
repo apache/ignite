@@ -60,7 +60,7 @@ public class FragmentMapping implements MarshalableMessage {
 
     /** */
     public static FragmentMapping create() {
-        return new FragmentMapping(Collections.emptyList());
+        return new FragmentMapping(new ColocationGroup());
     }
 
     /** */

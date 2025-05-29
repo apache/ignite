@@ -67,6 +67,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
@@ -427,7 +428,7 @@ public class TxTask
             List<IgniteTxEntry> locEntries = new ArrayList<>();
 
             for (GridDistributedTxMapping mapping : mappings.mappings()) {
-                if (F.eqNodes(mapping.primary(), locNode))
+                if (eqNodes(mapping.primary(), locNode))
                     locEntries.addAll(mapping.entries());
                 else
                     nearOnlyEntries.addAll(mapping.entries());

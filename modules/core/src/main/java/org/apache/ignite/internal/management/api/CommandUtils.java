@@ -54,6 +54,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Utility class for management commands.
@@ -762,7 +763,7 @@ public class CommandUtils {
         A arg,
         Collection<ClusterNode> nodes
     ) throws Exception {
-        Collection<UUID> nodesIds = F.nodeIds(nodes);
+        Collection<UUID> nodesIds = nodeIds(nodes);
 
         if (client != null) {
             try {

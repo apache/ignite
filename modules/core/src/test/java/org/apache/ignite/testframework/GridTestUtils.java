@@ -111,6 +111,7 @@ import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -135,6 +136,7 @@ import static java.util.Comparator.comparingLong;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
@@ -154,6 +156,18 @@ public final class GridTestUtils {
 
     /** */
     private static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
+
+    /** */
+    private static final GridAbsClosure NOOP = new NoOpClosure();
+
+    /**
+     * Creates an absolute (no-arg) closure that does nothing.
+     *
+     * @return Absolute (no-arg) closure that does nothing.
+     */
+    public static GridAbsClosure noop() {
+        return NOOP;
+    }
 
     /**
      * Hook object intervenes to discovery message handling
@@ -1565,7 +1579,7 @@ public final class GridTestUtils {
 
                     if (nodes.size() > backups + 1) {
                         LT.warn(log, "Partition map was not updated yet (will wait) [igniteInstanceName=" + g.name() +
-                            ", p=" + p + ", nodes=" + F.nodeIds(nodes) + ']');
+                            ", p=" + p + ", nodes=" + nodeIds(nodes) + ']');
 
                         wait = true;
 

@@ -73,7 +73,7 @@ import org.apache.ignite.configuration.SystemDataRegionConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -1794,7 +1794,7 @@ public class IgnitionEx {
          */
         private IgniteConfiguration initializeConfiguration(IgniteConfiguration cfg)
             throws IgniteCheckedException {
-            BinaryArray.initUseBinaryArrays();
+            BinaryUtils.initUseBinaryArrays();
 
             IgniteConfiguration myCfg = new IgniteConfiguration(cfg);
 
@@ -1943,11 +1943,22 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          */
         private void initializeDataStorageConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
-            if (cfg.getDataStorageConfiguration() != null &&
-                (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)) {
-                throw new IgniteCheckedException("Data storage can be configured with either legacy " +
-                    "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
-                    "but not both.");
+            DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+            if (dsCfg != null) {
+                if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null) {
+                    throw new IgniteCheckedException("Data storage can be configured with either legacy " +
+                        "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
+                        "but not both.");
+                }
+
+                List<String> extraStorages = F.asList(dsCfg.getExtraStoragePathes());
+
+                if (extraStorages.size() != new HashSet<>(extraStorages).size()
+                    || extraStorages.contains(dsCfg.getStoragePath())) {
+                    throw new IgniteCheckedException("DataStorageConfiguration contains duplicates " +
+                        "[storagePath=" + dsCfg.getStoragePath() + ", extraStoragePathes=" + extraStorages + ']');
+                }
             }
 
             if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)

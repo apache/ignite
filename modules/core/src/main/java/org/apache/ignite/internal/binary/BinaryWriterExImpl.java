@@ -394,7 +394,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             out.unsafeWriteByte(GridBinaryMarshaller.BINARY_ENUM);
             out.unsafeWriteInt(typeId);
 
-            writeString(val.className());
+            writeString(val.enumClassName());
 
             out.writeInt(val.enumOrdinal());
         }
@@ -600,11 +600,11 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinaryObject(@Nullable BinaryObjectImpl po) throws BinaryObjectException {
+    @Override public void writeBinaryObject(@Nullable BinaryObjectEx po) throws BinaryObjectException {
         if (po == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            byte[] poArr = po.array();
+            byte[] poArr = po.bytes();
 
             out.unsafeEnsure(1 + 4 + poArr.length + 4);
 
@@ -1484,8 +1484,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         return schemaId;
     }
 
-    /** {@inheritDoc} */
-    @Override public BinarySchema currentSchema() {
+    /**
+     * @return Current writer's schema.
+     */
+    BinarySchema currentSchema() {
         BinarySchema.Builder builder = BinarySchema.Builder.newBuilder();
 
         if (schema != null)

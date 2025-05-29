@@ -2821,7 +2821,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             BinaryObjectOffheapImpl offheapObj = new BinaryObjectOffheapImpl(ctx,
                 ptr,
                 0,
-                obj.array().length);
+                obj.bytes().length);
 
             assertTrue(offheapObj.equals(offheapObj));
             assertEquals(offheapObj.size(), obj.size());
@@ -2835,7 +2835,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             BinaryObjectOffheapImpl offheapObj1 = new BinaryObjectOffheapImpl(ctx,
                 ptr1,
                 0,
-                obj.array().length);
+                obj.bytes().length);
 
             assertTrue(offheapObj.equals(offheapObj1));
             assertTrue(offheapObj1.equals(offheapObj));
@@ -2876,7 +2876,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             BinaryObjectOffheapImpl offheapObj2 = new BinaryObjectOffheapImpl(ctx,
                 ptr2,
                 0,
-                obj.array().length);
+                obj.bytes().length);
 
             assertFalse(offheapObj.equals(offheapObj2));
             assertFalse(offheapObj2.equals(offheapObj));
@@ -2903,7 +2903,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryObjectImpl binaryObj = marshal(MySingleton.INSTANCE, marsh);
 
-        assertTrue(binaryObj.array().length <= 1024); // Check that big string was not serialized.
+        assertTrue(binaryObj.bytes().length <= 1024); // Check that big string was not serialized.
 
         MySingleton singleton = binaryObj.deserialize();
 
@@ -3519,9 +3519,9 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         BinaryObjectImpl binObjRaw0 = marshal(objRaw, m0);
         BinaryObjectImpl binObjRaw1 = marshal(objRaw, m1);
 
-        assertNotEquals(binObj0.array().length, binObj1.array().length);
-        assertNotEquals(binObjWithRaw0.array().length, binObjWithRaw1.array().length);
-        assertNotEquals(binObjRaw0.array().length, binObjRaw1.array().length);
+        assertNotEquals(binObj0.bytes().length, binObj1.bytes().length);
+        assertNotEquals(binObjWithRaw0.bytes().length, binObjWithRaw1.bytes().length);
+        assertNotEquals(binObjRaw0.bytes().length, binObjRaw1.bytes().length);
 
         checkEquals(binObj0, binObj1);
 
@@ -3649,18 +3649,18 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         BinaryObjectImpl binObj02 = marshal(obj2, m0);
 
         // The length of array must be equal. Object are different only by the class.
-        assertEquals(binObj00.array().length, binObj01.array().length);
-        assertEquals(binObj00.array().length, binObj02.array().length);
+        assertEquals(binObj00.bytes().length, binObj01.bytes().length);
+        assertEquals(binObj00.bytes().length, binObj02.bytes().length);
 
         BinaryObjectImpl binObj10 = marshal(obj0, m1);
         BinaryObjectImpl binObj11 = marshal(obj1, m1);
         BinaryObjectImpl binObj12 = marshal(obj2, m1);
 
         // The length of array must be equal. Object are different only by the class.
-        assertEquals(binObj10.array().length, binObj11.array().length);
-        assertEquals(binObj10.array().length, binObj12.array().length);
+        assertEquals(binObj10.bytes().length, binObj11.bytes().length);
+        assertEquals(binObj10.bytes().length, binObj12.bytes().length);
 
-        assertNotEquals(binObj10.array().length, binObj00.array().length);
+        assertNotEquals(binObj10.bytes().length, binObj00.bytes().length);
 
         assertEquals(binObj00, binObj10);
         assertEquals(binObj01, binObj11);
@@ -3753,13 +3753,13 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      * @param marsh Binary marshaller.
      * @return Instance of BinaryObjectOffheapImpl.
      */
-    private BinaryObjectOffheapImpl marshalOffHeap(BinaryObjectImpl obj, BinaryMarshaller marsh) {
+    private BinaryObjectOffheapImpl marshalOffHeap(BinaryObjectEx obj, BinaryMarshaller marsh) {
         long ptr = copyOffheap(obj);
 
         return new BinaryObjectOffheapImpl(binaryContext(marsh),
             ptr,
             0,
-            obj.array().length);
+            obj.bytes().length);
     }
 
     /**
@@ -3979,8 +3979,8 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      * @param obj Object.
      * @return Offheap address.
      */
-    private long copyOffheap(BinaryObjectImpl obj) {
-        byte[] arr = obj.array();
+    private long copyOffheap(BinaryObjectEx obj) {
+        byte[] arr = obj.bytes();
 
         long ptr = GridUnsafe.allocateMemory(arr.length);
 
@@ -4063,8 +4063,8 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      * @param marsh Marshaller.
      * @return Result object.
      */
-    private <T> T unmarshal(BinaryObjectImpl bo, BinaryMarshaller marsh) throws IgniteCheckedException {
-        return marsh.unmarshal(bo.array(), null);
+    private <T> T unmarshal(BinaryObjectEx bo, BinaryMarshaller marsh) throws IgniteCheckedException {
+        return marsh.unmarshal(bo.bytes(), null);
     }
 
     /**

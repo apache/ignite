@@ -183,7 +183,6 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
         return BinaryUtils.reader(marsh.context(),
             in,
             ctx.config().getClassLoader(),
-            null,
             true,
             true);
     }
