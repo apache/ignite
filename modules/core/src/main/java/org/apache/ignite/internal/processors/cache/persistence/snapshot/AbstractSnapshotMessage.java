@@ -68,7 +68,7 @@ abstract class AbstractSnapshotMessage implements Message {
         }
 
         if (writer.state() == 0) {
-            if (!writer.writeString("id", id))
+            if (!writer.writeString(id))
                 return false;
 
             writer.incrementState();
@@ -81,11 +81,8 @@ abstract class AbstractSnapshotMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (reader.state() == 0) {
-            id = reader.readString("id");
+            id = reader.readString();
 
             if (!reader.isLastRead())
                 return false;
@@ -93,7 +90,7 @@ abstract class AbstractSnapshotMessage implements Message {
             reader.incrementState();
         }
 
-        return reader.afterMessageRead(AbstractSnapshotMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */

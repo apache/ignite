@@ -267,15 +267,12 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 2:
-                expireTime = reader.readLong("expireTime");
+                expireTime = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -283,7 +280,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
                 reader.incrementState();
 
             case 3:
-                ttl = reader.readLong("ttl");
+                ttl = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -291,7 +288,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
                 reader.incrementState();
 
             case 4:
-                valBytes = reader.readByteArray("valBytes");
+                valBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -299,7 +296,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
                 reader.incrementState();
 
             case 5:
-                ver = reader.readMessage("ver");
+                ver = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -311,7 +308,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         assert key != null;
         assert !(val != null && valBytes != null);
 
-        return reader.afterMessageRead(GridCacheRawVersionedEntry.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -333,25 +330,25 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
 
         switch (writer.state()) {
             case 2:
-                if (!writer.writeLong("expireTime", expireTime))
+                if (!writer.writeLong(expireTime))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeLong("ttl", ttl))
+                if (!writer.writeLong(ttl))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("valBytes", valBytes))
+                if (!writer.writeByteArray(valBytes))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("ver", ver))
+                if (!writer.writeMessage(ver))
                     return false;
 
                 writer.incrementState();

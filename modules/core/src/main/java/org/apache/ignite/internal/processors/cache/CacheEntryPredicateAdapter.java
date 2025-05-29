@@ -59,10 +59,7 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
-        return reader.afterMessageRead(CacheEntryPredicateAdapter.class);
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -206,31 +206,31 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeMessage("errs", errs))
+                if (!writer.writeMessage(errs))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong(futId))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeInt("partId", partId))
+                if (!writer.writeInt(partId))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeUuid("primaryId", primaryId))
+                if (!writer.writeUuid(primaryId))
                     return false;
 
                 writer.incrementState();
@@ -244,15 +244,12 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                errs = reader.readMessage("errs");
+                errs = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -260,7 +257,7 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 5:
-                flags = reader.readByte("flags");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -268,7 +265,7 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 6:
-                futId = reader.readLong("futId");
+                futId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -276,7 +273,7 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 7:
-                partId = reader.readInt("partId");
+                partId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -284,7 +281,7 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 8:
-                primaryId = reader.readUuid("primaryId");
+                primaryId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -293,7 +290,7 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
 
         }
 
-        return reader.afterMessageRead(GridDhtAtomicNearResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */

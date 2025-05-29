@@ -68,22 +68,17 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
         }
 
         /** {@inheritDoc} */
-        @Override public void setCurrentReadClass(Class<? extends Message> msgCls) {
-            this.msgCls = msgCls;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte[] readByteArray(String name) {
-            super.readByteArray(name);
+        @Override public byte[] readByteArray() {
+            super.readByteArray();
 
             return BYTE_ARR;
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends Message> T readMessage(String name) {
-            super.readMessage(name);
+        @Override public <T extends Message> T readMessage() {
+            super.readMessage();
 
-            return msgCls.equals(GridCacheRawVersionedEntry.class) && "key".equals(name)
+            return msgCls.equals(GridCacheRawVersionedEntry.class)
                 ? (T)new KeyCacheObjectImpl()
                 : null;
         }

@@ -86,7 +86,7 @@ public class TxLockList implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("txLocks", txLocks, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(txLocks, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -100,12 +100,9 @@ public class TxLockList implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                txLocks = reader.readCollection("txLocks", MessageCollectionItemType.MSG);
+                txLocks = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -114,7 +111,7 @@ public class TxLockList implements Message {
 
         }
 
-        return reader.afterMessageRead(TxLockList.class);
+        return true;
     }
 
     /** {@inheritDoc} */

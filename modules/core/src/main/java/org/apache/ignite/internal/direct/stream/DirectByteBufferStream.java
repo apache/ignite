@@ -1336,8 +1336,6 @@ public class DirectByteBufferStream {
             try {
                 reader.beforeInnerMessageRead();
 
-                reader.setCurrentReadClass(msg.getClass());
-
                 lastFinished = msg.readFrom(buf, reader);
             }
             finally {
