@@ -401,7 +401,7 @@ public class ValidationOnNodeJoinUtils {
             if (dsCfg == null)
                 throw new IgniteCheckedException("Data storage must be configured when cache storage path set: " + csp);
 
-            Set<String> nodeStorages = new HashSet<>(F.asList(dsCfg.getExtraStoragePathes()));
+            Set<String> nodeStorages = new HashSet<>(F.asList(dsCfg.getExtraStoragePaths()));
 
             if (!F.isEmpty(dsCfg.getStoragePath()))
                 nodeStorages.add(dsCfg.getStoragePath());

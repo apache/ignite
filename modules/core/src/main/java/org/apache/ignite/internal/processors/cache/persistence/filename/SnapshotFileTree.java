@@ -377,7 +377,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * Modifies {@link #extraStorages} for this tree to reflect snapshot options.
      * In case {@link IgniteConfiguration#getSnapshotPath()} points to absolute directory or {@link #path} for snapshot provided
      * then all snapshot files must be stored inside one folder.
-     * Otherwise, we use configured by {@link DataStorageConfiguration#getExtraStoragePathes()} structure to save snapshot.
+     * Otherwise, we use configured by {@link DataStorageConfiguration#getExtraStoragePaths()} structure to save snapshot.
      * This will distribute workload to all physical device on host.
      *
      * @param ft Node file tree.

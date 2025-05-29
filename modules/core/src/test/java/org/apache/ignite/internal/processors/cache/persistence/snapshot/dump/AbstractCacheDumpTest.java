@@ -229,7 +229,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             .setSnapshotThreadPoolSize(snpPoolSz)
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setStoragePath(DFLT_STORAGE)
-                .setExtraStoragePathes(CUSTOM_STORAGE)
+                .setExtraStoragePaths(CUSTOM_STORAGE)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(persistence))
                 .setDataRegionConfigurations(new DataRegionConfiguration()

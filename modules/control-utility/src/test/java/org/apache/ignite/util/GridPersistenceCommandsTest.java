@@ -85,7 +85,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (separateStorage) {
-            cfg.getDataStorageConfiguration().setExtraStoragePathes(
+            cfg.getDataStorageConfiguration().setExtraStoragePaths(
                 storagePath(DEFAULT_CACHE_NAME + "0"),
                 storagePath(DEFAULT_CACHE_NAME + "1"),
                 storagePath(DEFAULT_CACHE_NAME + "2"),

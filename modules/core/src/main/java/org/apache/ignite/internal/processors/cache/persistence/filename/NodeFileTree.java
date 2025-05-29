@@ -272,8 +272,8 @@ public class NodeFileTree extends SharedFileTree {
     private final File nodeStorage;
 
     /**
-     * Key is the path from {@link DataStorageConfiguration#getExtraStoragePathes()}, may be relative. Value is storage.
-     * @see DataStorageConfiguration#getExtraStoragePathes()
+     * Key is the path from {@link DataStorageConfiguration#getExtraStoragePaths()}, may be relative. Value is storage.
+     * @see DataStorageConfiguration#getExtraStoragePaths()
      */
     protected final Map<String, File> extraStorages;
 
@@ -830,13 +830,13 @@ public class NodeFileTree extends SharedFileTree {
      *
      * @param dsCfg Data storage configuration.
      * @return Node storages.
-     * @see DataStorageConfiguration#setExtraStoragePathes(String...)
+     * @see DataStorageConfiguration#setExtraStoragePaths(String...)
      */
     private Map<String, File> extraStorages(@Nullable DataStorageConfiguration dsCfg, Function<String, File> resolver) {
-        if (dsCfg == null || F.isEmpty(dsCfg.getExtraStoragePathes()))
+        if (dsCfg == null || F.isEmpty(dsCfg.getExtraStoragePaths()))
             return Collections.emptyMap();
 
-        return Arrays.stream(dsCfg.getExtraStoragePathes())
+        return Arrays.stream(dsCfg.getExtraStoragePaths())
             .collect(Collectors.toMap(Function.identity(), resolver));
     }
 

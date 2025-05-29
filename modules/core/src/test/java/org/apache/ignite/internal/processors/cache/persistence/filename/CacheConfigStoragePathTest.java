@@ -41,6 +41,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DB_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 
 /**
  * Test cases when {@link CacheConfiguration#setStoragePath(String...)} used to set custom data region storage path.
@@ -50,7 +51,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setExtraStoragePathes(storagePath(STORAGE_PATH), storagePath(STORAGE_PATH_2));
+            .setExtraStoragePaths(storagePath(STORAGE_PATH), storagePath(STORAGE_PATH_2));
 
         dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
@@ -67,10 +68,10 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
             ccfg("cache1", "grp1"),
             ccfg("cache2", "grp1"),
             ccfg("cache3", null, storagePaths(STORAGE_PATH, STORAGE_PATH_2)),
-            ccfg("cache4", "grp2", storagePaths(STORAGE_PATH)),
-            ccfg("cache5", null, storagePaths(STORAGE_PATH_2)),
-            ccfg("cache6", "grp3", storagePaths(STORAGE_PATH_2)),
-            ccfg("cache7", "grp3", storagePaths(STORAGE_PATH_2))
+            ccfg("cache4", "grp2", storagePaths(STORAGE_PATH_2, STORAGE_PATH)),
+            ccfg("cache5", null, storagePaths(STORAGE_PATH_2, STORAGE_PATH)),
+            ccfg("cache6", "grp3", storagePaths(STORAGE_PATH_2, STORAGE_PATH)),
+            ccfg("cache7", "grp3", storagePaths(STORAGE_PATH_2, STORAGE_PATH))
         };
     }
 
@@ -163,13 +164,29 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
             assertTrue(snpRoot.isDirectory());
 
             try (Stream<Path> files = Files.walk(snpRoot.toPath())) {
-                files.filter(p -> NodeFileTree.partitionFile(p.toFile())).forEach(part -> {
-                    File root = roots.stream().filter(r -> part.startsWith(r.toPath())).findFirst().orElseThrow();
+                files.filter(p -> NodeFileTree.partitionFile(p.toFile())).forEach(partFile -> {
+                    File root = roots.stream().filter(r -> partFile.startsWith(r.toPath())).findFirst().orElseThrow();
+
+                    String cacheName = NodeFileTree.cacheName(partFile.getParent().toFile());
+
+                    if (cacheName.equals(METASTORAGE_CACHE_NAME))
+                        return;
+
+                    int part = NodeFileTree.partId(partFile.toFile());
+
+
+                    String[] cs = Arrays.stream(ccfgs())
+                        .filter(ccfg -> CU.cacheOrGroupName(ccfg).equals(cacheName))
+                        .findFirst().orElseThrow().getStoragePath();
+
+                    File expStorage = snpRootF.apply(F.isEmpty(cs) ? null : cs[(part + 1) % cs.length]);
+
+                    assertEquals(expStorage, root);
 
                     snpFiles
                         .computeIfAbsent(root, r -> new HashMap<>())
-                        .computeIfAbsent(NodeFileTree.cacheName(part.getParent().toFile()), c -> new HashSet<>())
-                        .add(NodeFileTree.partId(part.toFile()));
+                        .computeIfAbsent(cacheName, c -> new HashSet<>())
+                        .add(part);
                 });
             }
             catch (IOException e) {
