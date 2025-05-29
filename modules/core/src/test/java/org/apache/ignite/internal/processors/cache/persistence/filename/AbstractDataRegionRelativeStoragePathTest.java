@@ -201,7 +201,7 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
         if (severalCacheStorages) {
             String[] res = new String[storagePath.length];
 
-            for (int i=0; i<storagePath.length; i++)
+            for (int i = 0; i < storagePath.length; i++)
                 res[i] = storagePath(storagePath[i]);
 
             return res;
@@ -210,6 +210,7 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
         return new String[] {storagePath(storagePath[0])};
     }
 
+    /** */
     String storagePath(String storagePath) {
         try {
             return absPath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;

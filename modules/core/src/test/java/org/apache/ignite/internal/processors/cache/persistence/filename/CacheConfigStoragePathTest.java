@@ -174,7 +174,6 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
 
                     int part = NodeFileTree.partId(partFile.toFile());
 
-
                     String[] cs = Arrays.stream(ccfgs())
                         .filter(ccfg -> CU.cacheOrGroupName(ccfg).equals(cacheName))
                         .findFirst().orElseThrow().getStoragePath();

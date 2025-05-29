@@ -528,8 +528,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                             if (grpKeyEncrypted == null)
                                 return null;
 
-                            if (grpKey == null)
-                                grpKey = new GroupKey(grpKeyEncrypted.id(), ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key()));
+                            if (grpKey == null) {
+                                grpKey = new GroupKey(
+                                    grpKeyEncrypted.id(),
+                                    ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key())
+                                );
+                            }
                             else {
                                 assert grpKey.equals(new GroupKey(grpKeyEncrypted.id(),
                                     ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key())));
