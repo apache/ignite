@@ -60,7 +60,6 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
     /** */
     @Test
     public void testSnapshotThrowsIfExtraRootExists() throws Exception {
-        // TODO: check clear if node fails during snapshot creation.
         IgniteEx srv = startAndActivate();
 
         putData();

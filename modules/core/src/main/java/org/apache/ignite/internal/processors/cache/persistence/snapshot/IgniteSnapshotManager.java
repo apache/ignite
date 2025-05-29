@@ -940,7 +940,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIndex());
             }
 
-            writeSnapshotDirectoryToMetastorage(ift.root());
+            writeSnapshotDirectoryToMetastorage(ift);
 
             task.start();
         });
@@ -2216,26 +2216,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         restoreCacheGrpProc.cleanup();
 
         // Snapshot which has not been completed due to the local node crashed must be deleted.
-        String snpDirName = (String)metaStorage.read(SNP_RUNNING_DIR_KEY);
+        String snpDirsName = (String)metaStorage.read(SNP_RUNNING_DIR_KEY);
 
-        if (snpDirName == null)
+        if (snpDirsName == null)
             return;
-
-        File snpDir = new File(snpDirName);
 
         recovered = true;
 
         for (File tmpRoot : ft.snapshotsTempRoots())
             F.asList(tmpRoot.listFiles()).forEach(U::delete);
 
-        if (SnapshotFileTree.incrementSnapshotDir(snpDir))
-            U.delete(snpDir);
-        else
-            deleteSnapshot(snpDir);
+        String[] snpDirs = snpDirsName.split(File.pathSeparator);
+
+        for (String snpDirName : snpDirs) {
+            File snpDir = new File(snpDirName);
+
+            if (SnapshotFileTree.incrementSnapshotDir(snpDir))
+                U.delete(snpDir);
+            else
+                deleteSnapshot(snpDir);
+        }
 
         if (log.isInfoEnabled()) {
             log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
-                "related to snapshot operation have been deleted: " + snpDir.getName());
+                "related to snapshot operation have been deleted: " + snpDirsName);
         }
     }
 
@@ -2561,15 +2565,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             rqId);
     }
 
-    /** @param snpLocDir Snapshot local directory. */
-    public void writeSnapshotDirectoryToMetastorage(File snpLocDir) {
+    /** @param sft Snapshot file tree. */
+    public void writeSnapshotDirectoryToMetastorage(NodeFileTree sft) {
         cctx.database().checkpointReadLock();
 
         try {
             assert metaStorage != null && metaStorage.read(SNP_RUNNING_DIR_KEY) == null :
                 "The previous snapshot hasn't been completed correctly";
 
-            metaStorage.write(SNP_RUNNING_DIR_KEY, snpLocDir.getAbsolutePath());
+            StringBuilder dirs = new StringBuilder(sft.root().getAbsolutePath());
+
+            for (File value : sft.extraStorages().values())
+                dirs.append(File.pathSeparator).append(value.getAbsolutePath());
+
+            metaStorage.write(SNP_RUNNING_DIR_KEY, dirs.toString());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -3835,7 +3844,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     sft.allStorages().map(File::getAbsolutePath).collect(Collectors.joining(",")) + ']');
             }
 
-            writeSnapshotDirectoryToMetastorage(sft.root());
+            writeSnapshotDirectoryToMetastorage(sft);
 
             sft.allStorages().forEach(s -> {
                 try {
