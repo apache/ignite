@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -816,6 +819,24 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         ign.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
         assertCacheKeys(ign.cache(DEFAULT_CACHE_NAME), keysCnt);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testNonSerializableCacheGroupsRestore() throws Exception {
+        int keysCnt = dfltCacheCfg.getAffinity().partitions();
+
+        Ignite ignite = startGridsWithSnapshot(1, keysCnt, false, true);
+
+        Collection<String> grpsAsKeySet = Map.of(DEFAULT_CACHE_NAME, 0).keySet();
+
+        assertFalse(grpsAsKeySet instanceof Serializable);
+
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, grpsAsKeySet).get(TIMEOUT);
+
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
     }
 
     /**

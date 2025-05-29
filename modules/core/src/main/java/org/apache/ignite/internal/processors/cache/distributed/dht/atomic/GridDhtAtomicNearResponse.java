@@ -170,11 +170,6 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 9;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
     }
@@ -203,7 +198,7 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();

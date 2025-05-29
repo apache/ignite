@@ -486,7 +486,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -707,11 +707,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 25;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 21;
     }
 
     /** {@inheritDoc} */

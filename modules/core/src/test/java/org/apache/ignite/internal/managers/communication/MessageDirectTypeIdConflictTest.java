@@ -29,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -40,7 +41,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  */
 public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
     /** Message direct type. Message with this direct type will be registered by {@link GridIoMessageFactory} first. */
-    private static final short MSG_DIRECT_TYPE = -44;
+    private static final short MSG_DIRECT_TYPE = TcpCommunicationSpi.HANDSHAKE_MSG_TYPE;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -108,11 +109,6 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public short directType() {
             return MSG_DIRECT_TYPE;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 0;
         }
 
         /** {@inheritDoc} */

@@ -771,8 +771,8 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public BinarySchema createSchema() {
-        return reader(null, false).getOrCreateSchema();
+    @Override BinarySchema createSchema() {
+        return ((BinaryReaderExImpl)reader(null, false)).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -812,7 +812,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -866,11 +866,6 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
     /** {@inheritDoc} */
     @Override public short directType() {
         return 113;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /**

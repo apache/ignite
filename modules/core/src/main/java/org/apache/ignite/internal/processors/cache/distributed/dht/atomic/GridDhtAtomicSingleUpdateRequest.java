@@ -366,7 +366,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -483,11 +483,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override public short directType() {
         return -36;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 16;
     }
 
     /** {@inheritDoc} */

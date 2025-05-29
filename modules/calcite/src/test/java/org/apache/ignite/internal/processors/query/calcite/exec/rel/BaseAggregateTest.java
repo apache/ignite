@@ -27,7 +27,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -35,7 +34,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -45,7 +43,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Aggregat
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Assert;
@@ -445,11 +442,9 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
     /** */
     @Test
-    public void sumOnDifferentRowsCount() throws IgniteCheckedException {
-        int bufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
-
-        int[] grpsCnt = {1, bufSize / 2, bufSize, bufSize + 1, bufSize * 4};
-        int[] rowsInGrps = {1, 5, bufSize};
+    public void sumOnDifferentRowsCount() {
+        int[] grpsCnt = {1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE, IN_BUFFER_SIZE + 1, IN_BUFFER_SIZE * 4};
+        int[] rowsInGrps = {1, 5, IN_BUFFER_SIZE};
 
         for (int grps : grpsCnt) {
             for (int rowsInGrp : rowsInGrps) {

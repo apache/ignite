@@ -19,7 +19,6 @@ package org.apache.ignite.cdc;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI3;
@@ -120,8 +120,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         cdcCfg.setMetricExporterSpi(metricExporters());
 
         return new CdcMain(cfg, null, cdcCfg) {
-            @Override protected CdcConsumerState createState(Path stateDir) {
-                return new CdcConsumerState(log, stateDir) {
+            @Override protected CdcConsumerState createState(NodeFileTree ft) {
+                return new CdcConsumerState(log, ft) {
                     @Override public void saveWal(T2<WALPointer, Integer> state) throws IOException {
                         super.saveWal(state);
 

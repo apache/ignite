@@ -250,7 +250,7 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -320,11 +320,6 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     /** {@inheritDoc} */
     @Override public short directType() {
         return 86;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

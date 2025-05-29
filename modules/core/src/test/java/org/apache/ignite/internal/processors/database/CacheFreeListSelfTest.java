@@ -760,13 +760,6 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            assert false;
-
-            return 0;
-        }
-
-        /** {@inheritDoc} */
         @Override public void onAckReceived() {
             assert false;
         }

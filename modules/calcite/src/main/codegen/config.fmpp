@@ -380,7 +380,6 @@ data: {
       "UESCAPE"
       "UNIQUE"
       "UNKNOWN"
-      "UNNEST"
       "UPPER"
       "UPSERT"
       "VALUE"

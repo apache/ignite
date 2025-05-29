@@ -114,7 +114,7 @@ public class CacheEvictionEntry implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -179,10 +179,5 @@ public class CacheEvictionEntry implements Message {
         }
 
         return reader.afterMessageRead(CacheEvictionEntry.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 }

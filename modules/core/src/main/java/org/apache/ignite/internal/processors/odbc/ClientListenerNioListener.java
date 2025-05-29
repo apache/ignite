@@ -567,23 +567,20 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             return;
         }
 
-        // If security enabled then only admin allowed to connect as management.
-        if (isControlUtility) {
-            if (connCtx.securityContext() != null) {
-                try (OperationSecurityContext ignored = ctx.security().withContext(connCtx.securityContext())) {
-                    ctx.security().authorize(SecurityPermission.ADMIN_OPS);
-                }
-                catch (SecurityException e) {
-                    throw new IgniteAccessControlException("ADMIN_OPS permission required");
-                }
-            }
-
-            // Allow to connect control utility even if connection disabled.
-            // Must provide a way to invoke commands.
+        if (newConnEnabled.test(connCtx.clientType()))
             return;
-        }
 
-        if (!newConnEnabled.test(connCtx.clientType()))
+        if (!isControlUtility)
             throw new IgniteAccessControlException(CONN_DISABLED_BY_ADMIN_ERR_MSG);
+
+        // When security is enabled, only an administrator can connect and execute commands.
+        if (connCtx.securityContext() != null) {
+            try (OperationSecurityContext ignored = ctx.security().withContext(connCtx.securityContext())) {
+                ctx.security().authorize(SecurityPermission.ADMIN_OPS);
+            }
+            catch (SecurityException e) {
+                throw new IgniteAccessControlException("ADMIN_OPS permission required");
+            }
+        }
     }
 }

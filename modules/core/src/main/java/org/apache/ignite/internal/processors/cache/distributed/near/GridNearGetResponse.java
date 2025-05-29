@@ -220,7 +220,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -349,11 +349,6 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
     /** {@inheritDoc} */
     @Override public short directType() {
         return 50;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 11;
     }
 
     /** {@inheritDoc} */
