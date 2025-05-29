@@ -549,16 +549,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         DataRegion dataRegion
     ) throws IgniteCheckedException {
         try {
-            boolean dirExisted = false;
-
-            for (File storage : cft.storages()) {
-                if (storage.exists()) {
-                    dirExisted = true;
-                    break;
-                }
-            }
-
-            checkAndInitCacheWorkDir(cft);
+            boolean dirExisted = checkAndInitCacheWorkDir(cft);
 
             if (dirExisted) {
                 MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
@@ -635,7 +626,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @param cft Cache file tree.
      */
-    public static void checkAndInitCacheWorkDir(CacheFileTree cft) throws IgniteCheckedException {
+    public static boolean checkAndInitCacheWorkDir(CacheFileTree cft) throws IgniteCheckedException {
+        boolean dirExisted = false;
+
         for (File cacheWorkDir : cft.storages()) {
             ReadWriteLock lock = initDirLock.getLock(cacheWorkDir.getName().hashCode());
 
@@ -661,6 +654,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                     Path tmp = cacheWorkDirPath.getParent().resolve(cacheWorkDir.getName() + TMP_SUFFIX);
 
+                    dirExisted = true;
+
                     if (!cacheWorkDir.exists())
                         throw new IgniteCheckedException("Failed to initialize cache working directory " +
                             "(failed to create, make sure the work folder has correct permissions): " +
@@ -673,8 +668,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             finally {
                 lock.writeLock().unlock();
             }
-
         }
+
+        return dirExisted;
     }
 
     /** {@inheritDoc} */

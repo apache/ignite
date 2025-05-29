@@ -52,7 +52,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.oneOf;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.resolveStorage;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 
 /**
@@ -594,7 +594,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Partition file.
      */
     public File partitionFile(CacheConfiguration<?, ?> ccfg, int part) {
-        return new File(oneOf(cacheStorages(ccfg), part), partitionFileName(part));
+        return new File(resolveStorage(cacheStorages(ccfg), part), partitionFileName(part));
     }
 
     /**
@@ -656,7 +656,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Path to the temp partition file.
      */
     public File tmpPartition(CacheConfiguration<?, ?> ccfg, int partId) {
-        return new File(oneOf(tmpCacheStorages(ccfg), partId), partitionFileName(partId));
+        return new File(resolveStorage(tmpCacheStorages(ccfg), partId), partitionFileName(partId));
     }
 
     /**
