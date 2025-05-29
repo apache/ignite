@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DB_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 
 /**
@@ -107,16 +106,18 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
     @Override void checkFileTrees(List<NodeFileTree> fts) {
         for (NodeFileTree ft : fts) {
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
-                String storagePath = F.isEmpty(ccfg.getStoragePaths()) ? null : ccfg.getStoragePaths()[0];
+                String[] csp = ccfg.getStoragePaths();
 
-                File customRoot = storagePath == null ? ft.root() : ensureExists(absPath
-                    ? new File(storagePath)
-                    : new File(ft.root(), storagePath)
-                );
-                File db = ensureExists(new File(customRoot, DB_DIR));
-                File nodeStorage = ensureExists(new File(db, ft.folderName()));
+                for (File cacheDir : ft.cacheStorages(ccfg)) {
+                    ensureExists(cacheDir);
+                    if (!F.isEmpty(csp)) {
+                        for (File partfile : cacheDir.listFiles(NodeFileTree::partitionFile)) {
+                            int part = NodeFileTree.partId(partfile);
 
-                ensureExists(new File(nodeStorage, ft.cacheStorages(ccfg)[0].getName()));
+                            assertTrue(partfile.getAbsolutePath().contains(csp[(part + 1) % csp.length]));
+                        }
+                    }
+                }
             }
         }
     }
