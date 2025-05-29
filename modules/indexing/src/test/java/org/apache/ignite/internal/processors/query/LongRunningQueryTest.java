@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -50,7 +54,9 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
 
 import static java.lang.Thread.currentThread;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
@@ -96,6 +102,15 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     /** Log listener for long DMLs. */
     private static LogListener lsnrDml;
 
+    /** Multi-node test rule. */
+    @Rule
+    public final MultiNodeTestRule multiNodeTestRule = new MultiNodeTestRule();
+
+    /** Annotation for the {@link MultiNodeTestRule}. */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    public @interface MultiNodeTest {}
+
     /** Page size. */
     private int pageSize = DEFAULT_PAGE_SIZE;
 
@@ -125,7 +140,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ignite = startGrid(0);
+        ignite = startGrids(multiNodeTestRule.isMultiNode ? 3 : 1);
 
         IgniteCache c = grid(0).createCache(new CacheConfiguration<Long, Long>()
             .setName("test")
@@ -173,14 +188,6 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
             .setName(name)
             .setIndexedTypes(idxTypes)
             .setSqlFunctionClasses(TestSQLFunctions.class);
-    }
-
-    /** */
-    public void startAdditionalGrids(int cnt) throws Exception {
-        int curentCnt = gridCount();
-
-        for (int i = curentCnt; i < curentCnt + cnt; i++)
-            startGrid(i);
     }
 
     /**
@@ -413,18 +420,13 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /**
      * Verifies that while a query is not fully fetched, its {@link H2QueryInfo} is kept in {@link HeavyQueriesTracker}
-     * on all cluster nodes and its {@link H2QueryInfo#isSuspended()} returns {@code true}. Once the query is fully
-     * fetched, its {@link H2QueryInfo} must be removed from {@link HeavyQueriesTracker}.
+     * on all cluster nodes and its {@link H2QueryInfo#isSuspended()} returns {@code true}. Then, once the query is fully
+     * fetched, its {@link H2QueryInfo} is removed from {@link HeavyQueriesTracker}.
      */
     @Test
+    @MultiNodeTest
     public void testEmptyHeavyQueriesTrackerWithFullyFetchedIterator() throws Exception {
-        startAdditionalGrids(2);
-
-        Iterator<?> it = ignite.cache("test").query(
-            new SqlFieldsQuery("select * from test")
-                .setLocal(false)
-                .setPageSize(1))
-            .iterator();
+        Iterator<?> it = queryCursor(false).iterator();
 
         assertTrue(checkQryInfoCountOnAllNodes(gridCount()));
 
@@ -440,13 +442,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * {@link HeavyQueriesTracker} on all cluster nodes.
      */
     @Test
+    @MultiNodeTest
     public void testEmptyHeavyQueriesTrackerWithClosedCursor() throws Exception {
-        startAdditionalGrids(2);
-
-        FieldsQueryCursor<List<?>> cursor = ignite.cache("test").query(
-            new SqlFieldsQuery("select * from test")
-                .setLocal(false)
-                .setPageSize(1));
+        FieldsQueryCursor<List<?>> cursor = queryCursor(false);
 
         cursor.iterator().next();
 
@@ -464,9 +462,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * {@link HeavyQueriesTracker} on all cluster nodes.
      */
     @Test
+    @MultiNodeTest
     public void testEmptyHeavyQueriesTrackerWithCancelledQuery() throws Exception {
-        startAdditionalGrids(2);
-
         cancelQueries(runNotFullyFetchedQuery(false));
     }
 
@@ -475,9 +472,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * {@link HeavyQueriesTracker} on all cluster nodes.
      */
     @Test
+    @MultiNodeTest
     public void testEmptyHeavyQueriesTrackerWithCancelledLocalQuery() throws Exception {
-        startAdditionalGrids(2);
-
         long qryId = runNotFullyFetchedQuery(true);
 
         ((IgniteEx)ignite).context().query().cancelLocalQueries(Set.of(qryId));
@@ -488,9 +484,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * {@link H2QueryInfo} instances are removed from {@link HeavyQueriesTracker} on all cluster nodes.
      * */
     @Test
+    @MultiNodeTest
     public void testEmptyHeavyQueriesTrackerWithMultipleCancelledQueries() throws Exception {
-        startAdditionalGrids(2);
-
         int qryCnt = 4;
 
         for (int i = 0; i < qryCnt; i++)
@@ -712,15 +707,11 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * @param loc Flag indicating if query should be local.
+     * @param loc Flag indicating if the query is local.
      * @return Query id.
      */
     public long runNotFullyFetchedQuery(boolean loc) {
-        SqlFieldsQuery qry = new SqlFieldsQuery("select * from test")
-            .setLocal(loc)
-            .setPageSize(1);
-
-        ignite.cache("test").query(qry).iterator().next();
+        queryCursor(loc).iterator().next();
 
         assertTrue(loc ? !heavyQueriesTracker(0).getQueries().isEmpty() : checkQryInfoCountOnAllNodes(gridCount()));
 
@@ -729,6 +720,17 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         assertTrue(qryInfo.isSuspended());
 
         return qryInfo.queryId();
+    }
+
+    /**
+     * @param loc Flag indicating if the query is local.
+     * @return Query cursor.
+     */
+    public FieldsQueryCursor<List<?>> queryCursor(boolean loc) {
+        return ignite.cache("test").query(
+            new SqlFieldsQuery("select * from test")
+                .setLocal(loc)
+                .setPageSize(1));
     }
 
     /**
@@ -855,6 +857,22 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
          */
         public Organization(String name) {
             this.name = name;
+        }
+    }
+
+    /** Test rule that allows running multi-node tests via {@link MultiNodeTest} annotation. */
+    private static class MultiNodeTestRule extends TestWatcher {
+        /** */
+        private boolean isMultiNode;
+
+        /** {@inheritDoc} */
+        @Override protected void starting(org.junit.runner.Description description) {
+            isMultiNode = description.getAnnotation(MultiNodeTest.class) != null;
+        }
+
+        /** */
+        public boolean isMultiNode() {
+            return isMultiNode;
         }
     }
 }

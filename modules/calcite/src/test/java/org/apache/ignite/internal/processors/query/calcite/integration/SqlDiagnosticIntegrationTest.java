@@ -792,8 +792,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Verifies that once the query is fully fetched, its information encapsulated in a  {@link RootQuery} instance
-     * is removed from {@link HeavyQueriesTracker}.
+     * Verifies that once the query is fully fetched, it is no longer tracked and its information encapsulated in a
+     * {@link RootQuery} instance is removed from {@link HeavyQueriesTracker}.
      */
     @Test
     public void testEmptyHeavyQueriesTrackerWithFullyFetchedIterator() throws IgniteInterruptedCheckedException {
@@ -807,8 +807,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Verifies that when the cursor of a not fully fetched query is closed, its information encapsulated
-     * in a {@link RootQuery} instacne is removed from {@link HeavyQueriesTracker}.
+     * Verifies that once the cursor of a not fully fetched query is closed, it is no longer tracked and its information
+     * encapsulated in a {@link RootQuery} instance is removed from {@link HeavyQueriesTracker}.
      */
     @Test
     public void testEmptyHeavyQueriesTrackerWithClosedCursor() throws IgniteInterruptedCheckedException {
@@ -822,8 +822,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Verifies that when a not fully fetched query is cancelled, its information encapsulated in a {@link RootQuery}
-     * instacne is removed from {@link HeavyQueriesTracker}.
+     * Verifies that once a not fully fetched query is cancelled, it is no longer tracked and its information
+     * encapsulated in a {@link RootQuery} instance is removed from {@link HeavyQueriesTracker}.
      */
     @Test
     public void testEmptyHeavyQueriesTrackerWithCancelledQuery() throws IgniteInterruptedCheckedException {
@@ -839,8 +839,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Verifies that when a local not fully fetched query is cancelled, its information encapsulated
-     * in a {@link RootQuery} instacne is removed from {@link HeavyQueriesTracker}.
+     * Verifies that once a not fully fetched local query is cancelled, it is no longer tracked its information
+     * encapsulated in a {@link RootQuery} instance is removed from {@link HeavyQueriesTracker}.
      */
     @Test
     public void testEmptyHeavyQueriesTrackerWithCancelledLocalQuery() throws IgniteInterruptedCheckedException {
