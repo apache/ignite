@@ -57,6 +57,7 @@ import org.apache.ignite.testframework.LogListener;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import static java.lang.Thread.currentThread;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
@@ -727,10 +728,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @return Query cursor.
      */
     public FieldsQueryCursor<List<?>> queryCursor(boolean loc) {
-        return ignite.cache("test").query(
-            new SqlFieldsQuery("select * from test")
-                .setLocal(loc)
-                .setPageSize(1));
+        return ignite.cache("test").query(new SqlFieldsQuery("select * from test").setLocal(loc).setPageSize(1));
     }
 
     /**
@@ -866,7 +864,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         private boolean isMultiNode;
 
         /** {@inheritDoc} */
-        @Override protected void starting(org.junit.runner.Description description) {
+        @Override protected void starting(Description description) {
             isMultiNode = description.getAnnotation(MultiNodeTest.class) != null;
         }
 
