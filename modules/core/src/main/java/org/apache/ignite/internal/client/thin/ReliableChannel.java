@@ -352,12 +352,6 @@ final class ReliableChannel implements AutoCloseable {
         List<ClientConnectionException> failures,
         Throwable err
     ) {
-        if (!(err instanceof ClientConnectionException)) {
-            fut.completeExceptionally(err);
-
-            return;
-        }
-
         if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, (ClientConnectionException)err))
             handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
         else
