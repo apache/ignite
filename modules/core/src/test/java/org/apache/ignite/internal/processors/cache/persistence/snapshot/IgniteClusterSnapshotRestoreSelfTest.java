@@ -82,6 +82,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -850,9 +851,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         Collection<String> duplicatedGrps = Arrays.asList(DEFAULT_CACHE_NAME, DEFAULT_CACHE_NAME);
 
-        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, duplicatedGrps).get(TIMEOUT);
+        Throwable thrown = assertThrowsWithCause(() -> ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, duplicatedGrps).get(TIMEOUT), IllegalArgumentException.class);
 
-        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
+        assertTrue(thrown.getMessage().contains("Cache group names must be unique"));
     }
 
     /**
