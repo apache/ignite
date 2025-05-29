@@ -1957,7 +1957,7 @@ public class IgnitionEx {
                 if (extraStorages.size() != new HashSet<>(extraStorages).size()
                     || extraStorages.contains(dsCfg.getStoragePath())) {
                     throw new IgniteCheckedException("DataStorageConfiguration contains duplicates " +
-                        "[storagePath=" + dsCfg.getStoragePath() + ", extraStoragePathes=" + extraStorages + ']');
+                        "[storagePath=" + dsCfg.getStoragePath() + ", extraStoragePaths=" + extraStorages + ']');
                 }
             }
 
