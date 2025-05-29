@@ -178,6 +178,13 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                     .setStoragePaths(myPath.getAbsolutePath(), myPath2.getAbsolutePath())),
                 IgniteCheckedException.class
             );
+
+            assertThrowsWithCause(
+                () -> srv.createCache(new CacheConfiguration<>("my-cache4")
+                    .setGroupName("grp-3")
+                    .setStoragePaths(myPath3.getAbsolutePath(), myPath2.getAbsolutePath())),
+                IgniteCheckedException.class
+            );
         };
 
         try (IgniteEx srv = startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
