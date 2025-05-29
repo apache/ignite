@@ -93,11 +93,6 @@ public class GridCacheVersionEx extends GridCacheVersion {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -105,7 +100,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();

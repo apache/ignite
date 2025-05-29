@@ -388,7 +388,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -551,11 +551,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         }
 
         return reader.afterMessageRead(CacheContinuousQueryEntry.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 10;
     }
 
     /** {@inheritDoc} */

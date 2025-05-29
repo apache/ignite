@@ -103,7 +103,7 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -190,11 +190,6 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 7;
     }
 
     /** {@inheritDoc} */

@@ -315,7 +315,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -471,11 +471,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 30;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
         return 30;
     }
 

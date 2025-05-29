@@ -113,11 +113,8 @@ public abstract class AbstractCommunicationMessageSerializationTest {
             + msg.getClass().getName() + ']', writer.writtenFields, reader.readFields);
 
         if (!(msg instanceof HandshakeMessage)) {
-            assertEquals("Unexpected write count for the message [cls="
-                + msg.getClass().getName() + ']', msg.fieldsCount(), writer.writtenFields.size());
-
-            assertEquals("Unexpected read count for the message [cls="
-                + msg.getClass().getName() + ']', msg.fieldsCount(), reader.readFields.size());
+            assertEquals("Mismatch fields count for the message [cls="
+                + msg.getClass().getName() + ']', reader.readFields.size(), writer.writtenFields.size());
         }
     }
 
@@ -164,7 +161,7 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         @Override public void setBuffer(ByteBuffer buf) {}
 
         /** {@inheritDoc} */
-        @Override public boolean writeHeader(short type, byte fieldCnt) {
+        @Override public boolean writeHeader(short type) {
             return true;
         }
 

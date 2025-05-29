@@ -180,7 +180,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -196,11 +196,6 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         }
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

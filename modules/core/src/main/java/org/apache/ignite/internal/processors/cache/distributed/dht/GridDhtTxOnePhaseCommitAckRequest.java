@@ -90,7 +90,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -135,10 +135,5 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -27;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 }

@@ -62,7 +62,7 @@ public class GridH2String extends GridH2ValueMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -107,11 +107,6 @@ public class GridH2String extends GridH2ValueMessage {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -17;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

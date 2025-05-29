@@ -230,7 +230,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -411,10 +411,5 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.QUERY_START_REQUEST;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 11;
     }
 }

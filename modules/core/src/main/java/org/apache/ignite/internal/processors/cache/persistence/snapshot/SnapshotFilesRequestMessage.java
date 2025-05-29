@@ -133,7 +133,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -215,11 +215,6 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
         }
 
         return reader.afterMessageRead(SnapshotFilesRequestMessage.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 5;
     }
 
     /** {@inheritDoc} */

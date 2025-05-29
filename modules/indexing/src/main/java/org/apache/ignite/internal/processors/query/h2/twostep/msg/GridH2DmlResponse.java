@@ -144,7 +144,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -228,11 +228,6 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -56;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 
     /** {@inheritDoc} */

@@ -53,13 +53,6 @@ public interface Message extends Serializable {
     public short directType();
 
     /**
-     * Gets fields count.
-     *
-     * @return Fields count.
-     */
-    public byte fieldsCount();
-
-    /**
      * Method called when ack message received.
      */
     public void onAckReceived();
