@@ -104,9 +104,9 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             long newTrackingData;
 
             if (firstTs <= secondTs)
-                newTrackingData = asLong((int)latestTs, secondTs);
+                newTrackingData = U.toLong((int)latestTs, secondTs);
             else
-                newTrackingData = asLong(firstTs, (int)latestTs);
+                newTrackingData = U.toLong(firstTs, (int)latestTs);
 
             success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackingData, newTrackingData);
         } while (!success);
@@ -228,7 +228,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
 
-        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, asLong((int)latestTs, 0));
+        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, U.toLong((int)latestTs, 0));
     }
 
     /**
@@ -256,34 +256,21 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             if (firstTs == -1)
                 return;
 
-            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackinData, asLong(-1, nextPageIdx));
+            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackinData, U.toLong(-1, nextPageIdx));
         } while (!success);
     }
 
-    /** */
-    private static final long FIRST_INT_MASK = ~(-1L << Integer.SIZE);
-
-    /** */
-    private static final long SECOND_INT_MASK = -1L << Integer.SIZE;
-
     /**
-     * Encode a pair of integer values into a single long.
-     */
-    private long asLong(int first, int second) {
-        return (((long)second) << Integer.SIZE) | ((long)first & FIRST_INT_MASK);
-    }
-
-    /**
-     * Decode long and extract firsts integer value.
+     * Helper to extract first integer value.
      */
     private int first(long l) {
-        return (int)(l & FIRST_INT_MASK);
+        return (int)(l >> Integer.SIZE);
     }
 
     /**
-     * Decode long and extract second integer value.
+     * Helper to extract second integer value.
      */
     private int second(long l) {
-        return (int)((l & SECOND_INT_MASK) >> Integer.SIZE);
+        return (int)l;
     }
 }
