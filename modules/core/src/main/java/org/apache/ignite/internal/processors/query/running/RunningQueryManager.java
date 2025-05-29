@@ -938,7 +938,7 @@ public class RunningQueryManager {
         }
     }
 
-    /** Stops query execution tracking on all nodes.*/
+    /** Stops tracking of the query on all cluster nodes.*/
     private static class StopQueryTrackingTask implements IgniteRunnable {
         /** */
         private static final long serialVersionUID = 0L;

@@ -22,65 +22,78 @@ import java.util.Objects;
 import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * {@link TrackableQuery} implementation that facilitates identifying H2 queries information in {@link HeavyQueriesTracker}
- * from the {@code ignite-core} module.
- */
+/** {@link TrackableQuery} implementation that facilitates processing of query information in {@link HeavyQueriesTracker}. */
 public class TrackableQueryImpl implements TrackableQuery {
-    /** Query schema. */
+    /** Schema name. */
     private String schema;
 
-    /** Query SQL. */
+    /** Sql. */
     private String sql;
 
-    /** Originator node uid. */
+    /** Node id. */
     private UUID nodeId;
 
     /** Query id. */
     private long qryId;
 
-    /** */
+    /** @return Schema name. */
     public String schema() {
         return schema;
     }
 
-    /** */
+    /**
+     * @param schema Schema name.
+     *
+     * @return {@code this} for chaining.
+     */
     public TrackableQueryImpl schema(String schema) {
         this.schema = schema;
 
         return this;
     }
 
-    /** */
+    /** @return Sql. */
     public String sql() {
         return sql;
     }
 
-    /** */
+    /**
+     * @param sql Sql.
+     *
+     * @return {@code this} for chaining.
+     */
     public TrackableQueryImpl sql(String sql) {
         this.sql = sql;
 
         return this;
     }
 
-    /** */
+    /** @return Node id. */
     public UUID nodeId() {
         return nodeId;
     }
 
-    /** */
+    /**
+     * @param nodeId Node id.
+     *
+     * @return {@code this} for chaining.
+     */
     public TrackableQueryImpl nodeId(UUID nodeId) {
         this.nodeId = nodeId;
 
         return this;
     }
 
-    /** */
+    /** @return Query id. */
     public long queryId() {
         return qryId;
     }
 
-    /** */
+    /**
+     * @param qryId Query id.
+     *
+     * @return {@code this} for chaining.
+     */
     public TrackableQueryImpl queryId(long qryId) {
         this.qryId = qryId;
 

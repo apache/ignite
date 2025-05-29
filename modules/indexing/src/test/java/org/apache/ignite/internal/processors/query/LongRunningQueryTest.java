@@ -171,7 +171,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        assertTrue(checkQryInfoCountOnAllNodes(0));
+        checkQryInfoCount(0);
 
         stopAllGrids();
 
@@ -425,10 +425,10 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      */
     @Test
     @MultiNodeTest
-    public void testEmptyHeavyQueriesTrackerWithFullyFetchedIterator() throws Exception {
+    public void testEmptyHeavyQueriesTrackerWithFullyFetchedIterator() {
         Iterator<?> it = queryCursor(false).iterator();
 
-        assertTrue(checkQryInfoCountOnAllNodes(gridCount()));
+        checkQryInfoCount(gridCount());
 
         H2QueryInfo qry = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
 
@@ -443,12 +443,12 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      */
     @Test
     @MultiNodeTest
-    public void testEmptyHeavyQueriesTrackerWithClosedCursor() throws Exception {
+    public void testEmptyHeavyQueriesTrackerWithClosedCursor() {
         FieldsQueryCursor<List<?>> cursor = queryCursor(false);
 
         cursor.iterator().next();
 
-        assertTrue(checkQryInfoCountOnAllNodes(gridCount()));
+        checkQryInfoCount(gridCount());
 
         H2QueryInfo qryInfo = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
 
@@ -463,7 +463,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      */
     @Test
     @MultiNodeTest
-    public void testEmptyHeavyQueriesTrackerWithCancelledQuery() throws Exception {
+    public void testEmptyHeavyQueriesTrackerWithCancelledQuery() {
         cancelQueries(runNotFullyFetchedQuery(false));
     }
 
@@ -473,7 +473,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      */
     @Test
     @MultiNodeTest
-    public void testEmptyHeavyQueriesTrackerWithCancelledLocalQuery() throws Exception {
+    public void testEmptyHeavyQueriesTrackerWithCancelledLocalQuery() {
         long qryId = runNotFullyFetchedQuery(true);
 
         ((IgniteEx)ignite).context().query().cancelLocalQueries(Set.of(qryId));
@@ -485,7 +485,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * */
     @Test
     @MultiNodeTest
-    public void testEmptyHeavyQueriesTrackerWithMultipleCancelledQueries() throws Exception {
+    public void testEmptyHeavyQueriesTrackerWithMultipleCancelledQueries() {
         int qryCnt = 4;
 
         for (int i = 0; i < qryCnt; i++)
@@ -713,7 +713,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public long runNotFullyFetchedQuery(boolean loc) {
         queryCursor(loc).iterator().next();
 
-        assertTrue(loc ? !heavyQueriesTracker(0).getQueries().isEmpty() : checkQryInfoCountOnAllNodes(gridCount()));
+        checkQryInfoCount(loc ? 1 : gridCount());
 
         H2QueryInfo qryInfo = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
 
@@ -810,7 +810,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /** */
-    private boolean checkQryInfoCountOnAllNodes(int exp) {
+    private void checkQryInfoCount(int exp) {
         int res = 0;
 
         for (int i = 0; i < gridCount(); i++) {
@@ -818,7 +818,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
                 res++;
         }
 
-        return res == exp;
+        assertEquals(exp, res);
     }
 
     /** */
@@ -860,7 +860,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         }
     }
 
-    /** Test rule that allows running multi-node tests via {@link MultiNodeTest} annotation. */
+    /** Test rule that allows marking a test as multi-node via the {@link MultiNodeTest} annotation. */
     private static class MultiNodeTestRule extends TestWatcher {
         /** */
         private boolean isMultiNode;

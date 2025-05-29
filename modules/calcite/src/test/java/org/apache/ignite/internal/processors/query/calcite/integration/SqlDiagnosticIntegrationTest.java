@@ -839,7 +839,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Verifies that once a not fully fetched local query is cancelled, it is no longer tracked its information
+     * Verifies that once a not fully fetched local query is cancelled, it is no longer tracked and its information
      * encapsulated in a {@link RootQuery} instance is removed from {@link HeavyQueriesTracker}.
      */
     @Test
@@ -1006,8 +1006,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 .addQueryField("id", Long.class.getName(), null)
                 .addQueryField("val", Long.class.getName(), null)
                 .setKeyFieldName("id")
-                .setValueFieldName("val")
-            )));
+                .setValueFieldName("val"))));
 
         for (long i = 0; i < 10; ++i)
             cache.put(i, i);
