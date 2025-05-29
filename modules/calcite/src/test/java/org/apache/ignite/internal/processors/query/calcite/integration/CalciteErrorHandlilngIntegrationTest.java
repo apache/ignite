@@ -101,6 +101,9 @@ public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest
 
         sql(client, "create table test (id int primary key, val varchar)");
 
+        for (int i = 0; i < 200; ++i)
+            sql(client, "insert into test values(?,?)", i, i + "a");
+
         String sql = "select /*+ CNL_JOIN */ t1.id " +
             "from test t1, test t2 where t1.id = t2.id";
 

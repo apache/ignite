@@ -665,7 +665,11 @@ public class PlannerTest extends AbstractPlannerTest {
 
         IgniteRel phys = physicalPlan(sql, publicSchema);
 
-        assertEquals(3, splitPlan(phys).fragments().size());
+        List<Fragment> fragments = splitPlan(phys).fragments();
+
+        assertEquals(2, fragments.size());
+        assertEquals(1, fragments.stream().filter(fr -> fr.root() instanceof Join).count());
+        assertEquals(1, fragments.stream().filter(fr -> fr.root() instanceof IgniteSender).count());
     }
 
     /**

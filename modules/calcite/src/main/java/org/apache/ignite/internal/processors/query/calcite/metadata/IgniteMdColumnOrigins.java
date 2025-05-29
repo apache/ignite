@@ -224,7 +224,7 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
 
             for (RexSlot slot : sources) {
                 if (slot instanceof RexLocalRef) {
-                    RelColumnOrigin slotOrigin = rel.columnOriginsByRelLocalRef(slot.getIndex());
+                    RelColumnOrigin slotOrigin = rel.tableColIdx(slot.getIndex());
 
                     res.add(new RelColumnOrigin(slotOrigin.getOriginTable(), slotOrigin.getOriginColumnOrdinal(),
                         derived));
@@ -234,7 +234,7 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
             return res;
         }
 
-        return Collections.singleton(rel.columnOriginsByRelLocalRef(iOutputColumn));
+        return Collections.singleton(rel.tableColIdx(iOutputColumn));
     }
 
     /**

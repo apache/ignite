@@ -190,9 +190,16 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
      * @return Set of column origins for the given idx or {@code null} if unable to found it.
      */
     public RelColumnOrigin columnOriginsByRelLocalRef(int colIdx) {
+        int originColIdx = (requiredColumns() == null) ? colIdx : requiredColumns().toArray()[colIdx];
+
+        return new RelColumnOrigin(getTable(), originColIdx, false);
+    }
+
+    /** */
+    public RelColumnOrigin tableColIdx(int projectColIdx) {
         int originColIdx = (requiredColumns == null)
-            ? colIdx
-            : Commons.mapping(requiredColumns, getTable().getRowType().getFieldCount()).getTarget(requiredColumns.nth(colIdx));
+            ? projectColIdx
+            : Commons.mapping(requiredColumns, getTable().getRowType().getFieldCount()).getTarget(requiredColumns.nth(projectColIdx));
 
         return new RelColumnOrigin(getTable(), originColIdx, false);
     }
