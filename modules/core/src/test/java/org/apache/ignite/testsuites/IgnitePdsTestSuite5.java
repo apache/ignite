@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDiscoDataHandlingInNewClusterTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionNotificationsTest;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.FillFactorMetricTest;
@@ -85,7 +84,6 @@ public class IgnitePdsTestSuite5 {
         GridTestUtils.addTestIfNeeded(suite, PageIdDistributionTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TrackingPageIOTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageIOFreeSizeTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, FreeListTest.class, ignoredTests);
 
         // BTree tests with store page memory.
         GridTestUtils.addTestIfNeeded(suite, BPlusTreePageMemoryImplTest.class, ignoredTests);

@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.freelist;
+package org.apache.ignite.internal.processors.database;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,7 +41,6 @@ import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.CallbackExecutorLogListener;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -60,7 +58,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
  */
 @RunWith(Parameterized.class)
 @WithSystemProperty(key = IGNITE_PAGES_LIST_STRIPES_PER_BUCKET, value = "1")
-public class FreeListTest extends GridCommonAbstractTest {
+public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS_COUNT = 5_000;
 
@@ -164,9 +162,6 @@ public class FreeListTest extends GridCommonAbstractTest {
         @IgniteInstanceResource
         Ignite ignite;
 
-        /** */
-        Random random = new Random(3793);
-
         /** {@inheritDoc} */
         @Override public void run() {
             IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
@@ -214,12 +209,12 @@ public class FreeListTest extends GridCommonAbstractTest {
 
         /** */
         private int key() {
-            return random.nextInt(KEYS_COUNT);
+            return ThreadLocalRandom.current().nextInt(KEYS_COUNT);
         }
 
         /** */
         private byte[] value() {
-            return new byte[random.nextInt(12000) + 3000];
+            return new byte[ThreadLocalRandom.current().nextInt(12000) + 3000];
         }
     }
 
@@ -242,19 +237,13 @@ public class FreeListTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
-            .setDiscoverySpi(new TcpDiscoverySpi()
-                .setLocalAddress("127.0.0.1")
-                .setIpFinder(new TcpDiscoveryVmIpFinder()
-                    .setAddresses(Collections.singleton("127.0.0.1:" +
-                        TcpDiscoverySpi.DFLT_PORT + ".." + (TcpDiscoverySpi.DFLT_PORT + 1)))
-                ));;
+            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER));
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
         int pageSize = dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize();
 
         dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setPersistenceEnabled(false)
             .setMaxSize(pageSize * 10L * KEYS_COUNT));
 
         cfg.setDataStorageConfiguration(dsCfg);
