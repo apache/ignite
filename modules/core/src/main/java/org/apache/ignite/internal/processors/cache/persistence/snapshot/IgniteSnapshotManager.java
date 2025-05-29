@@ -700,16 +700,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.isDirectory())
             return;
 
-        try {
-            SnapshotFileTree sft = new SnapshotFileTree(
-                cctx.kernalContext(),
-                snpDir.getName(),
-                snpDir.getParent(),
-                ft.folderName(),
-                pdsSettings.consistentId().toString());
+        deleteSnapshot(new SnapshotFileTree(
+            cctx.kernalContext(),
+            snpDir.getName(),
+            snpDir.getParent(),
+            ft.folderName(),
+            pdsSettings.consistentId().toString()));
+    }
 
+    /** */
+    public void deleteSnapshot(SnapshotFileTree sft) {
+        try {
             U.delete(sft.binaryMeta());
-            U.delete(sft.nodeStorage());
+            sft.allStorages().forEach(U::delete);
             U.delete(sft.meta());
 
             deleteDirectory(sft.binaryMetaRoot());
@@ -1243,7 +1246,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (req.incremental())
                         U.delete(snpReq.snapshotFileTree().incrementalSnapshotFileTree(req.incrementIndex()).root());
                     else
-                        deleteSnapshot(snpReq.snapshotFileTree().root());
+                        deleteSnapshot(snpReq.snapshotFileTree());
                 }
                 else if (!F.isEmpty(req.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
@@ -3959,7 +3962,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + sft.nodeStorage() + ']');
             }
             else {
-                deleteSnapshot(sft.root());
+                deleteSnapshot(sft);
 
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());

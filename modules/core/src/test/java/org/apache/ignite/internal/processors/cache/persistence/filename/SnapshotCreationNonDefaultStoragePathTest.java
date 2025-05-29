@@ -19,12 +19,17 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Test snapshot can be created when {@link DataStorageConfiguration#setStoragePath(String)} used.
@@ -54,6 +59,41 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
 
     /** */
     @Test
+    public void testSnapshotThrowsIfExtraRootExists() throws Exception {
+        // TODO: check clear if node fails during snapshot creation.
+        IgniteEx srv = startAndActivate();
+
+        putData();
+
+        checkDataExists();
+
+        String snpName = "mysnp";
+
+        File srvExtraSnpRoot = new SnapshotFileTree(srv.context(), snpName, null).extraStorages().get(storagePath(STORAGE_PATH_2));
+
+        assertTrue(srvExtraSnpRoot.mkdirs());
+
+        assertThrowsWithCause(() -> srv.snapshot().createSnapshot(snpName).get(), IgniteException.class);
+
+        for (Ignite node : G.allGrids()) {
+            SnapshotFileTree sft = new SnapshotFileTree(((IgniteEx)node).context(), snpName, null);
+
+            assertTrue(sft.nodeStorage().getAbsolutePath() + " must not extists", !sft.nodeStorage().exists());
+
+            for (File es : sft.extraStorages().values()) {
+                assertTrue(es.getAbsolutePath() + " must not extists", !es.exists());
+            }
+        }
+
+        U.delete(srvExtraSnpRoot);
+
+        srv.snapshot().createSnapshot(snpName).get();
+
+        restoreAndCheck(snpName, null);
+    }
+
+    /** */
+    @Test
     public void testSnapshotCanBeCreated() throws Exception {
         IgniteEx srv = startAndActivate();
 
@@ -75,13 +115,18 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
     @Override void checkFileTrees(List<NodeFileTree> fts) {
         for (NodeFileTree ft : fts) {
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
+                assertTrue(!severalCacheStorages || ccfg.getStoragePaths().length > 1);
+
                 for (String cs : ccfg.getStoragePaths()) {
+
                     File customRoot = ensureExists(absPath
                         ? new File(cs)
                         : new File(ft.root(), cs)
                     );
 
-                    File nodeStorage = ensureExists(new File(customRoot, ft.folderName()));
+                    String foldeNamePath = (cs.equals(storagePath(STORAGE_PATH)) ? "" : "db/") + ft.folderName();
+
+                    File nodeStorage = ensureExists(new File(customRoot, foldeNamePath));
 
                     ensureExists(new File(nodeStorage, ft.cacheStorages(ccfg)[0].getName()));
                 }
