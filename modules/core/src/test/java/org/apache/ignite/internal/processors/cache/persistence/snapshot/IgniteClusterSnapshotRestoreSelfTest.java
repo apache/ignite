@@ -851,7 +851,10 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         Collection<String> duplicatedGrps = Arrays.asList(DEFAULT_CACHE_NAME, DEFAULT_CACHE_NAME);
 
-        Throwable thrown = assertThrowsWithCause(() -> ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, duplicatedGrps).get(TIMEOUT), IllegalArgumentException.class);
+        Throwable thrown = assertThrowsWithCause(
+            () -> ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, duplicatedGrps).get(TIMEOUT),
+            IllegalArgumentException.class
+        );
 
         assertTrue(thrown.getMessage().contains("Cache group names must be unique."));
     }
