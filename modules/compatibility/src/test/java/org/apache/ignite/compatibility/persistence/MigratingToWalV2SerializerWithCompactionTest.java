@@ -142,12 +142,12 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
             assertNotNull(cpMarkers);
             assertTrue(cpMarkers.length > 0);
 
-            List<File> partFiles = Arrays.stream(ft.cacheStorages(ignite.cachex(TEST_CACHE_NAME).configuration()))
-                .flatMap(cacheDir -> Arrays.stream(cacheDir.listFiles(NodeFileTree::partitionFile)))
-                .collect(Collectors.toList());
+            File[] cacheDirs = ft.cacheStorages(ignite.cachex(TEST_CACHE_NAME).configuration());
+            assertEquals(1, cacheDirs.length);
+            File[] partFiles = cacheDirs[0].listFiles(NodeFileTree::partitionFile);
 
             assertNotNull(partFiles);
-            assertTrue(!partFiles.isEmpty());
+            assertTrue(partFiles.length > 0);
 
             // Enforce reading WAL from the very beginning at the next start.
             for (File f : cpMarkers)

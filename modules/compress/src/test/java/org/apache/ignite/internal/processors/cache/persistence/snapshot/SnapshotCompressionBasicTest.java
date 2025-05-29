@@ -403,8 +403,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     protected long persistenseSize(Collection<Ignite> grids) {
         return grids.stream()
-            .flatMap(ig -> ((IgniteEx)ig).context().pdsFolderResolver().fileTree().allStorages())
-            .map(File::toPath)
+            .map(ig -> ((IgniteEx)ig).context().pdsFolderResolver().fileTree().nodeStorage().toPath())
             .reduce(0L, (acc, p) -> acc + directorySize(p), Long::sum);
     }
 
