@@ -592,8 +592,8 @@ public class ConnectionClientPool {
         if (clients0 != null) {
             for (GridCommunicationClient client : clients0) {
                 if (client != null) {
-                    if (log.isInfoEnabled()) {
-                        log.info("Forcing NIO client close since node has left [nodeId=" + nodeId +
+                    if (log.isDebugEnabled()) {
+                        log.debug("Forcing NIO client close since node has left [nodeId=" + nodeId +
                             ", client=" + client + ']');
                     }
 

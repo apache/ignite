@@ -47,8 +47,6 @@ class CommunicationWorkerThreadUtils {
 
             U.join(tcpCommWorkerThread, log);
         }
-
-        log.info(">>> FINISH interruptCommWorkerThreads for clientName: " + clientName);
     }
 
     /**

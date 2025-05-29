@@ -7559,8 +7559,8 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return Resolved address.
      */
     private static InetSocketAddress createResolved(String addr, int port) {
-        log.log(Level.INFO, () -> S.toString(
-            ">>> Resolving address",
+        log.log(Level.FINE, () -> S.toString(
+            "Resolving address",
             "addr", addr, false,
             "port", port, false,
             "thread", Thread.currentThread().getName(), false
@@ -7579,8 +7579,8 @@ public abstract class IgniteUtils extends CommonUtils {
             long threshold = millisToNanos(200);
 
             if (duration > threshold) {
-                log.log(Level.INFO, new TimeoutException(), () -> S.toString(
-                    ">>> Resolving address took too much time",
+                log.log(Level.FINE, new TimeoutException(), () -> S.toString(
+                    "Resolving address took too much time",
                     "duration(ms)", nanosToMillis(duration), false,
                     "addr", addr, false,
                     "port", port, false,

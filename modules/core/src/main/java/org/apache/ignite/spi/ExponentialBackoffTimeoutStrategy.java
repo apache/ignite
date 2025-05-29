@@ -20,9 +20,6 @@ package org.apache.ignite.spi;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_MAX_CONN_TIMEOUT;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_RECONNECT_CNT;
-
 /**
  * Strategy which incorporates retriable network operation, handling of totalTimeout logic.
  * It increases startTimeout based on exponential backoff algorithm.
@@ -65,28 +62,6 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
             totalBackoffTimeout += backoffTimeout(totalBackoffTimeout, maxTimeout);
 
         return totalBackoffTimeout;
-    }
-
-    public static void main(String[] args) throws IgniteSpiOperationTimeoutException {
-        System.out.println(">>> RESULT=" + totalBackoffTimeout(5000, DFLT_MAX_CONN_TIMEOUT, DFLT_RECONNECT_CNT));
-
-        TimeoutStrategy connTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
-                totalBackoffTimeout(5000, DFLT_MAX_CONN_TIMEOUT, DFLT_RECONNECT_CNT),
-                500,
-                DFLT_MAX_CONN_TIMEOUT
-        );
-
-        System.out.println(">>> 1: " + connTimeoutStgy.nextTimeout());
-        System.out.println(">>> 2: " + connTimeoutStgy.nextTimeout());
-        System.out.println(">>> 3: " + connTimeoutStgy.nextTimeout());
-        System.out.println(">>> 4: " + connTimeoutStgy.nextTimeout());
-        System.out.println(">>> 5: " + connTimeoutStgy.nextTimeout());
-        System.out.println(">>> 6: " + connTimeoutStgy.nextTimeout());
-        System.out.println(">>> 7: " + connTimeoutStgy.nextTimeout());
-        System.out.println(">>> 8: " + connTimeoutStgy.nextTimeout());
-        System.out.println(">>> 9: " + connTimeoutStgy.nextTimeout());
-        System.out.println(">>> 10: " + connTimeoutStgy.nextTimeout());
-        System.out.println(">>> 11: " + connTimeoutStgy.nextTimeout());
     }
 
     /**
