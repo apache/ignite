@@ -143,31 +143,9 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
      */
     private void unregisterQuery() {
         if (unregistered.compareAndSet(false, true)) {
-            stopTrackingQuery();
+            runningQryMgr.stopQueryTracking(qryId, failReason);
 
             runningQryMgr.unregister(qryId, failReason);
-        }
-    }
-
-    /**
-     * Stop tracking query.
-     */
-    private void stopTrackingQuery() {
-        GridRunningQueryInfo qry = runningQryMgr.runningQueryInfo(qryId);
-
-        if (qry != null) {
-            runningQryMgr.heavyQueriesTracker().stopTracking(
-                new H2QueryInfo(
-                    qry.schemaName(),
-                    qry.query(),
-                    qry.enforceJoinOrder(),
-                    qry.distributedJoins(),
-                    qry.lazy(),
-                    qry.nodeId(),
-                    qry.id()
-                ),
-                failReason
-            );
         }
     }
 

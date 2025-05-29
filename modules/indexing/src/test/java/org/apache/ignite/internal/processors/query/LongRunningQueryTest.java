@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.query.running.TrackableQuery;
+import org.apache.ignite.internal.processors.query.running.TrackableQueryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -123,9 +125,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ignite = startGrid();
+        ignite = startGrid(0);
 
-        IgniteCache c = grid().createCache(new CacheConfiguration<Long, Long>()
+        IgniteCache c = grid(0).createCache(new CacheConfiguration<Long, Long>()
             .setName("test")
             .setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Long.class)
                 .setTableName("test")
@@ -140,7 +142,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         for (long i = 0; i < KEY_CNT; ++i)
             c.put(i, i);
 
-        IgniteCache c2 = grid().createCache(cacheConfig("pers", Integer.class, Person.class));
+        IgniteCache c2 = grid(0).createCache(cacheConfig("pers", Integer.class, Person.class));
 
         c2.put(1001, new Person(1, "p1"));
 
@@ -154,7 +156,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        assertTrue(heavyQueriesTracker().getQueries().isEmpty());
+        assertTrue(checkQryInfoCountOnAllNodes(0));
 
         stopAllGrids();
 
@@ -171,6 +173,14 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
             .setName(name)
             .setIndexedTypes(idxTypes)
             .setSqlFunctionClasses(TestSQLFunctions.class);
+    }
+
+    /** */
+    public void startAdditionalGrids(int cnt) throws Exception {
+        int curentCnt = gridCount();
+
+        for (int i = curentCnt; i < curentCnt + cnt; i++)
+            startGrid(i);
     }
 
     /**
@@ -402,21 +412,23 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Verifies that while a query is not fully fetched, its {@link H2QueryInfo} is kept in
-     * {@link HeavyQueriesTracker} and its {@link H2QueryInfo#isSuspended()} returns {@code true}. It also verifies that
-     * once the query is fully fetched, its {@link H2QueryInfo} is removed from {@link HeavyQueriesTracker}.
+     * Verifies that while a query is not fully fetched, its {@link H2QueryInfo} is kept in {@link HeavyQueriesTracker}
+     * on all cluster nodes and its {@link H2QueryInfo#isSuspended()} returns {@code true}. Once the query is fully
+     * fetched, its {@link H2QueryInfo} must be removed from {@link HeavyQueriesTracker}.
      */
     @Test
-    public void testEmptyHeavyQueriesTrackerWithFullyFetchedIterator() {
+    public void testEmptyHeavyQueriesTrackerWithFullyFetchedIterator() throws Exception {
+        startAdditionalGrids(2);
+
         Iterator<?> it = ignite.cache("test").query(
             new SqlFieldsQuery("select * from test")
                 .setLocal(false)
                 .setPageSize(1))
             .iterator();
 
-        H2QueryInfo qry = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
+        assertTrue(checkQryInfoCountOnAllNodes(gridCount()));
 
-        assertFalse(heavyQueriesTracker().getQueries().isEmpty());
+        H2QueryInfo qry = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
 
         assertTrue(qry.isSuspended());
 
@@ -424,11 +436,13 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Verifies that when a not fully fetched query cursor is closed, its {@link H2QueryInfo} is removed from
-     * {@link HeavyQueriesTracker}.
+     * Verifies that when the cursor of a not fully fetched query is closed, its {@link H2QueryInfo} is removed from
+     * {@link HeavyQueriesTracker} on all cluster nodes.
      */
     @Test
-    public void testEmptyHeavyQueriesTrackerWithClosedCursor() {
+    public void testEmptyHeavyQueriesTrackerWithClosedCursor() throws Exception {
+        startAdditionalGrids(2);
+
         FieldsQueryCursor<List<?>> cursor = ignite.cache("test").query(
             new SqlFieldsQuery("select * from test")
                 .setLocal(false)
@@ -436,9 +450,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         cursor.iterator().next();
 
-        H2QueryInfo qryInfo = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
+        assertTrue(checkQryInfoCountOnAllNodes(gridCount()));
 
-        assertFalse(heavyQueriesTracker().getQueries().isEmpty());
+        H2QueryInfo qryInfo = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
 
         assertTrue(qryInfo.isSuspended());
 
@@ -447,19 +461,23 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /**
      * Verifies that when a not fully fetched query is cancelled, its {@link H2QueryInfo} is removed from
-     * {@link HeavyQueriesTracker}.
+     * {@link HeavyQueriesTracker} on all cluster nodes.
      */
     @Test
-    public void testEmptyHeavyQueriesTrackerWithCancelledQuery() {
+    public void testEmptyHeavyQueriesTrackerWithCancelledQuery() throws Exception {
+        startAdditionalGrids(2);
+
         cancelQueries(runNotFullyFetchedQuery(false));
     }
 
     /**
      * Verifies that when a local not fully fetched query is cancelled, its {@link H2QueryInfo} is removed from
-     * {@link HeavyQueriesTracker}.
+     * {@link HeavyQueriesTracker} on all cluster nodes.
      */
     @Test
-    public void testEmptyHeavyQueriesTrackerWithCancelledLocalQuery() {
+    public void testEmptyHeavyQueriesTrackerWithCancelledLocalQuery() throws Exception {
+        startAdditionalGrids(2);
+
         long qryId = runNotFullyFetchedQuery(true);
 
         ((IgniteEx)ignite).context().query().cancelLocalQueries(Set.of(qryId));
@@ -467,28 +485,35 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /**
      * Verifies that when there are multiple not fully fetched queries, and they are cancelled separately, corresponding
-     * {@link H2QueryInfo} instances are removed from {@link HeavyQueriesTracker}.
+     * {@link H2QueryInfo} instances are removed from {@link HeavyQueriesTracker} on all cluster nodes.
      * */
     @Test
-    public void testEmptyHeavyQueriesTrackerWithMultipleCancelledQueries() {
-        for (int i = 0; i < 4; i++)
+    public void testEmptyHeavyQueriesTrackerWithMultipleCancelledQueries() throws Exception {
+        startAdditionalGrids(2);
+
+        int qryCnt = 4;
+
+        for (int i = 0; i < qryCnt; i++)
             runNotFullyFetchedQuery(false);
 
-        Set<TrackableQuery> qrys = heavyQueriesTracker().getQueries();
+        for (int i = 0; i < gridCount(); ++i)
+            assertEquals(qryCnt, heavyQueriesTracker(i).getQueries().size());
 
-        assertEquals(4, qrys.size());
-
-        List<H2QueryInfo> qrysList = qrys.stream().map(q -> (H2QueryInfo)q).collect(Collectors.toList());
+        List<H2QueryInfo> qrysList = heavyQueriesTracker(0).getQueries().stream().map(q -> (H2QueryInfo)q).collect(Collectors.toList());
 
         cancelQueries(qrysList.get(0).queryId(), qrysList.get(1).queryId());
 
-        assertEquals(2, qrys.size());
+        for (int i = 0; i < gridCount(); ++i) {
+            Set<TrackableQuery> qrys = heavyQueriesTracker(i).getQueries();
 
-        assertFalse(qrys.stream().anyMatch(qryInfo -> {
-            long id = ((H2QueryInfo)qryInfo).queryId();
+            assertEquals(2, qrys.size());
 
-            return id == qrysList.get(0).queryId() || id == qrysList.get(1).queryId();
-        }));
+            assertFalse(qrys.stream().anyMatch(qryInfo -> {
+                long id = ((TrackableQueryImpl)qryInfo).queryId();
+
+                return id == qrysList.get(0).queryId() || id == qrysList.get(1).queryId();
+            }));
+        }
 
         cancelQueries(qrysList.get(2).queryId(), qrysList.get(3).queryId());
     }
@@ -697,9 +722,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         ignite.cache("test").query(qry).iterator().next();
 
-        H2QueryInfo qryInfo = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
+        assertTrue(loc ? !heavyQueriesTracker(0).getQueries().isEmpty() : checkQryInfoCountOnAllNodes(gridCount()));
 
-        assertFalse(heavyQueriesTracker().getQueries().isEmpty());
+        H2QueryInfo qryInfo = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
 
         assertTrue(qryInfo.isSuspended());
 
@@ -757,13 +782,13 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     private ListeningTestLogger testLog() {
         ListeningTestLogger testLog = new ListeningTestLogger(log);
 
-        GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).heavyQueriesTracker(),
+        GridTestUtils.setFieldValue(((IgniteH2Indexing)grid(0).context().query().getIndexing()).heavyQueriesTracker(),
             "log", testLog);
 
-        GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).mapQueryExecutor(),
+        GridTestUtils.setFieldValue(((IgniteH2Indexing)grid(0).context().query().getIndexing()).mapQueryExecutor(),
             "log", testLog);
 
-        GridTestUtils.setFieldValue(grid().context().query().getIndexing(), "log", testLog);
+        GridTestUtils.setFieldValue(grid(0).context().query().getIndexing(), "log", testLog);
 
         return testLog;
     }
@@ -774,7 +799,29 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @return Heavy queries tracker.
      */
     private HeavyQueriesTracker heavyQueriesTracker() {
-        return ((IgniteH2Indexing)grid().context().query().getIndexing()).heavyQueriesTracker();
+        return heavyQueriesTracker(0);
+    }
+
+    /** */
+    private HeavyQueriesTracker heavyQueriesTracker(int idx) {
+        return ((IgniteH2Indexing)grid(idx).context().query().getIndexing()).heavyQueriesTracker();
+    }
+
+    /** */
+    private boolean checkQryInfoCountOnAllNodes(int exp) {
+        int res = 0;
+
+        for (int i = 0; i < gridCount(); i++) {
+            if (!heavyQueriesTracker(i).getQueries().isEmpty())
+                res++;
+        }
+
+        return res == exp;
+    }
+
+    /** */
+    public int gridCount() {
+        return Ignition.allGrids().size();
     }
 
     /** */

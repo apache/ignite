@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.running;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -151,6 +152,23 @@ public final class HeavyQueriesTracker {
             else
                 LT.warn(log, LONG_QUERY_ERROR_MSG + err.getMessage() + qryInfo.queryInfo(null));
         }
+    }
+
+    /**
+     * @param schema Schema name.
+     * @param sql Sql.
+     * @param nodeId Node id.
+     * @param qryId Query id.
+     * @param err Error.
+     */
+    public void stopTracking(String schema, String sql, UUID nodeId, long qryId, @Nullable Throwable err) {
+        stopTracking(
+            new TrackableQueryImpl()
+                .schema(schema)
+                .sql(sql)
+                .nodeId(nodeId)
+                .queryId(qryId),
+            err);
     }
 
     /**

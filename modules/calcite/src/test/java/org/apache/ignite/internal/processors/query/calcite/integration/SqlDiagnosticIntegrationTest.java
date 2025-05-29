@@ -791,10 +791,13 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertTrue(isHeavyQueriesTrackerEmpty());
     }
 
-    /** */
+    /**
+     * Verifies that once the query is fully fetched, its information encapsulated in a  {@link RootQuery} instance
+     * is removed from {@link HeavyQueriesTracker}.
+     */
     @Test
     public void testEmptyHeavyQueriesTrackerWithFullyFetchedIterator() throws IgniteInterruptedCheckedException {
-        Iterator<?> it = runNotFullyFetchedQuery().iterator();
+        Iterator<?> it = runNotFullyFetchedQuery(false).iterator();
 
         assertFalse(isHeavyQueriesTrackerEmpty());
 
@@ -803,10 +806,13 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertTrue(waitForCondition(this::isHeavyQueriesTrackerEmpty, 1_000));
     }
 
-    /** */
+    /**
+     * Verifies that when the cursor of a not fully fetched query is closed, its information encapsulated
+     * in a {@link RootQuery} instacne is removed from {@link HeavyQueriesTracker}.
+     */
     @Test
     public void testEmptyHeavyQueriesTrackerWithClosedCursor() throws IgniteInterruptedCheckedException {
-        FieldsQueryCursor<List<?>> cursor = runNotFullyFetchedQuery();
+        FieldsQueryCursor<List<?>> cursor = runNotFullyFetchedQuery(false);
 
         assertFalse(isHeavyQueriesTrackerEmpty());
 
@@ -815,10 +821,13 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertTrue(waitForCondition(this::isHeavyQueriesTrackerEmpty, 1_000));
     }
 
-    /** */
+    /**
+     * Verifies that when a not fully fetched query is cancelled, its information encapsulated in a {@link RootQuery}
+     * instacne is removed from {@link HeavyQueriesTracker}.
+     */
     @Test
     public void testEmptyHeavyQueriesTrackerWithCancelledQuery() throws IgniteInterruptedCheckedException {
-        runNotFullyFetchedQuery();
+        runNotFullyFetchedQuery(false);
 
         assertFalse(isHeavyQueriesTrackerEmpty());
 
@@ -829,10 +838,13 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertTrue(waitForCondition(this::isHeavyQueriesTrackerEmpty, 1_000));
     }
 
-    /** */
+    /**
+     * Verifies that when a local not fully fetched query is cancelled, its information encapsulated
+     * in a {@link RootQuery} instacne is removed from {@link HeavyQueriesTracker}.
+     */
     @Test
     public void testEmptyHeavyQueriesTrackerWithCancelledLocalQuery() throws IgniteInterruptedCheckedException {
-        runNotFullyFetchedQuery();
+        runNotFullyFetchedQuery(true);
 
         assertFalse(isHeavyQueriesTrackerEmpty());
 
@@ -986,7 +998,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> runNotFullyFetchedQuery() {
+    private FieldsQueryCursor<List<?>> runNotFullyFetchedQuery(boolean loc) {
         IgniteCache<Long, Long> cache = grid(0).createCache(new CacheConfiguration<Long, Long>()
             .setName("test")
             .setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Long.class)
@@ -1000,7 +1012,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         for (long i = 0; i < 10; ++i)
             cache.put(i, i);
 
-        return cache.query(new SqlFieldsQuery("select * from test").setLocal(false).setPageSize(1));
+        return cache.query(new SqlFieldsQuery("select * from test").setLocal(loc).setPageSize(1));
     }
 
     /** */
