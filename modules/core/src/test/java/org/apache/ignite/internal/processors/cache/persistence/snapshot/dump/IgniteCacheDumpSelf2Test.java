@@ -224,7 +224,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         CacheConfiguration<Object, Object> ccfg = defaultCacheConfiguration();
 
         if (dataCustomLocation)
-            ccfg.setStoragePath(CUSTOM_LOCATION);
+            ccfg.setStoragePaths(CUSTOM_LOCATION);
 
         cli.createCache(ccfg);
 
@@ -355,7 +355,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         CacheConfiguration<Object, Object> ccfg = defaultCacheConfiguration();
 
         if (dataCustomLocation)
-            ccfg.setStoragePath(CUSTOM_LOCATION);
+            ccfg.setStoragePaths(CUSTOM_LOCATION);
 
         ign0.createCache(ccfg);
 
@@ -704,7 +704,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 .setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
             if (dataCustomLocation)
-                ccfg.setStoragePath(CUSTOM_LOCATION);
+                ccfg.setStoragePaths(CUSTOM_LOCATION);
 
             IgniteCache<Integer, Integer> cache = ign.createCache(ccfg);
 

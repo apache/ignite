@@ -377,7 +377,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
             .setBackups(1);
 
         if (separateStorage)
-            ccfg.setStoragePath(storagePath(cacheName));
+            ccfg.setStoragePaths(storagePath(cacheName));
 
         return ccfg;
     }

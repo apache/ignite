@@ -222,7 +222,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         if (storagePath != null) {
             for (CacheConfiguration ccfg : ccfgs)
-                ccfg.setStoragePath(storagePath);
+                ccfg.setStoragePaths(storagePath);
         }
 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)

@@ -393,10 +393,10 @@ public class ValidationOnNodeJoinUtils {
                     cacheSpec.toString());
         }
 
-        if (!F.isEmpty(cc.getStoragePath()) && !ctx.clientNode()) {
+        if (!F.isEmpty(cc.getStoragePaths()) && !ctx.clientNode()) {
             DataStorageConfiguration dsCfg = c.getDataStorageConfiguration();
 
-            List<String> csp = Arrays.asList(cc.getStoragePath());
+            List<String> csp = Arrays.asList(cc.getStoragePaths());
 
             if (dsCfg == null)
                 throw new IgniteCheckedException("Data storage must be configured when cache storage path set: " + csp);

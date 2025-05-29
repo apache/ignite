@@ -525,7 +525,7 @@ public class NodeFileTree extends SharedFileTree {
             ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
             : CACHE_DIR_PREFIX + ccfg.getName();
 
-        String[] csp = ccfg.getStoragePath();
+        String[] csp = ccfg.getStoragePaths();
 
         if (F.isEmpty(csp))
             return new File[] {new File(cacheStorageRoot(null), cacheDirName)};
@@ -618,7 +618,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param storagePath Cache storage path.
      * @param cacheDirName Cache directory name.
      * @return Temp store directory for given cache.
-     * @see CacheConfiguration#getStoragePath()
+     * @see CacheConfiguration#getStoragePaths()
      */
     public File tmpCacheStorage(@Nullable String storagePath, String cacheDirName) {
         return new File(cacheStorageRoot(storagePath), TMP_CACHE_DIR_PREFIX + cacheDirName);
@@ -666,7 +666,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheDirName Cache directory name.
      * @param partId partition id.
      * @return Path to the temp partition file.
-     * @see CacheConfiguration#getStoragePath()
+     * @see CacheConfiguration#getStoragePaths()
      */
     public File tmpPartition(@Nullable String storagePath, String cacheDirName, int partId) {
         return new File(tmpCacheStorage(storagePath, cacheDirName), partitionFileName(partId));
@@ -818,7 +818,7 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * @param storagePath Value from config.
      * @return File storage.
-     * @see CacheConfiguration#getStoragePath()
+     * @see CacheConfiguration#getStoragePaths()
      */
     private File cacheStorageRoot(@Nullable String storagePath) {
         return storagePath == null ? nodeStorage : extraStorages.getOrDefault(storagePath, nodeStorage);

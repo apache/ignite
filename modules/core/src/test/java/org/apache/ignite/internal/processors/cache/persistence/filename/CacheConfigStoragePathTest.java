@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.S
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 
 /**
- * Test cases when {@link CacheConfiguration#setStoragePath(String...)} used to set custom data region storage path.
+ * Test cases when {@link CacheConfiguration#setStoragePaths(String...)} used to set custom data region storage path.
  */
 public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
 
@@ -107,7 +107,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
     @Override void checkFileTrees(List<NodeFileTree> fts) {
         for (NodeFileTree ft : fts) {
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
-                String storagePath = F.isEmpty(ccfg.getStoragePath()) ? null : ccfg.getStoragePath()[0];
+                String storagePath = F.isEmpty(ccfg.getStoragePaths()) ? null : ccfg.getStoragePaths()[0];
 
                 File customRoot = storagePath == null ? ft.root() : ensureExists(absPath
                     ? new File(storagePath)
@@ -176,7 +176,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
 
                     String[] cs = Arrays.stream(ccfgs())
                         .filter(ccfg -> CU.cacheOrGroupName(ccfg).equals(cacheName))
-                        .findFirst().orElseThrow().getStoragePath();
+                        .findFirst().orElseThrow().getStoragePaths();
 
                     File expStorage = snpRootF.apply(F.isEmpty(cs) ? null : cs[(part + 1) % cs.length]);
 
@@ -205,7 +205,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
 
             Set<Integer> parts = new HashSet<>();
 
-            String[] storagePaths = ccfg.getStoragePath();
+            String[] storagePaths = ccfg.getStoragePaths();
 
             if (F.isEmpty(storagePaths)) {
                 storagePaths = new String[1];

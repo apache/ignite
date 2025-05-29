@@ -309,7 +309,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * File transmission parameter of a storage path for given group id.
-     * @see CacheConfiguration#getStoragePath()
+     * @see CacheConfiguration#getStoragePaths()
      */
     private static final String SNP_CACHE_STORAGE_PATH_PARAM = "cacheStoragePath";
 
@@ -3765,7 +3765,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param storagePath Storage path.
          * @param pair Cache group id with corresponding partition id.
          * @return Map of params.
-         * @see CacheConfiguration#getStoragePath()
+         * @see CacheConfiguration#getStoragePaths()
          */
         private Map<String, Serializable> transmissionParams(
             String rqId,

@@ -219,7 +219,7 @@ public class DataStorageConfiguration implements Serializable {
      * User may want to use dedicated storage for cache is server has several physical disks.
      * Spreading load across several disks can improve performance.
      *
-     * @see CacheConfiguration#setStoragePath(String...)
+     * @see CacheConfiguration#setStoragePaths(String...)
      */
     @IgniteExperimental
     private String[] extraStoragePaths;
