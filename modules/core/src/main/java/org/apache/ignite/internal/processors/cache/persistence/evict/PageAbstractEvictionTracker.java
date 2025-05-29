@@ -97,11 +97,6 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public void forgetFragmentPage(long pageId) throws IgniteCheckedException {
-        // No-op.
-    }
-
     /**
      * @param pageIdx Page index.
      * @return true if at least one data row has been evicted

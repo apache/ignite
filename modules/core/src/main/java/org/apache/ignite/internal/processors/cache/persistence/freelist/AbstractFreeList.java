@@ -431,9 +431,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     put(null, pageId, page, pageAddr, newBucket, statHolder);
             }
 
-            if (nextLink != 0 && !io.isEmpty(pageAddr))
-                evictionTracker.forgetFragmentPage(pageId);
-
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
         }

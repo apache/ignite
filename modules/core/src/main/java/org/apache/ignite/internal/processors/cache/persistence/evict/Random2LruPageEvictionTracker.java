@@ -218,19 +218,6 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         linkFragmentPages(tailPageId, headPageId);
     }
 
-    /** {@inheritDoc} */
-    @Override public void forgetFragmentPage(long pageId) throws IgniteCheckedException {
-        int pageIdx = PageIdUtils.pageIndex(pageId);
-
-        int trackingIdx = trackingIdx(pageIdx);
-
-        long latestTs = compactTimestamp(U.currentTimeMillis());
-
-        assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
-
-        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, U.toLong((int)latestTs, 0));
-    }
-
     /**
      * Link two pages containing fragments of row.
      * Link is stored as a page index in the second integer in the tracking data.

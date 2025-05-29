@@ -74,12 +74,4 @@ public interface PageEvictionTracker extends LifecycleAware {
      * @throws IgniteCheckedException In case of page memory error.
      */
     public void trackTailFragmentPage(long pageId, long headPageId) throws IgniteCheckedException;
-
-    /**
-     * Call this method when row fragment is removed from data page.
-     *
-     * @param pageId Page id.
-     * @throws IgniteCheckedException In case of page memory error.
-     */
-    public void forgetFragmentPage(long pageId) throws IgniteCheckedException;
 }
