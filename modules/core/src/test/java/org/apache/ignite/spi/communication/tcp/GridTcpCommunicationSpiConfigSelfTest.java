@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -52,6 +50,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import sun.net.util.IPAddressUtil;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
@@ -345,26 +344,6 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         checkHostNamesAttr(startGrid(nodeIdx++), true, false);
     }
 
-    /** @return Host name, or {@code null} if all addresses are IPs. */
-    private @Nullable String findHostName(Collection<String> addrs) {
-        return addrs.stream()
-            .filter(addr -> {
-                try {
-                    // Skips optional IPv6 zone ID (e.g., fe80::1%lo0) because InetAddress#getByName might fail to parse it.
-                    String[] parts = addr.split("%", 2);
-
-                    InetAddress inet = InetAddress.getByName(parts[0]);
-
-                    return !(inet instanceof Inet6Address) && !(inet instanceof Inet4Address);
-                }
-                catch (Exception e) {
-                    return true;  // Failed to parse, then not an IP address.
-                }
-            })
-            .findFirst()
-            .orElse(null);
-    }
-
     /** */
     @Test
     public void testFindingAddresses() throws Exception {
@@ -375,11 +354,12 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
             "192.168.1.1",
             "fe80::1%lo0",
             "2001:db8::ff00:42:8329",
+            "localhost",
             "abcd"
         );
 
         assertEquals("192.168.1.1", findIpAddr(addrs));
-        assertEquals("abcd", findHostName(addrs));
+        assertEquals("localhost", findHostName(addrs));
     }
 
     /** @return Non-loopback IP. */
@@ -392,6 +372,15 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         }
 
         throw new IllegalArgumentException("No IP address in the list: " + addrs);
+    }
+
+    /** @return Host name, or {@code null} if all addresses are IPs. */
+    private @Nullable String findHostName(Collection<String> addrs) {
+        return addrs.stream()
+            .filter(addr ->
+                !(IPAddressUtil.isIPv4LiteralAddress(addr) || IPAddressUtil.isIPv6LiteralAddress(addr)))
+            .findFirst()
+            .orElse(null);
     }
 
     /**
