@@ -843,7 +843,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
      * @throws Exception if failed.
      */
     @Test
-    public void reproduceCacheGroupsDuplicationError() throws Exception {
+    public void testRestoreCacheGroupsWithDuplication() throws Exception {
         int keysCnt = dfltCacheCfg.getAffinity().partitions();
 
         Ignite ignite = startGridsWithSnapshot(1, keysCnt, false, true);
