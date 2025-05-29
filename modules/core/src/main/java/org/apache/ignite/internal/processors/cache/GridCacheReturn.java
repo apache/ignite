@@ -401,7 +401,7 @@ public class GridCacheReturn implements Externalizable, Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -494,11 +494,6 @@ public class GridCacheReturn implements Externalizable, Message {
         }
 
         return reader.afterMessageRead(GridCacheReturn.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 5;
     }
 
     /** {@inheritDoc} */

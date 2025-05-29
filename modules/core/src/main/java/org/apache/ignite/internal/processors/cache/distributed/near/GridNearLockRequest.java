@@ -304,7 +304,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -446,11 +446,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 51;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 29;
     }
 
     /** {@inheritDoc} */

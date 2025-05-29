@@ -82,7 +82,7 @@ public class UserAuthenticateRequestMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -152,11 +152,6 @@ public class UserAuthenticateRequestMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 131;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */
