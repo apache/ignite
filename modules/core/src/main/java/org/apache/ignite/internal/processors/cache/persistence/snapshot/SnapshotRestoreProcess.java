@@ -323,8 +323,6 @@ public class SnapshotRestoreProcess {
         snpMgr.recordSnapshotEvent(snpName, msg, EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
 
         snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, incIdx < 1, incIdx, check).listen(f -> {
-            Set<String> uniqueCacheGrpNames = cacheGrpNames == null ? null : new HashSet<>(cacheGrpNames);
-
             if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
 
@@ -346,8 +344,8 @@ public class SnapshotRestoreProcess {
             Set<UUID> dataNodes = new HashSet<>();
             Set<String> snpBltNodes = null;
             Map<ClusterNode, List<SnapshotMetadata>> metas = f.result().metas();
-            Map<Integer, String> reqGrpIds = uniqueCacheGrpNames == null ? Collections.emptyMap() :
-                uniqueCacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
+            Map<Integer, String> reqGrpIds = cacheGrpNames == null ? Collections.emptyMap() :
+                cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
             Optional<SnapshotMetadata> firstMeta = metas.values().iterator().next()
                 .stream()
@@ -403,7 +401,7 @@ public class SnapshotRestoreProcess {
                 F.first(dataNodes),
                 snpName,
                 snpPath,
-                uniqueCacheGrpNames,
+                cacheGrpNames == null ? null : new HashSet<>(cacheGrpNames),
                 new HashSet<>(bltNodes),
                 false,
                 incIdx,
