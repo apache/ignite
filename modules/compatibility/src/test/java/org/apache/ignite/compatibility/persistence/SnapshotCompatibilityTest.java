@@ -120,7 +120,6 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     /** */
     @Test
     public void testSnapshotRestore() throws Exception {
-
         for (int i = 1; i <= oldNodesCnt; ++i) {
             startGrid(
                 i,
