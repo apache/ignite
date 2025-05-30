@@ -392,8 +392,12 @@ class RelJson {
                     type = typeFactory.createSqlIntervalType(
                         new SqlIntervalQualifier(startUnit, endUnit, SqlParserPos.ZERO));
                 }
-                else if (sqlTypeName == SqlTypeName.ARRAY)
+                else if (sqlTypeName == SqlTypeName.ARRAY) {
                     type = typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
+
+                    if (Boolean.TRUE == map.get("nullable"))
+                        type = typeFactory.createTypeWithNullability(type, true);
+                }
                 else if (sqlTypeName == SqlTypeName.MAP)
                     type = typeFactory.createMapType(
                         toType(typeFactory, map.get("keyType")),
@@ -764,6 +768,7 @@ class RelJson {
             Map<String, Object> map = map();
             map.put("type", toJson(node.getSqlTypeName()));
             map.put("elementType", toJson(node.getComponentType()));
+            map.put("nullable", node.isNullable());
             return map;
         }
         else if (node.getSqlTypeName() == SqlTypeName.MAP) {
