@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortedIndexS
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TimeCalculationExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UncollectExecutionTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.WindowExecutionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -57,6 +58,7 @@ import org.junit.runners.Suite;
     LimitExecutionTest.class,
     TimeCalculationExecutionTest.class,
     UncollectExecutionTest.class,
+    WindowExecutionTest.class
 })
 public class ExecutionTestSuite {
 }

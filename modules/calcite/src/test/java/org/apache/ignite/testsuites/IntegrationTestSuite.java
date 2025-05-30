@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIn
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTransactionalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ViewsIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.WindowIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
@@ -161,6 +162,7 @@ import org.junit.runners.Suite;
     ScalarInIntegrationTest.class,
     TpchTest.class,
     UnnestIntegrationTest.class,
+    WindowIntegrationTest.class
 })
 public class IntegrationTestSuite {
 }
