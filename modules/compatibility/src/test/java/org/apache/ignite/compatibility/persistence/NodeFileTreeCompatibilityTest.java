@@ -19,19 +19,29 @@ package org.apache.ignite.compatibility.persistence;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiFunction;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.compatibility.IgniteReleasedVersion;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,7 +51,25 @@ import org.junit.runners.Parameterized.Parameters;
 
 /** */
 @RunWith(Parameterized.class)
-public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstractTest {
+public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
+    /** */
+    private static final String OLD_IGNITE_VERSION = Collections.max(
+        Arrays.asList(IgniteReleasedVersion.values()),
+        Comparator.comparing(IgniteReleasedVersion::version)
+    ).toString();
+
+    /** */
+    private static final String SNAPSHOT_NAME = "test_snapshot";
+
+    /** */
+    private static final String CACHE_DUMP_NAME = "test_cache_dump";
+
+    /** */
+    private static final int BASE_CACHE_SIZE = 100;
+
+    /** */
+    private static final int ENTRIES_CNT_FOR_INCREMENT = 100;
+
     /** */
     private static final String SNP_PART_SUFFIX = ".bin";
 
@@ -58,99 +86,84 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
     private static final String CACHE_PREFIX = "cache";
 
     /** */
+    private static final Map<String, String> cacheToGrp = Map.of(
+        "singleCache", "singleCache",
+        "testCache1", "testCacheGrp",
+        "testCache2", "testCacheGrp"
+    );
+
+    /** */
     @Parameter
     public boolean customConsId;
 
     /** */
     @Parameter(1)
-    public boolean customSnpDir;
-
-    /** */
-    @Parameter(2)
     public int nodesCnt;
 
     /** */
-    private final String oldWorkDir;
-
-    {
-        try {
-            oldWorkDir = String.format("%s-%s", U.defaultWorkDirectory(), OLD_IGNITE_VERSION);
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private String oldWorkDir;
 
     /** */
-    private final SnapshotPathResolver oldSnpPathResolver = new SnapshotPathResolver(customSnpDir, oldWorkDir);
-
-    /** */
-    private final SnapshotPathResolver curSnpPathResolver = new SnapshotPathResolver(customSnpDir);
-
-    /** */
-    @Parameters(name = "customConsId={0}, customSnpDir={1}, nodesCnt={2}")
+    @Parameters(name = "customConsId={0}, nodesCnt={1}")
     public static Collection<Object[]> data() {
         return GridTestUtils.cartesianProduct(
-            List.of(true, false),
             List.of(true, false),
             List.of(1, 3)
         );
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        oldWorkDir = String.format("%s-%s", U.defaultWorkDirectory(), OLD_IGNITE_VERSION);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterTest() throws Exception {
+        super.afterTest();
+
+        cleanPersistenceDir();
+
+        FileUtils.deleteDirectory(new File(oldWorkDir));
+    }
+
     /** */
     @Test
     public void testNodeFileTree() throws Exception {
-        try {
-            for (int i = 1; i <= nodesCnt; ++i) {
-                startGrid(
-                    i,
-                    OLD_IGNITE_VERSION,
-                    new ConfigurationClosure(
-                        consId(customConsId, i),
-                        oldSnpPathResolver.snpDir(true),
-                        true,
-                        cacheGrpsCfg,
-                        oldWorkDir
-                    ),
-                    i == nodesCnt ? new CreateSnapshotClosure(cacheGrpsCfg) : null
-                );
-            }
+        for (int i = 1; i <= nodesCnt; ++i)
+            startGrid(i, OLD_IGNITE_VERSION, new ConfigurationClosure(i, oldWorkDir), i == nodesCnt ? new CreateSnapshotClosure() : null);
 
-            stopAllGrids();
+        stopAllGrids();
 
-            List<IgniteEx> curNodes = new ArrayList<>(nodesCnt);
+        List<IgniteEx> curNodes = new ArrayList<>(nodesCnt);
 
-            for (int i = 0; i < nodesCnt; ++i) {
-                curNodes.add(
-                    startGrid(
-                        i,
-                        new ConfigurationClosure(
-                            consId(customConsId, i),
-                            curSnpPathResolver.snpDir(true),
-                            true,
-                            cacheGrpsCfg
-                        )::apply
-                    )
-                );
-            }
+        for (int i = 0; i < nodesCnt; ++i)
+            curNodes.add(startGrid(i, new ConfigurationClosure(i, U.defaultWorkDirectory())::apply));
 
-            new CreateSnapshotClosure(cacheGrpsCfg).apply(curNodes.get(0));
+        new CreateSnapshotClosure().apply(curNodes.get(0));
 
-            assertEquals(scanFileTree(oldWorkDir, SNP_PART_SUFFIX), scanFileTree(U.defaultWorkDirectory(), SNP_PART_SUFFIX));
+        assertEquals(scanFileTree(oldWorkDir, SNP_PART_SUFFIX), scanFileTree(U.defaultWorkDirectory(), SNP_PART_SUFFIX));
 
-            assertEquals(
-                scanFileTree(oldSnpPathResolver.snpPath(CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX),
-                scanFileTree(curSnpPathResolver.snpPath(CACHE_DUMP_NAME, false), DUMP_PART_SUFFIX)
-            );
+        assertEquals(
+            scanFileTree(snpPath(oldWorkDir, CACHE_DUMP_NAME), DUMP_PART_SUFFIX),
+            scanFileTree(snpPath(U.defaultWorkDirectory(), CACHE_DUMP_NAME), DUMP_PART_SUFFIX)
+        );
 
-            assertEquals(
-                scanSnp(oldSnpPathResolver.snpPath(SNAPSHOT_NAME, false)),
-                scanSnp(curSnpPathResolver.snpPath(SNAPSHOT_NAME, false))
-            );
-        }
-        finally {
-            FileUtils.deleteDirectory(new File(oldWorkDir));
-        }
+        assertEquals(
+            scanSnp(snpPath(oldWorkDir, SNAPSHOT_NAME)),
+            scanSnp(snpPath(U.defaultWorkDirectory(), SNAPSHOT_NAME))
+        );
+    }
+
+    /** */
+    private static String snpPath(String workDir, String snpName) {
+        return workDir + File.separator + "snapshots" + File.separator + snpName;
+    }
+
+    /** */
+    private static String calcValue(String cacheName, int key) {
+        return cacheName + "-organization-" + key;
     }
 
     /** */
@@ -163,31 +176,35 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
     }
 
     /** */
-    private Map<String, CacheGrpScanResult> scanFileTree(String rootPath, String partSuffix) {
-        Map<String, CacheGrpScanResult> res = new HashMap<>();
+    private Map<String, CacheGroupScanResult> scanFileTree(String rootPath, String partSuffix) {
+        Map<String, CacheGroupScanResult> res = new HashMap<>();
 
         File dbDir = new File(rootPath, "db");
 
-        BiFunction<CacheGrpScanResult, CacheGrpScanResult, CacheGrpScanResult> mergeScans = (to, from) -> {
-            to.cacheNames().addAll(from.cacheNames());
-            to.partNames().addAll(from.partNames());
-
-            return to;
-        };
-
         for (File child : dbDir.listFiles()) {
-            if (child.getName().startsWith("node"))
-                scanNode(child, partSuffix).forEach(scan -> res.merge(scan.cacheGrpName(), scan, mergeScans));
+            if (child.getName().startsWith("node")) {
+                scanNode(child, partSuffix).forEach(scan ->
+                    res.merge(
+                        scan.cacheGrpName(),
+                        scan,
+                        (to, from) -> {
+                            to.merge(from);
+
+                            return to;
+                        }
+                    )
+                );
+            }
         }
 
         return res;
     }
 
     /** */
-    private List<CacheGrpScanResult> scanNode(File nodeDir, String partSuffix) {
+    private List<CacheGroupScanResult> scanNode(File nodeDir, String partSuffix) {
         assertTrue(nodeDir.isDirectory());
 
-        List<CacheGrpScanResult> res = new ArrayList<>();
+        List<CacheGroupScanResult> res = new ArrayList<>();
 
         for (File child : nodeDir.listFiles())
             if (child.getName().startsWith(CACHE_PREFIX))
@@ -197,13 +214,13 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
     }
 
     /** */
-    private CacheGrpScanResult scanCacheGrp(File cacheGrpDir, String partSuffix) {
+    private CacheGroupScanResult scanCacheGrp(File cacheGrpDir, String partSuffix) {
         assertTrue(cacheGrpDir.isDirectory());
 
         String cacheGrpNamePrefix = cacheGrpDir.getName().startsWith(CACHE_GROUP_PREFIX) ? CACHE_GROUP_PREFIX : CACHE_PREFIX;
         String cacheGrpName = cacheGrpDir.getName().substring(cacheGrpNamePrefix.length() + 1);
 
-        CacheGrpScanResult res = new CacheGrpScanResult(cacheGrpName);
+        CacheGroupScanResult res = new CacheGroupScanResult(cacheGrpName);
 
         for (String childFileName : cacheGrpDir.list()) {
             if (childFileName.endsWith(CACHE_DATA_SUFFIX)) {
@@ -224,10 +241,10 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
         private final int incsCnt;
 
         /** */
-        private final Map<String, CacheGrpScanResult> cacheGrpScans;
+        private final Map<String, CacheGroupScanResult> cacheGrpScans;
 
         /** */
-        public SnpScanResult(int incsCnt, Map<String, CacheGrpScanResult> cacheGrpScans) {
+        public SnpScanResult(int incsCnt, Map<String, CacheGroupScanResult> cacheGrpScans) {
             this.incsCnt = incsCnt;
 
             this.cacheGrpScans = cacheGrpScans;
@@ -239,7 +256,7 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
         }
 
         /** */
-        public Map<String, CacheGrpScanResult> cacheGrpScans() {
+        public Map<String, CacheGroupScanResult> cacheGrpScans() {
             return cacheGrpScans;
         }
 
@@ -263,7 +280,7 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
     }
 
     /** */
-    private static class CacheGrpScanResult {
+    private static class CacheGroupScanResult {
         /** */
         private final String cacheGrpName;
 
@@ -274,18 +291,8 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
         private final Set<String> partNames = new HashSet<>();
 
         /** */
-        public CacheGrpScanResult(String cacheGrpName) {
+        public CacheGroupScanResult(String cacheGrpName) {
             this.cacheGrpName = cacheGrpName;
-        }
-
-        /** */
-        public void addCacheName(String cacheName) {
-            cacheNames.add(cacheName);
-        }
-
-        /** */
-        public void addPartName(String partName) {
-            partNames.add(partName);
         }
 
         /** */
@@ -303,13 +310,31 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
             return partNames;
         }
 
+        /** */
+        public void addCacheName(String cacheName) {
+            cacheNames.add(cacheName);
+        }
+
+        /** */
+        public void addPartName(String partName) {
+            partNames.add(partName);
+        }
+
+        /** */
+        public void merge(CacheGroupScanResult that) {
+            assert Objects.equals(cacheGrpName(), that.cacheGrpName());
+
+            cacheNames.addAll(that.cacheNames());
+            partNames.addAll(that.partNames());
+        }
+
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o) return true;
 
-            if (!(o instanceof CacheGrpScanResult)) return false;
+            if (!(o instanceof CacheGroupScanResult)) return false;
 
-            CacheGrpScanResult other = (CacheGrpScanResult)o;
+            CacheGroupScanResult other = (CacheGroupScanResult)o;
 
             return Objects.equals(cacheGrpName, other.cacheGrpName) &&
                     Objects.equals(cacheNames, other.cacheNames) &&
@@ -319,6 +344,72 @@ public class NodeFileTreeCompatibilityTest extends SnapshotCompatibilityAbstract
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(cacheGrpName, cacheNames, partNames);
+        }
+    }
+
+    /** Snapshot creating closure both for old and current Ignite version. */
+    private static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
+        /** {@inheritDoc} */
+        @Override public void apply(Ignite ign) {
+            ign.cluster().state(ClusterState.ACTIVE);
+
+            cacheToGrp.forEach((key, value) -> {
+                IgniteCache<Integer, String> cache = ign.createCache(new CacheConfiguration<Integer, String>(key)
+                    .setGroupName(Objects.equals(key, value) ? null : value)
+                    .setAffinity(new RendezvousAffinityFunction(false, 10)));
+
+                addItemsToCache(cache, 0, BASE_CACHE_SIZE);
+            });
+
+            ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+            ign.snapshot().createDump(CACHE_DUMP_NAME, cacheToGrp.values()).get();
+
+            // Incremental snapshots require same consistentID
+            // https://issues.apache.org/jira/browse/IGNITE-25096
+            if (ign.configuration().getConsistentId() != null && ign.cluster().nodes().size() == 1) {
+                cacheToGrp.keySet().forEach(
+                    cacheName -> addItemsToCache(ign.cache(cacheName), BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT)
+                );
+
+                ign.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
+            }
+        }
+
+        /** */
+        private static void addItemsToCache(IgniteCache<Integer, String> cache, int startIdx, int cnt) {
+            for (int i = startIdx; i < startIdx + cnt; ++i)
+                cache.put(i, calcValue(cache.getName(), i));
+        }
+    }
+
+    /** Configuration closure both for old and current Ignite version. */
+    private class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+        /** */
+        private final int nodeIdx;
+
+        /** */
+        private final String workDir;
+
+        /** */
+        public ConfigurationClosure(int nodeIdx, String workDir) {
+            this.nodeIdx = nodeIdx;
+            this.workDir = workDir;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(IgniteConfiguration cfg) {
+            DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+
+            storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+
+            cfg.setDataStorageConfiguration(storageCfg);
+
+            cfg.setConsistentId(customConsId ? "node-" + nodeIdx : null);
+
+            storageCfg.setWalCompactionEnabled(true);
+
+            cfg.setWorkDirectory(workDir);
         }
     }
 }
