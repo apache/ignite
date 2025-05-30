@@ -76,6 +76,10 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
             }
         };
 
+
+    /** watch {@link #onUpdate} */
+    private final AtomicBoolean watchUpdate = new AtomicBoolean();
+
     /** Initialization guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
 
@@ -454,35 +458,42 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
     private void initializeSemaphore() throws IgniteCheckedException {
         if (!initGuard.get() && initGuard.compareAndSet(false, true)) {
             try {
-                sync = retryTopologySafe(new Callable<Sync>() {
-                    @Override public Sync call() throws Exception {
-                        try (GridNearTxLocal tx = CU.txStartInternal(ctx,
-                            cacheView, PESSIMISTIC, REPEATABLE_READ)) {
-                            GridCacheSemaphoreState val = cacheView.get(key);
+                Sync sync;
+                do {
+                    watchUpdate.compareAndSet(true, false);
+                    sync = retryTopologySafe(new Callable<Sync>() {
+                        @Override
+                        public Sync call() throws Exception {
+                            try (GridNearTxLocal tx = CU.txStartInternal(ctx,
+                                    cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+                                GridCacheSemaphoreState val = cacheView.get(key);
 
-                            if (val == null) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to find semaphore with given name: " + name);
+                                if (val == null) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to find semaphore with given name: " + name);
 
-                                return null;
+                                    return null;
+                                }
+
+                                final int cnt = val.getCount();
+
+                                Map<UUID, Integer> waiters = val.getWaiters();
+
+                                final boolean failoverSafe = val.isFailoverSafe();
+
+                                tx.commit();
+
+                                Sync sync = new Sync(cnt, waiters, failoverSafe);
+
+                                sync.setBroken(val.isBroken());
+
+                                return sync;
                             }
-
-                            final int cnt = val.getCount();
-
-                            Map<UUID, Integer> waiters = val.getWaiters();
-
-                            final boolean failoverSafe = val.isFailoverSafe();
-
-                            tx.commit();
-
-                            Sync sync = new Sync(cnt, waiters, failoverSafe);
-
-                            sync.setBroken(val.isBroken());
-
-                            return sync;
                         }
-                    }
-                });
+                    });
+                } while (watchUpdate.get());
+
+                this.sync = sync;
 
                 if (log.isDebugEnabled())
                     log.debug("Initialized internal sync structure: " + sync);
@@ -501,8 +512,10 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
 
     /** {@inheritDoc} */
     @Override public void onUpdate(GridCacheSemaphoreState val) {
-        if (sync == null)
+        if (sync == null) {
+            watchUpdate.compareAndSet(false, true);
             return;
+        }
 
         // Update broken flag.
         sync.setBroken(val.isBroken());
