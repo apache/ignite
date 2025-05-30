@@ -32,6 +32,9 @@ import org.jetbrains.annotations.NotNull;
 
 /** */
 public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
+    /** */
+    private static final int HALF_BUF_SIZE = IN_BUFFER_SIZE >> 1;
+
     /** Special value to highlights that all row were received and we are not waiting any more. */
     protected static final int NOT_WAITING = -1;
 
@@ -299,6 +302,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
                 requested = 0;
+                rightMaterialized.clear();
                 downstream().end();
             }
         }
@@ -385,6 +389,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
                 requested = 0;
+                rightMaterialized.clear();
                 downstream().end();
             }
         }
@@ -499,6 +504,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
                 && leftInBuf.isEmpty() && rightNotMatchedIndexes.isEmpty()) {
                 requested = 0;
+                rightMaterialized.clear();
                 downstream().end();
             }
         }
@@ -637,6 +643,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
                 && leftInBuf.isEmpty() && rightNotMatchedIndexes.isEmpty()) {
                 requested = 0;
+                rightMaterialized.clear();
                 downstream().end();
             }
         }
@@ -684,6 +691,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
                 downstream().end();
+                rightMaterialized.clear();
                 requested = 0;
             }
         }
@@ -735,6 +743,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
             if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
                 requested = 0;
+                rightMaterialized.clear();
                 downstream().end();
             }
         }

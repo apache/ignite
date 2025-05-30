@@ -21,18 +21,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.IntStream;
+import java.util.function.Consumer;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,7 +43,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 
 /** */
 @SuppressWarnings("TypeMayBeWeakened")
-public class MergeJoinExecutionTest extends AbstractExecutionTest {
+public class MergeJoinExecutionTest extends AbstractJoinExecutionTest {
     /** */
     public static final Object[][] EMPTY = new Object[0][];
 
@@ -58,6 +54,21 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected JoinCreator joinCreator() {
+        return (ctx, outType, leftType, rightType, joinType, cond) ->
+            MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, Comparator.comparingInt(r -> (Integer)r[0]), true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Consumer<AbstractNode<?>> joinFinalChecker() {
+        return node -> {
+            assertTrue(((MergeJoinNode<?>)node).leftInBuf.size() <= IN_BUFFER_SIZE);
+
+            assertTrue(((MergeJoinNode<?>)node).rightInBuf.size() <= IN_BUFFER_SIZE);
+        };
     }
 
     /** */
@@ -123,166 +134,6 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
             {2, "Igor"},
             {3, "Alexey"}
         });
-    }
-
-    /** */
-    @Test
-    public void testJoinBuffersInner() throws Exception {
-        doTestJoinBuffers(INNER);
-    }
-
-    /** */
-    @Test
-    public void testJoinBuffersFull() throws Exception {
-        doTestJoinBuffers(FULL);
-    }
-
-    /** */
-    @Test
-    public void testJoinBuffersLeft() throws Exception {
-        doTestJoinBuffers(LEFT);
-    }
-
-    /** */
-    @Test
-    public void testJoinBuffersRight() throws Exception {
-        doTestJoinBuffers(RIGHT);
-    }
-
-    /** */
-    @Test
-    public void testJoinBuffersAnti() throws Exception {
-        doTestJoinBuffers(ANTI);
-    }
-
-    /** */
-    @Test
-    public void testJoinBuffersSemi() throws Exception {
-        doTestJoinBuffers(SEMI);
-    }
-
-    /** */
-    private void doTestJoinBuffers(JoinRelType joinType) throws Exception {
-        int size = IN_BUFFER_SIZE * 2 + IN_BUFFER_SIZE / 2;
-        int intersect = IN_BUFFER_SIZE / 10;
-
-        int leftTo = size + intersect;
-        int rightTo = size * 2;
-
-        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
-
-        Iterator<Object[]> leftIter = IntStream.range(0, leftTo).boxed().map(i -> new Object[] {i}).iterator();
-        Iterator<Object[]> rightIter = IntStream.range(size, rightTo).boxed().map(i -> new Object[] {i}).iterator();
-
-        RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class);
-        ScanNode<Object[]> leftNode = new ScanNode<>(ctx, leftType, () -> leftIter);
-
-        RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class);
-        ScanNode<Object[]> rightNode = new ScanNode<>(ctx, rightType, () -> rightIter);
-
-        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, int.class);
-
-        MergeJoinNode<Object[]> join = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType,
-            Comparator.comparingInt(r -> (Integer)r[0]), true);
-
-        join.register(F.asList(leftNode, rightNode));
-
-        List<Object[]> res = new ArrayList<>();
-        AtomicBoolean finished = new AtomicBoolean();
-
-        join.onRegister(new Downstream<>() {
-            @Override public void push(Object[] objects) {
-                res.add(objects);
-            }
-
-            @Override public void end() {
-                finished.set(true);
-            }
-
-            @Override public void onError(Throwable e) {
-                // No-op.
-            }
-        });
-
-        join.request(size * size);
-
-        assertTrue(GridTestUtils.waitForCondition(finished::get, getTestTimeout()));
-
-        switch (joinType) {
-            case LEFT:
-                assertEquals(size + intersect, res.size());
-
-                for (int i = 0; i < size; ++i) {
-                    assertEquals(i, res.get(i)[0]);
-                    assertEquals(null, res.get(i)[1]);
-                }
-
-                for (int i = size; i < size + intersect; ++i) {
-                    assertEquals(i, res.get(i)[0]);
-                    assertEquals(i, res.get(i)[1]);
-                }
-                break;
-            case INNER:
-                assertEquals(intersect, res.size());
-
-                for (int i = size; i < size + intersect; ++i) {
-                    assertEquals(i, res.get(i - size)[0]);
-                    assertEquals(i, res.get(i - size)[1]);
-                }
-                break;
-            case RIGHT:
-                assertEquals(rightTo - size, res.size());
-
-                for (int i = size; i < size + intersect; ++i) {
-                    assertEquals(i, res.get(i - size)[0]);
-                    assertEquals(i, res.get(i - size)[1]);
-                }
-
-                for (int i = size + intersect; i < size << 1; ++i) {
-                    assertEquals(null, res.get(i - size)[0]);
-                    assertEquals(i, res.get(i - size)[1]);
-                }
-                break;
-            case FULL:
-                assertEquals(size * 2, res.size());
-
-                for (int i = 0; i < size; ++i) {
-                    assertEquals(i, res.get(i)[0]);
-                    assertEquals(null, res.get(i)[1]);
-                }
-
-                for (int i = size; i < size + intersect; ++i) {
-                    assertEquals(i, res.get(i)[0]);
-                    assertEquals(i, res.get(i)[1]);
-                }
-
-                for (int i = size + intersect; i < size << 1; ++i) {
-                    assertEquals(null, res.get(i)[0]);
-                    assertEquals(i, res.get(i)[1]);
-                }
-                break;
-            case SEMI:
-                assertEquals(intersect, res.size());
-
-                for (int i = 0; i < intersect; ++i) {
-                    assertEquals(1, res.get(i).length);
-                    assertEquals(size + i, res.get(i)[0]);
-                }
-                break;
-            case ANTI:
-                assertEquals(size, res.size());
-
-                for (int i = 0; i < size; ++i) {
-                    assertEquals(1, res.get(i).length);
-                    assertEquals(i, res.get(i)[0]);
-                }
-                break;
-            default:
-                throw new UnsupportedOperationException("Unsupported join type: " + join);
-        }
-
-        assertTrue(join.leftInBuf.size() <= IN_BUFFER_SIZE);
-        assertTrue(join.rightInBuf.size() <= IN_BUFFER_SIZE);
     }
 
     /** */
