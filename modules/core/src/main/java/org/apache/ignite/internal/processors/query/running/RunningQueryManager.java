@@ -493,15 +493,16 @@ public class RunningQueryManager {
             return;
         }
 
-        if (!heavyQueriesTracker().getQueries().contains(
-            new TrackableQueryImpl().schema(qry.schemaName()).nodeId(qry.nodeId()).queryId(qryId))
-        )
+        String schema = qry.schemaName();
+        UUID nodeId = qry.nodeId();
+
+        if (!heavyQueriesTracker().getQueries().contains(new TrackableQueryImpl().schema(schema).nodeId(nodeId).queryId(qryId)))
             return;
 
         try {
             closure.runAsync(
                 BROADCAST,
-                new StopQueryTrackingTask(qry, failReason),
+                new StopQueryTrackingTask(schema, nodeId, qryId, failReason),
                 options(ctx.cluster().get().nodes())
             ).get();
         }
@@ -965,14 +966,15 @@ public class RunningQueryManager {
         private transient IgniteEx ignite;
 
         /**
-         * @param qry Query information.
+         * @param schema Schema name.
+         * @param nodeId Node id.
+         * @param qryId Query id.
          * @param failReason Query fail reason.
          */
-        public StopQueryTrackingTask(GridRunningQueryInfo qry, @Nullable Throwable failReason) {
-            schema = qry.schemaName();
-            nodeId = qry.nodeId();
-            qryId = qry.id();
-
+        public StopQueryTrackingTask(String schema, UUID nodeId, long qryId, @Nullable Throwable failReason) {
+            this.schema = schema;
+            this.nodeId = nodeId;
+            this.qryId = qryId;
             this.failReason = failReason;
         }
 
