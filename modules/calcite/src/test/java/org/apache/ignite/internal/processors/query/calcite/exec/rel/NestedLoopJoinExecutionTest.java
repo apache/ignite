@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -44,7 +45,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.g
 /** */
 @SuppressWarnings("TypeMayBeWeakened")
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class NestedLoopJoinExecutionTest extends AbstractExecutionTest {
+public class NestedLoopJoinExecutionTest extends AbstractJoinExecutionTest {
     /** */
     public static final Object[][] EMPTY = new Object[0][];
 
@@ -55,6 +56,17 @@ public class NestedLoopJoinExecutionTest extends AbstractExecutionTest {
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected JoinCreator joinCreator() {
+        return (ctx, outType, leftType, rightType, joinType, cond) ->
+            NestedLoopJoinNode.create(ctx, outType, leftType, rightType, joinType, (r1, r2) -> r1[0].equals(r2[0]));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Consumer<AbstractNode<?>> joinFinalChecker() {
+        return node -> assertTrue(((NestedLoopJoinNode<?>)node).leftInBuf.size() <= IN_BUFFER_SIZE);
     }
 
     /** */
