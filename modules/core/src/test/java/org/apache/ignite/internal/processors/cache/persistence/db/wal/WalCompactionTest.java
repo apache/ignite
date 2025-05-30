@@ -396,7 +396,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         // Allow compressor to compress WAL segments.
         assertTrue(GridTestUtils.waitForCondition(zippedWalSegment::exists, 15_000));
 
-        File[] compressedSegments = NodeFileTree.listCompactedWalFiles(ft.walArchive());
+        File[] compressedSegments = ft.walArchiveCompactedFiles();
 
         long maxIdx = -1;
         for (File f : compressedSegments)

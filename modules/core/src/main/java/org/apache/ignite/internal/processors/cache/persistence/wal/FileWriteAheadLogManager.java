@@ -1358,7 +1358,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     segmentAware.setLastArchivedAbsoluteIndex(absIdx - 1);
 
                 // Getting segment sizes.
-                F.asList(ft.archiveWalCompactedOrRawFiles()).stream()
+                F.asList(ft.walArchiveCompactedOrRawFiles()).stream()
                     .map(FileDescriptor::new)
                     .forEach(fd -> {
                         if (fd.isCompressed())

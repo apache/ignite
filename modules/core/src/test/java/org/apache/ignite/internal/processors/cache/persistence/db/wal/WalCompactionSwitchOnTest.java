@@ -101,17 +101,17 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
 
         ex.cluster().state(ClusterState.ACTIVE);
 
-        File archiveDir = ex.context().pdsFolderResolver().fileTree().walArchive();
+        NodeFileTree ft1 = ex.context().pdsFolderResolver().fileTree();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                File[] archivedFiles = NodeFileTree.listCompactedWalFiles(archiveDir);
+                File[] archivedFiles = ft1.walArchiveCompactedFiles();
 
                 return archivedFiles.length == 20;
             }
         }, 5000);
 
-        File[] tmpFiles = NodeFileTree.listTmpCompactedWalFiles(archiveDir);
+        File[] tmpFiles = NodeFileTree.listTmpCompactedWalFiles(ft1.walArchive());
 
         assertEquals(0, tmpFiles.length);
     }

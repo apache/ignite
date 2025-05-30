@@ -39,7 +39,6 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
@@ -220,7 +219,7 @@ public class SnapshotMetadataVerificationTask
 
             List<FileDescriptor> walSeg = factory.resolveWalFiles(
                 new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                    .filesOrDirs(NodeFileTree.listCompactedWalFiles(ift.wal())));
+                    .filesOrDirs(ift.walCompactedFiles()));
 
             if (walSeg.isEmpty())
                 throw new IgniteException("No WAL segments found for incremental snapshot [dir=" + ift.wal() + ']');

@@ -145,7 +145,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         long idxBefore = fhBefore.getSegmentId();
 
-        File[] files = ft.archiveWalCompactedOrRawFiles();
+        File[] files = ft.walArchiveCompactedOrRawFiles();
 
         Arrays.sort(files);
 

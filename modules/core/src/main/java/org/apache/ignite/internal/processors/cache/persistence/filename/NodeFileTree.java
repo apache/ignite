@@ -966,7 +966,7 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /** @return Archive WAL compacted or raw files. */
-    public File[] archiveWalCompactedOrRawFiles() {
+    public File[] walArchiveCompactedOrRawFiles() {
         return walArchive().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
     }
 
@@ -980,6 +980,16 @@ public class NodeFileTree extends SharedFileTree {
         return listWalFiles(walCdc());
     }
 
+    /** @return WAL compacted files. */
+    public File[] walCompactedFiles() {
+        return wal().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
+    }
+
+    /** @return WAL archive compacted files. */
+    public File[] walArchiveCompactedFiles() {
+        return walArchive().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
+    }
+
     /** @return File descriptors for active WAL segments. */
     public FileDescriptor[] walFileDescriptors() {
         return scan(listWalFiles(wal()));
@@ -987,12 +997,12 @@ public class NodeFileTree extends SharedFileTree {
 
     /** @return File descriptors for archive compacted or raw WAL segments. */
     public FileDescriptor[] archiveWalCompactedOrRawFileDescriptors() {
-        return scan(archiveWalCompactedOrRawFiles());
+        return scan(walArchiveCompactedOrRawFiles());
     }
 
     /** @return File descriptors for compacted WAL segments. */
     public FileDescriptor[] walCompactedFileDescriptors() {
-        return scan(listCompactedWalFiles(wal()));
+        return scan(walCompactedFiles());
     }
 
     /**
@@ -1003,7 +1013,7 @@ public class NodeFileTree extends SharedFileTree {
     public long lastArchivedIndex() {
         long lastIdx = -1;
 
-        for (File file : archiveWalCompactedOrRawFiles()) {
+        for (File file : walArchiveCompactedOrRawFiles()) {
             try {
                 long idx = walSegmentIndex(file.toPath());
 
@@ -1093,7 +1103,7 @@ public class NodeFileTree extends SharedFileTree {
     ) {
         TreeMap<Long, FileDescriptor> archiveIndices = new TreeMap<>();
 
-        for (File file : archiveWalCompactedOrRawFiles()) {
+        for (File file : walArchiveCompactedOrRawFiles()) {
             try {
                 long idx = new FileDescriptor(file).idx();
 
@@ -1280,14 +1290,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static File[] listTmpWalFiles(File f) {
         return f.listFiles(WAL_SEGMENT_TEMP_FILE_FILTER);
-    }
-
-    /**
-     * @param f Directory to scan for WAL compacted files.
-     * @return Array of WAL compacted files.
-     */
-    public static File[] listCompactedWalFiles(File f) {
-        return f.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
     }
 
     /**
