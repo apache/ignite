@@ -197,6 +197,13 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         return firstTs > 0;
     }
 
+    /** */
+    private long trackingData(long pageId) {
+        int trackingIdx = trackingIdx(PageIdUtils.pageIndex(pageId));
+
+        return GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+    }
+
     /** {@inheritDoc} */
     @Override public void forgetPage(long pageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
@@ -207,15 +214,39 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void trackFragmentPage(long pageId, long tailPageId) {
+    @Override public void trackFragmentPage(long pageId, long lastLink) {
+        long trackingData = trackingData(lastLink);
+
+        int tailPageIdx;
+
+        if (trackingData == 0L)
+            tailPageIdx = PageIdUtils.pageIndex(lastLink);
+        else {
+            assert first(trackingData) == -1;
+
+            tailPageIdx = second(trackingData);
+        }
+
         // Store link to tail fragment page in each fragment page.
-        linkFragmentPages(pageId, tailPageId);
+        linkFragmentPages(PageIdUtils.pageIndex(pageId), tailPageIdx);
     }
 
     /** {@inheritDoc} */
-    @Override public void trackTailFragmentPage(long tailPageId, long headPageId) {
+    @Override public void trackTailFragmentPage(long lastLink, long headPageId) {
+        long trackingData = trackingData(lastLink);
+
+        int tailPageIdx;
+
+        if (trackingData == 0L)
+            tailPageIdx = PageIdUtils.pageIndex(lastLink);
+        else {
+            assert first(trackingData) == -1;
+
+            tailPageIdx = second(trackingData);
+        }
+
         // Store link to head fragment page in tail fragment page.
-        linkFragmentPages(tailPageId, headPageId);
+        linkFragmentPages(tailPageIdx, PageIdUtils.pageIndex(headPageId));
     }
 
     /**
@@ -223,14 +254,10 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
      * Link is stored as a page index in the second integer in the tracking data.
      * First integer in the tracking data is set to -1.
      *
-     * @param pageId Page id.
-     * @param nextPageId Id of page to link to.
+     * @param pageIdx Page index.
+     * @param nextPageIdx Index of page to link to.
      */
-    private void linkFragmentPages(long pageId, long nextPageId) {
-        int pageIdx = PageIdUtils.pageIndex(pageId);
-
-        int nextPageIdx = PageIdUtils.pageIndex(nextPageId);
-
+    private void linkFragmentPages(int pageIdx, int nextPageIdx) {
         boolean success;
 
         do {

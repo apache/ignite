@@ -368,32 +368,8 @@ public abstract class DataStructure {
         int intArg,
         R lockFailed,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        return write(pageId, h, init, arg, intArg, lockFailed, statHolder, -1);
-    }
-
-    /**
-     * @param pageId Page ID.
-     * @param h Handler.
-     * @param init IO for new page initialization or {@code null} if it is an existing page.
-     * @param arg Argument.
-     * @param intArg Argument of type {@code int}.
-     * @param lockFailed Result in case of lock failure due to page recycling.
-     * @param statHolder Statistics holder to track IO operations.
-     * @param longArg Argument of type {@code long}.
-     * @return Handler result.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected final <X, R> R write(
-        long pageId,
-        PageHandler<X, R> h,
-        PageIO init,
-        X arg,
-        int intArg,
-        R lockFailed,
-        IoStatisticsHolder statHolder,
-        long longArg) throws IgniteCheckedException {
         return PageHandler.writePage(pageMem, grpId, pageId, lockLsnr, h,
-            init, wal, null, arg, intArg, lockFailed, statHolder, pageIoRslvr, longArg);
+            init, wal, null, arg, intArg, lockFailed, statHolder, pageIoRslvr);
     }
 
     /**

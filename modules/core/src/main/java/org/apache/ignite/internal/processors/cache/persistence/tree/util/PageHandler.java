@@ -77,26 +77,6 @@ public abstract class PageHandler<X, R> {
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
-     * @param page Page absolute pointer.
-     * @param pageAddr Page address.
-     * @param io IO.
-     * @param walPlc Full page WAL record policy.
-     * @param arg Argument.
-     * @param intArg Argument of type {@code int}.
-     * @param statHolder Statistics holder to track IO operations.
-     * @param longArg Argument of type {@code long}.
-     * @return Result.
-     * @throws IgniteCheckedException If failed.
-     */
-    public R run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc, X arg,
-                 int intArg, IoStatisticsHolder statHolder, long longArg
-    ) throws IgniteCheckedException {
-        return run(cacheId, pageId, page, pageAddr, io, walPlc, arg, intArg, statHolder);
-    }
-
-    /**
-     * @param cacheId Cache ID.
-     * @param pageId Page ID.
      * @param page Page pointer.
      * @param pageAddr Page address.
      * @param arg Argument.
@@ -311,42 +291,6 @@ public abstract class PageHandler<X, R> {
         IoStatisticsHolder statHolder,
         PageIoResolver pageIoRslvr
     ) throws IgniteCheckedException {
-        return writePage(pageMem, grpId, pageId, lsnr, h, init, wal, walPlc, arg, intArg, lockFailed, statHolder, pageIoRslvr, -1);
-    }
-
-    /**
-     * @param pageMem Page memory.
-     * @param grpId Group ID.
-     * @param pageId Page ID.
-     * @param lsnr Lock listener.
-     * @param h Handler.
-     * @param init IO for new page initialization or {@code null} if it is an existing page.
-     * @param wal Write ahead log.
-     * @param walPlc Full page WAL record policy.
-     * @param arg Argument.
-     * @param intArg Argument of type {@code int}.
-     * @param lockFailed Result in case of lock failure due to page recycling.
-     * @param statHolder Statistics holder to track IO operations.
-     * @param longArg Argument of type {@code long}.
-     * @return Handler result.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static <X, R> R writePage(
-        PageMemory pageMem,
-        int grpId,
-        final long pageId,
-        PageLockListener lsnr,
-        PageHandler<X, R> h,
-        PageIO init,
-        IgniteWriteAheadLogManager wal,
-        Boolean walPlc,
-        X arg,
-        int intArg,
-        R lockFailed,
-        IoStatisticsHolder statHolder,
-        PageIoResolver pageIoRslvr,
-        long longArg
-    ) throws IgniteCheckedException {
         boolean releaseAfterWrite = true;
         long page = pageMem.acquirePage(grpId, pageId, statHolder);
         try {
@@ -366,7 +310,7 @@ public abstract class PageHandler<X, R> {
                 else
                     init = pageIoRslvr.resolve(pageAddr);
 
-                R res = h.run(grpId, pageId, page, pageAddr, init, walPlc, arg, intArg, statHolder, longArg);
+                R res = h.run(grpId, pageId, page, pageAddr, init, walPlc, arg, intArg, statHolder);
 
                 ok = true;
 
