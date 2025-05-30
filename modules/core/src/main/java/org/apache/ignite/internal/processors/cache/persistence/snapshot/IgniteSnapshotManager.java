@@ -309,7 +309,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * File transmission parameter of a storage path for given group id.
-     * @see CacheConfiguration#getStoragePath()
+     * @see CacheConfiguration#getStoragePaths()
      */
     private static final String SNP_CACHE_STORAGE_PATH_PARAM = "cacheStoragePath";
 
@@ -700,16 +700,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.isDirectory())
             return;
 
-        try {
-            SnapshotFileTree sft = new SnapshotFileTree(
-                cctx.kernalContext(),
-                snpDir.getName(),
-                snpDir.getParent(),
-                ft.folderName(),
-                pdsSettings.consistentId().toString());
+        deleteSnapshot(new SnapshotFileTree(
+            cctx.kernalContext(),
+            snpDir.getName(),
+            snpDir.getParent(),
+            ft.folderName(),
+            pdsSettings.consistentId().toString()));
+    }
 
+    /** */
+    public void deleteSnapshot(SnapshotFileTree sft) {
+        try {
             U.delete(sft.binaryMeta());
-            U.delete(sft.nodeStorage());
+            sft.allStorages().forEach(U::delete);
             U.delete(sft.meta());
 
             deleteDirectory(sft.binaryMetaRoot());
@@ -937,7 +940,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIndex());
             }
 
-            writeSnapshotDirectoryToMetastorage(ift.root());
+            writeSnapshotDirectoryToMetastorage(ift);
 
             task.start();
         });
@@ -1243,7 +1246,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (req.incremental())
                         U.delete(snpReq.snapshotFileTree().incrementalSnapshotFileTree(req.incrementIndex()).root());
                     else
-                        deleteSnapshot(snpReq.snapshotFileTree().root());
+                        deleteSnapshot(snpReq.snapshotFileTree());
                 }
                 else if (!F.isEmpty(req.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
@@ -2213,26 +2216,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         restoreCacheGrpProc.cleanup();
 
         // Snapshot which has not been completed due to the local node crashed must be deleted.
-        String snpDirName = (String)metaStorage.read(SNP_RUNNING_DIR_KEY);
+        String snpDirsName = (String)metaStorage.read(SNP_RUNNING_DIR_KEY);
 
-        if (snpDirName == null)
+        if (snpDirsName == null)
             return;
-
-        File snpDir = new File(snpDirName);
 
         recovered = true;
 
         for (File tmpRoot : ft.snapshotsTempRoots())
             F.asList(tmpRoot.listFiles()).forEach(U::delete);
 
-        if (SnapshotFileTree.incrementSnapshotDir(snpDir))
-            U.delete(snpDir);
-        else
-            deleteSnapshot(snpDir);
+        String[] snpDirs = snpDirsName.split(File.pathSeparator);
+
+        for (String snpDirName : snpDirs) {
+            File snpDir = new File(snpDirName);
+
+            if (SnapshotFileTree.incrementSnapshotDir(snpDir))
+                U.delete(snpDir);
+            else
+                deleteSnapshot(snpDir);
+        }
 
         if (log.isInfoEnabled()) {
             log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
-                "related to snapshot operation have been deleted: " + snpDir.getName());
+                "related to snapshot operation have been deleted: " + snpDirsName);
         }
     }
 
@@ -2375,8 +2382,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!sft.root().exists())
             throw new IgniteCheckedException("Snapshot directory doesn't exists: " + sft.root().getAbsolutePath());
 
-        if (!sft.nodeStorage().exists())
-            throw new IgniteCheckedException("Consistent id directory doesn't exists: " + sft.nodeStorage().getAbsolutePath());
+        if (!sft.allStorages().allMatch(File::exists)) {
+            throw new IgniteCheckedException("Consistent id directory doesn't exists: " +
+                sft.allStorages().map(File::getAbsolutePath).collect(Collectors.joining()));
+        }
 
         File snpPart = sft.partitionFile(ccfg, partId);
 
@@ -2556,15 +2565,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             rqId);
     }
 
-    /** @param snpLocDir Snapshot local directory. */
-    public void writeSnapshotDirectoryToMetastorage(File snpLocDir) {
+    /** @param sft Snapshot file tree. */
+    public void writeSnapshotDirectoryToMetastorage(NodeFileTree sft) {
         cctx.database().checkpointReadLock();
 
         try {
             assert metaStorage != null && metaStorage.read(SNP_RUNNING_DIR_KEY) == null :
                 "The previous snapshot hasn't been completed correctly";
 
-            metaStorage.write(SNP_RUNNING_DIR_KEY, snpLocDir.getAbsolutePath());
+            StringBuilder dirs = new StringBuilder(sft.root().getAbsolutePath());
+
+            for (File es : sft.extraStorages().values())
+                dirs.append(File.pathSeparator).append(es.getAbsolutePath());
+
+            metaStorage.write(SNP_RUNNING_DIR_KEY, dirs.toString());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -2821,36 +2835,36 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "Encrypted cache groups not supported [groupId=" + grpId + ']');
             }
 
-            File snpCacheDir = sft.cacheStorage(gctx.config());
-
-            if (!snpCacheDir.exists()) {
-                throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
-                    "Cache group directory not found [groupId=" + grpId + ']');
-            }
-
-            for (File snpDataFile : NodeFileTree.existingCacheConfigFiles(snpCacheDir)) {
-                StoredCacheData snpCacheData = GridLocalConfigManager.readCacheData(
-                    snpDataFile,
-                    cctx.kernalContext().marshallerContext().jdkMarshaller(),
-                    cctx.kernalContext().config()
-                );
-
-                byte[] snpCacheDataBytes = Files.readAllBytes(snpDataFile.toPath());
-
-                File nodeDataFile = ft.cacheConfigurationFile(snpCacheData.config());
-
-                if (!nodeDataFile.exists()) {
+            for (File snpCacheDir : sft.cacheStorages(gctx.config())) {
+                if (!snpCacheDir.exists()) {
                     throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
-                        "Cache destroyed [cacheId=" + snpCacheData.cacheId() +
-                        ", cacheName=" + snpCacheData.config().getName() + ']');
+                        "Cache group directory not found [groupId=" + grpId + ']');
                 }
 
-                byte[] nodeCacheDataBytes = Files.readAllBytes(nodeDataFile.toPath());
-
-                if (!Arrays.equals(snpCacheDataBytes, nodeCacheDataBytes)) {
-                    throw new IgniteCheckedException(
-                        cacheChangedException(snpCacheData.cacheId(), snpCacheData.config().getName())
+                for (File snpDataFile : NodeFileTree.existingCacheConfigFiles(snpCacheDir)) {
+                    StoredCacheData snpCacheData = GridLocalConfigManager.readCacheData(
+                        snpDataFile,
+                        cctx.kernalContext().marshallerContext().jdkMarshaller(),
+                        cctx.kernalContext().config()
                     );
+
+                    byte[] snpCacheDataBytes = Files.readAllBytes(snpDataFile.toPath());
+
+                    File nodeDataFile = ft.cacheConfigurationFile(snpCacheData.config());
+
+                    if (!nodeDataFile.exists()) {
+                        throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                            "Cache destroyed [cacheId=" + snpCacheData.cacheId() +
+                            ", cacheName=" + snpCacheData.config().getName() + ']');
+                    }
+
+                    byte[] nodeCacheDataBytes = Files.readAllBytes(nodeDataFile.toPath());
+
+                    if (!Arrays.equals(snpCacheDataBytes, nodeCacheDataBytes)) {
+                        throw new IgniteCheckedException(
+                            cacheChangedException(snpCacheData.cacheId(), snpCacheData.config().getName())
+                        );
+                    }
                 }
             }
         }
@@ -3763,7 +3777,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param storagePath Storage path.
          * @param pair Cache group id with corresponding partition id.
          * @return Map of params.
-         * @see CacheConfiguration#getStoragePath()
+         * @see CacheConfiguration#getStoragePaths()
          */
         private Map<String, Serializable> transmissionParams(
             String rqId,
@@ -3824,25 +3838,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override protected void init(int partsCnt) {
-            if (sft.nodeStorage().exists()) {
+            if (sft.allStorages().anyMatch(File::exists)) {
                 throw new IgniteException("Snapshot with given name already exists " +
-                    "[snpName=" + sft.name() + ", absPath=" + sft.nodeStorage().getAbsolutePath() + ']');
+                    "[snpName=" + sft.name() + ", absPath=" +
+                    sft.allStorages().map(File::getAbsolutePath).collect(Collectors.joining(",")) + ']');
             }
 
-            writeSnapshotDirectoryToMetastorage(sft.root());
+            writeSnapshotDirectoryToMetastorage(sft);
 
-            try {
-                U.ensureDirectory(sft.nodeStorage(), "snapshot work directory for a local snapshot sender", log);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            sft.allStorages().forEach(s -> {
+                try {
+                    U.ensureDirectory(s, "snapshot work directory for a local snapshot sender", log);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            });
         }
 
         /** {@inheritDoc} */
         @Override public void sendCacheConfig0(File ccfgFile, CacheConfiguration<?, ?> ccfg) {
             try {
-                File cacheDir = sft.cacheStorage(ccfg);
+                File cacheDir = sft.cacheStorages(ccfg)[0];
 
                 U.mkdirs(cacheDir);
 
@@ -3954,7 +3971,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + sft.nodeStorage() + ']');
             }
             else {
-                deleteSnapshot(sft.root());
+                deleteSnapshot(sft);
 
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());

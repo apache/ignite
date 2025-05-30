@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -67,7 +68,7 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
 
     /** */
     @Test
-    public void testDuplicatesStoragePathThrows() throws Exception {
+    public void testDuplicatesStoragePathThrows() {
         assertThrows(
             log,
             () -> startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
@@ -99,38 +100,49 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
     /** */
     @Test
     public void testCacheUnknownStoragePathThrows() throws Exception {
+        ConsumerX<IgniteEx> check = srv -> {
+            assertThrowsWithCause(
+                () -> srv.createCache(new CacheConfiguration<>("my-cache").setStoragePaths("other")),
+                IgniteCheckedException.class
+            );
+        };
+
         try (IgniteEx srv = startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
                 .setStoragePath(myPath.getAbsolutePath())
                 .setExtraStoragePaths(myPath2.getAbsolutePath())
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))))) {
             srv.cluster().state(ClusterState.ACTIVE);
+            check.accept(srv);
+        }
 
-            assertThrowsWithCause(
-                () -> srv.createCache(new CacheConfiguration<>("my-cache").setStoragePath("other")),
-                IgniteCheckedException.class
-            );
+        try (IgniteEx srv = startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
+            .setExtraStoragePaths(myPath.getAbsolutePath(), myPath2.getAbsolutePath())
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))))) {
+            srv.cluster().state(ClusterState.ACTIVE);
+
+            check.accept(srv);
         }
     }
 
     /** */
     @Test
     public void testDifferentStoragePathForGroupThrows() throws Exception {
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setStoragePath(myPath.getAbsolutePath())
-            .setExtraStoragePaths(myPath2.getAbsolutePath(), myPath3.getAbsolutePath())
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
-
-        try (IgniteEx srv = startGrid(new IgniteConfiguration().setDataStorageConfiguration(dsCfg))) {
-            srv.cluster().state(ClusterState.ACTIVE);
-
+        ConsumerX<IgniteEx> check = srv -> {
             srv.createCache(new CacheConfiguration<>("my-cache")
-                    .setGroupName("grp")
-                    .setStoragePath(myPath.getAbsolutePath()));
+                .setGroupName("grp")
+                .setStoragePaths(myPath.getAbsolutePath()));
 
             assertThrowsWithCause(
                 () -> srv.createCache(new CacheConfiguration<>("my-cache2")
                     .setGroupName("grp")
-                    .setStoragePath(myPath3.getAbsolutePath())),
+                    .setStoragePaths(myPath3.getAbsolutePath())),
+                IgniteCheckedException.class
+            );
+
+            assertThrowsWithCause(
+                () -> srv.createCache(new CacheConfiguration<>("my-cache2")
+                    .setGroupName("grp")
+                    .setStoragePaths(myPath2.getAbsolutePath(), myPath3.getAbsolutePath())),
                 IgniteCheckedException.class
             );
 
@@ -145,9 +157,51 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
             assertThrowsWithCause(
                 () -> srv.createCache(new CacheConfiguration<>("my-cache3")
                     .setGroupName("grp-2")
-                    .setStoragePath(myPath.getAbsolutePath())),
+                    .setStoragePaths(myPath.getAbsolutePath())),
                 IgniteCheckedException.class
             );
+
+            assertThrowsWithCause(
+                () -> srv.createCache(new CacheConfiguration<>("my-cache3")
+                    .setGroupName("grp-2")
+                    .setStoragePaths(myPath.getAbsolutePath(), myPath2.getAbsolutePath())),
+                IgniteCheckedException.class
+            );
+
+            srv.createCache(new CacheConfiguration<>("my-cache3")
+                .setStoragePaths(myPath2.getAbsolutePath(), myPath3.getAbsolutePath())
+                .setGroupName("grp-3"));
+
+            assertThrowsWithCause(
+                () -> srv.createCache(new CacheConfiguration<>("my-cache4")
+                    .setGroupName("grp-3")
+                    .setStoragePaths(myPath.getAbsolutePath(), myPath2.getAbsolutePath())),
+                IgniteCheckedException.class
+            );
+
+            assertThrowsWithCause(
+                () -> srv.createCache(new CacheConfiguration<>("my-cache4")
+                    .setGroupName("grp-3")
+                    .setStoragePaths(myPath3.getAbsolutePath(), myPath2.getAbsolutePath())),
+                IgniteCheckedException.class
+            );
+        };
+
+        try (IgniteEx srv = startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
+            .setStoragePath(myPath.getAbsolutePath())
+            .setExtraStoragePaths(myPath2.getAbsolutePath(), myPath3.getAbsolutePath())
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))))) {
+            srv.cluster().state(ClusterState.ACTIVE);
+
+            check.accept(srv);
+        }
+
+        try (IgniteEx srv = startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
+            .setExtraStoragePaths(myPath.getAbsolutePath(), myPath2.getAbsolutePath(), myPath3.getAbsolutePath())
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))))) {
+            srv.cluster().state(ClusterState.ACTIVE);
+
+            check.accept(srv);
         }
     }
 
@@ -163,10 +217,10 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
             srv.cluster().state(ClusterState.ACTIVE);
 
             srv.createCache(new CacheConfiguration<>("my-cache")
-                .setGroupName("grp").setStoragePath(myPath3.getAbsolutePath()));
+                .setGroupName("grp").setStoragePaths(myPath3.getAbsolutePath()));
 
             srv.createCache(new CacheConfiguration<>("my-cache2")
-                .setGroupName("grp").setStoragePath(myPath3.getAbsolutePath()));
+                .setGroupName("grp").setStoragePaths(myPath3.getAbsolutePath()));
         }
     }
 
@@ -178,7 +232,7 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setStoragePath(myPath.getAbsolutePath());
+            .setStoragePaths(myPath.getAbsolutePath());
 
         try (IgniteEx srv = startGrid(getConfiguration("srv")
             .setDataStorageConfiguration(dsCfg)

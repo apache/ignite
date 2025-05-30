@@ -428,7 +428,7 @@ public class CachePartitionDefragmentationManager {
                                 "newPages", idxAllocationTracker.get() + 1, false,
                                 "pageSize", pageSize, false,
                                 "partFile", cft.defragmentedIndexFile().getName(), false,
-                                "workDir", cft.storage(), false
+                                "workDir", Arrays.toString(cft.storages()), false
                             ));
                         }
 
@@ -597,7 +597,7 @@ public class CachePartitionDefragmentationManager {
                         "mappingPages", partCtx.mappingPagesAllocated.get() + 1, false,
                         "pageSize", pageSize, false,
                         "partFile", cft.defragmentedPartFile(partId).getName(), false,
-                        "workDir", cft.storage(), false
+                        "workDir", Arrays.toString(cft.storages()), false
                     ));
                 }
 
