@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -124,7 +125,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                 i,
                 OLD_IGNITE_VERSION,
                 new ConfigurationClosure(i),
-                i == oldNodesCnt ? new CreateSnapshotClosure() : null
+                i == oldNodesCnt ? new CreateSnapshotClosure(customSnpPath) : null
             );
         }
 
@@ -156,30 +157,29 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         // https://issues.apache.org/jira/browse/IGNITE-25096
         boolean incSnpSupported = customConsId && oldNodesCnt == 1;
 
-        HashSet<String> grpNames = new HashSet<>(cacheToGrp.values());
+        List<String> snpPaths = Arrays.asList(null, customSnpPath);
 
-        IgniteFuture<?> snpFut = incSnpSupported
-            ? node.snapshot().restoreSnapshot(SNAPSHOT_NAME, grpNames, 1)
-            : node.snapshot().restoreSnapshot(SNAPSHOT_NAME, grpNames);
+        Set<String> grpNames = new HashSet<>(cacheToGrp.values());
 
-        snpFut.get();
+        int expCacheSz = BASE_CACHE_SIZE + (incSnpSupported ? ENTRIES_CNT_FOR_INCREMENT : 0);
 
-        validateCaches(node, incSnpSupported);
+        for (Iterator<String> it = snpPaths.iterator(); it.hasNext();) {
+            String snpPath = it.next();
 
-        cacheToGrp.keySet().forEach(node::destroyCache);
+            restoreAndValidateSnapshot(node, grpNames, snpPath, incSnpSupported, expCacheSz);
 
-        IgniteFuture<?> customPathSnpFut = incSnpSupported
-            ? node.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, customSnpPath, grpNames, 1, true)
-            : node.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, customSnpPath, grpNames);
-
-        customPathSnpFut.get();
-
-        validateCaches(node, incSnpSupported);
+            if (it.hasNext())
+                node.destroyCaches(cacheToGrp.keySet());
+        }
     }
 
     /** */
-    private void validateCaches(IgniteEx node, boolean incSnpSupported) {
-        int expCacheSz = BASE_CACHE_SIZE + (incSnpSupported ? ENTRIES_CNT_FOR_INCREMENT : 0);
+    private void restoreAndValidateSnapshot(IgniteEx node, Set<String> grpNames, String snpPath, boolean incSnpSupported, int expCacheSz) {
+        IgniteFuture<?> fut = incSnpSupported
+            ? node.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, snpPath, grpNames, 1, true)
+            : node.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, snpPath, grpNames);
+
+        fut.get();
 
         cacheToGrp.keySet().forEach(cacheName -> {
             IgniteCache<Integer, String> cache = node.cache(cacheName);
