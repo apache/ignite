@@ -48,7 +48,7 @@ public class MapH2QueryInfo extends H2QueryInfo {
 
     /** {@inheritDoc} */
     @Override protected void printInfo(StringBuilder msg) {
-        msg.append("', reqId=").append(reqId)
+        msg.append(", reqId=").append(reqId)
             .append(", segment=").append(segment);
     }
 }
