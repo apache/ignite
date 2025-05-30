@@ -111,7 +111,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
             }
         }, 5000);
 
-        File[] tmpFiles = NodeFileTree.listTmpCompactedWalFiles(ft1.walArchive());
+        File[] tmpFiles = NodeFileTree.tmpWalCompactedFiles(ft1.walArchive());
 
         assertEquals(0, tmpFiles.length);
     }

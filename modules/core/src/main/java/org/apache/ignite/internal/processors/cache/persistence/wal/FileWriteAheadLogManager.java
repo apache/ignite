@@ -1510,8 +1510,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         Collection<File> tmpFiles = new HashSet<>();
 
         for (File walDir : F.asList(ft.wal(), ft.walArchive())) {
-            tmpFiles.addAll(F.asList(NodeFileTree.listTmpWalFiles(walDir)));
-            tmpFiles.addAll(F.asList(NodeFileTree.listTmpCompactedWalFiles(walDir)));
+            tmpFiles.addAll(F.asList(NodeFileTree.tmpWalFiles(walDir)));
+            tmpFiles.addAll(F.asList(NodeFileTree.tmpWalCompactedFiles(walDir)));
         }
 
         for (File tmpFile : tmpFiles) {

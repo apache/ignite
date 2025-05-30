@@ -1278,22 +1278,37 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param f Directory to scan for WAL temp files.
-     * @return Array of WAL temp files.
+     * @return WAL temp files.
      */
-    public static File[] listTmpWalFiles(File f) {
+    public static File[] tmpWalFiles(File f) {
         return f.listFiles(WAL_SEGMENT_TEMP_FILE_FILTER);
     }
 
     /**
      * @param f Directory to scan for WAL compacted temp files.
-     * @return Array of WAL compacted temp files.
+     * @return WAL compacted temp files.
      */
-    public static File[] listTmpCompactedWalFiles(File f) {
+    public static File[] tmpWalCompactedFiles(File f) {
         return f.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
     }
 
     /**
-     * @return Sorted WAL files descriptors.
+     * Scans provided folder for a WAL segment files
+     * @param walFilesDir directory to scan
+     * @return found WAL file descriptors
+     */
+    public static FileDescriptor[] loadFileDescriptors(final File walFilesDir) throws IgniteCheckedException {
+        final File[] files = walFilesDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+
+        if (files == null) {
+            throw new IgniteCheckedException("WAL files directory does not not denote a " +
+                    "directory, or if an I/O error occurs: [" + walFilesDir.getAbsolutePath() + "]");
+        }
+        return scan(files);
+    }
+
+    /**
+     * @return Sorted files descriptors.
      */
     private static FileDescriptor[] scan(@Nullable File[] allFiles) {
         if (allFiles == null)
@@ -1310,21 +1325,6 @@ public class NodeFileTree extends SharedFileTree {
         Arrays.sort(descs);
 
         return descs;
-    }
-
-    /**
-     * Scans provided folder for a WAL segment files
-     * @param walFilesDir directory to scan
-     * @return found WAL file descriptors
-     */
-    public static FileDescriptor[] loadFileDescriptors(final File walFilesDir) throws IgniteCheckedException {
-        final File[] files = walFilesDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
-
-        if (files == null) {
-            throw new IgniteCheckedException("WAL files directory does not not denote a " +
-                    "directory, or if an I/O error occurs: [" + walFilesDir.getAbsolutePath() + "]");
-        }
-        return scan(files);
     }
 
     /** {@inheritDoc} */
