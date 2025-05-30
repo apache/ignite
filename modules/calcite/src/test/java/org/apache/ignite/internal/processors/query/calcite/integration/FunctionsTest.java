@@ -496,4 +496,26 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("select decode(null, 1, 1, 2)").returns(2).check();
         assertQuery("select decode(1, null, 1, 2)").returns(2).check();
     }
+
+    /** Tests rewrittable functions with subquery as parameter. */
+    @Test
+    public void testRewrittenFunctionWithSubquery() {
+        sql("CREATE TABLE TBL(i INT PRIMARY KEY, t TIMESTAMP)");
+        sql("INSERT INTO TBL(i, t) values (1, timestamp '2025-05-22 13:40:15')");
+
+        assertQuery("select decode((select max(i) from tbl), 1, '1', '2')").returns("1").check();
+        assertQuery("select nvl((select max(i) from tbl), 0)").returns(1).check();
+        assertQuery("select coalesce((select max(i) from tbl), 0)").returns(1).check();
+        assertQuery("select nullif((select max(i) from tbl), 0)").returns(1).check();
+        assertQuery("select year((select max(t) from tbl))").returns(2025L).check();
+        assertQuery("select quarter((select max(t) from tbl))").returns(2L).check();
+        assertQuery("select month((select max(t) from tbl))").returns(5L).check();
+        assertQuery("select week((select max(t) from tbl))").returns(21L).check();
+        assertQuery("select dayofyear((select max(t) from tbl))").returns(142L).check();
+        assertQuery("select dayofmonth((select max(t) from tbl))").returns(22L).check();
+        assertQuery("select dayofweek((select max(t) from tbl))").returns(5L).check();
+        assertQuery("select hour((select max(t) from tbl))").returns(13L).check();
+        assertQuery("select minute((select max(t) from tbl))").returns(40L).check();
+        assertQuery("select second((select max(t) from tbl))").returns(15L).check();
+    }
 }
