@@ -27,13 +27,11 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -115,18 +113,6 @@ public interface IgniteTable extends TranslatableTable {
      * @return Indexes for the current table.
      */
     Map<String, IgniteIndex> indexes();
-
-    /** Return indexes of column representing primary key in the order they are specified in the index. */
-    default ImmutableIntList keyColumns() {
-        Map<String, IgniteIndex> indexes = indexes();
-
-        if (F.isEmpty(indexes))
-            return ImmutableIntList.of();
-
-        IgniteIndex idx = indexes.get("_key_PK");
-
-        return idx == null ? ImmutableIntList.of() : idx.collation().getKeys();
-    }
 
     /**
      * Adds index to table.

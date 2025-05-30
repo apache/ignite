@@ -195,7 +195,7 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         return new RelColumnOrigin(getTable(), originColIdx, false);
     }
 
-    /** */
+    /** Returns original index of a table column related to the projected index. */
     public RelColumnOrigin tableColIdx(int projectColIdx) {
         int originColIdx = (requiredColumns == null)
             ? projectColIdx
