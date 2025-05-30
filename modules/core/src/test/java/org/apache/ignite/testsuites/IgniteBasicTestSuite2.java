@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
+import org.apache.ignite.internal.processors.database.FreeListCutTailDifferentGcTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorLoggingTest;
@@ -225,6 +226,8 @@ import org.junit.runners.Suite;
 
     ConcurrentMappingFileReadWriteTest.class,
     PeriodicHistogramMetricImplTest.class,
+
+    FreeListCutTailDifferentGcTest.class,
 })
 public class IgniteBasicTestSuite2 {
 }
