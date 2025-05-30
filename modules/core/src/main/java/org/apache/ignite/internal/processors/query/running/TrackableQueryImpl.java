@@ -27,9 +27,6 @@ public class TrackableQueryImpl implements TrackableQuery {
     /** Schema name. */
     private String schema;
 
-    /** Sql. */
-    private String sql;
-
     /** Node id. */
     private UUID nodeId;
 
@@ -48,22 +45,6 @@ public class TrackableQueryImpl implements TrackableQuery {
      */
     public TrackableQueryImpl schema(String schema) {
         this.schema = schema;
-
-        return this;
-    }
-
-    /** @return Sql. */
-    public String sql() {
-        return sql;
-    }
-
-    /**
-     * @param sql Sql.
-     *
-     * @return {@code this} for chaining.
-     */
-    public TrackableQueryImpl sql(String sql) {
-        this.sql = sql;
 
         return this;
     }
@@ -111,14 +92,13 @@ public class TrackableQueryImpl implements TrackableQuery {
         TrackableQueryImpl info = (TrackableQueryImpl)o;
 
         return schema().equals(info.schema()) &&
-            sql().equals(info.sql()) &&
             nodeId().equals(info.nodeId()) &&
             queryId() == info.queryId();
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(schema(), sql(), nodeId(), queryId());
+        return Objects.hash(schema(), nodeId(), queryId());
     }
 
     /** {@inheritDoc} */

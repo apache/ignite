@@ -156,19 +156,12 @@ public final class HeavyQueriesTracker {
 
     /**
      * @param schema Schema name.
-     * @param sql Sql.
      * @param nodeId Node id.
      * @param qryId Query id.
      * @param err Error.
      */
-    public void stopTracking(String schema, String sql, UUID nodeId, long qryId, @Nullable Throwable err) {
-        stopTracking(
-            new TrackableQueryImpl()
-                .schema(schema)
-                .sql(sql)
-                .nodeId(nodeId)
-                .queryId(qryId),
-            err);
+    public void stopTracking(String schema, UUID nodeId, long qryId, @Nullable Throwable err) {
+        stopTracking(new TrackableQueryImpl().schema(schema).nodeId(nodeId).queryId(qryId), err);
     }
 
     /**

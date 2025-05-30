@@ -56,8 +56,9 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatcher;
+import org.junit.rules.TestRule;
 import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import static java.lang.Thread.currentThread;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
@@ -137,12 +138,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         return cfg.setSqlConfiguration(new SqlConfiguration().setLongQueryWarningTimeout(LONG_QUERY_WARNING_TIMEOUT));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        ignite = startGrids(multiNodeTestRule.isMultiNode ? 3 : 1);
-
+    /** */
+    private void prepareTestEnvironment() {
         IgniteCache c = grid(0).createCache(new CacheConfiguration<Long, Long>()
             .setName("test")
             .setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Long.class)
@@ -858,19 +855,19 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         }
     }
 
-    /** Test rule that allows marking a test as multi-node via the {@link MultiNodeTest} annotation. */
-    private static class MultiNodeTestRule extends TestWatcher {
-        /** */
-        private boolean isMultiNode;
-
+    /** Test rule that allows starting a test in the multi-node mode via the {@link MultiNodeTest} annotation. */
+    private class MultiNodeTestRule implements TestRule {
         /** {@inheritDoc} */
-        @Override protected void starting(Description description) {
-            isMultiNode = description.getAnnotation(MultiNodeTest.class) != null;
-        }
+        @Override public Statement apply(Statement base, Description description) {
+            return new Statement() {
+                @Override public void evaluate() throws Throwable {
+                    ignite = startGrids(description.getAnnotation(MultiNodeTest.class) == null ? 1 : 3);
 
-        /** */
-        public boolean isMultiNode() {
-            return isMultiNode;
+                    prepareTestEnvironment();
+
+                    base.evaluate();
+                }
+            };
         }
     }
 }

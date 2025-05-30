@@ -50,6 +50,9 @@ public class H2QueryInfo extends TrackableQueryImpl {
     /** Long query time tracking suspension flag. */
     private volatile boolean isSuspended;
 
+    /** Query SQL. */
+    private final String sql;
+
     /** Enforce join order. */
     private final boolean enforceJoinOrder;
 
@@ -77,8 +80,8 @@ public class H2QueryInfo extends TrackableQueryImpl {
             assert stmt != null;
 
             this.type = type;
+            this.sql = sql;
 
-            sql(sql);
             nodeId(nodeId);
             queryId(queryId);
 
@@ -107,6 +110,11 @@ public class H2QueryInfo extends TrackableQueryImpl {
         }
 
         return plan;
+    }
+
+    /** */
+    public String sql() {
+        return sql;
     }
 
     /** */
@@ -166,7 +174,7 @@ public class H2QueryInfo extends TrackableQueryImpl {
                 .append(", enforceJoinOrder=").append(enforceJoinOrder)
                 .append(", lazy=").append(lazy)
                 .append(", schema=").append(schema())
-                .append(", sql='").append(sql())
+                .append(", sql='").append(sql)
                 .append("', plan=").append(plan());
 
         printInfo(msgSb);

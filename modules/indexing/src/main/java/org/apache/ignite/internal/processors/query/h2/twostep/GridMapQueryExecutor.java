@@ -270,8 +270,7 @@ public class GridMapQueryExecutor {
                                 params,
                                 lazy,
                                 dataPageScanEnabled,
-                                treatReplicatedAsPartitioned,
-                                req.originalSql()
+                                treatReplicatedAsPartitioned
                             );
                         }
                         catch (Throwable e) {
@@ -299,8 +298,7 @@ public class GridMapQueryExecutor {
                 params,
                 lazy,
                 dataPageScanEnabled,
-                treatReplicatedAsPartitioned,
-                req.originalSql()
+                treatReplicatedAsPartitioned
             );
         }
         catch (Throwable e) {
@@ -347,8 +345,7 @@ public class GridMapQueryExecutor {
         final Object[] params,
         boolean lazy,
         Boolean dataPageScanEnabled,
-        boolean treatReplicatedAsPartitioned,
-        String originalSql
+        boolean treatReplicatedAsPartitioned
     ) {
         boolean performanceStatsEnabled = ctx.performanceStatistics().enabled();
 
@@ -467,7 +464,7 @@ public class GridMapQueryExecutor {
 
                         H2Utils.bindParameters(stmt, params0);
 
-                        qryInfo = new MapH2QueryInfo(stmt, originalSql, node.id(), qryId, reqId, segmentId, sql);
+                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, reqId, segmentId);
 
                         h2.heavyQueriesTracker().startTracking(qryInfo);
 

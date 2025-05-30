@@ -484,19 +484,24 @@ public class RunningQueryManager {
      * @param failReason Query fail reason.
      */
     public void stopQueryTracking(long qryId, @Nullable Throwable failReason) {
-        GridRunningQueryInfo qryInfo = runs.get(qryId);
+        GridRunningQueryInfo qry = runs.get(qryId);
 
-        if (qryInfo == null) {
+        if (qry == null) {
             log.error("Failed to stop query tracking, query not found among currently registered queries" +
                 " [qryId=" + qryId + "]");
 
             return;
         }
 
+        if (!heavyQueriesTracker().getQueries().contains(
+            new TrackableQueryImpl().schema(qry.schemaName()).nodeId(qry.nodeId()).queryId(qryId))
+        )
+            return;
+
         try {
             closure.runAsync(
                 BROADCAST,
-                new StopQueryTrackingTask(qryInfo, failReason),
+                new StopQueryTrackingTask(qry, failReason),
                 options(ctx.cluster().get().nodes())
             ).get();
         }
@@ -946,9 +951,6 @@ public class RunningQueryManager {
         /** Schema name. */
         private final String schema;
 
-        /** Sql. */
-        private final String sql;
-
         /** Node id. */
         private final UUID nodeId;
 
@@ -968,7 +970,6 @@ public class RunningQueryManager {
          */
         public StopQueryTrackingTask(GridRunningQueryInfo qry, @Nullable Throwable failReason) {
             schema = qry.schemaName();
-            sql = qry.query();
             nodeId = qry.nodeId();
             qryId = qry.id();
 
@@ -978,7 +979,7 @@ public class RunningQueryManager {
         /** {@inheritDoc} */
         @Override public void run() {
             ignite.context().query().runningQueryManager().heavyQueriesTracker()
-                .stopTracking(schema, sql, nodeId, qryId, failReason);
+                .stopTracking(schema, nodeId, qryId, failReason);
         }
     }
 }
