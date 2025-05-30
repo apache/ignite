@@ -18,6 +18,10 @@
 package org.apache.ignite.compatibility.persistence;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
@@ -143,7 +148,10 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
 
         new CreateSnapshotClosure().apply(curNodes.get(0));
 
-        assertEquals(scanFileTree(oldWorkDir, SNP_PART_SUFFIX), scanFileTree(U.defaultWorkDirectory(), SNP_PART_SUFFIX));
+        assertEquals(
+            scanFileTree(Path.of(oldWorkDir), SNP_PART_SUFFIX),
+            scanFileTree(Path.of(U.defaultWorkDirectory()), SNP_PART_SUFFIX)
+        );
 
         assertEquals(
             scanFileTree(snpPath(oldWorkDir, CACHE_DUMP_NAME), DUMP_PART_SUFFIX),
@@ -157,8 +165,8 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
     }
 
     /** */
-    private static String snpPath(String workDir, String snpName) {
-        return workDir + File.separator + "snapshots" + File.separator + snpName;
+    private static Path snpPath(String workDir, String snpName) {
+        return Path.of(workDir + File.separator + "snapshots" + File.separator + snpName);
     }
 
     /** */
@@ -167,23 +175,27 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
     }
 
     /** */
-    private SnpScanResult scanSnp(String snpPath) {
-        File incsDir = new File(snpPath, "increments");
+    private SnpScanResult scanSnp(Path snpPath) throws IOException {
+        Path incsDir = snpPath.resolve("increments");
 
-        int incsCnt = incsDir.exists() ? incsDir.list().length : 0;
+        int incsCnt = 0;
+
+        if (Files.isDirectory(incsDir)) {
+            try (Stream<Path> stream = Files.list(incsDir)) {
+                incsCnt = (int)stream.count();
+            }
+        }
 
         return new SnpScanResult(incsCnt, scanFileTree(snpPath, SNP_PART_SUFFIX));
     }
 
     /** */
-    private Map<String, CacheGroupScanResult> scanFileTree(String rootPath, String partSuffix) {
+    private Map<String, CacheGroupScanResult> scanFileTree(Path root, String partSuffix) throws IOException {
         Map<String, CacheGroupScanResult> res = new HashMap<>();
 
-        File dbDir = new File(rootPath, "db");
-
-        for (File child : dbDir.listFiles()) {
-            if (child.getName().startsWith("node")) {
-                scanNode(child, partSuffix).forEach(scan ->
+        try (DirectoryStream<Path> nodes = Files.newDirectoryStream(root.resolve("db"), "node*")) {
+            for (Path nodeDir : nodes) {
+                for (CacheGroupScanResult scan : scanNode(nodeDir, partSuffix)) {
                     res.merge(
                         scan.cacheGrpName(),
                         scan,
@@ -192,8 +204,8 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
 
                             return to;
                         }
-                    )
-                );
+                    );
+                }
             }
         }
 
@@ -201,35 +213,43 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
     }
 
     /** */
-    private List<CacheGroupScanResult> scanNode(File nodeDir, String partSuffix) {
-        assertTrue(nodeDir.isDirectory());
+    private List<CacheGroupScanResult> scanNode(Path nodeDir, String partSuffix) throws IOException {
+        assertTrue(Files.isDirectory(nodeDir));
 
         List<CacheGroupScanResult> res = new ArrayList<>();
 
-        for (File child : nodeDir.listFiles())
-            if (child.getName().startsWith(CACHE_PREFIX))
-                res.add(scanCacheGrp(child, partSuffix));
+        try (DirectoryStream<Path> caches = Files.newDirectoryStream(nodeDir, CACHE_PREFIX + '*')) {
+            for (Path cacheDir : caches) {
+                if (Files.isDirectory(cacheDir))
+                    res.add(scanCacheGrp(cacheDir, partSuffix));
+            }
+        }
 
         return res;
     }
 
     /** */
-    private CacheGroupScanResult scanCacheGrp(File cacheGrpDir, String partSuffix) {
-        assertTrue(cacheGrpDir.isDirectory());
+    private CacheGroupScanResult scanCacheGrp(Path cacheGrpDir, String partSuffix) throws IOException {
+        assertTrue(Files.isDirectory(cacheGrpDir));
 
-        String cacheGrpNamePrefix = cacheGrpDir.getName().startsWith(CACHE_GROUP_PREFIX) ? CACHE_GROUP_PREFIX : CACHE_PREFIX;
-        String cacheGrpName = cacheGrpDir.getName().substring(cacheGrpNamePrefix.length() + 1);
+        String cacheGrpDirName = cacheGrpDir.getFileName().toString();
+        String cacheGrpNamePrefix = cacheGrpDirName.startsWith(CACHE_GROUP_PREFIX) ? CACHE_GROUP_PREFIX : CACHE_PREFIX;
+        String cacheGrpName = cacheGrpDirName.substring(cacheGrpNamePrefix.length() + 1);
 
         CacheGroupScanResult res = new CacheGroupScanResult(cacheGrpName);
 
-        for (String childFileName : cacheGrpDir.list()) {
-            if (childFileName.endsWith(CACHE_DATA_SUFFIX)) {
-                String cacheName = childFileName.substring(0, childFileName.length() - CACHE_DATA_SUFFIX.length());
-                res.addCacheName(cacheName);
-            }
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(cacheGrpDir)) {
+            for (Path file : files) {
+                String name = file.getFileName().toString();
 
-            if (childFileName.startsWith("part") && childFileName.endsWith(partSuffix))
-                res.addPartName(childFileName);
+                if (name.endsWith(CACHE_DATA_SUFFIX)) {
+                    String cacheName = name.substring(0, name.length() - CACHE_DATA_SUFFIX.length());
+                    res.addCacheName(cacheName);
+                }
+
+                if (name.startsWith("part") && name.endsWith(partSuffix))
+                    res.addPartName(name);
+            }
         }
 
         return res;
@@ -337,8 +357,8 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
             CacheGroupScanResult other = (CacheGroupScanResult)o;
 
             return Objects.equals(cacheGrpName, other.cacheGrpName) &&
-                    Objects.equals(cacheNames, other.cacheNames) &&
-                    Objects.equals(partNames, other.partNames);
+                Objects.equals(cacheNames, other.cacheNames) &&
+                Objects.equals(partNames, other.partNames);
         }
 
         /** {@inheritDoc} */
