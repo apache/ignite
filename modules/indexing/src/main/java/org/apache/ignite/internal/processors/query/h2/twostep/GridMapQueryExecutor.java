@@ -178,7 +178,7 @@ public class GridMapQueryExecutor {
 
             nodeRess.cancelRequest(qryReqId);
 
-            h2.heavyQueriesTracker().stopTracking(new H2QueryInfo(node.id(), msg.queryRequestId()), null);
+            h2.heavyQueriesTracker().stopTracking(new H2QueryInfo(node.id(), qryReqId), null);
         }
     }
 
