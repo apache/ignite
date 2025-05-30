@@ -77,7 +77,7 @@ public class IgniteSessionContext {
 
         /** */
         @Override public @Nullable IgniteBiTuple<Boolean, String> onBeforeRemove(Cache.Entry<Integer, String> entry) {
-            String ret = sesCtxPrv.getSessionContext().getAttribute("onBeforeRemove");;
+            String ret = sesCtxPrv.getSessionContext().getAttribute("onBeforeRemove");
 
             return new IgniteBiTuple<>(ret != null, entry.getValue());
         }
