@@ -92,16 +92,23 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         do {
             int trackingIdx = trackingIdx(pageIdx);
 
-            int firstTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8L);
+            long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-            int secondTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8L + 4);
+            int firstTs = first(trackingData);
+
+            if (firstTs == -1)
+                break;
+
+            int secondTs = second(trackingData);
+
+            long newTrackingData;
 
             if (firstTs <= secondTs)
-                success = GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx * 8L, firstTs, (int)latestTs);
-            else {
-                success = GridUnsafe.compareAndSwapInt(
-                    null, trackingArrPtr + trackingIdx * 8L + 4, secondTs, (int)latestTs);
-            }
+                newTrackingData = toLong((int)latestTs, secondTs);
+            else
+                newTrackingData = toLong(firstTs, (int)latestTs);
+
+            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackingData, newTrackingData);
         } while (!success);
     }
 
@@ -123,9 +130,32 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             while (dataPagesCnt < SAMPLE_SIZE) {
                 int trackingIdx = rnd.nextInt(trackingSize);
 
-                int firstTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8L);
+                long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-                int secondTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8L + 4);
+                int firstTs = first(trackingData);
+
+                if (firstTs == -1) {
+                    // For page containing fragmented row data timestamps stored in the row's head page are used.
+                    // Fragment page (other than the tail one) contains link to tail page. Tail page contains link to
+                    // head page. So head page is found no more than in two hops.
+                    trackingIdx = trackingIdx(second(trackingData));
+
+                    trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+
+                    firstTs = first(trackingData);
+
+                    if (firstTs == -1) {
+                        trackingIdx = trackingIdx(second(trackingData));
+
+                        trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+
+                        firstTs = first(trackingData);
+
+                        assert firstTs >= 0 : "[firstTs=" + firstTs + ", secondTs=" + second(trackingData) + "]";
+                    }
+                }
+
+                int secondTs = second(trackingData);
 
                 int minTs = Math.min(firstTs, secondTs);
 
@@ -164,9 +194,16 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override protected boolean checkTouch(long pageId) {
         int trackingIdx = trackingIdx(PageIdUtils.pageIndex(pageId));
 
-        int firstTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8L);
+        int firstTs = first(GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L));
 
-        return firstTs != 0;
+        return firstTs > 0;
+    }
+
+    /** */
+    private long trackingData(long pageId) {
+        int trackingIdx = trackingIdx(PageIdUtils.pageIndex(pageId));
+
+        return GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
     }
 
     /** {@inheritDoc} */
@@ -176,5 +213,91 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         int trackingIdx = trackingIdx(pageIdx);
 
         GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, 0L);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) {
+        // Do nothing if called for tail page.
+        if (prevPageId == 0)
+            return;
+
+        if (isHeadPage) {
+            // Store link to head fragment page in tail fragment page.
+            linkFragmentPages(tailPageIdx(prevPageId), PageIdUtils.pageIndex(pageId));
+        }
+        else {
+            // Store link to tail fragment page in each fragment page.
+            linkFragmentPages(PageIdUtils.pageIndex(pageId), tailPageIdx(prevPageId));
+        }
+    }
+
+    /**
+     * Link two pages containing fragments of row.
+     * Link is stored as a page index in the second integer in the tracking data.
+     * First integer in the tracking data is set to -1.
+     *
+     * @param pageIdx Page index.
+     * @param nextPageIdx Index of page to link to.
+     */
+    private void linkFragmentPages(int pageIdx, int nextPageIdx) {
+        boolean success;
+
+        do {
+            int trackingIdx = trackingIdx(pageIdx);
+
+            long trackinData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+
+            int firstTs = first(trackinData);
+
+            if (firstTs == -1)
+                return;
+
+            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackinData, toLong(-1, nextPageIdx));
+        } while (!success);
+    }
+
+    /**
+     * Helper to encode a pair of integer values into a single long.
+     */
+    private long toLong(int first, int second) {
+        return U.toLong(first, second);
+    }
+
+    /**
+     * Helper to extract first integer value.
+     */
+    private int first(long l) {
+        return (int)(l >> Integer.SIZE);
+    }
+
+    /**
+     * Helper to extract second integer value.
+     */
+    private int second(long l) {
+        return (int)l;
+    }
+
+    /**
+     * Determine tail page index given page id of previously written fragment.
+     *
+     * @param prevPageId Page id of previously written fragment.
+     * @return tail page index.
+     */
+    private int tailPageIdx(long prevPageId) {
+        int tailPageIdx;
+
+        long trackingData = trackingData(prevPageId);
+
+        if (trackingData == 0L) {
+            // The previous page is just the tail one.
+            tailPageIdx = PageIdUtils.pageIndex(prevPageId);
+        }
+        else {
+            assert first(trackingData) == -1;
+
+            tailPageIdx = second(trackingData);
+        }
+
+        return tailPageIdx;
     }
 }
