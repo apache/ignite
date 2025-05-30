@@ -17,26 +17,42 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
+import java.io.DataInput;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
+import java.nio.ByteOrder;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.cdc.CdcMode;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -53,6 +69,8 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
 
 /**
  * Provides access to Ignite node file tree.
@@ -198,13 +216,45 @@ public class NodeFileTree extends SharedFileTree {
     public static final String ZIP_SUFFIX = ".zip";
 
     /** File extension of temp WAL segment. */
-    public static final String TMP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + TMP_SUFFIX;
+    private static final String TMP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + TMP_SUFFIX;
 
     /** File extension of zipped WAL segment. */
-    public static final String ZIP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + ZIP_SUFFIX;
+    static final String ZIP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + ZIP_SUFFIX;
 
     /** File extension of temp zipped WAL segment. */
-    public static final String TMP_ZIP_WAL_SEG_FILE_EXT = ZIP_WAL_SEG_FILE_EXT + TMP_SUFFIX;
+    private static final String TMP_ZIP_WAL_SEG_FILE_EXT = ZIP_WAL_SEG_FILE_EXT + TMP_SUFFIX;
+
+    /** Pattern for WAL segment file names. */
+    private static final Pattern WAL_NAME_PATTERN = U.fixedLengthNumberNamePattern(WAL_SEGMENT_FILE_EXT);
+
+    /** Pattern for WAL temp files - these files will be cleared at startup. */
+    private static final Pattern WAL_TEMP_NAME_PATTERN = U.fixedLengthNumberNamePattern(TMP_WAL_SEG_FILE_EXT);
+
+    /** Pattern for WAL compacted files. */
+    private static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(ZIP_WAL_SEG_FILE_EXT);
+
+    /** Pattern for WAL temp compacted files. */
+    private static final Pattern WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(TMP_ZIP_WAL_SEG_FILE_EXT);
+
+    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN}. */
+    private static final FileFilter WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
+           isWalFileName(file.getName());
+
+    /** WAL segment temporary file filter, see {@link #WAL_TEMP_NAME_PATTERN}. */
+    private static final FileFilter WAL_SEGMENT_TEMP_FILE_FILTER = file -> !file.isDirectory() &&
+            isTmpWalFileName(file.getName());
+
+    /** WAL segment compacted file filter, see {@link #WAL_SEGMENT_FILE_COMPACTED_PATTERN}. */
+    private static final FileFilter WAL_SEGMENT_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
+            isWalCompactedFileName(file.getName());
+
+    /** WAL segment compacted temporary file filter, see {@link #WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN}. */
+    private static final FileFilter WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
+            WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
+
+    /** WAL segment compacted or raw file filter, see {@link #WAL_NAME_PATTERN} and {@link #WAL_SEGMENT_FILE_COMPACTED_PATTERN}. */
+    private static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = file -> !file.isDirectory() &&
+            (isWalFileName(file.getName()) || isWalCompactedFileName(file.getName()));
 
     /** Filter out all cache directories. */
     private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
@@ -213,6 +263,9 @@ public class NodeFileTree extends SharedFileTree {
     private static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
         CACHE_DIR_FILTER.test(dir) ||
             dir.getName().equals(METASTORAGE_DIR_NAME);
+
+    /** An empty array of file descriptors. */
+    private static final FileDescriptor[] EMPTY_DESCRIPTORS = new FileDescriptor[0];
 
     /** Partition file prefix. */
     static final String PART_FILE_PREFIX = "part-";
@@ -914,6 +967,170 @@ public class NodeFileTree extends SharedFileTree {
         return new File(nodeStorage, MAINTENANCE_FILE_NAME);
     }
 
+    /** @return WAL compacted or raw files. */
+    public File[] walCompactedOrRawFiles() {
+        return wal().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+    }
+
+    /** @return Archive WAL compacted or raw files. */
+    public File[] walArchiveCompactedOrRawFiles() {
+        return walArchive().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+    }
+
+    /** @return WAL files. */
+    public File[] walFiles() {
+        return wal().listFiles(WAL_SEGMENT_FILE_FILTER);
+    }
+
+    /** @return WAL files for CDC. */
+    public File[] walCdcFiles() {
+        return walCdc().listFiles(WAL_SEGMENT_FILE_FILTER);
+    }
+
+    /** @return WAL compacted files. */
+    public File[] walCompactedFiles() {
+        return wal().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
+    }
+
+    /** @return WAL archive compacted files. */
+    public File[] walArchiveCompactedFiles() {
+        return walArchive().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
+    }
+
+    /** @return File descriptors for active WAL segments. */
+    public FileDescriptor[] walFileDescriptors() {
+        return scan(walFiles());
+    }
+
+    /** @return File descriptors for archive compacted or raw WAL segments. */
+    public FileDescriptor[] archiveWalCompactedOrRawFileDescriptors() {
+        return scan(walArchiveCompactedOrRawFiles());
+    }
+
+    /** @return File descriptors for compacted WAL segments. */
+    public FileDescriptor[] walCompactedFileDescriptors() {
+        return scan(walCompactedFiles());
+    }
+
+    /**
+     * Lists files in archive directory and returns the index of last archived file.
+     *
+     * @return The absolute index of last archived file.
+     */
+    public long lastArchivedIndex() {
+        long lastIdx = -1;
+
+        for (File file : walArchiveCompactedOrRawFiles()) {
+            try {
+                long idx = walSegmentIndex(file.toPath());
+
+                lastIdx = Math.max(lastIdx, idx);
+            }
+            catch (NumberFormatException | IndexOutOfBoundsException ignore) {
+
+            }
+        }
+
+        return lastIdx;
+    }
+
+    /**
+     * Renaming last segment if it is only one and its index is greater than {@link DataStorageConfiguration#getWalSegments()}.
+     *
+     * @throws StorageException If an error occurs while renaming.
+     */
+    public void renameLastSegment(DataStorageConfiguration dsCfg, IgniteLogger log) throws StorageException {
+        FileDescriptor[] workSegments = walFileDescriptors();
+
+        if (workSegments.length == 1 && workSegments[0].idx() != workSegments[0].idx() % dsCfg.getWalSegments()) {
+            FileDescriptor toRen = workSegments[0];
+
+            long idx = toRen.idx() % dsCfg.getWalSegments();
+
+            File tmpDst = tempWalSegment(idx);
+            File dst = walSegment(idx);
+
+            if (log.isInfoEnabled()) {
+                log.info("Last WAL segment file has to be renamed from " + toRen.file().getName() + " to " +
+                        dst.getName() + '.');
+            }
+
+            try {
+                Files.copy(toRen.file().toPath(), tmpDst.toPath());
+
+                Files.move(tmpDst.toPath(), dst.toPath());
+
+                Files.delete(toRen.file().toPath());
+
+                if (log.isInfoEnabled()) {
+                    log.info("WAL segment renamed [src=" + toRen.file().getAbsolutePath() +
+                            ", dst=" + dst.getAbsolutePath() + ']');
+                }
+            }
+            catch (IOException e) {
+                throw new StorageException("Failed to rename WAL segment [src=" +
+                        toRen.file().getAbsolutePath() + ", dst=" + dst.getAbsolutePath() + ']', e);
+            }
+        }
+    }
+
+    /**
+     * @param ioFactory Factory to provide I/O interfaces for read/write operations with files.
+     * @param segmentFileInputFactory Factory to provide I/O interfaces for read primitives with files.
+     * @param log Ignite logger.
+     * @return Map with work indices and file descriptors.
+     */
+    public TreeMap<Long, FileDescriptor> workIndices(
+        FileIOFactory ioFactory,
+        SegmentFileInputFactory segmentFileInputFactory,
+        IgniteLogger log
+    ) {
+        TreeMap<Long, FileDescriptor> workIndices = new TreeMap<>();
+
+        for (File file : walCompactedOrRawFiles()) {
+            FileDescriptor desc = readFileDescriptor(file, ioFactory, segmentFileInputFactory, log);
+
+            if (desc != null)
+                workIndices.put(desc.idx(), desc);
+        }
+
+        return workIndices;
+    }
+
+    /**
+     * @param ioFactory Factory to provide I/O interfaces for read/write operations with files.
+     * @param segmentFileInputFactory Factory to provide I/O interfaces for read primitives with files.
+     * @param log Ignite logger.
+     * @return Map with archive indices and file descriptors.
+     */
+    public TreeMap<Long, FileDescriptor> archiveIndices(
+        FileIOFactory ioFactory,
+        SegmentFileInputFactory segmentFileInputFactory,
+        IgniteLogger log
+    ) {
+        TreeMap<Long, FileDescriptor> archiveIndices = new TreeMap<>();
+
+        for (File file : walArchiveCompactedOrRawFiles()) {
+            try {
+                long idx = new FileDescriptor(file).idx();
+
+                FileDescriptor desc = readFileDescriptor(file, ioFactory, segmentFileInputFactory, log);
+
+                if (desc != null) {
+                    if (desc.idx() == idx)
+                        archiveIndices.put(idx, desc);
+                }
+                else
+                    log.warning("Skip file, failed read file header " + file);
+            }
+            catch (NumberFormatException | IndexOutOfBoundsException ignore) {
+                log.warning("Skip file " + file);
+            }
+        }
+
+        return archiveIndices;
+    }
+
     /**
      * @param includeMeta If {@code true} then include metadata directory into results.
      * @param filter Cache group names to filter.
@@ -974,6 +1191,49 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param file File to read.
+     * @param ioFactory IO factory.
+     * @return File descriptor for read file.
+     */
+    @Nullable private FileDescriptor readFileDescriptor(
+        File file,
+        FileIOFactory ioFactory,
+        SegmentFileInputFactory segmentFileInputFactory,
+        IgniteLogger log
+    ) {
+        FileDescriptor ds = new FileDescriptor(file);
+
+        try (SegmentIO fileIO = ds.toReadOnlyIO(ioFactory)) {
+            // File may be empty when LOG_ONLY mode is enabled and mmap is disabled.
+            if (fileIO.size() == 0)
+                return null;
+
+            try (ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
+                final DataInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
+
+                // Header record must be agnostic to the serializer version.
+                final int type = in.readUnsignedByte();
+
+                if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE) {
+                    if (log.isInfoEnabled())
+                        log.info("Reached logical end of the segment for file " + file);
+
+                    return null;
+                }
+
+                WALPointer ptr = readPosition(in);
+
+                return new FileDescriptor(file, ptr.index());
+            }
+        }
+        catch (IOException e) {
+            U.warn(log, "Failed to read file header [" + file + "]. Skipping this file", e);
+
+            return null;
+        }
+    }
+
+    /**
      * @param typeId Type id.
      * @return Binary metadata file name.
      */
@@ -989,6 +1249,89 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static int typeId(String fileName) {
         return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
+    }
+
+    /**
+     * @param fileName File name to check.
+     * @return {@code True} if the file name matches the WAL pattern.
+     */
+    public static boolean isWalFileName(String fileName) {
+        return WAL_NAME_PATTERN.matcher(fileName).matches();
+    }
+
+    /**
+     * @param fileName File name to check.
+     * @return {@code True} if the file name matches the WAL temp pattern.
+     */
+    public static boolean isTmpWalFileName(String fileName) {
+        return WAL_TEMP_NAME_PATTERN.matcher(fileName).matches();
+    }
+
+    /**
+     * @param fileName File name to check.
+     * @return {@code True} if the file name matches the WAL compacted pattern.
+     */
+    public static boolean isWalCompactedFileName(String fileName) {
+        return WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(fileName).matches();
+    }
+
+    /**
+     * @param f File to check.
+     * @return {@code True} if the file matches WAL file criteria.
+     */
+    public static boolean isWalFile(File f) {
+        return WAL_SEGMENT_FILE_FILTER.accept(f);
+    }
+
+    /**
+     * @param f Directory to scan for WAL temp files.
+     * @return WAL temp files.
+     */
+    public static File[] tmpWalFiles(File f) {
+        return f.listFiles(WAL_SEGMENT_TEMP_FILE_FILTER);
+    }
+
+    /**
+     * @param f Directory to scan for WAL compacted temp files.
+     * @return WAL compacted temp files.
+     */
+    public static File[] tmpWalCompactedFiles(File f) {
+        return f.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
+    }
+
+    /**
+     * Scans provided folder for a WAL segment files
+     * @param walFilesDir directory to scan
+     * @return found WAL file descriptors
+     */
+    public static FileDescriptor[] loadFileDescriptors(final File walFilesDir) throws IgniteCheckedException {
+        final File[] files = walFilesDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+
+        if (files == null) {
+            throw new IgniteCheckedException("WAL files directory does not not denote a " +
+                    "directory, or if an I/O error occurs: [" + walFilesDir.getAbsolutePath() + "]");
+        }
+        return scan(files);
+    }
+
+    /**
+     * @return Sorted files descriptors.
+     */
+    private static FileDescriptor[] scan(@Nullable File[] allFiles) {
+        if (allFiles == null)
+            return EMPTY_DESCRIPTORS;
+
+        FileDescriptor[] descs = new FileDescriptor[allFiles.length];
+
+        for (int i = 0; i < allFiles.length; i++) {
+            File f = allFiles[i];
+
+            descs[i] = new FileDescriptor(f);
+        }
+
+        Arrays.sort(descs);
+
+        return descs;
     }
 
     /** {@inheritDoc} */

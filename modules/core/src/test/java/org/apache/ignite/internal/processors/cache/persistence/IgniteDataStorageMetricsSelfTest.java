@@ -567,7 +567,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
      */
     private FileDescriptor[] walFiles(final File filesDir) throws IgniteException {
         try {
-            return FileWriteAheadLogManager.loadFileDescriptors(filesDir);
+            return NodeFileTree.loadFileDescriptors(filesDir);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
