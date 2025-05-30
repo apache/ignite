@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefin
  * Planner test for index hints.
  */
 public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
-    /** All the join order optimization rules (not only default/core). */
+    /** All the join order optimization rules. */
     private static final String[] JOIN_REORDER_RULES = Stream.of(
         CoreRules.JOIN_COMMUTE,
         JoinPushThroughJoinRule.LEFT, JoinPushThroughJoinRule.RIGHT,
