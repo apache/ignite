@@ -41,7 +41,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.SqlPlanHistoryViewWalker;
@@ -67,21 +66,17 @@ import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.systemview.view.SqlPlanHistoryView;
 import org.apache.ignite.spi.systemview.view.SqlQueryHistoryView;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.SqlConfiguration.DFLT_SQL_PLAN_HISTORY_SIZE;
-import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
-import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_ID;
 
@@ -476,38 +471,6 @@ public class RunningQueryManager {
         }
         finally {
             qrySpan.end();
-        }
-    }
-
-    /**
-     * @param qryId Query id.
-     * @param failReason Query fail reason.
-     */
-    public void stopQueryTracking(long qryId, @Nullable Throwable failReason) {
-        GridRunningQueryInfo qry = runs.get(qryId);
-
-        if (qry == null) {
-            log.error("Failed to stop query tracking, query not found among currently registered queries" +
-                " [qryId=" + qryId + "]");
-
-            return;
-        }
-
-        String schema = qry.schemaName();
-        UUID nodeId = qry.nodeId();
-
-        if (!heavyQueriesTracker().getQueries().contains(new TrackableQueryImpl().schema(schema).nodeId(nodeId).queryId(qryId)))
-            return;
-
-        try {
-            closure.runAsync(
-                BROADCAST,
-                new StopQueryTrackingTask(schema, nodeId, qryId, failReason),
-                options(ctx.cluster().get().nodes())
-            ).get();
-        }
-        catch (Exception e) {
-            log.error("Failed to stop query tracking [qryId=" + qryId + "]", e);
         }
     }
 
@@ -941,47 +904,6 @@ public class RunningQueryManager {
          */
         public long nodeQryId() {
             return nodeQryId;
-        }
-    }
-
-    /** Stops tracking of the query on all cluster nodes.*/
-    private static class StopQueryTrackingTask implements IgniteRunnable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Schema name. */
-        private final String schema;
-
-        /** Node id. */
-        private final UUID nodeId;
-
-        /** Query id. */
-        private final long qryId;
-
-        /** Query fail reason. */
-        private final Throwable failReason;
-
-        /** Auto-injected grid instance. */
-        @IgniteInstanceResource
-        private transient IgniteEx ignite;
-
-        /**
-         * @param schema Schema name.
-         * @param nodeId Node id.
-         * @param qryId Query id.
-         * @param failReason Query fail reason.
-         */
-        public StopQueryTrackingTask(String schema, UUID nodeId, long qryId, @Nullable Throwable failReason) {
-            this.schema = schema;
-            this.nodeId = nodeId;
-            this.qryId = qryId;
-            this.failReason = failReason;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            ignite.context().query().runningQueryManager().heavyQueriesTracker()
-                .stopTracking(schema, nodeId, qryId, failReason);
         }
     }
 }

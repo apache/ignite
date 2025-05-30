@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.query.running.TrackableQuery;
-import org.apache.ignite.internal.processors.query.running.TrackableQueryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -462,7 +461,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @Test
     @MultiNodeTest
     public void testEmptyHeavyQueriesTrackerWithCancelledQuery() {
-        cancelQueries(runNotFullyFetchedQuery(false));
+        cancelQuery(runNotFullyFetchedQuery(false));
     }
 
     /**
@@ -485,6 +484,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @MultiNodeTest
     public void testEmptyHeavyQueriesTrackerWithMultipleCancelledQueries() {
         int qryCnt = 4;
+        int cnldQryCnt = 2;
 
         for (int i = 0; i < qryCnt; i++)
             runNotFullyFetchedQuery(false);
@@ -492,23 +492,23 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         for (int i = 0; i < gridCount(); ++i)
             assertEquals(qryCnt, heavyQueriesTracker(i).getQueries().size());
 
-        List<H2QueryInfo> qrysList = heavyQueriesTracker(0).getQueries().stream().map(q -> (H2QueryInfo)q).collect(Collectors.toList());
-
-        cancelQueries(qrysList.get(0).queryId(), qrysList.get(1).queryId());
+        for (int i = 0; i < cnldQryCnt; i++)
+            cancelQuery(i + 1);
 
         for (int i = 0; i < gridCount(); ++i) {
             Set<TrackableQuery> qrys = heavyQueriesTracker(i).getQueries();
 
-            assertEquals(2, qrys.size());
+            assertEquals(cnldQryCnt, qrys.size());
 
             assertFalse(qrys.stream().anyMatch(qryInfo -> {
-                long id = ((TrackableQueryImpl)qryInfo).queryId();
+                long id = ((H2QueryInfo)qryInfo).queryId();
 
-                return id == qrysList.get(0).queryId() || id == qrysList.get(1).queryId();
+                return IntStream.range(0, cnldQryCnt).anyMatch(x -> x == id);
             }));
         }
 
-        cancelQueries(qrysList.get(2).queryId(), qrysList.get(3).queryId());
+        for (int i = cnldQryCnt; i < qryCnt; ++i)
+            cancelQuery(i + 1);
     }
 
     /**
@@ -729,11 +729,10 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * @param qryIds Query ids.
+     * @param qryId Query id.
      */
-    public void cancelQueries(long... qryIds) {
-        for (long id : qryIds)
-            ((IgniteEx)ignite).context().query().cancelQuery(id, ignite.cluster().node().id(), false);
+    public void cancelQuery(long qryId) {
+        ((IgniteEx)ignite).context().query().cancelQuery(qryId, ignite.cluster().node().id(), false);
     }
 
     /**
