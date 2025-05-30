@@ -91,6 +91,24 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
     private static final String CACHE_PREFIX = "cache";
 
     /** */
+    private static final String NODE_PREFIX = "node";
+
+    /** */
+    private static final String PART_PREFIX = "part";
+
+    /** */
+    private static final String DB_FOLDER = "db";
+
+    /** */
+    private static final String INCREMENTS_FOLDER = "increments";
+
+    /** */
+    private static final String DFLT_SNAPSHOTS_FOLDER = "snapshots";
+
+    /** */
+    private static final String EX_SNAPSHOTS_FOLDER = "ex_snapshots";
+
+    /** */
     private static final Map<String, String> cacheToGrp = Map.of(
         "singleCache", "singleCache",
         "testCache1", "testCacheGrp",
@@ -166,17 +184,12 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
 
     /** */
     private static Path snpPath(String workDir, String snpName) {
-        return Path.of(workDir + File.separator + "snapshots" + File.separator + snpName);
-    }
-
-    /** */
-    private static String calcValue(String cacheName, int key) {
-        return cacheName + "-organization-" + key;
+        return Path.of(workDir + File.separator + DFLT_SNAPSHOTS_FOLDER + File.separator + snpName);
     }
 
     /** */
     private SnpScanResult scanSnp(Path snpPath) throws IOException {
-        Path incsDir = snpPath.resolve("increments");
+        Path incsDir = snpPath.resolve(INCREMENTS_FOLDER);
 
         int incsCnt = 0;
 
@@ -193,7 +206,7 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
     private Map<String, CacheGroupScanResult> scanFileTree(Path root, String partSuffix) throws IOException {
         Map<String, CacheGroupScanResult> res = new HashMap<>();
 
-        try (DirectoryStream<Path> nodes = Files.newDirectoryStream(root.resolve("db"), "node*")) {
+        try (DirectoryStream<Path> nodes = Files.newDirectoryStream(root.resolve(DB_FOLDER), NODE_PREFIX + "*")) {
             for (Path nodeDir : nodes) {
                 for (CacheGroupScanResult scan : scanNode(nodeDir, partSuffix)) {
                     res.merge(
@@ -247,7 +260,7 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
                     res.addCacheName(cacheName);
                 }
 
-                if (name.startsWith("part") && name.endsWith(partSuffix))
+                if (name.startsWith(PART_PREFIX) && name.endsWith(partSuffix))
                     res.addPartName(name);
             }
         }
@@ -268,16 +281,6 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
             this.incsCnt = incsCnt;
 
             this.cacheGrpScans = cacheGrpScans;
-        }
-
-        /** */
-        public int incsCnt() {
-            return incsCnt;
-        }
-
-        /** */
-        public Map<String, CacheGroupScanResult> cacheGrpScans() {
-            return cacheGrpScans;
         }
 
         /** {@inheritDoc} */
@@ -321,16 +324,6 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
         }
 
         /** */
-        public Set<String> cacheNames() {
-            return cacheNames;
-        }
-
-        /** */
-        public Set<String> partNames() {
-            return partNames;
-        }
-
-        /** */
         public void addCacheName(String cacheName) {
             cacheNames.add(cacheName);
         }
@@ -344,8 +337,8 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
         public void merge(CacheGroupScanResult that) {
             assert Objects.equals(cacheGrpName(), that.cacheGrpName());
 
-            cacheNames.addAll(that.cacheNames());
-            partNames.addAll(that.partNames());
+            cacheNames.addAll(that.cacheNames);
+            partNames.addAll(that.partNames);
         }
 
         /** {@inheritDoc} */
@@ -399,7 +392,7 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
         /** */
         private static void addItemsToCache(IgniteCache<Integer, String> cache, int startIdx, int cnt) {
             for (int i = startIdx; i < startIdx + cnt; ++i)
-                cache.put(i, calcValue(cache.getName(), i));
+                cache.put(i, cache.getName() + "-organization-" + i);
         }
     }
 
