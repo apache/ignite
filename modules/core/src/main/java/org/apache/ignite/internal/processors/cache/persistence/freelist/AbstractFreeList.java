@@ -208,10 +208,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 evictionTracker.touchPage(pageId);
 
                 if (lastLink != 0)
-                    evictionTracker.trackTailFragmentPage(lastLink, pageId);
-            }
-            else if (lastLink != 0)
-                evictionTracker.trackFragmentPage(pageId, lastLink);
+                    evictionTracker.trackFragmentPage(pageId, lastLink, true);
+            } else
+                evictionTracker.trackFragmentPage(pageId, lastLink, false);
 
             // Avoid boxing with garbage generation for usual case.
             return written == rowSize ? COMPLETE : written;

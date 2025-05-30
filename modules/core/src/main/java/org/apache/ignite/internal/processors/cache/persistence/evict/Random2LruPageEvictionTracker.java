@@ -104,9 +104,9 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             long newTrackingData;
 
             if (firstTs <= secondTs)
-                newTrackingData = U.toLong((int)latestTs, secondTs);
+                newTrackingData = toLong((int)latestTs, secondTs);
             else
-                newTrackingData = U.toLong(firstTs, (int)latestTs);
+                newTrackingData = toLong(firstTs, (int)latestTs);
 
             success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackingData, newTrackingData);
         } while (!success);
@@ -150,6 +150,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
                         trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
                         firstTs = first(trackingData);
+
+                        assert firstTs >= 0 : "[firstTs=" + firstTs + ", secondTs=" + second(trackingData) + "]";
                     }
                 }
 
@@ -214,39 +216,19 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void trackFragmentPage(long pageId, long lastLink) {
-        long trackingData = trackingData(lastLink);
+    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) {
+        // Do nothing if called for tail page.
+        if (prevPageId == 0)
+            return;
 
-        int tailPageIdx;
-
-        if (trackingData == 0L)
-            tailPageIdx = PageIdUtils.pageIndex(lastLink);
-        else {
-            assert first(trackingData) == -1;
-
-            tailPageIdx = second(trackingData);
+        if (isHeadPage) {
+            // Store link to head fragment page in tail fragment page.
+            linkFragmentPages(tailPageIdx(prevPageId), PageIdUtils.pageIndex(pageId));
         }
-
-        // Store link to tail fragment page in each fragment page.
-        linkFragmentPages(PageIdUtils.pageIndex(pageId), tailPageIdx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void trackTailFragmentPage(long lastLink, long headPageId) {
-        long trackingData = trackingData(lastLink);
-
-        int tailPageIdx;
-
-        if (trackingData == 0L)
-            tailPageIdx = PageIdUtils.pageIndex(lastLink);
         else {
-            assert first(trackingData) == -1;
-
-            tailPageIdx = second(trackingData);
+            // Store link to tail fragment page in each fragment page.
+            linkFragmentPages(PageIdUtils.pageIndex(pageId), tailPageIdx(prevPageId));
         }
-
-        // Store link to head fragment page in tail fragment page.
-        linkFragmentPages(tailPageIdx, PageIdUtils.pageIndex(headPageId));
     }
 
     /**
@@ -270,8 +252,15 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             if (firstTs == -1)
                 return;
 
-            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackinData, U.toLong(-1, nextPageIdx));
+            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackinData, toLong(-1, nextPageIdx));
         } while (!success);
+    }
+
+    /**
+     * Helper to encode a pair of integer values into a single long.
+     */
+    private long toLong(int first, int second) {
+        return U.toLong(first, second);
     }
 
     /**
@@ -286,5 +275,29 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
      */
     private int second(long l) {
         return (int)l;
+    }
+
+    /**
+     * Determine tail page index given page id of previously written fragment.
+     *
+     * @param prevPageId Page id of previously written fragment.
+     * @return tail page index.
+     */
+    private int tailPageIdx(long prevPageId) {
+        int tailPageIdx;
+
+        long trackingData = trackingData(prevPageId);
+
+        if (trackingData == 0L) {
+            // The previous page is just the tail one.
+            tailPageIdx = PageIdUtils.pageIndex(prevPageId);
+        }
+        else {
+            assert first(trackingData) == -1;
+
+            tailPageIdx = second(trackingData);
+        }
+
+        return tailPageIdx;
     }
 }

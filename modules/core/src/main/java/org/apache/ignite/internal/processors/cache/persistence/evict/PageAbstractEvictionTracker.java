@@ -88,12 +88,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     }
 
     /** {@inheritDoc} */
-    @Override public void trackFragmentPage(long pageId, long tailPageId) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void trackTailFragmentPage(long pageId, long headPageId) throws IgniteCheckedException {
+    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) throws IgniteCheckedException {
         // No-op.
     }
 
