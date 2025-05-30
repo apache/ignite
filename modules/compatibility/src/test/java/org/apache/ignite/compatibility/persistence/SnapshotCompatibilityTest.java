@@ -67,17 +67,6 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     private static final String SNAPSHOT_NAME = "test_snapshot";
 
     /** */
-    private static final String CUSTOM_SNP_PATH;
-
-    static {
-        try {
-            CUSTOM_SNP_PATH = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true).getAbsolutePath();
-        } catch (org.apache.ignite.IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /** */
     private static final String CACHE_DUMP_NAME = "test_cache_dump";
 
     /** */
@@ -94,6 +83,9 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     );
 
     /** */
+    private String customSnpPath;
+
+    /** */
     @Parameterized.Parameter
     public boolean customConsId;
 
@@ -108,6 +100,13 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
             List.of(true, false),
             List.of(1, 3)
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        customSnpPath = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true).getAbsolutePath();
     }
 
     /** {@inheritDoc} */
@@ -170,8 +169,8 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         cacheToGrp.keySet().forEach(node::destroyCache);
 
         IgniteFuture<?> customPathSnpFut = incSnpSupported
-            ? node.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, CUSTOM_SNP_PATH, grpNames, 1, true)
-            : node.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, CUSTOM_SNP_PATH, grpNames);
+            ? node.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, customSnpPath, grpNames, 1, true)
+            : node.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, customSnpPath, grpNames);
 
         customPathSnpFut.get();
 
@@ -252,6 +251,14 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
     /** Snapshot creating closure both for old and current Ignite version. */
     private static class CreateSnapshotClosure implements IgniteInClosure<Ignite> {
+        /** */
+        private final String customSnpPath;
+
+        /** */
+        public CreateSnapshotClosure(String customSnpPath) {
+            this.customSnpPath = customSnpPath;
+        }
+
         /** {@inheritDoc} */
         @Override public void apply(Ignite ign) {
             ign.cluster().state(ClusterState.ACTIVE);
@@ -266,7 +273,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
             ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-            ((IgniteEx)ign).context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, CUSTOM_SNP_PATH, false, false).get();
+            ((IgniteEx)ign).context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, customSnpPath, false, false).get();
 
             ign.snapshot().createDump(CACHE_DUMP_NAME, cacheToGrp.values()).get();
 
@@ -279,7 +286,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
                 ign.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
 
-                ((IgniteEx)ign).context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, CUSTOM_SNP_PATH, true, false).get();
+                ((IgniteEx)ign).context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, customSnpPath, true, false).get();
             }
         }
 
