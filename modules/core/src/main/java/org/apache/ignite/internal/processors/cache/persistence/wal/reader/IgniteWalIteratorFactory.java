@@ -343,7 +343,7 @@ public class IgniteWalIteratorFactory {
         String fileName = file.getName();
 
         if (!NodeFileTree.isWalFileName(fileName) &&
-            !NodeFileTree.isCompactedWalFileName(fileName))
+            !NodeFileTree.isWalCompactedFileName(fileName))
             return;  // Filter out this because it is not segment file.
 
         FileDescriptor desc = readFileDescriptor(file, ioFactory);

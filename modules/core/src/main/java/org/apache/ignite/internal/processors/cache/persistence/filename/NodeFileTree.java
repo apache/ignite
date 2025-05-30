@@ -239,7 +239,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /** WAL segment compacted file filter, see {@link #WAL_SEGMENT_FILE_COMPACTED_PATTERN}. */
     private static final FileFilter WAL_SEGMENT_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
-            isCompactedWalFileName(file.getName());
+            isWalCompactedFileName(file.getName());
 
     /** WAL segment compacted temporary file filter, see {@link #WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN}. */
     private static final FileFilter WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
@@ -247,7 +247,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /** WAL segment compacted or raw file filter, see {@link #WAL_NAME_PATTERN} and {@link #WAL_SEGMENT_FILE_COMPACTED_PATTERN}. */
     private static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = file -> !file.isDirectory() &&
-            (isWalFileName(file.getName()) || isCompactedWalFileName(file.getName()));
+            (isWalFileName(file.getName()) || isWalCompactedFileName(file.getName()));
 
     /** Filter out all cache directories. */
     private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
@@ -972,12 +972,12 @@ public class NodeFileTree extends SharedFileTree {
 
     /** @return WAL files. */
     public File[] walFiles() {
-        return listWalFiles(wal());
+        return wal().listFiles(WAL_SEGMENT_FILE_FILTER);
     }
 
     /** @return WAL files for CDC. */
     public File[] walCdcFiles() {
-        return listWalFiles(walCdc());
+        return walCdc().listFiles(WAL_SEGMENT_FILE_FILTER);
     }
 
     /** @return WAL compacted files. */
@@ -992,7 +992,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /** @return File descriptors for active WAL segments. */
     public FileDescriptor[] walFileDescriptors() {
-        return scan(listWalFiles(wal()));
+        return scan(walFiles());
     }
 
     /** @return File descriptors for archive compacted or raw WAL segments. */
@@ -1264,7 +1264,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param fileName File name to check.
      * @return {@code True} if the file name matches the WAL compacted pattern.
      */
-    public static boolean isCompactedWalFileName(String fileName) {
+    public static boolean isWalCompactedFileName(String fileName) {
         return WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(fileName).matches();
     }
 
@@ -1274,14 +1274,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static boolean isWalFile(File f) {
         return WAL_SEGMENT_FILE_FILTER.accept(f);
-    }
-
-    /**
-     * @param f Directory to scan for WAL files.
-     * @return Array of WAL files.
-     */
-    private static File[] listWalFiles(File f) {
-        return f.listFiles(WAL_SEGMENT_FILE_FILTER);
     }
 
     /**

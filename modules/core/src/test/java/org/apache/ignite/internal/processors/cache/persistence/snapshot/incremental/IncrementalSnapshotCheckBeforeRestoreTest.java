@@ -259,7 +259,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         SnapshotFileTree sft = snapshotFileTree(srv, SNP);
 
         File[] segments = sft.incrementalSnapshotFileTree(1).wal()
-            .listFiles(f -> NodeFileTree.isCompactedWalFileName(f.getName()));
+            .listFiles(f -> NodeFileTree.isWalCompactedFileName(f.getName()));
 
         Arrays.sort(segments);
 
@@ -363,7 +363,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         SnapshotFileTree sft = snapshotFileTree(srv, SNP);
 
         File[] segments = sft.incrementalSnapshotFileTree(1).wal()
-            .listFiles(f -> NodeFileTree.isCompactedWalFileName(f.getName()));
+            .listFiles(f -> NodeFileTree.isWalCompactedFileName(f.getName()));
 
         Arrays.sort(segments);
 

@@ -253,6 +253,6 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
      */
     private static boolean isSegmentFileName(@Nullable String name) {
         return name != null && (NodeFileTree.isWalFileName(name) ||
-                NodeFileTree.isCompactedWalFileName(name));
+                NodeFileTree.isWalCompactedFileName(name));
     }
 }

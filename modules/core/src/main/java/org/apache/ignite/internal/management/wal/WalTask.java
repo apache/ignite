@@ -59,7 +59,7 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
     private static final FileFilter WAL_ARCHIVE_FILE_FILTER = new FileFilter() {
         @Override public boolean accept(File file) {
             return !file.isDirectory() && (NodeFileTree.isWalFileName(file.getName()) ||
-                    NodeFileTree.isCompactedWalFileName(file.getName()));
+                    NodeFileTree.isWalCompactedFileName(file.getName()));
         }
     };
 
