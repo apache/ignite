@@ -140,7 +140,7 @@ public final class HeavyQueriesTracker {
      * @param qryInfo Query info to remove.
      * @param err Exception if query executed with error.
      */
-    public void stopTracking(TrackableQuery qryInfo, @Nullable Throwable err) {
+    public synchronized void stopTracking(TrackableQuery qryInfo, @Nullable Throwable err) {
         assert qryInfo != null;
 
         qrys.remove(qryInfo);
