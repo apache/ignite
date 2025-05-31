@@ -109,25 +109,25 @@ public class FragmentDescription implements MarshalableMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("fragmentId", fragmentId))
+                if (!writer.writeLong(fragmentId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("mapping", mapping))
+                if (!writer.writeMessage(mapping))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMap("remoteSources0", remoteSources0, MessageCollectionItemType.LONG, MessageCollectionItemType.MSG))
+                if (!writer.writeMap(remoteSources0, MessageCollectionItemType.LONG, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeMessage("target", target))
+                if (!writer.writeMessage(target))
                     return false;
 
                 writer.incrementState();
@@ -141,12 +141,9 @@ public class FragmentDescription implements MarshalableMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                fragmentId = reader.readLong("fragmentId");
+                fragmentId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -154,7 +151,7 @@ public class FragmentDescription implements MarshalableMessage {
                 reader.incrementState();
 
             case 1:
-                mapping = reader.readMessage("mapping");
+                mapping = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -162,7 +159,7 @@ public class FragmentDescription implements MarshalableMessage {
                 reader.incrementState();
 
             case 2:
-                remoteSources0 = reader.readMap("remoteSources0", MessageCollectionItemType.LONG, MessageCollectionItemType.MSG, false);
+                remoteSources0 = reader.readMap(MessageCollectionItemType.LONG, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -170,7 +167,7 @@ public class FragmentDescription implements MarshalableMessage {
                 reader.incrementState();
 
             case 3:
-                target = reader.readMessage("target");
+                target = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -179,7 +176,7 @@ public class FragmentDescription implements MarshalableMessage {
 
         }
 
-        return reader.afterMessageRead(FragmentDescription.class);
+        return true;
     }
 
     /** {@inheritDoc} */

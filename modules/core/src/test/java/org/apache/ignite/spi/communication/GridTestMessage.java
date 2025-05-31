@@ -112,25 +112,25 @@ public class GridTestMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid(null, srcNodeId))
+                if (!writer.writeUuid(srcNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong(null, msgId))
+                if (!writer.writeLong(msgId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong(null, resId))
+                if (!writer.writeLong(resId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray(null, payload))
+                if (!writer.writeByteArray(payload))
                     return false;
 
                 writer.incrementState();
@@ -145,7 +145,7 @@ public class GridTestMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                srcNodeId = reader.readUuid(null);
+                srcNodeId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -153,7 +153,7 @@ public class GridTestMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                msgId = reader.readLong(null);
+                msgId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -161,7 +161,7 @@ public class GridTestMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                resId = reader.readLong(null);
+                resId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -169,7 +169,7 @@ public class GridTestMessage implements Message {
                 reader.incrementState();
 
             case 3:
-                payload = reader.readByteArray(null);
+                payload = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;

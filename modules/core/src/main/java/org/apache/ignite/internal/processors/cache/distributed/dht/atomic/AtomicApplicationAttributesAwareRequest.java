@@ -92,13 +92,13 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeMap("appAttrs", appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
+                if (!writer.writeMap(appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("payload", payload))
+                if (!writer.writeMessage(payload))
                     return false;
 
                 writer.incrementState();
@@ -112,15 +112,12 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                appAttrs = reader.readMap("appAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
+                appAttrs = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -128,7 +125,7 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
                 reader.incrementState();
 
             case 5:
-                payload = reader.readMessage("payload");
+                payload = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;

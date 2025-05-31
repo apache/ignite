@@ -115,13 +115,13 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong(futId))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeInt("partId", partId))
+                if (!writer.writeInt(partId))
                     return false;
 
                 writer.incrementState();
@@ -135,15 +135,12 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                futId = reader.readLong("futId");
+                futId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -151,7 +148,7 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 5:
-                partId = reader.readInt("partId");
+                partId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -160,7 +157,7 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicCheckUpdateRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

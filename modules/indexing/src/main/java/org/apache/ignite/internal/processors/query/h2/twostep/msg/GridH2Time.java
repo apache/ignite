@@ -71,7 +71,7 @@ public class GridH2Time extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("nanos", nanos))
+                if (!writer.writeLong(nanos))
                     return false;
 
                 writer.incrementState();
@@ -85,15 +85,12 @@ public class GridH2Time extends GridH2ValueMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 0:
-                nanos = reader.readLong("nanos");
+                nanos = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -102,7 +99,7 @@ public class GridH2Time extends GridH2ValueMessage {
 
         }
 
-        return reader.afterMessageRead(GridH2Time.class);
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -82,19 +82,19 @@ public class InboxCloseMessage implements CalciteMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("exchangeId", exchangeId))
+                if (!writer.writeLong(exchangeId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("fragmentId", fragmentId))
+                if (!writer.writeLong(fragmentId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeUuid("queryId", queryId))
+                if (!writer.writeUuid(queryId))
                     return false;
 
                 writer.incrementState();
@@ -108,12 +108,9 @@ public class InboxCloseMessage implements CalciteMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                exchangeId = reader.readLong("exchangeId");
+                exchangeId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -121,7 +118,7 @@ public class InboxCloseMessage implements CalciteMessage {
                 reader.incrementState();
 
             case 1:
-                fragmentId = reader.readLong("fragmentId");
+                fragmentId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -129,7 +126,7 @@ public class InboxCloseMessage implements CalciteMessage {
                 reader.incrementState();
 
             case 2:
-                queryId = reader.readUuid("queryId");
+                queryId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -138,7 +135,7 @@ public class InboxCloseMessage implements CalciteMessage {
 
         }
 
-        return reader.afterMessageRead(InboxCloseMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */

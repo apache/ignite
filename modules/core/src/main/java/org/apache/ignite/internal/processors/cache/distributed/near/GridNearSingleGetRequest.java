@@ -276,15 +276,12 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                accessTtl = reader.readLong("accessTtl");
+                accessTtl = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -292,7 +289,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 5:
-                createTtl = reader.readLong("createTtl");
+                createTtl = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -300,7 +297,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 6:
-                flags = reader.readByte("flags");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -308,7 +305,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 7:
-                futId = reader.readLong("futId");
+                futId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -316,7 +313,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 8:
-                key = reader.readMessage("key");
+                key = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -324,7 +321,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 9:
-                taskNameHash = reader.readInt("taskNameHash");
+                taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -332,7 +329,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 10:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -340,7 +337,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 11:
-                txLbl = reader.readString("txLbl");
+                txLbl = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -349,7 +346,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
         }
 
-        return reader.afterMessageRead(GridNearSingleGetRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -368,49 +365,49 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeLong("accessTtl", accessTtl))
+                if (!writer.writeLong(accessTtl))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("createTtl", createTtl))
+                if (!writer.writeLong(createTtl))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong(futId))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage(key))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeString("txLbl", txLbl))
+                if (!writer.writeString(txLbl))
                     return false;
 
                 writer.incrementState();

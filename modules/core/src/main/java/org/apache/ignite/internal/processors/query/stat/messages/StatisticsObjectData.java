@@ -143,37 +143,37 @@ public class StatisticsObjectData implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("data", data, MessageCollectionItemType.STRING, MessageCollectionItemType.MSG))
+                if (!writer.writeMap(data, MessageCollectionItemType.STRING, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage(key))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("partId", partId))
+                if (!writer.writeInt(partId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeLong("rowsCnt", rowsCnt))
+                if (!writer.writeLong(rowsCnt))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
+                if (!writer.writeByte(type != null ? (byte)type.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("updCnt", updCnt))
+                if (!writer.writeLong(updCnt))
                     return false;
 
                 writer.incrementState();
@@ -187,12 +187,9 @@ public class StatisticsObjectData implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                data = reader.readMap("data", MessageCollectionItemType.STRING, MessageCollectionItemType.MSG, false);
+                data = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -200,7 +197,7 @@ public class StatisticsObjectData implements Message {
                 reader.incrementState();
 
             case 1:
-                key = reader.readMessage("key");
+                key = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -208,7 +205,7 @@ public class StatisticsObjectData implements Message {
                 reader.incrementState();
 
             case 2:
-                partId = reader.readInt("partId");
+                partId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -216,7 +213,7 @@ public class StatisticsObjectData implements Message {
                 reader.incrementState();
 
             case 3:
-                rowsCnt = reader.readLong("rowsCnt");
+                rowsCnt = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -226,7 +223,7 @@ public class StatisticsObjectData implements Message {
             case 4:
                 byte typeOrd;
 
-                typeOrd = reader.readByte("type");
+                typeOrd = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -236,7 +233,7 @@ public class StatisticsObjectData implements Message {
                 reader.incrementState();
 
             case 5:
-                updCnt = reader.readLong("updCnt");
+                updCnt = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -245,7 +242,7 @@ public class StatisticsObjectData implements Message {
 
         }
 
-        return reader.afterMessageRead(StatisticsObjectData.class);
+        return true;
     }
 
     /** {@inheritDoc} */

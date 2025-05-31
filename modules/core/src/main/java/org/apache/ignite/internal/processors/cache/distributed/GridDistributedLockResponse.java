@@ -222,19 +222,19 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(vals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -248,15 +248,12 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 8:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -264,7 +261,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 9:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -272,7 +269,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 10:
-                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
+                vals = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -281,7 +278,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
         }
 
-        return reader.afterMessageRead(GridDistributedLockResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */

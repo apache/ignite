@@ -1588,9 +1588,6 @@ public class GridNioServer<T> {
 
                 assert msg != null;
 
-                if (writer != null)
-                    writer.setCurrentWriteClass(msg.getClass());
-
                 int startPos = buf.position();
 
                 finished = msg.writeTo(buf, writer);
@@ -1780,9 +1777,6 @@ public class GridNioServer<T> {
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
                 span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
-
-                if (writer != null)
-                    writer.setCurrentWriteClass(msg.getClass());
 
                 int startPos = buf.position();
 

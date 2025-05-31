@@ -68,7 +68,7 @@ public class GridH2Short extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeShort("x", x))
+                if (!writer.writeShort(x))
                     return false;
 
                 writer.incrementState();
@@ -82,15 +82,12 @@ public class GridH2Short extends GridH2ValueMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 0:
-                x = reader.readShort("x");
+                x = reader.readShort();
 
                 if (!reader.isLastRead())
                     return false;
@@ -99,7 +96,7 @@ public class GridH2Short extends GridH2ValueMessage {
 
         }
 
-        return reader.afterMessageRead(GridH2Short.class);
+        return true;
     }
 
     /** {@inheritDoc} */

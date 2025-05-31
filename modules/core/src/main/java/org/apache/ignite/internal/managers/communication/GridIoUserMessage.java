@@ -225,43 +225,43 @@ public class GridIoUserMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("bodyBytes", bodyBytes))
+                if (!writer.writeByteArray(bodyBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
+                if (!writer.writeIgniteUuid(clsLdrId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeString("depClsName", depClsName))
+                if (!writer.writeString(depClsName))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
+                if (!writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap("ldrParties", ldrParties, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
+                if (!writer.writeMap(ldrParties, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByteArray("topicBytes", topicBytes))
+                if (!writer.writeByteArray(topicBytes))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeString("userVer", userVer))
+                if (!writer.writeString(userVer))
                     return false;
 
                 writer.incrementState();
@@ -275,12 +275,9 @@ public class GridIoUserMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                bodyBytes = reader.readByteArray("bodyBytes");
+                bodyBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -288,7 +285,7 @@ public class GridIoUserMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                clsLdrId = reader.readIgniteUuid("clsLdrId");
+                clsLdrId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -296,7 +293,7 @@ public class GridIoUserMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                depClsName = reader.readString("depClsName");
+                depClsName = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -306,7 +303,7 @@ public class GridIoUserMessage implements Message {
             case 3:
                 byte depModeOrd;
 
-                depModeOrd = reader.readByte("depMode");
+                depModeOrd = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -316,7 +313,7 @@ public class GridIoUserMessage implements Message {
                 reader.incrementState();
 
             case 4:
-                ldrParties = reader.readMap("ldrParties", MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
+                ldrParties = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -324,7 +321,7 @@ public class GridIoUserMessage implements Message {
                 reader.incrementState();
 
             case 5:
-                topicBytes = reader.readByteArray("topicBytes");
+                topicBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -332,7 +329,7 @@ public class GridIoUserMessage implements Message {
                 reader.incrementState();
 
             case 6:
-                userVer = reader.readString("userVer");
+                userVer = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -341,7 +338,7 @@ public class GridIoUserMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(GridIoUserMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */

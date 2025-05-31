@@ -207,49 +207,49 @@ public class GridIoMessage implements Message, SpanTransport {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("msg", msg))
+                if (!writer.writeMessage(msg))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("ordered", ordered))
+                if (!writer.writeBoolean(ordered))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByte("plc", plc))
+                if (!writer.writeByte(plc))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeBoolean("skipOnTimeout", skipOnTimeout))
+                if (!writer.writeBoolean(skipOnTimeout))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("span", span))
+                if (!writer.writeByteArray(span))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("timeout", timeout))
+                if (!writer.writeLong(timeout))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeByteArray("topicBytes", topicBytes))
+                if (!writer.writeByteArray(topicBytes))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeInt("topicOrd", topicOrd))
+                if (!writer.writeInt(topicOrd))
                     return false;
 
                 writer.incrementState();
@@ -263,12 +263,9 @@ public class GridIoMessage implements Message, SpanTransport {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                msg = reader.readMessage("msg");
+                msg = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -276,7 +273,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 1:
-                ordered = reader.readBoolean("ordered");
+                ordered = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -284,7 +281,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 2:
-                plc = reader.readByte("plc");
+                plc = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -292,7 +289,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 3:
-                skipOnTimeout = reader.readBoolean("skipOnTimeout");
+                skipOnTimeout = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -300,7 +297,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 4:
-                span = reader.readByteArray("span");
+                span = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -308,7 +305,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 5:
-                timeout = reader.readLong("timeout");
+                timeout = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -316,7 +313,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 6:
-                topicBytes = reader.readByteArray("topicBytes");
+                topicBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -324,7 +321,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 7:
-                topicOrd = reader.readInt("topicOrd");
+                topicOrd = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -333,7 +330,7 @@ public class GridIoMessage implements Message, SpanTransport {
 
         }
 
-        return reader.afterMessageRead(GridIoMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */

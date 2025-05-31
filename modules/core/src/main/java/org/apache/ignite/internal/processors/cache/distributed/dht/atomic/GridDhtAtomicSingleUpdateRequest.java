@@ -374,25 +374,25 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
         switch (writer.state()) {
             case 12:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage(key))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeMessage("prevVal", prevVal))
+                if (!writer.writeMessage(prevVal))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeLong("updateCntr", updateCntr))
+                if (!writer.writeLong(updateCntr))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeMessage("val", val))
+                if (!writer.writeMessage(val))
                     return false;
 
                 writer.incrementState();
@@ -406,15 +406,12 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 12:
-                key = reader.readMessage("key");
+                key = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -422,7 +419,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
                 reader.incrementState();
 
             case 13:
-                prevVal = reader.readMessage("prevVal");
+                prevVal = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -430,7 +427,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
                 reader.incrementState();
 
             case 14:
-                updateCntr = reader.readLong("updateCntr");
+                updateCntr = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -438,7 +435,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
                 reader.incrementState();
 
             case 15:
-                val = reader.readMessage("val");
+                val = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -447,7 +444,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
         }
 
-        return reader.afterMessageRead(GridDhtAtomicSingleUpdateRequest.class);
+        return true;
     }
 
     /**

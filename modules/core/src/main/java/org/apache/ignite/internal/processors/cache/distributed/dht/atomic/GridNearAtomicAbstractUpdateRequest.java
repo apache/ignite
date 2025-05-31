@@ -529,37 +529,37 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong(futId))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
+                if (!writer.writeByte(op != null ? (byte)op.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
+                if (!writer.writeByte(syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
@@ -573,15 +573,12 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                flags = reader.readByte("flags");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -589,7 +586,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 5:
-                futId = reader.readLong("futId");
+                futId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -599,7 +596,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
             case 6:
                 byte opOrd;
 
-                opOrd = reader.readByte("op");
+                opOrd = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -611,7 +608,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
             case 7:
                 byte syncModeOrd;
 
-                syncModeOrd = reader.readByte("syncMode");
+                syncModeOrd = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -621,7 +618,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 8:
-                taskNameHash = reader.readInt("taskNameHash");
+                taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -629,7 +626,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 9:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -638,7 +635,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicAbstractUpdateRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

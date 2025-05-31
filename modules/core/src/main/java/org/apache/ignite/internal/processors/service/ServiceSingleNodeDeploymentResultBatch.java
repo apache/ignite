@@ -90,13 +90,13 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("depId", depId))
+                if (!writer.writeMessage(depId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMap("results", results, IGNITE_UUID, MSG))
+                if (!writer.writeMap(results, IGNITE_UUID, MSG))
                     return false;
 
                 writer.incrementState();
@@ -109,12 +109,9 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                depId = reader.readMessage("depId");
+                depId = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -122,7 +119,7 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
                 reader.incrementState();
 
             case 1:
-                results = reader.readMap("results", IGNITE_UUID, MSG, false);
+                results = reader.readMap(IGNITE_UUID, MSG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -130,7 +127,7 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(ServiceSingleNodeDeploymentResultBatch.class);
+        return true;
     }
 
     /** {@inheritDoc} */

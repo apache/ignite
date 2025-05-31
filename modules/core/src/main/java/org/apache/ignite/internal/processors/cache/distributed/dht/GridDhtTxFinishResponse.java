@@ -174,19 +174,19 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
 
         switch (writer.state()) {
             case 7:
-                if (!writer.writeByteArray("checkCommittedErrBytes", checkCommittedErrBytes))
+                if (!writer.writeByteArray(checkCommittedErrBytes))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("retVal", retVal))
+                if (!writer.writeMessage(retVal))
                     return false;
 
                 writer.incrementState();
@@ -200,15 +200,12 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 7:
-                checkCommittedErrBytes = reader.readByteArray("checkCommittedErrBytes");
+                checkCommittedErrBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -216,7 +213,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
                 reader.incrementState();
 
             case 8:
-                miniId = reader.readInt("miniId");
+                miniId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -224,7 +221,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
                 reader.incrementState();
 
             case 9:
-                retVal = reader.readMessage("retVal");
+                retVal = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -233,7 +230,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
 
         }
 
-        return reader.afterMessageRead(GridDhtTxFinishResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */

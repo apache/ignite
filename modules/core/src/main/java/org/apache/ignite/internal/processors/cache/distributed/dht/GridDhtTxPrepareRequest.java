@@ -411,85 +411,85 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         switch (writer.state()) {
             case 21:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeBitSet("invalidateNearEntries", invalidateNearEntries))
+                if (!writer.writeBitSet(invalidateNearEntries))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeUuid("nearNodeId", nearNodeId))
+                if (!writer.writeUuid(nearNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeCollection("nearWrites", nearWrites, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(nearWrites, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeMessage("nearXidVer", nearXidVer))
+                if (!writer.writeMessage(nearXidVer))
                     return false;
 
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeCollection("ownedKeys", ownedKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(ownedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 28:
-                if (!writer.writeCollection("ownedVals", ownedVals, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(ownedVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 29:
-                if (!writer.writeBitSet("preloadKeys", preloadKeys))
+                if (!writer.writeBitSet(preloadKeys))
                     return false;
 
                 writer.incrementState();
 
             case 30:
-                if (!writer.writeBoolean("skipCompletedVers", skipCompletedVers))
+                if (!writer.writeBoolean(skipCompletedVers))
                     return false;
 
                 writer.incrementState();
 
             case 31:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 32:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 33:
-                if (!writer.writeString("txLbl", txLbl))
+                if (!writer.writeString(txLbl))
                     return false;
 
                 writer.incrementState();
 
             case 34:
-                if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -503,15 +503,12 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 21:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -519,7 +516,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 22:
-                invalidateNearEntries = reader.readBitSet("invalidateNearEntries");
+                invalidateNearEntries = reader.readBitSet();
 
                 if (!reader.isLastRead())
                     return false;
@@ -527,7 +524,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 23:
-                miniId = reader.readInt("miniId");
+                miniId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -535,7 +532,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 24:
-                nearNodeId = reader.readUuid("nearNodeId");
+                nearNodeId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -543,7 +540,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 25:
-                nearWrites = reader.readCollection("nearWrites", MessageCollectionItemType.MSG);
+                nearWrites = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -551,7 +548,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 26:
-                nearXidVer = reader.readMessage("nearXidVer");
+                nearXidVer = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -559,7 +556,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 27:
-                ownedKeys = reader.readCollection("ownedKeys", MessageCollectionItemType.MSG);
+                ownedKeys = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -567,7 +564,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 28:
-                ownedVals = reader.readCollection("ownedVals", MessageCollectionItemType.MSG);
+                ownedVals = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -575,7 +572,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 29:
-                preloadKeys = reader.readBitSet("preloadKeys");
+                preloadKeys = reader.readBitSet();
 
                 if (!reader.isLastRead())
                     return false;
@@ -583,7 +580,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 30:
-                skipCompletedVers = reader.readBoolean("skipCompletedVers");
+                skipCompletedVers = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -591,7 +588,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 31:
-                taskNameHash = reader.readInt("taskNameHash");
+                taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -599,7 +596,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 32:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -607,7 +604,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 33:
-                txLbl = reader.readString("txLbl");
+                txLbl = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -615,7 +612,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 34:
-                updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
+                updCntrs = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -624,7 +621,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         }
 
-        return reader.afterMessageRead(GridDhtTxPrepareRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

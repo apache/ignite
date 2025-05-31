@@ -223,37 +223,37 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeByteArray("partsBytes", partsBytes))
+                if (!writer.writeByteArray(partsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("timeout", timeout))
+                if (!writer.writeLong(timeout))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeByteArray("topicBytes", topicBytes))
+                if (!writer.writeByteArray(topicBytes))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeLong("rebalanceId", rebalanceId))
+                if (!writer.writeLong(rebalanceId))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeInt("workerId", workerId))
+                if (!writer.writeInt(workerId))
                     return false;
 
                 writer.incrementState();
@@ -267,15 +267,12 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                partsBytes = reader.readByteArray("partsBytes");
+                partsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -283,7 +280,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
                 reader.incrementState();
 
             case 5:
-                timeout = reader.readLong("timeout");
+                timeout = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -291,7 +288,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
                 reader.incrementState();
 
             case 6:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -299,7 +296,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
                 reader.incrementState();
 
             case 7:
-                topicBytes = reader.readByteArray("topicBytes");
+                topicBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -307,7 +304,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
                 reader.incrementState();
 
             case 8:
-                rebalanceId = reader.readLong("rebalanceId");
+                rebalanceId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -315,7 +312,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
                 reader.incrementState();
 
             case 9:
-                workerId = reader.readInt("workerId");
+                workerId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -324,7 +321,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
 
         }
 
-        return reader.afterMessageRead(GridDhtPartitionDemandMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */

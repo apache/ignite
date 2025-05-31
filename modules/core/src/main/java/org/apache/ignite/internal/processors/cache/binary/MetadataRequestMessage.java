@@ -66,7 +66,7 @@ public class MetadataRequestMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("typeId", typeId))
+                if (!writer.writeInt(typeId))
                     return false;
 
                 writer.incrementState();
@@ -80,12 +80,9 @@ public class MetadataRequestMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                typeId = reader.readInt("typeId");
+                typeId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -94,7 +91,7 @@ public class MetadataRequestMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(MetadataRequestMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */

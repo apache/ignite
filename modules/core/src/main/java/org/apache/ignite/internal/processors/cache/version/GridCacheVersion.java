@@ -258,19 +258,19 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("nodeOrderDrId", nodeOrderDrId))
+                if (!writer.writeInt(nodeOrderDrId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("order", order))
+                if (!writer.writeLong(order))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("topVer", topVer))
+                if (!writer.writeInt(topVer))
                     return false;
 
                 writer.incrementState();
@@ -284,12 +284,9 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                nodeOrderDrId = reader.readInt("nodeOrderDrId");
+                nodeOrderDrId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -297,7 +294,7 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
                 reader.incrementState();
 
             case 1:
-                order = reader.readLong("order");
+                order = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -305,7 +302,7 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
                 reader.incrementState();
 
             case 2:
-                topVer = reader.readInt("topVer");
+                topVer = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -314,7 +311,7 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
 
         }
 
-        return reader.afterMessageRead(GridCacheVersion.class);
+        return true;
     }
 
     /** {@inheritDoc} */

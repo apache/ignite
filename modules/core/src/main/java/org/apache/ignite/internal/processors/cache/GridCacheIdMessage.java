@@ -66,7 +66,7 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeInt("cacheId", cacheId))
+                if (!writer.writeInt(cacheId))
                     return false;
 
                 writer.incrementState();
@@ -80,15 +80,12 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 3:
-                cacheId = reader.readInt("cacheId");
+                cacheId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -97,7 +94,7 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead(GridCacheIdMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */

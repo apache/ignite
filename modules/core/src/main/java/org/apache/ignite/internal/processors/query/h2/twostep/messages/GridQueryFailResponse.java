@@ -117,19 +117,19 @@ public class GridQueryFailResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("errMsg", errMsg))
+                if (!writer.writeString(errMsg))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByte("failCode", failCode))
+                if (!writer.writeByte(failCode))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("qryReqId", qryReqId))
+                if (!writer.writeLong(qryReqId))
                     return false;
 
                 writer.incrementState();
@@ -143,12 +143,9 @@ public class GridQueryFailResponse implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                errMsg = reader.readString("errMsg");
+                errMsg = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -156,7 +153,7 @@ public class GridQueryFailResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                failCode = reader.readByte("failCode");
+                failCode = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -164,7 +161,7 @@ public class GridQueryFailResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                qryReqId = reader.readLong("qryReqId");
+                qryReqId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -173,7 +170,7 @@ public class GridQueryFailResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(GridQueryFailResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */

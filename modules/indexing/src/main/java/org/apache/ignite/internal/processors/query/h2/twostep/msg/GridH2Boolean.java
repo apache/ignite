@@ -68,7 +68,7 @@ public class GridH2Boolean extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeBoolean("x", x))
+                if (!writer.writeBoolean(x))
                     return false;
 
                 writer.incrementState();
@@ -82,15 +82,12 @@ public class GridH2Boolean extends GridH2ValueMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 0:
-                x = reader.readBoolean("x");
+                x = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -99,7 +96,7 @@ public class GridH2Boolean extends GridH2ValueMessage {
 
         }
 
-        return reader.afterMessageRead(GridH2Boolean.class);
+        return true;
     }
 
     /** {@inheritDoc} */

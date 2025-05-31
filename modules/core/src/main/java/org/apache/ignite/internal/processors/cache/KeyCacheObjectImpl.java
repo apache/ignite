@@ -132,15 +132,12 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 1:
-                part = reader.readInt("part");
+                part = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -149,7 +146,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
         }
 
-        return reader.afterMessageRead(KeyCacheObjectImpl.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -168,7 +165,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
         switch (writer.state()) {
             case 1:
-                if (!writer.writeInt("part", part))
+                if (!writer.writeInt(part))
                     return false;
 
                 writer.incrementState();

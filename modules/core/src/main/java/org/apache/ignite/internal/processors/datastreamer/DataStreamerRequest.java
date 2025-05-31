@@ -293,97 +293,97 @@ public class DataStreamerRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("cacheName", cacheName))
+                if (!writer.writeString(cacheName))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
+                if (!writer.writeIgniteUuid(clsLdrId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
+                if (!writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(entries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeBoolean("forceLocDep", forceLocDep))
+                if (!writer.writeBoolean(forceLocDep))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeBoolean("ignoreDepOwnership", ignoreDepOwnership))
+                if (!writer.writeBoolean(ignoreDepOwnership))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeBoolean("keepBinary", keepBinary))
+                if (!writer.writeBoolean(keepBinary))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMap("ldrParticipants", ldrParticipants, MessageCollectionItemType.UUID, IGNITE_UUID))
+                if (!writer.writeMap(ldrParticipants, MessageCollectionItemType.UUID, IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeInt("partId", partId))
+                if (!writer.writeInt(partId))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeLong("reqId", reqId))
+                if (!writer.writeLong(reqId))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
+                if (!writer.writeByteArray(resTopicBytes))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeString("sampleClsName", sampleClsName))
+                if (!writer.writeString(sampleClsName))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeBoolean("skipStore", skipStore))
+                if (!writer.writeBoolean(skipStore))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeByteArray("updaterBytes", updaterBytes))
+                if (!writer.writeByteArray(updaterBytes))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeString("userVer", userVer))
+                if (!writer.writeString(userVer))
                     return false;
 
                 writer.incrementState();
@@ -397,12 +397,9 @@ public class DataStreamerRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                cacheName = reader.readString("cacheName");
+                cacheName = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -410,7 +407,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                clsLdrId = reader.readIgniteUuid("clsLdrId");
+                clsLdrId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -420,7 +417,7 @@ public class DataStreamerRequest implements Message {
             case 2:
                 byte depModeOrd;
 
-                depModeOrd = reader.readByte("depMode");
+                depModeOrd = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -430,7 +427,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 3:
-                entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
+                entries = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -438,7 +435,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 4:
-                forceLocDep = reader.readBoolean("forceLocDep");
+                forceLocDep = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -446,7 +443,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 5:
-                ignoreDepOwnership = reader.readBoolean("ignoreDepOwnership");
+                ignoreDepOwnership = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -454,7 +451,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 6:
-                keepBinary = reader.readBoolean("keepBinary");
+                keepBinary = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -462,7 +459,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 7:
-                ldrParticipants = reader.readMap("ldrParticipants", MessageCollectionItemType.UUID, IGNITE_UUID, false);
+                ldrParticipants = reader.readMap(MessageCollectionItemType.UUID, IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -470,7 +467,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 8:
-                partId = reader.readInt("partId");
+                partId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -478,7 +475,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 9:
-                reqId = reader.readLong("reqId");
+                reqId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -486,7 +483,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 10:
-                resTopicBytes = reader.readByteArray("resTopicBytes");
+                resTopicBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -494,7 +491,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 11:
-                sampleClsName = reader.readString("sampleClsName");
+                sampleClsName = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -502,7 +499,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 12:
-                skipStore = reader.readBoolean("skipStore");
+                skipStore = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -510,7 +507,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 13:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -518,7 +515,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 14:
-                updaterBytes = reader.readByteArray("updaterBytes");
+                updaterBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -526,7 +523,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 15:
-                userVer = reader.readString("userVer");
+                userVer = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -535,7 +532,7 @@ public class DataStreamerRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(DataStreamerRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -116,13 +116,13 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage(key))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("val", val))
+                if (!writer.writeMessage(val))
                     return false;
 
                 writer.incrementState();
@@ -136,12 +136,9 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                key = reader.readMessage("key");
+                key = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -149,7 +146,7 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
                 reader.incrementState();
 
             case 1:
-                val = reader.readMessage("val");
+                val = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -158,7 +155,7 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
 
         }
 
-        return reader.afterMessageRead(DataStreamerEntry.class);
+        return true;
     }
 
     /** {@inheritDoc} */

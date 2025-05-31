@@ -8269,9 +8269,6 @@ public abstract class IgniteUtils extends CommonUtils {
         assert buf != null;
         assert buf.hasArray();
 
-        if (writer != null)
-            writer.setCurrentWriteClass(msg.getClass());
-
         boolean finished = false;
         int cnt = 0;
 

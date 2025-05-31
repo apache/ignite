@@ -91,13 +91,13 @@ public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeUuid("routineId", routineId))
+                if (!writer.writeUuid(routineId))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMap("updateCntrs", updateCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
+                if (!writer.writeMap(updateCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
@@ -111,15 +111,12 @@ public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                routineId = reader.readUuid("routineId");
+                routineId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -127,7 +124,7 @@ public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 5:
-                updateCntrs = reader.readMap("updateCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
+                updateCntrs = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -136,7 +133,7 @@ public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
 
         }
 
-        return reader.afterMessageRead(CacheContinuousQueryBatchAck.class);
+        return true;
     }
 
     /** {@inheritDoc} */

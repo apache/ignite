@@ -88,13 +88,13 @@ public class UserManagementOperationFinishedMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("errorMsg", errorMsg))
+                if (!writer.writeString(errorMsg))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("opId", opId))
+                if (!writer.writeIgniteUuid(opId))
                     return false;
 
                 writer.incrementState();
@@ -108,12 +108,9 @@ public class UserManagementOperationFinishedMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                errorMsg = reader.readString("errorMsg");
+                errorMsg = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -121,7 +118,7 @@ public class UserManagementOperationFinishedMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                opId = reader.readIgniteUuid("opId");
+                opId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -130,7 +127,7 @@ public class UserManagementOperationFinishedMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(UserManagementOperationFinishedMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
