@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -182,9 +183,10 @@ public class Dump implements AutoCloseable {
     /**
      * @param node Node directory name.
      * @param grp Group id.
+     * @param cacheIds Cache ids.
      * @return Dump iterator.
      */
-    public DumpedPartitionIterator iterator(String node, int grp, int part) {
+    public DumpedPartitionIterator iterator(String node, int grp, int part, @Nullable Set<Integer> cacheIds) {
         FileIOFactory ioFactory = comprParts
             ? (file, modes) -> new ReadOnlyUnzipFileIO(file)
             : (file, modes) -> new ReadOnlyBufferedFileIO(file);
@@ -249,7 +251,11 @@ public class Dump implements AutoCloseable {
                     return;
 
                 try {
-                    next = serializer.read(dumpFile, grp, part);
+                    do {
+                        next = serializer.read(dumpFile, part);
+                    }
+                    // Skip all but cacheIds.
+                    while (next != null && cacheIds != null && !cacheIds.contains(next.cacheId()));
                 }
                 catch (IOException | IgniteCheckedException e) {
                     throw new IgniteException(e);

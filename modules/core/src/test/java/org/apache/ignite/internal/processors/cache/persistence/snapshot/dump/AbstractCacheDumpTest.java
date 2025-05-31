@@ -384,6 +384,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 false,
                 false,
                 cacheGrpNames,
+                null,
                 skipCopies,
                 null
             ),

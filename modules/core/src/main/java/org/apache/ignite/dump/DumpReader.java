@@ -115,19 +115,26 @@ public class DumpReader implements Runnable {
 
                 Map<Integer, List<String>> grpToNodes = new HashMap<>();
 
-                Set<Integer> cacheGrpIds = cfg.cacheGroupNames() != null
-                    ? Arrays.stream(cfg.cacheGroupNames()).map(CU::cacheId).collect(Collectors.toSet())
+                // TODO: filter caches, also.
+                Set<Integer> grpIds = cfg.groupNames() != null
+                    ? Arrays.stream(cfg.groupNames()).map(CU::cacheId).collect(Collectors.toSet())
+                    : null;
+
+                Set<Integer> cacheIds = cfg.cacheNames() != null
+                    ? Arrays.stream(cfg.cacheNames()).map(CU::cacheId).collect(Collectors.toSet())
                     : null;
 
                 for (SnapshotMetadata meta : dump.metadata()) {
                     for (Integer grp : meta.partitions().keySet()) {
-                        if (cacheGrpIds == null || cacheGrpIds.contains(grp))
+                        if (grpIds == null || grpIds.contains(grp))
                             grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
                     }
                 }
 
+                // Optimize - skip whole cache if only one in group!
                 cnsmr.onCacheConfigs(grpToNodes.entrySet().stream()
-                    .flatMap(e -> dump.configs(F.first(e.getValue()), e.getKey()).stream())
+                    .flatMap(e -> dump.configs(F.first(e.getValue()), e.getKey()).stream()
+                        .filter(scd -> cacheIds == null || cacheIds.contains(scd.cacheId())))
                     .iterator());
 
                 ExecutorService execSvc = cfg.threadCount() > 1 ? Executors.newFixedThreadPool(cfg.threadCount()) : null;
@@ -160,7 +167,7 @@ public class DumpReader implements Runnable {
                                     return;
                                 }
 
-                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part)) {
+                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part, cacheIds)) {
                                     if (log.isDebugEnabled()) {
                                         log.debug("Consuming partition [node=" + node + ", grp=" + grp +
                                             ", part=" + part + ']');
