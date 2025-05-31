@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,6 +30,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cdc.TypeMapping;
@@ -44,6 +48,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_TIMEOUT;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
 public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
@@ -60,13 +65,27 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testReadDumpWithCacheFilter() throws Exception {
-        try (IgniteEx srv = startGrid(1)) {
+        doTest(1);
+
+        cacheSzs.clear();
+
+        cleanPersistenceDir();
+
+        doTest(3);
+    }
+
+    /** */
+    private void doTest(int nodeCnt) throws Exception {
+        try (IgniteEx srv = startGrids(nodeCnt)) {
             createCaches(srv, true);
 
             srv.snapshot().createDump("dump", null).get();
         }
+        finally {
+            stopAllGrids();
+        }
 
-        try (IgniteEx srv = startGrid(1)) {
+        try (IgniteEx srv = startGrids(nodeCnt)) {
             SnapshotFileTree sft = new SnapshotFileTree(srv.context(), "dump", null);
 
             readAndCheck(srv, sft, "c1");
@@ -75,12 +94,37 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
             readAndCheck(srv, sft, "c0", "mycache");
             readAndCheck(srv, sft, "c1", "mycache", "mycache2");
             readAndCheck(srv, sft, "mycache", "mycache2");
-            readAndCheck(srv, sft, "mycache2");
+
+            corruptFileThatMustBeSkiped(srv, sft);
+        }
+        finally {
+            stopAllGrids();
         }
     }
 
+    /**
+     * Read dump similar to {@link #readAndCheck(IgniteEx, SnapshotFileTree, String...)} but corrupt all other files, first.
+     * Check that files not read during dump read.
+     */
+    private void corruptFileThatMustBeSkiped(IgniteEx srv, SnapshotFileTree sft) throws Exception {
+        corruptAllPartitions(sft, config("mycache", null));
+
+        assertThrowsWithCause(() -> readAndCheck(srv, sft, "c1", "mycache"), IgniteException.class);
+
+        srv.cacheNames().forEach(srv::destroyCache);
+
+        awaitPartitionMapExchange();
+
+        // Will succeed only if all other files, except for "mycache2" will be not read.
+        readAndCheck(srv, sft, "c1", "mycache2");
+
+        corruptAllPartitions(sft, config("c0", "g"));
+
+        readAndCheck(srv, sft, "mycache2");
+    }
+
     /** */
-    private void readAndCheck(IgniteEx srv, SnapshotFileTree sft, String... cacheNames) throws Exception {
+    private void readAndCheck(IgniteEx srv, SnapshotFileTree sft, String... cacheNames) {
         assertTrue(cacheNames != null);
         assertTrue(cacheNames.length > 0);
 
@@ -121,7 +165,12 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
             srv.destroyCache(name);
         }
 
-        awaitPartitionMapExchange();
+        try {
+            awaitPartitionMapExchange();
+        }
+        catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         assertEquals(ecnt, cnsmr.entryCnt);
         assertTrue(srv.cacheNames().isEmpty());
@@ -149,7 +198,6 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
 
             IntStream.range(0, cacheSz).forEach(idx -> c.put(idx, idx));
         }
-
     }
 
     /** */
@@ -159,6 +207,17 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
             .setAffinity(new RendezvousAffinityFunction(10, null));
     }
 
+    /** */
+    private static void corruptAllPartitions(SnapshotFileTree sft, CacheConfiguration<?, ?> ccfg) throws IOException {
+        for (File partFile : sft.existingCachePartitionFiles(sft.cacheStorage(ccfg), true, false)) {
+            try (FileOutputStream fos = new FileOutputStream(partFile)) {
+                // Corrupt file by writing zeroes to it.
+                fos.write(new byte[200]);
+            }
+        }
+    }
+
+    /** */
     private class FilterCacheConsumer implements DumpConsumer {
         /** */
         private final IgniteEx srv;
@@ -169,6 +228,7 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
         /** */
         int entryCnt;
 
+        /** */
         public FilterCacheConsumer(IgniteEx srv, Set<Integer> cacheIds) {
             this.srv = srv;
             this.cacheIds = cacheIds;
