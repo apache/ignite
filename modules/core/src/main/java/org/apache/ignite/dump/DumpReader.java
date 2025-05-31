@@ -121,9 +121,9 @@ public class DumpReader implements Runnable {
                     ? Arrays.stream(cfg.cacheNames()).map(CU::cacheId).collect(Collectors.toSet())
                     : null;
 
-                GroupsConfigs result = groupsConfigs(dump, cacheIds);
+                GroupsConfigs grpsCfgs = groupsConfigs(dump, cacheIds);
 
-                cnsmr.onCacheConfigs(result.cacheConfigs().iterator());
+                cnsmr.onCacheConfigs(grpsCfgs.cacheCfgs.iterator());
 
                 ExecutorService execSvc = cfg.threadCount() > 1 ? Executors.newFixedThreadPool(cfg.threadCount()) : null;
 
@@ -132,9 +132,9 @@ public class DumpReader implements Runnable {
                 Map<Integer, Set<Integer>> grps = cfg.skipCopies() ? new HashMap<>() : null;
 
                 if (grps != null)
-                    result.groupToNodes().keySet().forEach(grpId -> grps.put(grpId, new HashSet<>()));
+                    grpsCfgs.grpToNodes.keySet().forEach(grpId -> grps.put(grpId, new HashSet<>()));
 
-                for (Map.Entry<Integer, List<String>> e : result.groupToNodes().entrySet()) {
+                for (Map.Entry<Integer, List<String>> e : grpsCfgs.grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
                     for (String node : e.getValue()) {
@@ -412,20 +412,17 @@ public class DumpReader implements Runnable {
     }
 
     /** */
-    private static class GroupsConfigs extends IgniteBiTuple<Map<Integer, List<String>>, Collection<StoredCacheData>> {
+    private static class GroupsConfigs {
+        /** Key is group id, value is list of {@link NodeFileTree#folderName()} of nodes containing group. */
+        public final Map<Integer, List<String>> grpToNodes;
+
+        /** Cache configurations. */
+        public final @Nullable Collection<StoredCacheData> cacheCfgs;
+
         /** */
-        public GroupsConfigs(@Nullable Map<Integer, List<String>> val1, @Nullable Collection<StoredCacheData> val2) {
-            super(val1, val2);
-        }
-
-        /** @return Key is group id, value is list of {@link NodeFileTree#folderName()} of nodes containing group. */
-        public Map<Integer, List<String>> groupToNodes() {
-            return get1();
-        }
-
-        /** @return Cache configurations. */
-        public Collection<StoredCacheData> cacheConfigs() {
-            return get2();
+        public GroupsConfigs(Map<Integer, List<String>> grpToNodes, @Nullable Collection<StoredCacheData> val2) {
+            this.grpToNodes = grpToNodes;
+            this.cacheCfgs = val2;
         }
     }
 }
