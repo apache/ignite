@@ -240,20 +240,9 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
      * @param nextPageIdx Index of page to link to.
      */
     private void linkFragmentPages(int pageIdx, int nextPageIdx) {
-        boolean success;
+        int trackingIdx = trackingIdx(pageIdx);
 
-        do {
-            int trackingIdx = trackingIdx(pageIdx);
-
-            long trackinData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
-
-            int firstTs = first(trackinData);
-
-            if (firstTs == -1)
-                return;
-
-            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackinData, toLong(-1, nextPageIdx));
-        } while (!success);
+        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, toLong(-1, nextPageIdx));
     }
 
     /**
