@@ -209,7 +209,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 if (lastLink != 0)
                     evictionTracker.trackFragmentPage(pageId, lastLink, true);
-            } else
+            }
+            else
                 evictionTracker.trackFragmentPage(pageId, lastLink, false);
 
             // Avoid boxing with garbage generation for usual case.
