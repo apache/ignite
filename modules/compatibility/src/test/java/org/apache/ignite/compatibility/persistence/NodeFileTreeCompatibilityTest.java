@@ -175,14 +175,14 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
         );
 
         assertEquals(
-            scanCacheDump(CACHE_DUMP_NAME, snpPath(oldWorkDir, DFLT_SNAPSHOTS_FOLDER, false)),
-            scanCacheDump(CACHE_DUMP_NAME, snpPath(U.defaultWorkDirectory(), DFLT_SNAPSHOTS_FOLDER, false))
+            scanCacheDump(snpPath(oldWorkDir, DFLT_SNAPSHOTS_FOLDER, false)),
+            scanCacheDump(snpPath(U.defaultWorkDirectory(), DFLT_SNAPSHOTS_FOLDER, false))
         );
 
         for (String snpFolder : List.of(DFLT_SNAPSHOTS_FOLDER, EX_SNAPSHOTS_FOLDER)) {
             assertEquals(
-                scanSnp(SNAPSHOT_NAME, snpPath(oldWorkDir, snpFolder, false)),
-                scanSnp(SNAPSHOT_NAME, snpPath(U.defaultWorkDirectory(), snpFolder, false))
+                scanSnp(snpPath(oldWorkDir, snpFolder, false)),
+                scanSnp(snpPath(U.defaultWorkDirectory(), snpFolder, false))
             );
         }
     }
@@ -198,8 +198,8 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
     }
 
     /** */
-    private SnpScanResult scanSnp(String snpName, Path snpPath) throws IOException {
-        Path snpFolder = snpPath.resolve(snpName);
+    private SnpScanResult scanSnp(Path snpPath) throws IOException {
+        Path snpFolder = snpPath.resolve(SNAPSHOT_NAME);
 
         Path incsDir = snpFolder.resolve(INCREMENTS_FOLDER);
 
@@ -215,10 +215,8 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
     }
 
     /** */
-    private Map<String, CacheGroupScanResult> scanCacheDump(String dumpName, Path snpPath) throws IOException {
-        Path dumpFolder = snpPath.resolve(dumpName);
-
-        return scanFileTree(dumpFolder, DUMP_PART_SUFFIX);
+    private Map<String, CacheGroupScanResult> scanCacheDump(Path snpPath) throws IOException {
+        return scanFileTree(snpPath.resolve(CACHE_DUMP_NAME), DUMP_PART_SUFFIX);
     }
 
     /** */
