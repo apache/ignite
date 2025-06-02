@@ -17,7 +17,6 @@
 
 package org.apache.ignite.compatibility.persistence;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
