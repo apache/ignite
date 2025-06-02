@@ -393,11 +393,13 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
                 addItemsToCache(cache, 0, BASE_CACHE_SIZE);
             });
 
-            ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+            List<String> snpPaths = Arrays.asList(
+                null,
+                snpPath(ign.configuration().getWorkDirectory(), EX_SNAPSHOTS_FOLDER, true).toString()
+            );
 
-            String customSnpDir = snpPath(ign.configuration().getWorkDirectory(), EX_SNAPSHOTS_FOLDER, true).toString();
-
-            ((IgniteEx)ign).context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, customSnpDir, false, false).get();
+            for (String snpPath : snpPaths)
+                ((IgniteEx)ign).context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, snpPath, false, false).get();
 
             ign.snapshot().createDump(CACHE_DUMP_NAME, cacheToGrp.values()).get();
 
@@ -408,9 +410,8 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
                     cacheName -> addItemsToCache(ign.cache(cacheName), BASE_CACHE_SIZE, ENTRIES_CNT_FOR_INCREMENT)
                 );
 
-                ign.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
-
-                ((IgniteEx)ign).context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, customSnpDir, true, false).get();
+                for (String snpPath : snpPaths)
+                    ((IgniteEx)ign).context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, snpPath, true, false).get();
             }
         }
 
