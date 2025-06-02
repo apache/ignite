@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compatibility.IgniteReleasedVersion;
@@ -149,6 +150,8 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
         cleanPersistenceDir();
 
         FileUtils.deleteDirectory(new File(oldWorkDir));
+
+        FileUtils.deleteDirectory(new File(U.defaultWorkDirectory()));
     }
 
     /** */
@@ -172,24 +175,33 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
         );
 
         assertEquals(
-            scanFileTree(snpPath(oldWorkDir, CACHE_DUMP_NAME), DUMP_PART_SUFFIX),
-            scanFileTree(snpPath(U.defaultWorkDirectory(), CACHE_DUMP_NAME), DUMP_PART_SUFFIX)
+            scanCacheDump(CACHE_DUMP_NAME, snpPath(oldWorkDir, DFLT_SNAPSHOTS_FOLDER, false)),
+            scanCacheDump(CACHE_DUMP_NAME, snpPath(U.defaultWorkDirectory(), DFLT_SNAPSHOTS_FOLDER, false))
         );
 
-        assertEquals(
-            scanSnp(snpPath(oldWorkDir, SNAPSHOT_NAME)),
-            scanSnp(snpPath(U.defaultWorkDirectory(), SNAPSHOT_NAME))
-        );
+        for (String snpFolder : List.of(DFLT_SNAPSHOTS_FOLDER, EX_SNAPSHOTS_FOLDER)) {
+            assertEquals(
+                scanSnp(SNAPSHOT_NAME, snpPath(oldWorkDir, snpFolder, false)),
+                scanSnp(SNAPSHOT_NAME, snpPath(U.defaultWorkDirectory(), snpFolder, false))
+            );
+        }
     }
 
     /** */
-    private static Path snpPath(String workDir, String snpName) {
-        return Path.of(workDir + File.separator + DFLT_SNAPSHOTS_FOLDER + File.separator + snpName);
+    private static Path snpPath(String workDir, String path, boolean delIfExists) {
+        try {
+            return Path.of(U.resolveWorkDirectory(workDir, path, delIfExists).getAbsolutePath());
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** */
-    private SnpScanResult scanSnp(Path snpPath) throws IOException {
-        Path incsDir = snpPath.resolve(INCREMENTS_FOLDER);
+    private SnpScanResult scanSnp(String snpName, Path snpPath) throws IOException {
+        Path snpFolder = snpPath.resolve(snpName);
+
+        Path incsDir = snpFolder.resolve(INCREMENTS_FOLDER);
 
         int incsCnt = 0;
 
@@ -199,7 +211,14 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
             }
         }
 
-        return new SnpScanResult(incsCnt, scanFileTree(snpPath, SNP_PART_SUFFIX));
+        return new SnpScanResult(incsCnt, scanFileTree(snpFolder, SNP_PART_SUFFIX));
+    }
+
+    /** */
+    private Map<String, CacheGroupScanResult> scanCacheDump(String dumpName, Path snpPath) throws IOException {
+        Path dumpFolder = snpPath.resolve(dumpName);
+
+        return scanFileTree(dumpFolder, DUMP_PART_SUFFIX);
     }
 
     /** */
@@ -376,6 +395,10 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
 
             ign.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
+            String customSnpDir = snpPath(ign.configuration().getWorkDirectory(), EX_SNAPSHOTS_FOLDER, true).toString();
+
+            ((IgniteEx)ign).context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, customSnpDir, false, false).get();
+
             ign.snapshot().createDump(CACHE_DUMP_NAME, cacheToGrp.values()).get();
 
             // Incremental snapshots require same consistentID
@@ -386,6 +409,8 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
                 );
 
                 ign.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
+
+                ((IgniteEx)ign).context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, customSnpDir, true, false).get();
             }
         }
 
