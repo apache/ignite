@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.managers.communication;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -41,10 +39,6 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
 
             FieldUtils.writeField(msg, "nodeIdBytes", new byte[msgSize], true);
         }
-        else if (msg instanceof GridCacheRawVersionedEntry) {
-            FieldUtils.writeField(msg, "valBytes", new byte[0], true);
-            FieldUtils.writeField(msg, "key", new KeyCacheObjectImpl(), true);
-        }
 
         return msg;
     }
@@ -60,9 +54,6 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
         private static final byte[] BYTE_ARR = toBytes(null);
 
         /** */
-        protected Class<? extends Message> msgCls;
-
-        /** */
         public TestIoMessageReader(int capacity) {
             super(capacity);
         }
@@ -74,13 +65,11 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
             return BYTE_ARR;
         }
 
-        /** {@inheritDoc} */
-        @Override public <T extends Message> T readMessage() {
-            super.readMessage();
-
-            return msgCls.equals(GridCacheRawVersionedEntry.class)
-                ? (T)new KeyCacheObjectImpl()
-                : null;
-        }
+//        /** {@inheritDoc} */
+//        @Override public <T extends Message> T readMessage() {
+//            super.readMessage();
+//
+//            return null;
+//        }
     }
 }
