@@ -154,7 +154,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     }
 
     /** */
-    private void checkSnapshot(IgniteEx node) {
+    private void checkSnapshot(IgniteEx node) throws InterruptedException {
         // Incremental snapshots require same consistentID
         // https://issues.apache.org/jira/browse/IGNITE-25096
         boolean incSnpSupported = customConsId && oldNodesCnt == 1;
@@ -168,6 +168,8 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
         for (IgniteBiTuple<String, String> param: params) {
             cacheToGrp.keySet().forEach(node::destroyCache);
+
+            awaitPartitionMapExchange();
 
             IgniteFuture<?> snpFut = incSnpSupported
                 ? node.context().cache().context().snapshotMgr().restoreSnapshot(param.get1(), param.get2(), grpNames, 1, true)
