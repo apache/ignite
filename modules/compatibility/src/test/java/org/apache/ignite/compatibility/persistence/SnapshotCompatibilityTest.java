@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -124,7 +125,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
                 i,
                 OLD_IGNITE_VERSION,
                 new ConfigurationClosure(i),
-                i == oldNodesCnt ? new CreateSnapshotClosure() : null
+                i == oldNodesCnt ? new CreateSnapshotClosure(customSnpPath) : null
             );
         }
 
@@ -156,7 +157,7 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
         // https://issues.apache.org/jira/browse/IGNITE-25096
         boolean incSnpSupported = customConsId && oldNodesCnt == 1;
 
-        HashSet<String> grpNames = new HashSet<>(cacheToGrp.values());
+        Set<String> grpNames = new HashSet<>(cacheToGrp.values());
 
         IgniteFuture<?> snpFut = incSnpSupported
             ? node.snapshot().restoreSnapshot(SNAPSHOT_NAME, grpNames, 1)
