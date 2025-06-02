@@ -379,13 +379,6 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int readInt(int dflt) {
-            readField(int.class);
-
-            return 0;
-        }
-
-        /** {@inheritDoc} */
         @Override public long readLong() {
             readField(long.class);
 

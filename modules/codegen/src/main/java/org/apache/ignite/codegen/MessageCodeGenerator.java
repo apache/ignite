@@ -663,6 +663,7 @@ public class MessageCodeGenerator {
 
     /**
      * @param type Field type.
+     * @param name Field name.
      * @param colItemType Collection item type.
      * @param mapKeyType Map key type.
      * @param mapValType Map value type.

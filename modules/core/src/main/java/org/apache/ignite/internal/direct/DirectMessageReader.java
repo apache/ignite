@@ -97,11 +97,6 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public int readInt(int dflt) {
-        return readInt();
-    }
-
-    /** {@inheritDoc} */
     @Override public long readLong() {
         DirectByteBufferStream stream = state.item().stream;
 

@@ -64,12 +64,5 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
 
             return BYTE_ARR;
         }
-
-//        /** {@inheritDoc} */
-//        @Override public <T extends Message> T readMessage() {
-//            super.readMessage();
-//
-//            return null;
-//        }
     }
 }
