@@ -42,6 +42,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDiagnosticInfo;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext.CompoundInfo;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -69,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -91,6 +91,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CLUSTER_PROC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_INTERNAL_DIAGNOSTIC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_METRICS;
+import static org.apache.ignite.internal.IgniteDiagnosticPrepareContext.diagnosticInfo;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsistentIds;
@@ -399,12 +400,10 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
                         byte[] diagRes;
 
-                        IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> c;
-
                         try {
-                            c = msg0.unmarshal(marsh);
+                            CompoundInfo i = msg0.unmarshal(marsh);
 
-                            diagRes = marsh.marshal(c.apply(ctx));
+                            diagRes = marsh.marshal(diagnosticInfo(ctx, i));
                         }
                         catch (Exception e) {
                             U.error(diagnosticLog, "Failed to run diagnostic closure: " + e, e);
@@ -860,20 +859,19 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     }
 
     /**
-     * Sends diagnostic message closure to remote node. When response received dumps remote message and local
+     * Sends diagnostic message to remote node. When response received dumps remote message and local
      * communication info about connection(s) with remote node.
      *
      * @param nodeId Target node ID.
-     * @param c Closure to send.
-     * @param baseMsg Local message to log.
+     * @param i Compound info.
      * @return Message future.
      */
-    public IgniteInternalFuture<String> requestDiagnosticInfo(final UUID nodeId,
-        IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> c,
-        final String baseMsg) {
+    public IgniteInternalFuture<String> requestDiagnosticInfo(final UUID nodeId, CompoundInfo i) {
         final GridFutureAdapter<String> infoFut = new GridFutureAdapter<>();
 
-        final IgniteInternalFuture<IgniteDiagnosticInfo> rmtFut = sendDiagnosticMessage(nodeId, c);
+        final String baseMsg = i.message();
+
+        final IgniteInternalFuture<IgniteDiagnosticInfo> rmtFut = sendDiagnosticMessage(nodeId, i);
 
         rmtFut.listen(new CI1<IgniteInternalFuture<IgniteDiagnosticInfo>>() {
             @Override public void apply(IgniteInternalFuture<IgniteDiagnosticInfo> fut) {
@@ -888,7 +886,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
                 final String rmtMsg0 = rmtMsg;
 
-                IgniteInternalFuture<String> locFut = IgniteDiagnosticMessage.dumpCommunicationInfo(ctx, nodeId);
+                IgniteInternalFuture<String> locFut = IgniteDiagnosticMessage.dumpCommunicationInfo(
+                    ctx.config().getCommunicationSpi(), nodeId);
 
                 locFut.listen(new CI1<IgniteInternalFuture<String>>() {
                     @Override public void apply(IgniteInternalFuture<String> locFut) {
@@ -917,15 +916,14 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /**
      * @param nodeId Target node ID.
-     * @param c Message closure.
+     * @param i Compound info.
      * @return Message future.
      */
-    private IgniteInternalFuture<IgniteDiagnosticInfo> sendDiagnosticMessage(UUID nodeId,
-        IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> c) {
+    private IgniteInternalFuture<IgniteDiagnosticInfo> sendDiagnosticMessage(UUID nodeId, CompoundInfo i) {
         try {
-            IgniteDiagnosticMessage msg = IgniteDiagnosticMessage.createRequest(marsh,
-                c,
-                diagFutId.getAndIncrement());
+            byte[] reqBytes = U.marshal(marsh, i);
+
+            IgniteDiagnosticMessage msg = IgniteDiagnosticMessage.createRequest(reqBytes, diagFutId.getAndIncrement());
 
             InternalDiagnosticFuture fut = new InternalDiagnosticFuture(nodeId, msg.futureId());
 

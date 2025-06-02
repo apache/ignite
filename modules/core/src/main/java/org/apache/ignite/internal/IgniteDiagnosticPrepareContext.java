@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,32 +31,27 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteDiagnosticMessage.DiagnosticBaseClosure;
-import static org.apache.ignite.internal.IgniteDiagnosticMessage.ExchangeInfoClosure;
-import static org.apache.ignite.internal.IgniteDiagnosticMessage.TxEntriesInfoClosure;
-import static org.apache.ignite.internal.IgniteDiagnosticMessage.TxInfoClosure;
+import static org.apache.ignite.internal.IgniteDiagnosticMessage.DiagnosticBaseInfo;
+import static org.apache.ignite.internal.IgniteDiagnosticMessage.ExchangeInfo;
+import static org.apache.ignite.internal.IgniteDiagnosticMessage.TxEntriesInfo;
+import static org.apache.ignite.internal.IgniteDiagnosticMessage.TxInfo;
+import static org.apache.ignite.internal.IgniteDiagnosticMessage.additionalInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpCommunicationInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpExchangeInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpNodeBasicInfo;
-import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpPendingCacheMessages;
 
-/**
- * Groups diagnostic closures by node/closure type.
- */
+/** Groups diagnostic info by node/info type. */
 public class IgniteDiagnosticPrepareContext {
     /** */
     private final UUID locNodeId;
 
     /** */
-    private final Map<UUID, CompoundInfoClosure> cls = new HashMap<>();
+    private final Map<UUID, CompoundInfo> info = new HashMap<>();
 
-    /**
-     * @param nodeId Local node ID.
-     */
+    /** @param nodeId Local node ID. */
     public IgniteDiagnosticPrepareContext(UUID nodeId) {
         locNodeId = nodeId;
     }
@@ -66,7 +62,7 @@ public class IgniteDiagnosticPrepareContext {
      * @param msg Initial message.
      */
     public void exchangeInfo(UUID nodeId, AffinityTopologyVersion topVer, String msg) {
-        closure(nodeId).add(msg, new ExchangeInfoClosure(topVer));
+        compoundInfo(nodeId).add(msg, new ExchangeInfo(topVer));
     }
 
     /**
@@ -76,7 +72,7 @@ public class IgniteDiagnosticPrepareContext {
      * @param msg Initial message.
      */
     public void txKeyInfo(UUID nodeId, int cacheId, Collection<KeyCacheObject> keys, String msg) {
-        closure(nodeId).add(msg, new TxEntriesInfoClosure(cacheId, keys));
+        compoundInfo(nodeId).add(msg, new TxEntriesInfo(cacheId, keys));
     }
 
     /**
@@ -86,7 +82,7 @@ public class IgniteDiagnosticPrepareContext {
      * @param msg Initial message.
      */
     public void remoteTxInfo(UUID nodeId, GridCacheVersion dhtVer, GridCacheVersion nearVer, String msg) {
-        closure(nodeId).add(msg, new TxInfoClosure(dhtVer, nearVer));
+        compoundInfo(nodeId).add(msg, new TxInfo(dhtVer, nearVer));
     }
 
     /**
@@ -94,27 +90,25 @@ public class IgniteDiagnosticPrepareContext {
      * @param msg Initial message.
      */
     public void basicInfo(UUID nodeId, String msg) {
-        closure(nodeId).add(msg, null);
+        compoundInfo(nodeId).add(msg, null);
     }
 
     /**
      * @param nodeId Remote node ID.
-     * @return Compound closure
+     * @return Compound info.
      */
-    private CompoundInfoClosure closure(UUID nodeId) {
-        CompoundInfoClosure cl = cls.get(nodeId);
+    private CompoundInfo compoundInfo(UUID nodeId) {
+        CompoundInfo i = info.get(nodeId);
 
-        if (cl == null)
-            cls.put(nodeId, cl = new CompoundInfoClosure(locNodeId));
+        if (i == null)
+            info.put(nodeId, i = new CompoundInfo(locNodeId));
 
-        return cl;
+        return i;
     }
 
-    /**
-     * @return {@code True} if there are no added closures.
-     */
+    /** @return {@code True} if there are no added info. */
     public boolean empty() {
-        return cls.isEmpty();
+        return info.isEmpty();
     }
 
     /**
@@ -122,13 +116,8 @@ public class IgniteDiagnosticPrepareContext {
      * @param lsnr Optional listener (used in test).
      */
     public void send(GridKernalContext ctx, @Nullable IgniteInClosure<IgniteInternalFuture<String>> lsnr) {
-        for (Map.Entry<UUID, CompoundInfoClosure> entry : cls.entrySet()) {
-            UUID rmtNodeId = entry.getKey();
-
-            CompoundInfoClosure c = entry.getValue();
-
-            IgniteInternalFuture<String> fut =
-                ctx.cluster().requestDiagnosticInfo(rmtNodeId, c, c.message());
+        for (Map.Entry<UUID, CompoundInfo> entry : info.entrySet()) {
+            IgniteInternalFuture<String> fut = ctx.cluster().requestDiagnosticInfo(entry.getKey(), entry.getValue());
 
             if (lsnr != null)
                 fut.listen(lsnr);
@@ -157,87 +146,26 @@ public class IgniteDiagnosticPrepareContext {
         });
     }
 
-    /**
-     *
-     */
-    private static final class CompoundInfoClosure implements IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> {
+    /** */
+    public static final class CompoundInfo implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** ID of node sent closure. */
-        protected final UUID nodeId;
+        /** ID of node sent info. */
+        private final UUID nodeId;
 
-        /** Closures to send on remote node. */
-        private Map<Object, IgniteDiagnosticMessage.DiagnosticBaseClosure> cls = new LinkedHashMap<>();
+        /** Info to send on remote node. */
+        private Map<Object, DiagnosticBaseInfo> info = new LinkedHashMap<>();
 
-        /** Local message related to remote closures. */
+        /** Local message related to remote info. */
         private transient Map<Object, List<String>> msgs = new LinkedHashMap<>();
 
-        /**
-         * @param nodeId Node sent closure.
-         */
-        CompoundInfoClosure(UUID nodeId) {
+        /** @param nodeId ID of node sent info. */
+        CompoundInfo(UUID nodeId) {
             this.nodeId = nodeId;
         }
 
-        /** {@inheritDoc} */
-        @Override public final IgniteDiagnosticInfo apply(GridKernalContext ctx) {
-            try {
-                IgniteInternalFuture<String> commInfo = dumpCommunicationInfo(ctx, nodeId);
-
-                StringBuilder sb = new StringBuilder();
-
-                dumpNodeBasicInfo(sb, ctx);
-
-                sb.append(U.nl());
-
-                dumpExchangeInfo(sb, ctx);
-
-                sb.append(U.nl());
-
-                dumpPendingCacheMessages(sb, ctx);
-
-                sb.append(commInfo.get(10_000));
-
-                moreInfo(sb, ctx);
-
-                return new IgniteDiagnosticInfo(sb.toString());
-            }
-            catch (Exception e) {
-                ctx.cluster().diagnosticLog().error("Failed to execute diagnostic message closure: " + e, e);
-
-                return new IgniteDiagnosticInfo("Failed to execute diagnostic message closure: " + e);
-            }
-        }
-
-        /**
-         * @param sb String builder.
-         * @param ctx Grid context.
-         */
-        private void moreInfo(StringBuilder sb, GridKernalContext ctx) {
-            for (DiagnosticBaseClosure c : cls.values()) {
-                try {
-                    c.apply(sb, ctx);
-                }
-                catch (Exception e) {
-                    ctx.cluster().diagnosticLog().error(
-                        "Failed to populate diagnostic with additional information: " + e, e);
-
-                    sb.append(U.nl()).append("Failed to populate diagnostic with additional information: ").append(e);
-                }
-            }
-        }
-
-        /**
-         * @return Node ID.
-         */
-        public UUID nodeId() {
-            return nodeId;
-        }
-
-        /**
-         * @return Initial message.
-         */
+        /** @return Initial message. */
         public String message() {
             StringBuilder sb = new StringBuilder();
 
@@ -255,29 +183,57 @@ public class IgniteDiagnosticPrepareContext {
 
         /**
          * @param msg Message.
-         * @param c Closure or {@code null} if only basic info is needed.
+         * @param i Addition info or {@code null} if only basic info is needed.
          */
-        public void add(String msg, @Nullable DiagnosticBaseClosure c) {
-            Object key = c != null ? c.mergeKey() : getClass();
+        public void add(String msg, @Nullable IgniteDiagnosticMessage.DiagnosticBaseInfo i) {
+            Object key = i != null ? i.mergeKey() : getClass();
 
-            List<String> msgs0 = msgs.get(key);
-
-            if (msgs0 == null) {
-                msgs0 = new ArrayList<>();
-
-                msgs.put(key, msgs0);
-            }
+            List<String> msgs0 = msgs.computeIfAbsent(key, k -> new ArrayList<>());
 
             msgs0.add(msg);
 
-            if (c != null) {
-                DiagnosticBaseClosure c0 = cls.get(c.mergeKey());
+            if (i != null) {
+                DiagnosticBaseInfo i0 = info.get(i.mergeKey());
 
-                if (c0 == null)
-                    cls.put(c.mergeKey(), c);
+                if (i0 == null)
+                    info.put(i.mergeKey(), i);
                 else
-                    c0.merge(c);
+                    i0.merge(i);
             }
+        }
+    }
+
+    /**
+     * @param ctx Grid context.
+     * @param i Compound info.
+     * @return Ignite diagnostic info.
+     */
+    public static IgniteDiagnosticInfo diagnosticInfo(GridKernalContext ctx, CompoundInfo i) {
+        try {
+            IgniteInternalFuture<String> commInfo = dumpCommunicationInfo(ctx.config().getCommunicationSpi(), i.nodeId);
+
+            StringBuilder sb = new StringBuilder();
+
+            dumpNodeBasicInfo(sb, ctx);
+
+            sb.append(U.nl());
+
+            dumpExchangeInfo(sb, ctx.cache().context().exchange());
+
+            sb.append(U.nl());
+
+            ctx.cache().context().io().dumpPendingMessages(sb);
+
+            sb.append(commInfo.get(10_000));
+
+            additionalInfo(i.info.values(), sb, ctx);
+
+            return new IgniteDiagnosticInfo(sb.toString());
+        }
+        catch (Exception e) {
+            ctx.cluster().diagnosticLog().error("Failed to execute diagnostic message closure: " + e, e);
+
+            return new IgniteDiagnosticInfo("Failed to execute diagnostic message closure: " + e);
         }
     }
 }
