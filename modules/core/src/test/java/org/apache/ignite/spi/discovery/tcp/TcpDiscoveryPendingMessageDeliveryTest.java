@@ -102,6 +102,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         startGrid("listener");
 
+        awaitPartitionMapExchange();
+
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
 
