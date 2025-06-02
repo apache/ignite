@@ -225,17 +225,8 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
 
         try (DirectoryStream<Path> nodes = Files.newDirectoryStream(root.resolve(DB_FOLDER), NODE_PREFIX + "*")) {
             for (Path nodeDir : nodes) {
-                for (CacheGroupScanResult scan : scanNode(nodeDir, partSuffix)) {
-                    res.merge(
-                        scan.cacheGrpName(),
-                        scan,
-                        (to, from) -> {
-                            to.merge(from);
-
-                            return to;
-                        }
-                    );
-                }
+                for (CacheGroupScanResult scan : scanNode(nodeDir, partSuffix))
+                    res.merge(scan.cacheGrpName(), scan, CacheGroupScanResult::merge);
             }
         }
 
@@ -351,11 +342,13 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
         }
 
         /** */
-        public void merge(CacheGroupScanResult that) {
+        public CacheGroupScanResult merge(CacheGroupScanResult that) {
             assert Objects.equals(cacheGrpName(), that.cacheGrpName());
 
             cacheNames.addAll(that.cacheNames);
             partNames.addAll(that.partNames);
+
+            return this;
         }
 
         /** {@inheritDoc} */
