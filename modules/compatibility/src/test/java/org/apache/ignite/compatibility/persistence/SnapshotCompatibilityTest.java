@@ -46,8 +46,10 @@ import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -159,23 +161,22 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
 
         Set<String> grpNames = new HashSet<>(cacheToGrp.values());
 
-        IgniteFuture<?> snpFut = incSnpSupported
-            ? node.snapshot().restoreSnapshot(SNAPSHOT_NAME, grpNames, 1)
-            : node.snapshot().restoreSnapshot(SNAPSHOT_NAME, grpNames);
+        List<IgniteBiTuple<String, String>> params = Arrays.asList(
+            F.t(SNAPSHOT_NAME, null),
+            F.t(SNAPSHOT_NAME, customSnpPath)
+        );
 
-        snpFut.get();
+        for (IgniteBiTuple<String, String> param: params) {
+            cacheToGrp.keySet().forEach(node::destroyCache);
 
-        validateCaches(node, incSnpSupported);
+            IgniteFuture<?> snpFut = incSnpSupported
+                ? node.context().cache().context().snapshotMgr().restoreSnapshot(param.get1(), param.get2(), grpNames, 1, true)
+                : node.context().cache().context().snapshotMgr().restoreSnapshot(param.get1(), param.get2(), grpNames);
 
-        cacheToGrp.keySet().forEach(node::destroyCache);
+            snpFut.get();
 
-        IgniteFuture<?> customPathSnpFut = incSnpSupported
-            ? node.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, customSnpPath, grpNames, 1, true)
-            : node.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, customSnpPath, grpNames);
-
-        customPathSnpFut.get();
-
-        validateCaches(node, incSnpSupported);
+            validateCaches(node, incSnpSupported);
+        }
     }
 
     /** */
