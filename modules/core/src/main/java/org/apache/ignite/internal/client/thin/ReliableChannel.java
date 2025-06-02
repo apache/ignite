@@ -273,69 +273,81 @@ final class ReliableChannel implements AutoCloseable {
                     return null;
                 }
 
+                if (!(err instanceof ClientConnectionException)) {
+                    fut.completeExceptionally(err instanceof ClientException ? err : new ClientException(err));
+
+                    return null;
+                }
+
                 // Retry use same channel in case of connection exception.
-                if (err instanceof ClientConnectionException) {
-                    ClientConnectionException failure0 = (ClientConnectionException)err;
+                UUID nodeId = ch.serverNodeId();
 
-                    UUID nodeId = ch.serverNodeId();
+                ClientChannelHolder hld = (nodeId != null) ? nodeChannels.get(nodeId) : null;
 
-                    ClientChannelHolder hld = (nodeId != null) ? nodeChannels.get(nodeId) : null;
+                try {
+                    // Will try to reinit channels if topology changed.
+                    onChannelFailure(ch, err, failures);
 
+                    if (hld == null)
+                        throw (ClientConnectionException)err;
+                }
+                catch (ClientConnectionException reconnectEx) {
                     try {
-                        // Will try to reinit channels if topology changed.
-                        onChannelFailure(ch, err, failures);
+                        onChannelFailure(hld, ch, reconnectEx, failures);
+                    }
+                    catch (Throwable exFromOnFailure) {
+                        fut.completeExceptionally(exFromOnFailure);
+                    }
 
-                        if (hld == null) {
-                            failures.add(failure0);
+                    fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures, reconnectEx);
 
-                            throw failure0;
-                        }
+                    return null;
+                }
+                catch (Throwable ex) {
+                    fut.completeExceptionally(ex);
 
-                        if (!shouldRetry(op, failures.size() - 1, failure0)) {
-                            failures.add(failure0);
+                    return null;
+                }
 
-                            fut.completeExceptionally(composeException(failures));
+                if (!shouldRetry(op, failures.size() - 1, (ClientConnectionException)err)) {
+                    failures.add((ClientConnectionException)err);
+
+                    fut.completeExceptionally(composeException(failures));
+
+                    return null;
+                }
+
+                try {
+                    ClientChannel retryCh = hld.getOrCreateChannel();
+
+                    retryCh.serviceAsync(op, payloadWriter, payloadReader)
+                        .handle((retryRes, retryErr) -> {
+                            if (retryErr == null)
+                                fut.complete(retryRes);
+
+                            else if (retryErr instanceof ClientConnectionException) {
+                                failures.add((ClientConnectionException)retryErr);
+
+                                fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures, retryErr);
+                            }
+                            else
+                                fut.completeExceptionally(retryErr);
 
                             return null;
-                        }
-
-                        ClientChannel retryCh;
-
-                        try {
-                            retryCh = hld.getOrCreateChannel();
-                        }
-                        catch (ClientConnectionException retryEx) {
-                            failures.add(retryEx);
-
-                            throw retryEx;
-                        }
-
-                        retryCh.serviceAsync(op, payloadWriter, payloadReader)
-                            .handle((retryRes, retryErr) -> {
-                                if (retryErr == null)
-                                    fut.complete(retryRes);
-                                else if (retryErr instanceof ClientConnectionException) {
-                                    failures.add((ClientConnectionException)retryErr);
-
-                                    fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures, retryErr);
-                                }
-                                else
-                                    fut.completeExceptionally(retryErr);
-
-                                return null;
-                            });
-                    }
-                    catch (ClientConnectionException reconnectEx) {
-                        onChannelFailure(hld, ch, reconnectEx, failures);
-
-                        fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures, reconnectEx);
-                    }
-                    catch (Throwable ex) {
-                        fut.completeExceptionally(ex);
-                    }
+                        });
                 }
-                else
-                    fut.completeExceptionally(err instanceof ClientException ? err : new ClientException(err));
+                catch (ClientConnectionException retryEx) {
+                    failures.add(retryEx);
+
+                    try {
+                        onChannelFailure(hld, ch, retryEx, failures);
+                    }
+                    catch (Throwable exFromOnFailure) {
+                        fut.completeExceptionally(exFromOnFailure);
+                    }
+
+                    fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures, retryEx);
+                }
 
                 return null;
             });
