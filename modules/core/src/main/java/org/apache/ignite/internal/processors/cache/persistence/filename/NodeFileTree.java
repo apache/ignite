@@ -143,10 +143,17 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │      ├── cdc
  * │      │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                    ← walCdc (node 0)
  * │      │      ├── lock
- * │      │      └── state
- * │      │          ├── cdc-caches-state.bin
- * │      │          ├── cdc-mappings-state.bin
- * │      │          └── cdc-types-state.bin
+ * │      │      └── state                                                      ← cdcState (node 0)
+ * │      │          ├── cdc-caches-state.bin                                   ← cdcCachesState
+ * │      │          ├── cdc-caches-state.bin.tmp                               ← tmpCdcCachesState
+ * │      │          ├── cdc-mappings-state.bin                                 ← cdcMappingsState
+ * │      │          ├── cdc-mappings-state.bin.tmp                             ← tmpCdcMappingsState
+ * │      │          ├── cdc-mode.bin                                           ← cdcModeState
+ * │      │          ├── cdc-mode.bin.tmp                                       ← tmpCdcModeState
+ * │      │          ├── cdc-types-state.bin                                    ← cdcTypesState
+ * │      │          ├── cdc-types-state.bin.tmp                                ← tmpCdcTypesState
+ * │      │          ├── cdc-wal-state.bin                                      ← cdcWalState
+ * │      │          └── cdc-wal-state.bin.tmp                                  ← tmpCdcWalState
  * ...
  * │      │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                    ← walCdc (node 1)
  * │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                       ← wal (node 0)

@@ -2193,6 +2193,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(grpNames == null || !grpNames.isEmpty(), "List of cache group names cannot be empty.");
+        A.ensure(grpNames == null || grpNames.size() == new HashSet<>(grpNames).size(), "Cache group names must be unique.");
 
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
