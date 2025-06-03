@@ -75,6 +75,9 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
     /** Initialization guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
 
+    /** watch {@link #onUpdate} */
+    private final AtomicBoolean watchUpdate = new AtomicBoolean();
+
     /** Initialization latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
@@ -1054,47 +1057,55 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
      * @throws IgniteCheckedException If operation failed.
      */
     private void initializeReentrantLock() throws IgniteCheckedException {
-        if (initGuard.compareAndSet(false, true)) {
-            try {
-                sync = retryTopologySafe(new Callable<Sync>() {
-                        @Override public Sync call() throws Exception {
-                            try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
-                                GridCacheLockState val = cacheView.get(key);
-
-                                if (val == null) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to find reentrant lock with given name: " + name);
-
-                                    return null;
-                                }
-
-                                tx.rollback();
-
-                                return new Sync(val);
-                            }
-                        }
-                    });
-
-                if (log.isDebugEnabled())
-                    log.debug("Initialized internal sync structure: " + sync);
-            }
-            finally {
-                initLatch.countDown();
-            }
-        }
-        else {
+        if (!initGuard.compareAndSet(false, true)) {
             U.await(initLatch);
 
             if (sync == null)
                 throw new IgniteCheckedException("Internal reentrant lock has not been properly initialized.");
+            return;
+        }
+
+        try {
+            Sync sync;
+            do {
+                watchUpdate.compareAndSet(true, false);
+                sync = retryTopologySafe(new Callable<Sync>() {
+                    @Override public Sync call() throws Exception {
+                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+                            GridCacheLockState val = cacheView.get(key);
+
+                            if (val == null) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to find reentrant lock with given name: " + name);
+
+                                return null;
+                            }
+
+                            tx.rollback();
+
+                            return new Sync(val);
+                        }
+                    }
+                });
+            } while (watchUpdate.get());
+
+            this.sync = sync;
+
+            if (log.isDebugEnabled())
+                log.debug("Initialized internal sync structure: " + sync);
+        }
+        finally {
+            initLatch.countDown();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onUpdate(GridCacheLockState val) {
         // Called only on initialization, so it's safe to ignore update.
-        if (sync == null)
+        if (sync == null) {
+            watchUpdate.compareAndSet(false, true);
             return;
+        }
 
         updateLock.lock();
 
