@@ -549,9 +549,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         DataRegion dataRegion
     ) throws IgniteCheckedException {
         try {
-            boolean dirExisted = checkAndInitCacheWorkDir(cft);
+            boolean anyDirExisted = checkAndInitCacheWorkDir(cft);
 
-            if (dirExisted) {
+            if (anyDirExisted) {
                 MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
 
                 if (!mntcReg.isMaintenanceMode())
@@ -581,7 +581,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 }
             }
 
-            if (dirExisted && !idxFile.exists())
+            if (anyDirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(cft.groupId());
 
             FileVersionCheckingFactory pageStoreFactory = getPageStoreFactory(
