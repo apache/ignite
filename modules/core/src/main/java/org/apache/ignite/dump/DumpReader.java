@@ -61,7 +61,6 @@ import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
-import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.IgniteKernal.NL;
@@ -117,11 +116,7 @@ public class DumpReader implements Runnable {
 
                 cnsmr.onTypes(dump.types());
 
-                Set<Integer> cacheIds = cfg.cacheNames() != null
-                    ? Arrays.stream(cfg.cacheNames()).map(CU::cacheId).collect(Collectors.toSet())
-                    : null;
-
-                GroupsConfigs grpsCfgs = groupsConfigs(dump, cacheIds);
+                GroupsConfigs grpsCfgs = groupsConfigs(dump);
 
                 cnsmr.onCacheConfigs(grpsCfgs.cacheCfgs.iterator());
 
@@ -155,7 +150,7 @@ public class DumpReader implements Runnable {
                                     return;
                                 }
 
-                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part, cacheIds)) {
+                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part, grpsCfgs.cacheIds)) {
                                     if (log.isDebugEnabled()) {
                                         log.debug("Consuming partition [node=" + node + ", grp=" + grp +
                                             ", part=" + part + ']');
@@ -367,14 +362,17 @@ public class DumpReader implements Runnable {
 
     /**
      * @param dump Dump.
-     * @param cacheIds Set of cache id we want to read from dump. If {@code null} then all caches read.
      * @return Mapping from grpId -> "node list" and cache configs list.
      */
-    private GroupsConfigs groupsConfigs(Dump dump, @Nullable Set<Integer> cacheIds) {
+    private GroupsConfigs groupsConfigs(Dump dump) {
         Map<Integer, List<String>> grpsToNodes = new HashMap<>();
 
         Set<Integer> grpIds = cfg.groupNames() != null
             ? Arrays.stream(cfg.groupNames()).map(CU::cacheId).collect(Collectors.toSet())
+            : null;
+
+        Set<Integer> cacheIds = cfg.cacheNames() != null
+            ? Arrays.stream(cfg.cacheNames()).map(CU::cacheId).collect(Collectors.toSet())
             : null;
 
         for (SnapshotMetadata meta : dump.metadata()) {
@@ -404,7 +402,7 @@ public class DumpReader implements Runnable {
         }
 
         // Optimize - skip whole cache if only one in group!
-        return new GroupsConfigs(grpsToNodes, ccfgs);
+        return new GroupsConfigs(grpsToNodes, ccfgs, cacheIds);
     }
 
     /** */
@@ -415,10 +413,14 @@ public class DumpReader implements Runnable {
         /** Cache configurations. */
         public final Collection<StoredCacheData> cacheCfgs;
 
+        /** Cache ids. */
+        public final Set<Integer> cacheIds;
+
         /** */
-        public GroupsConfigs(Map<Integer, List<String>> grpToNodes, Collection<StoredCacheData> cacheCfgs) {
+        public GroupsConfigs(Map<Integer, List<String>> grpToNodes, Collection<StoredCacheData> cacheCfgs, Set<Integer> cacheIds) {
             this.grpToNodes = grpToNodes;
             this.cacheCfgs = cacheCfgs;
+            this.cacheIds = cacheIds;
         }
     }
 }

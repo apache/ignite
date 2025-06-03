@@ -43,6 +43,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -53,11 +54,20 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /** */
 public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
     /** */
+    public static final Map<String, String> CACHE_TO_GRP = new HashMap<>();
+
+    /** */
     private final Map<Integer, Integer> cacheSzs = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
+
+        CACHE_TO_GRP.put("c0", "g");
+        CACHE_TO_GRP.put("c1", "g");
+        CACHE_TO_GRP.put("c2", "g");
+        CACHE_TO_GRP.put("mycache", null);
+        CACHE_TO_GRP.put("mycache2", null);
 
         super.beforeTest();
     }
@@ -77,7 +87,7 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
     /** */
     private void doTest(int nodeCnt) throws Exception {
         try (IgniteEx srv = startGrids(nodeCnt)) {
-            createCaches(srv, true);
+            CACHE_TO_GRP.forEach((name, grp) -> createAndPutData(srv, name, grp, true));
 
             srv.snapshot().createDump("dump", null).get();
         }
@@ -88,12 +98,16 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
         try (IgniteEx srv = startGrids(nodeCnt)) {
             SnapshotFileTree sft = new SnapshotFileTree(srv.context(), "dump", null);
 
-            readAndCheck(srv, sft, "c1");
-            readAndCheck(srv, sft, "c0", "c2");
-            readAndCheck(srv, sft, "c0", "c1", "c2");
-            readAndCheck(srv, sft, "c0", "mycache");
-            readAndCheck(srv, sft, "c1", "mycache", "mycache2");
-            readAndCheck(srv, sft, "mycache", "mycache2");
+            readAndCheck(srv, sft, null, "c1");
+            readAndCheck(srv, sft, null, "c0", "c2");
+            readAndCheck(srv, sft, null, "c0", "c1", "c2");
+            readAndCheck(srv, sft, null, "c0", "mycache");
+            readAndCheck(srv, sft, null, "c1", "mycache", "mycache2");
+            readAndCheck(srv, sft, null, "mycache", "mycache2");
+
+            readAndCheck(srv, sft, Set.of("g"), "c1");
+            readAndCheck(srv, sft, Set.of("g"), "c0", "mycache");
+            readAndCheck(srv, sft, Set.of("g"), "mycache", "mycache2");
 
             corruptFileThatMustBeSkiped(srv, sft);
         }
@@ -103,32 +117,36 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Read dump similar to {@link #readAndCheck(IgniteEx, SnapshotFileTree, String...)} but corrupt all other files, first.
+     * Read dump similar to {@link #readAndCheck(IgniteEx, SnapshotFileTree, Set, String...) but corrupt all other files, first.
      * Check that files not read during dump read.
      */
     private void corruptFileThatMustBeSkiped(IgniteEx srv, SnapshotFileTree sft) throws Exception {
         corruptAllPartitions(sft, config("mycache", null));
 
-        assertThrowsWithCause(() -> readAndCheck(srv, sft, "c1", "mycache"), IgniteException.class);
+        assertThrowsWithCause(() -> readAndCheck(srv, sft, null, "c1", "mycache"), IgniteException.class);
 
         srv.cacheNames().forEach(srv::destroyCache);
 
         awaitPartitionMapExchange();
 
         // Will succeed only if all other files, except for "mycache2" will be not read.
-        readAndCheck(srv, sft, "c1", "mycache2");
+        readAndCheck(srv, sft, null, "c1", "mycache2");
 
         corruptAllPartitions(sft, config("c0", "g"));
 
-        readAndCheck(srv, sft, "mycache2");
+        readAndCheck(srv, sft, null, "mycache2");
     }
 
     /** */
-    private void readAndCheck(IgniteEx srv, SnapshotFileTree sft, String... cacheNames) {
+    private void readAndCheck(IgniteEx srv, SnapshotFileTree sft, Set<String> grpNames, String...cacheNames) {
         assertTrue(cacheNames != null);
         assertTrue(cacheNames.length > 0);
 
-        FilterCacheConsumer cnsmr = new FilterCacheConsumer(srv, Arrays.stream(cacheNames).map(CU::cacheId).collect(Collectors.toSet()));
+        Set<Integer> cacheIds = Arrays.stream(cacheNames)
+            .filter(name -> grpNames == null || grpNames.contains(groupName(name)))
+            .map(CU::cacheId).collect(Collectors.toSet());
+
+        FilterCacheConsumer cnsmr = new FilterCacheConsumer(srv, cacheIds);
 
         new DumpReader(
             new DumpReaderConfiguration(
@@ -141,7 +159,7 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
                 true,
                 false,
                 false,
-                null,
+                grpNames == null ? null : grpNames.toArray(U.EMPTY_STRS),
                 cacheNames,
                 true,
                 null
@@ -152,6 +170,11 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
         int ecnt = 0;
 
         for (String name : cacheNames) {
+            if (grpNames != null && !grpNames.contains(groupName(name))) {
+                assertFalse(srv.cacheNames().contains(name));
+                continue;
+            }
+
             IgniteCache<Integer, Integer> cache = srv.cache(name);
 
             int expSz = cacheSzs.get(CU.cacheId(name));
@@ -174,16 +197,6 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
 
         assertEquals(ecnt, cnsmr.entryCnt);
         assertTrue(srv.cacheNames().isEmpty());
-    }
-
-    /** */
-    private void createCaches(IgniteEx srv, boolean putData) {
-        for (int i = 0; i < 3; i++)
-            createAndPutData(srv, "c" + i, "g", putData);
-
-        createAndPutData(srv, "mycache", null, putData);
-
-        createAndPutData(srv, "mycache2", null, putData);
     }
 
     /** */
@@ -232,8 +245,6 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
         public FilterCacheConsumer(IgniteEx srv, Set<Integer> cacheIds) {
             this.srv = srv;
             this.cacheIds = cacheIds;
-
-            assertFalse(cacheIds.isEmpty());
         }
 
         /** {@inheritDoc} */
@@ -253,6 +264,11 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+            if (cacheIds.isEmpty()) {
+                assertFalse(caches.hasNext());
+                return;
+            }
+
             Set<Integer> expCacheIds = new HashSet<>(cacheIds);
 
             caches.forEachRemaining(d -> {
@@ -282,5 +298,11 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
         @Override public void stop() {
             // No-op.
         }
+    }
+
+    /** */
+    public static String groupName(String name) {
+        String grpName = CACHE_TO_GRP.get(name);
+        return grpName == null ? name : grpName;
     }
 }
