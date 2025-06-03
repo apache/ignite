@@ -146,7 +146,7 @@ public class Dump implements AutoCloseable {
     /**
      * @param node     Node directory name.
      * @param grp      Group id.
-     * @param cacheIds
+     * @param cacheIds Cache ids to read.
      * @return List of cache configs saved in dump for group.
      */
     public List<StoredCacheData> configs(String node, int grp, @Nullable Set<Integer> cacheIds) {

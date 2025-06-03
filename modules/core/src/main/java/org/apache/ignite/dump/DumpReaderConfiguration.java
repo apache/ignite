@@ -76,7 +76,7 @@ public class DumpReaderConfiguration {
     /** Cache group names. */
     private final String[] grpNames;
 
-    /** Cache group names. */
+    /** Cache names. */
     private final String[] cacheNames;
 
     /** Skip copies. */
