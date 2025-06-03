@@ -144,11 +144,12 @@ public class Dump implements AutoCloseable {
     }
 
     /**
-     * @param node Node directory name.
-     * @param grp Group id.
+     * @param node     Node directory name.
+     * @param grp      Group id.
+     * @param cacheIds
      * @return List of cache configs saved in dump for group.
      */
-    public List<StoredCacheData> configs(String node, int grp) {
+    public List<StoredCacheData> configs(String node, int grp, @Nullable Set<Integer> cacheIds) {
         JdkMarshaller marsh = cctx.marshallerContext().jdkMarshaller();
 
         // Searching for ALL config files regardless directory name.
@@ -161,7 +162,9 @@ public class Dump implements AutoCloseable {
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
-        }).collect(Collectors.toList());
+        // Keep only caches from filter.
+        }).filter(scd -> cacheIds == null || cacheIds.contains(scd.cacheId()))
+          .collect(Collectors.toList());
     }
 
     /**

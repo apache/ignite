@@ -391,11 +391,7 @@ public class DumpReader implements Runnable {
             Map.Entry<Integer, List<String>> grpToNodes = grpToNodesIter.next();
 
             // Read all group configs from single node.
-            List<StoredCacheData> grpCaches = dump.configs(F.first(grpToNodes.getValue()), grpToNodes.getKey());
-
-            // Keep only caches from filter.
-            if (cacheIds != null)
-                grpCaches.removeIf(scd -> !cacheIds.contains(scd.cacheId()));
+            List<StoredCacheData> grpCaches = dump.configs(F.first(grpToNodes.getValue()), grpToNodes.getKey(), cacheIds);
 
             if (grpCaches.isEmpty()) {
                 // Remove whole group to skip files read.
