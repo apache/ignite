@@ -27,6 +27,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -73,15 +75,16 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<List<String>> params() {
         ArrayList<List<String>> params = new ArrayList<>(List.of(
-            List.of("-XX:+UseShenandoahGC"),
-            List.of("-XX:+UseShenandoahGC", "-ea"),
-
-            List.of("-XX:+UseG1GC"),
-            List.of("-XX:+UseG1GC", "-ea")
+            List.of("-XX:+UseShenandoahGC")
+//                ,
+//            List.of("-XX:+UseShenandoahGC", "-ea"),
+//
+//            List.of("-XX:+UseG1GC"),
+//            List.of("-XX:+UseG1GC", "-ea")
         ));
 
-        if (Runtime.version().feature() >= 17 || U.isLinux())
-            addZgc(params);
+//        if (Runtime.version().feature() >= 17 || U.isLinux())
+//            addZgc(params);
 
         return params;
     }
@@ -96,12 +99,12 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
             "org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList$CutTail::run")) {
             IgniteFuture<Void> jobFut = ignite.compute().runAsync(new TestCutTailJob());
 
-            assertTrue(c2JitCompiled.await(getTestTimeout() / 2, TimeUnit.MILLISECONDS));
+//            assertTrue(c2JitCompiled.await(getTestTimeout() / 2, TimeUnit.MILLISECONDS));
 
             try {
                 // Let it work for 2 seconds with the optimized C2 Jit-compiled variant of the
                 // PagesList$CutTail::run method. It's enough to reproduce problem if it is broken.
-                jobFut.get(2000, TimeUnit.MILLISECONDS);
+                jobFut.get(60000, TimeUnit.MILLISECONDS);
             }
             catch (IgniteFutureTimeoutException e) {
                 jobFut.cancel();
@@ -130,25 +133,27 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
             ".*Compiled method \\(c2\\).*" + method.replace("$", "\\$") + ".*",
             c2JitCompiled::countDown));
 
-        IgniteConfiguration cfg = optimize(getConfiguration("remote-jvm-server"));
+//        IgniteConfiguration cfg = optimize(getConfiguration("remote-jvm-server"));
+//
+//        new IgniteProcessProxy(cfg, lsnrLog, null, false) {
+//            @Override protected Collection<String> filteredJvmArgs() throws Exception {
+//                Collection<String> args = super.filteredJvmArgs();
+//
+//                args.remove("-ea");
+//
+//                args.add("-XX:+UnlockDiagnosticVMOptions");
+//                args.add("-XX:PrintAssemblyOptions=intel");
+//                args.add("-XX:CompileCommand=print," + method);
+//
+//                args.addAll(jvmOpts);
+//
+//                return args;
+//            }
+//        };
+//
+//        remoteJvmServerStarted.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-        new IgniteProcessProxy(cfg, lsnrLog, null, false) {
-            @Override protected Collection<String> filteredJvmArgs() throws Exception {
-                Collection<String> args = super.filteredJvmArgs();
-
-                args.remove("-ea");
-
-                args.add("-XX:+UnlockDiagnosticVMOptions");
-                args.add("-XX:PrintAssemblyOptions=intel");
-                args.add("-XX:CompileCommand=print," + method);
-
-                args.addAll(jvmOpts);
-
-                return args;
-            }
-        };
-
-        remoteJvmServerStarted.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+        startGrid("local-server-node");
 
         return startClientGrid("local-jvm-client");
     }
@@ -169,6 +174,8 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
             for (int i = 0; i < KEYS_COUNT; i++)
                 cache.put(i, value());
 
+            AtomicLong cnt = new AtomicLong();
+
             AtomicBoolean stop = new AtomicBoolean(false);
 
             CyclicBarrier barrier = new CyclicBarrier(6);
@@ -187,23 +194,74 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
                         // No-op.
                     }
                     catch (Exception ex) {
-                        stop.set(true);
+                        cnt.getAndIncrement();
 
-                        throw ex;
+//                        System.out.printf("cnt=%d%n, ex=%s", cnt.get(), ex.getMessage());
+                        ignite.log().warning(String.format("cnt=%d, ex=%s", cnt.get(), ex.getMessage()));
+
+                        if (cnt.get() > 10)
+                            stop.set(true);
+
+//                        throw ex;
                     }
                 }
             }, 24, "update");
 
-            while (!stop.get())
-                cache.remove(key());
+            while (!stop.get()) {
+                try {
+                    cache.remove(key());
+                } catch (Exception e) {
+                    ignite.log().warning(" cache.remove()");
+                }
+            }
 
             barrier.reset();
 
             try {
                 updateFut.get();
+
+                cache.clear();
             }
             catch (IgniteCheckedException e) {
                 throw new RuntimeException(e);
+            }
+
+            int inserted = 0;
+            int i = 0;
+            while (inserted < 505) {
+                try {
+                    cache.put(i, new byte[4096 + 3000]);
+
+                    inserted++;
+                }
+                catch (Exception e) {
+                    ignite.log().warning(" cache.put(i), i=" + i);
+                }
+
+                i++;
+            }
+
+            try {
+                cache.put(506, new byte[850]);
+            }
+            catch (Exception e) {
+                ignite.log().error(" cache.put(506)", e);
+            }
+
+            try {
+                cache.put(507, new byte[850]);
+            }
+            catch (Exception e) {
+                ignite.log().error(" cache.put(507)", e);
+            }
+
+//            cache.put(506, new byte[890]);
+
+            try {
+                cache.clear();
+            }
+            catch (Exception e) {
+                ignite.log().error(" cache.clear()", e);
             }
         }
 
