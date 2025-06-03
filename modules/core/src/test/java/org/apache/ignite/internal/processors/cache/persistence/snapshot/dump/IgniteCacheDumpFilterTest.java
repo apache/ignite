@@ -218,7 +218,7 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private class FilterCacheConsumer implements DumpConsumer {
+    private static class FilterCacheConsumer implements DumpConsumer {
         /** */
         private final IgniteEx srv;
 

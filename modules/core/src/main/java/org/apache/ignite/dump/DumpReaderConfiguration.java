@@ -109,7 +109,7 @@ public class DumpReaderConfiguration {
      *                {@link KeyCacheObject} and {@link DumpEntry#value()} as {@link CacheObject}. If {@code true},
      *                disables {@link #keepBinary}.
      * @param grpNames Cache group names.
-     * @param cacheNames Cache group names.
+     * @param cacheNames Cache names.
      * @param skipCopies Skip copies.
      * @param encSpi Encryption SPI.
      */

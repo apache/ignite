@@ -417,12 +417,12 @@ public class DumpReader implements Runnable {
         public final Map<Integer, List<String>> grpToNodes;
 
         /** Cache configurations. */
-        public final @Nullable Collection<StoredCacheData> cacheCfgs;
+        public final Collection<StoredCacheData> cacheCfgs;
 
         /** */
-        public GroupsConfigs(Map<Integer, List<String>> grpToNodes, @Nullable Collection<StoredCacheData> val2) {
+        public GroupsConfigs(Map<Integer, List<String>> grpToNodes, Collection<StoredCacheData> cacheCfgs) {
             this.grpToNodes = grpToNodes;
-            this.cacheCfgs = val2;
+            this.cacheCfgs = cacheCfgs;
         }
     }
 }
