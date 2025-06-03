@@ -309,6 +309,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                         keepBinary.get(),
                         keepRaw.get(),
                         null,
+                        null,
                         false,
                         null
                     ),
@@ -550,7 +551,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             assertThrows(
                 null,
-                () -> dump.iterator(sfts.get(0).folderName(), CU.cacheId(DEFAULT_CACHE_NAME), 0).next(),
+                () -> dump.iterator(sfts.get(0).folderName(), CU.cacheId(DEFAULT_CACHE_NAME), 0, null).next(),
                 IgniteException.class,
                 "Data corrupted"
             );
@@ -956,6 +957,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 false,
                 false,
                 null,
+                null,
                 false,
                 null
             ),
@@ -1023,6 +1025,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 false,
                 false,
                 null,
+                null,
                 false,
                 null
             ),
@@ -1053,6 +1056,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                         true,
                         false,
                         false,
+                        null,
                         null,
                         false,
                         encSpi
@@ -1089,6 +1093,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 true,
                 false,
                 false,
+                null,
                 null,
                 false,
                 encryptionSpi()

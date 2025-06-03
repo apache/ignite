@@ -397,7 +397,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         try {
             String node = cctx.kernalContext().pdsFolderResolver().fileTree().folderName();
 
-            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
+            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part, null)) {
                 long size = 0;
 
                 VerifyPartitionContext ctx = new VerifyPartitionContext();
