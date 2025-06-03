@@ -101,7 +101,6 @@ import org.apache.ignite.internal.managers.communication.TransmissionCancelledEx
 import org.apache.ignite.internal.managers.communication.TransmissionHandler;
 import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
-import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
@@ -2356,58 +2355,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         GridCacheSharedContext<?, ?> sctx = GridCacheSharedContext.builder().build(ctx, null);
 
         return new DataPageIterator(sctx, coctx, pageStore, partId);
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @param ccfg Cache configuration.
-     * @param partId Partition id.
-     * @param encrKeyProvider Encryption keys provider to create encrypted IO. If {@code null}, no encrypted IO is used.
-     * @return Iterator over partition.
-     * @throws IgniteCheckedException If and error occurs.
-     */
-    public GridCloseableIterator<CacheDataRow> partitionRowIterator(String snpName,
-        CacheConfiguration<?, ?> ccfg,
-        int partId,
-        @Nullable EncryptionCacheKeyProvider encrKeyProvider
-    ) throws IgniteCheckedException {
-        SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, null);
-
-        if (!sft.root().exists())
-            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + sft.root().getAbsolutePath());
-
-        if (!sft.nodeStorage().exists())
-            throw new IgniteCheckedException("Consistent id directory doesn't exists: " + sft.nodeStorage().getAbsolutePath());
-
-        File snpPart = sft.partitionFile(ccfg, partId);
-
-        String grpName = CU.cacheOrGroupName(ccfg);
-        int grpId = CU.cacheId(grpName);
-
-        FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
-            encrKeyProvider == null || encrKeyProvider.getActiveKey(grpId) == null ? null : encrKeyProvider).
-            createPageStore(getTypeByPartId(partId),
-                snpPart::toPath,
-                val -> {});
-
-        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore);
-
-        return new GridCloseableIteratorAdapter<CacheDataRow>() {
-            /** {@inheritDoc} */
-            @Override protected CacheDataRow onNext() throws IgniteCheckedException {
-                return partIter.nextX();
-            }
-
-            /** {@inheritDoc} */
-            @Override protected boolean onHasNext() throws IgniteCheckedException {
-                return partIter.hasNextX();
-            }
-
-            /** {@inheritDoc} */
-            @Override protected void onClose() {
-                U.closeQuiet(pageStore);
-            }
-        };
     }
 
     /**
