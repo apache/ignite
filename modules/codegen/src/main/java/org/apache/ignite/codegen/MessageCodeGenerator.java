@@ -308,7 +308,6 @@ public class MessageCodeGenerator {
 
             boolean writeFound = false;
             boolean readFound = false;
-            boolean fieldCntFound = false;
 
             while ((line = rdr.readLine()) != null) {
                 if (!skip) {
@@ -408,8 +407,8 @@ public class MessageCodeGenerator {
 
         indent--;
 
-        finish(write, null);
-        finish(read, cls.getSimpleName());
+        finish(write);
+        finish(read);
     }
 
     /**
@@ -455,17 +454,6 @@ public class MessageCodeGenerator {
         code.add(builder().a(write ? "writer" : "reader").a(".setBuffer(").a(BUF_VAR).a(");").toString());
         code.add(EMPTY);
 
-        if (!write) {
-            code.add(builder().a("if (!reader.beforeMessageRead())").toString());
-
-            indent++;
-
-            code.add(builder().a("return false;").toString());
-            code.add(EMPTY);
-
-            indent--;
-        }
-
         if (superMtd != null) {
             if (write)
                 returnFalseIfFailed(code, "super." + superMtd, BUF_VAR, "writer");
@@ -498,7 +486,7 @@ public class MessageCodeGenerator {
     /**
      * @param code Code lines.
      */
-    private void finish(Collection<String> code, String readClsName) {
+    private void finish(Collection<String> code) {
         assert code != null;
 
         if (!fields.isEmpty()) {
@@ -506,10 +494,7 @@ public class MessageCodeGenerator {
             code.add(EMPTY);
         }
 
-        if (readClsName == null)
-            code.add(builder().a("return true;").toString());
-        else
-            code.add(builder().a("return reader.afterMessageRead(").a(readClsName).a(".class);").toString());
+        code.add(builder().a("return true;").toString());
     }
 
     /**
@@ -555,8 +540,8 @@ public class MessageCodeGenerator {
         Class<?> writeType = (fldPreproc != null && !fldPreproc.type().equals(GridCodegenConverter.Default.class)) ?
             fldPreproc.type() : field.getType();
 
-        returnFalseIfWriteFailed(writeType, field.getName(), colAnn != null ? colAnn.value() : null,
-            mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null, false, getExp);
+        returnFalseIfWriteFailed(writeType, colAnn != null ? colAnn.value() : null,
+            mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null, getExp);
 
         write.add(EMPTY);
         write.add(builder().a("writer.incrementState();").toString());
@@ -597,83 +582,78 @@ public class MessageCodeGenerator {
 
     /**
      * @param type Field type.
-     * @param name Field name.
      * @param colItemType Collection item type.
      * @param mapKeyType Map key type.
      * @param mapValType Map key value.
-     * @param raw Raw write flag.
      */
-    private void returnFalseIfWriteFailed(Class<?> type, String name, @Nullable Class<?> colItemType,
-        @Nullable Class<?> mapKeyType, @Nullable Class<?> mapValType, boolean raw, String getExpr) {
+    private void returnFalseIfWriteFailed(Class<?> type, @Nullable Class<?> colItemType,
+        @Nullable Class<?> mapKeyType, @Nullable Class<?> mapValType, String getExpr) {
         assert type != null;
-        assert name != null;
-
-        String field = raw ? "null" : '"' + name + '"';
 
         if (type == byte.class)
-            returnFalseIfFailed(write, "writer.writeByte", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeByte", getExpr);
         else if (type == short.class)
-            returnFalseIfFailed(write, "writer.writeShort", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeShort", getExpr);
         else if (type == int.class)
-            returnFalseIfFailed(write, "writer.writeInt", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeInt", getExpr);
         else if (type == long.class)
-            returnFalseIfFailed(write, "writer.writeLong", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeLong", getExpr);
         else if (type == float.class)
-            returnFalseIfFailed(write, "writer.writeFloat", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeFloat", getExpr);
         else if (type == double.class)
-            returnFalseIfFailed(write, "writer.writeDouble", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeDouble", getExpr);
         else if (type == char.class)
-            returnFalseIfFailed(write, "writer.writeChar", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeChar", getExpr);
         else if (type == boolean.class)
-            returnFalseIfFailed(write, "writer.writeBoolean", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeBoolean", getExpr);
         else if (type == byte[].class)
-            returnFalseIfFailed(write, "writer.writeByteArray", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeByteArray", getExpr);
         else if (type == short[].class)
-            returnFalseIfFailed(write, "writer.writeShortArray", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeShortArray", getExpr);
         else if (type == int[].class)
-            returnFalseIfFailed(write, "writer.writeIntArray", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeIntArray", getExpr);
         else if (type == long[].class)
-            returnFalseIfFailed(write, "writer.writeLongArray", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeLongArray", getExpr);
         else if (type == float[].class)
-            returnFalseIfFailed(write, "writer.writeFloatArray", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeFloatArray", getExpr);
         else if (type == double[].class)
-            returnFalseIfFailed(write, "writer.writeDoubleArray", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeDoubleArray", getExpr);
         else if (type == char[].class)
-            returnFalseIfFailed(write, "writer.writeCharArray", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeCharArray", getExpr);
         else if (type == boolean[].class)
-            returnFalseIfFailed(write, "writer.writeBooleanArray", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeBooleanArray", getExpr);
         else if (type == String.class)
-            returnFalseIfFailed(write, "writer.writeString", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeString", getExpr);
         else if (type == BitSet.class)
-            returnFalseIfFailed(write, "writer.writeBitSet", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeBitSet", getExpr);
         else if (type == UUID.class)
-            returnFalseIfFailed(write, "writer.writeUuid", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeUuid", getExpr);
         else if (type == IgniteUuid.class)
-            returnFalseIfFailed(write, "writer.writeIgniteUuid", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeIgniteUuid", getExpr);
         else if (type == AffinityTopologyVersion.class)
-            returnFalseIfFailed(write, "writer.writeAffinityTopologyVersion", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeAffinityTopologyVersion", getExpr);
         else if (type.isEnum()) {
             String arg = getExpr + " != null ? (byte)" + getExpr + ".ordinal() : -1";
 
-            returnFalseIfFailed(write, "writer.writeByte", field, arg);
+            returnFalseIfFailed(write, "writer.writeByte", arg);
         }
         else if (BASE_CLS.isAssignableFrom(type))
-            returnFalseIfFailed(write, "writer.writeMessage", field, getExpr);
+            returnFalseIfFailed(write, "writer.writeMessage", getExpr);
         else if (type.isArray()) {
-            returnFalseIfFailed(write, "writer.writeObjectArray", field, getExpr,
+            returnFalseIfFailed(write, "writer.writeObjectArray", getExpr,
                 "MessageCollectionItemType." + typeEnum(type.getComponentType()));
         }
         else if (Collection.class.isAssignableFrom(type) && !Set.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
-            returnFalseIfFailed(write, "writer.writeCollection", field, getExpr,
+            returnFalseIfFailed(write, "writer.writeCollection", getExpr,
                 "MessageCollectionItemType." + typeEnum(colItemType));
         }
         else if (Map.class.isAssignableFrom(type)) {
             assert mapKeyType != null;
             assert mapValType != null;
 
-            returnFalseIfFailed(write, "writer.writeMap", field, getExpr,
+            returnFalseIfFailed(write, "writer.writeMap", getExpr,
                 "MessageCollectionItemType." + typeEnum(mapKeyType),
                 "MessageCollectionItemType." + typeEnum(mapValType));
         }
@@ -692,74 +672,72 @@ public class MessageCodeGenerator {
         @Nullable Class<?> mapKeyType, @Nullable Class<?> mapValType, String setExpr) {
         assert type != null;
 
-        String field = '"' + name + '"';
-
         if (type == byte.class)
-            returnFalseIfReadFailed(name, "reader.readByte", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readByte", setExpr);
         else if (type == short.class)
-            returnFalseIfReadFailed(name, "reader.readShort", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readShort", setExpr);
         else if (type == int.class)
-            returnFalseIfReadFailed(name, "reader.readInt", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readInt", setExpr);
         else if (type == long.class)
-            returnFalseIfReadFailed(name, "reader.readLong", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readLong", setExpr);
         else if (type == float.class)
-            returnFalseIfReadFailed(name, "reader.readFloat", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readFloat", setExpr);
         else if (type == double.class)
-            returnFalseIfReadFailed(name, "reader.readDouble", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readDouble", setExpr);
         else if (type == char.class)
-            returnFalseIfReadFailed(name, "reader.readChar", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readChar", setExpr);
         else if (type == boolean.class)
-            returnFalseIfReadFailed(name, "reader.readBoolean", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readBoolean", setExpr);
         else if (type == byte[].class)
-            returnFalseIfReadFailed(name, "reader.readByteArray", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readByteArray", setExpr);
         else if (type == short[].class)
-            returnFalseIfReadFailed(name, "reader.readShortArray", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readShortArray", setExpr);
         else if (type == int[].class)
-            returnFalseIfReadFailed(name, "reader.readIntArray", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readIntArray", setExpr);
         else if (type == long[].class)
-            returnFalseIfReadFailed(name, "reader.readLongArray", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readLongArray", setExpr);
         else if (type == float[].class)
-            returnFalseIfReadFailed(name, "reader.readFloatArray", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readFloatArray", setExpr);
         else if (type == double[].class)
-            returnFalseIfReadFailed(name, "reader.readDoubleArray", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readDoubleArray", setExpr);
         else if (type == char[].class)
-            returnFalseIfReadFailed(name, "reader.readCharArray", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readCharArray", setExpr);
         else if (type == boolean[].class)
-            returnFalseIfReadFailed(name, "reader.readBooleanArray", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readBooleanArray", setExpr);
         else if (type == String.class)
-            returnFalseIfReadFailed(name, "reader.readString", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readString", setExpr);
         else if (type == BitSet.class)
-            returnFalseIfReadFailed(name, "reader.readBitSet", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readBitSet", setExpr);
         else if (type == UUID.class)
-            returnFalseIfReadFailed(name, "reader.readUuid", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readUuid", setExpr);
         else if (type == IgniteUuid.class)
-            returnFalseIfReadFailed(name, "reader.readIgniteUuid", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readIgniteUuid", setExpr);
         else if (type == AffinityTopologyVersion.class)
-            returnFalseIfReadFailed(name, "reader.readAffinityTopologyVersion", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readAffinityTopologyVersion", setExpr);
         else if (type.isEnum()) {
             String loc = name + "Ord";
 
             read.add(builder().a("byte ").a(loc).a(";").toString());
             read.add(EMPTY);
 
-            returnFalseIfReadFailed(loc, "reader.readByte", setExpr, field);
+            returnFalseIfReadFailed(loc, "reader.readByte", setExpr);
 
             read.add(EMPTY);
             read.add(builder().a(name).a(" = ").a(type.getSimpleName()).a(".fromOrdinal(").a(loc).a(");").toString());
         }
         else if (BASE_CLS.isAssignableFrom(type))
-            returnFalseIfReadFailed(name, "reader.readMessage", setExpr, field);
+            returnFalseIfReadFailed(name, "reader.readMessage", setExpr);
         else if (type.isArray()) {
             Class<?> compType = type.getComponentType();
 
-            returnFalseIfReadFailed(name, "reader.readObjectArray", setExpr, field,
+            returnFalseIfReadFailed(name, "reader.readObjectArray", setExpr,
                 "MessageCollectionItemType." + typeEnum(compType),
                 compType.getSimpleName() + ".class");
         }
         else if (Collection.class.isAssignableFrom(type) && !Set.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
-            returnFalseIfReadFailed(name, "reader.readCollection", setExpr, field,
+            returnFalseIfReadFailed(name, "reader.readCollection", setExpr,
                 "MessageCollectionItemType." + typeEnum(colItemType));
         }
         else if (Map.class.isAssignableFrom(type)) {
@@ -768,7 +746,7 @@ public class MessageCodeGenerator {
 
             boolean linked = type.equals(LinkedHashMap.class);
 
-            returnFalseIfReadFailed(name, "reader.readMap", setExpr, field,
+            returnFalseIfReadFailed(name, "reader.readMap", setExpr,
                 "MessageCollectionItemType." + typeEnum(mapKeyType),
                 "MessageCollectionItemType." + typeEnum(mapValType),
                 linked ? "true" : "false");

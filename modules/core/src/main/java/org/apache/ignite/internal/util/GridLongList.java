@@ -401,13 +401,13 @@ public class GridLongList implements Message, Externalizable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLongArray("arr", arr, idx))
+                if (!writer.writeLongArray(arr, idx))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("idx", idx))
+                if (!writer.writeInt(idx))
                     return false;
 
                 writer.incrementState();
@@ -421,12 +421,9 @@ public class GridLongList implements Message, Externalizable {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                arr = reader.readLongArray("arr");
+                arr = reader.readLongArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -434,7 +431,7 @@ public class GridLongList implements Message, Externalizable {
                 reader.incrementState();
 
             case 1:
-                idx = reader.readInt("idx");
+                idx = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -443,7 +440,7 @@ public class GridLongList implements Message, Externalizable {
 
         }
 
-        return reader.afterMessageRead(GridLongList.class);
+        return true;
     }
 
     /** {@inheritDoc} */

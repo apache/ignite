@@ -130,19 +130,19 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeIgniteUuid(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeBoolean("success", success))
+                if (!writer.writeBoolean(success))
                     return false;
 
                 writer.incrementState();
@@ -156,15 +156,12 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 8:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -172,7 +169,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
                 reader.incrementState();
 
             case 9:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -180,7 +177,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
                 reader.incrementState();
 
             case 10:
-                success = reader.readBoolean("success");
+                success = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -189,7 +186,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
 
         }
 
-        return reader.afterMessageRead(GridCacheTxRecoveryResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */

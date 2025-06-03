@@ -174,25 +174,25 @@ public class GridCacheSqlQuery implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("alias", alias))
+                if (!writer.writeString(alias))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeUuid("node", node))
+                if (!writer.writeUuid(node))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeIntArray("paramIdxs", paramIdxs))
+                if (!writer.writeIntArray(paramIdxs))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeString("qry", qry))
+                if (!writer.writeString(qry))
                     return false;
 
                 writer.incrementState();
@@ -206,12 +206,9 @@ public class GridCacheSqlQuery implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                alias = reader.readString("alias");
+                alias = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -219,7 +216,7 @@ public class GridCacheSqlQuery implements Message {
                 reader.incrementState();
 
             case 1:
-                node = reader.readUuid("node");
+                node = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -227,7 +224,7 @@ public class GridCacheSqlQuery implements Message {
                 reader.incrementState();
 
             case 2:
-                paramIdxs = reader.readIntArray("paramIdxs");
+                paramIdxs = reader.readIntArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -235,7 +232,7 @@ public class GridCacheSqlQuery implements Message {
                 reader.incrementState();
 
             case 3:
-                qry = reader.readString("qry");
+                qry = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -244,7 +241,7 @@ public class GridCacheSqlQuery implements Message {
 
         }
 
-        return reader.afterMessageRead(GridCacheSqlQuery.class);
+        return true;
     }
 
     /** {@inheritDoc} */

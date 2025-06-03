@@ -152,25 +152,25 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("err", err))
+                if (!writer.writeString(err))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("errKeysBytes", errKeysBytes))
+                if (!writer.writeByteArray(errKeysBytes))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("reqId", reqId))
+                if (!writer.writeLong(reqId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeLong("updCnt", updCnt))
+                if (!writer.writeLong(updCnt))
                     return false;
 
                 writer.incrementState();
@@ -184,12 +184,9 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                err = reader.readString("err");
+                err = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -197,7 +194,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 1:
-                errKeysBytes = reader.readByteArray("errKeysBytes");
+                errKeysBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -205,7 +202,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 2:
-                reqId = reader.readLong("reqId");
+                reqId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -213,7 +210,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 3:
-                updCnt = reader.readLong("updCnt");
+                updCnt = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -222,7 +219,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
 
         }
 
-        return reader.afterMessageRead(GridH2DmlResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */

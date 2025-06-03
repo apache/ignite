@@ -122,19 +122,19 @@ public class CacheEvictionEntry implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage(key))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("near", near))
+                if (!writer.writeBoolean(near))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("ver", ver))
+                if (!writer.writeMessage(ver))
                     return false;
 
                 writer.incrementState();
@@ -148,12 +148,9 @@ public class CacheEvictionEntry implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                key = reader.readMessage("key");
+                key = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -161,7 +158,7 @@ public class CacheEvictionEntry implements Message {
                 reader.incrementState();
 
             case 1:
-                near = reader.readBoolean("near");
+                near = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -169,7 +166,7 @@ public class CacheEvictionEntry implements Message {
                 reader.incrementState();
 
             case 2:
-                ver = reader.readMessage("ver");
+                ver = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -178,6 +175,6 @@ public class CacheEvictionEntry implements Message {
 
         }
 
-        return reader.afterMessageRead(CacheEvictionEntry.class);
+        return true;
     }
 }

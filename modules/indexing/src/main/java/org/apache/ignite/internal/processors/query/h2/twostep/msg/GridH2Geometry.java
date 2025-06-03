@@ -91,7 +91,7 @@ public class GridH2Geometry extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("b", b))
+                if (!writer.writeByteArray(b))
                     return false;
 
                 writer.incrementState();
@@ -105,15 +105,12 @@ public class GridH2Geometry extends GridH2ValueMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 0:
-                b = reader.readByteArray("b");
+                b = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -122,7 +119,7 @@ public class GridH2Geometry extends GridH2ValueMessage {
 
         }
 
-        return reader.afterMessageRead(GridH2Geometry.class);
+        return true;
     }
 
     /** {@inheritDoc} */
