@@ -91,7 +91,7 @@ public final class GridMessageCollection<M extends Message> implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -133,11 +133,6 @@ public final class GridMessageCollection<M extends Message> implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 124;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

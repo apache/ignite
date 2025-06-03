@@ -325,7 +325,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -359,11 +359,6 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         }
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 6;
     }
 
     /** {@inheritDoc} */

@@ -216,11 +216,6 @@ public class ClientMessage implements Message, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op
     }

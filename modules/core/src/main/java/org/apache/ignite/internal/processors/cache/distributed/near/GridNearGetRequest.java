@@ -341,7 +341,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -526,11 +526,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     /** {@inheritDoc} */
     @Override public short directType() {
         return 49;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 15;
     }
 
     /** {@inheritDoc} */

@@ -40,6 +40,10 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-commons</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>

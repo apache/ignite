@@ -107,7 +107,7 @@ public class CacheVersionedValue implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -163,11 +163,6 @@ public class CacheVersionedValue implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 102;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

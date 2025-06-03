@@ -109,7 +109,7 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -168,11 +168,6 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -45;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 5;
     }
 
     /** {@inheritDoc} */

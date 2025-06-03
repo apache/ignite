@@ -215,7 +215,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -330,11 +330,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 45;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 10;
     }
 
     /** {@inheritDoc} */

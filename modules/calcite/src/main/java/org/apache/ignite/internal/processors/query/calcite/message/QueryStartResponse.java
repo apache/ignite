@@ -96,7 +96,7 @@ public class QueryStartResponse implements MarshalableMessage {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -166,10 +166,5 @@ public class QueryStartResponse implements MarshalableMessage {
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.QUERY_START_RESPONSE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 }

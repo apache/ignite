@@ -216,7 +216,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -345,11 +345,6 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 52;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 18;
     }
 
     /** {@inheritDoc} */

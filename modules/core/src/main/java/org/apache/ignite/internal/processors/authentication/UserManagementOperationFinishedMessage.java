@@ -80,7 +80,7 @@ public class UserManagementOperationFinishedMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -136,11 +136,6 @@ public class UserManagementOperationFinishedMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 130;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

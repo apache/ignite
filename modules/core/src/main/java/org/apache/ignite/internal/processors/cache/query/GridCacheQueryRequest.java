@@ -683,7 +683,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -1038,11 +1038,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     /** {@inheritDoc} */
     @Override public short directType() {
         return 58;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 27;
     }
 
     /** {@inheritDoc} */
