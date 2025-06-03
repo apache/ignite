@@ -133,27 +133,27 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
             ".*Compiled method \\(c2\\).*" + method.replace("$", "\\$") + ".*",
             c2JitCompiled::countDown));
 
-//        IgniteConfiguration cfg = optimize(getConfiguration("remote-jvm-server"));
-//
-//        new IgniteProcessProxy(cfg, lsnrLog, null, false) {
-//            @Override protected Collection<String> filteredJvmArgs() throws Exception {
-//                Collection<String> args = super.filteredJvmArgs();
-//
-//                args.remove("-ea");
-//
-//                args.add("-XX:+UnlockDiagnosticVMOptions");
-//                args.add("-XX:PrintAssemblyOptions=intel");
-//                args.add("-XX:CompileCommand=print," + method);
-//
-//                args.addAll(jvmOpts);
-//
-//                return args;
-//            }
-//        };
-//
-//        remoteJvmServerStarted.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+        IgniteConfiguration cfg = optimize(getConfiguration("remote-jvm-server"));
 
-        startGrid("local-server-node");
+        new IgniteProcessProxy(cfg, lsnrLog, null, false) {
+            @Override protected Collection<String> filteredJvmArgs() throws Exception {
+                Collection<String> args = super.filteredJvmArgs();
+
+                args.remove("-ea");
+
+                args.add("-XX:+UnlockDiagnosticVMOptions");
+                args.add("-XX:PrintAssemblyOptions=intel");
+                args.add("-XX:CompileCommand=print," + method);
+
+                args.addAll(jvmOpts);
+
+                return args;
+            }
+        };
+
+        remoteJvmServerStarted.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+//        startGrid("local-server-node");
 
         return startClientGrid("local-jvm-client");
     }
@@ -196,11 +196,12 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
                     catch (Exception ex) {
                         cnt.getAndIncrement();
 
-//                        System.out.printf("cnt=%d%n, ex=%s", cnt.get(), ex.getMessage());
+                        //System.out.printf("WARN cnt=%d, ex=%s\n", cnt.get(), ex.getMessage());
                         ignite.log().warning(String.format("cnt=%d, ex=%s", cnt.get(), ex.getMessage()));
 
                         if (cnt.get() > 10)
                             stop.set(true);
+//                        stop.set(true);
 
 //                        throw ex;
                     }
@@ -211,6 +212,7 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
                 try {
                     cache.remove(key());
                 } catch (Exception e) {
+                    //System.out.printf("WARN cache.remove()\n");
                     ignite.log().warning(" cache.remove()");
                 }
             }
@@ -220,48 +222,67 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
             try {
                 updateFut.get();
 
+                ignite.log().info(" first cache.clear()");
+
                 cache.clear();
             }
             catch (IgniteCheckedException e) {
+                //System.out.printf(" first cache.clear() - %s\n", e);
+                ignite.log().error(" first cache.clear()", e);
+
                 throw new RuntimeException(e);
             }
 
+            ignite.log().info(" cache.put 505 cycle");
+
             int inserted = 0;
             int i = 0;
-            while (inserted < 505) {
+            while (inserted < 5200 && i < 100000) {
                 try {
                     cache.put(i, new byte[4096 + 3000]);
 
                     inserted++;
                 }
                 catch (Exception e) {
-                    ignite.log().warning(" cache.put(i), i=" + i);
+//                    if (i % 10 == 0) {
+                        //System.out.printf(" cache.put(i), i=%d\n", i);
+                        ignite.log().warning(" cache.put(i), i=" + i);
+//                    }
                 }
 
                 i++;
             }
 
-            try {
-                cache.put(506, new byte[850]);
-            }
-            catch (Exception e) {
-                ignite.log().error(" cache.put(506)", e);
-            }
+//            ignite.log().info(" cache.put(506)");
+//
+//            try {
+//                cache.put(506, new byte[850]);
+//            }
+//            catch (Exception e) {
+//                //System.out.printf(" cache.put(506) - %s\n", e);
+//                ignite.log().error(" cache.put(506)", e);
+//            }
+//
+//            ignite.log().info(" cache.put(507)");
+//            try {
+//                cache.put(507, new byte[850]);
+//            }
+//            catch (Exception e) {
+//                //System.out.printf(" cache.put(507) - %s\n", e);
+//                ignite.log().error(" cache.put(507)", e);
+//            }
 
-            try {
-                cache.put(507, new byte[850]);
-            }
-            catch (Exception e) {
-                ignite.log().error(" cache.put(507)", e);
-            }
 
-//            cache.put(506, new byte[890]);
+            ignite.log().info(" second cache.clear()");
 
             try {
                 cache.clear();
             }
             catch (Exception e) {
+                //System.out.printf(" cache.clear() - %s\n", e);
                 ignite.log().error(" cache.clear()", e);
+
+                throw e;
             }
         }
 
@@ -305,6 +326,8 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
             .setMaxSize(pageSize * 10L * KEYS_COUNT));
 
         cfg.setDataStorageConfiguration(dsCfg);
+
+        cfg.setMetricsLogFrequency(2000);
 
         return cfg;
     }
