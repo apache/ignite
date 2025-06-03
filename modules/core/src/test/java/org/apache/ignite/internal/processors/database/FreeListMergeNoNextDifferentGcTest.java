@@ -26,6 +26,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.Ignite;
@@ -33,6 +34,7 @@ import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -70,7 +73,7 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
     /** Signals once method under test is C2 Jit compiled in server node. */
     CountDownLatch c2JitCompiled = new CountDownLatch(1);
 
-    //    AtomicBoolean stop = new AtomicBoolean(false);
+    AtomicBoolean failed = new AtomicBoolean(false);
     IgniteAtomicLong stop;
 
     /** JVM options to start the server node in remote JVM. */
@@ -81,16 +84,15 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<List<String>> params() {
         ArrayList<List<String>> params = new ArrayList<>(List.of(
-                List.of("-XX:+UseShenandoahGC")
-//                ,
-//            List.of("-XX:+UseShenandoahGC", "-ea"),
-//
-//            List.of("-XX:+UseG1GC"),
-//            List.of("-XX:+UseG1GC", "-ea")
+            List.of("-XX:+UseShenandoahGC"),
+            List.of("-XX:+UseShenandoahGC", "-ea"),
+
+            List.of("-XX:+UseG1GC"),
+            List.of("-XX:+UseG1GC", "-ea")
         ));
 
-//        if (Runtime.version().feature() >= 17 || U.isLinux())
-//            addZgc(params);
+        if (Runtime.version().feature() >= 17 || U.isLinux())
+            addZgc(params);
 
         return params;
     }
@@ -103,6 +105,9 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
     public void testCutTail() throws Exception {
         try (Ignite ignite = prepareCluster(jvmOpts,
                 "org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList$CutTail::run")) {
+
+            TestMergeNoNextJob job = new TestMergeNoNextJob(ignite);
+            job.run();
 
             stop = ignite.atomicLong("stop", // Atomic long name.
                     0, // Initial value.
@@ -118,27 +123,10 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
 
             jobFut.get();
 
-//            jobFut.cancel();
-//            try {
-//                jobFut.get();
-//            }
-//            catch (Exception e) {
-//                log().warning("TestCutTailJob canvelled", e);
-//            }
+            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME+"1");
+            cache.clear();
 
-//            try {
-//                // Let it work for 2 seconds with the optimized C2 Jit-compiled variant of the
-//                // PagesList$CutTail::run method. It's enough to reproduce problem if it is broken.
-//                jobFut.get(10000, TimeUnit.MILLISECONDS);
-//            }
-//            catch (IgniteFutureTimeoutException e) {
-//                jobFut.cancel();
-//            }
-            TestMergeNoNextJob job = new TestMergeNoNextJob(ignite);
-
-            IgniteFuture<Void> job2Fut = ignite.compute().runAsync(job);
-            job2Fut.get();
-//            job.run();
+            assertFalse("cache.clear() failed", failed.get());
         }
     }
 
@@ -162,6 +150,10 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
         lsnrLog.registerListener(new CallbackExecutorLogListener(
                 ".*Compiled method \\(c2\\).*" + method.replace("$", "\\$") + ".*",
                 c2JitCompiled::countDown));
+
+        lsnrLog.registerListener(new CallbackExecutorLogListener(
+            ".*CorruptedFreeListException: Failed to remove data by link.*",
+                () -> failed.set(true)));
 
         if (!LOCAL) {
             IgniteConfiguration cfg = optimize(getConfiguration("remote-jvm-server"));
@@ -209,8 +201,6 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
 
             AtomicLong cnt = new AtomicLong();
 
-//            AtomicBoolean stop = new AtomicBoolean(false);
-
             IgniteAtomicLong stop = ignite.atomicLong("stop",0,false);
 
             CyclicBarrier barrier = new CyclicBarrier(6);
@@ -233,15 +223,10 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
                     catch (Exception ex) {
                         cnt.getAndIncrement();
 
-                        //System.out.printf("WARN cnt=%d, ex=%s\n", cnt.get(), ex.getMessage());
                         ignite.log().warning(String.format("cnt=%d, ex=%s", cnt.get(), ex.getMessage()));
 
-//                        if (cnt.get() > 10)
-//                            stop.set(true);
                         stop.incrementAndGet();
                         barrier.reset();
-
-//                        throw ex;
                     }
                 }
             }, 24, "update");
@@ -250,7 +235,6 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
                 try {
                     cache.remove(key());
                 } catch (Exception e) {
-                    //System.out.printf("WARN cache.remove()\n");
                     ignite.log().warning(" cache.remove()");
                 }
             }
@@ -270,7 +254,6 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
                 cache.clear();
             }
             catch (IgniteCheckedException e) {
-                //System.out.printf(" first cache.clear() - %s\n", e);
                 ignite.log().error(" first cache.clear()", e);
 
                 throw new RuntimeException(e);
@@ -279,10 +262,7 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
             logList(ignite, list);
 
             ignite.log().info(" cache.size()=" + cache.size(CachePeekMode.ALL));
-
         }
-
-
 
         /** */
         private int key() {
@@ -291,7 +271,8 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
 
         /** */
         private byte[] value() {
-            return new byte[ThreadLocalRandom.current().nextInt(12000) + 3000];
+            return new byte[3*4096 + 3100];
+//            return new byte[ThreadLocalRandom.current().nextInt(12000) + 3000];
         }
     }
 
@@ -329,16 +310,20 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
          */
         @Override
         public void run() {
-            IgniteCache<Object, Object> cache = ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+            IgniteCache<Object, Object> cache = ignite.getOrCreateCache(
+                    new CacheConfiguration<>(DEFAULT_CACHE_NAME+"1")
+                            .setAffinity(new RendezvousAffinityFunction(false, 1024)));
 
             ignite.log().info(" cache.put 505 cycle");
 
             long failed = 0;
             long inserted = 0;
             int i = 0;
-            while (inserted < 100000 && i < 100000) {
+            while (inserted < 5000 && i < 5000) {
                 try {
-                    cache.put(i, new byte[4096 + 3000]);
+                    cache.put(i, value());
+//                    cache.put(i, new byte[4096 + 3000]);
+//                    cache.put(key(), value());
 
                     inserted++;
                 }
@@ -377,18 +362,28 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
 //            }
 
 
-            ignite.log().info(" second cache.clear()");
-
-            try {
-                cache.clear();
-            }
-            catch (Exception e) {
-                //System.out.printf(" cache.clear() - %s\n", e);
-                ignite.log().error(" cache.clear()", e);
-
-                throw e;
-            }
+//            ignite.log().info(" second cache.clear()");
+//
+//            try {
+//                cache.clear();
+//            }
+//            catch (Exception e) {
+//                //System.out.printf(" cache.clear() - %s\n", e);
+//                ignite.log().error(" cache.clear()", e);
+//
+//                throw e;
+//            }
         }
+        /** */
+        private int key() {
+            return ThreadLocalRandom.current().nextInt(KEYS_COUNT);
+        }
+
+        private byte[] value() {
+            return new byte[4096 + 3000];
+//            return new byte[ThreadLocalRandom.current().nextInt(300) + 10];
+        }
+
     }
 
     /**
