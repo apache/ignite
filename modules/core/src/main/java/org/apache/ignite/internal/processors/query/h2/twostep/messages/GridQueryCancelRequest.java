@@ -77,7 +77,7 @@ public class GridQueryCancelRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("qryReqId", qryReqId))
+                if (!writer.writeLong(qryReqId))
                     return false;
 
                 writer.incrementState();
@@ -91,12 +91,9 @@ public class GridQueryCancelRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                qryReqId = reader.readLong("qryReqId");
+                qryReqId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -105,7 +102,7 @@ public class GridQueryCancelRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GridQueryCancelRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

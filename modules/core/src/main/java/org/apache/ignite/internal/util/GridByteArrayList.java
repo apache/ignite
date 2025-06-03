@@ -432,13 +432,13 @@ public class GridByteArrayList implements Message, Externalizable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("data", data))
+                if (!writer.writeByteArray(data))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("size", size))
+                if (!writer.writeInt(size))
                     return false;
 
                 writer.incrementState();
@@ -452,12 +452,9 @@ public class GridByteArrayList implements Message, Externalizable {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                data = reader.readByteArray("data");
+                data = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -465,7 +462,7 @@ public class GridByteArrayList implements Message, Externalizable {
                 reader.incrementState();
 
             case 1:
-                size = reader.readInt("size");
+                size = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -474,7 +471,7 @@ public class GridByteArrayList implements Message, Externalizable {
 
         }
 
-        return reader.afterMessageRead(GridByteArrayList.class);
+        return true;
     }
 
     /** {@inheritDoc} */
