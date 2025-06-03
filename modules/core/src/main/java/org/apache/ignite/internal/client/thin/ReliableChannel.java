@@ -292,13 +292,6 @@ final class ReliableChannel implements AutoCloseable {
                         throw (ClientConnectionException)err;
                 }
                 catch (ClientConnectionException reconnectEx) {
-                    try {
-                        onChannelFailure(hld, ch, reconnectEx, failures);
-                    }
-                    catch (Throwable exFromOnFailure) {
-                        fut.completeExceptionally(exFromOnFailure);
-                    }
-
                     fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures, reconnectEx);
 
                     return null;
