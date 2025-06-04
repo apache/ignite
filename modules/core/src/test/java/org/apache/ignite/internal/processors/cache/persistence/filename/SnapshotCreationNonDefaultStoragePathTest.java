@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.util.List;
+import java.util.function.BiConsumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -108,6 +109,45 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
 
         restoreAndCheck("mysnp", null);
         restoreAndCheck("mysnp2", fullPathSnp.getAbsolutePath());
+    }
+
+    /** */
+    @Test
+    public void testRestoreOnSmallerTopology() throws Exception {
+        IgniteEx srv = startAndActivate();
+
+        putData();
+
+        checkDataExists();
+
+        srv.snapshot().createSnapshot("mysnp").get();
+
+        File fullPathSnp = new File(U.defaultWorkDirectory(), SNP_PATH);
+
+        srv.context().cache().context().snapshotMgr().createSnapshot("mysnp2", fullPathSnp.getAbsolutePath(), false, false).get();
+
+        stopGrid(1);
+
+        resetBaselineTopology();
+
+        BiConsumer<String, String> check = (name, path) -> {
+            for (CacheConfiguration<?, ?> ccfg : ccfgs())
+                grid(0).destroyCache(ccfg.getName());
+
+            try {
+                awaitPartitionMapExchange();
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            srv.context().cache().context().snapshotMgr().restoreSnapshot(name, path, null).get();
+
+            checkDataExists();
+        };
+
+        check.accept("mysnp", null);
+        check.accept("mysnp2", fullPathSnp.getAbsolutePath());
     }
 
     /** {@inheritDoc} */

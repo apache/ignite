@@ -175,7 +175,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public boolean encryption;
 
-    /** . */
+    /** */
     @Parameterized.Parameter(1)
     public boolean onlyPrimary;
 

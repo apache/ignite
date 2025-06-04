@@ -31,6 +31,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -102,9 +103,8 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
      * @param path Snapshot path.
      */
     void restoreAndCheck(String name, String path) throws Exception {
-        List<NodeFileTree> fts = IntStream.range(0, 3)
-            .mapToObj(this::grid)
-            .map(ign -> ign.context().pdsFolderResolver().fileTree())
+        List<NodeFileTree> fts = IgnitionEx.allGrids().stream()
+            .map(ign -> ((IgniteEx)ign).context().pdsFolderResolver().fileTree())
             .collect(Collectors.toList());
 
         stopAllGrids();

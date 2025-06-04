@@ -602,7 +602,6 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
                     return FileVisitResult.CONTINUE;
                 }
             });
-
         }
 
         assertNull(cachePartFile.get()); //TODO Fails.
