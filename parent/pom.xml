@@ -72,7 +72,7 @@
         <commons.io.version>2.17.0</commons.io.version>
         <commons.dbcp.version>1.4</commons.dbcp.version>
         <cron4j.version>2.2.5</cron4j.version>
-        <curator.version>5.2.0</curator.version>
+        <curator.version>5.8.0</curator.version>
         <guava.version>32.1.2-jre</guava.version>
         <grpc-context.version>1.62.2</grpc-context.version>
         <h2.version>1.4.197</h2.version>
