@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFile
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -49,7 +48,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /**
  * Command line tests of --persistence commands.
  */
-@RunWith(Parameterized.class)
 public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** Use explicit cache storage for each group. */
     @Parameterized.Parameter(1)
@@ -87,7 +85,8 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         if (separateStorage) {
             cfg.getDataStorageConfiguration().setExtraStoragePaths(
                 storagePath(DEFAULT_CACHE_NAME + "0"),
-                storagePath(DEFAULT_CACHE_NAME + "1"),
+                storagePath(DEFAULT_CACHE_NAME + "1_0"),
+                storagePath(DEFAULT_CACHE_NAME + "1_1"),
                 storagePath(DEFAULT_CACHE_NAME + "2"),
                 storagePath(DEFAULT_CACHE_NAME + "3")
             );
@@ -376,8 +375,12 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setBackups(1);
 
-        if (separateStorage)
-            ccfg.setStoragePaths(storagePath(cacheName));
+        if (separateStorage) {
+            if (cacheName.equals(DEFAULT_CACHE_NAME + "1"))
+                ccfg.setStoragePaths(storagePath(cacheName) + "_0", storagePath(cacheName) + "_1");
+            else
+                ccfg.setStoragePaths(storagePath(cacheName));
+        }
 
         return ccfg;
     }

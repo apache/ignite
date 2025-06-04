@@ -202,8 +202,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                             return NodeFileTree.binFile(entry.toFile());
                         }
                     })) {
-                    for (Path path : files)
+                    for (Path path : files) {
                         delete(path);
+                    }
                 }
             }
         }
