@@ -72,7 +72,8 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
 
         if (separateStorage) {
             U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "0")));
-            U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "1")));
+            U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "1_0")));
+            U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "1_1")));
             U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "2")));
             U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "3")));
         }
@@ -134,7 +135,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
 
         boolean cleanedEmpty = ft.existingCacheDirs().stream()
             .filter(f -> f.getName().contains(cacheName0) || f.getName().contains(cacheName1))
-            .map(f -> f.listFiles().length == 1)
+            .map(f -> f.listFiles().length <= 1)
             .reduce(true, (t, u) -> t && u);
 
         assertTrue(cleanedEmpty);
@@ -199,7 +200,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
                 || f.getName().contains(cacheName1)
                 || f.getName().contains(cacheName2)
             )
-            .map(f -> f.listFiles().length == 1)
+            .map(f -> f.listFiles().length <= 1)
             .reduce(true, (t, u) -> t && u);
 
         assertTrue(cleanedEmpty);
@@ -236,7 +237,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         boolean allEmpty = ft.existingCacheDirs().stream()
             .filter(File::isDirectory)
             .filter(NodeFileTree::cacheDir)
-            .map(f -> f.listFiles().length == 1)
+            .map(f -> f.listFiles().length <= 1)
             .reduce(true, (t, u) -> t && u);
 
         assertTrue(allEmpty);
@@ -360,8 +361,10 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         long backedUpCachesCnt = ft.allStorages()
             .flatMap(root -> Arrays.stream(root.listFiles()))
             .filter(File::isDirectory)
-            .filter(f -> f.getName().startsWith("backup_"))
-            .count();
+            .map(File::getName)
+            .filter(name -> name.startsWith("backup_"))
+            .collect(Collectors.toSet())
+            .size();
 
         assertEquals(2, backedUpCachesCnt);
 
