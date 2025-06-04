@@ -136,8 +136,7 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = optimize(getConfiguration("remote-jvm-server"));
 
         new IgniteProcessProxy(cfg, lsnrLog, null, false) {
-            @Override
-            protected Collection<String> filteredJvmArgs() throws Exception {
+            @Override protected Collection<String> filteredJvmArgs() throws Exception {
                 Collection<String> args = super.filteredJvmArgs();
 
                 args.remove("-ea");
@@ -206,11 +205,11 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
 
             int capacity = PagesListNodeIO.VERSIONS.forVersion(1).getCapacity(pageSize);
 
-            int keyCount = capacity * 2 + 1;
+            int keyCnt = capacity * 2 + 1;
 
             int dataSize = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
-            for (int i = keyCount; i > 0; i--)
+            for (int i = keyCnt; i > 0; i--)
                 cache.put(i, new byte[dataSize - 64]);
 
             for (int i = 1; i <= capacity; i++)

@@ -228,6 +228,7 @@ import org.junit.runners.Suite;
     ConcurrentMappingFileReadWriteTest.class,
     PeriodicHistogramMetricImplTest.class,
 
+    FreeListCutTailDifferentGcTest.class,
     FreeListMergeNoNextDifferentGcTest.class,
 })
 public class IgniteBasicTestSuite2 {
