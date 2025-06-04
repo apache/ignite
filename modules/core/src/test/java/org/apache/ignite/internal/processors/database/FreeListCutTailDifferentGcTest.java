@@ -27,8 +27,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -75,16 +73,15 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<List<String>> params() {
         ArrayList<List<String>> params = new ArrayList<>(List.of(
-            List.of("-XX:+UseShenandoahGC")
-//                ,
-//            List.of("-XX:+UseShenandoahGC", "-ea"),
-//
-//            List.of("-XX:+UseG1GC"),
-//            List.of("-XX:+UseG1GC", "-ea")
+            List.of("-XX:+UseShenandoahGC"),
+            List.of("-XX:+UseShenandoahGC", "-ea"),
+
+            List.of("-XX:+UseG1GC"),
+            List.of("-XX:+UseG1GC", "-ea")
         ));
 
-//        if (Runtime.version().feature() >= 17 || U.isLinux())
-//            addZgc(params);
+        if (Runtime.version().feature() >= 17 || U.isLinux())
+            addZgc(params);
 
         return params;
     }
@@ -99,12 +96,12 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
             "org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList$CutTail::run")) {
             IgniteFuture<Void> jobFut = ignite.compute().runAsync(new TestCutTailJob());
 
-//            assertTrue(c2JitCompiled.await(getTestTimeout() / 2, TimeUnit.MILLISECONDS));
+            assertTrue(c2JitCompiled.await(getTestTimeout() / 2, TimeUnit.MILLISECONDS));
 
             try {
                 // Let it work for 2 seconds with the optimized C2 Jit-compiled variant of the
                 // PagesList$CutTail::run method. It's enough to reproduce problem if it is broken.
-                jobFut.get(60000, TimeUnit.MILLISECONDS);
+                jobFut.get(2000, TimeUnit.MILLISECONDS);
             }
             catch (IgniteFutureTimeoutException e) {
                 jobFut.cancel();
@@ -153,8 +150,6 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
 
         remoteJvmServerStarted.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-//        startGrid("local-server-node");
-
         return startClientGrid("local-jvm-client");
     }
 
@@ -174,8 +169,6 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
             for (int i = 0; i < KEYS_COUNT; i++)
                 cache.put(i, value());
 
-            AtomicLong cnt = new AtomicLong();
-
             AtomicBoolean stop = new AtomicBoolean(false);
 
             CyclicBarrier barrier = new CyclicBarrier(6);
@@ -194,95 +187,23 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
                         // No-op.
                     }
                     catch (Exception ex) {
-                        cnt.getAndIncrement();
+                        stop.set(true);
 
-                        //System.out.printf("WARN cnt=%d, ex=%s\n", cnt.get(), ex.getMessage());
-                        ignite.log().warning(String.format("cnt=%d, ex=%s", cnt.get(), ex.getMessage()));
-
-                        if (cnt.get() > 10)
-                            stop.set(true);
-//                        stop.set(true);
-
-//                        throw ex;
+                        throw ex;
                     }
                 }
             }, 24, "update");
 
-            while (!stop.get()) {
-                try {
-                    cache.remove(key());
-                } catch (Exception e) {
-                    //System.out.printf("WARN cache.remove()\n");
-                    ignite.log().warning(" cache.remove()");
-                }
-            }
+            while (!stop.get())
+                cache.remove(key());
 
             barrier.reset();
 
             try {
                 updateFut.get();
-
-                ignite.log().info(" first cache.clear()");
-
-                cache.clear();
             }
             catch (IgniteCheckedException e) {
-                //System.out.printf(" first cache.clear() - %s\n", e);
-                ignite.log().error(" first cache.clear()", e);
-
                 throw new RuntimeException(e);
-            }
-
-            ignite.log().info(" cache.put 505 cycle");
-
-            int inserted = 0;
-            int i = 0;
-            while (inserted < 5200 && i < 100000) {
-                try {
-                    cache.put(i, new byte[4096 + 3000]);
-
-                    inserted++;
-                }
-                catch (Exception e) {
-//                    if (i % 10 == 0) {
-                        //System.out.printf(" cache.put(i), i=%d\n", i);
-                        ignite.log().warning(" cache.put(i), i=" + i);
-//                    }
-                }
-
-                i++;
-            }
-
-//            ignite.log().info(" cache.put(506)");
-//
-//            try {
-//                cache.put(506, new byte[850]);
-//            }
-//            catch (Exception e) {
-//                //System.out.printf(" cache.put(506) - %s\n", e);
-//                ignite.log().error(" cache.put(506)", e);
-//            }
-//
-//            ignite.log().info(" cache.put(507)");
-//            try {
-//                cache.put(507, new byte[850]);
-//            }
-//            catch (Exception e) {
-//                //System.out.printf(" cache.put(507) - %s\n", e);
-//                ignite.log().error(" cache.put(507)", e);
-//            }
-
-
-            ignite.log().info(" second cache.clear()");
-
-            try {
-                cache.clear();
-            }
-            catch (Exception e) {
-                //System.out.printf(" cache.clear() - %s\n", e);
-                ignite.log().error(" cache.clear()", e);
-
-                throw e;
             }
         }
 
@@ -326,8 +247,6 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
             .setMaxSize(pageSize * 10L * KEYS_COUNT));
 
         cfg.setDataStorageConfiguration(dsCfg);
-
-        cfg.setMetricsLogFrequency(2000);
 
         return cfg;
     }
