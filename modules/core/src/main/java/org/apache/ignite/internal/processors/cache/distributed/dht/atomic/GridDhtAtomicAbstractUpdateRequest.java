@@ -484,11 +484,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 12;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -496,7 +491,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();

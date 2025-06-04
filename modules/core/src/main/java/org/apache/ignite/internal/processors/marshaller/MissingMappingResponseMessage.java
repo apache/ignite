@@ -62,7 +62,7 @@ public class MissingMappingResponseMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -132,11 +132,6 @@ public class MissingMappingResponseMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 79;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

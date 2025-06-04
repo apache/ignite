@@ -376,7 +376,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * Modifies {@link #extraStorages} for this tree to reflect snapshot options.
      * In case {@link IgniteConfiguration#getSnapshotPath()} points to absolute directory or {@link #path} for snapshot provided
      * then all snapshot files must be stored inside one folder.
-     * Otherwise, we use configured by {@link DataStorageConfiguration#getExtraStoragePathes()} structure to save snapshot.
+     * Otherwise, we use configured by {@link DataStorageConfiguration#getExtraStoragePaths()} structure to save snapshot.
      * This will distribute workload to all physical device on host.
      *
      * @param ft Node file tree.
@@ -391,7 +391,7 @@ public class SnapshotFileTree extends NodeFileTree {
         Map<String, File> snpExtraStorages = new HashMap<>();
 
         ft.extraStorages().forEach((cfgStoragePath, storagePath) -> {
-            // In case we want to make snapshot in several folders the pathes will be the following:
+            // In case we want to make snapshot in several folders the paths will be the following:
             // {storage_path}/db/{folder_name} - node cache storage.
             // {storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
             snpExtraStorages.put(

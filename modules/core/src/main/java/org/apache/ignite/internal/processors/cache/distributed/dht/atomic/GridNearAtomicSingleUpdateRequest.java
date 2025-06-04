@@ -237,7 +237,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -304,11 +304,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     /** {@inheritDoc} */
     @Override public short directType() {
         return 125;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 12;
     }
 
     /** {@inheritDoc} */

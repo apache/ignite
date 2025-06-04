@@ -501,7 +501,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -883,11 +883,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 25;
     }
 
     /** {@inheritDoc} */

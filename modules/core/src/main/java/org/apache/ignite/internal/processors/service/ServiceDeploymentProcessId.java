@@ -80,7 +80,7 @@ public class ServiceDeploymentProcessId implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -134,11 +134,6 @@ public class ServiceDeploymentProcessId implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 167;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

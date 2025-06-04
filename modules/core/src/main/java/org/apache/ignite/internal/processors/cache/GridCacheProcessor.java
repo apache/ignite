@@ -5372,6 +5372,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param key Filtering key.
      */
     private static <K, V> Map<K, V> filteredMap(Map<K, V> map, K key) {
+        if (map == null)
+            return Collections.emptyMap();
+
         if (key == null)
             return map;
 

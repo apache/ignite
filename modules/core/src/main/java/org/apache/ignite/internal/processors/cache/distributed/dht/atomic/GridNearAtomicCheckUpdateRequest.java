@@ -100,11 +100,6 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 6;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -112,7 +107,7 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();

@@ -497,11 +497,6 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         throw new UnsupportedOperationException(); // To make sure it is not marshalled.
     }

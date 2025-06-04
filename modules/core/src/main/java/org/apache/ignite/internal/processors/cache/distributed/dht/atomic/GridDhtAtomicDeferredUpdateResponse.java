@@ -112,7 +112,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -157,11 +157,6 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
     /** {@inheritDoc} */
     @Override public short directType() {
         return 37;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 5;
     }
 
     /** {@inheritDoc} */

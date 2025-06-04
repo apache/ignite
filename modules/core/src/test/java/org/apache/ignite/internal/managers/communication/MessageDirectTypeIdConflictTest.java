@@ -112,11 +112,6 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
         @Override public void onAckReceived() {
             // No-op.
         }

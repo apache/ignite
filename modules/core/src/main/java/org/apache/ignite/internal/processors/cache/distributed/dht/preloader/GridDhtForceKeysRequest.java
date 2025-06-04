@@ -159,7 +159,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -246,11 +246,6 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     /** {@inheritDoc} */
     @Override public short directType() {
         return 42;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 8;
     }
 
     /** {@inheritDoc} */

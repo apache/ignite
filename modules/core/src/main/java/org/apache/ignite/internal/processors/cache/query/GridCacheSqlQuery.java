@@ -166,7 +166,7 @@ public class GridCacheSqlQuery implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -250,11 +250,6 @@ public class GridCacheSqlQuery implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 112;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 
     /**
