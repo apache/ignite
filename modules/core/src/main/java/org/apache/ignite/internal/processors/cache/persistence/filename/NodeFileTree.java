@@ -33,6 +33,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.cdc.CdcManager;
+import org.apache.ignite.internal.cdc.CdcMode;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -110,7 +113,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  │  │  ├── 1737804007693-96128bb0-5361-495a-b593-53dc4339a56d-END.bin
  * │  │  │  └── 1737804007693-96128bb0-5361-495a-b593-53dc4339a56d-START.bin
  * │  │  ├── lock
- * │  │  ├── maintenance_tasks.mntc
+ * │  │  ├── maintenance_tasks.mntc                                             ← maintenance file (node 0).
  * │  │  ├── metastorage
  * │  │  │  ├── part-0.bin
  * │  │  │  └── part-1.bin
@@ -125,7 +128,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  │  ├── cp                                                                 ← checkpoint (node 1).
  * ...
  * │  │  ├── lock
- * │  │  ├── maintenance_tasks.mntc
+ * │  │  ├── maintenance_tasks.mntc                                             ← maintenance file (node 1).
  * │  │  ├── metastorage
  * ...
  * │  │  └── snp                                                                ← snpTmp (node 1)
@@ -139,10 +142,17 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │      ├── cdc
  * │      │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                    ← walCdc (node 0)
  * │      │      ├── lock
- * │      │      └── state
- * │      │          ├── cdc-caches-state.bin
- * │      │          ├── cdc-mappings-state.bin
- * │      │          └── cdc-types-state.bin
+ * │      │      └── state                                                      ← cdcState (node 0)
+ * │      │          ├── cdc-caches-state.bin                                   ← cdcCachesState
+ * │      │          ├── cdc-caches-state.bin.tmp                               ← tmpCdcCachesState
+ * │      │          ├── cdc-mappings-state.bin                                 ← cdcMappingsState
+ * │      │          ├── cdc-mappings-state.bin.tmp                             ← tmpCdcMappingsState
+ * │      │          ├── cdc-mode.bin                                           ← cdcModeState
+ * │      │          ├── cdc-mode.bin.tmp                                       ← tmpCdcModeState
+ * │      │          ├── cdc-types-state.bin                                    ← cdcTypesState
+ * │      │          ├── cdc-types-state.bin.tmp                                ← tmpCdcTypesState
+ * │      │          ├── cdc-wal-state.bin                                      ← cdcWalState
+ * │      │          └── cdc-wal-state.bin.tmp                                  ← tmpCdcWalState
  * ...
  * │      │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                    ← walCdc (node 1)
  * │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                       ← wal (node 0)
@@ -179,7 +189,7 @@ public class NodeFileTree extends SharedFileTree {
     public static final String WAL_SEGMENT_FILE_EXT = ".wal";
 
     /** File suffix. */
-    public static final String FILE_SUFFIX = ".bin";
+    static final String FILE_SUFFIX = ".bin";
 
     /** Suffix for tmp files */
     public static final String TMP_SUFFIX = ".tmp";
@@ -205,10 +215,10 @@ public class NodeFileTree extends SharedFileTree {
             dir.getName().equals(METASTORAGE_DIR_NAME);
 
     /** Partition file prefix. */
-    public static final String PART_FILE_PREFIX = "part-";
+    static final String PART_FILE_PREFIX = "part-";
 
     /** Index file prefix. */
-    public static final String INDEX_FILE_PREFIX = "index";
+    static final String INDEX_FILE_PREFIX = "index";
 
     /** Index file name. */
     protected static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
@@ -231,6 +241,33 @@ public class NodeFileTree extends SharedFileTree {
     /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group. */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
+    /** CDC state directory name. */
+    private static final String CDC_STATE_DIR = "state";
+
+    /**
+     * The file stores state of CDC mode. Content of the file is a {@link CdcMode} value:
+     * <ul>
+     *     <li>{@link CdcMode#CDC_UTILITY_ACTIVE} means that {@link CdcMain} utility captures data.</li>
+     *     <li>{@link CdcMode#IGNITE_NODE_ACTIVE} means that {@link CdcManager} captures data within Ignite node.</li>
+     * </ul>
+     */
+    private static final String CDC_MODE_FILE_NAME = "cdc-mode" + FILE_SUFFIX;
+
+    /** CDC WAL state file name. */
+    private static final String CDC_WAL_STATE_FILE_NAME = "cdc-wal-state" + FILE_SUFFIX;
+
+    /** CDC types state file name. */
+    private static final String CDC_TYPES_STATE_FILE_NAME = "cdc-types-state" + FILE_SUFFIX;
+
+    /** CDC mappings state file name. */
+    private static final String CDC_MAPPINGS_STATE_FILE_NAME = "cdc-mappings-state" + FILE_SUFFIX;
+
+    /** CDC caches state file name. */
+    private static final String CDC_CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
+
+    /** Maintenance file name. */
+    private static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
+
     /** Folder name for consistent id. */
     private final String folderName;
 
@@ -241,8 +278,8 @@ public class NodeFileTree extends SharedFileTree {
     private final File nodeStorage;
 
     /**
-     * Key is the path from {@link DataStorageConfiguration#getExtraStoragePathes()}, may be relative. Value is storage.
-     * @see DataStorageConfiguration#getExtraStoragePathes()
+     * Key is the path from {@link DataStorageConfiguration#getExtraStoragePaths()}, may be relative. Value is storage.
+     * @see DataStorageConfiguration#getExtraStoragePaths()
      */
     protected final Map<String, File> extraStorages;
 
@@ -782,13 +819,13 @@ public class NodeFileTree extends SharedFileTree {
      *
      * @param dsCfg Data storage configuration.
      * @return Node storages.
-     * @see DataStorageConfiguration#setExtraStoragePathes(String...)
+     * @see DataStorageConfiguration#setExtraStoragePaths(String...)
      */
     private Map<String, File> extraStorages(@Nullable DataStorageConfiguration dsCfg, Function<String, File> resolver) {
-        if (dsCfg == null || F.isEmpty(dsCfg.getExtraStoragePathes()))
+        if (dsCfg == null || F.isEmpty(dsCfg.getExtraStoragePaths()))
             return Collections.emptyMap();
 
-        return Arrays.stream(dsCfg.getExtraStoragePathes())
+        return Arrays.stream(dsCfg.getExtraStoragePaths())
             .collect(Collectors.toMap(Function.identity(), resolver));
     }
 
@@ -800,6 +837,81 @@ public class NodeFileTree extends SharedFileTree {
         String fn = segment.getFileName().toString();
 
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));
+    }
+
+    /**
+     * @return Tree for metastorage cache.
+     */
+    public CacheFileTree metastoreTree() {
+        return new CacheFileTree(this, true, null);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return Tree for cache.
+     */
+    public CacheFileTree cacheTree(CacheConfiguration<?, ?> ccfg) {
+        return new CacheFileTree(this, false, ccfg);
+    }
+
+    /** @return CDC state directory path. */
+    public Path cdcState() {
+        return walCdc().toPath().resolve(CDC_STATE_DIR);
+    }
+
+    /** @return CDC WAL state file path. */
+    public Path cdcWalState() {
+        return cdcState().resolve(CDC_WAL_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC WAL state file path. */
+    public Path tmpCdcWalState() {
+        return cdcState().resolve(CDC_WAL_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC types state file path. */
+    public Path cdcTypesState() {
+        return cdcState().resolve(CDC_TYPES_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC types state file path. */
+    public Path tmpCdcTypesState() {
+        return cdcState().resolve(CDC_TYPES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC mappings state file path. */
+    public Path cdcMappingsState() {
+        return cdcState().resolve(CDC_MAPPINGS_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC mappings state file path. */
+    public Path tmpCdcMappingsState() {
+        return cdcState().resolve(CDC_MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC caches state file path. */
+    public Path cdcCachesState() {
+        return cdcState().resolve(CDC_CACHES_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC caches state file path. */
+    public Path tmpCdcCachesState() {
+        return cdcState().resolve(CDC_CACHES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC manager mode state file path. */
+    public Path cdcModeState() {
+        return cdcState().resolve(CDC_MODE_FILE_NAME);
+    }
+
+    /** @return Temp CDC manager mode state file path. */
+    public Path tmpCdcModeState() {
+        return cdcState().resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return Maintenance file. */
+    public File maintenanceFile() {
+        return new File(nodeStorage, MAINTENANCE_FILE_NAME);
     }
 
     /**

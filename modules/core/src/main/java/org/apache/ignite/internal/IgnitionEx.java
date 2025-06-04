@@ -1952,12 +1952,12 @@ public class IgnitionEx {
                         "but not both.");
                 }
 
-                List<String> extraStorages = F.asList(dsCfg.getExtraStoragePathes());
+                List<String> extraStorages = F.asList(dsCfg.getExtraStoragePaths());
 
                 if (extraStorages.size() != new HashSet<>(extraStorages).size()
                     || extraStorages.contains(dsCfg.getStoragePath())) {
                     throw new IgniteCheckedException("DataStorageConfiguration contains duplicates " +
-                        "[storagePath=" + dsCfg.getStoragePath() + ", extraStoragePathes=" + extraStorages + ']');
+                        "[storagePath=" + dsCfg.getStoragePath() + ", extraStoragePaths=" + extraStorages + ']');
                 }
             }
 

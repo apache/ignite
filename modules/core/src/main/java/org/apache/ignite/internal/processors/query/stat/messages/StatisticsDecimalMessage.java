@@ -77,7 +77,7 @@ public class StatisticsDecimalMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -85,13 +85,13 @@ public class StatisticsDecimalMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("b", b))
+                if (!writer.writeByteArray(b))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("scale", scale))
+                if (!writer.writeInt(scale))
                     return false;
 
                 writer.incrementState();
@@ -104,12 +104,9 @@ public class StatisticsDecimalMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                b = reader.readByteArray("b");
+                b = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -117,7 +114,7 @@ public class StatisticsDecimalMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                scale = reader.readInt("scale");
+                scale = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -125,17 +122,12 @@ public class StatisticsDecimalMessage implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(StatisticsDecimalMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

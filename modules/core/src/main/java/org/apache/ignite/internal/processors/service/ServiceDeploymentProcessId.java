@@ -80,7 +80,7 @@ public class ServiceDeploymentProcessId implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -88,13 +88,13 @@ public class ServiceDeploymentProcessId implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeMessage(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("reqId", reqId))
+                if (!writer.writeIgniteUuid(reqId))
                     return false;
 
                 writer.incrementState();
@@ -107,12 +107,9 @@ public class ServiceDeploymentProcessId implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -120,7 +117,7 @@ public class ServiceDeploymentProcessId implements Message {
                 reader.incrementState();
 
             case 1:
-                reqId = reader.readIgniteUuid("reqId");
+                reqId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -128,17 +125,12 @@ public class ServiceDeploymentProcessId implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(ServiceDeploymentProcessId.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 167;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

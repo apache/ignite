@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -121,7 +120,7 @@ public class WalStateAckMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -129,25 +128,25 @@ public class WalStateAckMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("opId", opId))
+                if (!writer.writeUuid(opId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("affNode", affNode))
+                if (!writer.writeBoolean(affNode))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeBoolean("changed", changed))
+                if (!writer.writeBoolean(changed))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeString("errMsg", errMsg))
+                if (!writer.writeString(errMsg))
                     return false;
 
                 writer.incrementState();
@@ -160,12 +159,9 @@ public class WalStateAckMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                opId = reader.readUuid("opId");
+                opId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -173,7 +169,7 @@ public class WalStateAckMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                affNode = reader.readBoolean("affNode");
+                affNode = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -181,7 +177,7 @@ public class WalStateAckMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                changed = reader.readBoolean("changed");
+                changed = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -189,7 +185,7 @@ public class WalStateAckMessage implements Message {
                 reader.incrementState();
 
             case 3:
-                errMsg = reader.readString("errMsg");
+                errMsg = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -197,17 +193,12 @@ public class WalStateAckMessage implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(SchemaOperationStatusMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 129;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 
     /** {@inheritDoc} */

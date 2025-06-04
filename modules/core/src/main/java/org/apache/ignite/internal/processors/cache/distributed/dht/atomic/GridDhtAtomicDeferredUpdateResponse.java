@@ -112,7 +112,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -120,7 +120,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeMessage("futIds", futIds))
+                if (!writer.writeMessage(futIds))
                     return false;
 
                 writer.incrementState();
@@ -134,15 +134,12 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                futIds = reader.readMessage("futIds");
+                futIds = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -151,17 +148,12 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
 
         }
 
-        return reader.afterMessageRead(GridDhtAtomicDeferredUpdateResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 37;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 5;
     }
 
     /** {@inheritDoc} */

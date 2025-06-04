@@ -396,16 +396,11 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -413,19 +408,19 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("clsName", clsName))
+                if (!writer.writeString(clsName))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("ord", ord))
+                if (!writer.writeInt(ord))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("typeId", typeId))
+                if (!writer.writeInt(typeId))
                     return false;
 
                 writer.incrementState();
@@ -439,12 +434,9 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                clsName = reader.readString("clsName");
+                clsName = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -452,7 +444,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
                 reader.incrementState();
 
             case 1:
-                ord = reader.readInt("ord");
+                ord = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -460,7 +452,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
                 reader.incrementState();
 
             case 2:
-                typeId = reader.readInt("typeId");
+                typeId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -469,7 +461,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
 
         }
 
-        return reader.afterMessageRead(BinaryEnumObjectImpl.class);
+        return true;
     }
 
     /** {@inheritDoc} */

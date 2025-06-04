@@ -316,10 +316,5 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         @Override public short directType() {
             throw new UnsupportedOperationException();
         }
-
-        /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            throw new UnsupportedOperationException();
-        }
     }
 }

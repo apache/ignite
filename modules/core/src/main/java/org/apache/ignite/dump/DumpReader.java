@@ -24,9 +24,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +43,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
@@ -113,22 +116,9 @@ public class DumpReader implements Runnable {
 
                 cnsmr.onTypes(dump.types());
 
-                Map<Integer, List<String>> grpToNodes = new HashMap<>();
+                GroupsConfigs grpsCfgs = groupsConfigs(dump);
 
-                Set<Integer> cacheGrpIds = cfg.cacheGroupNames() != null
-                    ? Arrays.stream(cfg.cacheGroupNames()).map(CU::cacheId).collect(Collectors.toSet())
-                    : null;
-
-                for (SnapshotMetadata meta : dump.metadata()) {
-                    for (Integer grp : meta.partitions().keySet()) {
-                        if (cacheGrpIds == null || cacheGrpIds.contains(grp))
-                            grpToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
-                    }
-                }
-
-                cnsmr.onCacheConfigs(grpToNodes.entrySet().stream()
-                    .flatMap(e -> dump.configs(F.first(e.getValue()), e.getKey()).stream())
-                    .iterator());
+                cnsmr.onCacheConfigs(grpsCfgs.cacheCfgs.iterator());
 
                 ExecutorService execSvc = cfg.threadCount() > 1 ? Executors.newFixedThreadPool(cfg.threadCount()) : null;
 
@@ -137,9 +127,9 @@ public class DumpReader implements Runnable {
                 Map<Integer, Set<Integer>> grps = cfg.skipCopies() ? new HashMap<>() : null;
 
                 if (grps != null)
-                    grpToNodes.keySet().forEach(grpId -> grps.put(grpId, new HashSet<>()));
+                    grpsCfgs.grpToNodes.keySet().forEach(grpId -> grps.put(grpId, new HashSet<>()));
 
-                for (Map.Entry<Integer, List<String>> e : grpToNodes.entrySet()) {
+                for (Map.Entry<Integer, List<String>> e : grpsCfgs.grpToNodes.entrySet()) {
                     int grp = e.getKey();
 
                     for (String node : e.getValue()) {
@@ -160,7 +150,7 @@ public class DumpReader implements Runnable {
                                     return;
                                 }
 
-                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part)) {
+                                try (DumpedPartitionIterator iter = dump.iterator(node, grp, part, grpsCfgs.cacheIds)) {
                                     if (log.isDebugEnabled()) {
                                         log.debug("Consuming partition [node=" + node + ", grp=" + grp +
                                             ", part=" + part + ']');
@@ -367,6 +357,70 @@ public class DumpReader implements Runnable {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param dump Dump.
+     * @return Mapping from grpId -> "node list" and cache configs list.
+     */
+    private GroupsConfigs groupsConfigs(Dump dump) {
+        Map<Integer, List<String>> grpsToNodes = new HashMap<>();
+
+        Set<Integer> grpIds = cfg.groupNames() != null
+            ? Arrays.stream(cfg.groupNames()).map(CU::cacheId).collect(Collectors.toSet())
+            : null;
+
+        Set<Integer> cacheIds = cfg.cacheNames() != null
+            ? Arrays.stream(cfg.cacheNames()).map(CU::cacheId).collect(Collectors.toSet())
+            : null;
+
+        for (SnapshotMetadata meta : dump.metadata()) {
+            for (Integer grp : meta.partitions().keySet()) {
+                if (grpIds == null || grpIds.contains(grp))
+                    grpsToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
+            }
+        }
+
+        Iterator<Map.Entry<Integer, List<String>>> grpToNodesIter = grpsToNodes.entrySet().iterator();
+        List<StoredCacheData> ccfgs = new ArrayList<>();
+
+        while (grpToNodesIter.hasNext()) {
+            Map.Entry<Integer, List<String>> grpToNodes = grpToNodesIter.next();
+
+            // Read all group configs from single node.
+            List<StoredCacheData> grpCaches = dump.configs(F.first(grpToNodes.getValue()), grpToNodes.getKey(), cacheIds);
+
+            if (grpCaches.isEmpty()) {
+                // Remove whole group to skip files read.
+                grpToNodesIter.remove();
+
+                continue;
+            }
+
+            ccfgs.addAll(grpCaches);
+        }
+
+        // Optimize - skip whole cache if only one in group!
+        return new GroupsConfigs(grpsToNodes, ccfgs, cacheIds);
+    }
+
+    /** */
+    private static class GroupsConfigs {
+        /** Key is group id, value is list of {@link NodeFileTree#folderName()} of nodes containing group. */
+        public final Map<Integer, List<String>> grpToNodes;
+
+        /** Cache configurations. */
+        public final Collection<StoredCacheData> cacheCfgs;
+
+        /** Cache ids. */
+        public final Set<Integer> cacheIds;
+
+        /** */
+        public GroupsConfigs(Map<Integer, List<String>> grpToNodes, Collection<StoredCacheData> cacheCfgs, Set<Integer> cacheIds) {
+            this.grpToNodes = grpToNodes;
+            this.cacheCfgs = cacheCfgs;
+            this.cacheIds = cacheIds;
         }
     }
 }

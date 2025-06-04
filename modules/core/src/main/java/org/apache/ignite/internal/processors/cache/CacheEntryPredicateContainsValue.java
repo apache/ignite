@@ -97,7 +97,7 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -105,7 +105,7 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("val", val))
+                if (!writer.writeMessage(val))
                     return false;
 
                 writer.incrementState();
@@ -119,15 +119,12 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 0:
-                val = reader.readMessage("val");
+                val = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -136,17 +133,12 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
 
         }
 
-        return reader.afterMessageRead(CacheEntryPredicateContainsValue.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 98;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

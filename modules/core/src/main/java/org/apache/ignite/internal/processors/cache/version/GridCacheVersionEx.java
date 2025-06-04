@@ -93,11 +93,6 @@ public class GridCacheVersionEx extends GridCacheVersion {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -105,7 +100,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -113,7 +108,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeMessage("drVer", drVer))
+                if (!writer.writeMessage(drVer))
                     return false;
 
                 writer.incrementState();
@@ -127,15 +122,12 @@ public class GridCacheVersionEx extends GridCacheVersion {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 3:
-                drVer = reader.readMessage("drVer");
+                drVer = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -144,7 +136,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
 
         }
 
-        return reader.afterMessageRead(GridCacheVersionEx.class);
+        return true;
     }
 
     /** {@inheritDoc} */
