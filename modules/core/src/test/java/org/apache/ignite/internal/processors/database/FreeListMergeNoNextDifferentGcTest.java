@@ -20,30 +20,20 @@ package org.apache.ignite.internal.processors.database;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -57,24 +47,22 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
-
 /**
  * Test freelists ensuring that the optimization by the C2 Jit compilator was done.
  */
 @RunWith(Parameterized.class)
-//@WithSystemProperty(key = IGNITE_PAGES_LIST_STRIPES_PER_BUCKET, value = "1")
 public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS_COUNT = 5_000;
-
-    private static final boolean LOCAL = false;
 
     /** Signals once method under test is C2 Jit compiled in server node. */
     CountDownLatch c2JitCompiled = new CountDownLatch(1);
 
     AtomicBoolean failed = new AtomicBoolean(false);
+
     IgniteAtomicLong stop;
+
+    private int pageSize;
 
     /** JVM options to start the server node in remote JVM. */
     @Parameterized.Parameter
@@ -84,7 +72,8 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<List<String>> params() {
         ArrayList<List<String>> params = new ArrayList<>(List.of(
-            List.of("-XX:+UseShenandoahGC"),
+            List.of("-XX:+UseShenandoahGC")
+                ,
             List.of("-XX:+UseShenandoahGC", "-ea"),
 
             List.of("-XX:+UseG1GC"),
@@ -102,29 +91,18 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
      * With various garbage collectors and with assertions both turned on and off.
      */
     @Test
-    public void testCutTail() throws Exception {
+    public void testMergeNoNext() throws Exception {
         try (Ignite ignite = prepareCluster(jvmOpts,
                 "org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList$CutTail::run")) {
+            stop = ignite.atomicLong("stop", 0, true);
 
-            TestMergeNoNextJob job = new TestMergeNoNextJob(ignite);
-            job.run();
+            IgniteFuture<Void> jobFut = ignite.compute().runAsync(new TestMergeNoNextJob(pageSize));
 
-            stop = ignite.atomicLong("stop", // Atomic long name.
-                    0, // Initial value.
-                    true // Create if it does not exist.
-            );
-
-            IgniteFuture<Void> jobFut = ignite.compute().runAsync(new TestCutTailJob());
-
-            if (!LOCAL)
-                assertTrue(c2JitCompiled.await(getTestTimeout() / 2, TimeUnit.MILLISECONDS));
+            assertTrue(c2JitCompiled.await(getTestTimeout() / 2, TimeUnit.MILLISECONDS));
 
             stop.incrementAndGet();
 
-            jobFut.get();
-
-            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME+"1");
-            cache.clear();
+            jobFut.get(getTestTimeout() / 2, TimeUnit.MILLISECONDS);
 
             assertFalse("cache.clear() failed", failed.get());
         }
@@ -155,30 +133,26 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
             ".*CorruptedFreeListException: Failed to remove data by link.*",
                 () -> failed.set(true)));
 
-        if (!LOCAL) {
-            IgniteConfiguration cfg = optimize(getConfiguration("remote-jvm-server"));
+        IgniteConfiguration cfg = optimize(getConfiguration("remote-jvm-server"));
 
-            new IgniteProcessProxy(cfg, lsnrLog, null, false) {
-                @Override
-                protected Collection<String> filteredJvmArgs() throws Exception {
-                    Collection<String> args = super.filteredJvmArgs();
+        new IgniteProcessProxy(cfg, lsnrLog, null, false) {
+            @Override
+            protected Collection<String> filteredJvmArgs() throws Exception {
+                Collection<String> args = super.filteredJvmArgs();
 
-                    args.remove("-ea");
+                args.remove("-ea");
 
-                    args.add("-XX:+UnlockDiagnosticVMOptions");
-                    args.add("-XX:PrintAssemblyOptions=intel");
-                    args.add("-XX:CompileCommand=print," + method);
+                args.add("-XX:+UnlockDiagnosticVMOptions");
+                args.add("-XX:PrintAssemblyOptions=intel");
+                args.add("-XX:CompileCommand=print," + method);
 
-                    args.addAll(jvmOpts);
+                args.addAll(jvmOpts);
 
-                    return args;
-                }
-            };
+                return args;
+            }
+        };
 
-            remoteJvmServerStarted.await(getTestTimeout(), TimeUnit.MILLISECONDS);
-        }
-        else
-            startGrid("local-server-node");
+        remoteJvmServerStarted.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         return startClientGrid("local-jvm-client");
     }
@@ -187,203 +161,52 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
      * Perfrom concurrent updates and deletes ensuring the CutTail called enough
      * times to invoke the C2 optimizing Jit compiler.
      */
-    private static class TestCutTailJob implements IgniteRunnable {
-        /** */
-        @IgniteInstanceResource
-        Ignite ignite;
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
-
-            for (int i = 0; i < KEYS_COUNT; i++)
-                cache.put(i, value());
-
-            AtomicLong cnt = new AtomicLong();
-
-            IgniteAtomicLong stop = ignite.atomicLong("stop",0,false);
-
-            CyclicBarrier barrier = new CyclicBarrier(6);
-
-            IgniteInternalFuture<Long> updateFut = runMultiThreadedAsync(() -> {
-                while (stop.get() == 0) {
-                    try {
-                        barrier.await(100, TimeUnit.MILLISECONDS);
-
-                        cache.put(key(), value());
-                    }
-                    catch (InterruptedException | BrokenBarrierException ignored) {
-                        stop.incrementAndGet();
-
-                        barrier.reset();
-                    }
-                    catch (TimeoutException ignored) {
-                        // No-op.
-                    }
-                    catch (Exception ex) {
-                        cnt.getAndIncrement();
-
-                        ignite.log().warning(String.format("cnt=%d, ex=%s", cnt.get(), ex.getMessage()));
-
-                        stop.incrementAndGet();
-                        barrier.reset();
-                    }
-                }
-            }, 24, "update");
-
-            while (stop.get() == 0) {
-                try {
-                    cache.remove(key());
-                } catch (Exception e) {
-                    ignite.log().warning(" cache.remove()");
-                }
-            }
-
-            barrier.reset();
-
-            GridCacheProcessor cacheProc = ((IgniteEx)ignite).context().cache();
-            AbstractFreeList list = (AbstractFreeList)cacheProc.context().database().freeList(null);
-
-            logList(ignite, list);
-
-            try {
-                updateFut.get();
-
-                ignite.log().info(" first cache.clear()");
-
-                cache.clear();
-            }
-            catch (IgniteCheckedException e) {
-                ignite.log().error(" first cache.clear()", e);
-
-                throw new RuntimeException(e);
-            }
-
-            logList(ignite, list);
-
-            ignite.log().info(" cache.size()=" + cache.size(CachePeekMode.ALL));
-        }
-
-        /** */
-        private int key() {
-            return ThreadLocalRandom.current().nextInt(KEYS_COUNT);
-        }
-
-        /** */
-        private byte[] value() {
-            return new byte[3*4096 + 3100];
-//            return new byte[ThreadLocalRandom.current().nextInt(12000) + 3000];
-        }
-    }
-
-    private static void logList(Ignite ignite, AbstractFreeList list) {
-        PagesList.Stripe[] stripes = list.getBucket(255);
-        StringBuilder sb = new StringBuilder();
-
-        for (int stripe = 0; stripe < stripes.length; stripe++) {
-
-            if (stripe > 0)
-                sb.append(", ");
-
-            sb.append(stripe);
-            sb.append(": ");
-            sb.append(stripes[stripe].tailId);
-        }
-
-        ignite.log().info(sb.toString());
-    }
-
     private static class TestMergeNoNextJob implements IgniteRunnable {
         /** */
         @IgniteInstanceResource
         Ignite ignite;
 
-        public TestMergeNoNextJob() {
+        /** */
+        private final int pageSize;
+
+        /** */
+        private TestMergeNoNextJob(int pageSize) {
+            this.pageSize = pageSize;
         }
 
-        public TestMergeNoNextJob(Ignite ignite) {
-            this.ignite = ignite;
-        }
+        /** {@inheritDoc} */
+        @Override public void run() {
+            IgniteAtomicLong stop = ignite.atomicLong("stop",0,false);
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void run() {
-            IgniteCache<Object, Object> cache = ignite.getOrCreateCache(
-                    new CacheConfiguration<>(DEFAULT_CACHE_NAME+"1")
-                            .setAffinity(new RendezvousAffinityFunction(false, 1024)));
+            IgniteCache<Object, Object> cache = ignite.createCache(
+                new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                    .setAffinity(new RendezvousAffinityFunction(false, 1)));
 
-            ignite.log().info(" cache.put 505 cycle");
+            int capacity = PagesListNodeIO.VERSIONS.forVersion(1).getCapacity(pageSize);
 
-            long failed = 0;
-            long inserted = 0;
-            int i = 0;
-            while (inserted < 5000 && i < 5000) {
+            int keyCount = capacity * 2 + 1;
+
+            int dataSize = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
+
+            for (int i = keyCount; i > 0; i--)
+                cache.put(i, new byte[dataSize - 64]);
+
+            for (int i = 1; i <= capacity; i++)
+                cache.remove(i);
+
+            while (stop.get() == 0) {
                 try {
-                    cache.put(i, value());
-//                    cache.put(i, new byte[4096 + 3000]);
-//                    cache.put(key(), value());
+                    cache.put(0, new byte[2 * dataSize]);
 
-                    inserted++;
+                    cache.remove(0);
                 }
                 catch (Exception e) {
-//                    if (i % 10 == 0) {
-                    //System.out.printf(" cache.put(i), i=%d\n", i);
-//                        ignite.log().warning(" cache.put(i), i=" + i);
-
-                    failed++;
-//                    }
+                    stop.incrementAndGet();
                 }
-
-                i++;
             }
 
-            ignite.log().info(" cache.size()=" + cache.size(CachePeekMode.ALL));
-            ignite.log().info(" failed=" + failed);
-
-//            ignite.log().info(" cache.put(506)");
-//
-//            try {
-//                cache.put(506, new byte[850]);
-//            }
-//            catch (Exception e) {
-//                //System.out.printf(" cache.put(506) - %s\n", e);
-//                ignite.log().error(" cache.put(506)", e);
-//            }
-//
-//            ignite.log().info(" cache.put(507)");
-//            try {
-//                cache.put(507, new byte[850]);
-//            }
-//            catch (Exception e) {
-//                //System.out.printf(" cache.put(507) - %s\n", e);
-//                ignite.log().error(" cache.put(507)", e);
-//            }
-
-
-//            ignite.log().info(" second cache.clear()");
-//
-//            try {
-//                cache.clear();
-//            }
-//            catch (Exception e) {
-//                //System.out.printf(" cache.clear() - %s\n", e);
-//                ignite.log().error(" cache.clear()", e);
-//
-//                throw e;
-//            }
+            cache.clear();
         }
-        /** */
-        private int key() {
-            return ThreadLocalRandom.current().nextInt(KEYS_COUNT);
-        }
-
-        private byte[] value() {
-            return new byte[4096 + 3000];
-//            return new byte[ThreadLocalRandom.current().nextInt(300) + 10];
-        }
-
     }
 
     /**
@@ -409,14 +232,12 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
-        int pageSize = dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize();
+        pageSize = dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize();
 
         dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(pageSize * 100L * KEYS_COUNT));
+                .setMaxSize(pageSize * 3L * KEYS_COUNT));
 
         cfg.setDataStorageConfiguration(dsCfg);
-
-//        cfg.setMetricsLogFrequency(2000);
 
         return cfg;
     }
