@@ -82,7 +82,7 @@ public class UserAuthenticateRequestMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -90,19 +90,19 @@ public class UserAuthenticateRequestMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("id", id))
+                if (!writer.writeIgniteUuid(id))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString("name", name))
+                if (!writer.writeString(name))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeString("passwd", passwd))
+                if (!writer.writeString(passwd))
                     return false;
 
                 writer.incrementState();
@@ -116,12 +116,9 @@ public class UserAuthenticateRequestMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                id = reader.readIgniteUuid("id");
+                id = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -129,7 +126,7 @@ public class UserAuthenticateRequestMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                name = reader.readString("name");
+                name = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -137,7 +134,7 @@ public class UserAuthenticateRequestMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                passwd = reader.readString("passwd");
+                passwd = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -146,17 +143,12 @@ public class UserAuthenticateRequestMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(UserAuthenticateRequestMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 131;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

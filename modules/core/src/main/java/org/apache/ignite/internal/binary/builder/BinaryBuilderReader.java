@@ -29,7 +29,6 @@ import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryPositionReadable;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -108,15 +107,6 @@ class BinaryBuilderReader implements BinaryPositionReadable {
      */
     public void registerObject(BinaryObjectBuilderImpl obj) {
         objMap.put(obj.start(), obj);
-    }
-
-    /**
-     * Get schema of the object, starting at the given position.
-     *
-     * @return Object's schema.
-     */
-    public BinarySchema schema() {
-        return reader.getOrCreateSchema();
     }
 
     /**

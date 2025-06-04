@@ -65,7 +65,7 @@ public class JobStealingRequest implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -73,7 +73,7 @@ public class JobStealingRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("delta", delta))
+                if (!writer.writeInt(delta))
                     return false;
 
                 writer.incrementState();
@@ -87,12 +87,9 @@ public class JobStealingRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                delta = reader.readInt("delta");
+                delta = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -101,17 +98,12 @@ public class JobStealingRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(JobStealingRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 82;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

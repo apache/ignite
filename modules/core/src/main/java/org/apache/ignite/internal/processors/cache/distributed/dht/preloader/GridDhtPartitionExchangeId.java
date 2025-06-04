@@ -227,7 +227,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -235,19 +235,19 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("evt", evt))
+                if (!writer.writeInt(evt))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeUuid("nodeId", nodeId))
+                if (!writer.writeUuid(nodeId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
@@ -261,12 +261,9 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                evt = reader.readInt("evt");
+                evt = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -274,7 +271,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
                 reader.incrementState();
 
             case 1:
-                nodeId = reader.readUuid("nodeId");
+                nodeId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -282,7 +279,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
                 reader.incrementState();
 
             case 2:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -291,17 +288,12 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
 
         }
 
-        return reader.afterMessageRead(GridDhtPartitionExchangeId.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 87;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

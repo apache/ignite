@@ -39,8 +39,7 @@ import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.CacheFileTree;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
@@ -116,8 +115,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         ig.cluster().state(ClusterState.ACTIVE);
 
-        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
         CacheConfiguration<?, ?> dfltCacheCfg = ig.cachex(DEFAULT_CACHE_NAME).configuration();
+        CacheFileTree cft = ig.context().pdsFolderResolver().fileTree().cacheTree(dfltCacheCfg);
 
         fillCache(keyMapper, ig.cache(DEFAULT_CACHE_NAME));
 
@@ -127,20 +126,20 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         stopGrid(0);
 
-        long oldIdxFileLen = ft.partitionFile(dfltCacheCfg, INDEX_PARTITION).length();
+        long oldIdxFileLen = cft.partitionFile(INDEX_PARTITION).length();
 
         startGrid(0);
 
         waitForDefragmentation(0);
 
-        long newIdxFileLen = ft.partitionFile(dfltCacheCfg, INDEX_PARTITION).length();
+        long newIdxFileLen = cft.partitionFile(INDEX_PARTITION).length();
 
         assertTrue(
             "newIdxFileLen=" + newIdxFileLen + ", oldIdxFileLen=" + oldIdxFileLen,
             newIdxFileLen <= oldIdxFileLen
         );
 
-        File completionMarkerFile = DefragmentationFileUtils.defragmentationCompletionMarkerFile(ft.cacheStorage(dfltCacheCfg));
+        File completionMarkerFile = cft.defragmentationCompletionMarkerFile();
 
         assertTrue("Completion marker file must exists", completionMarkerFile.exists());
 

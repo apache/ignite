@@ -1943,11 +1943,22 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          */
         private void initializeDataStorageConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
-            if (cfg.getDataStorageConfiguration() != null &&
-                (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)) {
-                throw new IgniteCheckedException("Data storage can be configured with either legacy " +
-                    "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
-                    "but not both.");
+            DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
+            if (dsCfg != null) {
+                if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null) {
+                    throw new IgniteCheckedException("Data storage can be configured with either legacy " +
+                        "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
+                        "but not both.");
+                }
+
+                List<String> extraStorages = F.asList(dsCfg.getExtraStoragePaths());
+
+                if (extraStorages.size() != new HashSet<>(extraStorages).size()
+                    || extraStorages.contains(dsCfg.getStoragePath())) {
+                    throw new IgniteCheckedException("DataStorageConfiguration contains duplicates " +
+                        "[storagePath=" + dsCfg.getStoragePath() + ", extraStoragePaths=" + extraStorages + ']');
+                }
             }
 
             if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)

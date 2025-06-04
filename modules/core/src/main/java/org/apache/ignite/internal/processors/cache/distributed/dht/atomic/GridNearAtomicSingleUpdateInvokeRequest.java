@@ -215,7 +215,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -223,13 +223,13 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
 
         switch (writer.state()) {
             case 12:
-                if (!writer.writeByteArray("entryProcessorBytes", entryProcessorBytes))
+                if (!writer.writeByteArray(entryProcessorBytes))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeObjectArray(invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -243,15 +243,12 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 12:
-                entryProcessorBytes = reader.readByteArray("entryProcessorBytes");
+                entryProcessorBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -259,7 +256,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
                 reader.incrementState();
 
             case 13:
-                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
+                invokeArgsBytes = reader.readObjectArray(MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -268,12 +265,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicSingleUpdateInvokeRequest.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 14;
+        return true;
     }
 
     /** {@inheritDoc} */

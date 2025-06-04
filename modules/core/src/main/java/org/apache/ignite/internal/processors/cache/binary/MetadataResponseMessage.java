@@ -55,7 +55,7 @@ public class MetadataResponseMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -63,19 +63,19 @@ public class MetadataResponseMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("binaryMetadataBytes", binaryMetadataBytes))
+                if (!writer.writeByteArray(binaryMetadataBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByte("status", status != null ? (byte)status.ordinal() : -1))
+                if (!writer.writeByte(status != null ? (byte)status.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("typeId", typeId))
+                if (!writer.writeInt(typeId))
                     return false;
 
                 writer.incrementState();
@@ -89,12 +89,9 @@ public class MetadataResponseMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                binaryMetadataBytes = reader.readByteArray("binaryMetadataBytes");
+                binaryMetadataBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -104,7 +101,7 @@ public class MetadataResponseMessage implements Message {
             case 1:
                 byte statusOrd;
 
-                statusOrd = reader.readByte("status");
+                statusOrd = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -114,7 +111,7 @@ public class MetadataResponseMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                typeId = reader.readInt("typeId");
+                typeId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -123,17 +120,12 @@ public class MetadataResponseMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(MetadataResponseMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 81;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

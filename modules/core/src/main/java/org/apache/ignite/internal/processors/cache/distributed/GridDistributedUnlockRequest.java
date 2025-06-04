@@ -112,7 +112,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -120,7 +120,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -134,15 +134,12 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 8:
-                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
+                keys = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -151,17 +148,12 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
         }
 
-        return reader.afterMessageRead(GridDistributedUnlockRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 27;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 9;
     }
 
     /** {@inheritDoc} */

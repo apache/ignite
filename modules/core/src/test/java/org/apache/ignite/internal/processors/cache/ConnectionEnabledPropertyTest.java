@@ -38,6 +38,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 @RunWith(Parameterized.class)
 public class ConnectionEnabledPropertyTest extends GridCommonAbstractTest {
     /** */
+    public static final String THIN_CONN_ENABLED_PROP = "newThinConnectionsEnabled";
+
+    /** */
     private static final String SRV_CONN_ENABLED_PROP = "newServerNodeConnectionsEnabled";
 
     /** */

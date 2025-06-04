@@ -84,7 +84,7 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -92,13 +92,13 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeMap("appAttrs", appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
+                if (!writer.writeMap(appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMessage("payload", payload))
+                if (!writer.writeMessage(payload))
                     return false;
 
                 writer.incrementState();
@@ -112,15 +112,12 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 3:
-                appAttrs = reader.readMap("appAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
+                appAttrs = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -128,7 +125,7 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
-                payload = reader.readMessage("payload");
+                payload = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -138,11 +135,6 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
         }
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 5;
     }
 
     /** {@inheritDoc} */

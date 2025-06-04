@@ -83,7 +83,7 @@ public class GenerateEncryptionKeyResponse implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -91,19 +91,19 @@ public class GenerateEncryptionKeyResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("encKeys", encKeys, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection(encKeys, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("id", id))
+                if (!writer.writeIgniteUuid(id))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByteArray("masterKeyDigest", masterKeyDigest))
+                if (!writer.writeByteArray(masterKeyDigest))
                     return false;
 
                 writer.incrementState();
@@ -116,12 +116,9 @@ public class GenerateEncryptionKeyResponse implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                encKeys = reader.readCollection("encKeys", MessageCollectionItemType.BYTE_ARR);
+                encKeys = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -129,7 +126,7 @@ public class GenerateEncryptionKeyResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                id = reader.readIgniteUuid("id");
+                id = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -137,7 +134,7 @@ public class GenerateEncryptionKeyResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                masterKeyDigest = reader.readByteArray("masterKeyDigest");
+                masterKeyDigest = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -145,17 +142,12 @@ public class GenerateEncryptionKeyResponse implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(GenerateEncryptionKeyResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 163;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

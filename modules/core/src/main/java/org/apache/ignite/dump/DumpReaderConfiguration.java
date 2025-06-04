@@ -74,7 +74,10 @@ public class DumpReaderConfiguration {
     private final boolean keepRaw;
 
     /** Cache group names. */
-    private final String[] cacheGrpNames;
+    private final String[] grpNames;
+
+    /** Cache names. */
+    private final String[] cacheNames;
 
     /** Skip copies. */
     private final boolean skipCopies;
@@ -85,17 +88,17 @@ public class DumpReaderConfiguration {
     /**
      * @param name Optional dump name.
      * @param path Optional path to the dump directory.
-     * @param cfg Ignite configuration to resolve standart pathes.
+     * @param cfg Ignite configuration to resolve standart paths.
      * @param cnsmr Dump consumer.
      */
     public DumpReaderConfiguration(String name, @Nullable String path, @Nullable IgniteConfiguration cfg, DumpConsumer cnsmr) {
-        this(name, path, cfg, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true, false, null, false, null);
+        this(name, path, cfg, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true, false, null, null, false, null);
     }
 
     /**
      * @param name Optional dump name.
      * @param path Optional path to the dump directory.
-     * @param cfg Ignite configuration to resolve standart pathes.
+     * @param cfg Ignite configuration to resolve standart paths.
      * @param cnsmr Dump consumer.
      * @param thCnt Count of threads to consume dumped partitions.
      * @param timeout Timeout of dump reader invocation.
@@ -105,7 +108,8 @@ public class DumpReaderConfiguration {
      * @param keepRaw If {@code true}, doesn't deserialize cache data and keeps {@link DumpEntry#key()} as
      *                {@link KeyCacheObject} and {@link DumpEntry#value()} as {@link CacheObject}. If {@code true},
      *                disables {@link #keepBinary}.
-     * @param cacheGrpNames Cache group names.
+     * @param grpNames Cache group names.
+     * @param cacheNames Cache names.
      * @param skipCopies Skip copies.
      * @param encSpi Encryption SPI.
      */
@@ -119,7 +123,8 @@ public class DumpReaderConfiguration {
         boolean failFast,
         boolean keepBinary,
         boolean keepRaw,
-        String[] cacheGrpNames,
+        String[] grpNames,
+        String[] cacheNames,
         boolean skipCopies,
         EncryptionSpi encSpi
     ) {
@@ -132,7 +137,8 @@ public class DumpReaderConfiguration {
         this.failFast = failFast;
         this.keepBinary = keepBinary;
         this.keepRaw = keepRaw;
-        this.cacheGrpNames = cacheGrpNames;
+        this.grpNames = grpNames;
+        this.cacheNames = cacheNames;
         this.skipCopies = skipCopies;
         this.encSpi = encSpi;
     }
@@ -190,8 +196,13 @@ public class DumpReaderConfiguration {
     }
 
     /** @return Cache group names. */
-    public String[] cacheGroupNames() {
-        return cacheGrpNames;
+    public String[] groupNames() {
+        return grpNames;
+    }
+
+    /** @return Cache names. */
+    public String[] cacheNames() {
+        return cacheNames;
     }
 
     /** @return Skip copies. */

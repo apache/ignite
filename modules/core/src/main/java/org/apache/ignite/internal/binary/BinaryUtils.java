@@ -47,6 +47,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -59,6 +60,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -81,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -110,10 +113,10 @@ public class BinaryUtils {
     public static final String MAPPING_FILE_EXTENSION = ".classname";
 
     /** */
-    public static final Map<Class<?>, Byte> PLAIN_CLASS_TO_FLAG = new HashMap<>();
+    public static final Map<Class<?>, Byte> PLAIN_CLASS_TO_FLAG;
 
     /** */
-    public static final Map<Byte, Class<?>> FLAG_TO_CLASS = new HashMap<>();
+    public static final Map<Byte, Class<?>> FLAG_TO_CLASS;
 
     /** */
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
@@ -136,7 +139,7 @@ public class BinaryUtils {
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
 
     /** Binary classes. */
-    private static final Collection<Class<?>> BINARY_CLS = new HashSet<>();
+    private static final Collection<Class<?>> BINARY_CLS;
 
     /** Class for SingletonList obtained at runtime. */
     public static final Class<? extends Collection> SINGLETON_LIST_CLS = Collections.singletonList(null).getClass();
@@ -192,47 +195,55 @@ public class BinaryUtils {
      * Static class initializer.
      */
     static {
-        PLAIN_CLASS_TO_FLAG.put(Byte.class, GridBinaryMarshaller.BYTE);
-        PLAIN_CLASS_TO_FLAG.put(Short.class, GridBinaryMarshaller.SHORT);
-        PLAIN_CLASS_TO_FLAG.put(Integer.class, GridBinaryMarshaller.INT);
-        PLAIN_CLASS_TO_FLAG.put(Long.class, GridBinaryMarshaller.LONG);
-        PLAIN_CLASS_TO_FLAG.put(Float.class, GridBinaryMarshaller.FLOAT);
-        PLAIN_CLASS_TO_FLAG.put(Double.class, GridBinaryMarshaller.DOUBLE);
-        PLAIN_CLASS_TO_FLAG.put(Character.class, GridBinaryMarshaller.CHAR);
-        PLAIN_CLASS_TO_FLAG.put(Boolean.class, GridBinaryMarshaller.BOOLEAN);
-        PLAIN_CLASS_TO_FLAG.put(BigDecimal.class, GridBinaryMarshaller.DECIMAL);
-        PLAIN_CLASS_TO_FLAG.put(String.class, GridBinaryMarshaller.STRING);
-        PLAIN_CLASS_TO_FLAG.put(UUID.class, GridBinaryMarshaller.UUID);
-        PLAIN_CLASS_TO_FLAG.put(Date.class, GridBinaryMarshaller.DATE);
-        PLAIN_CLASS_TO_FLAG.put(Timestamp.class, GridBinaryMarshaller.TIMESTAMP);
-        PLAIN_CLASS_TO_FLAG.put(Time.class, GridBinaryMarshaller.TIME);
+        Map<Class<?>, Byte> clsToFlag = new HashMap<>();
 
-        PLAIN_CLASS_TO_FLAG.put(byte[].class, GridBinaryMarshaller.BYTE_ARR);
-        PLAIN_CLASS_TO_FLAG.put(short[].class, GridBinaryMarshaller.SHORT_ARR);
-        PLAIN_CLASS_TO_FLAG.put(int[].class, GridBinaryMarshaller.INT_ARR);
-        PLAIN_CLASS_TO_FLAG.put(long[].class, GridBinaryMarshaller.LONG_ARR);
-        PLAIN_CLASS_TO_FLAG.put(float[].class, GridBinaryMarshaller.FLOAT_ARR);
-        PLAIN_CLASS_TO_FLAG.put(double[].class, GridBinaryMarshaller.DOUBLE_ARR);
-        PLAIN_CLASS_TO_FLAG.put(char[].class, GridBinaryMarshaller.CHAR_ARR);
-        PLAIN_CLASS_TO_FLAG.put(boolean[].class, GridBinaryMarshaller.BOOLEAN_ARR);
-        PLAIN_CLASS_TO_FLAG.put(BigDecimal[].class, GridBinaryMarshaller.DECIMAL_ARR);
-        PLAIN_CLASS_TO_FLAG.put(String[].class, GridBinaryMarshaller.STRING_ARR);
-        PLAIN_CLASS_TO_FLAG.put(UUID[].class, GridBinaryMarshaller.UUID_ARR);
-        PLAIN_CLASS_TO_FLAG.put(Date[].class, GridBinaryMarshaller.DATE_ARR);
-        PLAIN_CLASS_TO_FLAG.put(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
-        PLAIN_CLASS_TO_FLAG.put(Time[].class, GridBinaryMarshaller.TIME_ARR);
+        clsToFlag.put(Byte.class, GridBinaryMarshaller.BYTE);
+        clsToFlag.put(Short.class, GridBinaryMarshaller.SHORT);
+        clsToFlag.put(Integer.class, GridBinaryMarshaller.INT);
+        clsToFlag.put(Long.class, GridBinaryMarshaller.LONG);
+        clsToFlag.put(Float.class, GridBinaryMarshaller.FLOAT);
+        clsToFlag.put(Double.class, GridBinaryMarshaller.DOUBLE);
+        clsToFlag.put(Character.class, GridBinaryMarshaller.CHAR);
+        clsToFlag.put(Boolean.class, GridBinaryMarshaller.BOOLEAN);
+        clsToFlag.put(BigDecimal.class, GridBinaryMarshaller.DECIMAL);
+        clsToFlag.put(String.class, GridBinaryMarshaller.STRING);
+        clsToFlag.put(UUID.class, GridBinaryMarshaller.UUID);
+        clsToFlag.put(Date.class, GridBinaryMarshaller.DATE);
+        clsToFlag.put(Timestamp.class, GridBinaryMarshaller.TIMESTAMP);
+        clsToFlag.put(Time.class, GridBinaryMarshaller.TIME);
 
-        for (Map.Entry<Class<?>, Byte> entry : PLAIN_CLASS_TO_FLAG.entrySet())
-            FLAG_TO_CLASS.put(entry.getValue(), entry.getKey());
+        clsToFlag.put(byte[].class, GridBinaryMarshaller.BYTE_ARR);
+        clsToFlag.put(short[].class, GridBinaryMarshaller.SHORT_ARR);
+        clsToFlag.put(int[].class, GridBinaryMarshaller.INT_ARR);
+        clsToFlag.put(long[].class, GridBinaryMarshaller.LONG_ARR);
+        clsToFlag.put(float[].class, GridBinaryMarshaller.FLOAT_ARR);
+        clsToFlag.put(double[].class, GridBinaryMarshaller.DOUBLE_ARR);
+        clsToFlag.put(char[].class, GridBinaryMarshaller.CHAR_ARR);
+        clsToFlag.put(boolean[].class, GridBinaryMarshaller.BOOLEAN_ARR);
+        clsToFlag.put(BigDecimal[].class, GridBinaryMarshaller.DECIMAL_ARR);
+        clsToFlag.put(String[].class, GridBinaryMarshaller.STRING_ARR);
+        clsToFlag.put(UUID[].class, GridBinaryMarshaller.UUID_ARR);
+        clsToFlag.put(Date[].class, GridBinaryMarshaller.DATE_ARR);
+        clsToFlag.put(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
+        clsToFlag.put(Time[].class, GridBinaryMarshaller.TIME_ARR);
 
-        PLAIN_CLASS_TO_FLAG.put(byte.class, GridBinaryMarshaller.BYTE);
-        PLAIN_CLASS_TO_FLAG.put(short.class, GridBinaryMarshaller.SHORT);
-        PLAIN_CLASS_TO_FLAG.put(int.class, GridBinaryMarshaller.INT);
-        PLAIN_CLASS_TO_FLAG.put(long.class, GridBinaryMarshaller.LONG);
-        PLAIN_CLASS_TO_FLAG.put(float.class, GridBinaryMarshaller.FLOAT);
-        PLAIN_CLASS_TO_FLAG.put(double.class, GridBinaryMarshaller.DOUBLE);
-        PLAIN_CLASS_TO_FLAG.put(char.class, GridBinaryMarshaller.CHAR);
-        PLAIN_CLASS_TO_FLAG.put(boolean.class, GridBinaryMarshaller.BOOLEAN);
+        clsToFlag.put(byte.class, GridBinaryMarshaller.BYTE);
+        clsToFlag.put(short.class, GridBinaryMarshaller.SHORT);
+        clsToFlag.put(int.class, GridBinaryMarshaller.INT);
+        clsToFlag.put(long.class, GridBinaryMarshaller.LONG);
+        clsToFlag.put(float.class, GridBinaryMarshaller.FLOAT);
+        clsToFlag.put(double.class, GridBinaryMarshaller.DOUBLE);
+        clsToFlag.put(char.class, GridBinaryMarshaller.CHAR);
+        clsToFlag.put(boolean.class, GridBinaryMarshaller.BOOLEAN);
+
+        PLAIN_CLASS_TO_FLAG = Map.copyOf(clsToFlag);
+
+        FLAG_TO_CLASS = PLAIN_CLASS_TO_FLAG.entrySet()
+            .stream()
+            .filter(e -> !e.getKey().isPrimitive())
+            .collect(Collectors.toUnmodifiableMap(Map.Entry::getValue, Map.Entry::getKey));
+
+        BINARY_CLS = Set.copyOf(FLAG_TO_CLASS.values());
 
         for (byte b : new byte[] {
             GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG,
@@ -246,35 +257,6 @@ public class BinaryUtils {
 
             PLAIN_TYPE_FLAG[b] = true;
         }
-
-        BINARY_CLS.add(Byte.class);
-        BINARY_CLS.add(Short.class);
-        BINARY_CLS.add(Integer.class);
-        BINARY_CLS.add(Long.class);
-        BINARY_CLS.add(Float.class);
-        BINARY_CLS.add(Double.class);
-        BINARY_CLS.add(Character.class);
-        BINARY_CLS.add(Boolean.class);
-        BINARY_CLS.add(String.class);
-        BINARY_CLS.add(UUID.class);
-        BINARY_CLS.add(Date.class);
-        BINARY_CLS.add(Timestamp.class);
-        BINARY_CLS.add(Time.class);
-        BINARY_CLS.add(BigDecimal.class);
-        BINARY_CLS.add(byte[].class);
-        BINARY_CLS.add(short[].class);
-        BINARY_CLS.add(int[].class);
-        BINARY_CLS.add(long[].class);
-        BINARY_CLS.add(float[].class);
-        BINARY_CLS.add(double[].class);
-        BINARY_CLS.add(char[].class);
-        BINARY_CLS.add(boolean[].class);
-        BINARY_CLS.add(String[].class);
-        BINARY_CLS.add(UUID[].class);
-        BINARY_CLS.add(Date[].class);
-        BINARY_CLS.add(Timestamp[].class);
-        BINARY_CLS.add(Time[].class);
-        BINARY_CLS.add(BigDecimal[].class);
 
         FIELD_TYPE_NAMES = new String[104];
 
@@ -3081,6 +3063,49 @@ public class BinaryUtils {
     public static void detachAllowedIfPossible(Object o) {
         if (isBinaryObjectImpl(o))
             ((BinaryObjectImpl)o).detachAllowed(true);
+    }
+
+    /**
+     * @param meta Binary metadata.
+     * @return Schemas identifiers of the specified {@link BinaryMetadata}.
+     */
+    public static Collection<T2<Integer, int[]>> schemasAndFieldsIds(BinaryMetadata meta) {
+        return F.viewReadOnly(meta.schemas(), s -> new T2<>(s.schemaId(), s.fieldIds()));
+    }
+
+    /**
+     * Gets field by its order.
+     *
+     * @param reader Reader.
+     * @param order Order.
+     */
+    public static int fieldId(BinaryReaderEx reader, int order) {
+        return ((BinaryReaderExImpl)reader).getOrCreateSchema().fieldId(order);
+    }
+
+    /**
+     * @param typeId Type ID.
+     * @param typeName Type name.
+     * @param fields Fields map.
+     * @param affKeyFieldName Affinity key field name.
+     * @param schemasAndFieldIds Schemas and fields identifiers.
+     * @param isEnum Enum flag.
+     * @param enumMap Enum name to ordinal mapping.
+     * @return New instance of {@link BinaryMetadata}.
+     */
+    public static BinaryMetadata binaryMetadata(
+        int typeId,
+        String typeName,
+        @Nullable Map<String, BinaryFieldMetadata> fields,
+        @Nullable String affKeyFieldName,
+        @Nullable Collection<T2<Integer, List<Integer>>> schemasAndFieldIds,
+        boolean isEnum,
+        @Nullable Map<String, Integer> enumMap) {
+        List<BinarySchema> schemas = F.isEmpty(schemasAndFieldIds) ? null : schemasAndFieldIds.stream()
+            .map(t -> new BinarySchema(t.get1(), t.get2()))
+            .collect(Collectors.toList());
+
+        return new BinaryMetadata(typeId, typeName, fields, affKeyFieldName, schemas, isEnum, enumMap);
     }
 
     /**
