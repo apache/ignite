@@ -563,7 +563,12 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (zkCluster != null) {
             try {
                 zkCluster.close();
+                Thread.sleep(100);
             }
+            catch (NullPointerException npe) {
+                U.warn(log, "Zookeeper cluster shutdown caused NullPointerException: " + npe);
+            }
+
             catch (Exception e) {
                 U.error(log, "Failed to stop Zookeeper client: " + e, e);
             }
