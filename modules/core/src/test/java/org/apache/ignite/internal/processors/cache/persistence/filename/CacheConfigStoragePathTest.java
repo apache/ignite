@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -110,6 +111,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
 
                 for (File cacheDir : ft.cacheStorages(ccfg)) {
                     ensureExists(cacheDir);
+
                     if (!F.isEmpty(csp)) {
                         for (File partfile : cacheDir.listFiles(NodeFileTree::partitionFile)) {
                             int part = NodeFileTree.partId(partfile);
@@ -226,6 +228,11 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
             IntStream.range(0, PARTS_CNT).forEach(i -> assertTrue(i + " partition must be found", parts.contains(i)));
         });
 
-        assertEquals(6, seenGrps.size());
+        assertEquals(grpCount(), seenGrps.size());
+    }
+
+    /** */
+    private int grpCount() {
+        return Arrays.stream(ccfgs()).map(CU::cacheOrGroupName).collect(Collectors.toSet()).size();
     }
 }
