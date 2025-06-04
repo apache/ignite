@@ -25,13 +25,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteAtomicLong;
+import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,20 +48,21 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Test freelists ensuring that the optimization by the C2 Jit compilator was done.
+ * Test {@link IgniteCache#clear} and {@link PagesList#mergeNoNext} ensuring that the optimization
+ * by the C2 Jit compiler was done for the {@link PagesList.CutTail#run}.
  */
 @RunWith(Parameterized.class)
 public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
-    /** */
-    private static final int KEYS_COUNT = 5_000;
+    /** Name of Ignite atomic to inform job in remove server node about C2 compilation. */
+    private static final String COMPILED_ATOMIC_NAME = "compiled";
 
-    /** Signals once method under test is C2 Jit compiled in server node. */
-    CountDownLatch c2JitCompiled = new CountDownLatch(1);
+    /** Signals once method under test is C2 Jit compiled in remote server node. */
+    private final CountDownLatch c2JitCompiledLatch = new CountDownLatch(1);
 
-    AtomicBoolean failed = new AtomicBoolean(false);
+    /** Signals that failure was detected in remote server node. */
+    private final AtomicBoolean failed = new AtomicBoolean(false);
 
-    IgniteAtomicLong stop;
-
+    /** Page size. */
     private int pageSize;
 
     /** JVM options to start the server node in remote JVM. */
@@ -72,8 +73,7 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<List<String>> params() {
         ArrayList<List<String>> params = new ArrayList<>(List.of(
-            List.of("-XX:+UseShenandoahGC")
-                ,
+            List.of("-XX:+UseShenandoahGC"),
             List.of("-XX:+UseShenandoahGC", "-ea"),
 
             List.of("-XX:+UseG1GC"),
@@ -86,23 +86,20 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
         return params;
     }
 
-    /**
-     * Ensure that the PagesList$CutTail::run handler is not broken if C2 Jit-compiled.
-     * With various garbage collectors and with assertions both turned on and off.
-     */
+    /** */
     @Test
     public void testMergeNoNext() throws Exception {
         try (Ignite ignite = prepareCluster(jvmOpts,
-                "org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList$CutTail::run")) {
-            stop = ignite.atomicLong("stop", 0, true);
+            "org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList$CutTail::run")) {
+            IgniteAtomicReference<Boolean> compiled = ignite.atomicReference(COMPILED_ATOMIC_NAME, false, true);
 
             IgniteFuture<Void> jobFut = ignite.compute().runAsync(new TestMergeNoNextJob(pageSize));
 
-            assertTrue(c2JitCompiled.await(getTestTimeout() / 2, TimeUnit.MILLISECONDS));
+            assertTrue(c2JitCompiledLatch.await(getTestTimeout() / 2, TimeUnit.MILLISECONDS));
 
-            stop.incrementAndGet();
+            compiled.set(true);
 
-            jobFut.get(getTestTimeout() / 2, TimeUnit.MILLISECONDS);
+            jobFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
             assertFalse("cache.clear() failed", failed.get());
         }
@@ -110,7 +107,10 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
 
     /**
      * Starts server node in remote JVM with the JVM options passed.
-     * Registers listener to signal once the method passed is C2 Jit-compiled in server node.
+     * <p>
+     * Registers listeners to signal once the method passed is C2 Jit-compiled
+     * and if cache clear fails in the server node.
+     * <p>
      * Starts client node in local JVM.
      *
      * @param jvmOpts JVM options for the server node.
@@ -123,15 +123,15 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
         ListeningTestLogger lsnrLog = new ListeningTestLogger(log);
 
         lsnrLog.registerListener(new CallbackExecutorLogListener(".*Topology snapshot \\[ver=1,.*",
-                remoteJvmServerStarted::countDown));
+            remoteJvmServerStarted::countDown));
 
         lsnrLog.registerListener(new CallbackExecutorLogListener(
-                ".*Compiled method \\(c2\\).*" + method.replace("$", "\\$") + ".*",
-                c2JitCompiled::countDown));
+            ".*Compiled method \\(c2\\).*" + method.replace("$", "\\$") + ".*",
+            c2JitCompiledLatch::countDown));
 
         lsnrLog.registerListener(new CallbackExecutorLogListener(
             ".*CorruptedFreeListException: Failed to remove data by link.*",
-                () -> failed.set(true)));
+            () -> failed.set(true)));
 
         IgniteConfiguration cfg = optimize(getConfiguration("remote-jvm-server"));
 
@@ -158,8 +158,30 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Perfrom concurrent updates and deletes ensuring the CutTail called enough
-     * times to invoke the C2 optimizing Jit compiler.
+     * Test that {@link PagesList#mergeNoNext} is not broken called from the {@link IgniteCache#clear}.
+     * <p>
+     * Notes:
+     * <ul>
+     * <li> Insert rows of the same size (which is a little bit smaller than the page) so that free
+     *      pages are accumulated in the single bucket of the freelist.
+     * <li> Insert rows in reverse key order and use one partition. This ensures that the most recently
+     *      inserted rows will be removed first during cache clear. This forces that freelist's bucket will be shrinked
+     *      from the tail and {@link PagesList#mergeNoNext} will be called.
+     * <li> To force the {@link PagesList.CutTail#run} C2 Jit compilation:<ul>
+     *     <li> Remove several rows to have some pages in the reuse bucket.
+     *     <li> Number of the reuse pages should be just above the {@link PagesListNodeIO} capacity.
+     *          So that adding single row would remove tail page from the reuse bucket list (cutting of the bucket's tail).
+     *          And removing of this row would add new tail page again.
+     *     <li> Repeatedly insert and remove row generating the {@link PagesList.CutTail#run} calls until it's C2 compiled.</ul>
+     * <li> Number of remaining rows should be also just above the {@link PagesListNodeIO} capacity. So that freelist bucket has
+     *      more than one page.
+     * <li> If the {@link PagesList.CutTail#run} is broken by the C2 Jit compiler
+     *      (see <a href="https://issues.apache.org/jira/browse/IGNITE-17734">IGNITE-17734</a>) the subsequent call to
+     *      {@link IgniteCache#clear} would fail two times with:<ul>
+     *      <li>"Tail not found: 0" - just in the {@link PagesList.CutTail#run} during the first attempt to cut the freelist bucket tail.
+     *      <li>"Tail not found: 844420635166727" (or other non-zero page id) - during the last row remove in {@code PagesList#updateTail},
+     *          since bucket's tail link wasn't correctly updated and contains outdated value because of previous failure.</ul>
+     * </ul>
      */
     private static class TestMergeNoNextJob implements IgniteRunnable {
         /** */
@@ -176,7 +198,7 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            IgniteAtomicLong stop = ignite.atomicLong("stop",0,false);
+            IgniteAtomicReference<Boolean> compiled = ignite.atomicReference(COMPILED_ATOMIC_NAME, false, true);
 
             IgniteCache<Object, Object> cache = ignite.createCache(
                 new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -194,14 +216,14 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
             for (int i = 1; i <= capacity; i++)
                 cache.remove(i);
 
-            while (stop.get() == 0) {
+            while (!compiled.get()) {
                 try {
                     cache.put(0, new byte[2 * dataSize]);
 
                     cache.remove(0);
                 }
                 catch (Exception e) {
-                    stop.incrementAndGet();
+                    compiled.set(true);
                 }
             }
 
@@ -233,11 +255,6 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
         pageSize = dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize();
-
-        dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(pageSize * 3L * KEYS_COUNT));
-
-        cfg.setDataStorageConfiguration(dsCfg);
 
         return cfg;
     }
