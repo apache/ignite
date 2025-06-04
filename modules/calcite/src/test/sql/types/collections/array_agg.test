@@ -61,3 +61,24 @@ SELECT ARRAY_AGG(b ORDER BY b) as c FROM T1 GROUP BY a ORDER BY a
 ----
 [10, 22]
 [21]
+
+query T
+SELECT ARRAY_AGG(b ORDER BY c) as c FROM T1 GROUP BY a ORDER BY a
+----
+[22, 10]
+[21]
+
+query T
+SELECT ARRAY_CONCAT_AGG(a) FROM (SELECT 1 as id, ARRAY[1, 2, 3] as a UNION SELECT 1 as id, ARRAY[4, 5, 6] as a) GROUP BY id
+----
+[1, 2, 3, 4, 5, 6]
+
+query T
+SELECT ARRAY_CONCAT_AGG(a ORDER BY rate DESC) FROM (SELECT 1 as id, ARRAY[10, 2, 24] as a, 2 as rate UNION SELECT 1 as id, ARRAY[4, 5, 2] as a, 1 as rate) GROUP BY id
+----
+[10, 2, 24, 4, 5, 2]
+
+query T
+SELECT ARRAY_CONCAT_AGG(a ORDER BY CARDINALITY(a)) FROM (SELECT 1 as id, ARRAY[3, 7, 2, 5] as a UNION SELECT 1 as id, ARRAY[2, 0] as a) GROUP BY id
+----
+[2, 0, 3, 7, 2, 5]
