@@ -149,9 +149,9 @@ public class NodeFileTreeCompatibilityTest extends IgnitePersistenceCompatibilit
 
         cleanPersistenceDir();
 
-        FileUtils.deleteDirectory(new File(oldWorkDir));
+        U.delete(Path.of(oldWorkDir));
 
-        FileUtils.deleteDirectory(new File(U.defaultWorkDirectory()));
+        snpPath(U.defaultWorkDirectory(), EX_SNAPSHOTS_FOLDER, true);
     }
 
     /** */
