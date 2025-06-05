@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal;
 
+import java.io.Externalizable;
 import java.io.IOException;
-import java.io.Serializable;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -204,7 +206,7 @@ public class IgniteDiagnosticMessage implements Message {
     }
 
     /** */
-    public abstract static class DiagnosticBaseInfo implements Serializable {
+    public abstract static class DiagnosticBaseInfo implements Externalizable {
         /** @return Key to group similar messages. */
         public Object mergeKey() {
             return getClass();
@@ -228,10 +230,15 @@ public class IgniteDiagnosticMessage implements Message {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final int cacheId;
+        private int cacheId;
 
         /** */
         private Collection<KeyCacheObject> keys;
+
+        /** Empty constructor required by {@link Externalizable}. */
+        public TxEntriesInfo() {
+            // No-op.
+        }
 
         /**
          * @param cacheId Cache ID.
@@ -288,19 +295,18 @@ public class IgniteDiagnosticMessage implements Message {
             this.keys.addAll(other0.keys);
         }
 
-        /**
-         * @param out Output stream.
-         * @throws IOException If failed.
-         */
-        private void writeObject(java.io.ObjectOutputStream out)
-            throws IOException {
-            /*
-            Transform to List, otherwise Set unmarshalling fails since need
-            call KeyCacheObject.finishUnmarshal before adding in Set.
-             */
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
             this.keys = new ArrayList<>(keys);
 
-            out.defaultWriteObject();
+            out.writeObject(this.keys);
+            out.writeInt(cacheId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            keys = (Collection<KeyCacheObject>)in.readObject();
+            cacheId = in.readInt();
         }
     }
 
@@ -310,7 +316,12 @@ public class IgniteDiagnosticMessage implements Message {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final AffinityTopologyVersion topVer;
+        private AffinityTopologyVersion topVer;
+
+        /** Empty constructor required by {@link Externalizable}. */
+        public ExchangeInfo() {
+            // No-op.
+        }
 
         /** @param topVer Exchange version. */
         ExchangeInfo(AffinityTopologyVersion topVer) {
@@ -338,6 +349,16 @@ public class IgniteDiagnosticMessage implements Message {
         @Override public Object mergeKey() {
             return new T2<>(getClass(), topVer);
         }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(topVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            topVer = (AffinityTopologyVersion)in.readObject();
+        }
     }
 
     /** */
@@ -346,10 +367,15 @@ public class IgniteDiagnosticMessage implements Message {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final GridCacheVersion dhtVer;
+        private GridCacheVersion dhtVer;
 
         /** */
-        private final GridCacheVersion nearVer;
+        private GridCacheVersion nearVer;
+
+        /** Empty constructor required by {@link Externalizable}. */
+        public TxInfo() {
+            // No-op.
+        }
 
         /**
          * @param dhtVer Tx dht version.
@@ -390,6 +416,18 @@ public class IgniteDiagnosticMessage implements Message {
         /** {@inheritDoc} */
         @Override public Object mergeKey() {
             return new T3<>(getClass(), nearVer, dhtVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(dhtVer);
+            out.writeObject(nearVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            dhtVer = (GridCacheVersion)in.readObject();
+            nearVer = (GridCacheVersion)in.readObject();
         }
     }
 
