@@ -313,7 +313,7 @@ public class IgniteDiagnosticMessage implements Message {
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             this.keys = new ArrayList<>(keys);
 
-            U.writeCollection(out, this.keys);
+            U.writeCollection(out, keys);
             out.writeInt(cacheId);
         }
 
