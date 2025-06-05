@@ -71,6 +71,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.ShutdownPolicy;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -151,7 +152,6 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
-import org.junit.Rule;
 import org.junit.Test;
 
 import static java.io.File.separatorChar;
@@ -192,6 +192,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.util.TestCommandsProvider.registerCommand;
+import static org.apache.ignite.util.TestCommandsProvider.unregisterAll;
 import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
 
 /**
@@ -225,18 +227,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public static final String REENCRYPTION_SUSPEND = "suspend_reencryption";
 
     /** */
+    @SystemProperty(value = "Enables special test mode for offline command processing")
+    public static final String OFFLINE_COMMAND_TEST = "OFFLINE_COMMAND_TEST";
+
+    /** */
     protected static File defaultDiagnosticDir;
 
     /** */
     protected static File customDiagnosticDir;
-
-    /** */
-    @Rule
-    public final RegisterTestCommandsRule registerTestCmdsRule = new RegisterTestCommandsRule();
-
-    /** */
-    @Rule
-    public final OfflineCommandTestRule offlineCmdTestRule = new OfflineCommandTestRule();
 
     /** */
     protected ListeningTestLogger listeningLog;
@@ -3874,18 +3872,24 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** */
     @Test
-    @RegisterTestCommands(value = OfflineTestCommand.class)
-    @OfflineCommandTest
+    @WithSystemProperty(key = OFFLINE_COMMAND_TEST, value = "true")
     public void testOfflineCommand() throws Exception {
-        startGrid(0);
+        try {
+            registerCommand(new OfflineTestCommand());
 
-        injectTestSystemOut();
+            startGrid(0);
 
-        String input = "Test Offline Command";
+            injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--offline-test", "--input", input));
+            String input = "Test Offline Command";
 
-        assertTrue(testOut.toString().contains(input));
+            assertEquals(EXIT_CODE_OK, execute("--offline-test", "--input", input));
+
+            assertTrue(testOut.toString().contains(input));
+        }
+        finally {
+            unregisterAll();
+        }
     }
 
     /**

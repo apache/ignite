@@ -21,23 +21,21 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsProvider;
 
 /** Enables registration of additional commands for testing purposes. */
 public class TestCommandsProvider implements CommandsProvider {
     /** Commands. */
-    private static final Set<Class<? extends Command<?, ?>>> COMMANDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private static final Set<Command<?, ?>> COMMANDS = new HashSet<>();
 
     /**
      * Registers a new command.
      *
-     * @param cmdCls Command class.
+     * @param cmd Command to register.
      */
-    public static void registerCommand(Class<? extends Command<?, ?>> cmdCls) {
-        COMMANDS.add(cmdCls);
+    public static void registerCommand(Command<?, ?> cmd) {
+        COMMANDS.add(cmd);
     }
 
     /** Unregisters all registered commands. */
@@ -47,16 +45,6 @@ public class TestCommandsProvider implements CommandsProvider {
 
     /** {@inheritDoc} */
     @Override public Collection<Command<?, ?>> commands() {
-        try {
-            Set<Command<?, ?>> cmds = new HashSet<>();
-
-            for (Class<? extends Command<?, ?>> clazz : COMMANDS)
-                cmds.add(clazz.getDeclaredConstructor().newInstance());
-
-            return cmds;
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to register test commands", e);
-        }
+        return Collections.unmodifiableSet(COMMANDS);
     }
 }
