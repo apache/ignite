@@ -184,7 +184,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         leftInBuf.add(row);
 
-        join();
+        if (waitingLeft == 0 && waitingRight <= 0)
+            join();
     }
 
     /** */
@@ -198,7 +199,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         rightInBuf.add(row);
 
-        join();
+        if (waitingRight == 0 && waitingLeft <= 0)
+            join();
     }
 
     /** */
@@ -210,7 +212,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         waitingLeft = NOT_WAITING;
 
-        join();
+        if (waitingRight <= 0)
+            join();
     }
 
     /** */
@@ -222,7 +225,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         waitingRight = NOT_WAITING;
 
-        join();
+        if (waitingLeft <= 0)
+            join();
     }
 
     /** */
@@ -239,8 +243,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     protected abstract void join() throws Exception;
 
     /** Checks if finished considering strictly one shoulder. */
-    protected void checkFinished(boolean leftShoulder) throws Exception {
-        checkFinished(leftShoulder ? -1 : 1, false);
+    protected boolean checkFinished(boolean leftShoulder) throws Exception {
+        return checkFinished(leftShoulder ? -1 : 1, false);
     }
 
     /**
@@ -249,7 +253,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
      * @param shoulder If <0, checks the only left input. If is 0, checks both inputs. If >0, checks only right input.
      * @param strict Works with only with {@code input} == 0. If {@code true}, checks both inputs. Otherwise, checks any input.
      */
-    protected void checkFinished(int shoulder, boolean strict) throws Exception {
+    protected boolean checkFinished(int shoulder, boolean strict) throws Exception {
         if (!distributed
             || (shoulder == 0 && !strict && (waitingLeft == NOT_WAITING || waitingRight == NOT_WAITING))
             || (shoulder == 0 && strict && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)
@@ -258,8 +262,13 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         ) {
             requested = 0;
             rightMaterialization = null;
+
             downstream().end();
+
+            return true;
         }
+
+        return false;
     }
 
     /** */
@@ -407,12 +416,14 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            tryToRequestInputs();
-
-            if (requested > 0 && ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
+            if (requested > 0
+                && ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
                 || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null))
+                && checkFinished(0, false)
             )
-                checkFinished(0, false);
+                return;
+
+            tryToRequestInputs();
         }
     }
 
@@ -562,10 +573,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            tryToRequestInputs();
+            if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty() && checkFinished(true))
+                return;
 
-            if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
-                checkFinished(true);
+            tryToRequestInputs();
         }
     }
 
@@ -727,10 +738,11 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            tryToRequestInputs();
+            if (requested > 0 && waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null
+                && checkFinished(false))
+                return;
 
-            if (requested > 0 && waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null)
-                checkFinished(false);
+            tryToRequestInputs();
         }
     }
 
@@ -931,12 +943,13 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            tryToRequestInputs();
-
             if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()
                 && waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty() && rightMaterialization == null
+                && checkFinished(0, true)
             )
-                checkFinished(0, true);
+                return;
+
+            tryToRequestInputs();
         }
     }
 
@@ -997,12 +1010,14 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            tryToRequestInputs();
-
-            if (requested > 0 && ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()
-                || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty())))
+            if (requested > 0
+                && ((waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty()
+                    || (waitingRight == NOT_WAITING && right == null && rightInBuf.isEmpty())))
+                && checkFinished(0, false)
             )
-                checkFinished(0, false);
+                return;
+
+            tryToRequestInputs();
         }
     }
 
@@ -1057,10 +1072,10 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            tryToRequestInputs();
+            if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty() && checkFinished(true))
+                return;
 
-            if (requested > 0 && waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty())
-                checkFinished(true);
+            tryToRequestInputs();
         }
     }
 }
