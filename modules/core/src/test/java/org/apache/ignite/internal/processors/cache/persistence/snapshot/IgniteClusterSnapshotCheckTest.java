@@ -84,7 +84,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
@@ -100,10 +99,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Cluster-wide snapshot check procedure tests.
  */
 public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
-    /** */
-    @Parameterized.Parameter(2)
-    public boolean severalStorages;
-
     /** Map of intermediate compute task results collected prior performing reduce operation on them. */
     private final Map<Class<?>, Map<PartitionKey, List<PartitionHashRecord>>> jobResults = new ConcurrentHashMap<>();
 
@@ -112,18 +107,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Optional cache name to be created on demand. */
     private static final String OPTIONAL_CACHE_NAME = "CacheName";
-
-    /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}, severalStorages={2}")
-    public static Collection<Object[]> params() {
-        List<Object[]> res = new ArrayList<>();
-
-        for (boolean onlyPrimary: new boolean[] {true, false})
-            for (boolean severalStorages: new boolean[] {true, false})
-                res.add(new Object[] { false, onlyPrimary, severalStorages});
-
-        return res;
-    }
 
     /** Cleanup data of task execution results if need. */
     @Before
