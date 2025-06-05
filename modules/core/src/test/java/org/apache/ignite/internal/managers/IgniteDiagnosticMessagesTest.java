@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -40,10 +41,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -119,7 +122,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDiagnosticMessages1() throws Exception {
-        checkBasicDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL);
+        checkDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL, false);
     }
 
     /**
@@ -129,7 +132,15 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     public void testDiagnosticMessages2() throws Exception {
         connectionsPerNode = 5;
 
-        checkBasicDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL);
+        checkDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMoreDiagnosticMessages() throws Exception {
+        checkDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL, true);
     }
 
     /**
@@ -605,7 +616,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
-    private void checkBasicDiagnosticInfo(CacheAtomicityMode atomicityMode) throws Exception {
+    private void checkDiagnosticInfo(CacheAtomicityMode atomicityMode, boolean needMoreInfo) throws Exception {
         startGrids(3);
 
         startClientGrid(3);
@@ -617,7 +628,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        sendDiagnostic();
+        sendDiagnostic(needMoreInfo);
 
         for (int i = 0; i < 5; i++) {
             final IgniteCache<Object, Object> cache = ignite(i).cache(DEFAULT_CACHE_NAME);
@@ -631,13 +642,13 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             }, 10, "cache-thread");
         }
 
-        sendDiagnostic();
+        sendDiagnostic(needMoreInfo);
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void sendDiagnostic() throws Exception {
+    private void sendDiagnostic(boolean needMoreInfo) throws Exception {
         for (int i = 0; i < 5; i++) {
             IgniteKernal node = (IgniteKernal)ignite(i);
 
@@ -650,6 +661,12 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                     IgniteDiagnosticPrepareContext ctx = new IgniteDiagnosticPrepareContext(node.localNodeId());
 
                     ctx.basicInfo(dstNode.id(), "Test diagnostic");
+
+                    if (needMoreInfo) {
+                        ctx.remoteTxInfo(dstNode.id(), new GridCacheVersion(), new GridCacheVersion(), "Remote Tx message");
+                        ctx.exchangeInfo(dstNode.id(), new AffinityTopologyVersion(), "Exchange message");
+                        ctx.txKeyInfo(dstNode.id(), 0, Set.of(), "TxKey message");
+                    }
 
                     ctx.send(node.context(), new IgniteInClosure<IgniteInternalFuture<String>>() {
                         @Override public void apply(IgniteInternalFuture<String> diagFut) {
@@ -671,6 +688,13 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                         msg.contains("Test diagnostic") &&
                             msg.contains(searchMsg) &&
                             msg.contains("Partitions exchange info [readyVer=AffinityTopologyVersion [topVer=5, minorTopVer="));
+
+                    if (needMoreInfo) {
+                        assertTrue("Unexpected message: " + msg,
+                            msg.contains("Remote Tx message") &&
+                            msg.contains("Exchange message") &&
+                            msg.contains("TxKey message"));
+                    }
                 }
             }
         }
