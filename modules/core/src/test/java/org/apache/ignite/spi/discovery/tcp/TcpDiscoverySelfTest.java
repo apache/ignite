@@ -2049,6 +2049,12 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             ignite0.destroyCache(DEFAULT_CACHE_NAME); // Send custom message.
 
+            Iterable<?> pendingMsgsIterable = GridTestUtils.getFieldValue(spi.impl, "msgWorker", "pendingMsgs");
+
+            boolean noPendingMsgsFound = GridTestUtils.waitForCondition(() -> !pendingMsgsIterable.iterator().hasNext(), 1_000);
+
+            assertTrue(noPendingMsgsFound);
+
             stopGrid(1);
 
             log.info("Start new node.");
