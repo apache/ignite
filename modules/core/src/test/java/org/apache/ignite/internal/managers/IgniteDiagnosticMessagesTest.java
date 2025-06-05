@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -42,6 +43,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
@@ -122,7 +125,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDiagnosticMessages1() throws Exception {
-        checkDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL, false);
+        checkBasicDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /**
@@ -132,15 +135,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     public void testDiagnosticMessages2() throws Exception {
         connectionsPerNode = 5;
 
-        checkDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMoreDiagnosticMessages() throws Exception {
-        checkDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL, true);
+        checkBasicDiagnosticInfo(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /**
@@ -614,10 +609,9 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
     /**
      * @param atomicityMode Cache atomicity mode.
-     * @param needMoreInfo {@code True} if need more diagnostic info.
      * @throws Exception If failed.
      */
-    private void checkDiagnosticInfo(CacheAtomicityMode atomicityMode, boolean needMoreInfo) throws Exception {
+    private void checkBasicDiagnosticInfo(CacheAtomicityMode atomicityMode) throws Exception {
         startGrids(3);
 
         startClientGrid(3);
@@ -629,7 +623,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        sendDiagnostic(needMoreInfo);
+        sendDiagnostic();
 
         for (int i = 0; i < 5; i++) {
             final IgniteCache<Object, Object> cache = ignite(i).cache(DEFAULT_CACHE_NAME);
@@ -643,14 +637,17 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             }, 10, "cache-thread");
         }
 
-        sendDiagnostic(needMoreInfo);
+        sendDiagnostic();
     }
 
     /**
-     * @param needMoreInfo {@code True} if need more diagnostic info.
      * @throws Exception If failed.
      */
-    private void sendDiagnostic(boolean needMoreInfo) throws Exception {
+    private void sendDiagnostic() throws Exception {
+        GridCacheContext<Object, Object> cacheCtx = ignite(0).context().cache().internalCache(DEFAULT_CACHE_NAME).context();
+
+        byte[] data = ignite(0).context().cacheObjects().marshal(cacheCtx.cacheObjectContext(), "data");
+
         for (int i = 0; i < 5; i++) {
             IgniteKernal node = (IgniteKernal)ignite(i);
 
@@ -664,11 +661,14 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
                     ctx.basicInfo(dstNode.id(), "Test diagnostic");
 
-                    if (needMoreInfo) {
-                        ctx.remoteTxInfo(dstNode.id(), new GridCacheVersion(), new GridCacheVersion(), "Remote Tx message");
-                        ctx.exchangeInfo(dstNode.id(), new AffinityTopologyVersion(), "Exchange message");
-                        ctx.txKeyInfo(dstNode.id(), 0, Set.of(), "TxKey message");
-                    }
+                    GridCacheVersion dhtVer = new GridCacheVersion(0, 0, 0);
+                    GridCacheVersion nearVer = new GridCacheVersion(0, 0, 1);
+
+                    ctx.remoteTxInfo(dstNode.id(), dhtVer, nearVer, "Remote Tx message");
+
+                    ctx.exchangeInfo(dstNode.id(), new AffinityTopologyVersion(dstNode.order()), "Exchange message");
+
+                    ctx.txKeyInfo(dstNode.id(), cacheCtx.cacheId(), Set.of(new KeyCacheObjectImpl("data", data, -1)), "TxKey message");
 
                     ctx.send(node.context(), new IgniteInClosure<IgniteInternalFuture<String>>() {
                         @Override public void apply(IgniteInternalFuture<String> diagFut) {
@@ -686,17 +686,25 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                     String searchMsg = "General node info [id=" + dstNode.id() + ", client=" + dstNode.isClient() +
                         ", discoTopVer=AffinityTopologyVersion [topVer=5, minorTopVer=";
 
+                    String searchExchangeMsg = "Exchange future: GridDhtPartitionsExchangeFuture " +
+                            "[firstDiscoEvt=DiscoveryEvent [evtNode=TcpDiscoveryNode [id=" + dstNode.id();
+
+                    String searchTxMsg = "Related transactions [dhtVer=" + dhtVer + ", nearVer=" + nearVer;
+
+                    Predicate<String> txKeyMsgPred = str ->
+                            str.contains("Failed to find cache with id: " + cacheCtx.cacheId()) ||
+                            str.contains("Cache entries [cacheId=" + cacheCtx.cacheId() + ", cacheName=" + DEFAULT_CACHE_NAME);
+
                     assertTrue("Unexpected message: " + msg,
                         msg.contains("Test diagnostic") &&
-                            msg.contains(searchMsg) &&
-                            msg.contains("Partitions exchange info [readyVer=AffinityTopologyVersion [topVer=5, minorTopVer="));
-
-                    if (needMoreInfo) {
-                        assertTrue("Unexpected message: " + msg,
                             msg.contains("Remote Tx message") &&
-                                msg.contains("Exchange message") &&
-                                msg.contains("TxKey message"));
-                    }
+                            msg.contains("Exchange message") &&
+                            msg.contains("TxKey message") &&
+                            msg.contains(searchMsg) &&
+                            msg.contains("Partitions exchange info [readyVer=AffinityTopologyVersion [topVer=5, minorTopVer=") &&
+                            msg.contains(searchExchangeMsg) &&
+                            msg.contains(searchTxMsg) &&
+                            txKeyMsgPred.test(msg));
                 }
             }
         }

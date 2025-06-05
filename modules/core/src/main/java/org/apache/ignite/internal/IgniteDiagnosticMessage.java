@@ -23,12 +23,13 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext.CompoundInfo;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -41,8 +42,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -79,15 +78,22 @@ public class IgniteDiagnosticMessage implements Message {
     }
 
     /**
-     * @param reqBytes Marshalled request.
+     * @param marsh Marshaller.
+     * @param info Compound info.
      * @param futId Future ID.
      * @return Request message.
+     * @throws IgniteCheckedException If failed.
      */
-    public static IgniteDiagnosticMessage createRequest(byte[] reqBytes, long futId) {
+    public static IgniteDiagnosticMessage createRequest(Marshaller marsh,
+        CompoundInfo info,
+        long futId
+    ) throws IgniteCheckedException {
+        byte[] cBytes = U.marshal(marsh, info);
+
         IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage();
 
         msg.futId = futId;
-        msg.bytes = reqBytes;
+        msg.bytes = cBytes;
         msg.flags |= REQUEST_FLAG_MASK;
 
         return msg;
@@ -218,11 +224,6 @@ public class IgniteDiagnosticMessage implements Message {
      */
     public abstract static class DiagnosticBaseInfo {
         /**
-         * @return Key to group similar messages.
-         */
-        public abstract Object mergeKey();
-
-        /**
          * @param other Another info of the same type.
          */
         public void merge(DiagnosticBaseInfo other) {
@@ -296,11 +297,6 @@ public class IgniteDiagnosticMessage implements Message {
         }
 
         /** {@inheritDoc} */
-        @Override public Object mergeKey() {
-            return new T2<>(getClass(), cacheId);
-        }
-
-        /** {@inheritDoc} */
         @Override public void merge(DiagnosticBaseInfo other) {
             TxEntriesInfo other0 = (TxEntriesInfo)other;
 
@@ -311,16 +307,32 @@ public class IgniteDiagnosticMessage implements Message {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            this.keys = new ArrayList<>(keys);
-
-            U.writeCollection(out, keys);
             out.writeInt(cacheId);
+            U.writeCollection(out, keys);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            keys = U.readCollection(in);
             cacheId = in.readInt();
+            keys = U.readCollection(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TxEntriesInfo that = (TxEntriesInfo)o;
+
+            return cacheId == that.cacheId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hashCode(cacheId);
         }
     }
 
@@ -364,11 +376,6 @@ public class IgniteDiagnosticMessage implements Message {
         }
 
         /** {@inheritDoc} */
-        @Override public Object mergeKey() {
-            return new T2<>(getClass(), topVer);
-        }
-
-        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(topVer);
         }
@@ -376,6 +383,24 @@ public class IgniteDiagnosticMessage implements Message {
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             topVer = (AffinityTopologyVersion)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ExchangeInfo that = (ExchangeInfo)o;
+
+            return Objects.equals(topVer, that.topVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hashCode(topVer);
         }
     }
 
@@ -434,11 +459,6 @@ public class IgniteDiagnosticMessage implements Message {
         }
 
         /** {@inheritDoc} */
-        @Override public Object mergeKey() {
-            return new T3<>(getClass(), nearVer, dhtVer);
-        }
-
-        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(dhtVer);
             out.writeObject(nearVer);
@@ -448,6 +468,24 @@ public class IgniteDiagnosticMessage implements Message {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             dhtVer = (GridCacheVersion)in.readObject();
             nearVer = (GridCacheVersion)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TxInfo txInfo = (TxInfo)o;
+
+            return Objects.equals(dhtVer, txInfo.dhtVer) && Objects.equals(nearVer, txInfo.nearVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(dhtVer, nearVer);
         }
     }
 

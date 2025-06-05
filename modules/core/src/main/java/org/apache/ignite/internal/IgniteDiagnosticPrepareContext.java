@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -155,18 +160,23 @@ public class IgniteDiagnosticPrepareContext {
     /**
      *
      */
-    public static final class CompoundInfo implements Serializable {
+    public static final class CompoundInfo implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** ID of node sent info. */
-        private final UUID nodeId;
+        private UUID nodeId;
 
         /** Info to send on remote node. */
-        private Map<Object, DiagnosticBaseInfo> info = new LinkedHashMap<>();
+        private Set<DiagnosticBaseInfo> info = new LinkedHashSet<>();
 
         /** Local message related to remote info. */
         private transient Map<Object, List<String>> msgs = new LinkedHashMap<>();
+
+        /** Empty constructor required by {@link Externalizable}. */
+        public CompoundInfo() {
+            // No-op.
+        }
 
         /**
          * @param nodeId ID of node sent info.
@@ -213,7 +223,7 @@ public class IgniteDiagnosticPrepareContext {
          * @param ctx Grid context.
          */
         private void moreInfo(StringBuilder sb, GridKernalContext ctx) {
-            for (DiagnosticBaseInfo baseInfo : info.values()) {
+            for (DiagnosticBaseInfo baseInfo : info) {
                 try {
                     baseInfo.appendInfo(sb, ctx);
                 }
@@ -248,21 +258,31 @@ public class IgniteDiagnosticPrepareContext {
          * @param msg Message.
          * @param baseInfo Info or {@code null} if only basic info is needed.
          */
-        public void add(String msg, @Nullable IgniteDiagnosticMessage.DiagnosticBaseInfo baseInfo) {
-            Object key = baseInfo != null ? baseInfo.mergeKey() : getClass();
+        public void add(String msg, @Nullable DiagnosticBaseInfo baseInfo) {
+            Object key = baseInfo != null ? baseInfo : getClass();
 
-            List<String> msgs0 = msgs.computeIfAbsent(key, k -> new ArrayList<>());
-
-            msgs0.add(msg);
+            msgs.computeIfAbsent(key, k -> new ArrayList<>()).add(msg);
 
             if (baseInfo != null) {
-                DiagnosticBaseInfo baseInfo0 = info.get(baseInfo.mergeKey());
-
-                if (baseInfo0 == null)
-                    info.put(baseInfo.mergeKey(), baseInfo);
-                else
-                    baseInfo0.merge(baseInfo);
+                if (!info.add(baseInfo) && baseInfo instanceof TxEntriesInfo) {
+                    for (DiagnosticBaseInfo baseInfo0 : info) {
+                        if (baseInfo0.equals(baseInfo))
+                            baseInfo0.merge(baseInfo);
+                    }
+                }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(nodeId);
+            U.writeCollection(out, info);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            nodeId = (UUID)in.readObject();
+            info = U.readSet(in);
         }
     }
 }
