@@ -614,6 +614,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
     /**
      * @param atomicityMode Cache atomicity mode.
+     * @param needMoreInfo {@code True} if need more diagnostic info.
      * @throws Exception If failed.
      */
     private void checkDiagnosticInfo(CacheAtomicityMode atomicityMode, boolean needMoreInfo) throws Exception {
@@ -646,6 +647,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param needMoreInfo {@code True} if need more diagnostic info.
      * @throws Exception If failed.
      */
     private void sendDiagnostic(boolean needMoreInfo) throws Exception {
