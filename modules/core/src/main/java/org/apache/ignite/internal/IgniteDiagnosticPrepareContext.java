@@ -164,6 +164,57 @@ public class IgniteDiagnosticPrepareContext {
             this.nodeId = nodeId;
         }
 
+        /**
+         * @param ctx Grid context.
+         * @return Diagnostic info.
+         */
+        public final IgniteDiagnosticInfo diagnosticInfo(GridKernalContext ctx) {
+            try {
+                IgniteInternalFuture<String> commInfo = dumpCommunicationInfo(ctx.config().getCommunicationSpi(), nodeId);
+
+                StringBuilder sb = new StringBuilder();
+
+                dumpNodeBasicInfo(sb, ctx);
+
+                sb.append(U.nl());
+
+                dumpExchangeInfo(sb, ctx.cache().context().exchange());
+
+                sb.append(U.nl());
+
+                ctx.cache().context().io().dumpPendingMessages(sb);
+
+                sb.append(commInfo.get(10_000));
+
+                moreInfo(sb, ctx);
+
+                return new IgniteDiagnosticInfo(sb.toString());
+            }
+            catch (Exception e) {
+                ctx.cluster().diagnosticLog().error("Failed to execute diagnostic message closure: " + e, e);
+
+                return new IgniteDiagnosticInfo("Failed to execute diagnostic message closure: " + e);
+            }
+        }
+
+        /**
+         * @param sb String builder.
+         * @param ctx Grid context.
+         */
+        private void moreInfo(StringBuilder sb, GridKernalContext ctx) {
+            for (DiagnosticBaseInfo i : info.values()) {
+                try {
+                    i.appendInfo(sb, ctx);
+                }
+                catch (Exception e) {
+                    ctx.cluster().diagnosticLog().error(
+                            "Failed to populate diagnostic with additional information: " + e, e);
+
+                    sb.append(U.nl()).append("Failed to populate diagnostic with additional information: ").append(e);
+                }
+            }
+        }
+
         /** @return Initial message. */
         public String message() {
             StringBuilder sb = new StringBuilder();
@@ -198,59 +249,6 @@ public class IgniteDiagnosticPrepareContext {
                     info.put(i.mergeKey(), i);
                 else
                     i0.merge(i);
-            }
-        }
-    }
-
-    /**
-     * @param ctx Grid context.
-     * @param i Compound info.
-     * @return Ignite diagnostic info.
-     */
-    public static IgniteDiagnosticInfo diagnosticInfo(GridKernalContext ctx, CompoundInfo i) {
-        try {
-            IgniteInternalFuture<String> commInfo = dumpCommunicationInfo(ctx.config().getCommunicationSpi(), i.nodeId);
-
-            StringBuilder sb = new StringBuilder();
-
-            dumpNodeBasicInfo(sb, ctx);
-
-            sb.append(U.nl());
-
-            dumpExchangeInfo(sb, ctx.cache().context().exchange());
-
-            sb.append(U.nl());
-
-            ctx.cache().context().io().dumpPendingMessages(sb);
-
-            sb.append(commInfo.get(10_000));
-
-            moreInfo(i.info.values(), sb, ctx);
-
-            return new IgniteDiagnosticInfo(sb.toString());
-        }
-        catch (Exception e) {
-            ctx.cluster().diagnosticLog().error("Failed to execute diagnostic message closure: " + e, e);
-
-            return new IgniteDiagnosticInfo("Failed to execute diagnostic message closure: " + e);
-        }
-    }
-
-    /**
-     * @param info All diagnostic base info.
-     * @param sb String builder.
-     * @param ctx Grid context.
-     */
-    private static void moreInfo(Collection<DiagnosticBaseInfo> info, StringBuilder sb, GridKernalContext ctx) {
-        for (DiagnosticBaseInfo i : info) {
-            try {
-                i.appendInfo(sb, ctx);
-            }
-            catch (Exception e) {
-                ctx.cluster().diagnosticLog().error(
-                        "Failed to populate diagnostic with additional information: " + e, e);
-
-                sb.append(U.nl()).append("Failed to populate diagnostic with additional information: ").append(e);
             }
         }
     }

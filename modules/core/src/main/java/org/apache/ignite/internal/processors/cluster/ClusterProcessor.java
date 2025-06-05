@@ -91,7 +91,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CLUSTER_PROC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_INTERNAL_DIAGNOSTIC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_METRICS;
-import static org.apache.ignite.internal.IgniteDiagnosticPrepareContext.diagnosticInfo;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsistentIds;
@@ -403,7 +402,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                         try {
                             CompoundInfo i = msg0.unmarshal(marsh);
 
-                            diagRes = marsh.marshal(diagnosticInfo(ctx, i));
+                            diagRes = marsh.marshal(i.diagnosticInfo(ctx));
                         }
                         catch (Exception e) {
                             U.error(diagnosticLog, "Failed to run diagnostic closure: " + e, e);
