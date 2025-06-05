@@ -246,7 +246,7 @@ public class IgniteDiagnosticPrepareContext {
 
         /**
          * @param msg Message.
-         * @param baseInfo Addition info or {@code null} if only basic info is needed.
+         * @param baseInfo Info or {@code null} if only basic info is needed.
          */
         public void add(String msg, @Nullable IgniteDiagnosticMessage.DiagnosticBaseInfo baseInfo) {
             Object key = baseInfo != null ? baseInfo.mergeKey() : getClass();
@@ -256,12 +256,12 @@ public class IgniteDiagnosticPrepareContext {
             msgs0.add(msg);
 
             if (baseInfo != null) {
-                DiagnosticBaseInfo i0 = info.get(baseInfo.mergeKey());
+                DiagnosticBaseInfo baseInfo0 = info.get(baseInfo.mergeKey());
 
-                if (i0 == null)
+                if (baseInfo0 == null)
                     info.put(baseInfo.mergeKey(), baseInfo);
                 else
-                    i0.merge(baseInfo);
+                    baseInfo0.merge(baseInfo);
             }
         }
     }

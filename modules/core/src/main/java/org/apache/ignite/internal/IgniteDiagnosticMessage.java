@@ -319,7 +319,7 @@ public class IgniteDiagnosticMessage implements Message {
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            keys = (Collection<KeyCacheObject>)in.readObject();
+            keys = U.readCollection(in);
             cacheId = in.readInt();
         }
     }
