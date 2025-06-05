@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -40,10 +41,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -650,6 +653,9 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                     IgniteDiagnosticPrepareContext ctx = new IgniteDiagnosticPrepareContext(node.localNodeId());
 
                     ctx.basicInfo(dstNode.id(), "Test diagnostic");
+                    ctx.remoteTxInfo(dstNode.id(), new GridCacheVersion(), new GridCacheVersion(), "test message");
+                    ctx.exchangeInfo(dstNode.id(), new AffinityTopologyVersion(), "test message");
+                    ctx.txKeyInfo(dstNode.id(), 0, Set.of(), "test message");
 
                     ctx.send(node.context(), new IgniteInClosure<IgniteInternalFuture<String>>() {
                         @Override public void apply(IgniteInternalFuture<String> diagFut) {

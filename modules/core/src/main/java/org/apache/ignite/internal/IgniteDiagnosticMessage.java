@@ -82,6 +82,8 @@ public class IgniteDiagnosticMessage implements Message {
     public static IgniteDiagnosticMessage createRequest(byte[] reqBytes, long futId) {
         IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage();
 
+        System.out.println(">>> IgniteDiagnosticMessage#createRequest: " + reqBytes.length);
+
         msg.futId = futId;
         msg.bytes = reqBytes;
         msg.flags |= REQUEST_FLAG_MASK;
