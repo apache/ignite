@@ -206,7 +206,7 @@ public class IgniteDiagnosticMessage implements Message {
     }
 
     /** */
-    public abstract static class DiagnosticBaseInfo implements Externalizable {
+    public abstract static class DiagnosticBaseInfo {
         /** @return Key to group similar messages. */
         public Object mergeKey() {
             return getClass();
@@ -225,7 +225,7 @@ public class IgniteDiagnosticMessage implements Message {
     }
 
     /** */
-    public static final class TxEntriesInfo extends DiagnosticBaseInfo {
+    public static final class TxEntriesInfo extends DiagnosticBaseInfo implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -311,7 +311,7 @@ public class IgniteDiagnosticMessage implements Message {
     }
 
     /** */
-    public static final class ExchangeInfo extends DiagnosticBaseInfo {
+    public static final class ExchangeInfo extends DiagnosticBaseInfo implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -362,7 +362,7 @@ public class IgniteDiagnosticMessage implements Message {
     }
 
     /** */
-    public static final class TxInfo extends DiagnosticBaseInfo {
+    public static final class TxInfo extends DiagnosticBaseInfo implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
