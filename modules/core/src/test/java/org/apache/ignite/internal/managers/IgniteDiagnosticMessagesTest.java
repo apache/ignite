@@ -692,8 +692,8 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                     if (needMoreInfo) {
                         assertTrue("Unexpected message: " + msg,
                             msg.contains("Remote Tx message") &&
-                            msg.contains("Exchange message") &&
-                            msg.contains("TxKey message"));
+                                msg.contains("Exchange message") &&
+                                msg.contains("TxKey message"));
                     }
                 }
             }
