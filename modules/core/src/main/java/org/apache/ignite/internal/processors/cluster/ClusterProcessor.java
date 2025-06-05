@@ -885,8 +885,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
                 final String rmtMsg0 = rmtMsg;
 
-                IgniteInternalFuture<String> locFut = IgniteDiagnosticMessage.dumpCommunicationInfo(
-                    ctx.config().getCommunicationSpi(), nodeId);
+                IgniteInternalFuture<String> locFut = IgniteDiagnosticMessage.dumpCommunicationInfo(ctx, nodeId);
 
                 locFut.listen(new CI1<IgniteInternalFuture<String>>() {
                     @Override public void apply(IgniteInternalFuture<String> locFut) {

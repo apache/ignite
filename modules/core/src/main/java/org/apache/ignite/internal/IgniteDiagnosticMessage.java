@@ -407,9 +407,10 @@ public class IgniteDiagnosticMessage implements Message {
 
     /**
      * @param sb String builder.
-     * @param exchMgr Cache partition exchange manager.
+     * @param ctx Context.
      */
-    static void dumpExchangeInfo(StringBuilder sb, GridCachePartitionExchangeManager<?, ?> exchMgr) {
+    static void dumpExchangeInfo(StringBuilder sb, GridKernalContext ctx) {
+        GridCachePartitionExchangeManager<?, ?> exchMgr = ctx.cache().context().exchange();
         GridDhtTopologyFuture fut = exchMgr.lastTopologyFuture();
 
         sb.append("Partitions exchange info [readyVer=").append(exchMgr.readyAffinityVersion()).append(']').append(U.nl())
@@ -417,15 +418,23 @@ public class IgniteDiagnosticMessage implements Message {
     }
 
     /**
-     * @param spi Communication SPI.
+     * @param sb String builder.
+     * @param ctx Context.
+     */
+    static void dumpPendingCacheMessages(StringBuilder sb, GridKernalContext ctx) {
+        ctx.cache().context().io().dumpPendingMessages(sb);
+    }
+
+    /**
+     * @param ctx Context.
      * @param nodeId Target node ID.
      * @return Communication information future.
      */
-    public static IgniteInternalFuture<String> dumpCommunicationInfo(CommunicationSpi<?> spi, UUID nodeId) {
-        if (spi instanceof TcpCommunicationSpi)
-            return ((TcpCommunicationSpi)spi).dumpNodeStatistics(nodeId);
+    public static IgniteInternalFuture<String> dumpCommunicationInfo(GridKernalContext ctx, UUID nodeId) {
+        if (ctx.config().getCommunicationSpi() instanceof TcpCommunicationSpi)
+            return ((TcpCommunicationSpi)ctx.config().getCommunicationSpi()).dumpNodeStatistics(nodeId);
         else
-            return new GridFinishedFuture<>("Unexpected communication SPI: " + spi);
+            return new GridFinishedFuture<>("Unexpected communication SPI: " + ctx.config().getCommunicationSpi());
     }
 
     /**

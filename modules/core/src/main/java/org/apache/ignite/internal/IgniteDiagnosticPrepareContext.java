@@ -41,6 +41,7 @@ import static org.apache.ignite.internal.IgniteDiagnosticMessage.TxInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpCommunicationInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpExchangeInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpNodeBasicInfo;
+import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpPendingCacheMessages;
 
 /** Groups diagnostic info by node/info type. */
 public class IgniteDiagnosticPrepareContext {
@@ -170,7 +171,7 @@ public class IgniteDiagnosticPrepareContext {
          */
         public final IgniteDiagnosticInfo diagnosticInfo(GridKernalContext ctx) {
             try {
-                IgniteInternalFuture<String> commInfo = dumpCommunicationInfo(ctx.config().getCommunicationSpi(), nodeId);
+                IgniteInternalFuture<String> commInfo = dumpCommunicationInfo(ctx, nodeId);
 
                 StringBuilder sb = new StringBuilder();
 
@@ -178,11 +179,11 @@ public class IgniteDiagnosticPrepareContext {
 
                 sb.append(U.nl());
 
-                dumpExchangeInfo(sb, ctx.cache().context().exchange());
+                dumpExchangeInfo(sb, ctx);
 
                 sb.append(U.nl());
 
-                ctx.cache().context().io().dumpPendingMessages(sb);
+                dumpPendingCacheMessages(sb, ctx);
 
                 sb.append(commInfo.get(10_000));
 
@@ -208,7 +209,7 @@ public class IgniteDiagnosticPrepareContext {
                 }
                 catch (Exception e) {
                     ctx.cluster().diagnosticLog().error(
-                            "Failed to populate diagnostic with additional information: " + e, e);
+                        "Failed to populate diagnostic with additional information: " + e, e);
 
                     sb.append(U.nl()).append("Failed to populate diagnostic with additional information: ").append(e);
                 }
