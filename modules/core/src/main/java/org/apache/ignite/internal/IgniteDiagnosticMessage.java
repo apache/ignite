@@ -52,7 +52,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ *
+ */
 public class IgniteDiagnosticMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
@@ -69,7 +71,9 @@ public class IgniteDiagnosticMessage implements Message {
     /** */
     private byte[] bytes;
 
-    /** Required by {@link GridIoMessageFactory}. */
+    /**
+     * Required by {@link GridIoMessageFactory}.
+     */
     public IgniteDiagnosticMessage() {
         // No-op.
     }
@@ -81,8 +85,6 @@ public class IgniteDiagnosticMessage implements Message {
      */
     public static IgniteDiagnosticMessage createRequest(byte[] reqBytes, long futId) {
         IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage();
-
-        System.out.println(">>> IgniteDiagnosticMessage#createRequest: " + reqBytes.length);
 
         msg.futId = futId;
         msg.bytes = reqBytes;
@@ -118,12 +120,16 @@ public class IgniteDiagnosticMessage implements Message {
         return U.unmarshal(marsh, bytes, null);
     }
 
-    /** @return Future ID. */
+    /**
+     * @return Future ID.
+     */
     public long futureId() {
         return futId;
     }
 
-    /** @return {@code True} if this is request message. */
+    /**
+     * @return {@code True} if this is request message.
+     */
     public boolean request() {
         return (flags & REQUEST_FLAG_MASK) != 0;
     }
@@ -207,14 +213,18 @@ public class IgniteDiagnosticMessage implements Message {
         // No-op.
     }
 
-    /** */
+    /**
+     *
+     */
     public abstract static class DiagnosticBaseInfo {
-        /** @return Key to group similar messages. */
-        public Object mergeKey() {
-            return getClass();
-        }
+        /**
+         * @return Key to group similar messages.
+         */
+        public abstract Object mergeKey();
 
-        /** @param other Another info of the same type. */
+        /**
+         * @param other Another info of the same type.
+         */
         public void merge(DiagnosticBaseInfo other) {
             // No-op.
         }
@@ -226,7 +236,9 @@ public class IgniteDiagnosticMessage implements Message {
         public abstract void appendInfo(StringBuilder sb, GridKernalContext ctx);
     }
 
-    /** */
+    /**
+     *
+     */
     public static final class TxEntriesInfo extends DiagnosticBaseInfo implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -301,7 +313,7 @@ public class IgniteDiagnosticMessage implements Message {
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             this.keys = new ArrayList<>(keys);
 
-            out.writeObject(this.keys);
+            U.writeCollection(out, this.keys);
             out.writeInt(cacheId);
         }
 
@@ -312,7 +324,9 @@ public class IgniteDiagnosticMessage implements Message {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     public static final class ExchangeInfo extends DiagnosticBaseInfo implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -325,7 +339,9 @@ public class IgniteDiagnosticMessage implements Message {
             // No-op.
         }
 
-        /** @param topVer Exchange version. */
+        /**
+         * @param topVer Exchange version.
+         */
         ExchangeInfo(AffinityTopologyVersion topVer) {
             this.topVer = topVer;
         }
@@ -363,7 +379,9 @@ public class IgniteDiagnosticMessage implements Message {
         }
     }
 
-    /** */
+    /**
+     *
+     */
     public static final class TxInfo extends DiagnosticBaseInfo implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;

@@ -43,7 +43,9 @@ import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpExchangeInf
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpNodeBasicInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpPendingCacheMessages;
 
-/** Groups diagnostic info by node/info type. */
+/**
+ * Groups diagnostic closures by node/closure type.
+ */
 public class IgniteDiagnosticPrepareContext {
     /** */
     private final UUID locNodeId;
@@ -51,7 +53,9 @@ public class IgniteDiagnosticPrepareContext {
     /** */
     private final Map<UUID, CompoundInfo> info = new HashMap<>();
 
-    /** @param nodeId Local node ID. */
+    /**
+     * @param nodeId Local node ID.
+     */
     public IgniteDiagnosticPrepareContext(UUID nodeId) {
         locNodeId = nodeId;
     }
@@ -98,15 +102,17 @@ public class IgniteDiagnosticPrepareContext {
      * @return Compound info.
      */
     private CompoundInfo compoundInfo(UUID nodeId) {
-        CompoundInfo i = info.get(nodeId);
+        CompoundInfo compoundInfo = info.get(nodeId);
 
-        if (i == null)
-            info.put(nodeId, i = new CompoundInfo(locNodeId));
+        if (compoundInfo == null)
+            info.put(nodeId, compoundInfo = new CompoundInfo(locNodeId));
 
-        return i;
+        return compoundInfo;
     }
 
-    /** @return {@code True} if there are no added info. */
+    /**
+     * @return {@code True} if there are no added info.
+     */
     public boolean empty() {
         return info.isEmpty();
     }
@@ -146,7 +152,9 @@ public class IgniteDiagnosticPrepareContext {
         });
     }
 
-    /** */
+    /**
+     *
+     */
     public static final class CompoundInfo implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -160,7 +168,9 @@ public class IgniteDiagnosticPrepareContext {
         /** Local message related to remote info. */
         private transient Map<Object, List<String>> msgs = new LinkedHashMap<>();
 
-        /** @param nodeId ID of node sent info. */
+        /**
+         * @param nodeId ID of node sent info.
+         */
         CompoundInfo(UUID nodeId) {
             this.nodeId = nodeId;
         }
@@ -203,9 +213,9 @@ public class IgniteDiagnosticPrepareContext {
          * @param ctx Grid context.
          */
         private void moreInfo(StringBuilder sb, GridKernalContext ctx) {
-            for (DiagnosticBaseInfo i : info.values()) {
+            for (DiagnosticBaseInfo baseInfo : info.values()) {
                 try {
-                    i.appendInfo(sb, ctx);
+                    baseInfo.appendInfo(sb, ctx);
                 }
                 catch (Exception e) {
                     ctx.cluster().diagnosticLog().error(
@@ -216,7 +226,9 @@ public class IgniteDiagnosticPrepareContext {
             }
         }
 
-        /** @return Initial message. */
+        /**
+         * @return Initial message.
+         */
         public String message() {
             StringBuilder sb = new StringBuilder();
 
@@ -234,22 +246,22 @@ public class IgniteDiagnosticPrepareContext {
 
         /**
          * @param msg Message.
-         * @param i Addition info or {@code null} if only basic info is needed.
+         * @param baseInfo Addition info or {@code null} if only basic info is needed.
          */
-        public void add(String msg, @Nullable IgniteDiagnosticMessage.DiagnosticBaseInfo i) {
-            Object key = i != null ? i.mergeKey() : getClass();
+        public void add(String msg, @Nullable IgniteDiagnosticMessage.DiagnosticBaseInfo baseInfo) {
+            Object key = baseInfo != null ? baseInfo.mergeKey() : getClass();
 
             List<String> msgs0 = msgs.computeIfAbsent(key, k -> new ArrayList<>());
 
             msgs0.add(msg);
 
-            if (i != null) {
-                DiagnosticBaseInfo i0 = info.get(i.mergeKey());
+            if (baseInfo != null) {
+                DiagnosticBaseInfo i0 = info.get(baseInfo.mergeKey());
 
                 if (i0 == null)
-                    info.put(i.mergeKey(), i);
+                    info.put(baseInfo.mergeKey(), baseInfo);
                 else
-                    i0.merge(i);
+                    i0.merge(baseInfo);
             }
         }
     }

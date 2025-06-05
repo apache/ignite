@@ -400,9 +400,9 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                         byte[] diagRes;
 
                         try {
-                            CompoundInfo i = msg0.unmarshal(marsh);
+                            CompoundInfo info = msg0.unmarshal(marsh);
 
-                            diagRes = marsh.marshal(i.diagnosticInfo(ctx));
+                            diagRes = marsh.marshal(info.diagnosticInfo(ctx));
                         }
                         catch (Exception e) {
                             U.error(diagnosticLog, "Failed to run diagnostic closure: " + e, e);
@@ -862,15 +862,15 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * communication info about connection(s) with remote node.
      *
      * @param nodeId Target node ID.
-     * @param i Compound info.
+     * @param info Compound info.
      * @return Message future.
      */
-    public IgniteInternalFuture<String> requestDiagnosticInfo(final UUID nodeId, CompoundInfo i) {
+    public IgniteInternalFuture<String> requestDiagnosticInfo(final UUID nodeId, CompoundInfo info) {
         final GridFutureAdapter<String> infoFut = new GridFutureAdapter<>();
 
-        final String baseMsg = i.message();
+        final String baseMsg = info.message();
 
-        final IgniteInternalFuture<IgniteDiagnosticInfo> rmtFut = sendDiagnosticMessage(nodeId, i);
+        final IgniteInternalFuture<IgniteDiagnosticInfo> rmtFut = sendDiagnosticMessage(nodeId, info);
 
         rmtFut.listen(new CI1<IgniteInternalFuture<IgniteDiagnosticInfo>>() {
             @Override public void apply(IgniteInternalFuture<IgniteDiagnosticInfo> fut) {
@@ -914,12 +914,12 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /**
      * @param nodeId Target node ID.
-     * @param i Compound info.
+     * @param info Compound info.
      * @return Message future.
      */
-    private IgniteInternalFuture<IgniteDiagnosticInfo> sendDiagnosticMessage(UUID nodeId, CompoundInfo i) {
+    private IgniteInternalFuture<IgniteDiagnosticInfo> sendDiagnosticMessage(UUID nodeId, CompoundInfo info) {
         try {
-            byte[] reqBytes = U.marshal(marsh, i);
+            byte[] reqBytes = U.marshal(marsh, info);
 
             IgniteDiagnosticMessage msg = IgniteDiagnosticMessage.createRequest(reqBytes, diagFutId.getAndIncrement());
 
