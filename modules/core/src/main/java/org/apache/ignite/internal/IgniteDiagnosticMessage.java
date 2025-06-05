@@ -211,10 +211,16 @@ public class IgniteDiagnosticMessage implements Message {
             return getClass();
         }
 
-        /** @param other Another closure of the same type. */
+        /** @param other Another info of the same type. */
         public void merge(DiagnosticBaseInfo other) {
             // No-op.
         }
+
+        /**
+         * @param sb String builder.
+         * @param ctx Grid context.
+         */
+        public abstract void appendInfo(StringBuilder sb, GridKernalContext ctx);
     }
 
     /** */
@@ -235,6 +241,38 @@ public class IgniteDiagnosticMessage implements Message {
         TxEntriesInfo(int cacheId, Collection<KeyCacheObject> keys) {
             this.cacheId = cacheId;
             this.keys = new HashSet<>(keys);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {
+            sb.append(U.nl());
+
+            GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheId);
+
+            if (cctx == null) {
+                sb.append("Failed to find cache with id: ").append(cacheId);
+
+                return;
+            }
+
+            try {
+                for (KeyCacheObject key : keys)
+                    key.finishUnmarshal(cctx.cacheObjectContext(), null);
+            }
+            catch (IgniteCheckedException e) {
+                ctx.cluster().diagnosticLog().error("Failed to unmarshal key: " + e, e);
+
+                sb.append("Failed to unmarshal key: ").append(e).append(U.nl());
+            }
+
+            sb.append("Cache entries [cacheId=").append(cacheId)
+                .append(", cacheName=").append(cctx.name()).append("]: ");
+
+            for (KeyCacheObject key : keys) {
+                GridCacheMapEntry e = (GridCacheMapEntry)cctx.cache().peekEx(key);
+
+                sb.append(U.nl()).append("    Key [key=").append(key).append(", entry=").append(e).append("]");
+            }
         }
 
         /** {@inheritDoc} */
@@ -281,6 +319,23 @@ public class IgniteDiagnosticMessage implements Message {
         }
 
         /** {@inheritDoc} */
+        @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {
+            sb.append(U.nl());
+
+            List<GridDhtPartitionsExchangeFuture> futs = ctx.cache().context().exchange().exchangeFutures();
+
+            for (GridDhtPartitionsExchangeFuture fut : futs) {
+                if (topVer.equals(fut.initialVersion())) {
+                    sb.append("Exchange future: ").append(fut);
+
+                    return;
+                }
+            }
+
+            sb.append("Failed to find exchange future: ").append(topVer);
+        }
+
+        /** {@inheritDoc} */
         @Override public Object mergeKey() {
             return new T2<>(getClass(), topVer);
         }
@@ -304,6 +359,33 @@ public class IgniteDiagnosticMessage implements Message {
         TxInfo(GridCacheVersion dhtVer, GridCacheVersion nearVer) {
             this.dhtVer = dhtVer;
             this.nearVer = nearVer;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {
+            sb.append(U.nl())
+                .append("Related transactions [dhtVer=").append(dhtVer)
+                .append(", nearVer=").append(nearVer).append("]: ");
+
+            boolean found = false;
+
+            for (IgniteInternalTx tx : ctx.cache().context().tm().activeTransactions()) {
+                if (dhtVer.equals(tx.xidVersion()) || nearVer.equals(tx.nearXidVersion())) {
+                    sb.append(U.nl())
+                        .append("    ")
+                        .append(tx.getClass().getSimpleName())
+                        .append(" [ver=").append(tx.xidVersion())
+                        .append(", nearVer=").append(tx.nearXidVersion())
+                        .append(", topVer=").append(tx.topologyVersion())
+                        .append(", state=").append(tx.state())
+                        .append(", fullTx=").append(tx).append(']');
+
+                    found = true;
+                }
+            }
+
+            if (!found)
+                sb.append(U.nl()).append("Failed to find related transactions.");
         }
 
         /** {@inheritDoc} */
@@ -344,109 +426,6 @@ public class IgniteDiagnosticMessage implements Message {
             return ((TcpCommunicationSpi)spi).dumpNodeStatistics(nodeId);
         else
             return new GridFinishedFuture<>("Unexpected communication SPI: " + spi);
-    }
-
-    /**
-     * @param info All diagnostic base info.
-     * @param sb String builder.
-     * @param ctx Grid context.
-     */
-    public static void additionalInfo(Collection<DiagnosticBaseInfo> info, StringBuilder sb, GridKernalContext ctx) {
-        for (DiagnosticBaseInfo i : info) {
-            try {
-                additionalInfo(i, sb, ctx);
-            }
-            catch (Exception e) {
-                ctx.cluster().diagnosticLog().error(
-                        "Failed to populate diagnostic with additional information: " + e, e);
-
-                sb.append(U.nl()).append("Failed to populate diagnostic with additional information: ").append(e);
-            }
-        }
-    }
-
-    /**
-     * @param info Diagnostic base info.
-     * @param sb String builder.
-     * @param ctx Grid context.
-     */
-    private static void additionalInfo(DiagnosticBaseInfo info, StringBuilder sb, GridKernalContext ctx) {
-        if (info instanceof TxEntriesInfo) {
-            TxEntriesInfo info0 = (TxEntriesInfo)info;
-
-            sb.append(U.nl());
-
-            GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(info0.cacheId);
-
-            if (cctx == null) {
-                sb.append("Failed to find cache with id: ").append(info0.cacheId);
-
-                return;
-            }
-
-            try {
-                for (KeyCacheObject key : info0.keys)
-                    key.finishUnmarshal(cctx.cacheObjectContext(), null);
-            }
-            catch (IgniteCheckedException e) {
-                ctx.cluster().diagnosticLog().error("Failed to unmarshal key: " + e, e);
-
-                sb.append("Failed to unmarshal key: ").append(e).append(U.nl());
-            }
-
-            sb.append("Cache entries [cacheId=").append(info0.cacheId)
-                    .append(", cacheName=").append(cctx.name()).append("]: ");
-
-            for (KeyCacheObject key : info0.keys) {
-                GridCacheMapEntry e = (GridCacheMapEntry)cctx.cache().peekEx(key);
-
-                sb.append(U.nl()).append("    Key [key=").append(key).append(", entry=").append(e).append("]");
-            }
-        }
-        else if (info instanceof ExchangeInfo) {
-            ExchangeInfo info0 = (ExchangeInfo)info;
-
-            sb.append(U.nl());
-
-            List<GridDhtPartitionsExchangeFuture> futs = ctx.cache().context().exchange().exchangeFutures();
-
-            for (GridDhtPartitionsExchangeFuture fut : futs) {
-                if (info0.topVer.equals(fut.initialVersion())) {
-                    sb.append("Exchange future: ").append(fut);
-
-                    return;
-                }
-            }
-
-            sb.append("Failed to find exchange future: ").append(info0.topVer);
-        }
-        else if (info instanceof TxInfo) {
-            TxInfo info0 = (TxInfo)info;
-
-            sb.append(U.nl())
-                    .append("Related transactions [dhtVer=").append(info0.dhtVer)
-                    .append(", nearVer=").append(info0.nearVer).append("]: ");
-
-            boolean found = false;
-
-            for (IgniteInternalTx tx : ctx.cache().context().tm().activeTransactions()) {
-                if (info0.dhtVer.equals(tx.xidVersion()) || info0.nearVer.equals(tx.nearXidVersion())) {
-                    sb.append(U.nl())
-                            .append("    ")
-                            .append(tx.getClass().getSimpleName())
-                            .append(" [ver=").append(tx.xidVersion())
-                            .append(", nearVer=").append(tx.nearXidVersion())
-                            .append(", topVer=").append(tx.topologyVersion())
-                            .append(", state=").append(tx.state())
-                            .append(", fullTx=").append(tx).append(']');
-
-                    found = true;
-                }
-            }
-
-            if (!found)
-                sb.append(U.nl()).append("Failed to find related transactions.");
-        }
     }
 
     /**

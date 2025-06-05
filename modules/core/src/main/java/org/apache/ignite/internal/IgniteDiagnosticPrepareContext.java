@@ -38,7 +38,6 @@ import static org.apache.ignite.internal.IgniteDiagnosticMessage.DiagnosticBaseI
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.ExchangeInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.TxEntriesInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.TxInfo;
-import static org.apache.ignite.internal.IgniteDiagnosticMessage.additionalInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpCommunicationInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpExchangeInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpNodeBasicInfo;
@@ -226,7 +225,7 @@ public class IgniteDiagnosticPrepareContext {
 
             sb.append(commInfo.get(10_000));
 
-            additionalInfo(i.info.values(), sb, ctx);
+            moreInfo(i.info.values(), sb, ctx);
 
             return new IgniteDiagnosticInfo(sb.toString());
         }
@@ -234,6 +233,25 @@ public class IgniteDiagnosticPrepareContext {
             ctx.cluster().diagnosticLog().error("Failed to execute diagnostic message closure: " + e, e);
 
             return new IgniteDiagnosticInfo("Failed to execute diagnostic message closure: " + e);
+        }
+    }
+
+    /**
+     * @param info All diagnostic base info.
+     * @param sb String builder.
+     * @param ctx Grid context.
+     */
+    private static void moreInfo(Collection<DiagnosticBaseInfo> info, StringBuilder sb, GridKernalContext ctx) {
+        for (DiagnosticBaseInfo i : info) {
+            try {
+                i.appendInfo(sb, ctx);
+            }
+            catch (Exception e) {
+                ctx.cluster().diagnosticLog().error(
+                        "Failed to populate diagnostic with additional information: " + e, e);
+
+                sb.append(U.nl()).append("Failed to populate diagnostic with additional information: ").append(e);
+            }
         }
     }
 }
