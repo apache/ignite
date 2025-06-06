@@ -28,15 +28,17 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
-import static org.apache.ignite.internal.util.IgniteUtils.jdkVersion;
-import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
+import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MEMORY_UNALIGNED_ACCESS;
+import static org.apache.ignite.internal.util.CommonUtils.jdkVersion;
+import static org.apache.ignite.internal.util.CommonUtils.majorJavaVersion;
 
 /**
  * <p>Wrapper for {@link sun.misc.Unsafe} class.</p>
@@ -72,12 +74,9 @@ public abstract class GridUnsafe {
     /** Unaligned flag. */
     private static final boolean UNALIGNED = unaligned();
 
-    /** @see IgniteSystemProperties#IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD */
-    public static final long DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD = 0L;
-
     /** Per-byte copy threshold. */
-    private static final long PER_BYTE_THRESHOLD = IgniteSystemProperties.getLong(
-        IgniteSystemProperties.IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD, DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD);
+    private static final long PER_BYTE_THRESHOLD = IgniteCommonsSystemProperties.getLong(
+        IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD, DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD);
 
     /** Big endian. */
     public static final boolean BIG_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
@@ -1566,7 +1565,7 @@ public abstract class GridUnsafe {
     public static long calcAlign() {
         // Note: Alignment can also be set explicitly by -XX:ObjectAlignmentInBytes JVM property.
         return OBJ_REF_SIZE == 8L ? 8L :
-            U.nearestPow2(Math.max(8, (int)(Runtime.getRuntime().maxMemory() >> 32)), false);
+            CommonUtils.nearestPow2(Math.max(8, (int)(Runtime.getRuntime().maxMemory() >> 32)), false);
     }
 
     /** Calculate size with alignment. */
@@ -1583,7 +1582,7 @@ public abstract class GridUnsafe {
         boolean res = arch.equals("i386") || arch.equals("x86") || arch.equals("amd64") || arch.equals("x86_64");
 
         if (!res)
-            res = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MEMORY_UNALIGNED_ACCESS, false);
+            res = IgniteCommonsSystemProperties.getBoolean(IGNITE_MEMORY_UNALIGNED_ACCESS, false);
 
         return res;
     }
