@@ -18,6 +18,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
+import java.util.regex.Pattern;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -50,6 +52,9 @@ public class IgniteSqlFunctions {
     /** */
     private static final int DFLT_NUM_PRECISION = IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL);
 
+    /***/
+    private static final Pattern PATTERN_0_STAR_E = Pattern.compile("0*E");
+
     /**
      * Default constructor.
      */
@@ -70,6 +75,16 @@ public class IgniteSqlFunctions {
     /** CAST(DECIMAL AS VARCHAR). */
     public static String toString(BigDecimal x) {
         return x == null ? null : x.toPlainString();
+    }
+
+    /** Keeps casting like in v1.37 and Postgres. Example: 2::FLOAT is "2", not "2.0". */
+    public static String toString(double x) {
+        if (x == 0)
+            return "0E0";
+
+        String s = new BigDecimal(x, MathContext.DECIMAL64).stripTrailingZeros().toString();
+
+        return PATTERN_0_STAR_E.matcher(s).replaceAll("E").replace("E+", "E");
     }
 
     /** CAST(DOUBLE AS DECIMAL). */

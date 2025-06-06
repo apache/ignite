@@ -38,6 +38,7 @@ public class SqlReservedWordsTest extends GridCommonAbstractTest {
         "ANY",
         "ARRAY",
         "AS",
+        "ASOF",
         "ASYMMETRIC", // BETWEEN ASYMMETRIC .. AND ..
         "BETWEEN",
         "BOTH", // TRIM(BOTH .. FROM ..)
@@ -82,6 +83,8 @@ public class SqlReservedWordsTest extends GridCommonAbstractTest {
         "LIMIT",
         "LOCALTIME",
         "LOCALTIMESTAMP",
+        "MATCH_CONDITION",
+        "MEASURE",
         "MERGE",
         "MINUS",
         "NATURAL", // NATURAL JOIN
