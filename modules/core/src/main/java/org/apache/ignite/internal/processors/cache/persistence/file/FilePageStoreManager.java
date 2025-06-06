@@ -192,19 +192,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** {@inheritDoc} */
     @Override public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException {
         try {
-            File cacheWorkDir = ft.cacheStorage(cacheConfiguration);
+            for (File cacheWorkDir : ft.cacheStorages(cacheConfiguration)) {
+                if (!cacheWorkDir.exists())
+                    continue;
 
-            if (!cacheWorkDir.exists())
-                return;
-
-            try (DirectoryStream<Path> files = newDirectoryStream(cacheWorkDir.toPath(),
-                new DirectoryStream.Filter<Path>() {
-                    @Override public boolean accept(Path entry) throws IOException {
-                        return NodeFileTree.binFile(entry.toFile());
+                try (DirectoryStream<Path> files = newDirectoryStream(cacheWorkDir.toPath(),
+                    new DirectoryStream.Filter<Path>() {
+                        @Override public boolean accept(Path entry) throws IOException {
+                            return NodeFileTree.binFile(entry.toFile());
+                        }
+                    })) {
+                    for (Path path : files) {
+                        delete(path);
                     }
-                })) {
-                for (Path path : files)
-                    delete(path);
+                }
             }
         }
         catch (IOException e) {
@@ -298,7 +299,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         new MaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
                             "Corrupted cache groups found",
                             cacheCfgs.stream()
-                                .map(ccfg -> ft.cacheStorage(ccfg).getName())
+                                .map(ccfg -> ft.cacheStorages(ccfg)[0].getName())
                                 .collect(Collectors.joining(File.separator)))
                 );
             }
@@ -333,7 +334,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 boolean globalEnabled = cctx.database().walEnabled(grpDescId, false);
 
                 if (!locEnabled || !globalEnabled) {
-                    File dir = ft.cacheStorage(desc.config());
+                    File dir = ft.cacheConfigurationFile(desc.config()).getParentFile();
 
                     if (Arrays.stream(dir.listFiles()).anyMatch(f -> !NodeFileTree.cacheConfigFile(f)))
                         corruptedCacheGrps.add(desc.config());
@@ -549,9 +550,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         DataRegion dataRegion
     ) throws IgniteCheckedException {
         try {
-            boolean dirExisted = checkAndInitCacheWorkDir(cft);
+            boolean anyDirExisted = checkAndInitCacheWorkDir(cft);
 
-            if (dirExisted) {
+            if (anyDirExisted) {
                 MaintenanceRegistry mntcReg = cctx.kernalContext().maintenanceRegistry();
 
                 if (!mntcReg.isMaintenanceMode())
@@ -581,7 +582,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 }
             }
 
-            if (dirExisted && !idxFile.exists())
+            if (anyDirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(cft.groupId());
 
             FileVersionCheckingFactory pageStoreFactory = getPageStoreFactory(
@@ -627,47 +628,47 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param cft Cache file tree.
      */
     public static boolean checkAndInitCacheWorkDir(CacheFileTree cft) throws IgniteCheckedException {
-        File cacheWorkDir = cft.storage();
-
         boolean dirExisted = false;
 
-        ReadWriteLock lock = initDirLock.getLock(cacheWorkDir.getName().hashCode());
+        for (File cacheWorkDir : cft.storages()) {
+            ReadWriteLock lock = initDirLock.getLock(cacheWorkDir.getName().hashCode());
 
-        lock.writeLock().lock();
+            lock.writeLock().lock();
 
-        try {
-            if (!Files.exists(cacheWorkDir.toPath())) {
-                try {
-                    Files.createDirectory(cacheWorkDir.toPath());
+            try {
+                if (!Files.exists(cacheWorkDir.toPath())) {
+                    try {
+                        Files.createDirectory(cacheWorkDir.toPath());
+                    }
+                    catch (IOException e) {
+                        throw new IgniteCheckedException("Failed to initialize cache working directory " +
+                            "(failed to create, make sure the work folder has correct permissions): " +
+                            cacheWorkDir.getAbsolutePath(), e);
+                    }
                 }
-                catch (IOException e) {
-                    throw new IgniteCheckedException("Failed to initialize cache working directory " +
-                        "(failed to create, make sure the work folder has correct permissions): " +
-                        cacheWorkDir.getAbsolutePath(), e);
+                else {
+                    if (cacheWorkDir.isFile())
+                        throw new IgniteCheckedException("Failed to initialize cache working directory " +
+                            "(a file with the same name already exists): " + cacheWorkDir.getAbsolutePath());
+
+                    Path cacheWorkDirPath = cacheWorkDir.toPath();
+
+                    Path tmp = cacheWorkDirPath.getParent().resolve(cacheWorkDir.getName() + TMP_SUFFIX);
+
+                    dirExisted = true;
+
+                    if (!cacheWorkDir.exists())
+                        throw new IgniteCheckedException("Failed to initialize cache working directory " +
+                            "(failed to create, make sure the work folder has correct permissions): " +
+                            cacheWorkDir.getAbsolutePath());
+
+                    if (Files.exists(tmp))
+                        U.delete(tmp);
                 }
             }
-            else {
-                if (cacheWorkDir.isFile())
-                    throw new IgniteCheckedException("Failed to initialize cache working directory " +
-                        "(a file with the same name already exists): " + cacheWorkDir.getAbsolutePath());
-
-                Path cacheWorkDirPath = cacheWorkDir.toPath();
-
-                Path tmp = cacheWorkDirPath.getParent().resolve(cacheWorkDir.getName() + TMP_SUFFIX);
-
-                dirExisted = true;
-
-                if (!cacheWorkDir.exists())
-                    throw new IgniteCheckedException("Failed to initialize cache working directory " +
-                        "(failed to create, make sure the work folder has correct permissions): " +
-                        cacheWorkDir.getAbsolutePath());
-
-                if (Files.exists(tmp))
-                    U.delete(tmp);
+            finally {
+                lock.writeLock().unlock();
             }
-        }
-        finally {
-            lock.writeLock().unlock();
         }
 
         return dirExisted;

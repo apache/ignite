@@ -742,7 +742,7 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link CdcCacheEvent} and notifies the consumer. */
     private void updateCaches() {
         try {
-            if (!ft.nodeStorage().exists())
+            if (ft.allStorages().noneMatch(File::exists))
                 return;
 
             Set<Integer> destroyed = new HashSet<>(cachesState.keySet());

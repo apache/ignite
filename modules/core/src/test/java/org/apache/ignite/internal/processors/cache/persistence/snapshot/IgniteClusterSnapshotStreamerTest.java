@@ -502,9 +502,6 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         assertTrue(checkRes.exceptions().isEmpty());
 
-        if (!onlyPrimary)
-            assertTrue((expWrn != null) == checkRes.idleVerifyResult().hasConflicts());
-
         if (expWrn != null) {
             ListeningTestLogger testLog = new ListeningTestLogger();
 

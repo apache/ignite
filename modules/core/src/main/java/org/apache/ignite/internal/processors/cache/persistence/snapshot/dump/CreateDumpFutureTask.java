@@ -211,10 +211,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
             int grp = e.getKey();
 
-            File grpDumpDir = sft.cacheStorage(cctx.cache().cacheGroup(grp).config());
-
-            if (!grpDumpDir.mkdirs())
-                throw new IgniteCheckedException("Dump directory can't be created: " + grpDumpDir);
+            for (File grpDumpDir : sft.cacheStorages(cctx.cache().cacheGroup(grp).config())) {
+                if (!grpDumpDir.mkdirs())
+                    throw new IgniteCheckedException("Dump directory can't be created: " + grpDumpDir);
+            }
 
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
@@ -233,9 +233,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         return processed.keySet().stream().map(grp -> runAsync(() -> {
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
-            File grpDir = sft.cacheStorage(gctx.config());
-
-            IgniteUtils.ensureDirectory(grpDir, "dump group directory", null);
+            for (File grpDir : sft.cacheStorages(gctx.config()))
+                IgniteUtils.ensureDirectory(grpDir, "dump group directory", null);
 
             for (GridCacheContext<?, ?> cacheCtx : gctx.caches()) {
                 DynamicCacheDescriptor desc = cctx.kernalContext().cache().cacheDescriptor(cacheCtx.cacheId());
