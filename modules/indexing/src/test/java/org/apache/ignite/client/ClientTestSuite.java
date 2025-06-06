@@ -60,6 +60,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     ClientConfigurationTest.class,
     ClientCacheConfigurationTest.class,
+    ClientCacheHashMapPutAllTest.class,
     FunctionalTest.class,
     IgniteBinaryTest.class,
     LoadTest.class,
