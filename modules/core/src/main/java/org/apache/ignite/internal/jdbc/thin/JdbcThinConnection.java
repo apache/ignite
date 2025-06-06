@@ -81,7 +81,6 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.jdbc2.JdbcBlob;
 import org.apache.ignite.internal.jdbc2.JdbcClob;
@@ -2476,21 +2475,21 @@ public class JdbcThinConnection implements Connection {
         private final BinaryMetadataHandler cache = BinaryUtils.cachingMetadataHandler();
 
         /** {@inheritDoc} */
-        @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered)
+        @Override public void addMeta(int typeId, BinaryContext ctx, BinaryMetadata meta, boolean failIfUnregistered)
             throws BinaryObjectException {
             try {
-                doRequest(new JdbcBinaryTypePutRequest(((BinaryTypeImpl)meta).metadata()));
+                doRequest(new JdbcBinaryTypePutRequest(meta));
             }
             catch (ExecutionException | InterruptedException | ClientException | SQLException e) {
                 throw new BinaryObjectException(e);
             }
 
-            cache.addMeta(typeId, meta, failIfUnregistered); // merge
+            cache.addMeta(typeId, ctx, meta, failIfUnregistered); // merge
         }
 
         /** {@inheritDoc} */
-        @Override public void addMetaLocally(int typeId, BinaryType meta,
-            boolean failIfUnregistered) throws BinaryObjectException {
+        @Override public void addMetaLocally(int typeId, BinaryContext ctx, BinaryMetadata meta, boolean failIfUnregistered)
+            throws BinaryObjectException {
             throw new UnsupportedOperationException("Can't register metadata locally for thin client.");
         }
 
@@ -2508,14 +2507,40 @@ public class JdbcThinConnection implements Connection {
         @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
             BinaryMetadata meta = cache.metadata0(typeId);
 
-            if (meta == null) {
-                BinaryTypeImpl binType = (BinaryTypeImpl)getBinaryType(typeId);
-
-                if (binType != null)
-                    meta = binType.metadata();
-            }
+            if (meta == null)
+                meta = getBinaryMetadata(typeId);
 
             return meta;
+        }
+
+        /** {@inheritDoc} */
+        @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
+            BinaryType meta = cache.metadata(typeId, schemaId);
+
+            if (meta == null)
+                meta = getBinaryType(typeId, schemaId);
+
+            return meta;
+        }
+
+        /** {@inheritDoc} */
+        @Override public BinaryMetadata metadata0(int typeId, int schemaId) throws BinaryObjectException {
+            BinaryMetadata meta = cache.metadata0(typeId, schemaId);
+
+            if (meta == null)
+                meta = getBinaryMetadata(typeId, schemaId);
+
+            return meta;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
+            return cache.metadata();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<BinaryMetadata> metadata0() throws BinaryObjectException {
+            return cache.metadata0();
         }
 
         /**
@@ -2525,23 +2550,59 @@ public class JdbcThinConnection implements Connection {
          * @return Binary type.
          */
         private @Nullable BinaryType getBinaryType(int typeId) throws BinaryObjectException {
-            BinaryType binType = null;
+            BinaryMetadata meta = getBinaryMetadata(typeId);
+
+            return meta != null ? cache.metadata(typeId) : null;
+        }
+
+        /**
+         * Request binary type from grid. Returns {@code null} if requested type metadata doesn't have provided schemaId.
+         *
+         * @param typeId Type ID.
+         * @param schemaId Schema ID.
+         * @return Binary type.
+         */
+        private @Nullable BinaryType getBinaryType(int typeId, int schemaId) throws BinaryObjectException {
+            BinaryMetadata meta = getBinaryMetadata(typeId, schemaId);
+
+            return meta != null ? cache.metadata(typeId) : null;
+        }
+
+        /**
+         * Request binary metadata from grid. Returns {@code null} if requested metadata doesn't have provided schemaId.
+         *
+         * @param typeId Type ID.
+         * @param schemaId Schema ID.
+         * @return Binary type.
+         */
+        private @Nullable BinaryMetadata getBinaryMetadata(int typeId, int schemaId) throws BinaryObjectException {
+            BinaryMetadata meta = getBinaryMetadata(typeId);
+
+            return meta != null && meta.hasSchema(schemaId) ? meta : null;
+        }
+
+        /**
+         * Request binary metadata from grid.
+         *
+         * @param typeId Type ID.
+         * @return Binary type.
+         */
+        private @Nullable BinaryMetadata getBinaryMetadata(int typeId) throws BinaryObjectException {
+            BinaryMetadata meta;
+
             try {
                 JdbcBinaryTypeGetResult res = doRequest(new JdbcBinaryTypeGetRequest(typeId));
 
-                BinaryMetadata meta = res.meta();
-
-                if (meta != null) {
-                    binType = new BinaryTypeImpl(ctx, meta);
-
-                    cache.addMeta(typeId, binType, false);
-                }
+                meta = res.meta();
             }
             catch (ExecutionException | InterruptedException | ClientException | SQLException e) {
                 throw new BinaryObjectException(e);
             }
 
-            return binType;
+            if (meta != null)
+                cache.addMeta(typeId, ctx, meta, false);
+
+            return meta;
         }
 
         /**
@@ -2564,18 +2625,6 @@ public class JdbcThinConnection implements Connection {
          */
         public boolean handleResult(JdbcBinaryTypeGetResult res) {
             return handleResult(res.reqId(), res);
-        }
-
-        /** {@inheritDoc} */
-        @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-            BinaryType type = metadata(typeId);
-
-            return type != null && ((BinaryTypeImpl)type).metadata().hasSchema(schemaId) ? type : null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
-            return cache.metadata();
         }
     }
 
