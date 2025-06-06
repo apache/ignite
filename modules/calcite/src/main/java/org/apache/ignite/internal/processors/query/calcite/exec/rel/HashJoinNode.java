@@ -259,12 +259,14 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
                 try {
                     while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
+                        // Proceed with next left row, if previous was fully processed.
                         if (!rightIt.hasNext()) {
                             left = leftInBuf.remove();
 
                             rightIt = lookup(left).iterator();
                         }
 
+                        // Emits matched rows.
                         while (rightIt.hasNext()) {
                             checkState();
 
@@ -326,6 +328,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                     while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
                         checkState();
 
+                        // Proceed with next left row, if previous was fully processed.
                         if (!rightIt.hasNext()) {
                             left = leftInBuf.remove();
 
@@ -340,6 +343,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                             rightIt = rightRows.iterator();
                         }
 
+                        // Emit unmatched left row.
                         while (rightIt.hasNext()) {
                             checkState();
 
@@ -371,6 +375,9 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         /** Left row factory. */
         private final RowHandler.RowFactory<RowT> leftRowFactory;
 
+        /** */
+        private boolean drainMaterialization;
+
         /**
          * Creates node for RIGHT OUTER JOIN.
          *
@@ -401,12 +408,14 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                     while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
                         checkState();
 
+                        // Proceed with next left row, if previous was fully processed.
                         if (!rightIt.hasNext()) {
                             left = leftInBuf.remove();
 
                             rightIt = lookup(left).iterator();
                         }
 
+                        // Emits matched rows.
                         while (rightIt.hasNext()) {
                             checkState();
 
@@ -429,12 +438,17 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
+            // Emit unmatched right rows.
             if (left == null && leftInBuf.isEmpty() && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && requested > 0) {
                 inLoop = true;
 
                 try {
-                    if (!rightIt.hasNext())
+                    if (!rightIt.hasNext() && !drainMaterialization) {
+                        // Prevent scanning store more than once.
+                        drainMaterialization = true;
+
                         rightIt = untouched(hashStore);
+                    }
 
                     RowT emptyLeft = leftRowFactory.create();
 
@@ -465,6 +479,13 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         @Override protected boolean keepRowsWithNull() {
             return true;
         }
+
+        /** {@inheritDoc} */
+        @Override protected void rewindInternal() {
+            drainMaterialization = false;
+
+            super.rewindInternal();
+        }
     }
 
     /** */
@@ -474,6 +495,9 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         /** Right row factory. */
         private final RowHandler.RowFactory<RowT> rightRowFactory;
+
+        /** */
+        private boolean drainMaterialization;
 
         /**
          * Creates node for FULL OUTER JOIN.
@@ -508,11 +532,13 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                     while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
                         checkState();
 
+                        // Proceed with next left row, if previous was fully processed.
                         if (!rightIt.hasNext()) {
                             left = leftInBuf.remove();
 
                             Collection<RowT> rightRows = lookup(left);
 
+                            // Emit unmatched left row.
                             if (rightRows.isEmpty()) {
                                 requested--;
 
@@ -522,6 +548,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                             rightIt = rightRows.iterator();
                         }
 
+                        // Emits matched rows.
                         while (rightIt.hasNext()) {
                             checkState();
 
@@ -545,13 +572,17 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            if (left == null && !rightIt.hasNext() && leftInBuf.isEmpty() && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING
-                && requested > 0) {
+            // Emit unmatched right rows.Add commentMore actions
+            if (left == null && leftInBuf.isEmpty() && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && requested > 0) {
                 inLoop = true;
 
                 try {
-                    if (!rightIt.hasNext())
+                    if (!rightIt.hasNext() && !drainMaterialization) {
+                        // Prevent scanning store more than once.
+                        drainMaterialization = true;
+
                         rightIt = untouched(hashStore);
+                    }
 
                     RowT emptyLeft = leftRowFactory.create();
 
@@ -579,6 +610,13 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         /** {@inheritDoc} */
         @Override protected boolean keepRowsWithNull() {
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void rewindInternal() {
+            drainMaterialization = false;
+
+            super.rewindInternal();
         }
     }
 
@@ -609,13 +647,11 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
                         Collection<RowT> rightRows = lookup(left);
 
+                        // Emit matched row.
                         if (!rightRows.isEmpty()) {
                             requested--;
 
                             downstream().push(left);
-
-                            if (requested == 0)
-                                break;
                         }
 
                         left = null;
@@ -661,9 +697,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                             requested--;
 
                             downstream().push(left);
-
-                            if (requested == 0)
-                                break;
                         }
 
                         left = null;

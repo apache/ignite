@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -326,6 +327,16 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     /** */
     protected QueryTaskExecutor taskExecutor(UUID nodeId) {
         return taskExecutors.get(nodeId);
+    }
+
+    /** */
+    protected ExecutionContext<Object[]> executionContext() {
+        return executionContext(nodes.get(new Random().nextInt(nodesCnt)), UUID.randomUUID(), 0);
+    }
+
+    /** */
+    protected ExecutionContext<Object[]> executionContext(UUID nodeId) {
+        return executionContext(nodeId, UUID.randomUUID(), 0);
     }
 
     /** */
