@@ -85,7 +85,6 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_MANAGER_STOP_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -481,7 +480,7 @@ public class CdcMain implements Runnable {
                     Iterator<Path> segments = cdcFiles
                         .peek(exists::add) // Store files that exists in cdc dir.
                         // Need unseen WAL segments only.
-                        .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()) && !seen.contains(p))
+                        .filter(p -> NodeFileTree.walFile(p.toFile()) && !seen.contains(p))
                         .peek(seen::add) // Adds to seen.
                         .sorted(Comparator.comparingLong(ft::walSegmentIndex)) // Sort by segment index.
                         .peek(p -> {

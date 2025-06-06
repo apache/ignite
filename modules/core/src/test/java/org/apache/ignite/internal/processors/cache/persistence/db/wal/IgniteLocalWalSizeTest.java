@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +43,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.WAL_SEGMENT_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.isSegmentFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -135,17 +136,16 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
         NodeFileTree ft = nodeFileTree("unknown");
 
         Arrays.asList(
-            null,
             "",
             "1",
             "wal",
             ft.walSegment(0).getName() + "1",
             ft.walSegment(1).getName().replace(WAL_SEGMENT_FILE_EXT, ".wa")
-        ).forEach(s -> assertFalse(s, isSegmentFileName(s)));
+        ).forEach(s -> assertFalse(s, isSegmentFileName(new File(s))));
 
         IntStream.range(0, 10)
             .mapToObj(idx -> ft.walSegment(idx).getName())
-            .forEach(fn -> assertTrue(fn, isSegmentFileName(fn) && isSegmentFileName(fn + ZIP_SUFFIX)));
+            .forEach(fn -> assertTrue(fn, isSegmentFileName(new File(fn)) && isSegmentFileName(new File(fn + ZIP_SUFFIX))));
     }
 
     /**
@@ -245,5 +245,16 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
         });
 
         assertEquals(0, walMgr(n).segmentSize(currHnd.getSegmentId() + 1));
+    }
+
+    /**
+     * Check that file name matches segment name.
+     *
+     * @param f File.
+     * @return {@code True} if file name matches segment name.
+     */
+    private static boolean isSegmentFileName(@Nullable File f) {
+        return f != null && (NodeFileTree.walFileName(f) ||
+                WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches());
     }
 }

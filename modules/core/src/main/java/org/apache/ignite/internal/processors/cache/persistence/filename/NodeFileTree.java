@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteException;
@@ -213,6 +214,12 @@ public class NodeFileTree extends SharedFileTree {
     private static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
         CACHE_DIR_FILTER.test(dir) ||
             dir.getName().equals(METASTORAGE_DIR_NAME);
+
+    /** Pattern for segment file names. */
+    private static final Pattern WAL_NAME_PATTERN = U.fixedLengthNumberNamePattern(WAL_SEGMENT_FILE_EXT);
+
+    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
+    private static final FileFilter WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() && walFileName(file);
 
     /** Partition file prefix. */
     static final String PART_FILE_PREFIX = "part-";
@@ -742,6 +749,22 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
+     * @param f File.
+     * @return {@code True} if file name matches the WAL pattern.
+     */
+    public static boolean walFileName(File f) {
+        return WAL_NAME_PATTERN.matcher(f.getName()).matches();
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file matches WAL file criteria.
+     */
+    public static boolean walFile(File f) {
+        return WAL_SEGMENT_FILE_FILTER.accept(f);
+    }
+
+    /**
      * @param f Temporary cache directory.
      * @return Cache or group id.
      */
@@ -923,6 +946,16 @@ public class NodeFileTree extends SharedFileTree {
         Predicate<File> dirFilter = includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER;
 
         return filesInStorages(f -> f.isDirectory() && dirFilter.test(f) && filter.test(f)).collect(Collectors.toList());
+    }
+
+    /** @return An array of WAL files. */
+    public File[] walFiles() {
+        return wal().listFiles(WAL_SEGMENT_FILE_FILTER);
+    }
+
+    /** @return An array of WAL files for CDC. */
+    public File[] walCdcFiles() {
+        return walCdc().listFiles(WAL_SEGMENT_FILE_FILTER);
     }
 
     /**
