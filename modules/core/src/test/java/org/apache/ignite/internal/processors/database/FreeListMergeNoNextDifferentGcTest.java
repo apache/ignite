@@ -31,6 +31,9 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
@@ -73,7 +76,8 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
     @Parameterized.Parameters(name = "{0}")
     public static Iterable<List<String>> params() {
         ArrayList<List<String>> params = new ArrayList<>(List.of(
-            List.of("-XX:+UseShenandoahGC"),
+            List.of("-XX:+UseShenandoahGC")
+            ,
             List.of("-XX:+UseShenandoahGC", "-ea"),
 
             List.of("-XX:+UseG1GC"),
@@ -143,6 +147,9 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
 
                 args.add("-XX:+UnlockDiagnosticVMOptions");
                 args.add("-XX:PrintAssemblyOptions=intel");
+//                args.add("-XX:+LogCompilation");
+//                args.add("-Xlog:jit*=debug,compilation*=debug:file=/home/skor/git/ignite/work/log/compilation.log:time,uptime,level,tags");
+//                args.add("-XX:+PrintAssembly");
                 args.add("-XX:CompileCommand=print," + method);
 
                 args.addAll(jvmOpts);
@@ -205,28 +212,65 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
 
             int capacity = PagesListNodeIO.VERSIONS.forVersion(1).getCapacity(pageSize);
 
-            int keyCnt = capacity * 2 + 1;
+            int keyCnt = capacity * 5 + 1;
 
             int dataSize = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
-            for (int i = keyCnt; i > 0; i--)
-                cache.put(i, new byte[dataSize - 64]);
+//            logList(ignite);
 
-            for (int i = 1; i <= capacity; i++)
-                cache.remove(i);
+//            ignite.log().info("Start insert");
 
-            while (!compiled.get()) {
-                try {
-                    cache.put(0, new byte[2 * dataSize]);
+            for (int i = keyCnt; i > 0; i--) {
+//                cache.put(i, new byte[dataSize - 64]);
+                cache.put(i, new byte[pageSize  / 2]);
 
-                    cache.remove(0);
-                }
-                catch (Exception e) {
-                    compiled.set(true);
-                }
+//                logList(ignite);
             }
 
+//            logList(ignite);
+
+//            ignite.log().info("Start remove");
+
+            for (int i = 1; i <= capacity; i++) {
+                cache.remove(i);
+
+//                logList(ignite);
+            }
+
+//            logList(ignite);
+//            ignite.log().info("End remove");
+
+//            logList(ignite);
+
+            int counter = 0;
+            while (/*counter++ < 10 && */!compiled.get()) {
+                try {
+//                    ignite.log().info("put");
+//                    cache.put(0, new byte[dataSize + (dataSize - 64) - 16]);
+                    cache.put(0, new byte[dataSize + pageSize / 2 - 16]);
+//                    logList(ignite);
+
+//                    ignite.log().info("remove");
+                    cache.remove(0);
+//                    logList(ignite);
+                }
+                catch (Exception e) {
+                    ignite.log().error("Error inserting row", e);
+
+//                    break;
+                    compiled.set(true);
+                }
+
+//                ignite.log().info("remove");
+//                cache.remove(0);
+//                logList(ignite);
+            }
+
+//            ignite.log().info("before clear");
+
+//            logList(ignite);
             cache.clear();
+//            ignite.log().info("all cleared");
         }
     }
 
@@ -265,5 +309,52 @@ public class FreeListMergeNoNextDifferentGcTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         IgniteProcessProxy.killAll();
+    }
+
+    private static void logList(Ignite ignite) {
+        GridCacheProcessor cacheProc = ((IgniteEx)ignite).context().cache();
+        AbstractFreeList list = (AbstractFreeList)cacheProc.context().database().freeList(null);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("buckets: ");
+        for (int b = 0; b < list.bucketsCount(); b++) {
+            if (list.bucketSize(b) > 0) {
+                sb.append(b);
+                sb.append(": ");
+                sb.append(list.bucketSize(b));
+                sb.append(", ");
+            }
+        }
+        ignite.log().info(sb.toString());
+
+        PagesList.Stripe[] stripes = list.getBucket(255);
+        sb = new StringBuilder();
+        if (stripes != null) {
+            sb.append("  reuse stripes: ");
+            for (int stripe = 0; stripe < stripes.length; stripe++) {
+                if (stripe > 0)
+                    sb.append(", ");
+
+                sb.append(stripe);
+                sb.append(": ");
+                sb.append(stripes[stripe].tailId);
+            }
+            ignite.log().info(sb.toString());
+        }
+
+        stripes = list.getBucket(1);
+        sb = new StringBuilder();
+        if (stripes != null) {
+            sb.append("  1 bucket stripes: ");
+            for (int stripe = 0; stripe < stripes.length; stripe++) {
+                if (stripe > 0)
+                    sb.append(", ");
+
+                sb.append(stripe);
+                sb.append(": ");
+                sb.append(stripes[stripe].tailId);
+            }
+            ignite.log().info(sb.toString());
+        }
     }
 }
