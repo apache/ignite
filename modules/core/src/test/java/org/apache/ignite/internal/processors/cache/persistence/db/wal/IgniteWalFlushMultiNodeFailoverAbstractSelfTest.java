@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -51,7 +52,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 
 /**
  * Tests error recovery while node flushing
@@ -275,7 +275,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
                     System.out.println(">>>!!!! W " + file.getName());
 
-                    if (fail != null && WAL_NAME_PATTERN.matcher(file.getName()).matches() && fail.get())
+                    if (fail != null && NodeFileTree.walFileName(file) && fail.get())
                         throw new IOException("No space left on device");
 
                     return super.write(srcBuf);
@@ -285,7 +285,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                 @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
                     System.out.println(">>>!!!! M " + file.getName());
 
-                    if (fail != null && WAL_NAME_PATTERN.matcher(file.getName()).matches() && fail.get())
+                    if (fail != null && NodeFileTree.walFileName(file) && fail.get())
                         throw new IOException("No space left on deive");
 
                     return delegate.map(sizeBytes);

@@ -177,15 +177,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Zero-filled buffer for file formatting. */
     private static final byte[] FILL_BUF = new byte[1024 * 1024];
 
-    /** Pattern for segment file names. */
-    public static final Pattern WAL_NAME_PATTERN = U.fixedLengthNumberNamePattern(WAL_SEGMENT_FILE_EXT);
-
     /** Pattern for WAL temp files - these files will be cleared at startup. */
     public static final Pattern WAL_TEMP_NAME_PATTERN = U.fixedLengthNumberNamePattern(TMP_WAL_SEG_FILE_EXT);
-
-    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
-    public static final FileFilter WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
-        WAL_NAME_PATTERN.matcher(file.getName()).matches();
 
     /** WAL segment temporary file filter, see {@link #WAL_TEMP_NAME_PATTERN} */
     private static final FileFilter WAL_SEGMENT_TEMP_FILE_FILTER = file -> !file.isDirectory() &&
@@ -194,9 +187,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     public static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(ZIP_WAL_SEG_FILE_EXT);
 
-    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
+    /** WAL segment file filter, see {@link NodeFileTree#walFileName(File)} */
     public static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = file -> !file.isDirectory() &&
-        (WAL_NAME_PATTERN.matcher(file.getName()).matches() ||
+        (NodeFileTree.walFileName(file) ||
             WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
 
     /** */
@@ -1622,7 +1615,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
         }
 
-        if (F.isEmpty(ft.wal().listFiles(WAL_SEGMENT_FILE_FILTER)))
+        if (F.isEmpty(ft.walFiles()))
             createFile(ft.walSegment(0));
 
         if (isArchiverEnabled()) {
@@ -2221,7 +2214,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (maxDirSize <= 0)
                 return true;
 
-            long dirSize = Arrays.stream(ft.walCdc().listFiles(WAL_SEGMENT_FILE_FILTER)).mapToLong(File::length).sum();
+            long dirSize = Arrays.stream(ft.walCdcFiles()).mapToLong(File::length).sum();
 
             if (dirSize + len <= maxDirSize)
                 return true;
@@ -3252,17 +3245,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Check that file name matches segment name.
-     *
-     * @param name File name.
-     * @return {@code True} if file name matches segment name.
-     */
-    public static boolean isSegmentFileName(@Nullable String name) {
-        return name != null && (WAL_NAME_PATTERN.matcher(name).matches() ||
-            WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(name).matches());
-    }
-
-    /**
      * Getting last truncated segment.
      *
      * @return Absolut segment index.
@@ -3436,7 +3418,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private void moveSegmentsToArchive() throws StorageException {
         assert isArchiverEnabled();
 
-        FileDescriptor[] workSegments = scan(ft.wal().listFiles(WAL_SEGMENT_FILE_FILTER));
+        FileDescriptor[] workSegments = scan(ft.walFiles());
 
         List<FileDescriptor> toMove = new ArrayList<>();
 
@@ -3493,7 +3475,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private void renameLastSegment() throws StorageException {
         assert isArchiverEnabled();
 
-        FileDescriptor[] workSegments = scan(ft.wal().listFiles(WAL_SEGMENT_FILE_FILTER));
+        FileDescriptor[] workSegments = scan(ft.walFiles());
 
         if (workSegments.length == 1 && workSegments[0].idx() != workSegments[0].idx() % dsCfg.getWalSegments()) {
             FileDescriptor toRen = workSegments[0];
@@ -3536,7 +3518,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         assert isArchiverEnabled();
 
         if (mode == WALMode.FSYNC || mmap) {
-            List<FileDescriptor> toFormat = Arrays.stream(scan(ft.wal().listFiles(WAL_SEGMENT_FILE_FILTER)))
+            List<FileDescriptor> toFormat = Arrays.stream(scan(ft.walFiles()))
                 .filter(fd -> fd.file().length() < dsCfg.getWalSegmentSize()).collect(toList());
 
             if (!toFormat.isEmpty()) {

@@ -41,8 +41,6 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
-
 /**
  * Task to delete lost segment CDC links.
  */
@@ -105,7 +103,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
                     AtomicLong lastSgmnt = new AtomicLong(-1);
 
                     cdcFiles
-                        .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()))
+                        .filter(p -> NodeFileTree.walFile(p.toFile()))
                         .sorted(Comparator.comparingLong(ft::walSegmentIndex)
                             .reversed()) // Sort by segment index.
                         .forEach(path -> {
