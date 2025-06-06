@@ -13,7 +13,7 @@ panel-collapsible(
         | 数据传输任务调度设置.
         a.link-success(href="/docs/schedule" target="_blank") More info
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
-        .pca-form-column-6.pc-form-grid-row
+        .pca-form-column-12.pc-form-grid-row
             .pc-form-grid-col-30
                 +form-field__dropdown({
                     label: 'Mode:',
@@ -87,5 +87,4 @@ panel-collapsible(
                     min: '0',
                     tip: 'Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network'
                 })
-        .pca-form-column-6
-            +preview-model(model, 'cacheRebalance')
+

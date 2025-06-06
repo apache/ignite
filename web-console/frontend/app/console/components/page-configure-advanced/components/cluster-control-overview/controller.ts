@@ -41,6 +41,8 @@ export default class ClusterControlController {
         private Caches: Caches
     ) {}
 
+    openDrawer = false;
+
     visibleRows$ = new Subject();
     selectedRows$ = new Subject();
 

@@ -36,7 +36,7 @@ import IgniteFormUtils from 'app/services/FormUtils.service';
 import {default as ActivitiesData} from 'app/core/activities/Activities.data';
 import {UserService} from 'app/modules/user/User.service';
 import Datasource from 'app/datasource/services/Datasource';
-
+import {Cluster} from 'app/configuration/types';
 function _mapCaches(caches = []) {
     return caches.map((cache) => {
         return {label: cache.name, value: cache.id, cache};
@@ -137,7 +137,7 @@ export class ModalImportModels {
             switchMap((id = 'new') => {
                 return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectClusterToEdit(id, defaultNames.importedCluster));
             }),
-            switchMap((cluster) => {
+            switchMap((cluster:Cluster) => {
                 return (!(cluster.caches || []).length && !(cluster.models || []).length)
                     ? of({
                         cluster,

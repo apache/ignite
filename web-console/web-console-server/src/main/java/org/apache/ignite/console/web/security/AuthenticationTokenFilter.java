@@ -1,6 +1,6 @@
 package org.apache.ignite.console.web.security;
 
-import javax.servlet.FilterConfig;
+import jakarta.servlet.FilterConfig;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.console.dto.Account;
@@ -15,8 +15,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
  
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Enumeration;
 
@@ -65,7 +65,7 @@ public class AuthenticationTokenFilter implements Filter{
             }
         }
         filterChain.doFilter(servletRequest, servletResponse);
-        SecurityContextHolder.getContext().setAuthentication(old);
+        //-SecurityContextHolder.getContext().setAuthentication(old);
     }
 
 	public AccountsService getAccountsService() {

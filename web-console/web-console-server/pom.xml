@@ -1,20 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!--
- Copyright 2019 GridGain Systems, Inc. and Contributors.
 
- Licensed under the GridGain Community Edition License (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
--->
 
 <!--
     POM file.
@@ -32,6 +18,17 @@
     <artifactId>ignite-web-console-server</artifactId>
    
     <url>http://ignite.apache.org</url>
+    
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>        
+        <spring.boot.version>3.4.5</spring.boot.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
+        <web-console.ignite.version>2.16.999-SNAPSHOT</web-console.ignite.version>
+        <commons.lang3.version>3.12.0</commons.lang3.version>        
+        <commons.compress.version>1.20</commons.compress.version>        
+    </properties>
 
     <dependencyManagement>
         <dependencies>
@@ -43,16 +40,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
-            <!-- https://mvnrepository.com/artifact/org.springframework.session/spring-session-bom -->
-			<dependency>
-			    <groupId>org.springframework.session</groupId>
-			    <artifactId>spring-session-bom</artifactId>
-			    <version>2021.2.2</version>
-			    <type>pom</type>
-			    <scope>import</scope>
-			</dependency>
-
         </dependencies>
     </dependencyManagement>
 
@@ -106,6 +93,18 @@
             <artifactId>spring-boot-starter-jetty</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+            <version>${spring-ai.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.logaritex.mcp</groupId>
+            <artifactId>spring-ai-mcp-annotations</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+
         <!-- Use Log4j2 instead -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -146,25 +145,28 @@
 	        <artifactId>commons-csv</artifactId>
 	        <version>1.10.0</version>
 	    </dependency>
- 
+
+        <!-- https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui -->
         <dependency>
-	      <groupId>org.springdoc</groupId>
-	      <artifactId>springdoc-openapi-ui</artifactId>
-	      <version>1.7.0</version>
-	    </dependency>
-	    
-	    <dependency>
-	      <groupId>com.caucho.quercus</groupId>
-	      <artifactId>quercus</artifactId>
-	      <version>4.0.42-MOD4-SNAPSHOT</version>
-	    </dependency>	
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.8.8</version>
+        </dependency>
+
 	   
         <dependency>
             <groupId>org.mongodb</groupId>
-            <artifactId>mongodb-driver-sync</artifactId>           
+            <artifactId>mongodb-driver-core</artifactId>
+            <version>4.6.1</version>
         </dependency>
 
-        <!-- GridGain dependencies -->
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+            <version>4.6.1</version>
+        </dependency>
+
+        <!-- Ignite dependencies -->
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
@@ -209,14 +211,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        
-        <!-- https://mvnrepository.com/artifact/org.eclipse.jetty/jetty-rewrite -->
-		<dependency>
-		    <groupId>org.eclipse.jetty</groupId>
-		    <artifactId>jetty-rewrite</artifactId>
-		    <version>${jetty.version}</version>
-		</dependency>
-        
         
     </dependencies>
 

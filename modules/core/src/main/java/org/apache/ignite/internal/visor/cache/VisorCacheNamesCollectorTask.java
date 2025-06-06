@@ -73,7 +73,7 @@ public class VisorCacheNamesCollectorTask extends VisorOneNodeTask<Void, VisorCa
             Map<String, IgniteUuid> caches = new HashMap<>();
             Map<String, String> cachesComment = new HashMap<>();
             Map<String, String> sqlSchemas = new HashMap<>();
-            Map<String, String> groups = new HashMap<>();
+            Map<String, String> tableNames = new HashMap<>();
 
             for (Map.Entry<String, DynamicCacheDescriptor> item : cacheProc.cacheDescriptors().entrySet()) {
                 DynamicCacheDescriptor cd = item.getValue();
@@ -90,12 +90,17 @@ public class VisorCacheNamesCollectorTask extends VisorOneNodeTask<Void, VisorCa
                 Collection<QueryEntity> grp = cd.schema().entities();
 
                 if (!F.isEmpty(grp)) {
-                	List<String> types = grp.stream().map(s->s.getTableName()).collect(Collectors.toList());
-                    groups.put(item.getKey(),String.join(",", types));
+                	List<String> types = grp.stream().map(s->{
+                		if(s.getValueType().equalsIgnoreCase(s.getTableName()))
+                			return s.getValueType();
+                		return s.getValueType()+":"+s.getTableName();
+                		
+                	}).collect(Collectors.toList());
+                	tableNames.put(item.getKey(),String.join(",", types));
                 }
             }
 
-            return new VisorCacheNamesCollectorTaskResult(caches, cachesComment, sqlSchemas, groups);
+            return new VisorCacheNamesCollectorTaskResult(caches, cachesComment, sqlSchemas, tableNames);
         }
 
         /** {@inheritDoc} */

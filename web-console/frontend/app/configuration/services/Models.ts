@@ -75,8 +75,8 @@ export default class Models {
             const scale = this.fieldProperties.scaleAvailable(entity);
 
             return `${entity.name || ''} ${entity.className || ''}${precision && entity.precision ? ' (' + entity.precision : ''}\
-${scale && entity.precision && entity.scale ? ',' + entity.scale : ''}${precision && entity.precision ? ')' : ''}\
- ${entity.notNull ? ' Not NULL' : ''} ${entity.defaultValue ? ' DEFAULT ' + entity.defaultValue : ''}`;
+               ${scale && entity.precision && entity.scale ? ',' + entity.scale : ''}${precision && entity.precision ? ')' : ''}\
+               ${entity.notNull ? ' Not NULL' : ''} ${entity.defaultValue ? ' DEFAULT ' + entity.defaultValue : ''}`;
         },
         precisionAvailable: (entity) => entity && this.fieldProperties.typesWithPrecision.includes(entity.className),
         scaleAvailable: (entity) => entity && entity.className === 'BigDecimal'

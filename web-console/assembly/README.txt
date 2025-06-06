@@ -2,7 +2,7 @@ Requirements
 -------------------------------------
 1. JDK 8 suitable for your platform.
 2. Supported browsers: Chrome, Firefox, Safari, Edge.
-3. GridGain cluster should be started with `ignite-rest-http` module in classpath.
+3. Ignite cluster should be started with `ignite-rest-http` module in classpath.
    For this copy `ignite-rest-http` folder from `libs\optional` to `libs` folder.
 
 How to run
@@ -197,7 +197,7 @@ Path to Jetty configuration file should be either absolute or relative to IGNITE
 (more details about REST HTTP configuration can be found https://apacheignite.readme.io/docs/rest-api#section-general-configuration)
 
 Jetty configuration and node configuration should be same for all nodes.
-If Jetty configuration is not provided for some nodes then Ignite(GridGain) will start Jetty server with simple HTTP connector.
+If Jetty configuration is not provided for some nodes then Ignite(Ignite) will start Jetty server with simple HTTP connector.
 
 Example of grid configuration:
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -229,5 +229,5 @@ migration.mongo.db.url: mongodb://localhost:27017/console
 
 4. It is recommended to remove "migration.mongo.db.url" from settings after migration.
 
-5. Migration possible only on "clean" GridGain database.
+5. Migration possible only on "clean" Ignite database.
  If you need to repeat migration, just delete folder "work" and restart Web Console.

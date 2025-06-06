@@ -68,7 +68,7 @@ export default class AuthService {
     }
 
     logout() {
-        return this.$http.post('/api/v1/logout')
+        return this.$http.post('/api/v1/logout',{})
             .catch((e) => this.Messages.showError(e))
             .finally(() => {
                 this.User.clean();

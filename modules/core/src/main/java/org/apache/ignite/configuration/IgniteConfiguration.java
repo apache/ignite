@@ -273,6 +273,9 @@ public class IgniteConfiguration {
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
+    
+    /** Optional cluster comment. */
+    private String comment;
 
     /** User attributes. */
     private Map<String, ?> userAttrs;
@@ -3495,4 +3498,12 @@ public class IgniteConfiguration {
     @Override public String toString() {
         return S.toString(IgniteConfiguration.class, this);
     }
+
+	public String getComment() {
+		return comment;
+	}
+
+	public void setComment(String comment) {
+		this.comment = comment;
+	}
 }

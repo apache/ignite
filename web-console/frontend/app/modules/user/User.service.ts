@@ -31,7 +31,7 @@ export default function UserFactory(
          * @returns {ng.IPromise<User>}
          */
         load() {
-            return user = $http.get('/api/v1/user')
+            user = $http.get('/api/v1/user')
                 .then(({data}) => {
                     current$.next(data);
                     return data;
@@ -41,6 +41,7 @@ export default function UserFactory(
 
                     return $q.reject(data);
                 });
+            return user;
         },
         read() {
             if (user)

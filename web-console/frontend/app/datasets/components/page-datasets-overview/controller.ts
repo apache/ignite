@@ -15,9 +15,9 @@ const cellTemplateGo = (state) => `
     <div class="ui-grid-cell-contents">
         <a
             class="link-success"
-            ui-sref="base.datasets.edit.basic({datasetID: row.entity.id})"
+            ui-sref="${state}({datasetID: row.entity.id})"
             title='Click to Visit'
-        >{{ 'Visit' }}</a>
+        >{{ 'CRUD UI' }}</a>
     </div>
 `;
 
@@ -74,7 +74,20 @@ export default class PageDatasourceOverviewController {
                 sort: {direction: 'asc', priority: 0},
                 sortingAlgorithm: naturalCompare,
                 cellTemplate: cellTemplate('base.configuration.edit'),
-                minWidth: 165
+                width: 200
+            },
+            {
+                name: 'comment',
+                displayName: 'Comment',
+                field: 'comment',
+                enableHiding: false,
+                filter: {
+                    placeholder: 'Filter by comment…'
+                },
+                sort: {direction: 'asc', priority: 0},
+                sortingAlgorithm: naturalCompare,
+                cellTemplate: cellTemplate('base.configuration.edit.basic'),
+                minWidth: 200
             },
             {
                 name: 'id',
@@ -82,7 +95,7 @@ export default class PageDatasourceOverviewController {
                 field: 'id',
                 enableHiding: false,
                 enableFiltering: false,
-                cellTemplate: cellTemplateGo('base.configuration.edit'),
+                cellTemplate: cellTemplateGo('base.datasets.edit.basic'),
                 minWidth: 165
             },
             {

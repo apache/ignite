@@ -23,7 +23,7 @@ form(novalidate name=form)
         | Configure cluster properties and associate your cluster with caches.
 
     .pc-form-grid-row.pcb-form-grid-row
-        .pc-form-grid-col-60
+        .pc-form-grid-col-30
             +form-field__text({
                 label: 'Name:',
                 model: `${model}.name`,
@@ -37,6 +37,22 @@ form(novalidate name=form)
                 ignite-unique-skip=`["id", ${model}]`
             )
                 +form-field__error({ error: 'igniteUnique', message: 'Cluster name should be unique.' })
+
+        .pc-form-grid-col-60
+            +form-field__text({
+                label: 'Comment:',
+                model: `${model}.comment`,
+                name: '"clusterComment"',
+                placeholder: 'Input comment',
+                required: false,
+                tip: 'Instance comment describe the main functions of the cluster data.  It is useful when you want to distinguish between different clusters'
+            })(
+                ignite-unique='$ctrl.shortClusters'
+                ignite-unique-property='comment'
+                ignite-unique-skip=`["id", ${model}]`
+            )
+                +form-field__error({ error: 'igniteUnique', message: 'Cluster comment should be unique.' })
+
 
         .pc-form-grid__break
         .pc-form-grid-col-60

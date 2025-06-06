@@ -54,6 +54,7 @@ public abstract class SingleRouterHandler {
 
     public static void out(RoutingContext ctx, Object msg) {
     	if(msg==null) {
+    		ctx.response().end();
     		return;
     	}
     	
@@ -201,7 +202,7 @@ public abstract class SingleRouterHandler {
         log.info("[vertx web] objects:{}", Arrays.toString(parameters));
         log.info("[vertx web] api has benn invoke.The api name is:" + prefix + url);
         boolean isAync = Future.class.isAssignableFrom(method.getReturnType()) || java.util.concurrent.Future.class.isAssignableFrom(method.getReturnType());
-        if (isAync || "void".equals(method.getReturnType().getTypeName())) {
+        if (isAync || "void".equalsIgnoreCase(method.getReturnType().getTypeName())) {
             log.info("[vertx web] this method returnType is void");
             try {
                 //method.invoke(classBean,parameters);
@@ -214,6 +215,7 @@ public abstract class SingleRouterHandler {
             		ctx.response().setStatusCode(500);
             	}
             	ctx.response().setStatusMessage(e.getMessage());
+            	ctx.response().end();
                 
             }
             
@@ -230,6 +232,7 @@ public abstract class SingleRouterHandler {
             		ctx.response().setStatusCode(500);
             	}
             	ctx.response().setStatusMessage(e.getMessage());
+            	ctx.response().end();
             }
         }
     }

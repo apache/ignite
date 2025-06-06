@@ -62,7 +62,6 @@ import java.util.Map;
 /**
  * An {@link DatasetPersistenceProvider} that uses AWS Igfs for storage.
  */
-@Service
 public class IgfsDatasetPersistenceProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IgfsDatasetPersistenceProvider.class);
@@ -80,15 +79,21 @@ public class IgfsDatasetPersistenceProvider {
     }
 
     private Map<String,IgniteFileSystem> fsMap = new HashMap<>();
+    private Map<String,String> regionMap = new HashMap<>();
     
     private IgniteFileSystem igfs;
     
     // default bucket container
     private String s3BucketName = "igfs";
     
-    @Autowired
-    @Qualifier("systemConfig")
+    private String region;
+
     private SystemConfig systemConfig;
+    
+    public IgfsDatasetPersistenceProvider(String region,SystemConfig systemConfig) {
+    	this.region = region;
+    	this.systemConfig = systemConfig;
+    }
     
    
     /**
@@ -96,7 +101,7 @@ public class IgfsDatasetPersistenceProvider {
      * @param bucketName
      * @return
      */
-    protected IgniteFileSystem fs(String bucketName) {
+    public IgniteFileSystem fs(String bucketName) {
     	IgniteFileSystem globalIgfs = allFS().get(bucketName);    	
     	if(globalIgfs!=null) {
     		return globalIgfs;
@@ -109,25 +114,48 @@ public class IgfsDatasetPersistenceProvider {
     	throw new IllegalArgumentException("The system igfs for storage bucket '" + bucketName + "' not existed");
     }
     
-    protected Map<String,IgniteFileSystem> allFS(){
+    public Map<String,IgniteFileSystem> allFS(){
     	if(fsMap.isEmpty()) {
     		s3BucketName = systemConfig.getS3BucketName();
             if (!StringUtils.hasText(s3BucketName)) {
                 throw new IllegalArgumentException("The property '" + BUCKET_NAME_PROP + "' must be provided");
-            }            
-    		
-    		String instanceName = systemConfig.getS3InstanceName();
-    		for(Ignite ignite: Ignition.allGrids()) {
-    			for(IgniteFileSystem fs: ignite.fileSystems()) {
-    				String prefix = StringUtils.isEmpty(ignite.name()) || StringUtils.pathEquals(instanceName, ignite.name()) ? fs.name(): ignite.name()+"-"+fs.name();
-    				if(!prefix.isBlank()) {
-    					fsMap.put(prefix, fs);
-    				}
-    				if(fs.name().equals(s3BucketName) && StringUtils.pathEquals(instanceName, ignite.name())) {
-    					igfs = fs;
-    				}
-    			}
-    		}
+            }
+            
+            if(true) {
+	            Ignite ignite = Ignition.ignite(region);
+	            for(IgniteFileSystem fs: ignite.fileSystems()) {
+	            	if(igfs==null) {
+						igfs = fs; // default storage is first fs.
+					}
+					String bucket = fs.name();
+					fsMap.put(bucket, fs);
+					regionMap.put(bucket, ignite.name());			
+					if(bucket.equals(s3BucketName)) {
+						igfs = fs; // default storage
+					}
+				}
+            }
+            
+            if(true) {           
+	            
+	            for(Ignite ignite: Ignition.allGrids()) {
+	    			for(IgniteFileSystem fs: ignite.fileSystems()) {
+	    				if(StringUtils.pathEquals(ignite.name(),region)) {
+	    					continue;
+	    				}
+	    				if(StringUtils.hasText(ignite.name())) {
+		    				String prefix = ignite.name()+"-"+fs.name();
+	    					fsMap.put(prefix, fs);
+	    					regionMap.put(prefix, ignite.name());
+	    				}
+	    				else if(!fsMap.containsKey(fs.name())) {
+	    					String bucket = fs.name();
+	    					fsMap.put(bucket, fs);
+	    					regionMap.put(bucket, ignite.name());  
+	    				}	    				
+	    			}
+	    		}
+            }
     	}
     	return fsMap;
     }
@@ -138,12 +166,16 @@ public class IgfsDatasetPersistenceProvider {
         for(Map.Entry<String,IgniteFileSystem> fsEnt : allFS().entrySet()) {
             try {
             	IgniteFileSystem fs = fsEnt.getValue();
+            	
             	String fsName = fsEnt.getKey();
+            	String region = regionMap.get(fsName);
                 Bucket bucket = new Bucket();
 				bucket.setName(fsName);
 				bucket.setCreationDate(DateUtil.getDateIso8601Format(new Date(DateUtil.cpuStartTime)));
-				bucket.setAuthor(fs.name());
+				bucket.setAuthor(fsName);
+				bucket.setRegion(region);
                 buckets.add(bucket);
+                
             } catch (Exception ex) {
             	ex.printStackTrace();
             }
@@ -162,6 +194,7 @@ public class IgfsDatasetPersistenceProvider {
 				bucket.setName(b.path().toString().substring(1));
 				bucket.setCreationDate(DateUtil.getDateIso8601Format(new Date(b.modificationTime())));
 				bucket.setAuthor(fs.name());
+				bucket.setRegion(region);
 				buckets.add(bucket);
 			}
 		}
@@ -180,7 +213,8 @@ public class IgfsDatasetPersistenceProvider {
         		IgfsPath sub = new IgfsPath(dir,path);
         		IgfsUtils.mkdirs(fs,sub);        		
         	}
-        	
+        	bucket.setAuthor(fs.name());
+        	bucket.setRegion(region);
             LOGGER.debug("Successfully saved Igfs '{}' with bucket '{}'", new Object[]{s3BucketName, bucket.getName()});
         } catch (Exception e) {
             throw new DatasetPersistenceException("Error saving dataset version to Igfs due to: " + e.getMessage(), e);

@@ -64,6 +64,10 @@ page-console-basic {
         margin-bottom: 8px;
     }
 
+    .panel-group {
+        width: 100%;
+    }
+
     .pcb-form-grid-row {
         @media(min-width: 992px) {
             &>.pc-form-grid-col-10 {

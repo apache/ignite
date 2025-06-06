@@ -17,15 +17,18 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.util.*;
 
-@Service
-@Primary
+
 public class S3IgfsServiceImpl implements S3Service {
-    @Autowired
-    @Qualifier("systemConfig")
-    private SystemConfig systemConfig;    
     
-    @Autowired
+
+    private SystemConfig systemConfig;    
+
     private IgfsDatasetPersistenceProvider provider;
+    
+    public S3IgfsServiceImpl(String region,SystemConfig systemConfig) {
+		this.systemConfig = systemConfig;
+		this.provider = new IgfsDatasetPersistenceProvider(region,systemConfig);
+	}
      
 
     @Override

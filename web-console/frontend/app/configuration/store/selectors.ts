@@ -1,24 +1,24 @@
 
-
 import {uniqueName} from 'app/utils/uniqueName';
-import {of, empty, combineLatest, forkJoin, pipe} from 'rxjs';
+import {Observable, of, empty, combineLatest, forkJoin, pipe} from 'rxjs';
 import {filter, pluck, map, switchMap, take, distinctUntilChanged, exhaustMap} from 'rxjs/operators';
 import {defaultNames} from '../defaultNames';
 
 import {default as Caches} from '../services/Caches';
 import {default as Clusters} from '../services/Clusters';
 import {default as Models} from '../services/Models';
-import {Cluster} from '../types';
+import {Cluster,Cache,ShortCache,DomainModel,ShortDomainModel} from '../types';
 
-const isDefined = filter((v) => v);
+const isDefined = filter((v:any) => v);
 
-const selectItems = (path) => pipe(filter((s) => s), pluck(path), filter((v) => v));
+const selectItems = (path:string) => pipe(filter((s:any) => s), pluck(path), filter((v) => v));
 
-const selectValues = map((v) => v && [...v.value.values()]);
 
-export const selectMapItem = (mapPath, key) => pipe(pluck(mapPath), map((v) => v && v.get(key)));
+const selectValues = map((v:{ value: Map<any,any> }) => v && [...v.value.values()]);
 
-const selectMapItems = (mapPath, keys) => pipe(pluck(mapPath), map((v) => v && keys.map((key) => v.get(key))));
+export const selectMapItem = (mapPath:string, key:string) => pipe(pluck(mapPath), map((v:Map<any,any>) => v && v.get(key)));
+
+const selectMapItems = (mapPath:string, keys:string[]) => pipe(pluck(mapPath), map((v:Map<any,any>) => v && keys.map((key) => v.get(key))));
 
 const selectItemToEdit = ({items, itemFactory, defaultName = '', itemID}) => switchMap((item) => {
     if (item)
@@ -73,6 +73,9 @@ export default class ConfigSelectors {
      */
     selectShortModels = () => selectItems('shortModels');
 
+     /**
+     * @returns {(state$: Observable) => Observable<Array<ShortDomainModel>>}
+     */
     selectShortModelsValue = () => (state$) => state$.pipe(this.selectShortModels(), selectValues);
 
     /**
@@ -88,14 +91,29 @@ export default class ConfigSelectors {
         selectNames(clusterIDs)
     );
 
+    /**
+     * @returns {(state$: Observable) => Observable<Cluster>}
+     */
     selectCluster = (id) => selectMapItem('clusters', id);
 
+    /**
+     * @returns {(state$: Observable) => Observable<Array<ShortCluster>>}
+     */
     selectShortClusters = () => selectItems('shortClusters');
 
+    /**
+     * @returns {(state$: Observable) => Observable<Cache>}
+     */
     selectCache = (id) => selectMapItem('caches', id);
 
+     /**
+     * @returns {(state$: Observable) => Observable<{pristine: boolean, value: Map<string, ShortCache>}>}
+     */
     selectShortCaches = () => selectItems('shortCaches');
 
+    /**
+     * @returns {(state$: Observable) => Observable<Array<ShortCache>>}
+     */
     selectShortCachesValue = () => (state$) => state$.pipe(this.selectShortCaches(), selectValues);
 
    /**
@@ -106,6 +124,9 @@ export default class ConfigSelectors {
         selectNames(cacheIDs)
     );
     
+     /**
+     * @returns {(state$: Observable) => Observable<Cache>}
+     */
     selectCacheToEdit = (cacheID) => (state$) => state$.pipe(
         this.selectCache(cacheID),
         distinctUntilChanged(),
@@ -117,6 +138,9 @@ export default class ConfigSelectors {
         })
     );
 
+     /**
+     * @returns {(state$: Observable) => Observable<DomainModel>}
+     */
     selectModelToEdit = (itemID) => (state$) => state$.pipe(
         this.selectModel(itemID),
         distinctUntilChanged(),
@@ -127,6 +151,9 @@ export default class ConfigSelectors {
         })
     );
 
+    /**
+     * @returns {(state$: Observable) => Observable<Cluster>}
+     */
     selectClusterToEdit = (clusterID, defaultName = defaultNames.cluster) => (state$) => state$.pipe(
         this.selectCluster(clusterID),
         distinctUntilChanged(),
@@ -138,10 +165,19 @@ export default class ConfigSelectors {
         })
     );
 
+    /**
+     * @returns {(state$: Observable) => Observable<Array<ShortCache>>}
+     */
     selectCurrentShortCaches = currentShortItems({changesKey: 'caches', shortKey: 'shortCaches'});
 
+    /**
+     * @returns {(state$: Observable) => Observable<Array<ShortDomainModel>>}
+     */
     selectCurrentShortModels = currentShortItems({changesKey: 'models', shortKey: 'shortModels'});
 
+    /**
+     * @returns {(state$: Observable) => Observable<Array<ShortCache>>}
+     */
     selectClusterShortCaches = (clusterID) => (state$) => {
         if (clusterID === 'new')
             return of([]);
@@ -153,6 +189,9 @@ export default class ConfigSelectors {
         );
     };
 
+    /**
+     * @returns {(state$: Observable) => Observable<{cluster:Cluster,caches:Array<Cache>,domains:Array<DomainModel>,spaces:Array<object>}>}
+     */
     selectCompleteClusterConfiguration = ({clusterID, isDemo}) => (state$) => {
         const hasValues = (array) => !array.some((v) => !v);
         return state$.pipe(

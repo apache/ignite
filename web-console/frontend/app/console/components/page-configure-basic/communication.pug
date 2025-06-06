@@ -4,60 +4,11 @@
 -var communication = model + '.communication'
 
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
-    panel-title Configuration of communication with other nodes by TCP/IP.    
+    panel-title Communication  
+    panel-description 
+        | Configuration of communication with other nodes by TCP/IP.  
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
-        .pca-form-column-12.pc-form-grid-row
-            .pc-form-grid-col-30
-                +form-field__number({
-                    label: 'Timeout:',
-                    model: `${model}.networkTimeout`,
-                    name: '"commNetworkTimeout"',
-                    placeholder: '5000',
-                    min: '1',
-                    tip: 'Maximum timeout in milliseconds for network requests'
-                })
-            .pc-form-grid-col-30
-                +form-field__number({
-                    label: 'Send retry delay:',
-                    model: `${model}.networkSendRetryDelay`,
-                    name: '"networkSendRetryDelay"',
-                    placeholder: '1000',
-                    min: '1',
-                    tip: 'Interval in milliseconds between message send retries'
-                })
-            .pc-form-grid-col-30
-                +form-field__number({
-                    label: 'Send retry count:',
-                    model: `${model}.networkSendRetryCount`,
-                    name: '"networkSendRetryCount"',
-                    placeholder: '3',
-                    min: '1',
-                    tip: 'Message send retries count'
-                })
-            .pc-form-grid-col-30
-                +form-field__number({
-                    label: 'Compression level:',
-                    model: `${model}.networkCompressionLevel`,
-                    name: '"networkCompressionLevel"',
-                    placeholder: '1',
-                    min: '0',
-                    max: '9',
-                    tip: 'Compression level of internal network messages'
-                })            
-            .pc-form-grid-col-60
-                +form-field__java-class({
-                    label: 'Failure resolver:',
-                    model: `${model}.communicationFailureResolver`,
-                    name: '"communicationFailureResolver"',
-                    tip: 'Communication failure resovler'
-                })
-            .pc-form-grid-col-60
-                +form-field__java-class({
-                    label: 'Communication listener:',
-                    model: `${communication}.listener`,
-                    name: '"comListener"',
-                    tip: 'Listener of communication events'
-                })
+        .pca-form-column-12.pc-form-grid-row            
             .pc-form-grid-col-30
                 +form-field__ip-address({
                     label: 'Local IP address:',
@@ -77,16 +28,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     min: '1024',
                     max: '65535',
                     tip: 'Local port for socket binding'
-                })
-            .pc-form-grid-col-30
-                +form-field__number({
-                    label: 'Local port range:',
-                    model: `${communication}.localPortRange`,
-                    name: '"comLocalPortRange"',
-                    placeholder: '100',
-                    min: '1',
-                    tip: 'Local port range for local host ports'
-                })            
+                })              
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Idle connection timeout:',
@@ -167,30 +109,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     placeholder: '{{ ::$ctrl.Clusters.messageQueueLimit.default }}',
                     min: '{{ ::$ctrl.Clusters.messageQueueLimit.min }}',
                     tip: 'Message queue limit for incoming and outgoing messages'
-                })
-            .pc-form-grid-col-30
-                //- allowInvalid: true prevents from infinite digest loop when old value was 0 and becomes less than allowed minimum
-                +form-field__number({
-                    label: 'Unacknowledged messages:',
-                    model: `${communication}.unacknowledgedMessagesBufferSize`,
-                    name: '"unacknowledgedMessagesBufferSize"',
-                    placeholder: '{{ ::$ctrl.Clusters.unacknowledgedMessagesBufferSize.default }}',
-                    min: `{{ $ctrl.Clusters.unacknowledgedMessagesBufferSize.min(
-                        ${communication}.unacknowledgedMessagesBufferSize,
-                        ${communication}.messageQueueLimit,
-                        ${communication}.ackSendThreshold
-                    ) }}`,
-                    tip: `Maximum number of stored unacknowledged messages per connection to node<br/>
-                    If specified non zero value it should be
-                    <ul>
-                        <li>At least ack send threshold * {{ ::$ctrl.Clusters.unacknowledgedMessagesBufferSize.validRatio }}</li>
-                        <li>At least message queue limit * {{ ::$ctrl.Clusters.unacknowledgedMessagesBufferSize.validRatio }}</li>
-                    </ul>`
-                })(
-                    ng-model-options=`{
-                        allowInvalid: true
-                    }`
-                )
+                })            
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Socket write timeout:',

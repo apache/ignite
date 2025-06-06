@@ -82,7 +82,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
         | Domain model properties for binding database with cache via POJO cache store.
         a.link-success(href="https://apacheignite.readme.io/docs/3rd-party-store" target="_blank") More info
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
-        .pca-form-column-6.pc-form-grid-row
+        .pca-form-column-12.pc-form-grid-row
             .pc-form-grid-col-30
                 +form-field__text({
                     label: 'Database schema:',
@@ -132,7 +132,4 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         ng-show=`store.valueFields.$invalid`
                     )
                         +form-field__error({ error: 'dbFieldUnique', message: 'Each value field DB name and Java name should be unique' })
-
-        .pca-form-column-6
-            +preview-model(model, 'domainStore')
 

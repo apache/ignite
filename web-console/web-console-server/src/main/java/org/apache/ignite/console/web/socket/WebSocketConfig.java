@@ -1,6 +1,5 @@
 package org.apache.ignite.console.web.socket;
 
-import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -17,7 +16,7 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 import static org.apache.ignite.console.websocket.WebSocketEvents.AGENTS_PATH;
 import static org.apache.ignite.console.websocket.WebSocketEvents.BROWSERS_PATH;
 
-import javax.websocket.WebSocketContainer;
+import jakarta.websocket.WebSocketContainer;
 
 /**
  * Websocket configuration.

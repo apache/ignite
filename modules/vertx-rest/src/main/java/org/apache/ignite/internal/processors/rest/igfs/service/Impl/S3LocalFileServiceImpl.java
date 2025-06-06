@@ -13,10 +13,17 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.util.*;
 
-@Service
+
 public class S3LocalFileServiceImpl implements S3Service {
-    @Autowired
+
     private SystemConfig systemConfig;
+    
+    private String region;
+	
+	public S3LocalFileServiceImpl(String region,SystemConfig systemConfig) {
+		this.systemConfig = systemConfig;
+		this.region = region;
+	}
 
     @Override
     public Bucket createBucket(String bucketName) {
@@ -28,6 +35,8 @@ public class S3LocalFileServiceImpl implements S3Service {
         Bucket bucket = new Bucket();
         bucket.setName(bucketName);
         bucket.setCreationDate(DateUtil.getDateIso8601Format(new Date()));
+        bucket.setAuthor("user");
+        bucket.setRegion(region);
         return bucket;
     }
 
@@ -49,6 +58,8 @@ public class S3LocalFileServiceImpl implements S3Service {
                     Bucket bucket = new Bucket();
                     bucket.setName(file.getName());
                     bucket.setCreationDate(FileUtil.getCreationTime(file.getAbsoluteFile()));
+                    bucket.setAuthor("user");
+                    bucket.setRegion(region);
                     bucketList.add(bucket);
                 }
             }

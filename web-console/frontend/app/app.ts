@@ -109,6 +109,7 @@ import listEditable from './components/list-editable';
 import breadcrumbs from './components/breadcrumbs';
 import panelCollapsible from './components/panel-collapsible';
 import clusterSelector from './components/cluster-selector';
+import appDrawer from './components/app-drawer';
 import connectedClusters from './components/connected-clusters-badge';
 import connectedClustersDialog from './components/connected-clusters-dialog';
 import stacktraceViewerDialog from './components/stacktrace-viewer-dialog';
@@ -209,6 +210,7 @@ export default angular
         listEditable.name,
         panelCollapsible.name,
         clusterSelector.name,
+        appDrawer.name,
         servicesModule.name,
         connectedClusters.name,
         connectedClustersDialog.name,

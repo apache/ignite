@@ -2102,10 +2102,21 @@ export class NotebookCtrl {
                         const cache:any = _.find($scope.caches, { value: meta.cacheName });
 
                         if (cache) {
-                            meta.name = (cache.sqlSchema || '"' + meta.cacheName + '"') + '.' + meta.typeName;
-                            meta.displayName = meta.typeName;
+                            let tableName = meta.typeName;
+                            if(cache.types){
+                                let types = cache.types.split(',');
+                                for(let type of types){
+                                    let typeAndName = type.trim().split(':');
+                                    if(typeAndName[0] == meta.typeName && typeAndName.length>1){
+                                        tableName = typeAndName[1];
+                                        break;
+                                    }
+                                }
+                            }
+                            meta.name = (cache.schema || '"' + meta.cacheName + '"') + '.' + tableName;
+                            meta.displayName = tableName;
 
-                            if (cache.sqlSchema)
+                            if (cache.schema)
                                 meta.children.unshift({type: 'plain', name: 'cacheName: ' + meta.maskedName, maskedName: meta.maskedName});
                             if (cache.mode)
                                 meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode, maskedName: meta.maskedName});                            

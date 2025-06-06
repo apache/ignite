@@ -7,8 +7,6 @@ import java.sql.Driver;
 import java.sql.SQLException;
 import javax.sql.DataSource;
 
-import org.apache.ignite.console.db.DBInfo;
-
 import org.apache.ignite.console.utils.Utils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;

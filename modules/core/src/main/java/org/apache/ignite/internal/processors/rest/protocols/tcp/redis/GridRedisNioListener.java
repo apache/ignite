@@ -193,7 +193,8 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
             U.warn(log, "Cannot find the corresponding command (session will be closed) [ses=" + ses +
                 ", command=" + msg.aux(0) + ']');
 
-            ses.close();
+            msg.setResponse(GridRedisProtocolParser.toGenericError("ERR unknown command '"+msg.aux(0)+"'"));
+    		sendResponse(ses, msg);
 
             return;
         }

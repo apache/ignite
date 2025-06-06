@@ -1,6 +1,7 @@
 
 pc-items-table(
     table-title='::"My domain models"'
+    max-rows-to-show='8'
     column-defs='$ctrl.columnDefs'
     items='$ctrl.shortItems$|async:this'
     actions-menu='$ctrl.tableActions$|async:this'
@@ -13,24 +14,22 @@ pc-items-table(
     footer-slot
         div(style='font-style: italic' ng-hide='($ctrl.shortItems$|async:this).length')
             | You have no models. #[a.link-success(ui-sref='base.configuration.edit.advanced.models.model({modelID: "new"})') Create one?]
-        a.link-success(
-            ui-sref='base.configuration.edit.advanced.models.model({modelID: "new"})'
-            ng-show='($ctrl.shortItems$|async:this).length'
-        ) + Add new model
+        
+        button.btn.dropdown-toggle(ng-click="$ctrl.openDrawer = true") 打开操作面板
 
-h2.pc-page-header.ng-animate-disabled(ng-if='!($ctrl.itemID$|async:this)')
-    | {{ ($ctrl.selectionManager.selectedItemIDs$|async:this).length ? 'Multiple' : 'No' }} models selected
-    span.pc-page-header-sub Select only one model to see settings and edit it
 
-h2.pc-page-header.ng-animate-disabled(ng-if='$ctrl.itemID$|async:this')
-    | {{ $ctrl.itemEditTitle$|async:this }}
-
-model-meric-form(
-    model='$ctrl.originalItem$|async:this'
-    models='$ctrl.shortItems$|async:this'
-    caches='$ctrl.shortCaches$|async:this'
-    on-save='$ctrl.save($event)'
-    ng-class='{"pca-form-blocked": !($ctrl.itemID$|async:this)}'
-    fake-ui-can-exit='base.console.edit.advanced.models.model'
-    form-ui-can-exit-guard
+app-drawer(
+  is-open="$ctrl.openDrawer && ($ctrl.itemID$|async:this)"
+  on-close="$ctrl.openDrawer = false"
+  title=`$ctrl.itemEditTitle$|async:this`
+  width="50%"
 )
+    model-meric-form(
+        model='$ctrl.originalItem$|async:this'
+        models='$ctrl.shortItems$|async:this'
+        caches='$ctrl.shortCaches$|async:this'
+        on-save='$ctrl.save($event)'
+        ng-class='{"pca-form-blocked": !($ctrl.itemID$|async:this)}'
+        fake-ui-can-exit='base.console.edit.advanced.models.model'
+        form-ui-can-exit-guard
+    )

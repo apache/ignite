@@ -1,7 +1,7 @@
 
 
 export default class CacheMetrics {
-    constructor(cache) {
+    constructor(cache,metrics) {
         this.dynamicDeploymentId = cache.dynamicDeploymentId;
 
         // Name.
@@ -29,7 +29,7 @@ export default class CacheMetrics {
         this.swapSize = cache.swapSize;
         this.swapKeys = cache.swapKeys;
 
-        const m = cache.metrics;
+        const m = metrics;
 
         // Read/write metrics.
         this.hits = m.hits;

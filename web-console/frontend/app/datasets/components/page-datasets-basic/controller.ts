@@ -14,7 +14,7 @@ import Datasource from 'app/datasource/services/Datasource';
 export default class PageDatasetsBasicComponent implements OnInit, AfterViewInit {
     static $inject = ['$sanitize','$sce','$uiRouter','Datasource','ConfigureState','ConfigSelectors'];
 
-    url = 'http://localhost:3000/webapps/mongoAdmin/queryDocuments#admin';
+    url = 'http://localhost:18080/mongoAdmin/queryDocuments#admin';
 
     safeUrl: SafeResourceUrl;
 

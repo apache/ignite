@@ -5,6 +5,8 @@ public class Bucket {
     private String name;
     private String creationDate;
     private String author;
+    private String region;
+    private boolean publicAccessBlocked;
 
     public String getName() {
         return name;
@@ -59,6 +61,21 @@ public class Bucket {
 	public void setAuthor(String author) {
 		this.author = author;
 	}
-    
+
+	public boolean isPublicAccessBlocked() {
+		return publicAccessBlocked;
+	}
+
+	public void setPublicAccessBlocked(boolean publicAccessBlocked) {
+		this.publicAccessBlocked = publicAccessBlocked;
+	}
+
+	public String getRegion() {
+		return region;
+	}
+
+	public void setRegion(String region) {
+		this.region = region;
+	}   
     
 }

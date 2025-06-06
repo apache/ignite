@@ -1,18 +1,4 @@
-/*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 package org.apache.ignite.console.web.controller;
 
@@ -93,7 +79,7 @@ public class ConfigurationsController {
      * @return Clusters short list.
      */
     @Operation(summary = "Clusters short list.")
-    @GetMapping(path = "/clusters")
+    @GetMapping(path = {"/clusters","/clusters/"})
     public ResponseEntity<JsonArray> loadClustersShortList(
         @AuthenticationPrincipal Account acc,
         @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo
@@ -204,7 +190,7 @@ public class ConfigurationsController {
      * @param changedItems Items to save.
      */
     @Operation(summary = "Save cluster advanced configuration.")
-    @PutMapping(path = "/clusters", consumes = APPLICATION_JSON_VALUE)
+    @PutMapping(path = {"/clusters","/clusters/"}, consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> saveAdvancedCluster(
         @AuthenticationPrincipal Account acc,
         @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo,
@@ -222,7 +208,7 @@ public class ConfigurationsController {
      * @param changedItems Items to save.
      */
     @Operation(summary = "Save cluster basic configuration.")
-    @PutMapping(path = "/clusters/basic", consumes = APPLICATION_JSON_VALUE)
+    @PutMapping(path = {"/clusters/basic","/clusters/basic/"}, consumes = APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> saveBasicCluster(
         @AuthenticationPrincipal Account acc,
         @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo,

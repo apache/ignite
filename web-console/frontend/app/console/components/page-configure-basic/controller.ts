@@ -18,17 +18,19 @@ import ConfigureState from '../../../configuration/services/ConfigureState';
 import ConfigSelectors from '../../../configuration/store/selectors';
 import Caches from '../../../configuration/services/Caches';
 import Clusters from '../../../configuration/services/Clusters';
-import IgniteVersion from 'app/services/Version.service';
+import LegacyUtilsFactory from 'app/services/LegacyUtils.service';
 import {UIRouter} from '@uirouter/angularjs';
 import FormUtils from 'app/services/FormUtils.service';
 import AgentManager from 'app/modules/agent/AgentManager.service';
+import NodeMetrics from 'app/modules/cluster/NodeMetrics';
+
 
 
 export default class PageConfigureBasicController {
     form: ng.IFormController;
 
     static $inject = [
-        'Confirm', '$uiRouter', 'ConfigureState', 'ConfigSelectors', 'Clusters', 'Caches', 'IgniteVersion', '$element', 'IgniteFormUtils', 'AgentManager', '$scope'
+        'Confirm', '$uiRouter', 'ConfigureState', 'ConfigSelectors', 'Clusters', 'Caches', 'IgniteLegacyUtils', '$element', 'IgniteFormUtils', 'AgentManager', '$scope'
     ];
 
     constructor(
@@ -38,7 +40,7 @@ export default class PageConfigureBasicController {
         private ConfigSelectors: ConfigSelectors,
         private Clusters: Clusters,
         private Caches: Caches,
-        private IgniteVersion: IgniteVersion,
+        private LegacyUtils: ReturnType<typeof LegacyUtilsFactory>,
         private $element: JQLite,        
         private IgniteFormUtils: ReturnType<typeof FormUtils>,
         private AgentManager: AgentManager,      
@@ -51,29 +53,38 @@ export default class PageConfigureBasicController {
             icon: 'checkmark'
         })
         
-        this.$scope.formActionsMenu = this.formActionsMenu;
+        this.$scope.formActionsMenu = this.formActionsMenu;        
+        this.$scope.currentNode = -1;
     }
     
     formActionsMenu:Array<any> = [];
-    cachesColDefs = [
-        {name: 'Name:', cellClass: 'pc-form-grid-col-20'},
-        {name: 'Mode:', cellClass: 'pc-form-grid-col-10'},
-        {name: 'Atomicity:', cellClass: 'pc-form-grid-col-10', tip: `
-            Atomicity:
-            <ul>
-                <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>
-                <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>                    
-            </ul>
-        `},
-        {name: 'Backups:', cellClass: 'pc-form-grid-col-10', tip: `
-            Number of nodes used to back up single partition for partitioned cache
-        `},
-        {name: 'Rows/Size:', cellClass: 'pc-form-grid-col-10', tip: `
-            Number of rows and AllocatedSize for partitioned cache
-        `}
+    kvColumnDefs = [
+         {
+            name: 'name',
+            displayName: 'Name',
+            field: 'name',
+            enableHiding: false,
+            filter: {
+                placeholder: 'Filter by name…'
+            },
+            sort: {direction: 'asc', priority: 0},
+            sortingAlgorithm: naturalCompare,                        
+            minWidth: 200
+        },
+        {
+            name: 'value',
+            displayName: 'Value',
+            field: 'value',
+            enableHiding: false,
+            enableFiltering: false,
+            minWidth: 200
+        },
     ]; 
 
-    cacheMetrics = {};
+    clusterMetrics = [];
+    nodesAttrs = [];
+    nodeList = [];
+    nodeAttrs = [];
 
     $onDestroy() {
         this.subscription.unsubscribe();        
@@ -128,30 +139,42 @@ export default class PageConfigureBasicController {
                 
                 this.originalCluster.status =  this.clonedCluster.status;
                 
-                this.callService('CacheMetricsService').then((m)=>{
-                    if(m) this.cacheMetrics = m;
+                this.callService('ClusterInfoService').then((m)=>{
+                    if(m){
+                        this.clusterMetrics = this.LegacyUtils.objectToKvList(m.metrics);
+                        this.nodesAttrs = m.nodes;
+                        this.nodeList = this._nodeList();                        
+                        this.onNodeSelect(0);                    
+                    } 
                 });
                 
             }))
         ).subscribe();
 
         this.$scope.ui = this.IgniteFormUtils.formUI();
-        this.$scope.ui.loadedPanels = [];
-        
+        this.$scope.ui.loadedPanels = [];        
+
+    }    
+
+    _nodeList() {
+        let options = [];
+        for(let i=0;i<this.nodesAttrs.length;i++){
+            let port = this.nodesAttrs[i]['org.apache.ignite.rest.tcp.port']
+            options.push({
+                value: i,
+                label: i+'. '+this.nodesAttrs[i]['node.addresses']+':'+port
+            });
+        };
+        return options;
     }
 
-    getCacheMetrics(cache) {
-        const m = cache && this.cacheMetrics[cache.name];
-        if(m){
-            return ''+m.cacheSize+'/'+ m.offHeapAllocatedSize;
-        }             
-        else{
-            return '';
+    onNodeSelect(currentNode) {
+        this.$scope.currentNode = currentNode;
+        let node = this.nodesAttrs[currentNode];
+        if (node) {
+            this.nodeAttrs = this.LegacyUtils.objectToKvList(node);            
+            this.$scope.$applyAsync();
         }
-    }
-
-    changeCache(cache) {
-        return this.ConfigureState.dispatchAction(changeItem('caches', cache));
     }
 
     reset() {
@@ -245,7 +268,7 @@ export default class PageConfigureBasicController {
     }
     
     callService(serviceName,args={}) {
-        return this.AgentManager.callCacheService(this.clonedCluster,serviceName,args).then((data) => {  
+        return this.AgentManager.callClusterService(this.clonedCluster,serviceName,args).then((data) => {  
             this.$scope.status = data.status;
             this.buildFormActionsMenu();
             this.clonedCluster.status = data.status;            

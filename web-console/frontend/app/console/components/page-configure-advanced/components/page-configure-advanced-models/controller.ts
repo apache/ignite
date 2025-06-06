@@ -69,7 +69,7 @@ export default class PageConfigureAdvancedModels {
                     placeholder: 'Filter by key type…'
                 },
                 cellTemplate: keyCellTemplate,
-                minWidth: 165
+                width: 165
             },
             {
                 name: 'valueType',
@@ -81,7 +81,8 @@ export default class PageConfigureAdvancedModels {
                 },
                 sort: {direction: 'asc', priority: 0},
                 cellTemplate: valueCellTemplate,
-                minWidth: 165
+                minWidth: 200,
+                maxWidth: 350
             },
             {
                 name: 'valueLabel',
@@ -93,7 +94,7 @@ export default class PageConfigureAdvancedModels {
                 },
                 sort: {direction: 'asc', priority: 0},
                 cellTemplate: valueCellTemplate,
-                minWidth: 165
+                minWidth: 200
             }
         ];
 
@@ -155,6 +156,8 @@ export default class PageConfigureAdvancedModels {
             this.selectionManager.editGoes$.pipe(tap((id) => this.edit(id))),
             this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.console.edit.advanced.models', null, options)))
         ).subscribe();
+
+        this.openDrawer = false;
         
     }    
 

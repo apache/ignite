@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -61,7 +62,7 @@ public class CacheServiceMapperTask extends ComputeTaskSplitAdapter<JsonObject, 
 		return list;
 	}
 	
-	public static List<String> cacheNameSelectList(JsonObject args) {		
+	public static List<String> cacheNameSelectList(JsonObject args,Ignite ignite) {		
 		List<String> list = new ArrayList<>();
 		
 		if(args.containsKey("caches")) {
@@ -84,6 +85,9 @@ public class CacheServiceMapperTask extends ComputeTaskSplitAdapter<JsonObject, 
 		else if(args.containsKey("cacheName")) {
 			String obj = args.getString("cacheName");
 			list.add(obj.toString());
+		}
+		else {
+			list.addAll(ignite.cacheNames().stream().filter(n-> !n.startsWith("__") && !n.startsWith("igfs-internal-") && !n.startsWith("INDEXES.")).collect(Collectors.toList()));
 		}
 		
 		return list;
@@ -137,6 +141,9 @@ public class CacheServiceMapperTask extends ComputeTaskSplitAdapter<JsonObject, 
 		}
 
 	}
+	
+	@IgniteInstanceResource
+	private Ignite ignite;
 
 	
 	@Override
@@ -145,7 +152,7 @@ public class CacheServiceMapperTask extends ComputeTaskSplitAdapter<JsonObject, 
 		String serviceName = payload.getString("serviceName", "");
 		JsonObject args = payload.getJsonObject("args");		
 		
-		List<String> cacheNames = cacheNameSelectList(args);
+		List<String> cacheNames = cacheNameSelectList(args,ignite);
 
 		for (int i = 0; i < cacheNames.size(); i++) {
 			String cacheName = cacheNames.get(i);			

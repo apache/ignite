@@ -1,11 +1,11 @@
 Ignite Web Agent
 ======================================
-Ignite Web Agent is a java standalone application that allows to connect GridGain Grid to Ignite Web Console.
+Ignite Web Agent is a java standalone application that allows to connect Ignite Grid to Ignite Web Console.
 Ignite Web Agent communicates with grid nodes via REST interface and connects to Ignite Web Console via websocket.
 
 Two main functions of Ignite Web Agent:
- 1. Proxy between Ignite Web Console and GridGain Grid to execute SQL statements and collect metrics for monitoring.
-   You may need to specify URI for connect to GridGain REST server via "-n" option.
+ 1. Proxy between Ignite Web Console and Ignite Grid to execute SQL statements and collect metrics for monitoring.
+   You may need to specify URI for connect to Ignite REST server via "-n" option.
 
  2. Proxy between Ignite Web Console and user RDBMS to collect database metadata for later indexed types configuration.
    You may need to copy JDBC driver into "./jdbc-drivers" subfolder or specify path via "-d" option.
@@ -62,9 +62,9 @@ Security tokens:
   3) One may specify several tokens as a comma-separated list using configuration file or as command line arguments of Web Agent.
 
 Ignite Web Agent requirements:
-  1) In order to communicate with Web Agent, GridGain node should be started with REST server (copy "ignite-rest-http" folder from "libs/optional/" to "libs/").
+  1) In order to communicate with Web Agent, Ignite node should be started with REST server (copy "ignite-rest-http" folder from "libs/optional/" to "libs/").
   2) Configure Web Agent server-uri property with address where Web Console is running.
-  3) Configure Web Agent node-uri property with GridGain nodes URI(s).
+  3) Configure Web Agent node-uri property with Ignite nodes URI(s).
 
 Options:
   -h, --help
@@ -79,7 +79,7 @@ Options:
     Path to folder with JDBC drivers
     Default value: ./jdbc-drivers
   -n, --node-uri
-    Comma-separated list of URIs for connecting to GridGain node via REST
+    Comma-separated list of URIs for connecting to Ignite node via REST
     Default value: http://localhost:8080
   -nl, --node-login
     User name that will be used to connect to secured cluster
@@ -115,7 +115,7 @@ Options:
      to server and cluster
 
 How to build:
-  To build from the sources run the following command in GridGain project root folder:
+  To build from the sources run the following command in Ignite project root folder:
   mvn clean package -pl :ignite-web-console-agent -am -P web-console -DskipTests=true
 
 Demo of Ignite Web Agent:
@@ -139,7 +139,7 @@ Demo of Ignite Web Agent:
 
    2) Demo for SQL.
      How to evaluate:
-     In this mode an internal GridGain node will be started. Cache created and populated with data.
+     In this mode an internal Ignite node will be started. Cache created and populated with data.
        2.1) Click "Queries" in Ignite Web Console sidebar on the left.
        2.2) Open "Demo" notebook with preconfigured queries.
        2.3) You can also execute any SQL queries for tables: "Country, Department, Employee, Parking, Car".

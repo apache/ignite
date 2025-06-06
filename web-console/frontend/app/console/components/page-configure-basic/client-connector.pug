@@ -6,10 +6,12 @@
 -var sslFactoryEnabled = `${sslEnabled} && !${connectionModel}.useIgniteSslContextFactory`
 
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
-    panel-title Configuration of Client connector
+    panel-title Client connector
+    panel-description 
+        | Configure client properties and associate your cluster with thin client api.
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-12.pc-form-grid-row            
-            .pc-form-grid-col-60
+            .pc-form-grid-col-30
                 +form-field__text({
                     label: 'Host:',
                     model: `${connectionModel}.host`,
@@ -25,16 +27,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     disabled: `!(${connectionEnabled})`,
                     placeholder: '10800',
                     min: '1025'
-                })
-            .pc-form-grid-col-30
-                +form-field__number({
-                    label: 'Port range:',
-                    model: `${connectionModel}.portRange`,
-                    name: '"ClientConnectorPortRange"',
-                    disabled: `!(${connectionEnabled})`,
-                    placeholder: '100',
-                    min: '0'
-                })
+                })           
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Socket send buffer size:',

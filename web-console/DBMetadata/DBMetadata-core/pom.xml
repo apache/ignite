@@ -23,21 +23,31 @@
     <java.version>11</java.version>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
+    <slf4j.version>1.7.33</slf4j.version>
   </properties>
   
   <dependencies>
-    <!--jdbc-->
-    
+
     <dependency>
-        <groupId>org.postgresql</groupId>
-        <artifactId>postgresql</artifactId>
-        <version>42.2.2.jre7</version>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
-    
+
+    <!--jdbc-->
+
     <dependency>
-        <groupId>mysql</groupId>
-        <artifactId>mysql-connector-java</artifactId>
-        <version>5.1.44</version>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.2.2.jre7</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>5.1.44</version>
+      <scope>test</scope>
     </dependency>
    
   </dependencies>
@@ -75,20 +85,6 @@
               </execution>
             </executions>
           </plugin>
-          <!-- GPG mvn clean deploy -P release -Dgpg.passphrase=YourPassphase-->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>sign-artifacts</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>sign</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
         </plugins>
       </build>
       <distributionManagement>
@@ -105,15 +101,15 @@
   </profiles>
   
   <build>
-    <!-- 设置jdk版本为 1.8 -->
+    <!-- 设置jdk版本为 11 -->
     <plugins>  
         <plugin>  
             <groupId>org.apache.maven.plugins</groupId>  
             <artifactId>maven-compiler-plugin</artifactId>  
             <version>3.5.1</version>  
             <configuration>  	
-                <source>1.8</source>  
-                <target>1.8</target>  
+                <source>11</source>
+                <target>11</target>
             </configuration>  
         </plugin>  
     </plugins>  

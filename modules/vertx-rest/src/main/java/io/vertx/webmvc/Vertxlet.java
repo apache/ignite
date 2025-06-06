@@ -15,8 +15,9 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.webmvc.common.VertxletException;
 import io.vertx.webmvc.common.VertxHttpServerResponseOutputStream;
 import io.vertx.webmvc.common.WebConstant;
+import io.vertx.webmvc.VertxInstanceAware;
 
-public abstract class Vertxlet implements Handler<RoutingContext>, ApplicationContextAware, java.io.Serializable {
+public abstract class Vertxlet extends VertxInstanceAware implements Handler<RoutingContext>, ApplicationContextAware, java.io.Serializable {
 
 	private ApplicationContext springContext;
 

@@ -115,7 +115,7 @@ public static void main(String[] args) throws IOException, SQLException {
 }
 ```
 
-## DBMetadata-swing
+## DBMetadata-transfer
 
 这个子项目也算是一个对**DBMetadata-core**的使用，通过上述工具获取元数据后，使用swing界面展示数据，并且可以通过查询来筛选符合要求的数据。
 

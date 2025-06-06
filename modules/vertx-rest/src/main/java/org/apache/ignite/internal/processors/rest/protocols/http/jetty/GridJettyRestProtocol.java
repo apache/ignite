@@ -325,6 +325,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             srvConn.setReuseAddress(true);
 
             httpSrv = new WebApiCreater(context,srvConn);
+            
         }
         else {           
 
@@ -374,6 +375,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         serverSocketPlaceholder = new ServerSocket(port);
         
         override(httpSrv.options); 
+        
+        httpSrv.setIgniteInstanceName(ctx.igniteInstanceName());
         
     }
 

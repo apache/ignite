@@ -15,7 +15,7 @@ const cellTemplate = (state) => `
             class="link-success"
             ui-sref="base.igfs.edit.basic({storageID: row.entity.id})"
             title='Click to Visit'
-        >{{ 'Visit' }}</a>
+        >{{ 'File Manager' }}</a>
     </div>
 `;
 
@@ -77,14 +77,14 @@ export default class PageIgfsOverviewController {
             displayName: 'Storage Access Mode',
             field: 'accessMode',                   
             enableFiltering: false,           
-            width: 150
+            width: 180
         },
         {
             name: 'bucketName',
             displayName: 'Bucket Name',
             field: 'bucketName',                     
             enableFiltering: false,            
-            width: 150
+            width: 180
         },
         {
             name: 'status',
@@ -94,9 +94,9 @@ export default class PageIgfsOverviewController {
             cellTemplate: `
                 <div class="ui-grid-cell-contents status-{{ row.entity.status }} ">{{ row.entity.status }}</div>
             `,
-            enableFiltering: true,
+            enableFiltering: false,
             type: 'string',
-            width: 85
+            width: 100
         },
         {
             name: 'id',
@@ -106,7 +106,7 @@ export default class PageIgfsOverviewController {
             cellTemplate: cellTemplate,
             enableFiltering: false,
             type: 'string',
-            width: 100
+            width: 180
         }
     ];
     

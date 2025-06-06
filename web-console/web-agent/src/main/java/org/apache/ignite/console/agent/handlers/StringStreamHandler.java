@@ -10,8 +10,7 @@ public class StringStreamHandler extends StreamHandler{
 
 	static Formatter formatter = new Formatter() {
          @Override public String format(LogRecord record) {
-        	 if(record.getMessage().isBlank()) return record.getMessage();
-             return record.getMessage() + "<br/>";
+             return record.getMessage() + "\n";
          }
 	};
 	

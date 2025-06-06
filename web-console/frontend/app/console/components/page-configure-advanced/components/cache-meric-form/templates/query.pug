@@ -12,7 +12,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
         | Cache queries and sqlSchema settings. 
         a.link-success(href="https://apacheignite-sql.readme.io/docs/select" target="_blank") More info
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
-        .pca-form-column-6.pc-form-grid-row
+        .pca-form-column-12.pc-form-grid-row
             .pc-form-grid-col-60
                 +form-field__text({
                     label: 'SQL schema name:',
@@ -117,5 +117,3 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                          Escaped names will be used for creation internal structures in Ignite SQL engine.'
                 })
 
-        .pca-form-column-6
-            +preview-xml-java(model, 'cacheQuery', 'domains')

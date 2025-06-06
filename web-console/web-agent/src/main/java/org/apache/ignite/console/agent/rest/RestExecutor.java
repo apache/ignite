@@ -1,18 +1,4 @@
-/*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 package org.apache.ignite.console.agent.rest;
 
@@ -242,8 +228,11 @@ public class RestExecutor implements AutoCloseable {
 		}
     	String clusterConfigGetUrl = serverUri+"/api/v1/configuration/clusters/";
     	HttpResponse<String> modelsResp = sendMetaServerRequest(clusterConfigGetUrl+clusterId+"/models", null,token);
-    	
-    	JsonArray models = new JsonArray(modelsResp.body());
+    	String body = modelsResp.body();
+    	if(!body.startsWith("[")) {
+    		return new JsonObject(body);
+    	}
+    	JsonArray models = new JsonArray(body);
     	JsonObject result = new JsonObject();
     	for(int i=0;i<models.size();i++) {
     		String modelConfigGetUrl = serverUri+"/api/v1/configuration/domains/";

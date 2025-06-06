@@ -38,6 +38,9 @@ export default function service(ErrorPopover) {
     }
     
     return {
+        objectToKvList(obj) {
+            return Object.entries(obj).map(([name, value]) => ({ name, value }));
+        },
 
         mkOptions(options) {
             return _.map(options, (option) => {

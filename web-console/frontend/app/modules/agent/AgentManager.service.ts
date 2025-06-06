@@ -690,11 +690,12 @@ export default class AgentManager {
                 let cacheNames = _.filter(caches,(cache:string)=>{ 
                     return !cache.startsWith('INDEXES.') && !cache.startsWith('igfs-internal-')
                 });
-                
+                let tableName = {};
                 if(data.hasOwnProperty('types')){
                     cacheNames = _.filter(cacheNames,(cache:string)=>{ 
                         return cache in data.types
                     });
+                    tableName = data.types;
                 }
                 let cachesInfo = _.map(cacheNames, (cacheName) => {
                     const schema = data.sqlSchemas && data.sqlSchemas[cacheName] || cacheName;
@@ -706,7 +707,8 @@ export default class AgentManager {
                         value: cacheName,
                         label: cacheName + comment,
                         key: schema+'.'+ cacheName,
-                        schema: schema       
+                        schema: schema,
+                        types: tableName[cacheName],     
                     }                
                 });
                 return cachesInfo;

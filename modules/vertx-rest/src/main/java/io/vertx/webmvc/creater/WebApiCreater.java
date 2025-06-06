@@ -1,7 +1,9 @@
 package io.vertx.webmvc.creater;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Context;
 import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
@@ -11,6 +13,7 @@ import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.ErrorHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.webmvc.Vertxlet;
+import io.vertx.webmvc.VertxInstanceAware;
 import io.vertx.webmvc.annotation.VertxletMapping;
 import io.vertx.webmvc.creater.handler.InitSingleRouterHandler;
 import io.vertx.webmvc.utils.SpringUtils;
@@ -55,9 +58,12 @@ public class WebApiCreater extends AbstractVerticle {
     private HttpServer server;
     
     private Consumer<Router> readyCallback;
-
-
     
+    protected String igniteInstanceName;
+
+	public void setIgniteInstanceName(String igniteInstanceName) {
+		this.igniteInstanceName = igniteInstanceName;
+	}
 
 	public WebApiCreater(ApplicationContext applicationContext,HttpServerOptions options) {
         springContext = applicationContext;
@@ -148,7 +154,6 @@ public class WebApiCreater extends AbstractVerticle {
         String staticDirs = getProperty("spring.web.resources.static-locations");
         
         HttpServer server = vertx.createHttpServer(options);
-
         router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
         router.route().last().failureHandler(ErrorHandler.create(vertx));
@@ -157,7 +162,7 @@ public class WebApiCreater extends AbstractVerticle {
         //将所有的controller转换成router
         try {
             // 获取所有beanNames
-            String[] beanNames = SpringUtils.getBeanNamesForType(Object.class);
+            String[] beanNames = SpringUtils.getBeanNamesForType(null);
             for (String beanName : beanNames) {
             	try {
 	                RestController restController = SpringUtils.findAnnotationOnBean(beanName, RestController.class);
@@ -172,6 +177,12 @@ public class WebApiCreater extends AbstractVerticle {
 	                    }
 	                    log.info("[vertx web] prefix:" + prefixName);
 	                    Object newInstance = SpringUtils.getBean(beanName);
+	                    if(newInstance instanceof VertxInstanceAware) {
+	                    	VertxInstanceAware vertRestController = (VertxInstanceAware)newInstance;
+	                    	vertRestController.setVertx(vertx);
+	                    	vertRestController.setIgniteInstanceName(igniteInstanceName);
+	                    }
+	                    
 	                    Method[] methods = ReflectionUtils.getAllDeclaredMethods(newInstance.getClass());
 	                    for (Method method : methods) {
 	                        initSingleRouterHandler.exec(method,prefixName,newInstance,router);
@@ -183,6 +194,8 @@ public class WebApiCreater extends AbstractVerticle {
 	                if (vertxletController != null) {                    
 	                    
 	                	Vertxlet vertxlet = SpringUtils.getBean(beanName,Vertxlet.class);
+	                	vertxlet.setVertx(vertx);
+	                	vertxlet.setIgniteInstanceName(igniteInstanceName);
 	                    for (String url : vertxlet.getClass().getAnnotation(VertxletMapping.class).url()) {
 	                        log.info("Mapping url {} with class {}", url, vertxlet.getClass().getName());
 	                        vertxletMap.put(url, vertxlet);

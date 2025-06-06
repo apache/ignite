@@ -8,23 +8,14 @@ include /app/configuration/mixins
 
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Statistics
-    panel-description Cache statistics and management settings.
-    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
-        .pca-form-column-6.pc-form-grid-row
-            .pc-form-grid-col-60
-                +form-field__checkbox({
-                    label: 'Statistics enabled',
-                    model: `${model}.statisticsEnabled`,
-                    name: '"statisticsEnabled"',
-                    tip: 'Flag indicating whether statistics gathering is enabled on this cache'
-                })
-            .pc-form-grid-col-60
-                +form-field__checkbox({
-                    label: 'Management enabled',
-                    model: `${model}.managementEnabled`,
-                    name: '"managementEnabled"',
-                    tip: 'Flag indicating whether management is enabled on this cache<br/>\
-                         If enabled the CacheMXBean for each cache is registered in the platform MBean server'
-                })
-        .pca-form-column-6
-            +preview-model(model, 'cacheStatistics')
+    panel-description Cache statistics and management data.
+    panel-content.pca-data-column-12(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pco-relative-root
+            ignite-grid-table(
+                tab-name='cache-metrics'    
+                max-rows-to-show='8'
+                one-way-selection='true'
+                column-defs='$ctrl.kvColumnDefs'
+                items='$ctrl.cacheMetrics'    
+                grid-thin='true'
+            )  

@@ -85,7 +85,7 @@ export default class Clusters {
     }
 
     getClustersOverview() {
-        return this.$http.get<{data: ShortCluster[]}>('/api/v1/configuration/clusters/');
+        return this.$http.get<{data: ShortCluster[]}>('/api/v1/configuration/clusters');
     }
 
     removeCluster(clusterIDs) {
@@ -97,7 +97,7 @@ export default class Clusters {
     }
 
     saveAdvanced(changedItems) {
-        return this.$http.put('/api/v1/configuration/clusters/', changedItems);
+        return this.$http.put('/api/v1/configuration/clusters', changedItems);
     }
 
     getBlankCluster() {

@@ -1,6 +1,7 @@
 
 pc-items-table(
     table-title='::"Grid Commands"'
+    max-rows-to-show='8'
     column-defs='$ctrl.commandColumnDefs'
     row-identity-key='id'
     items='$ctrl.serviceList$|async:this'
@@ -10,17 +11,17 @@ pc-items-table(
     on-selection-change='$ctrl.selectedRows$.next($event)'
     on-filter-changed='$ctrl.filterChanges$.next($event)'   
 )
-    
+    footer-slot(ng-if='($ctrl.serviceList$|async:this).length' style='font-style: italic')
+        button.btn.dropdown-toggle(ng-click="$ctrl.openDrawer = true") 打开操作面板
 
-h2.pc-page-header.ng-animate-disabled(ng-if='!($ctrl.isBlocked$|async:this)')
-    | {{ ($ctrl.selectionManager.selectedItemIDs$|async:this).length ? 'Multiple' : 'No' }} services selected
-    span.pc-page-header-sub Select only one service to see settings and call it
-
-h2.pc-page-header.ng-animate-disabled(ng-if='$ctrl.isBlocked$|async:this')
-    | {{ $ctrl.itemEditTitle$|async:this }}
-
-command-call-form(
-    service='$ctrl.originalService$|async:this'    
-    on-call='$ctrl.onCall($event)'
-    ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'   
+app-drawer(
+  is-open="$ctrl.openDrawer && ($ctrl.isBlocked$|async:this)"
+  on-close="$ctrl.openDrawer = false"
+  title=`$ctrl.itemEditTitle$|async:this`
+  width="55%"
 )
+    command-call-form(
+        service='$ctrl.originalService$|async:this'    
+        on-call='$ctrl.onCall($event)'
+        ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'   
+    )

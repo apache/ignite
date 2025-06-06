@@ -13,6 +13,8 @@ import Version from 'app/services/Version.service';
 import {ShortCache} from 'app/configuration/types';
 import {IColumnDefOf} from 'ui-grid';
 import AgentManager from 'app/modules/agent/AgentManager.service';
+import CacheMetrics from 'app/modules/cluster/CacheMetrics';
+
 // Controller for Caches screen.
 export default class CacheServiceController {
     static $inject = [
@@ -83,8 +85,20 @@ export default class CacheServiceController {
             cellTemplate: `
                 <div class="ui-grid-cell-contents">{{ grid.appScope.$ctrl.Caches.getCacheBackupsCount(row.entity) }}</div>
             `
+        },
+        {   
+            name: 'rows',
+            displayName: 'Rows/Size',
+            field: 'rows',
+            width: 160,
+            enableFiltering: false,
+            cellTemplate: `
+                <div class="ui-grid-cell-contents">{{ grid.appScope.$ctrl.getCacheSize(row.entity) }}</div>
+            `
         }
     ];
+
+    cacheMetrics = {};
 
     $onInit() {
         const cacheID$ = this.$uiRouter.globals.params$.pipe(
@@ -116,7 +130,13 @@ export default class CacheServiceController {
 	                });
                 }
                               
-            });  
+            });
+
+            this.callService('CacheMetricsService',{}).then((m)=>{
+                if(m){
+                    this.cacheMetrics = m.result;                    
+                } 
+            });
             
         });
         
@@ -138,9 +158,7 @@ export default class CacheServiceController {
             selectedItemRows$: this.selectedRows$,
             visibleRows$: this.visibleRows$,
             loadedItems$: this.shortCaches$
-        });
-
-        
+        });        
 
         this.isBlocked$ = cacheID$;        
         // 根据caches选择可以执行的services
@@ -183,6 +201,25 @@ export default class CacheServiceController {
                 available: true
             }
         ]));
+    }
+
+    getCacheSize(cache) {
+        const m = cache && this.cacheMetrics[cache.name];
+        if(m){
+            return ''+m.cacheSize+'/'+ m.offHeapAllocatedSize;
+        }             
+        else{
+            return '';
+        }
+    }
+    getCacheMetrics(cache) {
+        const m = cache && this.cacheMetrics[cache.name];
+        if(m){
+            return new CacheMetrics(cache,m);
+        }             
+        else{
+            return '';
+        }
     }
 
     call(itemIDs: Array<string>, serviceName: string) {

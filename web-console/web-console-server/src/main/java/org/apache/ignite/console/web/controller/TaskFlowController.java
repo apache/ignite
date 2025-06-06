@@ -11,13 +11,7 @@ import org.apache.ignite.console.repositories.TaskFlowRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
@@ -60,7 +54,7 @@ public class TaskFlowController {
     @Operation(summary = "Get user's grouped taskFlows.")
     @GetMapping(path = "/group/{groupId}")
     public ResponseEntity<Collection<TaskFlow>> list(@AuthenticationPrincipal Account acc,
-    		@PathVariable("groupId") String groupId,String sourceCluster, String target, String source) {
+    		@PathVariable("groupId") String groupId,@RequestParam("sourceCluster") String sourceCluster, @RequestParam(value = "target", required = false) String target, @RequestParam(value = "source",required = false) String source) {
         return ResponseEntity.ok(taskFlowsSrv.taskFlowForGroup(acc.getId(),groupId, sourceCluster, target, source));
     }
     
@@ -71,7 +65,9 @@ public class TaskFlowController {
     @Operation(summary = "Get user's grouped taskFlows.")
     @GetMapping(path = "/cluster/{clusterId}")
     public ResponseEntity<Collection<TaskFlow>> listOfCache(@AuthenticationPrincipal Account acc,
-    		@PathVariable("clusterId") String clusterId,String action, String target) {
+                                                            @PathVariable("clusterId") String clusterId,
+                                                            @RequestParam(value = "action",required = false) String action,
+                                                            @RequestParam("target") String target) {
         return ResponseEntity.ok(taskFlowsSrv.taskFlowForCache(acc.getId(),clusterId, action, target));
     }
     

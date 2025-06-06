@@ -37,6 +37,7 @@
     <properties>        
         <vertx.version>4.4.5</vertx.version>
         <jmail.version>1.6.7</jmail.version>
+        <hutool.version>5.7.11</hutool.version>
     </properties>
 
     <dependencies>
@@ -157,11 +158,12 @@
             <artifactId>vertx-web-client</artifactId>
             <version>${vertx.version}</version>
         </dependency>
+        
         <!--Hutool Java工具包-->
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-core</artifactId>
-            <version>5.4.0</version>
+            <version>${hutool.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

@@ -3,15 +3,18 @@
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import {merge, empty, of, from} from 'rxjs';
+import naturalCompare from 'natural-compare-lite';
 import {tap, pluck, publishReplay, catchError, switchMap, distinctUntilChanged, refCount} from 'rxjs/operators';
 import {Menu} from 'app/types';
 import {UIRouter, TransitionService, StateService} from '@uirouter/angularjs';
-
+import LegacyUtilsFactory from 'app/services/LegacyUtils.service';
 import LegacyConfirmFactory from 'app/services/Confirm.service';
 import Version from 'app/services/Version.service';
 import Caches from 'app/configuration/services/Caches';
 import TaskFlows from 'app/console/services/TaskFlows';
 import FormUtilsFactory from 'app/services/FormUtils.service';
+import AgentManager from 'app/modules/agent/AgentManager.service';
+import CacheMetrics from 'app/modules/cluster/CacheMetrics';
 
 export default class CacheEditFormController {
     modelsMenu: Menu<string>;
@@ -24,7 +27,11 @@ export default class CacheEditFormController {
 
     clusterId: string;
 
-    static $inject = ['$state','IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'TaskFlows','IgniteFormUtils'];
+    cacheDataProvider: Array<any>;
+
+    cacheMetrics: Array<any>;
+
+    static $inject = ['$state','IgniteConfirm', 'IgniteVersion', '$scope', 'Caches', 'TaskFlows','IgniteFormUtils','IgniteLegacyUtils','AgentManager'];
 
     constructor(
         private $state: StateService,
@@ -33,31 +40,18 @@ export default class CacheEditFormController {
         private $scope: ng.IScope,
         private Caches: Caches,
         private TaskFlows: TaskFlows,
-        private IgniteFormUtils: ReturnType<typeof FormUtilsFactory>
+        private IgniteFormUtils: ReturnType<typeof FormUtilsFactory>,
+        private LegacyUtils: ReturnType<typeof LegacyUtilsFactory>,
+        private AgentManager: AgentManager,  
     ) {}
     
     
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
         
-        const rebuildDropdowns = () => {
-            this.$scope.affinityFunction = [
-                {value: 'Rendezvous', label: 'Rendezvous'},
-                {value: 'Custom', label: 'Custom'},
-                {value: null, label: 'Default'}
-            ];            
-        };
-
-        rebuildDropdowns();
-
-        this.subscription = this.IgniteVersion.currentSbj.pipe(
-            tap(rebuildDropdowns)            
-        )
-        .subscribe();        
-        
         this.cachesColDefs = [            
-            {name: 'Source Cluster:', cellClass: 'pc-form-grid-col-20'},
-            {name: 'Source Cache:', cellClass: 'pc-form-grid-col-10'},
+            {name: 'Source Cluster:', cellClass: 'pc-form-grid-col-10'},
+            {name: 'Source Cache:', cellClass: 'pc-form-grid-col-20'},
             {name: 'Existing Mode:', cellClass: 'pc-form-grid-col-10'},
             {name: 'Atomicity:', cellClass: 'pc-form-grid-col-10', tip: `
                 Atomicity:
@@ -66,9 +60,32 @@ export default class CacheEditFormController {
                     <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>                    
                 </ul>
             `},
-            {name: 'Read From Backup:', cellClass: 'pc-form-grid-col-10', tip: `
+            {name: 'Read Backup:', cellClass: 'pc-form-grid-col-10', tip: `
                 Read from source cache used to back up single partition for partitioned cache
             `}
+        ]; 
+
+        this.kvColumnDefs = [
+            {
+                name: 'name',
+                displayName: 'Name',
+                field: 'name',
+                enableHiding: false,
+                filter: {
+                    placeholder: 'Filter by name…'
+                },
+                sort: {direction: 'asc', priority: 0},
+                sortingAlgorithm: naturalCompare,                        
+                minWidth: 200
+            },
+            {
+                name: 'value',
+                displayName: 'Value',
+                field: 'value',
+                enableHiding: false,
+                enableFiltering: false,
+                minWidth: 200
+            },
         ]; 
         
         // TODO: Do we really need this?
@@ -83,7 +100,7 @@ export default class CacheEditFormController {
         if(this.clusters){
             for(let c of this.clusters){
                 this.clustersOptions.push({value:c.id,label:c.name})
-            }
+            }           
         }        
     }
 
@@ -100,6 +117,13 @@ export default class CacheEditFormController {
                 this.$scope.ui.inputForm.$setPristine();
                 this.$scope.ui.inputForm.$setUntouched();
             }
+
+            this.callService('CacheMetricsService',{cache: this.clonedCache}).then((m)=>{
+                if(m){
+                    this.cacheMetrics = this.LegacyUtils.objectToKvList(m.result);
+                    //this.$scope.$applyAsync();                   
+                } 
+            });
         }
         if ('models' in changes)
             this.modelsMenu = (changes.models.currentValue || []).map((m) => ({value: m.id, label: m.valueType}));
@@ -200,5 +224,22 @@ export default class CacheEditFormController {
         let editFlow = this.cacheDataProvider.filter((item) => item.id == task.id )
         Object.assign(editFlow[0], task)
         console.log(task)
+    }
+
+    callService(serviceName: string, args) {
+        let clusterID = this.clusterId;
+        return new Promise((resolve,reject) => {
+           this.AgentManager.callCacheService({id:clusterID},serviceName,args).then((data) => {                    
+                if(data.message){                    
+                    this.$scope.message = data.message;                    
+                }
+                resolve(data);         
+            })   
+           .catch((e) => {
+                this.$scope.message = e.message;                
+                reject(e)       
+            });
+        });   
+        
     }
 }

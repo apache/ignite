@@ -7,17 +7,19 @@ import org.springframework.stereotype.Component;
 @Component
 @PropertySource("classpath:application.properties")
 public class SystemConfig {
-    private String tempPath = "/tmp";
-    private String dataPath = "data/";
     
-    @Value("${igfs.s3InstanceName:igfs}")
-    private String s3InstanceName = "igfs";
+	private String tempPath = "/tmp";
+    private String dataPath = "file-uploads/";
+    
     @Value("${igfs.s3BucketName:igfs}")
     private String s3BucketName = "igfs";
+    
     @Value("${igfs.endpointOverride:}")
     private String endpointOverride = null;
+    
     @Value("${igfs.accessKey:root}")
     private String accessKey = "root";
+    
     @Value("${igfs.secretAccessKey:123456}")
     private String secretAccessKey = "123456";
         
@@ -69,14 +71,6 @@ public class SystemConfig {
 
 	public void setS3BucketName(String s3BucketName) {
 		this.s3BucketName = s3BucketName;
-	}
-
-	public String getS3InstanceName() {
-		return s3InstanceName;
-	}
-
-	public void setS3InstanceName(String s3InstanceName) {
-		this.s3InstanceName = s3InstanceName;
 	}
 
 }

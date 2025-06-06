@@ -4,6 +4,91 @@
 export type CacheModes = 'PARTITIONED' | 'REPLICATED' ;
 export type AtomicityModes = 'ATOMIC' | 'TRANSACTIONAL' ;
 
+export interface KeyValueEntries<K = string, V = any> {
+    keyClsName: string;
+    valClsName: string;
+    keyField?: string;
+    valField?: string;
+    entries: Array<{ key: K; value: V }>;
+}
+
+export interface IndexFields {
+    indexType: string; // org.apache.ignite.cache.QueryIndexType
+    fields: KeyValueEntries<string, boolean>;
+}
+
+export interface Cache {
+    name: string;
+    cacheMode: CacheModes;
+    partitionLossPolicy: object;
+    atomicityMode: AtomicityModes;
+    memoryMode: string;
+    onheapCacheEnabled: boolean;
+    offHeapMaxMemory: number;
+    startSize: number;
+    swapEnabled: boolean;
+    sqlOnheapRowCacheSize: number;
+    longQueryWarningTimeout: number;
+    snapshotableIndex: boolean;
+    sqlEscapeAll: boolean;
+    sqlSchema: string;
+    storeKeepBinary: boolean;
+    loadPreviousValue: boolean;
+    cacheStoreFactory: object;
+    storeConcurrentLoadAllThreshold: number;
+    readThrough: boolean;
+    writeThrough: boolean;
+    writeBehindEnabled: boolean;
+    writeBehindBatchSize: number;
+    writeBehindFlushSize: number;
+    writeBehindFlushFrequency: number;
+    writeBehindFlushThreadCount: number;
+    writeBehindCoalescing: boolean;
+    maxConcurrentAsyncOperations: number;
+    defaultLockTimeout: number;
+    atomicWriteOrderMode: string;
+    writeSynchronizationMode: string;
+    rebalanceMode: string;
+    rebalanceBatchSize: number;
+    rebalanceBatchesPrefetchCount: number;
+    rebalanceOrder: number;
+    rebalanceDelay: number;
+    rebalanceTimeout: number;
+    rebalanceThrottle: number;
+    statisticsEnabled: boolean;
+    managementEnabled: boolean;
+    nearConfiguration: {
+        nearStartSize: number;
+    };
+    clientNearConfiguration: {
+        nearStartSize: number;
+    };
+    evictionPolicy: {
+        batchSize: number;
+        maxSize: number;
+    };
+    queryMetadata: string;
+    queryDetailMetricsSize: number;
+    queryParallelism: number;
+    fields: KeyValueEntries<string, string>;
+    defaultFieldValues: KeyValueEntries;
+    fieldsPrecision: KeyValueEntries<string, number>;
+    fieldsScale: KeyValueEntries<string, number>;
+    aliases: KeyValueEntries<string, string>;
+    indexes: IndexFields;
+    typeField: {
+        databaseFieldType: string;
+    };
+    memoryPolicyName: string;
+    diskPageCompression: string;
+    sqlOnheapCacheEnabled: boolean;
+    sqlOnheapCacheMaxSize: number;
+    storeByValue: boolean;
+    encryptionEnabled: boolean;
+    eventsDisabled: boolean;
+    maxQueryIteratorsCount: number;
+}
+
 export interface ShortCache {
     id: string,
     cacheMode: CacheModes,
@@ -116,6 +201,9 @@ export type FailoverSPIs = 'JobStealing' | 'Never' | 'Always' | 'Custom';
 export interface Cluster {
     id: string,
     name: string,
+    discovery: DiscoveryKinds,
+    caches: string[],
+    models: string[],
     // TODO: cover with types
     [key: string]: any
 }

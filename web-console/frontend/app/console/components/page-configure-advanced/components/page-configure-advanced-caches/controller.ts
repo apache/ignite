@@ -47,6 +47,7 @@ export default class Controller {
         private Caches: Caches
     ) {}
 
+    openDrawer = false;
     visibleRows$ = new Subject();
     selectedRows$ = new BehaviorSubject([]); // modify@Byron new Subject();
 
@@ -61,7 +62,8 @@ export default class Controller {
                 placeholder: 'Filter by name…'
             },
             sortingAlgorithm: naturalCompare,
-            minWidth: 165
+            minWidth: 250,
+            maxWidth: 350
         },
         {
             name: 'cacheMode',

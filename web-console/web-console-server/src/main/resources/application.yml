@@ -18,10 +18,14 @@ server:
     whitelabel:
       enabled: true
 
+  servlet:
+    session:
+      timeout: 6000m
+
 ####Jetty properties########
   jetty:
-    acceptors: 1 # acceptor线程数
-    selectors: 2 # selector线程数
+    acceptors: 2 # acceptor线程数
+    selectors: 4 # selector线程数
     max-http-post-size: 1073741824 # put或post方法最大字节数    
     max-threads: 128
     work-directory: .
@@ -33,3 +37,8 @@ spring:
 
   mail:
     defaultTemplatePath: templates/mail/base.html
+
+
+mcp-server:
+  user-email: junphine@126.com
+  default-instance: shanxi-std

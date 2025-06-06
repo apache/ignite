@@ -31,9 +31,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
+import org.apache.ignite.console.agent.db.DBInfo;
 import org.apache.ignite.console.agent.db.DataSourceManager;
 import org.apache.ignite.console.agent.db.DbSchema;
-import org.apache.ignite.console.db.DBInfo;
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.eclipse.jetty.util.StringUtil;

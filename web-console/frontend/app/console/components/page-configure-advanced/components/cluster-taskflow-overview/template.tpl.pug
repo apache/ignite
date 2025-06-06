@@ -5,7 +5,7 @@
         table-title='::"Choose Data Provider Cluster"'
         column-defs='$ctrl.clustersColumnDefs'
         items='$ctrl.shortClusters$|async:this'        
-        max-rows-to-show='10'
+        max-rows-to-show='8'
         one-way-selection='::false'
         selected-row-id='$ctrl.selectedRowsIDs$|async:this'
         on-selection-change='$ctrl.selectedRows$.next($event)'

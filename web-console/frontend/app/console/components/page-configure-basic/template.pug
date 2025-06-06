@@ -56,20 +56,29 @@ form(novalidate name=basicForm)
 
         .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row
             .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'Cluster comment:',
+                    model: `${model}.comment`,
+                    name: '"comment"',
+                    disabled: 'true',
+                    placeholder: '',
+                    tip: 'Instance comment describe the main functions of the cluster data.  It is useful when you want to distinguish between different clusters'
+                })
+
+            .pc-form-grid__break
+            .pc-form-grid-col-60
                 +form-field__ip-address({
                     label: 'Local host:',
                     model: `${model}.localHost`,
                     name: '"localHost"',
                     disabled: 'true',
-                    placeholder: '0.0.0.0',
+                    placeholder: '',
                     tip: 'System-wide local address or host for all Ignite components to bind to<br/>\
                           If not defined then Ignite tries to use local wildcard address<br/>\
                           That means that all services will be available on all network interfaces of the host machine'
                 })
 
-    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') 2. Client Configuration
-        .pcb-section-notification.pcb-inner-padding(ng-if='$ctrl.shortClusters')
-            | Configure client properties and associate your cluster with thin client api.
+    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px')
     
     .pca-form-row
         .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row    
@@ -82,74 +91,22 @@ form(novalidate name=basicForm)
                 .panel-group
                     //- Since ignite 2.3
                     include ./communication
-        
-    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') 3. Caches Matric
 
-    .pcb-form-grid-row.pc-form-grid-row
+    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px')
+    
+    .pca-form-row
+        .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row    
+            .pc-form-grid-col-120    
+                .panel-group
+                    //- Since ignite 2.3
+                    include ./cluster-metrics
+        .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row    
+            .pc-form-grid-col-120 
+                .panel-group
+                    //- Since ignite 2.3
+                    include ./cluster-attrs
         
-        .pc-form-grid-col-120
-            .ignite-form-field
-                list-editable.pcb-caches-list(
-                    ng-model='$ctrl.shortCaches'
-                    list-editable-one-way
-                    on-item-change='$ctrl.changeCache($event)'                    
-                    list-editable-cols='::$ctrl.cachesColDefs'
-                    list-editable-cols-row-class='pc-form-grid-row pcb-row-no-margin'
-                )
-                    list-editable-item-view
-                        div {{ $item.name }}
-                        div {{ $item.cacheMode }}
-                        div {{ $item.atomicityMode }}
-                        div {{ $ctrl.Caches.getCacheBackupsCount($item) }}
-                        div {{ $ctrl.getCacheMetrics($item) }}
-                    list-editable-item-edit
-                        div
-                            +form-field__text({
-                                label: 'Name',
-                                model: '$item.name',
-                                name: '"name"',
-                                disabled: true,
-                                required: true
-                            })(
-                                ignite-unique='$ctrl.shortCaches'
-                                ignite-unique-property='name'
-                                ignite-form-field-input-autofocus='true'
-                            )
-                                +form-field__error({ error: 'igniteUnique', message: 'Cache name should be unqiue' })
-                        div
-                            +form-field__cache-modes({
-                                label: 'Mode:',
-                                model: '$item.cacheMode',
-                                name: '"cacheMode"',
-                                placeholder: 'PARTITIONED'
-                            })
-                        div
-                            +form-field__dropdown({
-                                label: 'Atomicity:',
-                                model: '$item.atomicityMode',
-                                name: '"atomicityMode"',
-                                placeholder: 'ATOMIC',
-                                disabled: true,
-                                options: '::$ctrl.Caches.atomicityModes'
-                            })
-                        div(ng-show='$ctrl.Caches.shouldShowCacheBackupsCount($item)')
-                            +form-field__number({
-                                label: 'Backups:',
-                                model: '$item.backups',
-                                name: '"backups"',
-                                placeholder: '0',
-                                disabled: false,
-                                min: 0
-                            })
-                        div
-                            +form-field__number({
-                                label: 'Rows:',
-                                model: '$item.rows',
-                                name: '"rows"',
-                                placeholder: '0',
-                                disabled: true,
-                                min: 0
-                            })
+    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px')               
                     
 
     .pc-form-actions-panel        

@@ -1,18 +1,4 @@
-/*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 package org.apache.ignite.console.websocket;
 
@@ -51,10 +37,10 @@ public class TopologySnapshot {
     /** Optional Ignite cluster ID. */
     private static final String IGNITE_CLUSTER_ID = "IGNITE_CLUSTER_ID";
 
-    /** Optional GridGain plugin attribute. */
+    /** Optional Ignite plugin attribute. */
     private static final String GRIDGAIN_PLUGIN = "plugins.gg.node";
     
-    /** Optional GridGain Ultimate plugin attribute. */
+    /** Optional Ignite Ultimate plugin attribute. */
     private static final String ULTIMATE_CLUSTER = "plugins.gg.ultimate";
 
     /**
@@ -83,12 +69,12 @@ public class TopologySnapshot {
     private boolean demo;
 
     /**
-     * GridGain plugin flag.
+     * Ignite plugin flag.
      */
     private boolean gridgain;
 
     /**
-     * GridGain ultimate plugin flag.
+     * Ignite ultimate plugin flag.
      */
     private boolean ultimate;
 

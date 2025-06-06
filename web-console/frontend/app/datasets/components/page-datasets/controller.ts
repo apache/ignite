@@ -50,7 +50,7 @@ export default class PageDatasetsController {
         catch (ignored) {
             
         }
-        return {id: id, clusterName: "Mongo Express", url: "/webapps/mongoAdmin/queryDocuments#"+id}      
+        return {id: id, clusterName: "Mongo Express", url: "/mongoAdmin/queryDocuments#"+id}      
     }
 
     $onDestroy() {}

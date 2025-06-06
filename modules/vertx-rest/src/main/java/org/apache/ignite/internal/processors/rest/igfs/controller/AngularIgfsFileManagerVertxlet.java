@@ -48,6 +48,7 @@ import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 
 import org.apache.ignite.internal.processors.rest.igfs.config.SystemConfig;
+import org.apache.ignite.internal.processors.rest.igfs.service.Impl.IgfsDatasetPersistenceProvider;
 import org.apache.ignite.internal.processors.rest.igfs.util.DateUtil;
 import org.apache.ignite.internal.processors.rest.igfs.util.IgfsUtils;
 
@@ -126,13 +127,19 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
     }
 
     private String REPOSITORY_BASE_PATH = "/tmp";
-    private String DATE_FORMAT = "yyyy-MM-dd hh:mm:ss"; // (2001-07-04 12:08:56)
-   
-    private Map<String,IgniteFileSystem> fsMap = new HashMap<>();
+    private String DATE_FORMAT = "yyyy-MM-dd hh:mm:ss"; // (2001-07-04 12:08:56)   
+    
+    
+    private IgfsDatasetPersistenceProvider provider;
+    
+    
+    @Autowired
+    @Qualifier("systemConfig")
+    private SystemConfig systemConfig;   
 
 
     @Override
-    public void init() throws VertxletException {        
+    public void init() throws VertxletException { 
         
         String tmp = System.getProperty("ava.io.tmpdir");
         if(tmp!=null) {
@@ -169,6 +176,8 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
             enabledAction.put(Mode.copy, enabledActions.contains("copy"));
             enabledAction.put(Mode.upload, enabledActions.contains("upload"));
         }
+        
+        this.provider = new IgfsDatasetPersistenceProvider(this.getIgniteInstanceName(),systemConfig);
 
     }
     
@@ -178,23 +187,12 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
      * @return
      */
     protected IgniteFileSystem fs(String bucketName) {    		
-    	IgniteFileSystem igfs = allFS().get(bucketName);
+    	IgniteFileSystem igfs = provider.fs(bucketName);
         return igfs;
-
     }
     
     protected Map<String,IgniteFileSystem> allFS(){
-    	if(fsMap.isEmpty()) {
-    		for(Ignite ignite: Ignition.allGrids()) {
-    			for(IgniteFileSystem fs:ignite.fileSystems()) {
-    				String prefix = !StringUtils.hasText(ignite.name()) ? fs.name(): ignite.name()+"-"+fs.name();
-    				if(!prefix.isBlank()) {
-    					fsMap.put(prefix, fs);
-    				}
-    			}
-    		}
-    	}
-    	return fsMap;
+    	return this.provider.allFS();
     }
 
 	/**
@@ -238,8 +236,7 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
 	}
    
     @Override
-    public void doGet(HttpServerRequest request, HttpServerResponse response) throws VertxletException,IOException {
-    	     
+    public void doGet(HttpServerRequest request, HttpServerResponse response) throws VertxletException,IOException {    	     
         
     	String action = request.getParam("action");
     	String pathName = request.getParam("path");

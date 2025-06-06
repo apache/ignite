@@ -34,8 +34,7 @@ public class IgniteVertxPlugin implements IgnitePlugin {
 
 						long stopwatch = System.currentTimeMillis();
 						long spend = (stopwatch - startwatch) / 1000;
-						log.info("[Vertx web] Vertx web's vert.x system started successfully, using time {}.",
-								spend + "s");
+						log.info("[Vertx web] Vertx web's vert.x system started successfully, using time {}s.",spend+"");
 
 					} else {
 						// 失败的时候做什么！

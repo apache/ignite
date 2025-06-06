@@ -14,7 +14,7 @@ panel-collapsible(opened=`::true` ng-form=form)
         a.link-success(href="#cache" ng-click='$ctrl.goCacheEdit()') More info about cache configuration.
         
     panel-content.pca-form-row
-        .pca-form-column-6.pc-form-grid-row
+        .pca-form-column-12.pc-form-grid-row
             .pc-form-grid-col-60
                 +form-field__checkbox({
                     label: 'Generate POJO classes',
@@ -71,5 +71,3 @@ panel-collapsible(opened=`::true` ng-form=form)
                     ignite-form-field-input-autofocus=autofocus
                 )
 
-        .pca-form-column-6
-            +preview-model(model, 'domainModelGeneral')

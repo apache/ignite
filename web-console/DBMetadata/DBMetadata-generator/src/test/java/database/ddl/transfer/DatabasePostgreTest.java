@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.ignite.console.agent.db.BeetlTemplate;
+import org.apache.ignite.console.agent.db.HtmlTableTemplate;
 import org.apache.ignite.console.agent.db.Dialect;
 import org.apache.ignite.console.agent.db.IntrospectedTable;
 import org.apache.ignite.console.agent.utils.DBMetadataUtils;
@@ -31,7 +31,7 @@ public class DatabasePostgreTest {
             List<IntrospectedTable> tables = dbMetadataUtils.introspectTables(dbMetadataUtils.getDefaultConfig());
 
             DBMetadataUtils.sortTables(tables);
-            BeetlTemplate beetlTemplate = new BeetlTemplate();
+            HtmlTableTemplate beetlTemplate = new HtmlTableTemplate();
             beetlTemplate.exportDatabaseHtml(tables, "/tmp", "db");
 
             for (IntrospectedTable table : tables) {

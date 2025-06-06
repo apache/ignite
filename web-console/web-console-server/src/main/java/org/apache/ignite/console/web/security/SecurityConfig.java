@@ -1,59 +1,67 @@
-/*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 package org.apache.ignite.console.web.security;
 
 import java.io.IOException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.console.config.ActivationConfiguration;
+import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.services.AccountsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.task.TaskDecorator;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsChecker;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import org.springframework.session.MapSession;
+import org.springframework.session.MapSessionRepository;
 import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import static org.apache.ignite.console.dto.Account.ROLE_ADMIN;
 import static org.apache.ignite.console.dto.Account.ROLE_USER;
 import static org.apache.ignite.console.websocket.WebSocketEvents.AGENTS_PATH;
 import static org.apache.ignite.console.websocket.WebSocketEvents.BROWSERS_PATH;
+import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
  * Security settings provider.
@@ -62,7 +70,7 @@ import static org.apache.ignite.console.websocket.WebSocketEvents.BROWSERS_PATH;
 @EnableWebSecurity
 @EnableSpringHttpSession
 @Profile("!test")
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
+public class SecurityConfig {
     /** The number of seconds that the {@link Session} should be kept alive between client requests. */
     private static final int MAX_INACTIVE_INTERVAL_SECONDS = 60 * 60 * 24 * 30;
 
@@ -100,6 +108,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         FORGOT_PASSWORD_ROUTE, RESET_PASSWORD_ROUTE, ACTIVATION_RESEND
     };
 
+    final static Map<String, Session> sessions = new ConcurrentHashMap<>();
+
     /** */
     private final AccountsService accountsSrv;
     
@@ -134,34 +144,78 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         this.accountsSrv = accountsSrv;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void configure(HttpSecurity http) throws Exception {
-    	
-    	//-http.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
-    	
-    	
-    	http.cors();
-    	
-    	http = http.csrf().disable();
-        
-        http.authorizeRequests()
-            .antMatchers(PUBLIC_ROUTES).anonymous()
-            .antMatchers("/api/v1/admin/**").hasAuthority(ROLE_ADMIN)
-            .antMatchers("/api/v1/**", BROWSERS_PATH).hasAuthority(ROLE_USER)
-            .antMatchers(EXIT_USER_URL).authenticated()
-            .and()
-            .addFilterAt(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(switchUserFilter(), FilterSecurityInterceptor.class)
-            .addFilterAt(authenticationTokenFilter(), FilterSecurityInterceptor.class)
-            .logout()
-            .logoutUrl(LOGOUT_ROUTE)
-            .deleteCookies("SESSION")
-            .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.OK));
+    @PostConstruct
+    public void setSecurityContextStrategy() {
+        SecurityContextHolder.setStrategyName(
+                SecurityContextHolder.MODE_THREADLOCAL
+        );
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/v1/**", configuration);
+        return source;
     }
 
     /** {@inheritDoc} */
-    @Override public void configure(WebSecurity web) {
-        web.ignoring().antMatchers(
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    	
+    	//-http.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
+
+        http = http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
+    	
+    	http = http.csrf(csrf -> csrf.disable());
+		
+		http.headers(headers -> headers
+            // 禁用 X-Frame-Options
+            .frameOptions(frameOptions -> frameOptions.disable())
+            // 设置 CSP 允许特定域名 iframe 加载
+            .contentSecurityPolicy(csp -> csp
+                .policyDirectives("frame-ancestors 'self' http://localhost")
+            )
+        )
+        
+        http.authorizeHttpRequests(auth->auth
+                .requestMatchers(PUBLIC_ROUTES).anonymous()
+                .requestMatchers("/api/v1/admin/**").hasAuthority(ROLE_ADMIN)
+                .requestMatchers("/api/v1/**", BROWSERS_PATH).hasAuthority(ROLE_USER)
+                .requestMatchers(EXIT_USER_URL).authenticated().anyRequest().permitAll()
+                )
+            .addFilterAfter(switchUserFilter(), FilterSecurityInterceptor.class)
+            .addFilterAt(authenticationTokenFilter(), FilterSecurityInterceptor.class)
+            .logout(logout -> logout
+                .logoutUrl(LOGOUT_ROUTE)
+                .deleteCookies("SESSION")
+                .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler(HttpStatus.OK))
+            );
+
+        /*
+        http.sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+        );
+
+        http.securityContext(context->
+                context.securityContextRepository(new HttpSessionSecurityContextRepository())
+        );
+
+        http.rememberMe(rememberMe -> rememberMe
+                .rememberMeCookieName("ignite-remember")
+                .key("admin")
+                .tokenValiditySeconds(3600 * 12));
+        */
+        return http.build();
+    }
+
+    /** {@inheritDoc} */
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+    	return (web) -> web.ignoring().requestMatchers(
             "/v2/api-docs",
             "/configuration/ui",
             "/swagger-resources",
@@ -172,21 +226,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             "/webjars/**"
         );
     }
-
-    /**
-     * Configure global implementation of {@link #authenticationManager()}
-     */
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) {
-        DaoAuthenticationProvider authProvider = activationEnabled ?
-            new CustomAuthenticationProvider(activationTimeout) : new DaoAuthenticationProvider();
-
-        authProvider.setPreAuthenticationChecks(userDetailsChecker);
-        authProvider.setUserDetailsService(accountsSrv);
-        authProvider.setPasswordEncoder(encoder);
-
-        auth.authenticationProvider(authProvider);
-    }
+   
 
     /**
      * @param req Request.
@@ -199,8 +239,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         Authentication authentication
     ) throws IOException {
         res.setStatus(HttpServletResponse.SC_OK);
-
-        res.getWriter().flush();
+        Account account = (Account)authentication.getPrincipal();
+        res.addCookie(new Cookie("principal",account.getUsername()));
+        //res.getWriter().flush();
     }
 
     /**
@@ -208,26 +249,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
      */
     @Bean
     public SessionRepository<MapSession> sessionRepository(@Autowired Ignite ignite) {
+        if(true || !ignite.cluster().state().active())
+            return new MapSessionRepository(sessions);
         return new IgniteSessionRepository(ignite)
             .setDefaultMaxInactiveInterval(MAX_INACTIVE_INTERVAL_SECONDS);
     }
 
     /**
-     * Custom filter for retrieve credentials.
-     */
-    private BodyReaderAuthenticationFilter authenticationFilter() throws Exception {
-        BodyReaderAuthenticationFilter authenticationFilter = new BodyReaderAuthenticationFilter();
-
-        authenticationFilter.setAuthenticationManager(authenticationManagerBean());
-        authenticationFilter.setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher(SIGN_IN_ROUTE, "POST"));
-        authenticationFilter.setAuthenticationSuccessHandler(this::successHandler);
-
-        return authenticationFilter;
-    }
-
-    /**
      * Switch User processing filter.
      */
+    @Bean
     public SwitchUserFilter switchUserFilter() {
         SwitchUserFilter filter = new SwitchUserFilter();
 
@@ -244,6 +275,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     /**
      * Switch User processing filter.
      */
+    @Bean
     public AuthenticationTokenFilter authenticationTokenFilter() {
     	AuthenticationTokenFilter filter = new AuthenticationTokenFilter();
     	filter.setAccountsService(accountsSrv);
@@ -251,9 +283,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
     
     @Bean
-    @Override
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        return super.authenticationManagerBean();
+    public AuthenticationManager authenticationManager() {
+    	DaoAuthenticationProvider authProvider = activationEnabled ?
+    	            new CustomAuthenticationProvider(activationTimeout) : new DaoAuthenticationProvider();
+
+        authProvider.setPreAuthenticationChecks(userDetailsChecker);
+        authProvider.setUserDetailsService(accountsSrv);
+        authProvider.setPasswordEncoder(encoder);
+        return new ProviderManager(authProvider);
     }
 
 }

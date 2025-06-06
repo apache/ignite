@@ -1,7 +1,7 @@
 
-
 pc-items-table(
     table-title='::"My caches"'
+    max-rows-to-show='8'
     column-defs='$ctrl.cachesColumnDefs'
     items='$ctrl.shortCaches$|async:this'
     actions-menu='$ctrl.tableActions$|async:this'
@@ -18,35 +18,33 @@ pc-items-table(
                 ui-sref='base.configuration.edit.advanced.caches.cache({cacheID: "new"})'
                 ui-sref-opts='{location: "replace"}'
             ) Create one?           
-        a.link-success(
-            ui-sref='base.configuration.edit.advanced.caches.cache({cacheID: "new"})'
-            ui-sref-opts='{location: "replace"}'
-            ng-show='($ctrl.shortCaches$|async:this).length'
-        ) + Add new cache
+        
+        button.btn.dropdown-toggle(ng-click="$ctrl.openDrawer = true") 打开操作面板
 
-h2.pc-page-header.ng-animate-disabled(ng-hide='($ctrl.isBlocked$|async:this)')
-    | {{ ($ctrl.selectionManager.selectedItemIDs$|async:this).length ? 'Multiple' : 'No' }} caches selected
-    span.pc-page-header-sub Select only one cache to see settings and edit it
-    
+
+app-drawer(
+  is-open="$ctrl.openDrawer && ($ctrl.isBlocked$|async:this)"
+  on-close="$ctrl.openDrawer = false"
+  title=`$ctrl.itemEditTitle$|async:this`
+  width="55%"
+)
+
+    cache-meric-form(ng-if='$ctrl.isBlocked$|async:this'
+        cache='$ctrl.originalCache$|async:this'
+        caches='$ctrl.shortCaches$|async:this'
+        models='$ctrl.shortModels$|async:this'
+        clusters='$ctrl.shortClusters$|async:this'
+        cluster-id='$ctrl.clusterID$|async:this'
+        cache-data-provider='$ctrl.cacheDataProvider$|async:this'
+        on-save='$ctrl.save($event)'
+        ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'
+        fake-ui-can-exit='base.console.edit.advanced.caches.cache'
+        form-ui-can-exit-guard
+    )
+
 cluster-task-flow-overview(ng-hide='($ctrl.isBlocked$|async:this)'
     cluster-id='$ctrl.clusterID$|async:this'
     cluster='$ctrl.originalCluster$|async:this'
     target-caches='$ctrl.selectedRows$'
     models='$ctrl.shortModels$|async:this'
-)
-
-h2.pc-page-header.ng-animate-disabled(ng-show='$ctrl.isBlocked$|async:this')
-    | {{ $ctrl.itemEditTitle$|async:this }}
-
-cache-meric-form(ng-if='$ctrl.isBlocked$|async:this'
-    cache='$ctrl.originalCache$|async:this'
-    caches='$ctrl.shortCaches$|async:this'
-    models='$ctrl.shortModels$|async:this'
-    clusters='$ctrl.shortClusters$|async:this'
-    cluster-id='$ctrl.clusterID$|async:this'
-    cache-data-provider='$ctrl.cacheDataProvider$|async:this'
-    on-save='$ctrl.save($event)'
-    ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'
-    fake-ui-can-exit='base.console.edit.advanced.caches.cache'
-    form-ui-can-exit-guard
 )

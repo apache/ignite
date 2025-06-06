@@ -44,17 +44,16 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.console.agent.db.DBInfo;
 import org.apache.ignite.console.agent.db.DbColumn;
 import org.apache.ignite.console.agent.db.DbMetadataReader;
 import org.apache.ignite.console.agent.db.DbTable;
 import org.apache.ignite.console.agent.db.JdbcQueryExecutor;
+import org.apache.ignite.console.agent.db.VisorQueryIndex;
+import org.apache.ignite.console.agent.db.VisorQueryIndexField;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.service.LangflowApiClient;
 import org.apache.ignite.console.agent.service.ServiceResult;
-import org.apache.ignite.console.db.DBInfo;
-import org.apache.ignite.console.db.VisorQueryIndex;
-import org.apache.ignite.console.db.VisorQueryIndexField;
-
 import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;

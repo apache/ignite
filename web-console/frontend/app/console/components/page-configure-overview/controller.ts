@@ -107,7 +107,20 @@ export default class PageConfigureOverviewController {
                 sort: {direction: 'asc', priority: 0},
                 sortingAlgorithm: naturalCompare,
                 cellTemplate: cellTemplate('base.console.edit'),
-                minWidth: 165
+                width: 200
+            },
+            {
+                name: 'comment',
+                displayName: 'Comment',
+                field: 'comment',
+                enableHiding: false,
+                filter: {
+                    placeholder: 'Filter by comment…'
+                },
+                sort: {direction: 'asc', priority: 0},
+                sortingAlgorithm: naturalCompare,
+                cellTemplate: cellTemplate('base.console.edit.basic'),
+                minWidth: 200
             },
             {
                 name: 'discovery',

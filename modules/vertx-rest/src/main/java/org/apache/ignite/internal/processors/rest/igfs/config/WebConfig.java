@@ -29,7 +29,6 @@ public class WebConfig {
         // 注册自定义转换器  
         conversionService.addConverter(new RangeConverter());  
         return conversionService;  
-    }  
-
+    }
    
 }

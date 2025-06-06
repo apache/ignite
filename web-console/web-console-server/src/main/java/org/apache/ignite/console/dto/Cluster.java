@@ -1,18 +1,4 @@
-/*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 package org.apache.ignite.console.dto;
 
@@ -35,6 +21,8 @@ public class Cluster extends DataObject {
 
     /** */
     private String discovery;
+
+    private String comment;
 
     /**
      * @param json JSON data.
@@ -66,6 +54,7 @@ public class Cluster extends DataObject {
             id,
             name,
             discoveryKind,
+            json.getString("comment"),
             toJson(json)
         );
     }
@@ -78,22 +67,30 @@ public class Cluster extends DataObject {
      * @param discovery Cluster discovery.
      * @param json JSON payload.
      */
-    public Cluster(UUID id, String name, String discovery, String json) {
+    public Cluster(UUID id, String name, String discovery, String comment, String json) {
         super(id, json);
 
         this.name = name;
         this.discovery = discovery;
+        this.comment = comment;
     }
 
     /**
-     * @return name Cluster name.
+     * @return Cluster name.
      */
     public String name() {
         return name;
     }
 
     /**
-     * @return name Cluster discovery.
+     * @return Cluster description.
+     */
+    public String comment() {
+        return comment;
+    }
+
+    /**
+     * @return Cluster discovery.
      */
     public String discovery() {
         return discovery;
@@ -104,6 +101,7 @@ public class Cluster extends DataObject {
         return new JsonObject()
             .put("id", getId())
             .put("name", name)
+            .put("comment", comment)
             .put("discovery", discovery);
     }
 }

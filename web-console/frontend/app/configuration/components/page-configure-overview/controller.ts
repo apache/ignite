@@ -14,6 +14,7 @@ const cellTemplate = (state) => `
     </div>
 `;
 
+
 import {default as ConfigureState} from '../../services/ConfigureState';
 import {default as ConfigSelectors} from '../../store/selectors';
 import {default as Clusters} from '../../services/Clusters';
@@ -80,7 +81,20 @@ export default class PageConfigureOverviewController {
                 sort: {direction: 'asc', priority: 0},
                 sortingAlgorithm: naturalCompare,
                 cellTemplate: cellTemplate('base.configuration.edit'),
-                minWidth: 165
+                width: 200
+            },
+            {
+                name: 'comment',
+                displayName: 'Comment',
+                field: 'comment',
+                enableHiding: false,
+                filter: {
+                    placeholder: 'Filter by comment…'
+                },
+                sort: {direction: 'asc', priority: 0},
+                sortingAlgorithm: naturalCompare,
+                cellTemplate: cellTemplate('base.configuration.edit.basic'),
+                minWidth: 200
             },
             {
                 name: 'discovery',

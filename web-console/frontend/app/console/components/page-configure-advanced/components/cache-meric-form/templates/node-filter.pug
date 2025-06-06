@@ -13,7 +13,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Node filter
     panel-description Determines on what nodes the cache should be started.
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
-        .pca-form-column-6.pc-form-grid-row
+        .pca-form-column-12.pc-form-grid-row
             .pc-form-grid-col-60
                 +form-field__dropdown({
                     label: 'Node filter:',
@@ -32,5 +32,4 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     tip: 'Class name of custom node filter implementation',
                     validationActive: customFilter
                 })
-        .pca-form-column-6
-            +preview-model(model, 'cacheNodeFilter')
+

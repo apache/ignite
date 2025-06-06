@@ -1,20 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!--
- Copyright 2019 GridGain Systems, Inc. and Contributors.
 
- Licensed under the GridGain Community Edition License (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
--->
 
 <!--
     POM file.
@@ -38,12 +24,14 @@
         <java.version>11</java.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>        
-        <spring.boot.version>2.7.13</spring.boot.version>
+        <spring.boot.version>2.7.13</spring.boot.version>        
         <web-console.ignite.version>2.16.999-SNAPSHOT</web-console.ignite.version>
         <commons.lang3.version>3.12.0</commons.lang3.version>        
         <commons.compress.version>1.20</commons.compress.version>
         <vertx.version>4.4.5</vertx.version>
         <tinkerpop.version>3.7.2</tinkerpop.version>
+        <node.version>v20.12.2</node.version>
+        <npm.version>10.9.2</npm.version>
     </properties>
 
     <modules>
@@ -62,7 +50,7 @@
                         <plugin>
                             <groupId>com.github.eirslett</groupId>
                             <artifactId>frontend-maven-plugin</artifactId>
-                            <version>1.6</version>
+                            <version>1.11.0</version>
                             <configuration>
                                 <nodeVersion>${node.version}</nodeVersion>
                                 <installDirectory>target</installDirectory>
@@ -75,7 +63,7 @@
                     <plugin>
                         <groupId>com.github.eirslett</groupId>
                         <artifactId>frontend-maven-plugin</artifactId>
-
+                        <version>1.11.0</version>
                         <executions>
                             <execution>
                                 <id>build frontend</id>
@@ -153,7 +141,7 @@
 
     <build>
         <plugins>        
-	         <plugin>
+            <plugin>
 		          <artifactId>maven-javadoc-plugin</artifactId>		          
 		          <configuration>
 		            <skip>true</skip>
@@ -176,4 +164,53 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+        <repository>
+            <id>sonatype</id>
+            <name>OSS Sonatype</name>
+            <url>https://oss.sonatype.org/content/groups/public/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>aliyunmaven</id>
+            <name>aliyun</name>
+            <url>https://maven.aliyun.com/repository/public</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>public</id>
+            <name>aliyun nexus</name>
+            <url>https://maven.aliyun.com/repository/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
 </project>

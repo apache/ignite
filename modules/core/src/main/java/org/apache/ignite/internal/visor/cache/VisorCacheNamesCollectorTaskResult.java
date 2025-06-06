@@ -44,7 +44,7 @@ public class VisorCacheNamesCollectorTaskResult extends IgniteDataTransferObject
     /** Cache sqlSchemas. */
     private Map<String, String> sqlSchemas;
     
-    /** Cache types. */
+    /** Cache tableNames. */
     private Map<String, String> types;
 
     /**
