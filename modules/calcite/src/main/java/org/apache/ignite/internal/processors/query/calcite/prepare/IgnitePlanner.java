@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -146,9 +145,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** */
     private @Nullable SqlNode validatedSqlNode;
-
-    /** */
-    private static final int DUMP_LENGTH_LIMIT = 10_000;
 
     /**
      * @param ctx Planner context.
@@ -416,27 +412,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** */
     public String dump() {
-        System.out.println("IgnitePlanner.dump");
-
         StringWriter w = new StringWriter();
 
         ((VolcanoPlanner)planner).dump(new PrintWriter(w));
 
-        String result = w.toString();
-
-        if (!CalciteSystemProperty.DEBUG.value()) {
-            System.out.println("calcite.debug == false");
-
-            int idxOfSets = result.indexOf("\n\nSets:\n");
-
-            if (idxOfSets > 0)
-                result = result.substring(0, idxOfSets);
-        }
-
-        if (result.length() > DUMP_LENGTH_LIMIT)
-            result = result.substring(0, DUMP_LENGTH_LIMIT) + "... (truncated)";
-
-        return result;
+        return w.toString();
     }
 
     /** */
