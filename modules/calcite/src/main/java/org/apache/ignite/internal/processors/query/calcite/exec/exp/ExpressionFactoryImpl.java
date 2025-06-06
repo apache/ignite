@@ -48,6 +48,7 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -70,6 +71,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexToLixTran
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorsFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartition;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartitionFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.MultiBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.RangeBounds;
@@ -142,6 +145,19 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             return null;
 
         return new AccumulatorsFactory<>(ctx, type, calls, rowType);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public Supplier<WindowPartition<Row>> windowFrameFactory(
+        Window.Group group,
+        List<AggregateCall> calls,
+        RelDataType rowType,
+        boolean streaming
+    ) {
+        assert !calls.isEmpty() : "Window aggregate calls should not be empty";
+
+        return new WindowPartitionFactory<>(ctx, group, calls, rowType, streaming);
     }
 
     /** {@inheritDoc} */
