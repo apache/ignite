@@ -174,6 +174,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
@@ -1703,9 +1704,23 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             NavigableMap<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
-            lsnr.onDiscovery(
+            IgniteFuture<?> fut = lsnr.onDiscovery(
                 new DiscoveryNotification(type, topVer, node, top, hist, null, spanContainer)
             );
+
+            String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
+            String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
+
+            if (locBuildVer == null || rmtBuildVer == null) {
+                fut.get();
+                return true;
+            }
+
+            IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
+            IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
+
+            if (locVer.minor() != rmtVer.minor() || locVer.major() != rmtVer.major())
+                fut.get();
 
             return true;
         }
