@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
-@WithSystemProperty(key = IGNITE_CALCITE_PLANNER_TIMEOUT, value = "2000")
+@WithSystemProperty(key = IGNITE_CALCITE_PLANNER_TIMEOUT, value = "1000")
 public class CalcitePlanningDumpTest extends AbstractBasicIntegrationTest {
     /** */
     private static final long PLANNER_TIMEOUT = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT, 0);
