@@ -132,6 +132,11 @@ import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 
 /** */
 public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
+    static {
+        System.setProperty("calcite.volcano.dump.graphviz", "false");
+        System.setProperty("calcite.volcano.dump.sets", "false");
+    }
+
     /**
      * Default planner timeout, in ms.
      */
