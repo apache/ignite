@@ -19,6 +19,8 @@ package org.apache.ignite.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -49,6 +51,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
@@ -68,6 +71,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.ShutdownPolicy;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -80,6 +84,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.OfflineCommand;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
@@ -185,6 +192,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.util.TestCommandsProvider.registerCommand;
+import static org.apache.ignite.util.TestCommandsProvider.unregisterAll;
 import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
 
 /**
@@ -216,6 +225,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** */
     public static final String REENCRYPTION_SUSPEND = "suspend_reencryption";
+
+    /** */
+    @SystemProperty(value = "Enables special test mode for offline command processing")
+    public static final String OFFLINE_COMMAND_TEST = "OFFLINE_COMMAND_TEST";
 
     /** */
     protected static File defaultDiagnosticDir;
@@ -3857,6 +3870,28 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
     }
 
+    /** */
+    @Test
+    @WithSystemProperty(key = OFFLINE_COMMAND_TEST, value = "true")
+    public void testOfflineCommand() throws Exception {
+        try {
+            registerCommand(new OfflineTestCommand());
+
+            startGrid(0);
+
+            injectTestSystemOut();
+
+            String input = "Test Offline Command";
+
+            assertEquals(EXIT_CODE_OK, execute("--offline-test", "--input", input));
+
+            assertTrue(testOut.toString().contains(input));
+        }
+        finally {
+            unregisterAll();
+        }
+    }
+
     /**
      * @param ignite Ignite to execute task on.
      * @param delFoundGarbage If clearing mode should be used.
@@ -3952,5 +3987,52 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     public static void assertClusterState(ClusterState state, String logOutput) {
         assertTrue(Pattern.compile("Cluster state: " + state + "\\s+").matcher(logOutput).find());
+    }
+
+    /** */
+    public static class OfflineTestCommand implements OfflineCommand<OfflineTestCommandArg, Void> {
+        /** {@inheritDoc} */
+        @Override public String description() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<OfflineTestCommandArg> argClass() {
+            return OfflineTestCommandArg.class;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void execute(OfflineTestCommandArg arg, Consumer<String> printer) {
+            printer.accept(arg.input());
+
+            return null;
+        }
+    }
+
+    /** */
+    public static class OfflineTestCommandArg extends IgniteDataTransferObject {
+        /** */
+        @Argument
+        private String input;
+
+        /** */
+        public String input() {
+            return input;
+        }
+
+        /** */
+        public void input(String input) {
+            this.input = input;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            U.writeString(out, input);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(ObjectInput in) throws IOException {
+            input = U.readString(in);
+        }
     }
 }
