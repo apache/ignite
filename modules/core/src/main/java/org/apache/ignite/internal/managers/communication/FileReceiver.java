@@ -64,9 +64,10 @@ class FileReceiver extends TransmissionReceiver {
         FileIOFactory factory,
         Consumer<File> hnd,
         String path,
-        IgniteLogger log
+        IgniteLogger log,
+        TimedSemaphore inBytePermits
     ) {
-        super(meta, stopChecker, log, chunkSize);
+        super(meta, stopChecker, log, chunkSize, inBytePermits);
 
         A.notNull(hnd, "FileHandler must be provided by transmission handler");
         A.notNull(path, "File absolute path cannot be null");
