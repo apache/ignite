@@ -144,7 +144,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -225,6 +224,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.internal.util.io.GridFileUtils.ensureHardLinkAvailable;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW;
 import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW_DESC;
@@ -306,6 +306,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** File transmission parameter of a cache directory with is currently sends its partitions. */
     private static final String SNP_CACHE_DIR_NAME_PARAM = "cacheDirName";
+
+    /**
+     * File transmission parameter of a storage path for given group id.
+     * @see CacheConfiguration#getStoragePath()
+     */
+    private static final String SNP_CACHE_STORAGE_PATH_PARAM = "cacheStoragePath";
 
     /** Snapshot parameter name for a file transmission. */
     private static final String RQ_ID_NAME_PARAM = "rqId";
@@ -454,7 +460,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (isPersistenceEnabled(cctx.gridConfig())) {
             ft.mkdirSnapshotsRoot();
-            ft.mkdirSnapshotTempRoot();
+
+            for (File tmpRoot : ft.snapshotsTempRoots())
+                NodeFileTree.mkdir(tmpRoot, "temp directory for snapshot creation: " + tmpRoot.getAbsolutePath());
         }
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
@@ -765,8 +773,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>();
 
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
-        leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-            F.node2id()));
+        leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE), node2id()));
 
         if (!leftNodes.isEmpty()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Some of baseline nodes left the cluster " +
@@ -1068,7 +1075,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Throwable> err) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq != null && F.eq(id, snpReq.requestId()) && snpReq.incremental()) {
+        if (snpReq != null && Objects.equals(id, snpReq.requestId()) && snpReq.incremental()) {
             cctx.tm().txMessageTransformer(null);
 
             GridCompoundIdentityFuture<IgniteInternalTx> activeTxsFut = new GridCompoundIdentityFuture<>();
@@ -1220,7 +1227,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
+        if (snpReq == null || !Objects.equals(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
 
         IgniteInternalFuture<?> prepFut = req.incremental() ? wrapMsgsFut : new GridFinishedFuture<>();
@@ -1318,7 +1325,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private void processLocalSnapshotEndStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Throwable> err) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq == null || !F.eq(id, snpReq.requestId()))
+        if (snpReq == null || !Objects.equals(id, snpReq.requestId()))
             return;
 
         Set<UUID> endFail = new HashSet<>(snpReq.nodes());
@@ -1697,6 +1704,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
             "Collection of cache groups names cannot contain null elements.");
+        A.ensure(!includeCustomHandlers || incIdx < 1, "Snapshot handlers aren't supported for incremental snapshot.");
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
 
@@ -2063,7 +2071,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             });
 
             Set<UUID> bltNodeIds =
-                new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
+                new HashSet<>(F.viewReadOnly(srvNodes, node2id(), (node) -> CU.baselineNode(node, clusterState)));
 
             SnapshotOperationRequest snpOpReq = new SnapshotOperationRequest(
                     snpFut0.rqId,
@@ -2182,6 +2190,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(grpNames == null || !grpNames.isEmpty(), "List of cache group names cannot be empty.");
+        A.ensure(grpNames == null || grpNames.size() == new HashSet<>(grpNames).size(), "Cache group names must be unique.");
 
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
@@ -2214,8 +2223,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         recovered = true;
 
-        for (File tmp : ft.snapshotTempRoot().listFiles())
-            U.delete(tmp);
+        for (File tmpRoot : ft.snapshotsTempRoots())
+            F.asList(tmpRoot.listFiles()).forEach(U::delete);
 
         if (SnapshotFileTree.incrementSnapshotDir(snpDir))
             U.delete(snpDir);
@@ -2326,21 +2335,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "cache groups stopped: " + retain));
             }
         }
-    }
-
-    /**
-     * @param sft The full path to the snapshot files.
-     * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
-     * @return Standalone kernal context related to the snapshot.
-     * @throws IgniteCheckedException If fails.
-     */
-    public StandaloneGridKernalContext createStandaloneKernalContext(
-        SnapshotFileTree sft,
-        String folderName
-    ) throws IgniteCheckedException {
-        NodeFileTree folderFt = new NodeFileTree(sft.root(), folderName);
-
-        return new StandaloneGridKernalContext(log, cctx.kernalContext().compress(), folderFt.binaryMeta(), folderFt.marshaller());
     }
 
     /**
@@ -3621,6 +3615,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
             Integer partId = (Integer)fileMeta.params().get(SNP_PART_ID_PARAM);
             String cacheDirName = (String)fileMeta.params().get(SNP_CACHE_DIR_NAME_PARAM);
+            String cacheStoragePath = (String)fileMeta.params().get(SNP_CACHE_STORAGE_PATH_PARAM);
             String rqId = (String)fileMeta.params().get(RQ_ID_NAME_PARAM);
             Integer partsCnt = (Integer)fileMeta.params().get(SNP_PARTITIONS_CNT);
 
@@ -3639,9 +3634,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 task.partsLeft.compareAndSet(-1, partsCnt);
 
-                U.mkdirs(ft.tmpCacheStorage(cacheDirName));
+                U.mkdirs(ft.tmpCacheStorage(cacheStoragePath, cacheDirName));
 
-                return ft.tmpPartition(cacheDirName, partId).getAbsolutePath();
+                return ft.tmpPartition(cacheStoragePath, cacheDirName, partId).getAbsolutePath();
             }
             finally {
                 busyLock.leaveBusy();
@@ -3729,7 +3724,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File from, File to, GroupPartitionId pair, Long len) {
+        @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long len) {
             File snpCacheDir = to.getParentFile();
 
             try {
@@ -3737,7 +3732,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 assert len > 0 : "Requested partitions has incorrect file length " +
                     "[pair=" + pair + ", cacheDirName=" + snpCacheDir.getName() + ']';
 
-                sndr.send(from, 0, len, transmissionParams(rqId, snpCacheDir.getName(), pair), TransmissionPolicy.FILE);
+                sndr.send(from, 0, len, transmissionParams(rqId, snpCacheDir.getName(), storagePath, pair), TransmissionPolicy.FILE);
 
                 if (log.isInfoEnabled()) {
                     log.info("Partition file has been sent [part=" + from.getName() + ", pair=" + pair +
@@ -3764,17 +3759,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /**
+         * @param rqId Request id.
          * @param cacheDirName Cache directory name.
+         * @param storagePath Storage path.
          * @param pair Cache group id with corresponding partition id.
          * @return Map of params.
+         * @see CacheConfiguration#getStoragePath()
          */
-        private Map<String, Serializable> transmissionParams(String rqId, String cacheDirName,
-            GroupPartitionId pair) {
+        private Map<String, Serializable> transmissionParams(
+            String rqId,
+            String cacheDirName,
+            @Nullable String storagePath,
+            GroupPartitionId pair
+        ) {
             Map<String, Serializable> params = new HashMap<>();
 
             params.put(SNP_GRP_ID_PARAM, pair.getGroupId());
             params.put(SNP_PART_ID_PARAM, pair.getPartitionId());
             params.put(SNP_CACHE_DIR_NAME_PARAM, cacheDirName);
+            params.put(SNP_CACHE_STORAGE_PATH_PARAM, storagePath);
             params.put(RQ_ID_NAME_PARAM, rqId);
             params.put(SNP_PARTITIONS_CNT, partsCnt);
 
@@ -3887,7 +3890,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File from, File to, GroupPartitionId pair, Long len) {
+        @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long len) {
             try {
                 if (len == 0)
                     return;

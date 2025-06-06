@@ -227,7 +227,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -297,11 +297,6 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
     /** {@inheritDoc} */
     @Override public short directType() {
         return 87;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

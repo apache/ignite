@@ -263,11 +263,6 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 4;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
 
@@ -275,7 +270,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 return false;
 
             if (!writer.isHeaderWritten()) {
-                if (!writer.writeHeader(directType(), fieldsCount()))
+                if (!writer.writeHeader(directType()))
                     return false;
 
                 writer.onHeaderWritten();
@@ -375,11 +370,6 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 5;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
 
@@ -387,7 +377,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 return false;
 
             if (!writer.isHeaderWritten()) {
-                if (!writer.writeHeader(directType(), fieldsCount()))
+                if (!writer.writeHeader(directType()))
                     return false;
 
                 writer.onHeaderWritten();
@@ -522,11 +512,6 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 7;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
 
@@ -534,7 +519,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 return false;
 
             if (!writer.isHeaderWritten()) {
-                if (!writer.writeHeader(directType(), fieldsCount()))
+                if (!writer.writeHeader(directType()))
                     return false;
 
                 writer.onHeaderWritten();
@@ -696,11 +681,6 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 7;
-        }
-
-        /** {@inheritDoc} */
         @Override public String toString() {
             throw new RuntimeException("Exception while log message");
         }
@@ -713,7 +693,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 return false;
 
             if (!writer.isHeaderWritten()) {
-                if (!writer.writeHeader(directType(), fieldsCount()))
+                if (!writer.writeHeader(directType()))
                     return false;
 
                 writer.onHeaderWritten();

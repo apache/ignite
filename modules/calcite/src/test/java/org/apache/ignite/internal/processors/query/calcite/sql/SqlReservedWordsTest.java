@@ -106,6 +106,7 @@ public class SqlReservedWordsTest extends GridCommonAbstractTest {
         "TRAILING", // TRIM(TRAILING .. FROM ..)
         "TRUE",
         "UNION",
+        "UNNEST",
         "UPDATE",
         "USER",
         "USING",

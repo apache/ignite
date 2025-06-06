@@ -70,7 +70,7 @@ public class TestVolatilePayloadMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -136,10 +136,5 @@ public class TestVolatilePayloadMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return DIRECT_TYPE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 }

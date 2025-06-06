@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -320,7 +319,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /** {@inheritDoc} */
-    @Override public void marshall(Marshaller m) {
+    @Override public void marshall(BinaryMarshaller m) {
         if (paramsBytes != null)
             return;
 
@@ -336,24 +335,16 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
-    @Override public void unmarshall(Marshaller m, GridKernalContext ctx) {
+    @Override public void unmarshall(GridKernalContext ctx) {
         if (params != null)
             return;
 
         assert paramsBytes != null;
 
-        try {
-            final ClassLoader ldr = U.resolveClassLoader(ctx.config());
+        final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
-            if (m instanceof BinaryMarshaller)
-                // To avoid deserializing of enum types.
-                params = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(paramsBytes, ldr));
-            else
-                params = U.unmarshal(m, paramsBytes, ldr);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        // To avoid deserializing of enum types.
+        params = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(paramsBytes, ldr));
     }
 
     /** {@inheritDoc} */
@@ -361,7 +352,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -543,11 +534,6 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -55;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 11;
     }
 
     /** {@inheritDoc} */

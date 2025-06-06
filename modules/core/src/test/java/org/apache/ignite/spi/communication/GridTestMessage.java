@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.communication;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -104,7 +104,7 @@ public class GridTestMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -186,11 +186,6 @@ public class GridTestMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -200,7 +195,7 @@ public class GridTestMessage implements Message {
 
         GridTestMessage m = (GridTestMessage)o;
 
-        return F.eq(srcNodeId, m.srcNodeId) && F.eq(msgId, m.msgId) && F.eq(resId, m.resId);
+        return Objects.equals(srcNodeId, m.srcNodeId) && Objects.equals(msgId, m.msgId) && Objects.equals(resId, m.resId);
     }
 
     /** {@inheritDoc} */

@@ -23,10 +23,11 @@ import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
+
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  *
@@ -56,6 +57,6 @@ public abstract class IgniteIoTestAbstractBenchmark extends IgniteAbstractBenchm
         if (targetNodes.isEmpty())
             throw new IgniteException("Failed to find remote server nodes [nodes=" + nodes + ']');
 
-        BenchmarkUtils.println(cfg, "Initialized target nodes: " + F.nodeIds(targetNodes) + ']');
+        BenchmarkUtils.println(cfg, "Initialized target nodes: " + nodeIds(targetNodes) + ']');
     }
 }

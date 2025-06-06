@@ -43,6 +43,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.STEALING_ATTEMPT_COUNT_ATTR;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.THIEF_NODE_ATTR;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.WAIT_JOBS_THRESHOLD_NODE_ATTR;
@@ -302,7 +303,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
         return new GridTestTaskSession() {
             @Nullable @Override public Collection<UUID> getTopology() {
                 try {
-                    return F.nodeIds(getSpiContext().nodes());
+                    return nodeIds(getSpiContext().nodes());
                 }
                 catch (Exception e) {
                     throw new RuntimeException(e);

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.service;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -81,7 +80,7 @@ public class ServiceDeploymentProcessId implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -138,11 +137,6 @@ public class ServiceDeploymentProcessId implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
     }
@@ -157,7 +151,7 @@ public class ServiceDeploymentProcessId implements Message {
 
         ServiceDeploymentProcessId id = (ServiceDeploymentProcessId)o;
 
-        return F.eq(topVer, id.topVer) && F.eq(reqId, id.reqId);
+        return Objects.equals(topVer, id.topVer) && Objects.equals(reqId, id.reqId);
     }
 
     /** {@inheritDoc} */

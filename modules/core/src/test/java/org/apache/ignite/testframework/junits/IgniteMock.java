@@ -62,10 +62,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
@@ -143,7 +143,7 @@ public class IgniteMock implements IgniteEx {
         this.staticCfg = staticCfg;
 
         try {
-            kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null, null) {
+            kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null) {
                 @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
                     return new GridInternalSubscriptionProcessor(this);
                 }
@@ -171,7 +171,6 @@ public class IgniteMock implements IgniteEx {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setMarshaller(marshaller);
         cfg.setNodeId(nodeId);
         cfg.setMBeanServer(jmx);
         cfg.setIgniteHome(home);
@@ -443,14 +442,13 @@ public class IgniteMock implements IgniteEx {
 
         if (ctx == null) {
             /** {@inheritDoc} */
-            ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), configuration(), new NullLogger()) {
+            ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), configuration(), new NullLogger()) {
                 @Override public int typeId(String typeName) {
                     return typeName.hashCode();
                 }
             };
 
-            if (marshaller instanceof BinaryMarshaller)
-                ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration());
+            ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration());
         }
 
         binaryMock = new NoOpBinary() {
@@ -461,7 +459,7 @@ public class IgniteMock implements IgniteEx {
 
             /** {@inheritDoc} */
             @Override public BinaryObjectBuilder builder(String typeName) throws BinaryObjectException {
-                return new BinaryObjectBuilderImpl(ctx, typeName);
+                return BinaryObjectBuilders.builder(ctx, typeName);
             }
         };
 

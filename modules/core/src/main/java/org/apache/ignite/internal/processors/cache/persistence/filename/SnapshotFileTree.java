@@ -18,15 +18,22 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,11 +76,14 @@ public class SnapshotFileTree extends NodeFileTree {
     /** Snapshot path. */
     @Nullable private final String path;
 
-    /** Consistent id for snapshot. */
-    private final String consId;
+    /**
+     * Consistent id for snapshot.
+     * Nullable, only for {@link DumpReader} when we don't know specific consistenId.
+     */
+    @Nullable private final String consId;
 
     /** Node file tree relative to {@link #tempFileTree()}. */
-    private final NodeFileTree tmpFt;
+    private NodeFileTree tmpFt;
 
     /**
      * @param ctx Kernal context.
@@ -91,7 +101,30 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param path Optional snapshot path.
      */
     public SnapshotFileTree(GridKernalContext ctx, String name, @Nullable String path, String folderName, String consId) {
-        super(root(ctx.pdsFolderResolver().fileTree(), name, path), folderName);
+        this(ctx.config(), ctx.pdsFolderResolver().fileTree(), name, path, folderName, consId);
+
+        A.notNull(consId, "consistent id");
+
+        this.tmpFt = tempFileTree(ctx);
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @param ft Node file tree.
+     * @param name Snapshot name.
+     * @param path Snapshot path.
+     * @param folderName Folder name.
+     * @param consId Consistent id.
+     */
+    public SnapshotFileTree(
+        IgniteConfiguration cfg,
+        NodeFileTree ft,
+        String name,
+        @Nullable String path,
+        String folderName,
+        @Nullable String consId
+    ) {
+        super(cfg, root(ft, name, path), folderName, true);
 
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -99,7 +132,15 @@ public class SnapshotFileTree extends NodeFileTree {
         this.name = name;
         this.path = path;
         this.consId = consId;
-        this.tmpFt = new NodeFileTree(new File(ctx.pdsFolderResolver().fileTree().snapshotTempRoot(), name), folderName());
+
+        Map<String, File> snpExtraStorages = snapshotExtraStorages(ft, cfg.getSnapshotPath());
+
+        if (snpExtraStorages.isEmpty())
+            extraStorages.clear();
+        else
+            extraStorages.putAll(snpExtraStorages);
+
+        this.tmpFt = null;
     }
 
     /** @return Snapshot name. */
@@ -288,7 +329,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param path Optional snapshot path.
      * @return Path to the snapshot root directory.
      */
-    private static File root(NodeFileTree ft, String name, @Nullable String path) {
+    public static File root(SharedFileTree ft, String name, @Nullable String path) {
         assert name != null : "Snapshot name cannot be empty or null.";
 
         return path == null ? new File(ft.snapshotsRoot(), name) : new File(path, name);
@@ -329,5 +370,69 @@ public class SnapshotFileTree extends NodeFileTree {
         @Override public File walSegment(long idx) {
             return new File(wal(), U.fixedLengthNumberName(idx, ZIP_WAL_SEG_FILE_EXT));
         }
+    }
+
+    /**
+     * Modifies {@link #extraStorages} for this tree to reflect snapshot options.
+     * In case {@link IgniteConfiguration#getSnapshotPath()} points to absolute directory or {@link #path} for snapshot provided
+     * then all snapshot files must be stored inside one folder.
+     * Otherwise, we use configured by {@link DataStorageConfiguration#getExtraStoragePaths()} structure to save snapshot.
+     * This will distribute workload to all physical device on host.
+     *
+     * @param ft Node file tree.
+     * @param snpDfltPath Snapshot default path.
+     */
+    private Map<String, File> snapshotExtraStorages(NodeFileTree ft, String snpDfltPath) {
+        // If path provided then create snapshot inside it, only.
+        // Same rule applies if absolute path to the snapshot root dir configured.
+        if (path != null || new File(snpDfltPath).isAbsolute())
+            return Collections.emptyMap();
+
+        Map<String, File> snpExtraStorages = new HashMap<>();
+
+        ft.extraStorages().forEach((cfgStoragePath, storagePath) -> {
+            // In case we want to make snapshot in several folders the paths will be the following:
+            // {storage_path}/db/{folder_name} - node cache storage.
+            // {storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
+            snpExtraStorages.put(
+                cfgStoragePath,
+                new File(storagePath.getParentFile().getParentFile(), Path.of(snpDfltPath, name, DB_DIR, folderName()).toString())
+            );
+        });
+
+        return snpExtraStorages;
+    }
+
+    /**
+     * Creates file tree for temporary files.
+     * Required, only for snapshot operation inside running node.
+     *
+     * @param ctx Kernal context.
+     * @return File tree for temporary files.
+     * @see NodeFileTree#SNAPSHOT_TMP_DIR
+     */
+    private NodeFileTree tempFileTree(GridKernalContext ctx) {
+        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
+
+        NodeFileTree res = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.nodeStorage()), name), folderName(), true);
+
+        Map<String, File> snpTmpExtraStorages = new HashMap<>();
+
+        // Iterating via snapshot extra storages,
+        // because they may differ from the node one in case snapshot created using absolute path.
+        ft.extraStorages.forEach((cfgStoragePath, storagePath) -> snpTmpExtraStorages.put(
+            cfgStoragePath,
+            new File(storagePath, Path.of(SNAPSHOT_TMP_DIR, name).toString())
+        ));
+
+        res.extraStorages.putAll(snpTmpExtraStorages);
+
+        return res;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SnapshotFileTree.class, this);
     }
 }

@@ -240,8 +240,6 @@ public class DumpEntrySerializer {
         if (hasConflictVer)
             verSz *= 2 /*GridCacheVersion otherClusterVersion*/;
 
-        assert ver.fieldsCount() == (hasConflictVer ? 4 : 3);
-
         int keySz = key.valueBytesLength(coCtx);
         int valSz = val.valueBytesLength(coCtx);
 

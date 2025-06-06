@@ -140,11 +140,7 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionC
 
                     final AffinityAssignment assignment = grpCtx.affinity().readyAffinity(top.readyTopologyVersion());
 
-                    List<GridDhtLocalPartition> locParts = top.localPartitions();
-
-                    for (int i = 0; i < locParts.size(); i++) {
-                        GridDhtLocalPartition part = locParts.get(i);
-
+                    for (GridDhtLocalPartition part: top.currentLocalPartitions()) {
                         if (part == null)
                             continue;
 

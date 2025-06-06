@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import javax.cache.event.CacheEntryEvent;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientNotification;
 
@@ -47,7 +47,7 @@ public class ClientCacheEntryEventNotification extends ClientNotification {
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
         super.encode(ctx, writer);
 
         int pos = writer.reserveInt();

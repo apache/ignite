@@ -197,9 +197,7 @@ public class FindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<
         for (Integer grpId : grpIds) {
             CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
 
-            List<GridDhtLocalPartition> parts = grpCtx.topology().localPartitions();
-
-            for (GridDhtLocalPartition part : parts)
+            for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions())
                 partArgs.add(new T2<>(grpCtx, part));
         }
 

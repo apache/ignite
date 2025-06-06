@@ -23,20 +23,15 @@ import org.apache.ignite.internal.IgniteEx;
  * Tests for SQL MERGE on client node.
  */
 public class SqlMergeOnClientNodeTest extends SqlMergeTest {
-    /** Node. */
-    protected static IgniteEx cli;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        cli = startClientGrid(2);
+        startClientGrid(2);
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        node = cli;
+    @Override protected IgniteEx node() {
+        return grid(2);
     }
 }

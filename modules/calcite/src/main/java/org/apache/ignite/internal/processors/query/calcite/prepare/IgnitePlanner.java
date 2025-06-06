@@ -35,6 +35,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.RelOptLattice;
+import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -49,14 +50,18 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttle;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.logical.LogicalCorrelate;
+import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -395,6 +400,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
             for (RelTraitDef<?> def : traitDefs)
                 this.planner.addRelTraitDef(def);
+
+            RelOptListener planLsnr = ctx.unwrap(RelOptListener.class);
+
+            if (planLsnr != null)
+                planner.addListener(planLsnr);
         }
 
         return planner;
@@ -586,6 +596,123 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return relShuttle.visit(rel);
     }
 
+    /**
+     * Due to distributive property of conjunction over disjunction we can extract common part of conjunctions.
+     * This can help us to simplify and push down filters.
+     * For example, condition:
+     *      (a = 0 and x = 1) or (a = 0 and y = 2) or (a = 0 and z = 3)
+     * can be translated to:
+     *      a = 0 and (x = 1 or y = 2 or z = 3)
+     * after such a transformation condition "a = 0" can be used as index access predicate.
+     */
+    public RelNode extractConjunctionOverDisjunctionCommonPart(RelNode rel) {
+        return new RelHomogeneousShuttle() {
+            /** {@inheritDoc} */
+            @Override public RelNode visit(LogicalFilter filter) {
+                RexNode condition = transform(filter.getCluster().getRexBuilder(), filter.getCondition());
+
+                if (condition != filter.getCondition())
+                    filter = filter.copy(filter.getTraitSet(), filter.getInput(), condition);
+
+                return super.visit(filter);
+            }
+
+            /** {@inheritDoc} */
+            @Override public RelNode visit(LogicalJoin join) {
+                RexNode condition = transform(join.getCluster().getRexBuilder(), join.getCondition());
+
+                if (condition != join.getCondition()) {
+                    join = join.copy(join.getTraitSet(), condition, join.getLeft(), join.getRight(),
+                        join.getJoinType(), join.isSemiJoinDone());
+                }
+
+                return super.visit(join);
+            }
+
+            /** */
+            private RexNode transform(RexBuilder rexBuilder, RexNode condition) {
+                // It makes sence to extract only top level disjunction common part.
+                if (!condition.isA(SqlKind.OR))
+                    return condition;
+
+                Set<RexNode> commonPart = new HashSet<>();
+
+                List<RexNode> orOps = ((RexCall)condition).getOperands();
+
+                RexNode firstOp = orOps.get(0);
+
+                for (RexNode andOpFirst : conjunctionOperands(firstOp)) {
+                    boolean found = false;
+
+                    for (int i = 1; i < orOps.size(); i++) {
+                        found = false;
+
+                        for (RexNode andOpOther : conjunctionOperands(orOps.get(i))) {
+                            if (andOpFirst.equals(andOpOther)) {
+                                found = true;
+
+                                break;
+                            }
+                        }
+
+                        if (!found)
+                            break;
+                    }
+
+                    if (found)
+                        commonPart.add(andOpFirst);
+                }
+
+                if (commonPart.isEmpty())
+                    return condition;
+
+                List<RexNode> newOrOps = new ArrayList<>(orOps.size());
+
+                for (RexNode orOp : orOps) {
+                    List<RexNode> newAndOps = new ArrayList<>();
+
+                    for (RexNode andOp : conjunctionOperands(orOp)) {
+                        if (!commonPart.contains(andOp))
+                            newAndOps.add(andOp);
+                    }
+
+                    if (!newAndOps.isEmpty()) {
+                        RexNode newAnd = RexUtil.composeConjunction(rexBuilder, newAndOps);
+
+                        newOrOps.add(newAnd);
+                    }
+                    else {
+                        newOrOps.clear();
+
+                        break;
+                    }
+                }
+
+                if (newOrOps.isEmpty())
+                    condition = RexUtil.composeConjunction(rexBuilder, commonPart);
+                else {
+                    RexNode newOr = RexUtil.composeDisjunction(rexBuilder, newOrOps);
+
+                    List<RexNode> newConditions = new ArrayList<>(commonPart.size() + 1);
+                    newConditions.addAll(commonPart);
+                    newConditions.add(newOr);
+
+                    condition = RexUtil.composeConjunction(rexBuilder, newConditions);
+                }
+
+                return condition;
+            }
+
+            /** */
+            private List<RexNode> conjunctionOperands(RexNode call) {
+                if (call.isA(SqlKind.AND))
+                    return ((RexCall)call).getOperands();
+                else
+                    return Collections.singletonList(call);
+            }
+        }.visit(rel);
+    }
+
     /** */
     private SqlToRelConverter sqlToRelConverter(SqlValidator validator, CalciteCatalogReader reader,
         SqlToRelConverter.Config config) {
@@ -593,11 +720,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** */
-    public void setDisabledRules(Collection<String> disabledRuleNames) {
+    public void addDisabledRules(Collection<String> disabledRuleNames) {
         if (F.isEmpty(disabledRuleNames))
             return;
 
-        ctx.rulesFilter(rulesSet -> {
+        ctx.addRulesFilter(rulesSet -> {
             List<RelOptRule> newSet = new ArrayList<>();
 
             for (RelOptRule r : rulesSet) {

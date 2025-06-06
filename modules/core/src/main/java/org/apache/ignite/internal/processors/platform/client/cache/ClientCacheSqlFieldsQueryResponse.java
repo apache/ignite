@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -56,7 +56,7 @@ class ClientCacheSqlFieldsQueryResponse extends ClientResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
         super.encode(ctx, writer);
 
         writer.writeLong(cursor.id());

@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -50,19 +50,17 @@ import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.stream.StreamTransformer;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheManager.DFLT_JCACHE_DEFAULT_ISOLATED;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_USE_ASYNC_FILE_IO_FACTORY;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_TIMEOUT;
-import static org.apache.ignite.internal.IgniteKernal.DFLT_PERIODIC_STARVATION_CHECK_FREQ;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_PRECISION;
-import static org.apache.ignite.internal.binary.BinaryArray.DFLT_IGNITE_USE_BINARY_ARRAYS;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_IGNITE_USE_BINARY_ARRAYS;
+import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
+import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.DFLT_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DFLT_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.affinity.AffinityAssignment.DFLT_AFFINITY_BACKUPS_THRESHOLD;
@@ -133,6 +131,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.FilePe
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FILE_MAX_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FLUSH_SIZE;
 import static org.apache.ignite.internal.processors.platform.client.ClientRequestHandler.DFLT_ASYNC_REQUEST_WAIT_TIMEOUT_MILLIS;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.DFLT_PERIODIC_STARVATION_CHECK_FREQ;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker.DFLT_IGNITE_INDEX_REBUILD_BATCH_SIZE;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TIMEOUT;
@@ -146,9 +145,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.DFLT_MBEAN_APPEND_CLAS
 import static org.apache.ignite.internal.util.StripedExecutor.DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD;
 import static org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor.DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT;
 import static org.apache.ignite.internal.util.nio.GridNioServer.DFLT_IO_BALANCE_PERIOD;
-import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
-import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
-import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_MAX_LENGTH;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_METRICS_QNT_WARN;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
@@ -160,7 +156,7 @@ import static org.apache.ignite.startup.cmdline.CommandLineStartup.DFLT_PROG_NAM
  * Contains constants for all system properties and environmental variables in Ignite.
  * These properties and variables can be used to affect the behavior of Ignite.
  */
-public final class IgniteSystemProperties {
+public final class IgniteSystemProperties extends IgniteCommonsSystemProperties {
     /**
      * If this system property is present the Ignite will include grid name into verbose log.
      *
@@ -333,25 +329,6 @@ public final class IgniteSystemProperties {
         "Troubleshooting logger makes logging more verbose without enabling debug mode to provide more detailed " +
         "logs without performance penalty")
     public static final String IGNITE_TROUBLESHOOTING_LOGGER = "IGNITE_TROUBLESHOOTING_LOGGER";
-
-    /**
-     * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
-     */
-    @SystemProperty(value = "Enables writing sensitive information in toString() output",
-        defaults = "" + DFLT_TO_STRING_INCLUDE_SENSITIVE)
-    public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
-
-    /** Maximum length for {@code toString()} result. */
-    @SystemProperty(value = "Maximum length for toString() result", type = Integer.class,
-        defaults = "" + DFLT_TO_STRING_MAX_LENGTH)
-    public static final String IGNITE_TO_STRING_MAX_LENGTH = "IGNITE_TO_STRING_MAX_LENGTH";
-
-    /**
-     * Limit collection (map, array) elements number to output.
-     */
-    @SystemProperty(value = "Number of collection (map, array) elements to output",
-        type = Integer.class, defaults = "" + DFLT_TO_STRING_COLLECTION_LIMIT)
-    public static final String IGNITE_TO_STRING_COLLECTION_LIMIT = "IGNITE_TO_STRING_COLLECTION_LIMIT";
 
     /**
      * If this property is set to {@code true} (default) and Ignite is launched
@@ -977,19 +954,6 @@ public final class IgniteSystemProperties {
         "but it will be incompatible with old versions of Ignite")
     public static final String IGNITE_STREAM_TRANSFORMER_COMPATIBILITY_MODE =
         "IGNITE_STREAM_TRANSFORMER_COMPATIBILITY_MODE";
-
-    /**
-     * When set to {@code true} tree-based data structures - {@code TreeMap} and {@code TreeSet} - will not be
-     * wrapped into special holders introduced to overcome serialization issue caused by missing {@code Comparable}
-     * interface on {@code BinaryObject}.
-     * <p>
-     * @deprecated Should be removed in Apache Ignite 2.0.
-     */
-    @Deprecated
-    @SystemProperty("If enabled then tree-based data structures - TreeMap and TreeSet - will " +
-        "not be wrapped into special holders introduced to overcome serialization issue caused by missing " +
-        "Comparable interface on BinaryObject")
-    public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
 
     /**
      * When set to {@code true}, for consistent id will calculate by host name, without port, and you can use
@@ -2087,7 +2051,7 @@ public final class IgniteSystemProperties {
 
     /**
      * Enables storage of typed arrays.
-     * The default value is {@link BinaryArray#DFLT_IGNITE_USE_BINARY_ARRAYS}.
+     * The default value is {@link BinaryUtils#DFLT_IGNITE_USE_BINARY_ARRAYS}.
      */
     @SystemProperty(value = "Flag to enable store of array in binary format and keep component type",
         defaults = "" + DFLT_IGNITE_USE_BINARY_ARRAYS)
@@ -2118,221 +2082,6 @@ public final class IgniteSystemProperties {
      */
     private IgniteSystemProperties() {
         // No-op.
-    }
-
-    /**
-     * @param enumCls Enum type.
-     * @param name Name of the system property or environment variable.
-     * @param <E> Type of the enum.
-     * @return Enum value or {@code null} if the property is not set.
-     */
-    public static <E extends Enum<E>> E getEnum(Class<E> enumCls, String name) {
-        return getEnum(enumCls, name, null);
-    }
-
-    /**
-     * @param name Name of the system property or environment variable.
-     * @param dflt Default value if property is not set.
-     * @param <E> Type of the enum.
-     * @return Enum value or the given default.
-     */
-    public static <E extends Enum<E>> E getEnum(String name, E dflt) {
-        return getEnum(dflt.getDeclaringClass(), name, dflt);
-    }
-
-    /**
-     * @param enumCls Enum type.
-     * @param name Name of the system property or environment variable.
-     * @param dflt Default value.
-     * @return Enum value or the given default.
-     */
-    private static <E extends Enum<E>> E getEnum(Class<E> enumCls, String name, E dflt) {
-        assert enumCls != null;
-
-        String val = getString(name);
-
-        if (val == null)
-            return dflt;
-
-        try {
-            return Enum.valueOf(enumCls, val);
-        }
-        catch (IllegalArgumentException ignore) {
-            return dflt;
-        }
-    }
-
-    /**
-     * Gets either system property or environment variable with given name.
-     *
-     * @param name Name of the system property or environment variable.
-     * @return Value of the system property or environment variable.
-     *         Returns {@code null} if neither can be found for given name.
-     */
-    @Nullable public static String getString(String name) {
-        assert name != null;
-
-        String v = System.getProperty(name);
-
-        if (v == null)
-            v = System.getenv(name);
-
-        return v;
-    }
-
-    /**
-     * Gets either system property or environment variable with given name.
-     *
-     * @param name Name of the system property or environment variable.
-     * @param dflt Default value.
-     * @return Value of the system property or environment variable.
-     *         Returns {@code null} if neither can be found for given name.
-     */
-    @Nullable public static String getString(String name, String dflt) {
-        String val = getString(name);
-
-        return val == null ? dflt : val;
-    }
-
-    /**
-     * Gets either system property or environment variable with given name.
-     * The result is transformed to {@code boolean} using {@code Boolean.valueOf()} method.
-     *
-     * @param name Name of the system property or environment variable.
-     * @return Boolean value of the system property or environment variable.
-     *         Returns {@code False} in case neither system property
-     *         nor environment variable with given name is found.
-     */
-    public static boolean getBoolean(String name) {
-        return getBoolean(name, false);
-    }
-
-    /**
-     * Gets either system property or environment variable with given name.
-     * The result is transformed to {@code boolean} using {@code Boolean.valueOf()} method.
-     *
-     * @param name Name of the system property or environment variable.
-     * @param dflt Default value.
-     * @return Boolean value of the system property or environment variable.
-     *         Returns default value in case neither system property
-     *         nor environment variable with given name is found.
-     */
-    public static boolean getBoolean(String name, boolean dflt) {
-        String val = getString(name);
-
-        return val == null ? dflt : Boolean.parseBoolean(val);
-    }
-
-    /**
-     * Gets either system property or environment variable with given name.
-     * The result is transformed to {@code int} using {@code Integer.parseInt()} method.
-     *
-     * @param name Name of the system property or environment variable.
-     * @param dflt Default value.
-     * @return Integer value of the system property or environment variable.
-     *         Returns default value in case neither system property
-     *         nor environment variable with given name is found.
-     */
-    public static int getInteger(String name, int dflt) {
-        String s = getString(name);
-
-        if (s == null)
-            return dflt;
-
-        int res;
-
-        try {
-            res = Integer.parseInt(s);
-        }
-        catch (NumberFormatException ignore) {
-            res = dflt;
-        }
-
-        return res;
-    }
-
-    /**
-     * Gets either system property or environment variable with given name.
-     * The result is transformed to {@code float} using {@code Float.parseFloat()} method.
-     *
-     * @param name Name of the system property or environment variable.
-     * @param dflt Default value.
-     * @return Float value of the system property or environment variable.
-     *         Returns default value in case neither system property
-     *         nor environment variable with given name is found.
-     */
-    public static float getFloat(String name, float dflt) {
-        String s = getString(name);
-
-        if (s == null)
-            return dflt;
-
-        float res;
-
-        try {
-            res = Float.parseFloat(s);
-        }
-        catch (NumberFormatException ignore) {
-            res = dflt;
-        }
-
-        return res;
-    }
-
-    /**
-     * Gets either system property or environment variable with given name.
-     * The result is transformed to {@code long} using {@code Long.parseLong()} method.
-     *
-     * @param name Name of the system property or environment variable.
-     * @param dflt Default value.
-     * @return Integer value of the system property or environment variable.
-     *         Returns default value in case neither system property
-     *         nor environment variable with given name is found.
-     */
-    public static long getLong(String name, long dflt) {
-        String s = getString(name);
-
-        if (s == null)
-            return dflt;
-
-        long res;
-
-        try {
-            res = Long.parseLong(s);
-        }
-        catch (NumberFormatException ignore) {
-            res = dflt;
-        }
-
-        return res;
-    }
-
-    /**
-     * Gets either system property or environment variable with given name.
-     * The result is transformed to {@code double} using {@code Double.parseDouble()} method.
-     *
-     * @param name Name of the system property or environment variable.
-     * @param dflt Default value.
-     * @return Integer value of the system property or environment variable.
-     *         Returns default value in case neither system property
-     *         nor environment variable with given name is found.
-     */
-    public static double getDouble(String name, double dflt) {
-        String s = getString(name);
-
-        if (s == null)
-            return dflt;
-
-        double res;
-
-        try {
-            res = Double.parseDouble(s);
-        }
-        catch (NumberFormatException ignore) {
-            res = dflt;
-        }
-
-        return res;
     }
 
     /**

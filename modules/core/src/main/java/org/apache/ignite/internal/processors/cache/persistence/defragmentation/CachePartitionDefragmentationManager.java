@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.defragmentation;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -58,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.LightweightCheckpointManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.CacheFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -96,11 +96,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.Checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_MAPPING_REGION_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DEFRAGMENTATION_PART_REGION_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.batchRenameDefragmentedCacheGroupPartitions;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexTmpFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartMappingFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartTmpFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.renameTempIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.renameTempPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.skipAlreadyDefragmentedCacheGroup;
@@ -296,11 +291,11 @@ public class CachePartitionDefragmentationManager {
             for (CacheGroupContext oldGrpCtx : cacheGrpCtxsForDefragmentation) {
                 int grpId = oldGrpCtx.groupId();
 
-                File workDir = ft.cacheStorage(oldGrpCtx.config());
+                CacheFileTree cft = ft.cacheTree(oldGrpCtx.config());
 
                 List<CacheDataStore> oldCacheDataStores = oldStores.get(grpId);
 
-                if (skipAlreadyDefragmentedCacheGroup(workDir, grpId, log)) {
+                if (skipAlreadyDefragmentedCacheGroup(cft, log)) {
                     status.onCacheGroupSkipped(oldGrpCtx, oldCacheDataStores.size());
 
                     continue;
@@ -311,7 +306,7 @@ public class CachePartitionDefragmentationManager {
 
                     status.onCacheGroupStart(oldGrpCtx, oldCacheDataStores.size());
 
-                    if (workDir == null || oldCacheDataStores.isEmpty()) {
+                    if (oldCacheDataStores.isEmpty()) {
                         status.onCacheGroupFinish(oldGrpCtx);
 
                         continue;
@@ -357,7 +352,7 @@ public class CachePartitionDefragmentationManager {
 
                     AtomicLong idxAllocationTracker = new GridAtomicLong();
 
-                    createIndexPageStore(grpId, workDir, pageStoreFactory, partDataRegion, idxAllocationTracker::addAndGet);
+                    createIndexPageStore(cft, pageStoreFactory, partDataRegion, idxAllocationTracker::addAndGet);
 
                     checkCancellation();
 
@@ -398,8 +393,7 @@ public class CachePartitionDefragmentationManager {
                         oldCacheDataStores,
                         oldCacheDataStore -> defragmentOnePartition(
                             oldGrpCtx,
-                            grpId,
-                            workDir,
+                            cft,
                             offheap,
                             pageStoreFactory,
                             cmpFut,
@@ -433,8 +427,8 @@ public class CachePartitionDefragmentationManager {
                                 "oldPages", oldIdxPageStore.pages(), false,
                                 "newPages", idxAllocationTracker.get() + 1, false,
                                 "pageSize", pageSize, false,
-                                "partFile", defragmentedIndexFile(workDir).getName(), false,
-                                "workDir", workDir, false
+                                "partFile", cft.defragmentedIndexFile().getName(), false,
+                                "workDir", cft.storage(), false
                             ));
                         }
 
@@ -454,9 +448,9 @@ public class CachePartitionDefragmentationManager {
 
                         pageMgr.pageStoreMap().clear(grpId);
 
-                        renameTempIndexFile(workDir);
+                        renameTempIndexFile(cft);
 
-                        writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), workDir, log);
+                        writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), cft, log);
 
                         try {
                             for (PageStore store : filePageStoreMgr.getStores(grpId))
@@ -466,7 +460,7 @@ public class CachePartitionDefragmentationManager {
                             throw new IgniteException("Failed to stop page store for group " + grpId, e);
                         }
 
-                        batchRenameDefragmentedCacheGroupPartitions(workDir, log);
+                        batchRenameDefragmentedCacheGroupPartitions(cft);
 
                         return null;
                     });
@@ -478,7 +472,7 @@ public class CachePartitionDefragmentationManager {
                     );
                 }
                 catch (DefragmentationCancelledException e) {
-                    DefragmentationFileUtils.deleteLeftovers(workDir);
+                    DefragmentationFileUtils.deleteLeftovers(cft);
 
                     throw e;
                 }
@@ -523,8 +517,7 @@ public class CachePartitionDefragmentationManager {
      */
     private boolean defragmentOnePartition(
         CacheGroupContext oldGrpCtx,
-        int grpId,
-        File workDir,
+        CacheFileTree cft,
         GridCacheOffheapManager offheap,
         FileVersionCheckingFactory pageStoreFactory,
         GridCompoundFuture<Object, Object> cmpFut,
@@ -539,8 +532,7 @@ public class CachePartitionDefragmentationManager {
         int partId = oldCacheDataStore.partId();
 
         PartitionContext partCtx = new PartitionContext(
-            workDir,
-            grpId,
+            cft.groupId(),
             partId,
             partDataRegion,
             mappingDataRegion,
@@ -550,9 +542,9 @@ public class CachePartitionDefragmentationManager {
             pageStoreFactory
         );
 
-        if (skipAlreadyDefragmentedPartition(workDir, grpId, partId, log)) {
+        if (skipAlreadyDefragmentedPartition(cft, partId, log)) {
             partCtx.createPageStore(
-                () -> defragmentedPartMappingFile(workDir, partId).toPath(),
+                () -> cft.defragmentedPartMappingFile(partId).toPath(),
                 partCtx.mappingPagesAllocated,
                 partCtx.mappingPageMemory
             );
@@ -563,7 +555,7 @@ public class CachePartitionDefragmentationManager {
         }
 
         partCtx.createPageStore(
-            () -> defragmentedPartMappingFile(workDir, partId).toPath(),
+            () -> cft.defragmentedPartMappingFile(partId).toPath(),
             partCtx.mappingPagesAllocated,
             partCtx.mappingPageMemory
         );
@@ -573,7 +565,7 @@ public class CachePartitionDefragmentationManager {
         checkCancellation();
 
         partCtx.createPageStore(
-            () -> defragmentedPartTmpFile(workDir, partId).toPath(),
+            () -> cft.defragmentedPartTmpFile(partId).toPath(),
             partCtx.partPagesAllocated,
             partCtx.partPageMemory
         );
@@ -584,7 +576,7 @@ public class CachePartitionDefragmentationManager {
 
         DefragmentationPageReadWriteManager pageMgr = (DefragmentationPageReadWriteManager)partCtx.partPageMemory.pageManager();
 
-        PageStore oldPageStore = filePageStoreMgr.getStore(grpId, partId);
+        PageStore oldPageStore = filePageStoreMgr.getStore(cft.groupId(), partId);
 
         status.onPartitionDefragmented(
             oldGrpCtx,
@@ -598,24 +590,24 @@ public class CachePartitionDefragmentationManager {
                 if (log.isDebugEnabled()) {
                     log.debug(S.toString(
                         "Partition defragmented",
-                        "grpId", grpId, false,
+                        "grpId", cft.groupId(), false,
                         "partId", partId, false,
                         "oldPages", oldPageStore.pages(), false,
                         "newPages", partCtx.partPagesAllocated.get() + 1, false,
                         "mappingPages", partCtx.mappingPagesAllocated.get() + 1, false,
                         "pageSize", pageSize, false,
-                        "partFile", defragmentedPartFile(workDir, partId).getName(), false,
-                        "workDir", workDir, false
+                        "partFile", cft.defragmentedPartFile(partId).getName(), false,
+                        "workDir", cft.storage(), false
                     ));
                 }
 
-                oldPageMem.invalidate(grpId, partId);
+                oldPageMem.invalidate(cft.groupId(), partId);
 
-                partCtx.partPageMemory.invalidate(grpId, partId);
+                partCtx.partPageMemory.invalidate(cft.groupId(), partId);
 
-                pageMgr.pageStoreMap().removePageStore(grpId, partId); // Yes, it'll be invalid in a second.
+                pageMgr.pageStoreMap().removePageStore(cft.groupId(), partId); // Yes, it'll be invalid in a second.
 
-                renameTempPartitionFile(workDir, partId);
+                renameTempPartitionFile(cft, partId);
             }
         };
 
@@ -637,8 +629,7 @@ public class CachePartitionDefragmentationManager {
 
     /** */
     public void createIndexPageStore(
-        int grpId,
-        File workDir,
+        CacheFileTree cft,
         FileVersionCheckingFactory pageStoreFactory,
         DataRegion partRegion,
         LongConsumer allocatedTracker
@@ -647,7 +638,7 @@ public class CachePartitionDefragmentationManager {
         // There is a time period when index is already defragmented but marker file is not created yet. If node is
         // failed in that time window then index will be deframented once again. That's fine, situation is rare but code
         // to fix that would add unnecessary complications.
-        U.delete(defragmentedIndexTmpFile(workDir));
+        U.delete(cft.defragmentedIndexTmpFile());
 
         PageStore idxPageStore;
 
@@ -655,7 +646,7 @@ public class CachePartitionDefragmentationManager {
         try {
             idxPageStore = pageStoreFactory.createPageStore(
                 FLAG_IDX,
-                () -> defragmentedIndexTmpFile(workDir).toPath(),
+                () -> cft.defragmentedIndexTmpFile().toPath(),
                 allocatedTracker
             );
         }
@@ -669,7 +660,7 @@ public class CachePartitionDefragmentationManager {
 
         DefragmentationPageReadWriteManager partMgr = (DefragmentationPageReadWriteManager)partPageMem.pageManager();
 
-        partMgr.pageStoreMap().addPageStore(grpId, INDEX_PARTITION, idxPageStore);
+        partMgr.pageStoreMap().addPageStore(cft.groupId(), INDEX_PARTITION, idxPageStore);
     }
 
     /**
@@ -932,9 +923,6 @@ public class CachePartitionDefragmentationManager {
     @SuppressWarnings("PublicField")
     private class PartitionContext {
         /** */
-        public final File workDir;
-
-        /** */
         public final int grpId;
 
         /** */
@@ -978,7 +966,6 @@ public class CachePartitionDefragmentationManager {
 
         /** */
         public PartitionContext(
-            File workDir,
             int grpId,
             int partId,
             DataRegion partDataRegion,
@@ -988,7 +975,6 @@ public class CachePartitionDefragmentationManager {
             CacheDataStore oldCacheDataStore,
             FileVersionCheckingFactory pageStoreFactory
         ) {
-            this.workDir = workDir;
             this.grpId = grpId;
             this.partId = partId;
             cacheDataRegion = oldGrpCtx.dataRegion();

@@ -396,7 +396,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -525,11 +525,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 41;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 11;
     }
 
     /** {@inheritDoc} */

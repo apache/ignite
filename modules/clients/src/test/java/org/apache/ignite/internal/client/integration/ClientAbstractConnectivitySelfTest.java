@@ -202,8 +202,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
             List<String> nodeAddrs = node.tcpAddresses();
 
             assertTrue(nodeAddrs.contains(LOOPBACK_IP));
-
-            assertTrue(F.containsAll(nodeAddrs, addrs));
+            assertTrue(nodeAddrs.containsAll(addrs));
         }
     }
 
@@ -224,11 +223,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
 
         assertEquals(2, nodes.size());
 
-        assertTrue(F.forAll(nodes, new P1<GridClientNode>() {
-            @Override public boolean apply(GridClientNode node) {
-                return node.tcpAddresses().contains(LOOPBACK_IP);
-            }
-        }));
+        assertTrue(nodes.stream().allMatch(node -> node.tcpAddresses().contains(LOOPBACK_IP)));
 
         GridTestUtils.assertOneToOne(
             nodes,

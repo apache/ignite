@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
 import java.util.UUID;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -46,7 +46,7 @@ public class ClientClusterGroupGetNodeIdsResponse extends ClientResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
         super.encode(ctx, writer);
 
         writer.writeBoolean(true);

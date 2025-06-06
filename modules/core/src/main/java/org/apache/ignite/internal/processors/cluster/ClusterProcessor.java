@@ -93,6 +93,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_INTERNAL_DIAGNOSTIC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_METRICS;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsistentIds;
 
 /**
  *
@@ -692,7 +693,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             if (ctx.isStopping() || ctx.clientDisconnected())
                 return -1;
 
-            Collection<Object> srvIds = F.nodeConsistentIds(cluster.forServers().nodes());
+            Collection<Object> srvIds = nodeConsistentIds(cluster.forServers().nodes());
 
             return F.size(cluster.currentBaselineTopology(), node -> srvIds.contains(node.consistentId()));
         }, "Active baseline nodes count.");
@@ -738,7 +739,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             return;
 
         try {
-            ClusterNodeMetrics metrics = U.unmarshalZip(ctx.config().getMarshaller(), metricsBytes, null);
+            ClusterNodeMetrics metrics = U.unmarshalZip(ctx.marshaller(), metricsBytes, null);
 
             assert node instanceof IgniteClusterNode : node;
 
@@ -775,7 +776,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             ClusterNodeMetrics metrics = new ClusterNodeMetrics(locNode.metrics(), locNode.cacheMetrics());
 
             try {
-                byte[] metricsBytes = U.zip(U.marshal(ctx.config().getMarshaller(), metrics));
+                byte[] metricsBytes = U.zip(U.marshal(ctx.marshaller(), metrics));
 
                 allNodesMetrics.put(ctx.localNodeId(), metricsBytes);
             }
@@ -809,7 +810,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             ClusterNodeMetrics metrics = new ClusterNodeMetrics(metricsProvider.metrics(), metricsProvider.cacheMetrics());
 
             try {
-                byte[] metricsBytes = U.zip(U.marshal(ctx.config().getMarshaller(), metrics));
+                byte[] metricsBytes = U.zip(U.marshal(ctx.marshaller(), metrics));
 
                 ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(metricsBytes);
 

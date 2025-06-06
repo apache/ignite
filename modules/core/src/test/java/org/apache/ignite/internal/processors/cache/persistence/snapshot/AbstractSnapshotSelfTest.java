@@ -103,6 +103,7 @@ import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -264,10 +265,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 if (ig.configuration().isClientMode() || !persistence)
                     continue;
 
-                Path snpTempDir = ((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotTempRoot().toPath();
-
-                assertEquals("Snapshot working directory must be empty at the moment test execution stopped: " + snpTempDir,
-                    0, U.fileCount(snpTempDir));
+                for (File tmpRoot : ((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotsTempRoots()) {
+                    assertEquals("Snapshot working directory must be empty at the moment test execution stopped: " + tmpRoot,
+                        0, U.fileCount(tmpRoot.toPath()));
+                }
             }
         }
         finally {
@@ -1006,8 +1007,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File from, File to, GroupPartitionId pair, Long length) {
-            delegate.sendPart(from, to, pair, length);
+        @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
+            delegate.sendPart(from, to, storagePath, pair, length);
         }
 
         /** {@inheritDoc} */

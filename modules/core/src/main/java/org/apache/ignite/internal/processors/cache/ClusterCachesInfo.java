@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -331,7 +332,7 @@ public class ClusterCachesInfo {
                 CacheData cacheData = gridData.gridData.caches().get(locCfg.getName());
 
                 if (cacheData != null) {
-                    if (!F.eq(cacheData.sql(), locCacheInfo.sql())) {
+                    if (!Objects.equals(cacheData.sql(), locCacheInfo.sql())) {
                         throw new IgniteCheckedException("Cache configuration mismatch (local cache was created " +
                             "via " + (locCacheInfo.sql() ? "CREATE TABLE" : "Ignite API") + ", while remote cache " +
                             "was created via " + (cacheData.sql() ? "CREATE TABLE" : "Ignite API") + "): " +
@@ -1140,7 +1141,7 @@ public class ClusterCachesInfo {
         }
 
         assert req.cacheType() != null : req;
-        assert F.eq(ccfg.getName(), cacheName) : req;
+        assert Objects.equals(ccfg.getName(), cacheName) : req;
 
         int cacheId = CU.cacheId(cacheName);
 
@@ -2590,6 +2591,10 @@ public class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
             "diskPageCompressionLevel", "Disk page compression level",
             cfg.getDiskPageCompressionLevel(), startCfg.getDiskPageCompressionLevel(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
+            "storagePath", "Storage path",
+            cfg.getStoragePath(), startCfg.getStoragePath(), true);
     }
 
     /**

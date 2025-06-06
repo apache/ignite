@@ -92,8 +92,8 @@ public class ColocationGroup implements MarshalableMessage {
                     .collect(Collectors.toList());
         }
 
-        return new ColocationGroup(Arrays.copyOf(sourceIds, sourceIds.length), Collections.singletonList(nodeId),
-                locAssignments);
+        return new ColocationGroup(sourceIds == null ? null : Arrays.copyOf(sourceIds, sourceIds.length),
+            Collections.singletonList(nodeId), locAssignments);
     }
 
     /** */
@@ -319,7 +319,7 @@ public class ColocationGroup implements MarshalableMessage {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -384,11 +384,6 @@ public class ColocationGroup implements MarshalableMessage {
         }
 
         return reader.afterMessageRead(ColocationGroup.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

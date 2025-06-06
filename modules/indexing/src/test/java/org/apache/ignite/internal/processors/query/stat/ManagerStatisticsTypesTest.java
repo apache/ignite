@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
 import java.util.UUID;
-import org.apache.ignite.internal.util.GridClientByteUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.convertToSqlDate;
@@ -268,9 +268,9 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics decimalStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, decimalStats.distinct());
-        assertEquals(new BigDecimal(new BigInteger(1, GridClientByteUtils.uuidToBytes(new UUID(0L, 1L)))),
+        assertEquals(new BigDecimal(new BigInteger(1, IgniteUtils.uuidToBytes(new UUID(0L, 1L)))),
             decimalStats.min());
-        assertEquals(new BigDecimal(new BigInteger(1, GridClientByteUtils.uuidToBytes(new UUID(0L, SMALL_SIZE - 1L)))),
+        assertEquals(new BigDecimal(new BigInteger(1, IgniteUtils.uuidToBytes(new UUID(0L, SMALL_SIZE - 1L)))),
             decimalStats.max());
         assertEquals(16, decimalStats.size());
     }

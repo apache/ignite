@@ -337,7 +337,7 @@ public class IgniteIoTestMessage implements Message {
         onBeforeWrite();
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -577,11 +577,6 @@ public class IgniteIoTestMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -43;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 15;
     }
 
     /** {@inheritDoc} */

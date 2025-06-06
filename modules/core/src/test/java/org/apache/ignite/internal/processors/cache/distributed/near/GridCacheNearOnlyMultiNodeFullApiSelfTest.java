@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -199,7 +200,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         return F.view(super.affinityNodes(), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
-                return !F.eq(grid(n).name(), grid(nearIdx).name());
+                return !Objects.equals(grid(n).name(), grid(nearIdx).name());
             }
         });
     }

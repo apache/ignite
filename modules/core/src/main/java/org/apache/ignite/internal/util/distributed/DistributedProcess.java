@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.distributed;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,6 +48,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 
 /**
  * Distributed process is a cluster-wide process that accumulates single nodes results to finish itself.
@@ -216,7 +218,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
             for (Process p : processes.values()) {
                 p.initFut.listen(() -> {
-                    if (F.eq(leftNodeId, p.crdId)) {
+                    if (Objects.equals(leftNodeId, p.crdId)) {
                         ClusterNode crd = coordinator();
 
                         if (crd == null) {
@@ -233,7 +235,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                         if (!ctx.clientNode() || p.waitClnRes)
                             p.resFut.listen(() -> sendSingleMessage(p));
                     }
-                    else if (F.eq(ctx.localNodeId(), p.crdId)) {
+                    else if (Objects.equals(ctx.localNodeId(), p.crdId)) {
                         boolean isEmpty = false;
 
                         synchronized (mux) {
@@ -278,8 +280,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             assert p.remaining.isEmpty();
 
             p.remaining.addAll(F.viewReadOnly(
-                p.waitClnRes ? ctx.discovery().nodes(topVer) : ctx.discovery().serverNodes(topVer),
-                F.node2id()));
+                p.waitClnRes ? ctx.discovery().nodes(topVer) : ctx.discovery().serverNodes(topVer), node2id()));
 
             p.initCrdFut.onDone();
         }
@@ -297,7 +298,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
         UUID crdId = p.crdId;
 
-        if (F.eq(ctx.localNodeId(), crdId))
+        if (Objects.equals(ctx.localNodeId(), crdId))
             onSingleNodeMessageReceived(singleMsg, crdId);
         else {
             try {

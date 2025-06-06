@@ -199,7 +199,7 @@ public class GridIoMessage implements Message, SpanTransport {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -338,11 +338,6 @@ public class GridIoMessage implements Message, SpanTransport {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 8;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
         return 8;
     }
 

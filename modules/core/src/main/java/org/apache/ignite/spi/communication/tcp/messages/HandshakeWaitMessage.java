@@ -69,11 +69,6 @@ public class HandshakeWaitMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(HandshakeWaitMessage.class, this);
     }

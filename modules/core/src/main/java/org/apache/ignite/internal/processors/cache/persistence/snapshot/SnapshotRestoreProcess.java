@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -110,6 +109,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_STOP;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_INCREMENTAL_SNAPSHOT_START;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 
 /**
  * Distributed process to restore cache group from the snapshot.
@@ -203,7 +203,7 @@ public class SnapshotRestoreProcess {
      * @throws IgniteCheckedException If it was not possible to delete some temporary directory.
      */
     protected void cleanup() throws IgniteCheckedException {
-        for (File dir : ft.nodeStorage().listFiles((FileFilter)NodeFileTree::tmpCacheStorage)) {
+        for (File dir : ft.existingTmpCacheStorages()) {
             if (!U.delete(dir)) {
                 throw new IgniteCheckedException("Unable to remove temporary directory, " +
                     "try deleting it manually [dir=" + dir + ']');
@@ -322,7 +322,7 @@ public class SnapshotRestoreProcess {
 
         snpMgr.recordSnapshotEvent(snpName, msg, EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
 
-        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, true, incIdx, check).listen(f -> {
+        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, incIdx < 1, incIdx, check).listen(f -> {
             if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
 
@@ -394,14 +394,14 @@ public class SnapshotRestoreProcess {
             assert reqGrpIds.isEmpty() : "Cache group(s) was not found in the snapshot [groups=" + reqGrpIds.values()
                 + ", snapshot=" + snpName + ']';
 
-            Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), F.node2id());
+            Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), node2id());
 
             SnapshotOperationRequest req = new SnapshotOperationRequest(
                 fut0.rqId,
                 F.first(dataNodes),
                 snpName,
                 snpPath,
-                cacheGrpNames,
+                cacheGrpNames == null ? null : new HashSet<>(cacheGrpNames),
                 new HashSet<>(bltNodes),
                 false,
                 incIdx,
@@ -767,7 +767,9 @@ public class SnapshotRestoreProcess {
 
                 cfgsByName.putAll(ccfgs);
 
-                File cacheDir = ft.cacheStorage(F.first(ccfgs.values()).config());
+                CacheConfiguration<?, ?> ccfg = F.first(ccfgs.values()).config();
+
+                File cacheDir = ft.cacheStorage(ccfg);
 
                 if (cacheDir.exists()) {
                     if (!cacheDir.isDirectory()) {
@@ -787,7 +789,7 @@ public class SnapshotRestoreProcess {
                     }
                 }
 
-                File tmpCacheDir = ft.tmpCacheStorage(cacheDir.getName());
+                File tmpCacheDir = ft.tmpCacheStorage(ccfg);
 
                 if (tmpCacheDir.exists()) {
                     throw new IgniteCheckedException("Unable to restore cache group, temp directory already exists " +
@@ -989,7 +991,7 @@ public class SnapshotRestoreProcess {
                 if (log.isInfoEnabled())
                     cacheGrpNames.put(grpId, cacheOrGrpName);
 
-                ft.tmpCacheStorage(dir.getName()).mkdir();
+                ft.tmpCacheStorage(ccfg).mkdir();
 
                 Set<PartitionRestoreFuture> leftParts;
 
@@ -1035,7 +1037,7 @@ public class SnapshotRestoreProcess {
                             copyLocalAsync(
                                 opCtx0,
                                 sft.partitionFile(ccfg, partFut.partId),
-                                ft.tmpPartition(dir.getName(), partFut.partId),
+                                ft.tmpPartition(ccfg, partFut.partId),
                                 grpId,
                                 partFut
                             );
@@ -1063,7 +1065,7 @@ public class SnapshotRestoreProcess {
                             allParts.computeIfAbsent(grpId, g -> new HashSet<>())
                                 .add(idxFut = new PartitionRestoreFuture(INDEX_PARTITION, opCtx0.processedParts));
 
-                            copyLocalAsync(opCtx0, snpFile, ft.tmpPartition(dir.getName(), INDEX_PARTITION), grpId, idxFut);
+                            copyLocalAsync(opCtx0, snpFile, ft.tmpPartition(ccfg, INDEX_PARTITION), grpId, idxFut);
                         }
                     }
                 }
@@ -1168,7 +1170,7 @@ public class SnapshotRestoreProcess {
                             throw new IgniteInterruptedException("The operation has been stopped on temporary directory switch.");
 
                         for (File src : opCtx0.dirs)
-                            Files.move(ft.tmpCacheStorage(src.getName()).toPath(), src.toPath(), StandardCopyOption.ATOMIC_MOVE);
+                            Files.move(ft.tmpCacheStorage(src).toPath(), src.toPath(), StandardCopyOption.ATOMIC_MOVE);
                     }
                     catch (IOException e) {
                         throw new IgniteException(e);
@@ -1649,7 +1651,7 @@ public class SnapshotRestoreProcess {
                 IgniteCheckedException ex = null;
 
                 for (File cacheDir : opCtx0.dirs) {
-                    File tmpCacheDir = ft.tmpCacheStorage(cacheDir.getName());
+                    File tmpCacheDir = ft.tmpCacheStorage(cacheDir);
 
                     if (tmpCacheDir.exists() && !U.delete(tmpCacheDir)) {
                         log.error("Unable to perform rollback routine completely, cannot remove temp directory " +

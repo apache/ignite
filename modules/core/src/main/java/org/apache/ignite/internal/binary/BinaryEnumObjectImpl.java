@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.CacheObjectAdapter.obj
 /**
  * Binary enum object.
  */
-public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObject {
+class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -136,10 +136,8 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         this.ord = BinaryPrimitives.readInt(arr, off);
     }
 
-    /**
-     * @return Class name.
-     */
-    @Nullable public String className() {
+    /** {@inheritDoc} */
+    @Nullable @Override public String enumClassName() {
         return clsName;
     }
 
@@ -398,16 +396,11 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();

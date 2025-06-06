@@ -136,9 +136,6 @@ public class CdcMain implements Runnable {
     /** */
     public static final String ERR_MSG = "Persistence and CDC disabled. Capture Data Change can't run!";
 
-    /** State dir. */
-    public static final String STATE_DIR = "state";
-
     /** Current segment index metric name. */
     public static final String CUR_SEG_IDX = "CurrentSegmentIndex";
 
@@ -315,7 +312,7 @@ public class CdcMain implements Runnable {
         }
 
         try (CdcFileLockHolder lock = lockPds()) {
-            Files.createDirectories(ft.walCdc().toPath().resolve(STATE_DIR));
+            Files.createDirectories(ft.cdcState());
 
             if (log.isInfoEnabled()) {
                 log.info("Change Data Capture [dir=" + ft.walCdc() + ']');
@@ -330,7 +327,7 @@ public class CdcMain implements Runnable {
             try {
                 kctx.resource().injectGeneric(consumer.consumer());
 
-                state = createState(ft.walCdc().toPath().resolve(STATE_DIR));
+                state = createState(ft);
 
                 walState = state.loadWalState();
                 typesState = state.loadTypesState();
@@ -364,15 +361,15 @@ public class CdcMain implements Runnable {
     }
 
     /** Creates consumer state. */
-    protected CdcConsumerState createState(Path stateDir) {
-        return new CdcConsumerState(log, stateDir);
+    protected CdcConsumerState createState(NodeFileTree ft) {
+        return new CdcConsumerState(log, ft);
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
     private void startStandaloneKernal() throws IgniteCheckedException {
-        kctx = new StandaloneGridKernalContext(log, ft.binaryMeta(), ft.marshaller()) {
+        kctx = new StandaloneGridKernalContext(log, ft) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
@@ -546,8 +543,7 @@ public class CdcMain implements Runnable {
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
                 .log(log)
-                .binaryMetadataFileStoreDir(ft.binaryMeta())
-                .marshallerMappingFileStoreDir(ft.marshaller())
+                .fileTree(ft)
                 .igniteConfigurationModifier((cfg) -> cfg.setPluginProviders(igniteCfg.getPluginProviders()))
                 .keepBinary(cdcCfg.isKeepBinary())
                 .filesOrDirs(segment.toFile());
@@ -679,7 +675,7 @@ public class CdcMain implements Runnable {
             Iterator<BinaryType> changedTypes = Arrays.stream(files)
                 .filter(NodeFileTree::binFile)
                 .map(f -> {
-                    int typeId = BinaryUtils.typeId(f.getName());
+                    int typeId = NodeFileTree.typeId(f.getName());
                     long lastModified = f.lastModified();
 
                     // Filter out files already in `typesState` with the same last modify date.

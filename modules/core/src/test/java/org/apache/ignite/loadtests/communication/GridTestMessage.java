@@ -130,9 +130,4 @@ class GridTestMessage implements Message, Externalizable {
     @Override public short directType() {
         return 0;
     }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 0;
-    }
 }

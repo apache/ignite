@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary.builder;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -47,7 +47,7 @@ class BinaryLazySet extends BinaryAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterEx writer, BinaryBuilderSerializer ctx) {
         if (val == null) {
             int size = reader.readIntPositioned(off + 1);
 
