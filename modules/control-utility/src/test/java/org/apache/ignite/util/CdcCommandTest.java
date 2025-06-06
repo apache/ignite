@@ -67,6 +67,7 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -252,7 +253,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     private void checkLinks(IgniteEx srv, List<Long> expLinks) {
         NodeFileTree ft = srv.context().pdsFolderResolver().fileTree();
 
-        File[] links = ft.walCdcFiles();
+        File[] links = ft.walCdc().listFiles(WAL_SEGMENT_FILE_FILTER);
 
         assertEquals(expLinks.size(), links.length);
         Arrays.stream(links).map(File::toPath).map(ft::walSegmentIndex)

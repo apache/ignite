@@ -31,11 +31,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeTestUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
 
 /**
  * Saves data using previous version of ignite and then load this data using actual version
@@ -124,7 +125,7 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
 
             NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-            File[] compressedSegments = FileTreeTestUtils.walArchiveCompactedFiles(ft);
+            File[] compressedSegments = ft.walArchive().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
 
             final int actualCompressedWalSegments = compressedSegments == null ? 0 : compressedSegments.length;
 

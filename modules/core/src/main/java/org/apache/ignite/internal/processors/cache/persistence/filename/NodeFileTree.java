@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteException;
@@ -199,45 +198,13 @@ public class NodeFileTree extends SharedFileTree {
     public static final String ZIP_SUFFIX = ".zip";
 
     /** File extension of temp WAL segment. */
-    private static final String TMP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + TMP_SUFFIX;
+    public static final String TMP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + TMP_SUFFIX;
 
     /** File extension of zipped WAL segment. */
-    static final String ZIP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + ZIP_SUFFIX;
+    public static final String ZIP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + ZIP_SUFFIX;
 
     /** File extension of temp zipped WAL segment. */
-    private static final String TMP_ZIP_WAL_SEG_FILE_EXT = ZIP_WAL_SEG_FILE_EXT + TMP_SUFFIX;
-
-    /** Pattern for WAL segment file names. */
-    private static final Pattern WAL_NAME_PATTERN = U.fixedLengthNumberNamePattern(WAL_SEGMENT_FILE_EXT);
-
-    /** Pattern for WAL temp files - these files will be cleared at startup. */
-    private static final Pattern WAL_TEMP_NAME_PATTERN = U.fixedLengthNumberNamePattern(TMP_WAL_SEG_FILE_EXT);
-
-    /** Pattern for WAL compacted files. */
-    private static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(ZIP_WAL_SEG_FILE_EXT);
-
-    /** Pattern for WAL temp compacted files. */
-    private static final Pattern WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(TMP_ZIP_WAL_SEG_FILE_EXT);
-
-    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN}. */
-    private static final FileFilter WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
-           isWalFileName(file.getName());
-
-    /** WAL segment temporary file filter, see {@link #WAL_TEMP_NAME_PATTERN}. */
-    private static final FileFilter WAL_SEGMENT_TEMP_FILE_FILTER = file -> !file.isDirectory() &&
-            isTmpWalFileName(file.getName());
-
-    /** WAL segment compacted file filter, see {@link #WAL_SEGMENT_FILE_COMPACTED_PATTERN}. */
-    static final FileFilter WAL_SEGMENT_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
-            isWalCompactedFileName(file.getName());
-
-    /** WAL segment compacted temporary file filter, see {@link #WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN}. */
-    private static final FileFilter WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
-            WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
-
-    /** WAL segment compacted or raw file filter, see {@link #WAL_NAME_PATTERN} and {@link #WAL_SEGMENT_FILE_COMPACTED_PATTERN}. */
-    static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = file -> !file.isDirectory() &&
-            (isWalFileName(file.getName()) || isWalCompactedFileName(file.getName()));
+    public static final String TMP_ZIP_WAL_SEG_FILE_EXT = ZIP_WAL_SEG_FILE_EXT + TMP_SUFFIX;
 
     /** Filter out all cache directories. */
     private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
@@ -947,53 +914,6 @@ public class NodeFileTree extends SharedFileTree {
         return new File(nodeStorage, MAINTENANCE_FILE_NAME);
     }
 
-    /** @return WAL compacted or raw files. */
-    public File[] walCompactedOrRawFiles() {
-        return wal().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
-    }
-
-    /** @return Archive WAL compacted or raw files. */
-    public File[] walArchiveCompactedOrRawFiles() {
-        return walArchive().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
-    }
-
-    /** @return WAL files. */
-    public File[] walFiles() {
-        return wal().listFiles(WAL_SEGMENT_FILE_FILTER);
-    }
-
-    /** @return WAL files for CDC. */
-    public File[] walCdcFiles() {
-        return walCdc().listFiles(WAL_SEGMENT_FILE_FILTER);
-    }
-
-    /** @return WAL compacted files. */
-    public File[] walCompactedFiles() {
-        return wal().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
-    }
-
-    /**
-     * Lists files in archive directory and returns the index of last archived file.
-     *
-     * @return The absolute index of last archived file.
-     */
-    public long lastArchivedIndex() {
-        long lastIdx = -1;
-
-        for (File file : walArchiveCompactedOrRawFiles()) {
-            try {
-                long idx = walSegmentIndex(file.toPath());
-
-                lastIdx = Math.max(lastIdx, idx);
-            }
-            catch (NumberFormatException | IndexOutOfBoundsException ignore) {
-
-            }
-        }
-
-        return lastIdx;
-    }
-
     /**
      * @param includeMeta If {@code true} then include metadata directory into results.
      * @param filter Cache group names to filter.
@@ -1069,54 +989,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static int typeId(String fileName) {
         return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
-    }
-
-    /**
-     * @param fileName File name to check.
-     * @return {@code True} if the file name matches the WAL pattern.
-     */
-    public static boolean isWalFileName(String fileName) {
-        return WAL_NAME_PATTERN.matcher(fileName).matches();
-    }
-
-    /**
-     * @param fileName File name to check.
-     * @return {@code True} if the file name matches the WAL temp pattern.
-     */
-    public static boolean isTmpWalFileName(String fileName) {
-        return WAL_TEMP_NAME_PATTERN.matcher(fileName).matches();
-    }
-
-    /**
-     * @param fileName File name to check.
-     * @return {@code True} if the file name matches the WAL compacted pattern.
-     */
-    public static boolean isWalCompactedFileName(String fileName) {
-        return WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(fileName).matches();
-    }
-
-    /**
-     * @param f File to check.
-     * @return {@code True} if the file matches WAL file criteria.
-     */
-    public static boolean isWalFile(File f) {
-        return WAL_SEGMENT_FILE_FILTER.accept(f);
-    }
-
-    /**
-     * @param f Directory to scan for WAL temp files.
-     * @return WAL temp files.
-     */
-    public static File[] tmpWalFiles(File f) {
-        return f.listFiles(WAL_SEGMENT_TEMP_FILE_FILTER);
-    }
-
-    /**
-     * @param f Directory to scan for WAL compacted temp files.
-     * @return WAL compacted temp files.
-     */
-    public static File[] tmpWalCompactedFiles(File f) {
-        return f.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
     }
 
     /** {@inheritDoc} */

@@ -26,12 +26,14 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeTestUtils;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER;
 
 /**
  * Load without compaction -> Stop -> Enable WAL Compaction -> Start.
@@ -82,13 +84,13 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         for (int i = 0; i < 500; i++)
             cache.put(i, i);
 
-        NodeFileTree ft = ex.context().pdsFolderResolver().fileTree();
+        File walDir = ex.context().pdsFolderResolver().fileTree().wal();
 
         forceCheckpoint();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                File[] archivedFiles = ft.walFiles();
+                File[] archivedFiles = walDir.listFiles(WAL_SEGMENT_FILE_FILTER);
 
                 return archivedFiles.length == 39;
             }
@@ -102,17 +104,17 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
 
         ex.cluster().state(ClusterState.ACTIVE);
 
-        NodeFileTree ft1 = ex.context().pdsFolderResolver().fileTree();
+        File archiveDir = ex.context().pdsFolderResolver().fileTree().walArchive();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                File[] archivedFiles = FileTreeTestUtils.walArchiveCompactedFiles(ft1);
+                File[] archivedFiles = archiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
 
                 return archivedFiles.length == 20;
             }
         }, 5000);
 
-        File[] tmpFiles = NodeFileTree.tmpWalCompactedFiles(ft1.walArchive());
+        File[] tmpFiles = archiveDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER);
 
         assertEquals(0, tmpFiles.length);
     }

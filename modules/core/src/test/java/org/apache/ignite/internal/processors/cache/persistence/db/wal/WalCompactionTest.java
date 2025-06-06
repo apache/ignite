@@ -42,7 +42,6 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeTestUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,6 +50,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
 
 /**
  *
@@ -397,7 +397,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         // Allow compressor to compress WAL segments.
         assertTrue(GridTestUtils.waitForCondition(zippedWalSegment::exists, 15_000));
 
-        File[] compressedSegments = FileTreeTestUtils.walArchiveCompactedFiles(ft);
+        File[] compressedSegments = ft.walArchive().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
 
         long maxIdx = -1;
         for (File f : compressedSegments)

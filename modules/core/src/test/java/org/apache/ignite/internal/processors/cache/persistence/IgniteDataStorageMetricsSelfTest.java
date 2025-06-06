@@ -48,7 +48,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
-import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeTestUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -563,19 +562,12 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
      * List of all relevant wal files descriptors in a given directory.
      *
      * @param filesDir Directory where the wal files are located.
-     * @return Array of relevant file descriptors.
+     * @return List of relevant file descriptors
      * @throws IgniteException If failed.
      */
     private FileDescriptor[] walFiles(final File filesDir) throws IgniteException {
         try {
-            final File[] files = FileTreeTestUtils.walCompactedOrRawFiles(filesDir);
-
-            if (files == null) {
-                throw new IgniteCheckedException("WAL files directory does not not denote a " +
-                    "directory, or if an I/O error occurs: [" + filesDir.getAbsolutePath() + "]");
-            }
-
-            return FileWriteAheadLogManager.scan(files);
+            return FileWriteAheadLogManager.loadFileDescriptors(filesDir);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

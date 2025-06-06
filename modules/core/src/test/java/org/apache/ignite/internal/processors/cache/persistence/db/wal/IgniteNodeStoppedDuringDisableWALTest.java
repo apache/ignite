@@ -52,6 +52,8 @@ import static java.nio.file.Files.walkFileTree;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage.CP_FILE_NAME_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_TEMP_NAME_PATTERN;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
 /***
@@ -220,7 +222,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
                     if (parentDirName.equals(metastorage))
                         return CONTINUE;
 
-                    if (NodeFileTree.isWalFileName(name) || NodeFileTree.isTmpWalFileName(name))
+                    if (WAL_NAME_PATTERN.matcher(name).matches() || WAL_TEMP_NAME_PATTERN.matcher(name).matches())
                         return CONTINUE;
 
                     boolean failed = false;

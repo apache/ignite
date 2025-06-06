@@ -89,6 +89,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 
 /** */
 public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotTest {
@@ -971,7 +972,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         SnapshotFileTree sft = snapshotFileTree(grid(nodeIdx), SNP);
 
-        File[] incSegs = sft.incrementalSnapshotFileTree(incIdx).walCompactedOrRawFiles();
+        File[] incSegs = sft.incrementalSnapshotFileTree(incIdx).wal().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
 
         Arrays.sort(incSegs);
 
