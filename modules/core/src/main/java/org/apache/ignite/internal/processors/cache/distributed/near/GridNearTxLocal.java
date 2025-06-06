@@ -764,7 +764,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 entryTopVer,
                 keySet,
                 opCtx != null ? opCtx.expiry() : null,
-                map,
+                map.values(),
                 invokeMap0,
                 invokeArgs,
                 retval,
@@ -982,7 +982,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param cacheCtx Cache context.
      * @param keys Keys to enlist.
      * @param expiryPlc Explicitly specified expiry policy for entry.
-     * @param lookup Value lookup map ({@code null} for remove).
+     * @param vals Value lookup collection ({@code null} for remove).
      * @param invokeMap Map with entry processors for invoke operation.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param retval Flag indicating whether a value should be returned.
@@ -1003,7 +1003,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable AffinityTopologyVersion entryTopVer,
         Collection<?> keys,
         @Nullable ExpiryPolicy expiryPlc,
-        @Nullable Map<?, ?> lookup,
+        @Nullable Collection<?> vals,
         @Nullable Map<?, EntryProcessor<K, V, Object>> invokeMap,
         @Nullable Object[] invokeArgs,
         final boolean retval,
@@ -1034,7 +1034,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 return finishFuture(enlistFut, e, false);
             }
 
-            boolean rmv = lookup == null && invokeMap == null;
+            boolean rmv = vals == null && invokeMap == null;
 
             final boolean hasFilters = !F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter);
             final boolean needVal = singleRmv || retval || hasFilters;
@@ -1047,6 +1047,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 Set<KeyCacheObject> missedForLoad = null;
 
+                Iterator<?> it = null;
+
+                if (vals != null)
+                    it = vals.iterator();
+
                 for (Object key : keys) {
                     if (isRollbackOnly())
                         return finishFuture(enlistFut, timedOut() ? timeoutException() : rollbackException(), false);
@@ -1057,7 +1062,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         throw new NullPointerException("Null key.");
                     }
 
-                    Object val = rmv || lookup == null ? null : lookup.get(key);
+                    Object val = rmv || it == null ? null : it.next();
                     EntryProcessor entryProc = invokeMap == null ? null : invokeMap.get(key);
 
                     GridCacheVersion drVer;
@@ -1638,7 +1643,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             entryTopVer,
             keys0,
             plc,
-            /*lookup map*/null,
+            /*values*/null,
             /*invoke map*/null,
             /*invoke arguments*/null,
             retval,
