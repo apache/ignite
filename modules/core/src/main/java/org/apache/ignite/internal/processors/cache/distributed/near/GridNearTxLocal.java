@@ -101,6 +101,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -270,8 +271,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         this.txDumpsThrottling = txDumpsThrottling;
 
         initResult();
-
-        trackTimeout = timeout() > 0 && !implicit() && cctx.time().addTimeoutObject(this);
     }
 
     /** {@inheritDoc} */
@@ -4311,6 +4310,22 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      */
     public void threadId(long threadId) {
         this.threadId = threadId;
+    }
+
+    /**
+     * Starts tracking tx as timeout object.
+     */
+    public void initTimeoutHandler() throws TransactionTimeoutException {
+        if (timeout() > 0 && !implicit()) {
+            if (remainingTime() == -1L) {
+                onTimeout();
+
+                throw new TransactionTimeoutException(
+                    "Failed to start transaction. Transaction is timed out during initialization.");
+            }
+            else
+                trackTimeout = cctx.time().addTimeoutObject(this);
+        }
     }
 
     /**
