@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Test grids starting with non compatible release types.
+ * Test Rolling Upgrade release types.
  */
 public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
@@ -63,13 +63,13 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testOsEditionDoesNotSupportRollingUpdates() throws Exception {
-        nodeVer = "1.0.0";
+    public void testRollingUpgradeConflictVersions() throws Exception {
+        nodeVer = "2.20.0";
 
         startGrid(0);
 
         try {
-            nodeVer = "1.0.1";
+            nodeVer = "2.17.1";
 
             startGrid(1);
 
@@ -82,7 +82,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
             String stackTrace = errors.toString();
 
-            if (!stackTrace.contains("Local node and remote node have different version numbers"))
+            if (!stackTrace.contains("Incompatible version for cluster join"))
                 throw e;
         }
     }
@@ -91,13 +91,13 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testOsEditionDoesNotSupportRollingUpdatesClientMode() throws Exception {
-        nodeVer = "1.0.0";
+    public void testRollingUpgradeConflictVersionsWithClient() throws Exception {
+        nodeVer = "2.20.0";
 
         startGrid(0);
 
         try {
-            nodeVer = "1.0.1";
+            nodeVer = "2.17.1";
 
             startClientGrid(1);
 
@@ -110,8 +110,36 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
             String stackTrace = errors.toString();
 
-            if (!stackTrace.contains("Local node and remote node have different version numbers"))
+            if (!stackTrace.contains("Incompatible version for cluster join"))
                 throw e;
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRollingUpgradeCompatibleVersions() throws Exception {
+        nodeVer = "2.20.0";
+
+        startGrid(0);
+
+        nodeVer = "2.18.1";
+
+        startGrid(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRollingUpgradeCompatibleVersionsWithClient() throws Exception {
+        nodeVer = "2.20.0";
+
+        startGrid(0);
+
+        nodeVer = "2.18.1";
+
+        startClientGrid(1);
     }
 }

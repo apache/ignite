@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.nodevalidation;
 
-import java.util.Objects;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,6 +32,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
  * Node validation.
  */
 public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
+    /** */
+    private static final int MAX_VER_DIFF_FOR_RU = 2;
+
     /**
      * @param ctx Kernal context.
      */
@@ -43,31 +46,42 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         ClusterNode locNode = ctx.discovery().localNode();
 
-        // Check version.
         String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
         String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
-        if (!Objects.equals(rmtBuildVer, locBuildVer)) {
-            // OS nodes don't support rolling updates.
-            if (!locBuildVer.equals(rmtBuildVer)) {
-                String errMsg = "Local node and remote node have different version numbers " +
-                    "(node will not join, Ignite does not support rolling updates, " +
-                    "so versions must be exactly the same) " +
-                    "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
-                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + ']';
+        assert locBuildVer != null : ATTR_BUILD_VER + " is not set on local node!";
+        assert rmtBuildVer != null : ATTR_BUILD_VER + " is not set on remote node!";
 
-                LT.warn(log, errMsg);
+        IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
+        IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
-                // Always output in debug.
-                if (log.isDebugEnabled())
-                    log.debug(errMsg);
+        if (!isRollingUpgradeEligible(locVer, rmtVer)) {
+            String errMsg = "Remote node [rmtBuildVer=" + rmtBuildVer + ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                ", rmtNodeId=" + node.id() + "] rejected: Incompatible version for cluster join. Allowed major version " +
+                "range: " + locVer.major() + '.' + (locVer.minor() - 2) + '.' + locVer.maintenance() +
+                " to " + locVer.major() + '.' + (locVer.minor() + 2) + '.' + locVer.maintenance() +
+                " [locBuildVer=" + locBuildVer + ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                ", locNodeId=" + locNode.id() + ']';
 
-                return new IgniteNodeValidationResult(node.id(), errMsg);
-            }
+            LT.warn(log, errMsg);
+
+            if (log.isDebugEnabled())
+                log.debug(errMsg);
+
+            return new IgniteNodeValidationResult(node.id(), errMsg);
         }
 
         return null;
+    }
+
+    /**
+     * Checks whether remote node is eligible for rolling upgrade.
+     *
+     * @param locVer - Ignite build version for local node.
+     * @param rmtVer - Ignite build version for remote node.
+     * @return True - if remote node is eligible for rolling upgrade, thus can enter the cluster. False - otherwise.
+     */
+    private boolean isRollingUpgradeEligible(IgniteProductVersion locVer, IgniteProductVersion rmtVer) {
+        return Math.abs(locVer.minor() - rmtVer.minor()) <= MAX_VER_DIFF_FOR_RU;
     }
 }
