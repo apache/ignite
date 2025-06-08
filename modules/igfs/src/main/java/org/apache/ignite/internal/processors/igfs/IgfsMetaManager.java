@@ -2013,7 +2013,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                                     try (IgfsSecondaryFileSystemPositionedReadable reader = fs.open(path, bufSize)) {
                                         IgniteInternalFuture<byte[]> fut =
-                                            igfsCtx.data().dataBlock(info, path, blockIdx, reader);
+                                                igfsCtx.data().dataBlock(info, path, blockIdx, reader);
 
                                         assert fut != null;
 

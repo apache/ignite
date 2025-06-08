@@ -106,7 +106,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 for (CacheConfiguration cacheCfg : cacheCfgs) {
                     if (Objects.equals(cacheCfg.getName(), metaCacheName)) {
                         metaClient = false;
-
                         break;
                     }
                 }

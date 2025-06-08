@@ -21,7 +21,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.igfs.IgfsIpcEndpointType.SHMEM;
 import static org.apache.ignite.igfs.IgfsIpcEndpointType.TCP;
 
 /**

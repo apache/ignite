@@ -780,8 +780,8 @@ public class PoolProcessor extends GridProcessorAdapter {
                 assert getServiceExecutorService() != null : "Service pool is not configured.";
 
                 return getServiceExecutorService();
-                
-            case GridIoPolicy.IGFS_POOL: // add@byronIGFS_POOL
+
+            case GridIoPolicy.IGFS_POOL: // add@byron IGFS_POOL
             case GridIoPolicy.DATA_STREAMER_POOL:
                 assert getDataStreamerExecutorService() != null : "Data streamer pool is not configured.";
 
