@@ -1,1 +1,1 @@
-org.apache.ignite.codegen.MessageProcessor
+org.apache.ignite.internal.MessageProcessor

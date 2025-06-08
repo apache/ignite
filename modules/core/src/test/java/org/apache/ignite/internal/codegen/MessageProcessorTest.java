@@ -23,7 +23,7 @@ import javax.tools.JavaFileObject;
 import com.google.testing.compile.Compilation;
 import com.google.testing.compile.Compiler;
 import com.google.testing.compile.JavaFileObjects;
-import org.apache.ignite.codegen.MessageProcessor;
+import org.apache.ignite.internal.MessageProcessor;
 import org.junit.Test;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;

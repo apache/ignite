@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.codegen;
+package org.apache.ignite.internal;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -44,7 +44,7 @@ import javax.tools.JavaFileObject;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.codegen.MessageProcessor.MESSAGE_INTERFACE;
+import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 
 /**
  * Generates serializer class for given {@code Message} class. Example of generated code for class {@code XMessage}
@@ -101,7 +101,7 @@ class MessageSerializer {
     private static final String CLS_JAVADOC = "/** \n" +
         " * This class is generated automatically.\n" +
         " *\n" +
-        " * @see org.apache.ignite.codegen.MessageSerializer\n" +
+        " * @see org.apache.ignite.internal.MessageSerializer\n" +
         " */";
 
     /** */
