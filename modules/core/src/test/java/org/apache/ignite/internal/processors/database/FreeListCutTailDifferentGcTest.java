@@ -261,8 +261,7 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER));
 
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setPageSize(4 * 1024);
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
         pageSize = dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize();
 
