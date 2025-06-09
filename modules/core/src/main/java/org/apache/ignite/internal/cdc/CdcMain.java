@@ -480,7 +480,7 @@ public class CdcMain implements Runnable {
                     Iterator<Path> segments = cdcFiles
                         .peek(exists::add) // Store files that exists in cdc dir.
                         // Need unseen WAL segments only.
-                        .filter(p -> NodeFileTree.walFile(p.toFile()) && !seen.contains(p))
+                        .filter(p -> NodeFileTree.walSegment(p.toFile()) && !seen.contains(p))
                         .peek(seen::add) // Adds to seen.
                         .sorted(Comparator.comparingLong(ft::walSegmentIndex)) // Sort by segment index.
                         .peek(p -> {

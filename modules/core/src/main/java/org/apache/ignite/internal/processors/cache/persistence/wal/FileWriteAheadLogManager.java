@@ -187,10 +187,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     public static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(ZIP_WAL_SEG_FILE_EXT);
 
-    /** WAL segment file filter, see {@link NodeFileTree#walFileName(File)} */
-    public static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = file -> !file.isDirectory() &&
-        (NodeFileTree.walFileName(file) ||
-            WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
+    /** WAL segment file filter, see {@link NodeFileTree#walSegment(File)} */
+    public static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = file -> NodeFileTree.walSegment(file) ||
+        (!file.isDirectory() && WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
 
     /** */
     private static final Pattern WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(TMP_ZIP_WAL_SEG_FILE_EXT);
@@ -1615,7 +1614,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
         }
 
-        if (F.isEmpty(ft.walFiles()))
+        if (F.isEmpty(ft.walSegments()))
             createFile(ft.walSegment(0));
 
         if (isArchiverEnabled()) {
@@ -2214,7 +2213,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (maxDirSize <= 0)
                 return true;
 
-            long dirSize = Arrays.stream(ft.walCdcFiles()).mapToLong(File::length).sum();
+            long dirSize = Arrays.stream(ft.walCdcSegments()).mapToLong(File::length).sum();
 
             if (dirSize + len <= maxDirSize)
                 return true;
@@ -3418,7 +3417,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private void moveSegmentsToArchive() throws StorageException {
         assert isArchiverEnabled();
 
-        FileDescriptor[] workSegments = scan(ft.walFiles());
+        FileDescriptor[] workSegments = scan(ft.walSegments());
 
         List<FileDescriptor> toMove = new ArrayList<>();
 
@@ -3475,7 +3474,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private void renameLastSegment() throws StorageException {
         assert isArchiverEnabled();
 
-        FileDescriptor[] workSegments = scan(ft.walFiles());
+        FileDescriptor[] workSegments = scan(ft.walSegments());
 
         if (workSegments.length == 1 && workSegments[0].idx() != workSegments[0].idx() % dsCfg.getWalSegments()) {
             FileDescriptor toRen = workSegments[0];
@@ -3518,7 +3517,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         assert isArchiverEnabled();
 
         if (mode == WALMode.FSYNC || mmap) {
-            List<FileDescriptor> toFormat = Arrays.stream(scan(ft.walFiles()))
+            List<FileDescriptor> toFormat = Arrays.stream(scan(ft.walSegments()))
                 .filter(fd -> fd.file().length() < dsCfg.getWalSegmentSize()).collect(toList());
 
             if (!toFormat.isEmpty()) {

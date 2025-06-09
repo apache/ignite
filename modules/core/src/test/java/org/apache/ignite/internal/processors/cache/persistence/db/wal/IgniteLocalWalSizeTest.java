@@ -254,7 +254,7 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
      * @return {@code True} if file name matches segment name.
      */
     private static boolean isSegmentFileName(@Nullable File f) {
-        return f != null && (NodeFileTree.walFileName(f) ||
+        return f != null && (NodeFileTree.walSegment(f) ||
                 WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches());
     }
 }

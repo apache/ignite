@@ -343,7 +343,7 @@ public class IgniteWalIteratorFactory {
 
         String fileName = file.getName();
 
-        if (!NodeFileTree.walFileName(file) &&
+        if (!NodeFileTree.walSegment(file) &&
             !WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(fileName).matches())
             return;  // Filter out this because it is not segment file.
 

@@ -409,7 +409,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         failingFileIOFactory.createClosure((file, options) -> {
             FileIO delegate = failingFileIOFactory.delegateFactory().create(file, options);
 
-            if (NodeFileTree.walFileName(file)) {
+            if (NodeFileTree.walSegment(file)) {
                 return new FileIODecorator(delegate) {
                     @Override public int write(ByteBuffer srcBuf) throws IOException {
                         throw new IOException("No space left on device");

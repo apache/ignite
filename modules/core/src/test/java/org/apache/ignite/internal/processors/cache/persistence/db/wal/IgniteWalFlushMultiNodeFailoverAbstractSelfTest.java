@@ -275,7 +275,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
                     System.out.println(">>>!!!! W " + file.getName());
 
-                    if (fail != null && NodeFileTree.walFileName(file) && fail.get())
+                    if (fail != null && NodeFileTree.walSegment(file) && fail.get())
                         throw new IOException("No space left on device");
 
                     return super.write(srcBuf);
@@ -285,7 +285,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                 @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
                     System.out.println(">>>!!!! M " + file.getName());
 
-                    if (fail != null && NodeFileTree.walFileName(file) && fail.get())
+                    if (fail != null && NodeFileTree.walSegment(file) && fail.get())
                         throw new IOException("No space left on deive");
 
                     return delegate.map(sizeBytes);

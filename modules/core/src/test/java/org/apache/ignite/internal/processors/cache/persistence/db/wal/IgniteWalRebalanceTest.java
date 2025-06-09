@@ -1509,7 +1509,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegateIO = delegate.create(file, modes);
 
-            if (NodeFileTree.walFileName(file) && failRead)
+            if (NodeFileTree.walSegment(file) && failRead)
                 return new FileIODecorator(delegateIO) {
                     @Override public int read(ByteBuffer destBuf) throws IOException {
                         throw new IOException("Test exception."); // IO exception is required for correct cleanup.

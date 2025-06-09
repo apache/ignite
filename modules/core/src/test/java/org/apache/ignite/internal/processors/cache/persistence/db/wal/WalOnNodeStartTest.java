@@ -154,7 +154,7 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        File[] wals = ft.walFiles();
+        File[] wals = ft.walSegments();
 
         assertEquals(cfg.getDataStorageConfiguration().getWalSegments(), wals.length);
 
@@ -173,7 +173,7 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        wals = ft.walFiles();
+        wals = ft.walSegments();
 
         assertEquals(cfg.getDataStorageConfiguration().getWalSegments(), wals.length);
 

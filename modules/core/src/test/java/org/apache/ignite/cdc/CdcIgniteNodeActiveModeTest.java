@@ -351,7 +351,7 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
                 NodeFileTree ft = ign.context().pdsFolderResolver().fileTree();
 
                 List<Long> actual = Files.list(ft.walCdc().toPath())
-                    .filter(p -> NodeFileTree.walFile(p.toFile()))
+                    .filter(p -> NodeFileTree.walSegment(p.toFile()))
                     .map(ft::walSegmentIndex)
                     .sorted()
                     .collect(Collectors.toList());

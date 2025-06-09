@@ -462,7 +462,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
             this.file = file;
 
-            if (NodeFileTree.walFileName(file))
+            if (NodeFileTree.walSegment(file))
                 WAL_OPEN_COUNTER.incrementAndGet();
         }
 
@@ -470,7 +470,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         @Override public void close() throws IOException {
             super.close();
 
-            if (NodeFileTree.walFileName(file))
+            if (NodeFileTree.walSegment(file))
                 WAL_CLOSE_COUNTER.incrementAndGet();
         }
 

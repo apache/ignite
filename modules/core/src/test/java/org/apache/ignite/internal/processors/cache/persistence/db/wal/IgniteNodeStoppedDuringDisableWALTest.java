@@ -221,7 +221,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
                     if (parentDirName.equals(metastorage))
                         return CONTINUE;
 
-                    if (NodeFileTree.walFileName(path.toFile()) || WAL_TEMP_NAME_PATTERN.matcher(name).matches())
+                    if (NodeFileTree.walSegment(path.toFile()) || WAL_TEMP_NAME_PATTERN.matcher(name).matches())
                         return CONTINUE;
 
                     boolean failed = false;

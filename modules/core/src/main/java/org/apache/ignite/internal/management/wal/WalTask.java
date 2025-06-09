@@ -60,8 +60,8 @@ public class WalTask extends VisorMultiNodeTask<WalDeleteCommandArg, WalTaskResu
     /** WAL archive file filter. */
     private static final FileFilter WAL_ARCHIVE_FILE_FILTER = new FileFilter() {
         @Override public boolean accept(File file) {
-            return !file.isDirectory() && (NodeFileTree.walFileName(file) ||
-                    WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
+            return NodeFileTree.walSegment(file) || (!file.isDirectory() &&
+                WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
         }
     };
 

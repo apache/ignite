@@ -90,7 +90,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                File[] archivedFiles = ft.walFiles();
+                File[] archivedFiles = ft.walSegments();
 
                 return archivedFiles.length == 39;
             }

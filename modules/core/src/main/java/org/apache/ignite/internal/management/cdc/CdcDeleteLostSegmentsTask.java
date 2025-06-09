@@ -103,7 +103,7 @@ public class CdcDeleteLostSegmentsTask extends VisorMultiNodeTask<CdcDeleteLostS
                     AtomicLong lastSgmnt = new AtomicLong(-1);
 
                     cdcFiles
-                        .filter(p -> NodeFileTree.walFile(p.toFile()))
+                        .filter(p -> NodeFileTree.walSegment(p.toFile()))
                         .sorted(Comparator.comparingLong(ft::walSegmentIndex)
                             .reversed()) // Sort by segment index.
                         .forEach(path -> {

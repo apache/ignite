@@ -252,7 +252,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     private void checkLinks(IgniteEx srv, List<Long> expLinks) {
         NodeFileTree ft = srv.context().pdsFolderResolver().fileTree();
 
-        File[] links = ft.walCdcFiles();
+        File[] links = ft.walCdcSegments();
 
         assertEquals(expLinks.size(), links.length);
         Arrays.stream(links).map(File::toPath).map(ft::walSegmentIndex)
