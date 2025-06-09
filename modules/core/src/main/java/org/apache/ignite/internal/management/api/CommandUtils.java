@@ -533,7 +533,7 @@ public class CommandUtils {
      * @return {@code True} if command can be executed, {@code false} otherwise.
      */
     public static boolean executable(Command<?, ?> cmd) {
-        return cmd instanceof LocalCommand
+        return cmd instanceof NativeCommand
             || cmd instanceof ComputeCommand
             || cmd instanceof HelpCommand
             || cmd instanceof BeforeNodeStartCommand
