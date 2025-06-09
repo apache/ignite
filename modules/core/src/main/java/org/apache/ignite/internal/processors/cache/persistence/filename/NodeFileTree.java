@@ -429,6 +429,16 @@ public class NodeFileTree extends SharedFileTree {
         return wal;
     }
 
+    /** @return An array of WAL segment files. */
+    public File[] walSegments() {
+        return wal().listFiles(f -> walSegment(f));
+    }
+
+    /** @return An array of WAL segment files for CDC. */
+    public File[] walCdcSegments() {
+        return walCdc().listFiles(f -> walSegment(f));
+    }
+
     /**
      * @param idx Segment number.
      * @return Segment file.
@@ -939,16 +949,6 @@ public class NodeFileTree extends SharedFileTree {
         Predicate<File> dirFilter = includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER;
 
         return filesInStorages(f -> f.isDirectory() && dirFilter.test(f) && filter.test(f)).collect(Collectors.toList());
-    }
-
-    /** @return An array of WAL segment files. */
-    public File[] walSegments() {
-        return wal().listFiles(f -> walSegment(f));
-    }
-
-    /** @return An array of WAL segment files for CDC. */
-    public File[] walCdcSegments() {
-        return walCdc().listFiles(f -> walSegment(f));
     }
 
     /**
