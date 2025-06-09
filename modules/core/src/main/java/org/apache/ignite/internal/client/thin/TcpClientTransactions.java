@@ -106,7 +106,7 @@ class TcpClientTransactions implements ClientTransactions {
                     writer.writeString(lb);
                 }
             },
-            res -> new TcpClientTransaction(res.in().readInt(), res.clientChannel())
+            res -> new TcpClientTransaction(res.in().readInt(), res.clientChannel(), concurrency, isolation)
         );
 
         threadLocTxUid.set(tx0.txUid);
@@ -193,6 +193,12 @@ class TcpClientTransactions implements ClientTransactions {
         /** Client channel. */
         private final ClientChannel clientCh;
 
+        /** */
+        private final TransactionConcurrency concurrency;
+
+        /** */
+        private final TransactionIsolation isolation;
+
         /** Transaction is closed. */
         private volatile boolean closed;
 
@@ -200,10 +206,17 @@ class TcpClientTransactions implements ClientTransactions {
          * @param id Transaction ID.
          * @param clientCh Client channel.
          */
-        private TcpClientTransaction(int id, ClientChannel clientCh) {
+        private TcpClientTransaction(
+            int id,
+            ClientChannel clientCh,
+            TransactionConcurrency concurrency,
+            TransactionIsolation isolation
+        ) {
             txUid = txCnt.incrementAndGet();
             txId = id;
             this.clientCh = clientCh;
+            this.concurrency = concurrency;
+            this.isolation = isolation;
         }
 
         /** {@inheritDoc} */
@@ -279,6 +292,16 @@ class TcpClientTransactions implements ClientTransactions {
          */
         boolean isClosed() {
             return closed;
+        }
+
+        /** */
+        public TransactionConcurrency getConcurrency() {
+            return concurrency;
+        }
+
+        /** */
+        public TransactionIsolation getIsolation() {
+            return isolation;
         }
     }
 }
