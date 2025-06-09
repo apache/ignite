@@ -282,7 +282,7 @@ public class IgniteDiagnosticPrepareContext {
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             nodeId = (UUID)in.readObject();
-            info = U.readSet(in);
+            info = U.readLinkedSet(in);
         }
     }
 }

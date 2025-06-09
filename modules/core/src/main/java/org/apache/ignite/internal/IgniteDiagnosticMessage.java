@@ -332,7 +332,7 @@ public class IgniteDiagnosticMessage implements Message {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hashCode(cacheId);
+            return Objects.hash(getClass(), cacheId);
         }
     }
 
@@ -400,7 +400,7 @@ public class IgniteDiagnosticMessage implements Message {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hashCode(topVer);
+            return Objects.hash(getClass(), topVer);
         }
     }
 
@@ -485,7 +485,7 @@ public class IgniteDiagnosticMessage implements Message {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(dhtVer, nearVer);
+            return Objects.hash(getClass(), nearVer, dhtVer);
         }
     }
 
