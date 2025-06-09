@@ -179,7 +179,7 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
             check(
                 sql -> client.cache(ALLOWED_CACHE).query(sqlFieldsQuery(sql)).getAll(),
                 ClientAuthorizationException.class,
-                "User is not authorized"
+                "Client is not authorized"
             );
         }
     }

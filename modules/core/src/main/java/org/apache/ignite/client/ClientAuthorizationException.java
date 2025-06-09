@@ -31,7 +31,12 @@ public class ClientAuthorizationException extends ClientException {
      * Default constructor.
      */
     public ClientAuthorizationException() {
-        super(MSG);
+        this(MSG);
+    }
+
+    /** @param msg the detail message. */
+    public ClientAuthorizationException(String msg) {
+        super(msg);
     }
 
     /**
