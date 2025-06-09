@@ -161,7 +161,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         IgniteCache cache1 = srv.getOrCreateCache(cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
 
-        File cacheToClean = ft.cacheStorages(srv.cachex(CACHE_NAME).configuration())[0];
+        File cacheToClean = ft.defaultCacheStorage(srv.cachex(CACHE_NAME).configuration());
 
         srv.cluster().disableWal(CACHE_NAME);
 
@@ -224,7 +224,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         IgniteCache cache1 = srv.getOrCreateCache(cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
         IgniteCache cache2 = srv.getOrCreateCache(cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL));
 
-        File cacheToClean = srv.context().pdsFolderResolver().fileTree().cacheStorages(srv.cachex(CACHE_NAME_2).configuration())[0];
+        File cacheToClean = srv.context().pdsFolderResolver().fileTree().defaultCacheStorage(srv.cachex(CACHE_NAME_2).configuration());
 
         assertForAllNodes(CACHE_NAME, true);
         assertForAllNodes(CACHE_NAME_2, true);
@@ -334,7 +334,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         // Start other nodes.
         IgniteEx ig2 = startGrid(config(SRV_2, false, false));
 
-        File ig2CacheDir = ig2.context().pdsFolderResolver().fileTree().cacheStorages(ig2.cachex(CACHE_NAME).configuration())[0];
+        File ig2CacheDir = ig2.context().pdsFolderResolver().fileTree().defaultCacheStorage(ig2.cachex(CACHE_NAME).configuration());
 
         if (crdFiltered)
             srv.cluster().disableWal(CACHE_NAME);
@@ -434,7 +434,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                         IgniteEx srv = grid(victimName);
 
                         File cacheDir =
-                            srv.context().pdsFolderResolver().fileTree().cacheStorages(srv.cachex(CACHE_NAME).configuration())[0];
+                            srv.context().pdsFolderResolver().fileTree().defaultCacheStorage(srv.cachex(CACHE_NAME).configuration());
 
                         stopGrid(victimName);
 

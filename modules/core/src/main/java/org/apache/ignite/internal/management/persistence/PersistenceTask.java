@@ -234,7 +234,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                     try {
                         pageStore.cleanupPersistentSpace(cacheDescr.cacheConfiguration());
 
-                        cleanedCaches.add(ft.cacheStorages(cacheDescr.cacheConfiguration())[0].getName());
+                        cleanedCaches.add(ft.defaultCacheStorage(cacheDescr.cacheConfiguration()).getName());
                     }
                     catch (IgniteCheckedException e) {
                         failedToCleanCaches.add(name);
@@ -274,7 +274,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             List<String> allCacheDirs = cacheProc.cacheDescriptors()
                 .values()
                 .stream()
-                .map(desc -> ft.cacheStorages(desc.cacheConfiguration())[0].getName())
+                .map(desc -> ft.defaultCacheStorage(desc.cacheConfiguration()).getName())
                 .collect(Collectors.toList());
 
             try {

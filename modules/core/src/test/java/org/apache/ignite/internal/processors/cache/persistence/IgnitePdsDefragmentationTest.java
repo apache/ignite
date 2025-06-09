@@ -564,7 +564,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
-        String grpDirName = ft.cacheStorages(ig.cachex(DEFAULT_CACHE_NAME).configuration())[0].getName();
+        String grpDirName = ft.defaultCacheStorage(ig.cachex(DEFAULT_CACHE_NAME).configuration()).getName();
 
         stopGrid(0);
 

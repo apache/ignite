@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -71,7 +72,7 @@ public class FileTreeUtils {
     public static @Nullable String partitionStorage(CacheConfiguration<?, ?> ccfg, int part) {
         String[] csp = ccfg.getStoragePaths();
 
-        if (csp == null)
+        if (F.isEmpty(csp))
             return null;
 
         return resolveStorage(csp, part);

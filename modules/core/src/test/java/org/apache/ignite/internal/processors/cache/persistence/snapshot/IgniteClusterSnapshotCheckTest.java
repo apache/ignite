@@ -162,7 +162,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        File dir = snapshotFileTree(ignite, SNAPSHOT_NAME).cacheStorages(dfltCacheCfg)[0];
+        File dir = snapshotFileTree(ignite, SNAPSHOT_NAME).defaultCacheStorage(dfltCacheCfg);
 
         assertTrue(dir.toString(), dir.exists());
         assertTrue(U.delete(dir));

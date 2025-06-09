@@ -167,7 +167,7 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
 
                     File nodeStorage = ensureExists(new File(customRoot, foldeNamePath));
 
-                    ensureExists(new File(nodeStorage, ft.cacheStorages(ccfg)[0].getName()));
+                    ensureExists(new File(nodeStorage, ft.defaultCacheStorage(ccfg).getName()));
                 }
             }
         }

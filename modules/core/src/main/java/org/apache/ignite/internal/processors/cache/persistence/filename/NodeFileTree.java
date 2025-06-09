@@ -76,6 +76,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  *     which equal to {@code ${IGNITE_WORK_DIR}/db}, by default.</li>
  * </ul>
  *
+ * Node, user can configure several extra storages by {@link DataStorageConfiguration#setExtraStoragePaths(String...)}
+ * Which can be used by the cache to store data. See {@link CacheConfiguration#setStoragePaths(String...)}.
+ * Partition files will be spread evenly among all configured storages.
+ * In case extra storages configured, each storage will repeat structure described below.
+ * {@link NodeFileTree#defaultCacheStorage(CacheConfiguration)} will be used to store cache config.
+ *
  * <pre>
  * ❯ tree
  * .                                                                            ← root (work directory, shared between all local nodes).
@@ -525,6 +531,14 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param ccfg Cache configuration.
+     * @return Default store dir for given cache. Used for storing configuration.
+     */
+    public File defaultCacheStorage(CacheConfiguration<?, ?> ccfg) {
+        return cacheStorages(ccfg)[0];
+    }
+
+    /**
+     * @param ccfg Cache configuration.
      * @return Store dirs for given cache.
      */
     public File[] cacheStorages(CacheConfiguration<?, ?> ccfg) {
@@ -580,7 +594,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
     public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        return new File(cacheStorages(ccfg)[0], ccfg.getGroupName() == null
+        return new File(defaultCacheStorage(ccfg), ccfg.getGroupName() == null
             ? CACHE_DATA_FILENAME
             : (ccfg.getName() + CACHE_DATA_FILENAME));
     }
@@ -590,7 +604,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
     public File tmpCacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        return new File(cacheStorages(ccfg)[0], ccfg.getGroupName() == null
+        return new File(defaultCacheStorage(ccfg), ccfg.getGroupName() == null
             ? (CACHE_DATA_TMP_FILENAME)
             : (ccfg.getName() + CACHE_DATA_TMP_FILENAME));
     }
