@@ -299,7 +299,14 @@ final class ReliableChannel implements AutoCloseable {
                 try {
                     // Will try to reinit channels if topology changed.
                     onChannelFailure(ch, connEx, failures);
+                }
+                catch (Throwable ex) {
+                    fut.completeExceptionally(ex);
 
+                    return null;
+                }
+
+                try {
                     hld = (nodeId != null) ? nodeChannels.get(nodeId) : null;
 
                     if (hld == null)
@@ -308,8 +315,7 @@ final class ReliableChannel implements AutoCloseable {
                     retryCh = hld.getOrCreateChannel();
                 }
                 catch (ClientConnectionException reconnectEx) {
-                    if (retryCh != null)
-                        failures.add(reconnectEx);
+                    failures.add(reconnectEx);
 
                     fallbackToOtherChannels(fut, op, payloadWriter, payloadReader, failures, reconnectEx);
 

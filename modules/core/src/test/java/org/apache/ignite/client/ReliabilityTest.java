@@ -180,8 +180,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
                 Throwable[] suppressed = ex.getSuppressed();
 
-                // Each node gets 2 attempts (initial + retry), so we expect (CLUSTER_SIZE-1)*2 suppressed exceptions.
-                assertEquals((CLUSTER_SIZE - 1) * 2, suppressed.length);
+                assertEquals(CLUSTER_SIZE - 1, suppressed.length);
 
                 assertTrue(Stream.of(suppressed).allMatch(t -> t instanceof ClientConnectionException));
             }
@@ -670,7 +669,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Checks for no extra tryOtherChannels calls.
      */
     @Test
-    public void testTryOtherChannelsInvocationLimit() throws Exception {
+    public void testTryOtherChannelsInvocationLimit() {
         Assume.assumeFalse(partitionAware);
 
         final int CLUSTER_SIZE = 3;
@@ -692,7 +691,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             }, ClientConnectionException.class, null);
 
             assertEquals("Unexpected number of suppressed exceptions",
-                (CLUSTER_SIZE - 1) * 2, ex.getSuppressed().length);
+                CLUSTER_SIZE - 1, ex.getSuppressed().length);
         }
     }
 
