@@ -200,7 +200,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME, req -> writeString(name, req.out()));
 
-        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry);
+        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry, log);
     }
 
     /** {@inheritDoc} */
@@ -209,7 +209,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         return new IgniteClientFutureImpl<>(
                 ch.requestAsync(ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME, req -> writeString(name, req.out()))
-                        .thenApply(x -> new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry)));
+                        .thenApply(x -> new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry, log)));
     }
 
     /** {@inheritDoc} */
@@ -220,7 +220,7 @@ public class TcpIgniteClient implements IgniteClient {
         ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
             req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
-        return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry);
+        return new TcpClientCache<>(cfg, ch, marsh, transactions, lsnrsRegistry, log);
     }
 
     /** {@inheritDoc} */
@@ -231,14 +231,14 @@ public class TcpIgniteClient implements IgniteClient {
         return new IgniteClientFutureImpl<>(
                 ch.requestAsync(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
                         req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()))
-                        .thenApply(x -> new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry)));
+                        .thenApply(x -> new TcpClientCache<>(cfg, ch, marsh, transactions, lsnrsRegistry, log)));
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> ClientCache<K, V> cache(String name) {
         ensureCacheName(name);
 
-        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry);
+        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry, log);
     }
 
     /** {@inheritDoc} */
@@ -277,7 +277,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         ch.request(ClientOperation.CACHE_CREATE_WITH_NAME, req -> writeString(name, req.out()));
 
-        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry);
+        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry, log);
     }
 
     /** {@inheritDoc} */
@@ -286,7 +286,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         return new IgniteClientFutureImpl<>(
                 ch.requestAsync(ClientOperation.CACHE_CREATE_WITH_NAME, req -> writeString(name, req.out()))
-                        .thenApply(x -> new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry)));
+                        .thenApply(x -> new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry, log)));
     }
 
     /** {@inheritDoc} */
@@ -296,7 +296,7 @@ public class TcpIgniteClient implements IgniteClient {
         ch.request(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION,
             req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
-        return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry);
+        return new TcpClientCache<>(cfg, ch, marsh, transactions, lsnrsRegistry, log);
     }
 
     /** {@inheritDoc} */
@@ -307,7 +307,7 @@ public class TcpIgniteClient implements IgniteClient {
         return new IgniteClientFutureImpl<>(
                 ch.requestAsync(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION,
                         req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()))
-                        .thenApply(x -> new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry)));
+                        .thenApply(x -> new TcpClientCache<>(cfg, ch, marsh, transactions, lsnrsRegistry, log)));
     }
 
     /** {@inheritDoc} */
