@@ -67,8 +67,7 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
 
         super.afterTest();
 
-        if (!Boolean.getBoolean(OFFLINE_COMMAND_TEST))
-            assertTrue(factoryUsed);
+        assertTrue(factoryUsed);
 
         factoryUsed = false;
     }
@@ -105,5 +104,12 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
         super.testCleaningGarbageAfterCacheDestroyedAndNodeStop_ControlConsoleUtil();
 
         factoryUsed = true; // It's an SSL free test. Setting to `true` to avoid fail on check.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testOfflineCommand() throws Exception {
+        super.testOfflineCommand();
+
+        factoryUsed = true;
     }
 }

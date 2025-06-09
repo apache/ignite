@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsProvider;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** Enables registration of additional commands for testing purposes. */
 public class TestCommandsProvider implements CommandsProvider {
@@ -30,12 +31,12 @@ public class TestCommandsProvider implements CommandsProvider {
     private static final Set<Command<?, ?>> COMMANDS = new HashSet<>();
 
     /**
-     * Registers a new command.
+     * Registers new commands.
      *
-     * @param cmd Command to register.
+     * @param cmds Commands to register.
      */
-    public static void registerCommand(Command<?, ?> cmd) {
-        COMMANDS.add(cmd);
+    public static void registerCommands(Command<?, ?>... cmds) {
+        COMMANDS.addAll(F.asList(cmds));
     }
 
     /** Unregisters all registered commands. */
