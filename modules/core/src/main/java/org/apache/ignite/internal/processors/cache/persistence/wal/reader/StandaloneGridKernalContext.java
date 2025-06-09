@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
@@ -125,16 +126,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     private final List<GridComponent> comps = new LinkedList<>();
 
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Node file tree. */
-    private NodeFileTree ft;
+    private final NodeFileTree ft;
 
     /** Empty plugin processor. */
-    private IgnitePluginProcessor pluginProc;
+    private final IgnitePluginProcessor pluginProc;
 
     /** */
-    private GridResourceProcessor rsrcProc;
+    private final GridResourceProcessor rsrcProc;
 
     /** Metrics manager. */
     private final GridMetricManager metricMgr;
@@ -147,19 +148,22 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** */
     @GridToStringExclude
-    private CacheObjectTransformerProcessor transProc;
+    private final CacheObjectTransformerProcessor transProc;
 
     /**
      * Cache object processor. Used for converting cache objects and keys into binary objects. Null means there is no
      * convert is configured. All entries in this case will be lazy data entries.
      */
-    @Nullable private IgniteCacheObjectProcessor cacheObjProcessor;
+    @Nullable private final IgniteCacheObjectProcessor cacheObjProcessor;
 
     /** Marshaller context implementation. */
-    private MarshallerContextImpl marshallerCtx;
+    private final MarshallerContextImpl marshallerCtx;
 
     /** */
-    @Nullable private CompressionProcessor compressProc;
+    @Nullable private final CompressionProcessor compressProc;
+
+    /** */
+    private final IgniteSecurity secProc;
 
     /** Marshaller. */
     private final BinaryMarshaller marsh;
@@ -204,6 +208,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         sysViewMgr = new GridSystemViewManager(this);
         timeoutProc = new GridTimeoutProcessor(this);
         transProc = createComponent(CacheObjectTransformerProcessor.class);
+        secProc = new NoOpIgniteSecurityProcessor(this);
 
         // Fake folder provided to perform processor startup on empty folder.
         cacheObjProcessor = binaryProcessor(this, ft != null
@@ -528,7 +533,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgniteSecurity security() {
-        return null;
+        return secProc;
     }
 
     /** {@inheritDoc} */
