@@ -124,6 +124,6 @@ public class FileTreeUtils {
      * @return Storage for partition.
      */
     static <T> T resolveStorage(T[] storages, int part) {
-        return storages[(part + 1) % storages.length];
+        return storages[part % storages.length];
     }
 }

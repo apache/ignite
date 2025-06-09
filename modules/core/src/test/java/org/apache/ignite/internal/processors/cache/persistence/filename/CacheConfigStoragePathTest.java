@@ -116,7 +116,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
                         for (File partfile : cacheDir.listFiles(NodeFileTree::partitionFile)) {
                             int part = NodeFileTree.partId(partfile);
 
-                            assertTrue(partfile.getAbsolutePath().contains(csp[(part + 1) % csp.length]));
+                            assertTrue(partfile.getAbsolutePath().contains(csp[part % csp.length]));
                         }
                     }
                 }
@@ -181,7 +181,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
                         .filter(ccfg -> CU.cacheOrGroupName(ccfg).equals(cacheName))
                         .findFirst().orElseThrow().getStoragePaths();
 
-                    File expStorage = snpRootF.apply(F.isEmpty(cs) ? null : cs[(part + 1) % cs.length]);
+                    File expStorage = snpRootF.apply(F.isEmpty(cs) ? null : cs[part % cs.length]);
 
                     assertEquals(expStorage, root);
 
