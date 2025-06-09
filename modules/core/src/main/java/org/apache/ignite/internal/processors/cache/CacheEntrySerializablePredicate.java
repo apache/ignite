@@ -108,7 +108,7 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -116,7 +116,7 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("bytes", bytes))
+                if (!writer.writeByteArray(bytes))
                     return false;
 
                 writer.incrementState();
@@ -130,12 +130,9 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                bytes = reader.readByteArray("bytes");
+                bytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -144,16 +141,11 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
 
         }
 
-        return reader.afterMessageRead(CacheEntrySerializablePredicate.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 99;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 }

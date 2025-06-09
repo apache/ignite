@@ -74,6 +74,7 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
@@ -503,15 +504,13 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (!isMultiJvm())
             cfg.setLocalEventListeners(lsnrs);
 
-        if (persistence) {
-            DataStorageConfiguration memCfg = new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).
-                    setPersistenceEnabled(true))
-                .setPageSize(1024)
-                .setWalMode(WALMode.LOG_ONLY);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).
+                setPersistenceEnabled(persistence))
+            .setPageSize(1024)
+            .setWalMode(WALMode.LOG_ONLY);
 
-            cfg.setDataStorageConfiguration(memCfg);
-        }
+        cfg.setDataStorageConfiguration(memCfg);
 
         if (testCommSpi)
             cfg.setCommunicationSpi(new ZkTestCommunicationSpi());
@@ -729,7 +728,11 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             int connIdx
         ) throws IgniteCheckedException {
             if (failure && !matrix.hasConnection(getLocalNode(), node)) {
-                processSessionCreationError(node, null, new IgniteCheckedException("Test", new SocketTimeoutException()));
+                ((GridNioServerWrapper)U.field(this, "nioSrvWrapper")).processSessionCreationError(
+                        node,
+                        null,
+                        new IgniteCheckedException("Test", new SocketTimeoutException())
+                );
 
                 return null;
             }

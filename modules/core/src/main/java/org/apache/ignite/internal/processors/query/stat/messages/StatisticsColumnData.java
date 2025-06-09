@@ -169,7 +169,7 @@ public class StatisticsColumnData implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -177,55 +177,55 @@ public class StatisticsColumnData implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("createdAt", createdAt))
+                if (!writer.writeLong(createdAt))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("distinct", distinct))
+                if (!writer.writeLong(distinct))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("max", max))
+                if (!writer.writeMessage(max))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeMessage("min", min))
+                if (!writer.writeMessage(min))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeLong("nulls", nulls))
+                if (!writer.writeLong(nulls))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByteArray("rawData", rawData))
+                if (!writer.writeByteArray(rawData))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeInt("size", size))
+                if (!writer.writeInt(size))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeLong("total", total))
+                if (!writer.writeLong(total))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeLong("ver", ver))
+                if (!writer.writeLong(ver))
                     return false;
 
                 writer.incrementState();
@@ -239,12 +239,9 @@ public class StatisticsColumnData implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                createdAt = reader.readLong("createdAt");
+                createdAt = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -252,7 +249,7 @@ public class StatisticsColumnData implements Message {
                 reader.incrementState();
 
             case 1:
-                distinct = reader.readLong("distinct");
+                distinct = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -260,7 +257,7 @@ public class StatisticsColumnData implements Message {
                 reader.incrementState();
 
             case 2:
-                max = reader.readMessage("max");
+                max = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -268,7 +265,7 @@ public class StatisticsColumnData implements Message {
                 reader.incrementState();
 
             case 3:
-                min = reader.readMessage("min");
+                min = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -276,7 +273,7 @@ public class StatisticsColumnData implements Message {
                 reader.incrementState();
 
             case 4:
-                nulls = reader.readLong("nulls");
+                nulls = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -284,7 +281,7 @@ public class StatisticsColumnData implements Message {
                 reader.incrementState();
 
             case 5:
-                rawData = reader.readByteArray("rawData");
+                rawData = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -292,7 +289,7 @@ public class StatisticsColumnData implements Message {
                 reader.incrementState();
 
             case 6:
-                size = reader.readInt("size");
+                size = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -300,7 +297,7 @@ public class StatisticsColumnData implements Message {
                 reader.incrementState();
 
             case 7:
-                total = reader.readLong("total");
+                total = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -308,7 +305,7 @@ public class StatisticsColumnData implements Message {
                 reader.incrementState();
 
             case 8:
-                ver = reader.readLong("ver");
+                ver = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -317,17 +314,12 @@ public class StatisticsColumnData implements Message {
 
         }
 
-        return reader.afterMessageRead(StatisticsColumnData.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 9;
     }
 
     /** {@inheritDoc} */

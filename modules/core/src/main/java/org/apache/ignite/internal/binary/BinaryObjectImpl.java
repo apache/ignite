@@ -771,8 +771,8 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public BinarySchema createSchema() {
-        return reader(null, false).getOrCreateSchema();
+    @Override BinarySchema createSchema() {
+        return ((BinaryReaderExImpl)reader(null, false)).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -812,7 +812,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -820,13 +820,13 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("valBytes", valBytes))
+                if (!writer.writeByteArray(valBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("part", part))
+                if (!writer.writeInt(part))
                     return false;
 
                 writer.incrementState();
@@ -839,12 +839,9 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                valBytes = reader.readByteArray("valBytes");
+                valBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -852,7 +849,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
                 reader.incrementState();
 
             case 1:
-                part = reader.readInt("part");
+                part = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -860,17 +857,12 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(BinaryObjectImpl.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 113;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /**

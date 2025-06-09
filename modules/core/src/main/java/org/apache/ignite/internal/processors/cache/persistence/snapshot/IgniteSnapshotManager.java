@@ -101,7 +101,6 @@ import org.apache.ignite.internal.managers.communication.TransmissionCancelledEx
 import org.apache.ignite.internal.managers.communication.TransmissionHandler;
 import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
-import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
@@ -307,8 +306,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** File transmission parameter of a cache directory with is currently sends its partitions. */
     private static final String SNP_CACHE_DIR_NAME_PARAM = "cacheDirName";
 
-    /** File transmission parameter of a data region for given group id. */
-    private static final String SNP_CACHE_DR_NAME_PARAM = "cacheDrName";
+    /**
+     * File transmission parameter of a storage path for given group id.
+     * @see CacheConfiguration#getStoragePath()
+     */
+    private static final String SNP_CACHE_STORAGE_PATH_PARAM = "cacheStoragePath";
 
     /** Snapshot parameter name for a file transmission. */
     private static final String RQ_ID_NAME_PARAM = "rqId";
@@ -2187,6 +2189,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(grpNames == null || !grpNames.isEmpty(), "List of cache group names cannot be empty.");
+        A.ensure(grpNames == null || grpNames.size() == new HashSet<>(grpNames).size(), "Cache group names must be unique.");
 
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
@@ -2352,58 +2355,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         GridCacheSharedContext<?, ?> sctx = GridCacheSharedContext.builder().build(ctx, null);
 
         return new DataPageIterator(sctx, coctx, pageStore, partId);
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @param ccfg Cache configuration.
-     * @param partId Partition id.
-     * @param encrKeyProvider Encryption keys provider to create encrypted IO. If {@code null}, no encrypted IO is used.
-     * @return Iterator over partition.
-     * @throws IgniteCheckedException If and error occurs.
-     */
-    public GridCloseableIterator<CacheDataRow> partitionRowIterator(String snpName,
-        CacheConfiguration<?, ?> ccfg,
-        int partId,
-        @Nullable EncryptionCacheKeyProvider encrKeyProvider
-    ) throws IgniteCheckedException {
-        SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, null);
-
-        if (!sft.root().exists())
-            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + sft.root().getAbsolutePath());
-
-        if (!sft.nodeStorage().exists())
-            throw new IgniteCheckedException("Consistent id directory doesn't exists: " + sft.nodeStorage().getAbsolutePath());
-
-        File snpPart = sft.partitionFile(ccfg, partId);
-
-        String grpName = CU.cacheOrGroupName(ccfg);
-        int grpId = CU.cacheId(grpName);
-
-        FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
-            encrKeyProvider == null || encrKeyProvider.getActiveKey(grpId) == null ? null : encrKeyProvider).
-            createPageStore(getTypeByPartId(partId),
-                snpPart::toPath,
-                val -> {});
-
-        GridCloseableIterator<CacheDataRow> partIter = partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore);
-
-        return new GridCloseableIteratorAdapter<CacheDataRow>() {
-            /** {@inheritDoc} */
-            @Override protected CacheDataRow onNext() throws IgniteCheckedException {
-                return partIter.nextX();
-            }
-
-            /** {@inheritDoc} */
-            @Override protected boolean onHasNext() throws IgniteCheckedException {
-                return partIter.hasNextX();
-            }
-
-            /** {@inheritDoc} */
-            @Override protected void onClose() {
-                U.closeQuiet(pageStore);
-            }
-        };
     }
 
     /**
@@ -3611,7 +3562,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
             Integer partId = (Integer)fileMeta.params().get(SNP_PART_ID_PARAM);
             String cacheDirName = (String)fileMeta.params().get(SNP_CACHE_DIR_NAME_PARAM);
-            String cacheDrName = (String)fileMeta.params().get(SNP_CACHE_DR_NAME_PARAM);
+            String cacheStoragePath = (String)fileMeta.params().get(SNP_CACHE_STORAGE_PATH_PARAM);
             String rqId = (String)fileMeta.params().get(RQ_ID_NAME_PARAM);
             Integer partsCnt = (Integer)fileMeta.params().get(SNP_PARTITIONS_CNT);
 
@@ -3630,9 +3581,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 task.partsLeft.compareAndSet(-1, partsCnt);
 
-                U.mkdirs(ft.tmpCacheStorage(cacheDrName, cacheDirName));
+                U.mkdirs(ft.tmpCacheStorage(cacheStoragePath, cacheDirName));
 
-                return ft.tmpPartition(cacheDrName, cacheDirName, partId).getAbsolutePath();
+                return ft.tmpPartition(cacheStoragePath, cacheDirName, partId).getAbsolutePath();
             }
             finally {
                 busyLock.leaveBusy();
@@ -3720,7 +3671,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long len) {
+        @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long len) {
             File snpCacheDir = to.getParentFile();
 
             try {
@@ -3728,7 +3679,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 assert len > 0 : "Requested partitions has incorrect file length " +
                     "[pair=" + pair + ", cacheDirName=" + snpCacheDir.getName() + ']';
 
-                sndr.send(from, 0, len, transmissionParams(rqId, snpCacheDir.getName(), drName, pair), TransmissionPolicy.FILE);
+                sndr.send(from, 0, len, transmissionParams(rqId, snpCacheDir.getName(), storagePath, pair), TransmissionPolicy.FILE);
 
                 if (log.isInfoEnabled()) {
                     log.info("Partition file has been sent [part=" + from.getName() + ", pair=" + pair +
@@ -3757,14 +3708,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param rqId Request id.
          * @param cacheDirName Cache directory name.
-         * @param drName Data region name.
+         * @param storagePath Storage path.
          * @param pair Cache group id with corresponding partition id.
          * @return Map of params.
+         * @see CacheConfiguration#getStoragePath()
          */
         private Map<String, Serializable> transmissionParams(
             String rqId,
             String cacheDirName,
-            @Nullable String drName,
+            @Nullable String storagePath,
             GroupPartitionId pair
         ) {
             Map<String, Serializable> params = new HashMap<>();
@@ -3772,7 +3724,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             params.put(SNP_GRP_ID_PARAM, pair.getGroupId());
             params.put(SNP_PART_ID_PARAM, pair.getPartitionId());
             params.put(SNP_CACHE_DIR_NAME_PARAM, cacheDirName);
-            params.put(SNP_CACHE_DR_NAME_PARAM, drName);
+            params.put(SNP_CACHE_STORAGE_PATH_PARAM, storagePath);
             params.put(RQ_ID_NAME_PARAM, rqId);
             params.put(SNP_PARTITIONS_CNT, partsCnt);
 
@@ -3885,7 +3837,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File from, File to, @Nullable String drName, GroupPartitionId pair, Long len) {
+        @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long len) {
             try {
                 if (len == 0)
                     return;

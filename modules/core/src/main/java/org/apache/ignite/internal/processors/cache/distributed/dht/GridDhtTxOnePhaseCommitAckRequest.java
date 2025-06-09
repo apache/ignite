@@ -90,7 +90,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -98,7 +98,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("vers", vers, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(vers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -112,15 +112,12 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 3:
-                vers = reader.readCollection("vers", MessageCollectionItemType.MSG);
+                vers = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -129,16 +126,11 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead(GridDhtTxOnePhaseCommitAckRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -27;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 }

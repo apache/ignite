@@ -108,7 +108,7 @@ public class GridTaskSessionRequest implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -116,19 +116,19 @@ public class GridTaskSessionRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("attrsBytes", attrsBytes))
+                if (!writer.writeByteArray(attrsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("jobId", jobId))
+                if (!writer.writeIgniteUuid(jobId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeIgniteUuid("sesId", sesId))
+                if (!writer.writeIgniteUuid(sesId))
                     return false;
 
                 writer.incrementState();
@@ -142,12 +142,9 @@ public class GridTaskSessionRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                attrsBytes = reader.readByteArray("attrsBytes");
+                attrsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -155,7 +152,7 @@ public class GridTaskSessionRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                jobId = reader.readIgniteUuid("jobId");
+                jobId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -163,7 +160,7 @@ public class GridTaskSessionRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                sesId = reader.readIgniteUuid("sesId");
+                sesId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -172,17 +169,12 @@ public class GridTaskSessionRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GridTaskSessionRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 6;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

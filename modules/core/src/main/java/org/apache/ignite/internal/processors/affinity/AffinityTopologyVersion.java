@@ -177,7 +177,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -185,13 +185,13 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("minorTopVer", minorTopVer))
+                if (!writer.writeInt(minorTopVer))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeLong(topVer))
                     return false;
 
                 writer.incrementState();
@@ -205,12 +205,9 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                minorTopVer = reader.readInt("minorTopVer");
+                minorTopVer = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -218,7 +215,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
                 reader.incrementState();
 
             case 1:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -227,17 +224,12 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
 
         }
 
-        return reader.afterMessageRead(AffinityTopologyVersion.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 111;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

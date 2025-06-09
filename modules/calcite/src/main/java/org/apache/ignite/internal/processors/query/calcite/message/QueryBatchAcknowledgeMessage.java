@@ -81,7 +81,7 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -89,25 +89,25 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("batchId", batchId))
+                if (!writer.writeInt(batchId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("exchangeId", exchangeId))
+                if (!writer.writeLong(exchangeId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("fragmentId", fragmentId))
+                if (!writer.writeLong(fragmentId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeUuid("queryId", queryId))
+                if (!writer.writeUuid(queryId))
                     return false;
 
                 writer.incrementState();
@@ -121,12 +121,9 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                batchId = reader.readInt("batchId");
+                batchId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -134,7 +131,7 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
                 reader.incrementState();
 
             case 1:
-                exchangeId = reader.readLong("exchangeId");
+                exchangeId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -142,7 +139,7 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
                 reader.incrementState();
 
             case 2:
-                fragmentId = reader.readLong("fragmentId");
+                fragmentId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -150,7 +147,7 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
                 reader.incrementState();
 
             case 3:
-                queryId = reader.readUuid("queryId");
+                queryId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -159,16 +156,11 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
 
         }
 
-        return reader.afterMessageRead(QueryBatchAcknowledgeMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.QUERY_ACKNOWLEDGE_MESSAGE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 }

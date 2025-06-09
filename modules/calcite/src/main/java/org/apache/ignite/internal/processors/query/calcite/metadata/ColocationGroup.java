@@ -319,7 +319,7 @@ public class ColocationGroup implements MarshalableMessage {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -327,19 +327,19 @@ public class ColocationGroup implements MarshalableMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIntArray("marshalledAssignments", marshalledAssignments))
+                if (!writer.writeIntArray(marshalledAssignments))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeCollection("nodeIds", nodeIds, MessageCollectionItemType.UUID))
+                if (!writer.writeCollection(nodeIds, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLongArray("sourceIds", sourceIds))
+                if (!writer.writeLongArray(sourceIds))
                     return false;
 
                 writer.incrementState();
@@ -353,12 +353,9 @@ public class ColocationGroup implements MarshalableMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                marshalledAssignments = reader.readIntArray("marshalledAssignments");
+                marshalledAssignments = reader.readIntArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -366,7 +363,7 @@ public class ColocationGroup implements MarshalableMessage {
                 reader.incrementState();
 
             case 1:
-                nodeIds = reader.readCollection("nodeIds", MessageCollectionItemType.UUID);
+                nodeIds = reader.readCollection(MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -374,7 +371,7 @@ public class ColocationGroup implements MarshalableMessage {
                 reader.incrementState();
 
             case 2:
-                sourceIds = reader.readLongArray("sourceIds");
+                sourceIds = reader.readLongArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -383,12 +380,7 @@ public class ColocationGroup implements MarshalableMessage {
 
         }
 
-        return reader.afterMessageRead(ColocationGroup.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
+        return true;
     }
 
     /** {@inheritDoc} */

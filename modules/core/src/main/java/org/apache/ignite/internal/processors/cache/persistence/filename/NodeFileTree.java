@@ -23,18 +23,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.cdc.CdcManager;
+import org.apache.ignite.internal.cdc.CdcMode;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -112,7 +113,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  │  │  ├── 1737804007693-96128bb0-5361-495a-b593-53dc4339a56d-END.bin
  * │  │  │  └── 1737804007693-96128bb0-5361-495a-b593-53dc4339a56d-START.bin
  * │  │  ├── lock
- * │  │  ├── maintenance_tasks.mntc
+ * │  │  ├── maintenance_tasks.mntc                                             ← maintenance file (node 0).
  * │  │  ├── metastorage
  * │  │  │  ├── part-0.bin
  * │  │  │  └── part-1.bin
@@ -127,7 +128,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  │  ├── cp                                                                 ← checkpoint (node 1).
  * ...
  * │  │  ├── lock
- * │  │  ├── maintenance_tasks.mntc
+ * │  │  ├── maintenance_tasks.mntc                                             ← maintenance file (node 1).
  * │  │  ├── metastorage
  * ...
  * │  │  └── snp                                                                ← snpTmp (node 1)
@@ -141,10 +142,17 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │      ├── cdc
  * │      │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                    ← walCdc (node 0)
  * │      │      ├── lock
- * │      │      └── state
- * │      │          ├── cdc-caches-state.bin
- * │      │          ├── cdc-mappings-state.bin
- * │      │          └── cdc-types-state.bin
+ * │      │      └── state                                                      ← cdcState (node 0)
+ * │      │          ├── cdc-caches-state.bin                                   ← cdcCachesState
+ * │      │          ├── cdc-caches-state.bin.tmp                               ← tmpCdcCachesState
+ * │      │          ├── cdc-mappings-state.bin                                 ← cdcMappingsState
+ * │      │          ├── cdc-mappings-state.bin.tmp                             ← tmpCdcMappingsState
+ * │      │          ├── cdc-mode.bin                                           ← cdcModeState
+ * │      │          ├── cdc-mode.bin.tmp                                       ← tmpCdcModeState
+ * │      │          ├── cdc-types-state.bin                                    ← cdcTypesState
+ * │      │          ├── cdc-types-state.bin.tmp                                ← tmpCdcTypesState
+ * │      │          ├── cdc-wal-state.bin                                      ← cdcWalState
+ * │      │          └── cdc-wal-state.bin.tmp                                  ← tmpCdcWalState
  * ...
  * │      │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                    ← walCdc (node 1)
  * │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                       ← wal (node 0)
@@ -181,7 +189,7 @@ public class NodeFileTree extends SharedFileTree {
     public static final String WAL_SEGMENT_FILE_EXT = ".wal";
 
     /** File suffix. */
-    public static final String FILE_SUFFIX = ".bin";
+    static final String FILE_SUFFIX = ".bin";
 
     /** Suffix for tmp files */
     public static final String TMP_SUFFIX = ".tmp";
@@ -207,10 +215,10 @@ public class NodeFileTree extends SharedFileTree {
             dir.getName().equals(METASTORAGE_DIR_NAME);
 
     /** Partition file prefix. */
-    public static final String PART_FILE_PREFIX = "part-";
+    static final String PART_FILE_PREFIX = "part-";
 
     /** Index file prefix. */
-    public static final String INDEX_FILE_PREFIX = "index";
+    static final String INDEX_FILE_PREFIX = "index";
 
     /** Index file name. */
     protected static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
@@ -233,6 +241,33 @@ public class NodeFileTree extends SharedFileTree {
     /** Prefix for {@link #cacheStorage(CacheConfiguration)} directory in case of cache group. */
     private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
 
+    /** CDC state directory name. */
+    private static final String CDC_STATE_DIR = "state";
+
+    /**
+     * The file stores state of CDC mode. Content of the file is a {@link CdcMode} value:
+     * <ul>
+     *     <li>{@link CdcMode#CDC_UTILITY_ACTIVE} means that {@link CdcMain} utility captures data.</li>
+     *     <li>{@link CdcMode#IGNITE_NODE_ACTIVE} means that {@link CdcManager} captures data within Ignite node.</li>
+     * </ul>
+     */
+    private static final String CDC_MODE_FILE_NAME = "cdc-mode" + FILE_SUFFIX;
+
+    /** CDC WAL state file name. */
+    private static final String CDC_WAL_STATE_FILE_NAME = "cdc-wal-state" + FILE_SUFFIX;
+
+    /** CDC types state file name. */
+    private static final String CDC_TYPES_STATE_FILE_NAME = "cdc-types-state" + FILE_SUFFIX;
+
+    /** CDC mappings state file name. */
+    private static final String CDC_MAPPINGS_STATE_FILE_NAME = "cdc-mappings-state" + FILE_SUFFIX;
+
+    /** CDC caches state file name. */
+    private static final String CDC_CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
+
+    /** Maintenance file name. */
+    private static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
+
     /** Folder name for consistent id. */
     private final String folderName;
 
@@ -243,18 +278,10 @@ public class NodeFileTree extends SharedFileTree {
     private final File nodeStorage;
 
     /**
-     * Key is the name of data region({@link DataRegionConfiguration#getName()}), value is node storage for this data region.
-     * @see DataRegionConfiguration#setStoragePath(String)
+     * Key is the path from {@link DataStorageConfiguration#getExtraStoragePaths()}, may be relative. Value is storage.
+     * @see DataStorageConfiguration#getExtraStoragePaths()
      */
-    protected final Map<String, File> drStorages;
-
-    /**
-     * Name of the default data region.
-     * @see DataStorageConfiguration#DFLT_DATA_REG_DEFAULT_NAME
-     * @see DataStorageConfiguration#setDefaultDataRegionConfiguration(DataRegionConfiguration)
-     * @see DataRegionConfiguration#setName(String)
-     */
-    private final String dfltDrName;
+    protected final Map<String, File> extraStorages;
 
     /** Path to the checkpoint directory. */
     private final File checkpoint;
@@ -294,8 +321,7 @@ public class NodeFileTree extends SharedFileTree {
         wal = rootRelative(DFLT_WAL_PATH);
         walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
         walCdc = rootRelative(DFLT_WAL_CDC_PATH);
-        dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
-        drStorages = Collections.emptyMap();
+        extraStorages = Collections.emptyMap();
     }
 
     /**
@@ -312,7 +338,7 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#IGNITE_WORK_DIR
      */
     public NodeFileTree(IgniteConfiguration cfg, String folderName) {
-        this(cfg, resolveRoot(cfg), folderName);
+        this(cfg, resolveRoot(cfg), folderName, false);
     }
 
     /**
@@ -322,6 +348,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cfg Ignite configuration to get parameter from.
      * @param folderName Name of the folder for current node.
      *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
+     * @param isSnapshot {@code True} if tree relfects snapshot structure.
      *
      * @see IgniteConfiguration#getWorkDirectory()
      * @see IgniteConfiguration#setWorkDirectory(String)
@@ -329,7 +356,7 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#resolveWorkDirectory(String, String, boolean, boolean)
      * @see U#IGNITE_WORK_DIR
      */
-    protected NodeFileTree(IgniteConfiguration cfg, File root, String folderName) {
+    protected NodeFileTree(IgniteConfiguration cfg, File root, String folderName, boolean isSnapshot) {
         super(root, cfg.getSnapshotPath());
 
         A.notNull(folderName, "Node directory");
@@ -341,14 +368,14 @@ public class NodeFileTree extends SharedFileTree {
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
-            nodeStorage = dsCfg.getStoragePath() == null
+            // Snapshots MUST use root relative node storage path.
+            nodeStorage = (dsCfg.getStoragePath() == null || isSnapshot)
                 ? rootRelative(DB_DIR)
                 : resolveDirectory(dsCfg.getStoragePath());
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
             walCdc = resolveDirectory(dsCfg.getCdcWalPath());
-            dfltDrName = dsCfg.getDefaultDataRegionConfiguration().getName();
         }
         else {
             nodeStorage = rootRelative(DB_DIR);
@@ -356,12 +383,11 @@ public class NodeFileTree extends SharedFileTree {
             wal = rootRelative(DFLT_WAL_PATH);
             walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
             walCdc = rootRelative(DFLT_WAL_CDC_PATH);
-            dfltDrName = DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
         }
 
-        drStorages = dataRegionStorages(
+        extraStorages = extraStorages(
             dsCfg,
-            (drName, drStoragePath) -> resolveDirectory(Path.of(drStoragePath, DB_DIR).toString())
+            storagePath -> resolveDirectory(Path.of(storagePath, DB_DIR).toString())
         );
     }
 
@@ -370,9 +396,14 @@ public class NodeFileTree extends SharedFileTree {
         return nodeStorage;
     }
 
-    /** @return Storages for data regions. */
-    public Map<String, File> dataRegionStorages() {
-        return drStorages;
+    /** @return Extra storages. */
+    public Map<String, File> extraStorages() {
+        return extraStorages;
+    }
+
+    /** @return All storages directories. */
+    public Stream<File> allStorages() {
+        return Stream.concat(Stream.of(nodeStorage), extraStorages.values().stream());
     }
 
     /** @return Folder name. */
@@ -450,7 +481,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /** @return Path to the directories for temp snapshot files. */
     public List<File> snapshotsTempRoots() {
-        return Stream.concat(Stream.of(nodeStorage), drStorages.values().stream())
+        return allStorages()
             .map(this::snapshotTempRoot)
             .collect(Collectors.toList());
     }
@@ -496,7 +527,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store dir for given cache.
      */
     public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return new File(dataRegionStorage(ccfg.getDataRegionName()), ccfg.getGroupName() != null
+        return new File(cacheStorage(ccfg.getStoragePath()), ccfg.getGroupName() != null
             ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
             : CACHE_DIR_PREFIX + ccfg.getName());
     }
@@ -573,12 +604,13 @@ public class NodeFileTree extends SharedFileTree {
      * Temporary cache storage and partitions are created while snapshot restoring.
      * Moving to regular cache storage when finished.
      *
-     * @param drName Data region name.
+     * @param storagePath Cache storage path.
      * @param cacheDirName Cache directory name.
      * @return Temp store directory for given cache.
+     * @see CacheConfiguration#getStoragePath()
      */
-    public File tmpCacheStorage(@Nullable String drName, String cacheDirName) {
-        return new File(dataRegionStorage(drName), TMP_CACHE_DIR_PREFIX + cacheDirName);
+    public File tmpCacheStorage(@Nullable String storagePath, String cacheDirName) {
+        return new File(cacheStorage(storagePath), TMP_CACHE_DIR_PREFIX + cacheDirName);
     }
 
     /**
@@ -619,13 +651,14 @@ public class NodeFileTree extends SharedFileTree {
     /**
      * Temporary cache partitions are created while snapshot restoring.
      *
-     * @param drName Data region name.
+     * @param storagePath Cache storage path.
      * @param cacheDirName Cache directory name.
      * @param partId partition id.
      * @return Path to the temp partition file.
+     * @see CacheConfiguration#getStoragePath()
      */
-    public File tmpPartition(@Nullable String drName, String cacheDirName, int partId) {
-        return new File(tmpCacheStorage(drName, cacheDirName), partitionFileName(partId));
+    public File tmpPartition(@Nullable String storagePath, String cacheDirName, int partId) {
+        return new File(tmpCacheStorage(storagePath, cacheDirName), partitionFileName(partId));
     }
 
     /** */
@@ -772,42 +805,28 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param drName Data region name.
-     * @return Data region storage.
+     * @param storagePath Value from config.
+     * @return File storage.
+     * @see CacheConfiguration#getStoragePath()
      */
-    private File dataRegionStorage(@Nullable String drName) {
-        return drStorages.getOrDefault(drName == null ? dfltDrName : drName, nodeStorage);
+    private File cacheStorage(@Nullable String storagePath) {
+        return storagePath == null ? nodeStorage : extraStorages.getOrDefault(storagePath, nodeStorage);
     }
 
     /**
-     * Key is data region name.
-     * Value is data region storage.
+     * Key is storage path from config, may be relative.
+     * Value is actual storage path.
      *
      * @param dsCfg Data storage configuration.
-     * @return Data regions storages.
-     * @see DataRegionConfiguration#setStoragePath(String)
+     * @return Node storages.
+     * @see DataStorageConfiguration#setExtraStoragePaths(String...)
      */
-    private Map<String, File> dataRegionStorages(@Nullable DataStorageConfiguration dsCfg, BiFunction<String, String, File> resolver) {
-        if (dsCfg == null)
+    private Map<String, File> extraStorages(@Nullable DataStorageConfiguration dsCfg, Function<String, File> resolver) {
+        if (dsCfg == null || F.isEmpty(dsCfg.getExtraStoragePaths()))
             return Collections.emptyMap();
 
-        Map<String, File> customDsStorages = new HashMap<>();
-
-        if (dsCfg.getDataRegionConfigurations() != null) {
-            for (DataRegionConfiguration drCfg : dsCfg.getDataRegionConfigurations()) {
-                if (drCfg.getStoragePath() == null)
-                    continue;
-
-                customDsStorages.put(drCfg.getName(), resolver.apply(drCfg.getName(), drCfg.getStoragePath()));
-            }
-        }
-
-        DataRegionConfiguration dfltDr = dsCfg.getDefaultDataRegionConfiguration();
-
-        if (dfltDr.getStoragePath() != null)
-            customDsStorages.put(dfltDr.getName(), resolver.apply(dfltDr.getName(), dfltDr.getStoragePath()));
-
-        return customDsStorages;
+        return Arrays.stream(dsCfg.getExtraStoragePaths())
+            .collect(Collectors.toMap(Function.identity(), resolver));
     }
 
     /**
@@ -818,6 +837,81 @@ public class NodeFileTree extends SharedFileTree {
         String fn = segment.getFileName().toString();
 
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));
+    }
+
+    /**
+     * @return Tree for metastorage cache.
+     */
+    public CacheFileTree metastoreTree() {
+        return new CacheFileTree(this, true, null);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return Tree for cache.
+     */
+    public CacheFileTree cacheTree(CacheConfiguration<?, ?> ccfg) {
+        return new CacheFileTree(this, false, ccfg);
+    }
+
+    /** @return CDC state directory path. */
+    public Path cdcState() {
+        return walCdc().toPath().resolve(CDC_STATE_DIR);
+    }
+
+    /** @return CDC WAL state file path. */
+    public Path cdcWalState() {
+        return cdcState().resolve(CDC_WAL_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC WAL state file path. */
+    public Path tmpCdcWalState() {
+        return cdcState().resolve(CDC_WAL_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC types state file path. */
+    public Path cdcTypesState() {
+        return cdcState().resolve(CDC_TYPES_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC types state file path. */
+    public Path tmpCdcTypesState() {
+        return cdcState().resolve(CDC_TYPES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC mappings state file path. */
+    public Path cdcMappingsState() {
+        return cdcState().resolve(CDC_MAPPINGS_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC mappings state file path. */
+    public Path tmpCdcMappingsState() {
+        return cdcState().resolve(CDC_MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC caches state file path. */
+    public Path cdcCachesState() {
+        return cdcState().resolve(CDC_CACHES_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC caches state file path. */
+    public Path tmpCdcCachesState() {
+        return cdcState().resolve(CDC_CACHES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC manager mode state file path. */
+    public Path cdcModeState() {
+        return cdcState().resolve(CDC_MODE_FILE_NAME);
+    }
+
+    /** @return Temp CDC manager mode state file path. */
+    public Path tmpCdcModeState() {
+        return cdcState().resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return Maintenance file. */
+    public File maintenanceFile() {
+        return new File(nodeStorage, MAINTENANCE_FILE_NAME);
     }
 
     /**
@@ -848,15 +942,15 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param filter Dir file filter.
-     * @return All files from all {@link #drStorages} matching the filter.
+     * @return All files from all {@link #extraStorages} and {@link #nodeStorage} matching the filter.
      */
     private Stream<File> filesInStorages(FileFilter filter) {
-        return Stream.concat(Stream.of(nodeStorage), drStorages.values().stream()).flatMap(drStorage -> {
-            File[] drStorageFiles = drStorage.listFiles(filter);
+        return allStorages().flatMap(storage -> {
+            File[] storageFiles = storage.listFiles(filter);
 
-            return drStorageFiles == null
+            return storageFiles == null
                 ? Stream.empty()
-                : Arrays.stream(drStorageFiles);
+                : Arrays.stream(storageFiles);
         });
     }
 

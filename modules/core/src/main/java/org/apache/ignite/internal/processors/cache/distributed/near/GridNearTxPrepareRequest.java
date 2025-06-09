@@ -315,7 +315,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -323,37 +323,37 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         switch (writer.state()) {
             case 21:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeString("txLbl", txLbl))
+                if (!writer.writeString(txLbl))
                     return false;
 
                 writer.incrementState();
@@ -367,15 +367,12 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 21:
-                flags = reader.readByte("flags");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -383,7 +380,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 22:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -391,7 +388,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 23:
-                miniId = reader.readInt("miniId");
+                miniId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -399,7 +396,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 24:
-                taskNameHash = reader.readInt("taskNameHash");
+                taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -407,7 +404,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 25:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -415,7 +412,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 26:
-                txLbl = reader.readString("txLbl");
+                txLbl = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -424,17 +421,12 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         }
 
-        return reader.afterMessageRead(GridNearTxPrepareRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 55;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 27;
     }
 
     /** {@inheritDoc} */

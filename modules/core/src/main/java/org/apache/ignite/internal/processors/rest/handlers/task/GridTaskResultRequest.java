@@ -109,7 +109,7 @@ public class GridTaskResultRequest implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -117,13 +117,13 @@ public class GridTaskResultRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("taskId", taskId))
+                if (!writer.writeIgniteUuid(taskId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("topicBytes", topicBytes))
+                if (!writer.writeByteArray(topicBytes))
                     return false;
 
                 writer.incrementState();
@@ -137,12 +137,9 @@ public class GridTaskResultRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                taskId = reader.readIgniteUuid("taskId");
+                taskId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -150,7 +147,7 @@ public class GridTaskResultRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                topicBytes = reader.readByteArray("topicBytes");
+                topicBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -159,16 +156,11 @@ public class GridTaskResultRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GridTaskResultRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 76;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 }

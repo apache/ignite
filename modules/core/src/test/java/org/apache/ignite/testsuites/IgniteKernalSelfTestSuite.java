@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustInMemoryT
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustTest;
 import org.apache.ignite.internal.processors.cluster.ClusterReadOnlyModeNodeJoinTest;
 import org.apache.ignite.internal.processors.cluster.ClusterReadOnlyModeSelfTest;
+import org.apache.ignite.internal.processors.cluster.ClusterStateChangeOnNodeJoinTest;
 import org.apache.ignite.internal.processors.cluster.GridAddressResolverSelfTest;
 import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
@@ -116,7 +117,8 @@ import org.junit.runners.Suite;
     ClusterActiveStateChangeWithNodeOutOfBaselineTest.class,
     IgniteNodeValidationFailedEventTest.class,
     GridMutableLongTest.class,
-    LifecycleAwareListenerTest.class
+    LifecycleAwareListenerTest.class,
+    ClusterStateChangeOnNodeJoinTest.class
 })
 public class IgniteKernalSelfTestSuite {
 }

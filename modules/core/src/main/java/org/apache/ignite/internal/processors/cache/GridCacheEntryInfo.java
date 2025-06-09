@@ -187,7 +187,7 @@ public class GridCacheEntryInfo implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -195,37 +195,37 @@ public class GridCacheEntryInfo implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("cacheId", cacheId))
+                if (!writer.writeInt(cacheId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("expireTime", expireTime))
+                if (!writer.writeLong(expireTime))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage(key))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeLong("ttl", ttl))
+                if (!writer.writeLong(ttl))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMessage("val", val))
+                if (!writer.writeMessage(val))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("ver", ver))
+                if (!writer.writeMessage(ver))
                     return false;
 
                 writer.incrementState();
@@ -239,12 +239,9 @@ public class GridCacheEntryInfo implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                cacheId = reader.readInt("cacheId");
+                cacheId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -252,7 +249,7 @@ public class GridCacheEntryInfo implements Message {
                 reader.incrementState();
 
             case 1:
-                expireTime = reader.readLong("expireTime");
+                expireTime = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -260,7 +257,7 @@ public class GridCacheEntryInfo implements Message {
                 reader.incrementState();
 
             case 2:
-                key = reader.readMessage("key");
+                key = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -268,7 +265,7 @@ public class GridCacheEntryInfo implements Message {
                 reader.incrementState();
 
             case 3:
-                ttl = reader.readLong("ttl");
+                ttl = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -276,7 +273,7 @@ public class GridCacheEntryInfo implements Message {
                 reader.incrementState();
 
             case 4:
-                val = reader.readMessage("val");
+                val = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -284,7 +281,7 @@ public class GridCacheEntryInfo implements Message {
                 reader.incrementState();
 
             case 5:
-                ver = reader.readMessage("ver");
+                ver = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -293,17 +290,12 @@ public class GridCacheEntryInfo implements Message {
 
         }
 
-        return reader.afterMessageRead(GridCacheEntryInfo.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 91;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 6;
     }
 
     /**
