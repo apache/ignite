@@ -4824,7 +4824,7 @@ public abstract class IgniteUtils extends CommonUtils {
         if (size == -1)
             return null;
 
-        LinkedHashSet<E> set = new LinkedHashSet<>(size, 1.0f);
+        LinkedHashSet<E> set = new LinkedHashSet<>(size);
 
         for (int i = 0; i < size; i++)
             set.add((E)in.readObject());
