@@ -163,7 +163,8 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
      * Notes:
      * <ul>
      * <li> Insert rows of the same size (which is bigger than a half of the page capacity) so that free
-     *      pages are accumulated in the single bucket of the freelist.
+     *      pages are accumulated in the single bucket of the freelist (other than the very first one which
+     *      will be saved in one of the currently free page in another bucket).
      * <li> Insert rows in reverse key order and use one partition. This ensures that the most recently
      *      inserted rows will be removed first during cache clear. This forces that freelist's bucket will be shrinked
      *      from the tail and {@link PagesList#mergeNoNext} and therefore the {@link PagesList.CutTail#run} will be called.
@@ -172,11 +173,12 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
      *     <li> Number of the reuse pages should be just above the {@link PagesListNodeIO} capacity.
      *          So that adding single row would remove tail page from the reuse bucket list (cutting of the bucket's tail).
      *          And removing of this row would add new tail page again.
-     *     <li> Removing of exactly {@link PagesListNodeIO} capacity rows will put capacity+2 pages to reuse bucket.
-     *          The extra two pages come from freeing up BPlusTree pages as data pages are freed up.
+     *     <li> Removing of exactly {@link PagesListNodeIO} capacity rows will add (capacity+3) pages to reuse bucket.
+     *          From data comes capacity pages. Two pages come from freeing up BPlusTree pages as data pages are freed up.
+     *          And one page - from freeing the bucket's tail page.
      *     <li> Repeatedly insert and remove row generating the {@link PagesList.CutTail#run} calls until it's C2 compiled.
-     *          The record size is adjusted so that more than two pages are taken from the reuse list and the free
-     *          page goes into the same bucket.
+     *          The record size is adjusted so that 3 pages are taken from the reuse list. Two for data and one for new
+     *          node in bucket list since new free page goes into the same bucket.
      *     </ul>
      * <li> Once the {@link PagesList.CutTail#run} is compiled and if it's broken {@code cache.put()} would fail with
      *      the "Tail not found: 0" error.
