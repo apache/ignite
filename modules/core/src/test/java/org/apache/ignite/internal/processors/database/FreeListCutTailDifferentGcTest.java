@@ -178,7 +178,8 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
      *          The record size is adjusted so that more than two pages are taken from the reuse list and the free
      *          page goes into the same bucket.
      *     </ul>
-     * <li> Once the {@link PagesList.CutTail#run} is compiled and if it's broken {@code cache.put()} would fail with the "Tail not found: 0" error.
+     * <li> Once the {@link PagesList.CutTail#run} is compiled and if it's broken {@code cache.put()} would fail with
+     *      the "Tail not found: 0" error.
      * <li> Number of remaining rows should be also above the {@link PagesListNodeIO} capacity. So that freelist bucket has
      *      more than one page.
      * <li> If the {@link PagesList.CutTail#run} is compiled and is broken the subsequent call to
@@ -217,7 +218,7 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
             int dataSize = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
             for (int i = keyCnt; i > 0; i--)
-                cache.put(i, new byte[pageSize  / 2]);
+                cache.put(i, new byte[pageSize / 2]);
 
             for (int i = 1; i <= capacity; i++)
                 cache.remove(i);
