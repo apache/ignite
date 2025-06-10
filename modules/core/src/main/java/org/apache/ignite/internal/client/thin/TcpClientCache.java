@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -83,6 +85,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ARR_LIST;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
+import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.BulkOperation.GET;
+import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.BulkOperation.INVOKE;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.BulkOperation.PUT;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.BulkOperation.REMOVE;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
@@ -350,6 +354,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return new HashMap<>();
 
+        warnIfUnordered(keys, GET);
+
         TcpClientTransaction tx = transactions.tx();
 
         return txAwareService(null, tx,
@@ -367,6 +373,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             return IgniteClientFutureImpl.completedFuture(new HashMap<>());
 
         TcpClientTransaction tx = transactions.tx();
+
+        warnIfUnordered(keys, GET);
 
         return txAwareServiceAsync(null, tx,
             ClientOperation.CACHE_GET_ALL,
@@ -553,6 +561,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return;
 
+        warnIfUnordered(keys, REMOVE);
+
         TcpClientTransaction tx = transactions.tx();
 
         txAwareService(null, tx,
@@ -571,6 +581,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         if (keys.isEmpty())
             return IgniteClientFutureImpl.completedFuture(null);
+
+        warnIfUnordered(keys, REMOVE);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -961,6 +973,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (entryProc == null)
             throw new NullPointerException("entryProc");
 
+        warnIfUnordered(keys, INVOKE);
+
         TcpClientTransaction tx = transactions.tx();
 
         return txAwareService(null, tx,
@@ -983,6 +997,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         if (entryProc == null)
             throw new NullPointerException("entryProc");
+
+        warnIfUnordered(keys, INVOKE);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -1678,5 +1694,38 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         LT.warn(log, "Unordered map " + m.getClass().getName() +
             " is used for " + op.title() + " operation on cache " + name + ". " +
             "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead.");
+    }
+
+    /**
+     * Checks that given collection is sorted set, or processed inside deadlock-detecting transaction.
+     *
+     * Issues developer warning otherwise.
+     *
+     * @param coll Collection to examine.
+     */
+    protected void warnIfUnordered(Collection<?> coll, GridCacheAdapter.BulkOperation op) {
+        if (cacheMode.equals(ATOMIC))
+            return;
+
+        if (coll == null || coll.size() <= 1)
+            return;
+
+        if (coll instanceof SortedSet)
+            return;
+
+        if (op == GridCacheAdapter.BulkOperation.REMOVE)
+            return;
+
+        TcpClientTransaction tx = transactions.tx();
+
+        if (op == GET && tx == null)
+            return;
+
+        if (tx != null && !op.canBlockTx(tx.getConcurrency(), tx.getIsolation()))
+            return;
+
+        LT.warn(log, "Unordered collection " + coll.getClass().getName() +
+            " is used for " + op.title() + " operation on cache " + name + ". " +
+            "This can lead to a distributed deadlock. Switch to a sorted set like TreeSet instead.");
     }
 }
