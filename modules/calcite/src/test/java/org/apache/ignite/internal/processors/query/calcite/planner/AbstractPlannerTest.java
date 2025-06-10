@@ -43,6 +43,7 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.SchemaPlus;
@@ -51,7 +52,6 @@ import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql2rel.InitializerContext;
-import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteCheckedException;
@@ -90,7 +90,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -115,10 +114,10 @@ import static org.apache.ignite.internal.processors.query.calcite.externalize.Re
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     /** */
-    private static final FrameworkConfig cfg = CalciteQueryProcessor.FRAMEWORK_CONFIG;
+    private static final RelDataTypeSystem TYPE_SYSTEM = CalciteQueryProcessor.FRAMEWORK_CONFIG.getTypeSystem();
 
     /** */
-    protected static final IgniteTypeFactory TYPE_FACTORY = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+    protected static final IgniteTypeFactory TYPE_FACTORY = new IgniteTypeFactory(TYPE_SYSTEM);
 
     /** */
     protected static final int DEFAULT_TBL_SIZE = 500_000;
