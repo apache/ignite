@@ -32,7 +32,10 @@ import static org.apache.ignite.IgniteCommonsSystemProperties.getLong;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_PLANNER_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
-/** */
+/**
+ * This test assumes no Calcite classes are loaded in the current JVM before CalciteQueryProcessor.
+ * Violating this invariant may cause the test to fail due to premature Calcite initialization.
+ */
 @WithSystemProperty(key = IGNITE_CALCITE_PLANNER_TIMEOUT, value = "1000")
 public class CalcitePlanningDumpTest extends AbstractBasicIntegrationTest {
     /** */
