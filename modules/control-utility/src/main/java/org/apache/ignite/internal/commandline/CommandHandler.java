@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteWarningException;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.SslMode;
@@ -52,6 +51,7 @@ import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
+import org.apache.ignite.internal.management.api.CommandWarningException;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.HelpCommand;
@@ -299,7 +299,7 @@ public class CommandHandler {
             return EXIT_CODE_OK;
         }
         catch (Throwable e) {
-            if (X.hasCause(e, IgniteWarningException.class)) {
+            if (X.hasCause(e, CommandWarningException.class)) {
                 logger.warning(e.getMessage());
                 logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_COMPLETED_WITH_WARNINGS);
 

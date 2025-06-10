@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import org.apache.ignite.IgniteWarningException;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Snapshot operation warning. Warnings do not interrupt snapshot process but raise exception at the end to make the
  * operation status {@code EXIT_CODE_COMPLETED_WITH_WARNINGS} if no other error occurred.
  */
-public class SnapshotWarningException extends IgniteWarningException {
+public class SnapshotWarningException extends IgniteCheckedException {
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
 

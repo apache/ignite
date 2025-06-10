@@ -38,7 +38,6 @@ import javax.management.ReflectionException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteWarningException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.commandline.ArgumentParser;
@@ -49,6 +48,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandWarningException;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -257,7 +257,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
                 throw new IgniteException(e);
             }
             catch (Throwable e) {
-                if (X.hasCause(e, IgniteWarningException.class)) {
+                if (X.hasCause(e, CommandWarningException.class)) {
                     log.warning(e.getMessage());
                     log.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_COMPLETED_WITH_WARNINGS);
 

@@ -15,18 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal.management.api;
+
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Root exception for all warning-related exceptions. Serves as an umbrella for cases where an operation completes
- * its execution, but produces non-critical warnings that should be handled separately from regular errors.
+ * An exception indicating that a command completed its execution successfully, but produced non-critical warnings
+ * that should be handled separately from regular errors.
  */
-public abstract class IgniteWarningException extends IgniteCheckedException {
+public class CommandWarningException extends IgniteCheckedException {
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
 
     /** */
-    protected IgniteWarningException(String wrnMsg) {
-        super(wrnMsg);
+    public CommandWarningException(Throwable cause) {
+        super(cause);
     }
 }
