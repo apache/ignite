@@ -226,14 +226,14 @@ public class NodeFileTree extends SharedFileTree {
     private static final Pattern WAL_NAME_PATTERN = U.fixedLengthNumberNamePattern(WAL_SEGMENT_FILE_EXT);
 
     /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
-    private static final FileFilter WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
+    private static final Predicate<File> WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
         WAL_NAME_PATTERN.matcher(file.getName()).matches();
 
     /** Pattern for WAL temp files - these files will be cleared at startup. */
     private static final Pattern WAL_TEMP_NAME_PATTERN = U.fixedLengthNumberNamePattern(TMP_WAL_SEG_FILE_EXT);
 
     /** WAL segment temporary file filter, see {@link #WAL_TEMP_NAME_PATTERN} */
-    private static final FileFilter WAL_SEGMENT_TEMP_FILE_FILTER = file -> !file.isDirectory() &&
+    private static final Predicate<File> WAL_SEGMENT_TEMP_FILE_FILTER = file -> !file.isDirectory() &&
         WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches();
 
     /** Partition file prefix. */
@@ -803,7 +803,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return {@code True} if file matches WAL segment file criteria.
      */
     public static boolean walSegment(File f) {
-        return WAL_SEGMENT_FILE_FILTER.accept(f);
+        return WAL_SEGMENT_FILE_FILTER.test(f);
     }
 
     /**
@@ -811,7 +811,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return {@code True} if file matches WAL segment temp file criteria.
      */
     public static boolean walTmpSegment(File f) {
-        return WAL_SEGMENT_TEMP_FILE_FILTER.accept(f);
+        return WAL_SEGMENT_TEMP_FILE_FILTER.test(f);
     }
 
     /**
