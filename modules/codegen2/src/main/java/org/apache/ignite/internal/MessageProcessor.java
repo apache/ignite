@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -64,10 +63,12 @@ import javax.tools.Diagnostic;
 @SupportedAnnotationTypes("org.apache.ignite.internal.Order")
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class MessageProcessor extends AbstractProcessor {
-    /** */
+    /** Base interface that every message must implement. */
     static final String MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.Message";
 
-    /** {@inheritDoc} */
+    /**
+     * Processes all classes implementing the {@code Message} interface and generates corresponding serializer code.
+     */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         TypeMirror msgType = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE).asType();
 
@@ -98,7 +99,8 @@ public class MessageProcessor extends AbstractProcessor {
             catch (Exception e) {
                 processingEnv.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Failed to generate a message serializer for type " + type.getKey() + ": " + e.getMessage());
+                    "Failed to generate a message serializer:" + e.getMessage(),
+                    type.getKey());
             }
         }
 
@@ -116,8 +118,6 @@ public class MessageProcessor extends AbstractProcessor {
     private List<VariableElement> orderedFields(TypeElement type) {
         List<VariableElement> result = new ArrayList<>();
 
-        final TypeElement clazz = type;
-
         while (type != null) {
             for (Element el: type.getEnclosedElements()) {
                 if (el.getAnnotation(Order.class) != null) {
@@ -126,8 +126,8 @@ public class MessageProcessor extends AbstractProcessor {
                     if (el.getModifiers().contains(Modifier.STATIC)) {
                         processingEnv.getMessager().printMessage(
                             Diagnostic.Kind.ERROR,
-                            "Annotation @org.apache.ignite.codegen.Order must be used only " +
-                                "for non-static fields. Wrong field: " + type.getQualifiedName() + "#" + el.getSimpleName());
+                            "Annotation @Order must be used only for non-static fields.",
+                            el);
                     }
                 }
             }
@@ -143,10 +143,8 @@ public class MessageProcessor extends AbstractProcessor {
             if (result.get(i).getAnnotation(Order.class).value() != i) {
                 processingEnv.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Annotation @org.apache.ignite.codegen.Order must be a sequence from 0 to " + result.size() +
-                        ". Class with wrong order: " + clazz.getQualifiedName());
-
-                return Collections.emptyList();
+                    "Annotation @Order must be a sequence from 0 to " + (result.size() - 1),
+                    result.get(i));
             }
         }
 
