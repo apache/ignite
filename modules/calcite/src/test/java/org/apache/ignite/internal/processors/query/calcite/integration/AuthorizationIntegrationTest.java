@@ -177,9 +177,9 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
             new ClientConfiguration().setAddresses(Config.SERVER).setUserName(LOGIN).setUserPassword(PWD))
         ) {
             check(
-                sql -> client.cache(ALLOWED_CACHE).query(sqlFieldsQuery(sql)).getAll(),
+                sql -> client.query(sqlFieldsQuery(sql)).getAll(),
                 ClientAuthorizationException.class,
-                "Client is not authorized"
+                "Client is not authorized to perform this operation [errMsg=Authorization failed [perm="
             );
         }
     }
