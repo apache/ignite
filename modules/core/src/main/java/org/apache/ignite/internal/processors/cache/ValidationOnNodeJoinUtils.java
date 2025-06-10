@@ -420,7 +420,6 @@ public class ValidationOnNodeJoinUtils {
         }
     }
 
-
     /**
      * @param ctx Context.
      * @param log Logger.
