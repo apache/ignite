@@ -206,7 +206,7 @@ public class NodeFileTree extends SharedFileTree {
     public static final String ZIP_SUFFIX = ".zip";
 
     /** File extension of temp WAL segment. */
-    public static final String TMP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + TMP_SUFFIX;
+    private static final String TMP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + TMP_SUFFIX;
 
     /** File extension of zipped WAL segment. */
     public static final String ZIP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + ZIP_SUFFIX;
@@ -228,6 +228,13 @@ public class NodeFileTree extends SharedFileTree {
     /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
     private static final FileFilter WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
         WAL_NAME_PATTERN.matcher(file.getName()).matches();
+
+    /** Pattern for WAL temp files - these files will be cleared at startup. */
+    private static final Pattern WAL_TEMP_NAME_PATTERN = U.fixedLengthNumberNamePattern(TMP_WAL_SEG_FILE_EXT);
+
+    /** WAL segment temporary file filter, see {@link #WAL_TEMP_NAME_PATTERN} */
+    private static final FileFilter WAL_SEGMENT_TEMP_FILE_FILTER = file -> !file.isDirectory() &&
+        WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches();
 
     /** Partition file prefix. */
     static final String PART_FILE_PREFIX = "part-";
@@ -797,6 +804,14 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static boolean walSegment(File f) {
         return WAL_SEGMENT_FILE_FILTER.accept(f);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file matches WAL segment temp file criteria.
+     */
+    public static boolean walTmpSegment(File f) {
+        return WAL_SEGMENT_TEMP_FILE_FILTER.accept(f);
     }
 
     /**

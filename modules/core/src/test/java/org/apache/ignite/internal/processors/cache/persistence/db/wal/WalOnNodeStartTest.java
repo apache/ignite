@@ -41,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_TEMP_NAME_PATTERN;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
@@ -198,7 +197,7 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             // Ensure that reformated temp files created in the same dir as original WAL segments.
-            if (WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches() && !walArchiveDir.equals(file.getParentFile()))
+            if (NodeFileTree.walTmpSegment(file) && !walArchiveDir.equals(file.getParentFile()))
                 assertEquals(walWorkDir, file.getParentFile());
 
             return super.create(file, modes);
