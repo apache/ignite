@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.query.calcite.integration.Aggregate
 import org.apache.ignite.internal.processors.query.calcite.integration.AuthorizationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteBasicSecondaryIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteErrorHandlilngIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.CalcitePlanningDumpTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CorrelatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DataTypesTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DateTimeTest;
@@ -94,7 +93,6 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CalcitePlanningDumpTest.class,
     OrToUnionRuleTest.class,
     ProjectScanMergeRuleTest.class,
     CalciteQueryProcessorTest.class,
@@ -162,7 +160,7 @@ import org.junit.runners.Suite;
     QueryBlockingTaskExecutorIntegrationTest.class,
     ScalarInIntegrationTest.class,
     TpchTest.class,
-    UnnestIntegrationTest.class
+    UnnestIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }
