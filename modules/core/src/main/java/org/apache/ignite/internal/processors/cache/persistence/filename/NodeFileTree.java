@@ -568,9 +568,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store dirs for given cache.
      */
     private File[] cacheStorages(CacheConfiguration<?, ?> ccfg, boolean includeIdxPath) {
-        String cacheDirName = ccfg.getGroupName() != null
-            ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
-            : CACHE_DIR_PREFIX + ccfg.getName();
+        String cacheDirName = cacheDirName(ccfg);
 
         String[] csp = ccfg.getStoragePaths();
         String idxPath = ccfg.getIndexPath();
@@ -578,19 +576,25 @@ public class NodeFileTree extends SharedFileTree {
 
         if (F.isEmpty(csp)) {
             return idxPathEmpty
-                ? new File[]{new File(cacheStorageRoot(null), cacheDirName)}
-                : new File[]{new File(cacheStorageRoot(null), cacheDirName), new File(cacheStorageRoot(idxPath), cacheDirName)};
+                ? new File[]{cacheStorage(null, cacheDirName)}
+                : new File[]{cacheStorage(null, cacheDirName), cacheStorage(idxPath, cacheDirName)};
         }
 
         File[] cs = new File[csp.length + (idxPathEmpty ? 0 : 1)];
 
         for (int i = 0; i < csp.length; i++)
-            cs[i] = new File(cacheStorageRoot(csp[i]), cacheDirName);
+            cs[i] = cacheStorage(csp[i], cacheDirName);
 
         if (!idxPathEmpty)
-            cs[cs.length - 1] = new File(cacheStorageRoot(idxPath), cacheDirName);
+            cs[cs.length - 1] = cacheStorage(idxPath, cacheDirName);
 
         return cs;
+    }
+
+    private static String cacheDirName(CacheConfiguration<?, ?> ccfg) {
+        return ccfg.getGroupName() != null
+            ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
+            : CACHE_DIR_PREFIX + ccfg.getName();
     }
 
     /**
@@ -653,7 +657,7 @@ public class NodeFileTree extends SharedFileTree {
             String idxPath = ccfg.getIndexPath();
 
             if (idxPath != null)
-                return new File(cacheStorageRoot(idxPath), partitionFileName(INDEX_PARTITION));
+                return new File(cacheStorage(idxPath, cacheDirName(ccfg)), partitionFileName(INDEX_PARTITION));
         }
 
         return new File(resolveStorage(cacheStorages(ccfg, false), part), partitionFileName(part));
@@ -693,7 +697,7 @@ public class NodeFileTree extends SharedFileTree {
      * @see CacheConfiguration#getIndexPath()
      */
     public File tmpCacheStorage(@Nullable String storagePath, String cacheDirName) {
-        return tmpCacheStorage(new File(cacheStorageRoot(storagePath), cacheDirName));
+        return tmpCacheStorage(cacheStorage(storagePath, cacheDirName));
     }
 
     /**
@@ -912,8 +916,8 @@ public class NodeFileTree extends SharedFileTree {
      * @see CacheConfiguration#getStoragePaths()
      * @see CacheConfiguration#getIndexPath()
      */
-    private File cacheStorageRoot(@Nullable String storagePath) {
-        return storagePath == null ? nodeStorage : extraStorages.getOrDefault(storagePath, nodeStorage);
+    private File cacheStorage(@Nullable String storagePath, String cacheDirName) {
+        return new File(storagePath == null ? nodeStorage : extraStorages.getOrDefault(storagePath, nodeStorage), cacheDirName);
     }
 
     /**

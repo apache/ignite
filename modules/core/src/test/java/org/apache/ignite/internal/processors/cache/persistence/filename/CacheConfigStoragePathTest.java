@@ -51,7 +51,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setExtraStoragePaths(storagePath(STORAGE_PATH), storagePath(STORAGE_PATH_2));
+            .setExtraStoragePaths(storagePath(STORAGE_PATH), storagePath(STORAGE_PATH_2), storagePath(IDX_PATH));
 
         dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 

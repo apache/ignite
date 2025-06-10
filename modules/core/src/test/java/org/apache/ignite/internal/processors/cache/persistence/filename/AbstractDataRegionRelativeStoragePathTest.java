@@ -50,6 +50,9 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     /** Second custom storage path. */
     static final String STORAGE_PATH_2 = "storage2";
 
+    /** Custom indexes path. */
+    static final String IDX_PATH = "idxs";
+
     /** */
     static final String SNP_PATH = "ex_snapshots";
 
@@ -65,13 +68,18 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     public boolean severalCacheStorages;
 
     /** */
-    @Parameterized.Parameters(name = "absPath={0},severalCacheStorages={1}")
+    @Parameterized.Parameter(2)
+    public boolean idxStorage;
+
+    /** */
+    @Parameterized.Parameters(name = "absPath={0},severalCacheStorages={1},idxStorage={2}")
     public static List<Object[]> params() {
         List<Object[]> res = new ArrayList<>();
 
         for (boolean absPath : new boolean[]{true, false}) {
             for (boolean severalCacheStorages : new boolean[]{true, false}) {
-                res.add(new Object[] {absPath, severalCacheStorages});
+                for (boolean idxStorage : new boolean[]{true, false})
+                    res.add(new Object[]{absPath, severalCacheStorages, idxStorage});
             }
         }
 
@@ -89,10 +97,12 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
         if (absPath) {
             U.delete(new File(storagePath(STORAGE_PATH)).getParentFile());
             U.delete(new File(storagePath(STORAGE_PATH_2)).getParentFile());
+            U.delete(new File(storagePath(IDX_PATH)).getParentFile());
         }
         else {
             U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH));
             U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH_2));
+            U.delete(new File(U.defaultWorkDirectory(), IDX_PATH));
         }
 
         U.delete(new File(U.defaultWorkDirectory(), SNP_PATH));
@@ -192,6 +202,9 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
         if (!F.isEmpty(storagePath))
             ccfg.setStoragePaths(storagePath);
+
+        if (idxStorage)
+            ccfg.setIndexPath(storagePath(IDX_PATH));
 
         return ccfg;
     }
