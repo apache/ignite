@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteException;
@@ -220,6 +221,13 @@ public class NodeFileTree extends SharedFileTree {
     private static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
         CACHE_DIR_FILTER.test(dir) ||
             dir.getName().equals(METASTORAGE_DIR_NAME);
+
+    /** Pattern for segment file names. */
+    private static final Pattern WAL_NAME_PATTERN = U.fixedLengthNumberNamePattern(WAL_SEGMENT_FILE_EXT);
+
+    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
+    private static final FileFilter WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
+        WAL_NAME_PATTERN.matcher(file.getName()).matches();
 
     /** Partition file prefix. */
     static final String PART_FILE_PREFIX = "part-";
@@ -426,6 +434,16 @@ public class NodeFileTree extends SharedFileTree {
     /** @return Path to the directory containing active WAL segments. */
     public @Nullable File wal() {
         return wal;
+    }
+
+    /** @return An array of WAL segment files. */
+    public File[] walSegments() {
+        return wal().listFiles(f -> walSegment(f));
+    }
+
+    /** @return An array of WAL segment files for CDC. */
+    public File[] walCdcSegments() {
+        return walCdc().listFiles(f -> walSegment(f));
     }
 
     /**
@@ -771,6 +789,14 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static boolean notTmpFile(File f) {
         return !f.getName().endsWith(TMP_SUFFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file matches WAL segment file criteria.
+     */
+    public static boolean walSegment(File f) {
+        return WAL_SEGMENT_FILE_FILTER.accept(f);
     }
 
     /**
