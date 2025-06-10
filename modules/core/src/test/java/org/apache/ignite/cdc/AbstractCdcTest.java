@@ -127,6 +127,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
                         if (!F.isEmpty(conditions)) {
                             for (GridAbsPredicate p : conditions) {
+                                log.info(">>> predicate: " + p);
                                 if (!p.apply())
                                     return;
                             }
@@ -215,7 +216,9 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         TestCdcConsumer<?>... cnsmrs
     ) {
         return () -> {
+            log.info(">>> sizePredicate for cache=" + cacheName);
             int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.data(evtType, cacheId(cacheName)))).sum();
+            log.info(">>> SUM=" + sum + ", expSz=" + expSz);
             return sum == expSz;
         };
     }

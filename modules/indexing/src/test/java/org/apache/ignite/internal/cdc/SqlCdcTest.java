@@ -167,8 +167,12 @@ public class SqlCdcTest extends AbstractCdcTest {
                 Integer.toString(127000 + i));
         }
 
+        log.info(">>> BEFORE latch.await");
+
         // Wait while both predicte will become true and state saved on the disk.
         assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
+
+        log.info(">>> AFTER latch.await");
 
         checkMetrics(cdc, KEYS_CNT * 2);
 
