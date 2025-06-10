@@ -19,7 +19,6 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.NumericTypesPrecisionsTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.CalcitePlanningDumpTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcConnectionEnabledPropertyTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcSetClientInfoTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcThinTransactionalSelfTest;
@@ -36,7 +35,6 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CalcitePlanningDumpTest.class,
     PlannerTestSuite.class,
     ExecutionTestSuite.class,
     IntegrationTestSuite.class,
