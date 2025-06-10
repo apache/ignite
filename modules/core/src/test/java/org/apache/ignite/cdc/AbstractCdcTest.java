@@ -216,6 +216,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     ) {
         return () -> {
             int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.data(evtType, cacheId(cacheName)))).sum();
+            System.out.println(">>> SUM: " + sum);
             return sum == expSz;
         };
     }

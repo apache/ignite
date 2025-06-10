@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cdc;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -167,8 +168,12 @@ public class SqlCdcTest extends AbstractCdcTest {
                 Integer.toString(127000 + i));
         }
 
+        System.out.println(">>> BEFORE latch.await: " + Instant.now());
+
         // Wait while both predicte will become true and state saved on the disk.
         assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
+
+        System.out.println(">>> AFTER latch.await: " + Instant.now());
 
         checkMetrics(cdc, KEYS_CNT * 2);
 
