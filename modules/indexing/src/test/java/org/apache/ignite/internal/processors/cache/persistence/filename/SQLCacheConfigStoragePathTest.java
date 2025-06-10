@@ -89,6 +89,11 @@ public class SQLCacheConfigStoragePathTest extends CacheConfigStoragePathTest {
 
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean idxPartMustExistsInSnapshot() {
+        return true;
+    }
+
     /** */
     private static String dep(int i) {
         return i + " dep";
