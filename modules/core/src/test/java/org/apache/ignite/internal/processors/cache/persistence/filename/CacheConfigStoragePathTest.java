@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -51,7 +52,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * Test cases when {@link CacheConfiguration#setStoragePaths(String...)} used to set custom data region storage path.
  */
 public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
@@ -77,6 +77,39 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
             ccfg("cache6", "grp3", storagePaths(STORAGE_PATH_2, STORAGE_PATH)),
             ccfg("cache7", "grp3", storagePaths(STORAGE_PATH_2, STORAGE_PATH))
         };
+    }
+
+    /** Sanity checks - all pathes for all partitions are different and contains cacheDir. */
+    @Test
+    public void testPathGeneration() throws Exception {
+        IgniteEx srv = startAndActivate();
+
+        NodeFileTree ft = srv.context().pdsFolderResolver().fileTree();
+
+        IntConsumer checkPart = i -> {
+            Set<File> parts = new HashSet<>();
+
+            Set<String> grps = new HashSet<>();
+
+            for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
+                if (!grps.add(CU.cacheOrGroupName(ccfg)))
+                    continue;
+
+                File part = ft.partitionFile(ccfg, i);
+
+                assertTrue(Arrays.asList(ft.cacheStorages(ccfg)).contains(part.getParentFile()));
+                assertTrue(parts.add(part));
+            }
+
+            assertEquals(grpCount(), grps.size());
+        };
+
+        for (int i = 0; i < PARTS_CNT; i++)
+            checkPart.accept(i);
+
+        checkPart.accept(INDEX_PARTITION);
+
+        stopAllGrids();
     }
 
     /** */

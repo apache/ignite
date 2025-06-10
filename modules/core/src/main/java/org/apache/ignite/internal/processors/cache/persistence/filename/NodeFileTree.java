@@ -591,12 +591,6 @@ public class NodeFileTree extends SharedFileTree {
         return cs;
     }
 
-    private static String cacheDirName(CacheConfiguration<?, ?> ccfg) {
-        return ccfg.getGroupName() != null
-            ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
-            : CACHE_DIR_PREFIX + ccfg.getName();
-    }
-
     /**
      * @return All cache directories.
      */
@@ -1079,6 +1073,16 @@ public class NodeFileTree extends SharedFileTree {
     /** @return {@code ${root}/${path}/${folderName}} path. */
     private File rootRelative(String path) {
         return Paths.get(root.getAbsolutePath(), path, folderName).toFile();
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return Cache directory name.
+     */
+    private static String cacheDirName(CacheConfiguration<?, ?> ccfg) {
+        return ccfg.getGroupName() != null
+            ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
+            : CACHE_DIR_PREFIX + ccfg.getName();
     }
 
     /**
