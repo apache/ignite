@@ -18,13 +18,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.Arrays;
 import java.util.stream.Stream;
 
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
@@ -61,10 +61,7 @@ public class CalcitePlanningDumpTest extends AbstractBasicIntegrationTest {
 
         Throwable thrown = assertThrowsWithCause(() -> sql(longJoinQry), RelOptPlanner.CannotPlanException.class);
 
-        Throwable cannotPlanE = Arrays.stream(thrown.getSuppressed())
-            .filter(e -> e instanceof RelOptPlanner.CannotPlanException)
-            .findFirst()
-            .orElseThrow();
+        Throwable cannotPlanE = X.cause(thrown, RelOptPlanner.CannotPlanException.class);
 
         String cannotPlanMsg = cannotPlanE.getMessage();
 
