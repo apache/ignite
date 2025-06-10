@@ -938,25 +938,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
-            @Override public EntryProcessor apply(K k) {
-                return entryProcessor;
-            }
-        });
-
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> resFut = updateAll0(
-            null,
-            invokeMap,
-            args,
-            null,
-            null,
-            false,
-            TRANSFORM,
-            async);
+        IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> resFut = updateAll0(async, keys, entryProcessor, args);
 
         return resFut.chain(
             new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, Map<K, EntryProcessorResult<T>>>() {
@@ -971,6 +957,75 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     return ctx.unwrapInvokeResult(resMap, keepBinary);
                 }
             });
+    }
+
+    /**
+     * @param async Async operation flag.
+     * @param invokeKeys Keys.
+     * @param entryProcessor Entry processor.
+     * @param invokeArgs Optional arguments for EntryProcessor.
+     * @return Completion future.
+     */
+    @SuppressWarnings("ConstantConditions")
+    private IgniteInternalFuture updateAll0(
+        boolean async,
+        Set<?> invokeKeys,
+        final EntryProcessor entryProcessor,
+        Object... invokeArgs
+    ) {
+        assert ctx.updatesAllowed();
+
+        ctx.checkSecurity(SecurityPermission.CACHE_PUT);
+
+        final CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        Collection<EntryProcessor> invokeVals = Collections.nCopies(invokeKeys.size(), entryProcessor);
+
+        Collection<GridCacheDrInfo> conflictPutVals = null;
+
+        if (opCtx != null && opCtx.hasDataCenterId()) {
+            GridCacheVersion ver = nextVersion(opCtx.dataCenterId());
+            GridCacheDrInfo info = new GridCacheDrInfo(entryProcessor, ver);
+
+            conflictPutVals = Collections.nCopies(invokeKeys.size(), info);
+        }
+
+        int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
+
+        final GridNearAtomicUpdateFuture updateFut = new GridNearAtomicUpdateFuture(
+            ctx,
+            this,
+            ctx.config().getWriteSynchronizationMode(),
+            TRANSFORM,
+            invokeKeys,
+            invokeVals,
+            invokeArgs,
+            conflictPutVals,
+            null,
+            false,
+            opCtx != null ? opCtx.expiry() : null,
+            CU.filterArray(null),
+            taskNameHash,
+            opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.isKeepBinary(),
+            opCtx != null && opCtx.recovery(),
+            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+            opCtx != null ? opCtx.applicationAttributes() : null);
+
+        if (async) {
+            return asyncOp(new CO<IgniteInternalFuture<Object>>() {
+                @Override public IgniteInternalFuture<Object> apply() {
+                    updateFut.map();
+
+                    return updateFut;
+                }
+            });
+        }
+        else {
+            updateFut.map();
+
+            return updateFut;
+        }
     }
 
     /** {@inheritDoc} */
@@ -1031,7 +1086,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /**
-     * Entry point for all public API put/transform methods.
+     * Entry point for all public API put/transform methods. Except for invokeAll operations with {@code Set}.
      *
      * @param map Put map. Either {@code map}, {@code invokeMap} or {@code conflictPutMap} should be passed.
      * @param invokeMap Invoke map. Either {@code map}, {@code invokeMap} or {@code conflictPutMap} should be passed.

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import java.util.LinkedHashSet;
 import java.util.Set;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
@@ -60,7 +59,7 @@ public class ClientCacheKeysRequest extends ClientCacheDataRequest implements Cl
     private static Set<Object> readSet(BinaryReaderEx reader) {
         int cnt = reader.readInt();
 
-        Set<Object> keys = new LinkedHashSet<>(cnt);
+        Set<Object> keys = new GridArraySet<>(cnt);
 
         for (int i = 0; i < cnt; i++)
             keys.add(reader.readObjectDetached());
