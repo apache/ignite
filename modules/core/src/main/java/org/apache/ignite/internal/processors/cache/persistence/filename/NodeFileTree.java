@@ -566,6 +566,7 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param ccfg Cache configuration.
+     * @param includeIdxPath If {@code true} then add optional index store to results.
      * @return Store dirs for given cache.
      */
     private File[] cacheStorages(CacheConfiguration<?, ?> ccfg, boolean includeIdxPath) {

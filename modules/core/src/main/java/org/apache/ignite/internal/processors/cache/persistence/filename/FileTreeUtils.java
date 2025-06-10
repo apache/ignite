@@ -76,7 +76,7 @@ public class FileTreeUtils {
      */
     public static @Nullable String partitionStorage(CacheConfiguration<?, ?> ccfg, int part) {
         if (part == INDEX_PARTITION) {
-            if (ccfg.getIndexPath() != null)
+            if (F.isEmpty(ccfg.getIndexPath()))
                 return ccfg.getIndexPath();
         }
 
