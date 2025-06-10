@@ -179,7 +179,7 @@ public class SecurityConfig {
             .contentSecurityPolicy(csp -> csp
                 .policyDirectives("frame-ancestors 'self' http://localhost")
             )
-        )
+        );
         
         http.authorizeHttpRequests(auth->auth
                 .requestMatchers(PUBLIC_ROUTES).anonymous()
