@@ -78,7 +78,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * </ul>
  *
  * Node, user can configure several extra storages by {@link DataStorageConfiguration#setExtraStoragePaths(String...)}
- * Which can be used by the cache to store data. See {@link CacheConfiguration#setStoragePaths(String...)}.
+ * Which can be used by the cache to store data. See {@link CacheConfiguration#setStoragePaths(String...)}
+ * and {@link CacheConfiguration#setIndexPath(String)}.
  * Partition files will be spread evenly among all configured storages.
  * In case extra storages configured, each storage will repeat structure described below.
  * {@link NodeFileTree#defaultCacheStorage(CacheConfiguration)} will be used to store cache config.
@@ -572,7 +573,7 @@ public class NodeFileTree extends SharedFileTree {
 
         String[] csp = ccfg.getStoragePaths();
         String idxPath = ccfg.getIndexPath();
-        boolean idxPathEmpty = !includeIdxPath || idxPath == null;
+        boolean idxPathEmpty = !includeIdxPath || F.isEmpty(idxPath);
 
         if (F.isEmpty(csp)) {
             return idxPathEmpty
@@ -650,7 +651,7 @@ public class NodeFileTree extends SharedFileTree {
         if (part == INDEX_PARTITION) {
             String idxPath = ccfg.getIndexPath();
 
-            if (idxPath != null)
+            if (!F.isEmpty(idxPath))
                 return new File(cacheStorage(idxPath, cacheDirName(ccfg)), partitionFileName(INDEX_PARTITION));
         }
 
@@ -729,7 +730,7 @@ public class NodeFileTree extends SharedFileTree {
         if (partId == INDEX_PARTITION) {
             String idxPath = ccfg.getIndexPath();
 
-            if (idxPath != null) {
+            if (!F.isEmpty(idxPath)) {
                 File idxPartFile = partitionFile(ccfg, INDEX_PARTITION);
 
                 return new File(tmpCacheStorage(idxPartFile.getParentFile()), idxPartFile.getName());
