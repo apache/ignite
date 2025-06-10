@@ -94,6 +94,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    CalcitePlanningDumpTest.class,
     OrToUnionRuleTest.class,
     ProjectScanMergeRuleTest.class,
     CalciteQueryProcessorTest.class,
@@ -161,8 +162,7 @@ import org.junit.runners.Suite;
     QueryBlockingTaskExecutorIntegrationTest.class,
     ScalarInIntegrationTest.class,
     TpchTest.class,
-    UnnestIntegrationTest.class,
-    CalcitePlanningDumpTest.class,
+    UnnestIntegrationTest.class
 })
 public class IntegrationTestSuite {
 }
