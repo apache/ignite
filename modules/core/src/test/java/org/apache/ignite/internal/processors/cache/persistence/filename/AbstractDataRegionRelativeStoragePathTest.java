@@ -18,16 +18,20 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -36,7 +40,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Test cases when {@link CacheConfiguration#setStoragePath(String)} used to set custom data region storage path.
+ * Test cases when {@link CacheConfiguration#setStoragePaths(String...)} used to set custom data region storage path.
  */
 @RunWith(Parameterized.class)
 public abstract class AbstractDataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
@@ -54,12 +58,24 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
     /** */
     @Parameterized.Parameter()
-    public boolean useAbsStoragePath;
+    public boolean absPath;
 
     /** */
-    @Parameterized.Parameters(name = "useAbsStoragePath={0}")
-    public static Object[] params() {
-        return new Object[]{true, false};
+    @Parameterized.Parameter(1)
+    public boolean severalCacheStorages;
+
+    /** */
+    @Parameterized.Parameters(name = "absPath={0},severalCacheStorages={1}")
+    public static List<Object[]> params() {
+        List<Object[]> res = new ArrayList<>();
+
+        for (boolean absPath : new boolean[]{true, false}) {
+            for (boolean severalCacheStorages : new boolean[]{true, false}) {
+                res.add(new Object[] {absPath, severalCacheStorages});
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -70,8 +86,10 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
         cleanPersistenceDir();
 
-        if (useAbsStoragePath)
+        if (absPath) {
             U.delete(new File(storagePath(STORAGE_PATH)).getParentFile());
+            U.delete(new File(storagePath(STORAGE_PATH_2)).getParentFile());
+        }
         else {
             U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH));
             U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH_2));
@@ -85,9 +103,8 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
      * @param path Snapshot path.
      */
     void restoreAndCheck(String name, String path) throws Exception {
-        List<NodeFileTree> fts = IntStream.range(0, 3)
-            .mapToObj(this::grid)
-            .map(ign -> ign.context().pdsFolderResolver().fileTree())
+        List<NodeFileTree> fts = IgnitionEx.allGrids().stream()
+            .map(ign -> ((IgniteEx)ign).context().pdsFolderResolver().fileTree())
             .collect(Collectors.toList());
 
         stopAllGrids();
@@ -108,11 +125,14 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
         for (CacheConfiguration<?, ?> ccfg : ccfgs())
             grid(0).destroyCache(ccfg.getName());
 
+        awaitPartitionMapExchange();
+
         assertTrue(GridTestUtils.waitForCondition(() -> {
             for (NodeFileTree ft : fts) {
                 for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
-                    if (!F.isEmpty(ft.cacheStorage(ccfg).listFiles()))
-                        return false;
+                    Stream<File> cacheFiles = Arrays.stream(ft.cacheStorages(ccfg)).flatMap(dir -> Arrays.stream(dir.listFiles()));
+
+                    return cacheFiles.findAny().isEmpty();
                 }
             }
 
@@ -165,17 +185,35 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     }
 
     /** */
-    CacheConfiguration<?, ?> ccfg(String name, String grp, String storagePath) {
-        return new CacheConfiguration<>(name)
+    CacheConfiguration<?, ?> ccfg(String name, String grp, String... storagePath) {
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(name)
             .setGroupName(grp)
-            .setStoragePath(storagePath)
             .setAffinity(new RendezvousAffinityFunction().setPartitions(PARTS_CNT));
+
+        if (!F.isEmpty(storagePath))
+            ccfg.setStoragePaths(storagePath);
+
+        return ccfg;
+    }
+
+    /** */
+    String[] storagePaths(String... storagePath) {
+        if (severalCacheStorages) {
+            String[] res = new String[storagePath.length];
+
+            for (int i = 0; i < storagePath.length; i++)
+                res[i] = storagePath(storagePath[i]);
+
+            return res;
+        }
+
+        return new String[] {storagePath(storagePath[0])};
     }
 
     /** */
     String storagePath(String storagePath) {
         try {
-            return useAbsStoragePath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
+            return absPath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
         }
         catch (IgniteCheckedException e) {
             throw new RuntimeException(e);

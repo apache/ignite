@@ -129,7 +129,7 @@ public abstract class SnapshotSender {
      * @param storagePath Cache storage path.
      * @param pair Group id with partition id pair.
      * @param length Partition length.
-     * @see CacheConfiguration#getStoragePath()
+     * @see CacheConfiguration#getStoragePaths()
      */
     public final void sendPart(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
         if (!lock.readLock().tryLock())
@@ -196,7 +196,7 @@ public abstract class SnapshotSender {
      * @param storagePath Cache storage path.
      * @param pair Group id with partition id pair.
      * @param length Partition length.
-     * @see CacheConfiguration#getStoragePath()
+     * @see CacheConfiguration#getStoragePaths()
      */
     protected abstract void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length);
 
