@@ -215,7 +215,7 @@ public class CacheFileTree {
 
     /**
      * @param part Partition index.
-     * @return Root directory. for partition file.
+     * @return Root directory for partition file.
      */
     private File partitionRoot(int part) {
         return metastore

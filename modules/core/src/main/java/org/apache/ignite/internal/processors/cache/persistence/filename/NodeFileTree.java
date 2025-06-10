@@ -76,6 +76,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  *     which equal to {@code ${IGNITE_WORK_DIR}/db}, by default.</li>
  * </ul>
  *
+ * Node, user can configure several extra storages by {@link DataStorageConfiguration#setExtraStoragePaths(String...)}
+ * Which can be used by the cache to store data. See {@link CacheConfiguration#setStoragePaths(String...)}.
+ * Partition files will be spread evenly among all configured storages.
+ * In case extra storages configured, each storage will repeat structure described below.
+ * {@link NodeFileTree#defaultCacheStorage(CacheConfiguration)} will be used to store cache config.
+ *
  * <pre>
  * ❯ tree
  * .                                                                            ← root (work directory, shared between all local nodes).
