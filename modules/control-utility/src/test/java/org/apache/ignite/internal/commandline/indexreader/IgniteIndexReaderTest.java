@@ -725,7 +725,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             PAGE_SIZE,
             PART_CNT,
             PAGE_STORE_VER,
-            ft.cacheStorages(cacheConfig(cacheGrp))[0],
+            ft.defaultCacheStorage(cacheConfig(cacheGrp)),
             isNull(idxs) ? null : idx -> Arrays.stream(idxs).anyMatch(idx::endsWith),
             checkParts,
             log

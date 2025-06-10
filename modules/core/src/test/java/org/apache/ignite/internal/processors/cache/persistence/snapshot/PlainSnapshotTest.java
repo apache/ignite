@@ -109,7 +109,7 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
 
         assertFalse(ft.binaryMeta().equals(sft.binaryMeta()));
         assertFalse(ft.marshaller().equals(sft.marshaller()));
-        assertFalse(ft.cacheStorages(dfltCacheCfg)[0].equals(sft.cacheStorages(dfltCacheCfg)[0]));
+        assertFalse(ft.defaultCacheStorage(dfltCacheCfg).equals(sft.defaultCacheStorage(dfltCacheCfg)));
 
         final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(ft.cacheStorages(dfltCacheCfg));
         final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(sft.cacheStorages(dfltCacheCfg));

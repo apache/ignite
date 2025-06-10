@@ -504,7 +504,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             NodeFileTree sft = sfts.get(0);
 
-            File cacheDumpDir = sft.cacheStorages(cache.getConfiguration(CacheConfiguration.class))[0];
+            File cacheDumpDir = sft.defaultCacheStorage(cache.getConfiguration(CacheConfiguration.class));
 
             assertTrue(cacheDumpDir.exists());
 

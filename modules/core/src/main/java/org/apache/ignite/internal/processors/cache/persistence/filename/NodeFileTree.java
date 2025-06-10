@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteException;
@@ -220,6 +221,13 @@ public class NodeFileTree extends SharedFileTree {
     private static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
         CACHE_DIR_FILTER.test(dir) ||
             dir.getName().equals(METASTORAGE_DIR_NAME);
+
+    /** Pattern for segment file names. */
+    private static final Pattern WAL_NAME_PATTERN = U.fixedLengthNumberNamePattern(WAL_SEGMENT_FILE_EXT);
+
+    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
+    private static final FileFilter WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
+        WAL_NAME_PATTERN.matcher(file.getName()).matches();
 
     /** Partition file prefix. */
     static final String PART_FILE_PREFIX = "part-";
@@ -428,6 +436,16 @@ public class NodeFileTree extends SharedFileTree {
         return wal;
     }
 
+    /** @return An array of WAL segment files. */
+    public File[] walSegments() {
+        return wal().listFiles(f -> walSegment(f));
+    }
+
+    /** @return An array of WAL segment files for CDC. */
+    public File[] walCdcSegments() {
+        return walCdc().listFiles(f -> walSegment(f));
+    }
+
     /**
      * @param idx Segment number.
      * @return Segment file.
@@ -531,6 +549,14 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param ccfg Cache configuration.
+     * @return Default store dir for given cache. Used for storing configuration.
+     */
+    public File defaultCacheStorage(CacheConfiguration<?, ?> ccfg) {
+        return cacheStorages(ccfg)[0];
+    }
+
+    /**
+     * @param ccfg Cache configuration.
      * @return Store dirs for given cache.
      */
     public File[] cacheStorages(CacheConfiguration<?, ?> ccfg) {
@@ -539,7 +565,6 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param ccfg Cache configuration.
-     * @param includeIdxPath If {@code true} then add optional index store to results.
      * @return Store dirs for given cache.
      */
     private File[] cacheStorages(CacheConfiguration<?, ?> ccfg, boolean includeIdxPath) {
@@ -603,7 +628,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
     public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        return new File(cacheStorages(ccfg, false)[0], ccfg.getGroupName() == null
+        return new File(defaultCacheStorage(ccfg), ccfg.getGroupName() == null
             ? CACHE_DATA_FILENAME
             : (ccfg.getName() + CACHE_DATA_FILENAME));
     }
@@ -613,7 +638,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
     public File tmpCacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        return new File(cacheStorages(ccfg, false)[0], ccfg.getGroupName() == null
+        return new File(defaultCacheStorage(ccfg), ccfg.getGroupName() == null
             ? (CACHE_DATA_TMP_FILENAME)
             : (ccfg.getName() + CACHE_DATA_TMP_FILENAME));
     }
@@ -808,6 +833,14 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static boolean notTmpFile(File f) {
         return !f.getName().endsWith(TMP_SUFFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file matches WAL segment file criteria.
+     */
+    public static boolean walSegment(File f) {
+        return WAL_SEGMENT_FILE_FILTER.accept(f);
     }
 
     /**

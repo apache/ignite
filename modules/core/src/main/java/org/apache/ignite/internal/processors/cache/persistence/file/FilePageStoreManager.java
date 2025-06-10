@@ -191,25 +191,28 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException {
-        try {
-            for (File cacheWorkDir : ft.cacheStorages(cacheConfiguration)) {
-                if (!cacheWorkDir.exists())
-                    continue;
+        for (File cacheWorkDir : ft.cacheStorages(cacheConfiguration)) {
+            if (!cacheWorkDir.exists())
+                continue;
 
-                try (DirectoryStream<Path> files = newDirectoryStream(cacheWorkDir.toPath(),
-                    new DirectoryStream.Filter<Path>() {
-                        @Override public boolean accept(Path entry) throws IOException {
-                            return NodeFileTree.binFile(entry.toFile());
-                        }
-                    })) {
-                    for (Path path : files) {
+            try (DirectoryStream<Path> files = newDirectoryStream(cacheWorkDir.toPath(),
+                new DirectoryStream.Filter<Path>() {
+                    @Override public boolean accept(Path entry) throws IOException {
+                        return NodeFileTree.binFile(entry.toFile());
+                    }
+                })) {
+                for (Path path : files) {
+                    try {
                         delete(path);
+                    }
+                    catch (IOException e) {
+                        throw new IgniteCheckedException("Failed to cleanup persistent directory: " + path.toFile().getAbsolutePath(), e);
                     }
                 }
             }
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to cleanup persistent directory: ", e);
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to cleanup persistent directory: ", e);
+            }
         }
     }
 
@@ -299,7 +302,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         new MaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
                             "Corrupted cache groups found",
                             cacheCfgs.stream()
-                                .map(ccfg -> ft.cacheStorages(ccfg)[0].getName())
+                                .map(ccfg -> ft.defaultCacheStorage(ccfg).getName())
                                 .collect(Collectors.joining(File.separator)))
                 );
             }
@@ -628,7 +631,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param cft Cache file tree.
      */
     public static boolean checkAndInitCacheWorkDir(CacheFileTree cft) throws IgniteCheckedException {
-        boolean dirExisted = false;
+        boolean anyDirExisted = false;
 
         for (File cacheWorkDir : cft.storages()) {
             ReadWriteLock lock = initDirLock.getLock(cacheWorkDir.getName().hashCode());
@@ -655,7 +658,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                     Path tmp = cacheWorkDirPath.getParent().resolve(cacheWorkDir.getName() + TMP_SUFFIX);
 
-                    dirExisted = true;
+                    anyDirExisted = true;
 
                     if (!cacheWorkDir.exists())
                         throw new IgniteCheckedException("Failed to initialize cache working directory " +
@@ -671,7 +674,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             }
         }
 
-        return dirExisted;
+        return anyDirExisted;
     }
 
     /** {@inheritDoc} */

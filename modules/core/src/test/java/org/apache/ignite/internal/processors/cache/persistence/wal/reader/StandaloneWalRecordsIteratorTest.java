@@ -44,8 +44,8 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -453,16 +453,16 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         /** Wal close counter. */
         private static final AtomicInteger WAL_CLOSE_COUNTER = new AtomicInteger();
 
-        /** File name. */
-        private final String fileName;
+        /** File. */
+        private final File file;
 
         /** */
         public CountedFileIO(File file, OpenOption... modes) throws IOException {
             super(file, modes);
 
-            fileName = file.getName();
+            this.file = file;
 
-            if (FileWriteAheadLogManager.WAL_NAME_PATTERN.matcher(fileName).matches())
+            if (NodeFileTree.walSegment(file))
                 WAL_OPEN_COUNTER.incrementAndGet();
         }
 
@@ -470,7 +470,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         @Override public void close() throws IOException {
             super.close();
 
-            if (FileWriteAheadLogManager.WAL_NAME_PATTERN.matcher(fileName).matches())
+            if (NodeFileTree.walSegment(file))
                 WAL_CLOSE_COUNTER.incrementAndGet();
         }
 

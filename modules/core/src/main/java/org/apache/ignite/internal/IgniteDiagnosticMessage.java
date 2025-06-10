@@ -17,15 +17,19 @@
 
 package org.apache.ignite.internal;
 
+import java.io.Externalizable;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext.CompoundInfo;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -38,12 +42,8 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -79,16 +79,16 @@ public class IgniteDiagnosticMessage implements Message {
 
     /**
      * @param marsh Marshaller.
-     * @param c Closure to run.
+     * @param info Compound info.
      * @param futId Future ID.
      * @return Request message.
      * @throws IgniteCheckedException If failed.
      */
     public static IgniteDiagnosticMessage createRequest(Marshaller marsh,
-        IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> c,
+        CompoundInfo info,
         long futId
     ) throws IgniteCheckedException {
-        byte[] cBytes = U.marshal(marsh, c);
+        byte[] cBytes = U.marshal(marsh, info);
 
         IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage();
 
@@ -222,49 +222,53 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      *
      */
-    public abstract static class DiagnosticBaseClosure implements IgniteBiInClosure<StringBuilder, GridKernalContext> {
+    public abstract static class DiagnosticBaseInfo {
         /**
-         * @return Key to group similar messages.
+         * @param other Another info of the same type.
          */
-        public Object mergeKey() {
-            return getClass();
+        public void merge(DiagnosticBaseInfo other) {
+            // No-op.
         }
 
         /**
-         * @param other Another closure of the same type.
+         * @param sb String builder.
+         * @param ctx Grid context.
          */
-        public void merge(DiagnosticBaseClosure other) {
-            // No-op.
-        }
+        public abstract void appendInfo(StringBuilder sb, GridKernalContext ctx);
     }
 
     /**
      *
      */
-    public static final class TxEntriesInfoClosure extends DiagnosticBaseClosure {
+    public static final class TxEntriesInfo extends DiagnosticBaseInfo implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final int cacheId;
+        private int cacheId;
 
         /** */
         private Collection<KeyCacheObject> keys;
+
+        /** Empty constructor required by {@link Externalizable}. */
+        public TxEntriesInfo() {
+            // No-op.
+        }
 
         /**
          * @param cacheId Cache ID.
          * @param keys Keys.
          */
-        TxEntriesInfoClosure(int cacheId, Collection<KeyCacheObject> keys) {
+        TxEntriesInfo(int cacheId, Collection<KeyCacheObject> keys) {
             this.cacheId = cacheId;
             this.keys = new HashSet<>(keys);
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(StringBuilder sb, GridKernalContext ctx) {
+        @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {
             sb.append(U.nl());
 
-            GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
+            GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheId);
 
             if (cctx == null) {
                 sb.append("Failed to find cache with id: ").append(cacheId);
@@ -293,54 +297,69 @@ public class IgniteDiagnosticMessage implements Message {
         }
 
         /** {@inheritDoc} */
-        @Override public Object mergeKey() {
-            return new T2<>(getClass(), cacheId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void merge(DiagnosticBaseClosure other) {
-            TxEntriesInfoClosure other0 = (TxEntriesInfoClosure)other;
+        @Override public void merge(DiagnosticBaseInfo other) {
+            TxEntriesInfo other0 = (TxEntriesInfo)other;
 
             assert other0 != null && cacheId == other0.cacheId : other;
 
             this.keys.addAll(other0.keys);
         }
 
-        /**
-         * @param out Output stream.
-         * @throws IOException If failed.
-         */
-        private void writeObject(java.io.ObjectOutputStream out)
-            throws IOException {
-            /*
-            Transform to List, otherwise Set unmarshalling fails since need
-            call KeyCacheObject.finishUnmarshal before adding in Set.
-             */
-            this.keys = new ArrayList<>(keys);
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(cacheId);
+            U.writeCollection(out, keys);
+        }
 
-            out.defaultWriteObject();
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cacheId = in.readInt();
+            keys = U.readCollection(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TxEntriesInfo that = (TxEntriesInfo)o;
+
+            return cacheId == that.cacheId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(getClass(), cacheId);
         }
     }
 
     /**
      *
      */
-    public static final class ExchangeInfoClosure extends DiagnosticBaseClosure {
+    public static final class ExchangeInfo extends DiagnosticBaseInfo implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final AffinityTopologyVersion topVer;
+        private AffinityTopologyVersion topVer;
+
+        /** Empty constructor required by {@link Externalizable}. */
+        public ExchangeInfo() {
+            // No-op.
+        }
 
         /**
          * @param topVer Exchange version.
          */
-        ExchangeInfoClosure(AffinityTopologyVersion topVer) {
+        ExchangeInfo(AffinityTopologyVersion topVer) {
             this.topVer = topVer;
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(StringBuilder sb, GridKernalContext ctx) {
+        @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {
             sb.append(U.nl());
 
             List<GridDhtPartitionsExchangeFuture> futs = ctx.cache().context().exchange().exchangeFutures();
@@ -357,35 +376,63 @@ public class IgniteDiagnosticMessage implements Message {
         }
 
         /** {@inheritDoc} */
-        @Override public Object mergeKey() {
-            return new T2<>(getClass(), topVer);
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(topVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            topVer = (AffinityTopologyVersion)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ExchangeInfo that = (ExchangeInfo)o;
+
+            return Objects.equals(topVer, that.topVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(getClass(), topVer);
         }
     }
 
     /**
      *
      */
-    public static final class TxInfoClosure extends DiagnosticBaseClosure {
+    public static final class TxInfo extends DiagnosticBaseInfo implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final GridCacheVersion dhtVer;
+        private GridCacheVersion dhtVer;
 
         /** */
-        private final GridCacheVersion nearVer;
+        private GridCacheVersion nearVer;
+
+        /** Empty constructor required by {@link Externalizable}. */
+        public TxInfo() {
+            // No-op.
+        }
 
         /**
          * @param dhtVer Tx dht version.
          * @param nearVer Tx near version.
          */
-        TxInfoClosure(GridCacheVersion dhtVer, GridCacheVersion nearVer) {
+        TxInfo(GridCacheVersion dhtVer, GridCacheVersion nearVer) {
             this.dhtVer = dhtVer;
             this.nearVer = nearVer;
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(StringBuilder sb, GridKernalContext ctx) {
+        @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {
             sb.append(U.nl())
                 .append("Related transactions [dhtVer=").append(dhtVer)
                 .append(", nearVer=").append(nearVer).append("]: ");
@@ -412,13 +459,37 @@ public class IgniteDiagnosticMessage implements Message {
         }
 
         /** {@inheritDoc} */
-        @Override public Object mergeKey() {
-            return new T3<>(getClass(), nearVer, dhtVer);
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(dhtVer);
+            out.writeObject(nearVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            dhtVer = (GridCacheVersion)in.readObject();
+            nearVer = (GridCacheVersion)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TxInfo txInfo = (TxInfo)o;
+
+            return Objects.equals(dhtVer, txInfo.dhtVer) && Objects.equals(nearVer, txInfo.nearVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(getClass(), nearVer, dhtVer);
         }
     }
 
     /**
-     *
      * @param sb String builder.
      * @param ctx Context.
      */
@@ -434,7 +505,7 @@ public class IgniteDiagnosticMessage implements Message {
      * @param ctx Context.
      */
     static void dumpExchangeInfo(StringBuilder sb, GridKernalContext ctx) {
-        GridCachePartitionExchangeManager exchMgr = ctx.cache().context().exchange();
+        GridCachePartitionExchangeManager<?, ?> exchMgr = ctx.cache().context().exchange();
         GridDhtTopologyFuture fut = exchMgr.lastTopologyFuture();
 
         sb.append("Partitions exchange info [readyVer=").append(exchMgr.readyAffinityVersion()).append(']').append(U.nl())

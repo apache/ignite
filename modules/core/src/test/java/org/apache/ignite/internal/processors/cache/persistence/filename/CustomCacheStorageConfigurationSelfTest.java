@@ -18,7 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.IntStream;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -30,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -246,6 +252,61 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
             )) {
                 assertTrue(cliNode.cacheNames().contains(DEFAULT_CACHE_NAME));
             }
+        }
+    }
+
+    /** */
+    @Test
+    public void testDifferentStoragesInConfigAndStoredCacheData() throws Exception {
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setStoragePath(myPath.getAbsolutePath())
+            .setExtraStoragePaths(myPath2.getAbsolutePath())
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+
+        int partCnt = 10;
+
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+            // Start with two storages.
+            .setStoragePaths(myPath.getAbsolutePath(), myPath2.getAbsolutePath())
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(partCnt));
+
+        try (IgniteEx srv = startGrid(getConfiguration("srv")
+            .setDataStorageConfiguration(dsCfg)
+            .setCacheConfiguration(ccfg))) {
+            srv.cluster().state(ClusterState.ACTIVE);
+
+            IgniteCache<Integer, Integer> c = srv.cache(DEFAULT_CACHE_NAME);
+
+            IntStream.range(0, 100).forEach(i -> c.put(i, i));
+        }
+
+        // Set one storage in IgniteConfiguration.
+        ccfg.setStoragePaths(myPath2.getAbsolutePath());
+
+        try (IgniteEx srv = startGrid(getConfiguration("srv")
+            .setDataStorageConfiguration(dsCfg)
+            .setCacheConfiguration(ccfg))) {
+            srv.cluster().state(ClusterState.ACTIVE);
+
+            assertEquals(2, srv.cachex(DEFAULT_CACHE_NAME).configuration().getStoragePaths().length);
+
+            IgniteCache<Integer, Integer> c = srv.cache(DEFAULT_CACHE_NAME);
+
+            IntStream.range(0, 100).forEach(i -> assertEquals((Integer)i, c.get(i)));
+            IntStream.range(0, 100).forEach(i -> c.put(i, i * 2));
+
+            NodeFileTree ft = srv.context().pdsFolderResolver().fileTree();
+            Set<Integer> parts = new HashSet<>();
+
+            for (File cs : ft.cacheStorages(srv.cachex(DEFAULT_CACHE_NAME).configuration())) {
+                for (File partFile : cs.listFiles(NodeFileTree::binFile))
+                    assertTrue(parts.add(NodeFileTree.partId(partFile)));
+            }
+
+            // Extra file for index partition.
+            assertEquals(partCnt + 1, parts.size());
+            assertTrue(parts.contains(INDEX_PARTITION));
+            assertTrue(IntStream.range(0, partCnt).boxed().allMatch(parts::contains));
         }
     }
 }

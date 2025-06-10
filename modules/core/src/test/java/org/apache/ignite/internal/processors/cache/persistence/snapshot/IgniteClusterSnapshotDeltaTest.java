@@ -107,7 +107,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
         IgniteEx srv = startGridsWithCache(1, keys, (k) -> expPayload, ccfg);
 
-        String cacheDir = srv.context().pdsFolderResolver().fileTree().cacheStorages(ccfg)[0].getName();
+        String cacheDir = srv.context().pdsFolderResolver().fileTree().defaultCacheStorage(ccfg).getName();
 
         if (sequentialWrite)
             injectSequentialWriteCheck(srv);

@@ -2785,7 +2785,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             for (File snpCacheDir : sft.cacheStorages(gctx.config())) {
                 if (!snpCacheDir.exists()) {
                     throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
-                        "Cache group directory not found [groupId=" + grpId + ']');
+                        "Cache group directory not found [groupId=" + grpId + ", dir=" + snpCacheDir.getAbsolutePath() + ']');
                 }
 
                 for (File snpDataFile : NodeFileTree.existingCacheConfigFiles(snpCacheDir)) {
@@ -3807,11 +3807,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override public void sendCacheConfig0(File ccfgFile, CacheConfiguration<?, ?> ccfg) {
             try {
-                File cacheDir = sft.cacheStorages(ccfg)[0];
+                File cfgDir = sft.defaultCacheStorage(ccfg);
 
-                U.mkdirs(cacheDir);
+                U.mkdirs(cfgDir);
 
-                File targetCacheCfg = new File(cacheDir, ccfgFile.getName());
+                File targetCacheCfg = new File(cfgDir, ccfgFile.getName());
 
                 copy(ioFactory, ccfgFile, targetCacheCfg, ccfgFile.length(), transferRateLimiter);
 
