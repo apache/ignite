@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolPla
 import org.apache.ignite.internal.processors.query.calcite.planner.UncollectPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.UnionPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.UserDefinedViewsPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.WindowPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.hints.HintsTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -86,8 +87,9 @@ import org.junit.runners.Suite;
     RexSimplificationPlannerTest.class,
     SerializationPlannerTest.class,
     UncollectPlannerTest.class,
+    WindowPlannerTest.class,
 
-    HintsTestSuite.class,
+    HintsTestSuite.class
 })
 public class PlannerTestSuite {
 }
