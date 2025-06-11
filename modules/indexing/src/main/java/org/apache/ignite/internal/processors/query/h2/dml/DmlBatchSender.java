@@ -35,7 +35,7 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -447,7 +447,7 @@ public class DmlBatchSender {
         @Override public int compare(Object first, Object second) {
             // We assume that only simple types or BinaryObjectImpl are possible. The latter comes from the fact
             // that we use BinaryObjectBuilder which produces only on-heap binary objects.
-            return BinaryObjectImpl.compareForDml(first, second);
+            return BinaryUtils.compareForDml(first, second);
         }
     }
 }

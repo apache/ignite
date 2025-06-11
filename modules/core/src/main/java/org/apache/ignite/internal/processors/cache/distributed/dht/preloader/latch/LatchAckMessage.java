@@ -83,7 +83,7 @@ public class LatchAckMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -91,19 +91,19 @@ public class LatchAckMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeBoolean("isFinal", isFinal))
+                if (!writer.writeBoolean(isFinal))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString("latchId", latchId))
+                if (!writer.writeString(latchId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
@@ -117,12 +117,9 @@ public class LatchAckMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                isFinal = reader.readBoolean("isFinal");
+                isFinal = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -130,7 +127,7 @@ public class LatchAckMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                latchId = reader.readString("latchId");
+                latchId = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -138,7 +135,7 @@ public class LatchAckMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -147,17 +144,12 @@ public class LatchAckMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(LatchAckMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 135;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

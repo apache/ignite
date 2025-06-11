@@ -142,7 +142,10 @@ public class IncrementalSnapshotVerificationTask {
 
                 BaselineTopology blt = ignite.context().state().clusterState().baselineTopology();
 
-                checkBaseline(blt);
+                Map<String, Short> cstIdsMap = blt.consistentIdMapping().entrySet().stream()
+                    .collect(Collectors.toMap(e -> e.getKey().toString(), Map.Entry::getValue));
+
+                checkBaseline(cstIdsMap.keySet());
 
                 Map<Integer, StoredCacheData> txCaches = readTxCachesData();
 
@@ -324,14 +327,14 @@ public class IncrementalSnapshotVerificationTask {
         }
 
         /** Checks that current baseline topology matches baseline topology of the snapshot. */
-        private void checkBaseline(BaselineTopology blt) throws IgniteCheckedException, IOException {
+        private void checkBaseline(Collection<String> baselineCstIds) throws IgniteCheckedException, IOException {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
             SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.meta());
 
-            if (!F.eqNotOrdered(blt.consistentIds(), meta.baselineNodes())) {
+            if (!F.eqNotOrdered(baselineCstIds, meta.baselineNodes())) {
                 throw new IgniteCheckedException("Topologies of snapshot and current cluster are different [snp=" +
-                    meta.baselineNodes() + ", current=" + blt.consistentIds() + ']');
+                    meta.baselineNodes() + ", current=" + baselineCstIds + ']');
             }
         }
 

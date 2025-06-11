@@ -191,7 +191,7 @@ public class CacheInvokeDirectResult implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -199,19 +199,19 @@ public class CacheInvokeDirectResult implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage(key))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("res", res))
+                if (!writer.writeMessage(res))
                     return false;
 
                 writer.incrementState();
@@ -225,12 +225,9 @@ public class CacheInvokeDirectResult implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -238,7 +235,7 @@ public class CacheInvokeDirectResult implements Message {
                 reader.incrementState();
 
             case 1:
-                key = reader.readMessage("key");
+                key = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -246,7 +243,7 @@ public class CacheInvokeDirectResult implements Message {
                 reader.incrementState();
 
             case 2:
-                res = reader.readMessage("res");
+                res = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -255,12 +252,7 @@ public class CacheInvokeDirectResult implements Message {
 
         }
 
-        return reader.afterMessageRead(CacheInvokeDirectResult.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
+        return true;
     }
 
     /** {@inheritDoc} */

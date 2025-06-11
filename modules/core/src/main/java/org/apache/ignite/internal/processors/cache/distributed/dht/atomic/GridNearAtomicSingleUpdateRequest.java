@@ -237,7 +237,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -245,13 +245,13 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
         switch (writer.state()) {
             case 10:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage(key))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage("val", val))
+                if (!writer.writeMessage(val))
                     return false;
 
                 writer.incrementState();
@@ -265,15 +265,12 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 10:
-                key = reader.readMessage("key");
+                key = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -281,7 +278,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
                 reader.incrementState();
 
             case 11:
-                val = reader.readMessage("val");
+                val = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -290,7 +287,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicSingleUpdateRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -304,11 +301,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     /** {@inheritDoc} */
     @Override public short directType() {
         return 125;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 12;
     }
 
     /** {@inheritDoc} */

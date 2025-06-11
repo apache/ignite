@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.hep.HepMatchOrder;
+import org.apache.calcite.plan.hep.HepProgram;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -42,7 +45,7 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.Optionality;
-import org.apache.ignite.internal.processors.query.calcite.rule.CollectRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.CollectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelateToNestedLoopRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
@@ -60,10 +63,12 @@ import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateCon
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.UncollectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ExposeIndexRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterScanMergeRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectScanMergeRule;
 
@@ -137,6 +142,24 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public Program getProgram(PlanningContext ctx) {
             return hep(getRules(ctx));
+        }
+    },
+
+    /** */
+    HEP_OPTIMIZE_JOIN_ORDER("Heuristic phase to optimize joins order") {
+        /** {@inheritDoc} */
+        @Override public RuleSet getRules(PlanningContext ctx) {
+            return ctx.rules(RuleSets.ofList(IgniteMultiJoinOptimizeRule.INSTANCE));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Program getProgram(PlanningContext ctx) {
+            HepProgram sub = new HepProgramBuilder()
+                .addMatchOrder(HepMatchOrder.BOTTOM_UP)
+                .addRuleInstance(CoreRules.JOIN_TO_MULTI_JOIN)
+                .build();
+
+            return hep(getRules(ctx), sub);
         }
     },
 
@@ -244,7 +267,8 @@ public enum PlannerPhase {
                     LogicalScanConverterRule.TABLE_SCAN,
                     IndexCountRule.INSTANCE,
                     IndexMinMaxRule.INSTANCE,
-                    CollectRule.INSTANCE,
+                    CollectConverterRule.INSTANCE,
+                    UncollectConverterRule.INSTANCE,
                     HashAggregateConverterRule.COLOCATED,
                     HashAggregateConverterRule.MAP_REDUCE,
                     SortAggregateConverterRule.COLOCATED,

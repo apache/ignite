@@ -19,9 +19,8 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.Objects;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.TYPE_TABLE;
@@ -80,7 +79,7 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         writer.writeString(schemaName);
@@ -92,7 +91,7 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         schemaName = reader.readString();
@@ -112,7 +111,7 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
 
         JdbcTableMeta meta = (JdbcTableMeta)o;
 
-        return F.eq(schemaName, meta.schemaName) && F.eq(tblName, meta.tblName);
+        return Objects.equals(schemaName, meta.schemaName) && Objects.equals(tblName, meta.tblName);
     }
 
     /** {@inheritDoc} */

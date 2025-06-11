@@ -29,6 +29,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -82,6 +83,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Partition topology.
@@ -1080,10 +1082,33 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public int localPartitionsNumber() {
+        int num = 0;
+
+        for (int i = 0; i < locParts.length(); i++) {
+            GridDhtLocalPartition part = locParts.get(i);
+
+            if (part != null && part.state().active())
+                num++;
+        }
+
+        return num;
+    }
+
+    /** {@inheritDoc} */
     @Override public Iterable<GridDhtLocalPartition> currentLocalPartitions() {
-        return new Iterable<GridDhtLocalPartition>() {
+        return new Iterable<>() {
             @Override public Iterator<GridDhtLocalPartition> iterator() {
-                return new CurrentPartitionsIterator();
+                return new CurrentPartitionsIterator(0);
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterable<GridDhtLocalPartition> shiftedCurrentLocalPartitions() {
+        return new Iterable<>() {
+            @Override public Iterator<GridDhtLocalPartition> iterator() {
+                return new CurrentPartitionsIterator(ThreadLocalRandom.current().nextInt(locParts.length()));
             }
         };
     }
@@ -1278,7 +1303,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         GridDhtPartitionState state,
         GridDhtPartitionState... states
     ) {
-        Collection<UUID> allIds = F.nodeIds(discoCache.cacheGroupAffinityNodes(grp.groupId()));
+        Collection<UUID> allIds = nodeIds(discoCache.cacheGroupAffinityNodes(grp.groupId()));
 
         lock.readLock().lock();
 
@@ -2119,7 +2144,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             return;
 
         if (FAST_DIFF_REBUILD) {
-            Collection<UUID> affNodes = F.nodeIds(ctx.discovery().cacheGroupAffinityNodes(grp.groupId(),
+            Collection<UUID> affNodes = nodeIds(ctx.discovery().cacheGroupAffinityNodes(grp.groupId(),
                 affAssignment.topologyVersion()));
 
             for (Map.Entry<Integer, Set<UUID>> e : diffFromAffinity.entrySet()) {
@@ -2554,10 +2579,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 continue;
 
             List<ClusterNode> nodes = nodes(p, aff.topologyVersion(), OWNING);
-            Collection<UUID> nodeIds = F.nodeIds(nodes);
+            Collection<UUID> nodeIds = nodeIds(nodes);
 
             // If all affinity nodes are owners, then evict partition from local node.
-            if (nodeIds.containsAll(F.nodeIds(affNodes))) {
+            if (nodeIds.containsAll(nodeIds(affNodes))) {
                 GridDhtPartitionState state0 = part.state();
 
                 part.rent();
@@ -2826,11 +2851,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 part.clearDeferredDeletes();
 
-                List<GridDhtLocalPartition> parts = localPartitions();
-
                 boolean renting = false;
 
-                for (GridDhtLocalPartition part0 : parts) {
+                for (GridDhtLocalPartition part0 : currentLocalPartitions()) {
                     if (part0.state() == RENTING) {
                         renting = true;
 
@@ -3279,6 +3302,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * Iterator over current local partitions.
      */
     private class CurrentPartitionsIterator implements Iterator<GridDhtLocalPartition> {
+        /** Shift index. */
+        private final int shiftIdx;
+
         /** Next index. */
         private int nextIdx;
 
@@ -3286,9 +3312,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         private GridDhtLocalPartition nextPart;
 
         /**
-         * Constructor
+         * @param shiftIdx Shift start index for {@link #locParts} to reduce partitions contention.
          */
-        private CurrentPartitionsIterator() {
+        private CurrentPartitionsIterator(int shiftIdx) {
+            this.shiftIdx = shiftIdx;
+
             advance();
         }
 
@@ -3296,8 +3324,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
          * Try to advance to next partition.
          */
         private void advance() {
-            while (nextIdx < locParts.length()) {
-                GridDhtLocalPartition part = locParts.get(nextIdx);
+            int len = locParts.length();
+
+            while (nextIdx < len) {
+                GridDhtLocalPartition part = locParts.get((shiftIdx + nextIdx) % len);
 
                 if (part != null && part.state().active()) {
                     nextPart = part;

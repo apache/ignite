@@ -133,7 +133,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -141,7 +141,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("val", val))
+                if (!writer.writeByteArray(val))
                     return false;
 
                 writer.incrementState();
@@ -155,12 +155,9 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                val = reader.readByteArray("val");
+                val = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -169,7 +166,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
         }
 
-        return reader.afterMessageRead(CacheObjectByteArrayImpl.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -185,11 +182,6 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 105;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

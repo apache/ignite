@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.service;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -81,7 +80,7 @@ public class ServiceDeploymentProcessId implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -89,13 +88,13 @@ public class ServiceDeploymentProcessId implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeMessage(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("reqId", reqId))
+                if (!writer.writeIgniteUuid(reqId))
                     return false;
 
                 writer.incrementState();
@@ -108,12 +107,9 @@ public class ServiceDeploymentProcessId implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -121,7 +117,7 @@ public class ServiceDeploymentProcessId implements Message {
                 reader.incrementState();
 
             case 1:
-                reqId = reader.readIgniteUuid("reqId");
+                reqId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -129,17 +125,12 @@ public class ServiceDeploymentProcessId implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(ServiceDeploymentProcessId.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 167;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */
@@ -157,7 +148,7 @@ public class ServiceDeploymentProcessId implements Message {
 
         ServiceDeploymentProcessId id = (ServiceDeploymentProcessId)o;
 
-        return F.eq(topVer, id.topVer) && F.eq(reqId, id.reqId);
+        return Objects.equals(topVer, id.topVer) && Objects.equals(reqId, id.reqId);
     }
 
     /** {@inheritDoc} */

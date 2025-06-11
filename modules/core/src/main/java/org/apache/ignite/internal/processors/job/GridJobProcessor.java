@@ -334,7 +334,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     public GridJobProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         // Collision manager is already started and is fully functional.
         jobAlwaysActivate = !ctx.collision().enabled();

@@ -661,16 +661,11 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -678,19 +673,19 @@ public abstract class GridCacheMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("depInfo", depInfo))
+                if (!writer.writeMessage(depInfo))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeAffinityTopologyVersion("lastAffChangedTopVer", lastAffChangedTopVer))
+                if (!writer.writeAffinityTopologyVersion(lastAffChangedTopVer))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("msgId", msgId))
+                if (!writer.writeLong(msgId))
                     return false;
 
                 writer.incrementState();
@@ -704,12 +699,9 @@ public abstract class GridCacheMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                depInfo = reader.readMessage("depInfo");
+                depInfo = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -717,7 +709,7 @@ public abstract class GridCacheMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                lastAffChangedTopVer = reader.readAffinityTopologyVersion("lastAffChangedTopVer");
+                lastAffChangedTopVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -725,7 +717,7 @@ public abstract class GridCacheMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                msgId = reader.readLong("msgId");
+                msgId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -734,7 +726,7 @@ public abstract class GridCacheMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(GridCacheMessage.class);
+        return true;
     }
 
     /**

@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SCHEMA_OR_R
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TOTAL_LEN_POS;
 
 /** */
-public class CrossObjectReferenceResolver {
+class CrossObjectReferenceResolver {
     /** */
     private final RawBinaryObjectExtractor in;
 

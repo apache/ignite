@@ -69,6 +69,7 @@ import static java.util.Collections.singletonMap;
 import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
+import static org.apache.ignite.internal.processors.cache.ConnectionEnabledPropertyTest.THIN_CONN_ENABLED_PROP;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.toMetaStorageKey;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
@@ -125,9 +126,6 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
     /** Size of the data region for object eviction testing. */
     protected static final int EVICTION_TEST_DATA_REGION_SIZE = 20 * (1 << 20);
-
-    /** */
-    private static final String THIN_CONN_ENABLED_PROP = "newThinConnectionsEnabled";
 
     /** */
     private Map<String, String> userAttrs;
@@ -392,25 +390,21 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     public void testConnectAsManagementClient() throws Exception {
         Runnable cliCanConnect = () -> {
             try (IgniteClient cli = startClient(CLIENT)) {
-                assertNotNull("Cach query from CLIENT", cli.cacheNames());
+                assertNotNull("Cache query from CLIENT", cli.cacheNames());
             }
         };
 
         Runnable adminCanConnect = () -> {
             try (IgniteClient cli = startClient(ADMIN)) {
-                assertNotNull("Cach query from CLIENT", cli.cacheNames());
+                assertNotNull("Cache query from CLIENT", cli.cacheNames());
             }
         };
 
-        Runnable withUserAttrsCheck = () -> {
+        Runnable withUserAttrsCanConnect = () -> {
             userAttrs = F.asMap(MANAGEMENT_CLIENT_ATTR, "true");
 
-            try {
-                // Trying to connect as CLIENT with "management client" flag must fail, because of security.
-                // CLIENT has no ADMIN_OPS permission.
-                assertThrows(log, () -> startClient(CLIENT), ClientAuthenticationException.class, "ADMIN_OPS permission required");
-
-                adminCanConnect.run();
+            try (IgniteClient cli = startClient(CLIENT)) {
+                assertNotNull("Cache query from CLIENT", cli.cacheNames());
             }
             finally {
                 userAttrs = null;
@@ -420,8 +414,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         Runnable checkDflt = () -> {
             cliCanConnect.run();
             adminCanConnect.run();
-
-            withUserAttrsCheck.run();
+            withUserAttrsCanConnect.run();
         };
 
         checkDflt.run();
@@ -436,7 +429,9 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             // Trying to connect without specifying "management client" flag must fail.
             assertThrows(log, () -> startClient(ADMIN), ClientAuthenticationException.class, CONN_DISABLED_BY_ADMIN_ERR_MSG);
 
-            withUserAttrsCheck.run();
+            // Trying to connect as CLIENT with "management client" flag must fail, because of security.
+            // CLIENT has no ADMIN_OPS permission.
+            assertThrows(log, withUserAttrsCanConnect::run, IgniteException.class, "ADMIN_OPS permission required");
         }
         finally {
             grid(0).context().distributedMetastorage().write(toMetaStorageKey(THIN_CONN_ENABLED_PROP), true);

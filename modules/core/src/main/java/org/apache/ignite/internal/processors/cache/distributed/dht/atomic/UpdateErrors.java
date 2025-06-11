@@ -147,7 +147,7 @@ public class UpdateErrors implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -155,13 +155,13 @@ public class UpdateErrors implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeCollection("failedKeys", failedKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(failedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -175,12 +175,9 @@ public class UpdateErrors implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -188,7 +185,7 @@ public class UpdateErrors implements Message {
                 reader.incrementState();
 
             case 1:
-                failedKeys = reader.readCollection("failedKeys", MessageCollectionItemType.MSG);
+                failedKeys = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -197,17 +194,12 @@ public class UpdateErrors implements Message {
 
         }
 
-        return reader.afterMessageRead(UpdateErrors.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -49;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

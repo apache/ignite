@@ -122,6 +122,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_U
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeForNodeId;
 
 /**
  * Command handler for API requests.
@@ -760,7 +761,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 chain(resultWrapper((IgniteInternalCache<Object, Object>)prj, key));
         }
         else {
-            ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
+            ClusterGroup prj = ctx.grid().cluster().forPredicate(nodeForNodeId(destId));
 
             return ctx.closure().callAsync(
                 BALANCE,
@@ -794,7 +795,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return op.apply(cache, ctx).chain(resultWrapper(cache, key));
         }
         else {
-            ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
+            ClusterGroup prj = ctx.grid().cluster().forPredicate(nodeForNodeId(destId));
 
             return ctx.closure().callAsync(
                 BALANCE,

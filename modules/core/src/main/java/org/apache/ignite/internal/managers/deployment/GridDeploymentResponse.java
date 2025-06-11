@@ -116,7 +116,7 @@ public class GridDeploymentResponse implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -124,19 +124,19 @@ public class GridDeploymentResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("byteSrc", byteSrc))
+                if (!writer.writeMessage(byteSrc))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString("errMsg", errMsg))
+                if (!writer.writeString(errMsg))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeBoolean("success", success))
+                if (!writer.writeBoolean(success))
                     return false;
 
                 writer.incrementState();
@@ -150,12 +150,9 @@ public class GridDeploymentResponse implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                byteSrc = reader.readMessage("byteSrc");
+                byteSrc = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -163,7 +160,7 @@ public class GridDeploymentResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                errMsg = reader.readString("errMsg");
+                errMsg = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -171,7 +168,7 @@ public class GridDeploymentResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                success = reader.readBoolean("success");
+                success = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -180,17 +177,12 @@ public class GridDeploymentResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(GridDeploymentResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 12;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

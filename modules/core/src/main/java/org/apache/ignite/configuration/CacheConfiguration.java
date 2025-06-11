@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
@@ -433,6 +434,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private Integer diskPageCompressionLevel;
 
+    /**
+     * Root directories where partition files are stored.
+     * @see DataStorageConfiguration#setStoragePath(String)
+     * @see DataStorageConfiguration#setExtraStoragePaths(String[])
+     */
+    @IgniteExperimental
+    @Nullable private String[] storagePaths;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -531,6 +540,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
         sqlOnheapCacheMaxSize = cc.getSqlOnheapCacheMaxSize();
         evtsDisabled = cc.isEventsDisabled();
+        storagePaths = cc.getStoragePaths();
     }
 
     /**
@@ -2002,7 +2012,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean dup = false;
 
             for (QueryEntity entity : qryEntities) {
-                if (F.eq(entity.findValueType(), newEntity.findValueType())) {
+                if (Objects.equals(entity.findValueType(), newEntity.findValueType())) {
                     dup = true;
 
                     break;
@@ -2024,7 +2034,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                     boolean keyCfgDup = false;
 
                     for (CacheKeyConfiguration oldKeyCfg : keyCfg) {
-                        if (F.eq(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
+                        if (Objects.equals(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
                             keyCfgDup = true;
 
                             break;
@@ -2119,7 +2129,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean found = false;
 
             for (QueryEntity existing : this.qryEntities) {
-                if (F.eq(entity.findValueType(), existing.findValueType())) {
+                if (Objects.equals(entity.findValueType(), existing.findValueType())) {
                     found = true;
 
                     break;
@@ -2452,6 +2462,28 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
         this.diskPageCompressionLevel = diskPageCompressionLevel;
+
+        return this;
+    }
+
+    /**
+     * @return A path to the root directory where the Persistent Store for cache group will persist data and indexes.
+     */
+    @IgniteExperimental
+    @Nullable public String[] getStoragePaths() {
+        return storagePaths;
+    }
+
+    /**
+     * Sets a path to the root directory where the Persistent Store will persist data.
+     * By default, the Persistent Store's files are located under {@link DataStorageConfiguration#getStoragePath()}.
+     *
+     * @param storagePaths Persistence store path.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public CacheConfiguration<K, V> setStoragePaths(String... storagePaths) {
+        this.storagePaths = storagePaths;
 
         return this;
     }

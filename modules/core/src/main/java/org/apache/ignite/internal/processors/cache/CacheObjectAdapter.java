@@ -158,12 +158,9 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                valBytes = reader.readByteArray("valBytes");
+                valBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -172,7 +169,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
         }
 
-        return reader.afterMessageRead(CacheObjectAdapter.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -180,7 +177,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -188,7 +185,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("valBytes", valBytes))
+                if (!writer.writeByteArray(valBytes))
                     return false;
 
                 writer.incrementState();
@@ -196,11 +193,6 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         }
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

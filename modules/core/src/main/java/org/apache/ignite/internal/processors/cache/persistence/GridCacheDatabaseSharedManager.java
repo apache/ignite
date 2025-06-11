@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1887,7 +1888,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.warning("Maintenance task found, stop restoring memory");
 
             mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
-                new CorruptedPdsMaintenanceCallback(cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage(),
+                new CorruptedPdsMaintenanceCallback(cctx.kernalContext().pdsFolderResolver().fileTree(),
                     Arrays.asList(mntcTask.parameters().split(Pattern.quote(File.separator))))
             );
 
@@ -3562,7 +3563,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 CheckpointRecord cpRec = (CheckpointRecord)rec;
 
                 // We roll memory up until we find a checkpoint start record registered in the status.
-                if (F.eq(cpRec.checkpointId(), status.cpStartId)) {
+                if (Objects.equals(cpRec.checkpointId(), status.cpStartId)) {
                     if (log.isInfoEnabled()) {
                         log.info("Found last checkpoint marker [cpId=" + cpRec.checkpointId() +
                             ", pos=" + rec.position() + ']');
@@ -3570,7 +3571,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     needApplyBinaryUpdates = false;
                 }
-                else if (!F.eq(cpRec.checkpointId(), status.cpEndId))
+                else if (!Objects.equals(cpRec.checkpointId(), status.cpEndId))
                     U.warn(log, "Found unexpected checkpoint marker, skipping [cpId=" + cpRec.checkpointId() +
                         ", expCpId=" + status.cpStartId + ", pos=" + rec.position() + ']');
             }

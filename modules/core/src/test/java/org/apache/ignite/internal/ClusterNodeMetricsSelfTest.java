@@ -261,7 +261,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         Object msg = new TestMessage();
 
-        int size = ignite0.configuration().getMarshaller().marshal(msg).length;
+        int size = marshaller(ignite0).marshal(msg).length;
 
         assert size > MSG_SIZE;
 

@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -56,6 +57,8 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.CacheFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -118,8 +121,8 @@ public class GridLocalConfigManager {
         marshaller = ctx.marshallerContext().jdkMarshaller();
         ft = ctx.pdsFolderResolver().fileTree();
 
-        if (!ctx.clientNode() && ft.nodeStorage() != null)
-            U.ensureDirectory(ft.nodeStorage(), "page store work directory", log);
+        if (!ctx.clientNode())
+            FileTreeUtils.createCacheStorages(ft, log);
     }
 
     /**
@@ -134,12 +137,12 @@ public class GridLocalConfigManager {
 
         try {
             for (CacheConfiguration<?, ?> ccfg : ccfgs) {
-                File cacheDir = ft.cacheStorage(ccfg);
+                File cfgDir = ft.cacheConfigurationFile(ccfg).getParentFile();
 
-                if (!cacheDir.exists())
+                if (!cfgDir.exists())
                     continue;
 
-                List<File> ccfgFiles = NodeFileTree.existingCacheConfigFiles(cacheDir);
+                List<File> ccfgFiles = NodeFileTree.existingCacheConfigFiles(cfgDir);
 
                 if (F.isEmpty(ccfgFiles))
                     continue;
@@ -268,11 +271,11 @@ public class GridLocalConfigManager {
         if (!CU.storeCacheConfig(cacheProcessor.context(), ccfg))
             return;
 
-        File cacheWorkDir = ft.cacheStorage(ccfg);
+        CacheFileTree cft = ft.cacheTree(ccfg);
 
-        FilePageStoreManager.checkAndInitCacheWorkDir(cacheWorkDir, log);
+        FilePageStoreManager.checkAndInitCacheWorkDir(cft);
 
-        assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
+        assert Arrays.stream(cft.storages()).allMatch(File::exists) : "Work directory does not exist: " + Arrays.toString(cft.storages());
 
         File file = ft.cacheConfigurationFile(ccfg);
         Path filePath = file.toPath();
@@ -401,10 +404,10 @@ public class GridLocalConfigManager {
      * @throws IgniteCheckedException If fails.
      */
     public void removeCacheGroupConfigurationData(CacheGroupContext ctx) throws IgniteCheckedException {
-        File cacheGrpDir = ft.cacheStorage(ctx.config());
+        File cfgDir = ft.cacheConfigurationFile(ctx.config()).getParentFile();
 
-        if (cacheGrpDir != null && cacheGrpDir.exists()) {
-            for (File file : NodeFileTree.existingCacheConfigFiles(cacheGrpDir)) {
+        if (cfgDir.exists()) {
+            for (File file : NodeFileTree.existingCacheConfigFiles(cfgDir)) {
                 if (!U.delete(file))
                     throw new IgniteCheckedException("Failed to delete cache configurations of group: " + ctx);
             }

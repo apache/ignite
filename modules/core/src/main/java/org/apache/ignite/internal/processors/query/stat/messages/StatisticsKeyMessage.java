@@ -94,7 +94,7 @@ public class StatisticsKeyMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -102,19 +102,19 @@ public class StatisticsKeyMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("colNames", colNames, MessageCollectionItemType.STRING))
+                if (!writer.writeCollection(colNames, MessageCollectionItemType.STRING))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString("obj", obj))
+                if (!writer.writeString(obj))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeString("schema", schema))
+                if (!writer.writeString(schema))
                     return false;
 
                 writer.incrementState();
@@ -128,12 +128,9 @@ public class StatisticsKeyMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                colNames = reader.readCollection("colNames", MessageCollectionItemType.STRING);
+                colNames = reader.readCollection(MessageCollectionItemType.STRING);
 
                 if (!reader.isLastRead())
                     return false;
@@ -141,7 +138,7 @@ public class StatisticsKeyMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                obj = reader.readString("obj");
+                obj = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -149,7 +146,7 @@ public class StatisticsKeyMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                schema = reader.readString("schema");
+                schema = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -158,17 +155,12 @@ public class StatisticsKeyMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(StatisticsKeyMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

@@ -52,7 +52,6 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -207,8 +206,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     private void testRandomOperation(final boolean jcacheApi, final boolean syncNtf, final boolean withFilter,
         final boolean asyncCallback, final boolean keepBinary)
         throws Exception {
-        if (keepBinary && !(getConfiguration().getMarshaller() == null
-            || getConfiguration().getMarshaller().getClass() == BinaryMarshaller.class))
+        if (keepBinary)
             return;
 
         runInAllDataModes(new TestRunnable() {

@@ -45,6 +45,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -55,7 +56,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.management.cache.CacheFilterEnum;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -177,7 +179,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        File dir = snapshotFileTree(ignite, SNAPSHOT_NAME).cacheStorage(dfltCacheCfg);
+        File dir = snapshotFileTree(ignite, SNAPSHOT_NAME).defaultCacheStorage(dfltCacheCfg);
 
         assertTrue(dir.toString(), dir.exists());
         assertTrue(U.delete(dir));
@@ -188,7 +190,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         res.print(b::append, true);
 
         assertFalse(F.isEmpty(res.exceptions()));
-        assertContains(log, b.toString(), "Snapshot data doesn't contain required cache groups");
+        assertContains(log, b.toString(), "Snapshot data doesn't contain required cache group");
     }
 
     /** @throws Exception If fails. */
@@ -433,10 +435,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 new Random().nextBytes(bytes);
 
                 try {
-                    BinaryObjectImpl newVal = new BinaryObjectImpl(binCtx, binCtx.marshaller().marshal(new Value(bytes)), 0);
+                    BinaryObject newVal = BinaryUtils.binaryObject(binCtx, binCtx.marshaller().marshal(new Value(bytes)), 0);
 
                     boolean success = cached.initialValue(
-                        newVal,
+                        (CacheObject)newVal,
                         new GridCacheVersion(row0.version().topologyVersion(),
                             row0.version().nodeOrder(),
                             row0.version().order() + 1),

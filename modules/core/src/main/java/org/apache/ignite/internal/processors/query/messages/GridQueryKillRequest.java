@@ -92,7 +92,7 @@ public class GridQueryKillRequest implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -100,19 +100,19 @@ public class GridQueryKillRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeBoolean("asyncRes", asyncRes))
+                if (!writer.writeBoolean(asyncRes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("nodeQryId", nodeQryId))
+                if (!writer.writeLong(nodeQryId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("reqId", reqId))
+                if (!writer.writeLong(reqId))
                     return false;
 
                 writer.incrementState();
@@ -126,12 +126,9 @@ public class GridQueryKillRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                asyncRes = reader.readBoolean("asyncRes");
+                asyncRes = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -139,7 +136,7 @@ public class GridQueryKillRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                nodeQryId = reader.readLong("nodeQryId");
+                nodeQryId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -147,7 +144,7 @@ public class GridQueryKillRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                reqId = reader.readLong("reqId");
+                reqId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -156,17 +153,12 @@ public class GridQueryKillRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GridQueryKillRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

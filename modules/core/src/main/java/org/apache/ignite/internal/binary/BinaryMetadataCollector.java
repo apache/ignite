@@ -253,7 +253,7 @@ class BinaryMetadataCollector implements BinaryWriter {
     /** {@inheritDoc} */
     @Override public BinaryRawWriter rawWriter() {
         return (BinaryRawWriter)Proxy.newProxyInstance(getClass().getClassLoader(),
-            new Class<?>[] { BinaryRawWriterEx.class },
+            new Class<?>[] { BinaryWriterEx.class },
             new InvocationHandler() {
                 @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                     return null;

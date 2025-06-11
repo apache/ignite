@@ -21,17 +21,18 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ObjectSizeCalculator;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * Abstract memory tracking node.
  */
 public abstract class MemoryTrackingNode<Row> extends AbstractNode<Row> {
     /** Estimated overhead of row in hash map (assuming key and value is an objects composed from the original row fields). */
-    protected static final long HASH_MAP_ROW_OVERHEAD = ObjectSizeCalculator.OBJ_REF_SIZE * 4 / 3 /* load factor */ +
+    protected static final long HASH_MAP_ROW_OVERHEAD = GridUnsafe.OBJ_REF_SIZE * 4 / 3 /* load factor */ +
         ObjectSizeCalculator.HASH_MAP_ENTRY_SIZE;
 
     /** Estimated overhead of row in array (assuming overhead is only size of extra reference to the row). */
-    protected static final long ARRAY_ROW_OVERHEAD = ObjectSizeCalculator.OBJ_REF_SIZE;
+    protected static final long ARRAY_ROW_OVERHEAD = GridUnsafe.OBJ_REF_SIZE;
 
     /** Default row overhead (assuming rows are stored in arrays by default). */
     protected static final long DFLT_ROW_OVERHEAD = ARRAY_ROW_OVERHEAD;

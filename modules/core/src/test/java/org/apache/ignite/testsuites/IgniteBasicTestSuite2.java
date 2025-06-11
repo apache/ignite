@@ -44,7 +44,6 @@ import org.apache.ignite.internal.metric.PeriodicHistogramMetricImplTest;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBeanTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordSerializationTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
-import org.apache.ignite.internal.processors.DeadLockOnNodeLeftExchangeTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidatesThreadTest;
 import org.apache.ignite.internal.processors.cache.GridLongRunningInitNewCrdFutureDiagnosticsTest;
@@ -72,6 +71,7 @@ import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
+import org.apache.ignite.internal.processors.database.FreeListCutTailDifferentGcTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorLoggingTest;
@@ -202,8 +202,6 @@ import org.junit.runners.Suite;
     ConfigVariationsExecutionTest.class,
     ConfigVariationsTestSuiteBuilderTest.class,
 
-    DeadLockOnNodeLeftExchangeTest.class,
-
     ClassPathContentLoggingTest.class,
 
     IncompleteDeserializationExceptionTest.class,
@@ -228,6 +226,8 @@ import org.junit.runners.Suite;
 
     ConcurrentMappingFileReadWriteTest.class,
     PeriodicHistogramMetricImplTest.class,
+
+    FreeListCutTailDifferentGcTest.class,
 })
 public class IgniteBasicTestSuite2 {
 }

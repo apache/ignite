@@ -184,7 +184,7 @@ public class GridH2IndexRangeResponse implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -192,49 +192,49 @@ public class GridH2IndexRangeResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("batchLookupId", batchLookupId))
+                if (!writer.writeInt(batchLookupId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString("err", err))
+                if (!writer.writeString(err))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeUuid("originNodeId", originNodeId))
+                if (!writer.writeUuid(originNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeLong("qryId", qryId))
+                if (!writer.writeLong(qryId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("ranges", ranges, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(ranges, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByte("status", status))
+                if (!writer.writeByte(status))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeInt("originSegId", originSegmentId))
+                if (!writer.writeInt(originSegmentId))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeInt("segmentId", segmentId))
+                if (!writer.writeInt(segmentId))
                     return false;
 
                 writer.incrementState();
@@ -247,12 +247,9 @@ public class GridH2IndexRangeResponse implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                batchLookupId = reader.readInt("batchLookupId");
+                batchLookupId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -260,7 +257,7 @@ public class GridH2IndexRangeResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                err = reader.readString("err");
+                err = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -268,7 +265,7 @@ public class GridH2IndexRangeResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                originNodeId = reader.readUuid("originNodeId");
+                originNodeId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -276,7 +273,7 @@ public class GridH2IndexRangeResponse implements Message {
                 reader.incrementState();
 
             case 3:
-                qryId = reader.readLong("qryId");
+                qryId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -284,7 +281,7 @@ public class GridH2IndexRangeResponse implements Message {
                 reader.incrementState();
 
             case 4:
-                ranges = reader.readCollection("ranges", MessageCollectionItemType.MSG);
+                ranges = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -292,7 +289,7 @@ public class GridH2IndexRangeResponse implements Message {
                 reader.incrementState();
 
             case 5:
-                status = reader.readByte("status");
+                status = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -300,7 +297,7 @@ public class GridH2IndexRangeResponse implements Message {
                 reader.incrementState();
 
             case 6:
-                originSegmentId = reader.readInt("originSegId");
+                originSegmentId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -308,7 +305,7 @@ public class GridH2IndexRangeResponse implements Message {
                 reader.incrementState();
 
             case 7:
-                segmentId = reader.readInt("segmentId");
+                segmentId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -316,17 +313,12 @@ public class GridH2IndexRangeResponse implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(GridH2IndexRangeResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -31;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 8;
     }
 
     /** {@inheritDoc} */

@@ -27,7 +27,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerInaccessibleClassException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,26 +41,11 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.COLLE
 /**
  * Internal binary object interface.
  */
-public abstract class BinaryObjectExImpl implements BinaryObjectEx {
+abstract class BinaryObjectExImpl implements BinaryObjectEx {
     /**
      * @return Length.
      */
     public abstract int length();
-
-    /**
-     * @return Object start.
-     */
-    public abstract int start();
-
-    /**
-     * @return {@code True} if object is array based.
-     */
-    public abstract boolean hasArray();
-
-    /**
-     * @return Object array if object is array based, otherwise {@code null}.
-     */
-    public abstract byte[] array();
 
     /**
      * @return Object offheap address is object is offheap based, otherwise 0.
@@ -148,18 +133,11 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      *
      * @return Schema.
      */
-    public abstract BinarySchema createSchema();
-
-    /**
-     * Get binary context.
-     *
-     * @return Binary context.
-     */
-    public abstract BinaryContext context();
+    abstract BinarySchema createSchema();
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
-        return BinaryObjectBuilderImpl.wrap(this);
+        return BinaryObjectBuilders.builder(this);
     }
 
     /** {@inheritDoc} */

@@ -30,6 +30,7 @@ import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
@@ -110,6 +111,12 @@ public abstract class GridUnsafe {
 
     /** */
     public static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
+
+    /** Reference type size. */
+    public static final long OBJ_REF_SIZE = arrayIndexScale(Object[].class);
+
+    /** Objects allignment. */
+    private static final long OBJ_ALIGN = calcAlign();
 
     /** {@link java.nio.Buffer#address} field offset. */
     private static final long DIRECT_BUF_ADDR_OFF = bufferAddressOffset();
@@ -1553,6 +1560,18 @@ public abstract class GridUnsafe {
         assert buf.isDirect();
 
         DIRECT_BUF_CLEANER.clean(buf);
+    }
+
+    /** */
+    public static long calcAlign() {
+        // Note: Alignment can also be set explicitly by -XX:ObjectAlignmentInBytes JVM property.
+        return OBJ_REF_SIZE == 8L ? 8L :
+            U.nearestPow2(Math.max(8, (int)(Runtime.getRuntime().maxMemory() >> 32)), false);
+    }
+
+    /** Calculate size with alignment. */
+    public static long align(long size) {
+        return (size + (OBJ_ALIGN - 1L)) & (-OBJ_ALIGN);
     }
 
     /**

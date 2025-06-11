@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -76,7 +77,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.cdc.CdcUtilityActiveCdcManager;
@@ -2198,12 +2198,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         caches.put(cacheCtx.name(), cache);
 
-        // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
-        if (cfg.isStoreKeepBinary() && cfg.isStoreKeepBinary() != CacheConfiguration.DFLT_STORE_KEEP_BINARY
-            && !(ctx.config().getMarshaller() instanceof BinaryMarshaller))
-            U.warn(log, "CacheConfiguration.isStoreKeepBinary() configuration property will be ignored because " +
-                "BinaryMarshaller is not used");
-
         // Start managers.
         for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
             mgr.start(cacheCtx);
@@ -3369,7 +3363,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assert cfg != null;
 
-            if (F.eq(cacheName, cfg.getName())) {
+            if (Objects.equals(cacheName, cfg.getName())) {
                 cfgTemplate = desc;
 
                 break;
@@ -5378,6 +5372,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param key Filtering key.
      */
     private static <K, V> Map<K, V> filteredMap(Map<K, V> map, K key) {
+        if (map == null)
+            return Collections.emptyMap();
+
         if (key == null)
             return map;
 

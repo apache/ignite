@@ -81,7 +81,7 @@ public class GridQueryKillResponse implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -89,13 +89,13 @@ public class GridQueryKillResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("errMsg", errMsg))
+                if (!writer.writeString(errMsg))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("reqId", reqId))
+                if (!writer.writeLong(reqId))
                     return false;
 
                 writer.incrementState();
@@ -109,12 +109,9 @@ public class GridQueryKillResponse implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                errMsg = reader.readString("errMsg");
+                errMsg = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -122,7 +119,7 @@ public class GridQueryKillResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                reqId = reader.readLong("reqId");
+                reqId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -131,17 +128,12 @@ public class GridQueryKillResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(GridQueryKillResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

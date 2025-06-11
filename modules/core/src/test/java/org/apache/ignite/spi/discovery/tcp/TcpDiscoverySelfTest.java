@@ -344,7 +344,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-            g1.configuration().getMarshaller().marshal(nodes, bos);
+            marshaller(g1).marshal(nodes, bos);
 
             info(">>> Approximate node connect message size [topSize=" + nodes.size() +
                 ", msgSize=" + bos.size() / 1024.0 + "KB]");
@@ -1202,7 +1202,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         // On Windows and Mac machines two nodes can reside on the same port
         // (if one node has localHost="127.0.0.1" and another has localHost="0.0.0.0").
         // So two nodes do not even discover each other.
-        if (U.isWindows() || U.isMacOs() || U.isSolaris())
+        if (U.isWindows() || U.isMacOs())
             return;
 
         try {

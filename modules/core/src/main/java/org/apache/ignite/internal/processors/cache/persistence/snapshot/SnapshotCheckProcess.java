@@ -57,6 +57,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 
 /** Distributed process of snapshot checking (with the partition hashes). */
 public class SnapshotCheckProcess {
@@ -620,7 +621,7 @@ public class SnapshotCheckProcess {
 
         UUID reqId = UUID.randomUUID();
 
-        Set<UUID> requiredNodes = new HashSet<>(F.viewReadOnly(kctx.discovery().discoCache().aliveBaselineNodes(), F.node2id()));
+        Set<UUID> requiredNodes = new HashSet<>(F.viewReadOnly(kctx.discovery().discoCache().aliveBaselineNodes(), node2id()));
 
         // Initiator is also a required node. It collects the final operation result.
         requiredNodes.add(kctx.localNodeId());

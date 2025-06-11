@@ -23,7 +23,6 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -35,6 +34,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Test node restart.
@@ -204,7 +204,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
                 int part = affinity(c).partition(key);
 
                 info("Affinity nodes before stop [key=" + key + ", partition" + part + ", nodes=" +
-                    U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
+                    nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
             }
         }
     }
@@ -218,7 +218,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
                 int part = affinity(c).partition(key);
 
                 info("Affinity nodes after start [key=" + key + ", partition" + part + ", nodes=" +
-                    U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
+                    nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
             }
         }
     }

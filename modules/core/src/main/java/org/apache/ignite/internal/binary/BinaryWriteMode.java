@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary;
 /**
  * Various write modes for binary objects.
  */
-public enum BinaryWriteMode {
+enum BinaryWriteMode {
     /** Primitive byte. */
     P_BYTE(GridBinaryMarshaller.BYTE),
 

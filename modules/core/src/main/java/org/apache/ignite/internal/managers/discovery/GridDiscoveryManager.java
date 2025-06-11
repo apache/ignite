@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -182,6 +183,8 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.isSec
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withRemoteSecurityContext;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsistentIds;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
 /**
@@ -1288,7 +1291,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             String rmtPreferIpV4 = n.attribute("java.net.preferIPv4Stack");
 
-            if (!F.eq(rmtPreferIpV4, locPreferIpV4)) {
+            if (!Objects.equals(rmtPreferIpV4, locPreferIpV4)) {
                 if (!ipV4Warned)
                     U.warn(log, "Local node's value of 'java.net.preferIPv4Stack' " +
                         "system property differs from remote node's " +
@@ -1358,7 +1361,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             ShutdownPolicy rmtShutdownPlc = n.attribute(ATTR_SHUTDOWN_POLICY) == null ? null :
                 ShutdownPolicy.fromOrdinal(n.attribute(ATTR_SHUTDOWN_POLICY));
 
-            if (rmtShutdownPlc != null && !F.eq(locShutdownPlc, rmtShutdownPlc)) {
+            if (rmtShutdownPlc != null && !Objects.equals(locShutdownPlc, rmtShutdownPlc)) {
                 throw new IgniteCheckedException("Remote node has shutdoun policy different from local" +
                     " local [locId8=" + U.id8(locNode.id()) + ", locShutdownPolicy=" + locShutdownPlc +
                     ", rmtId8=" + U.id8(n.id()) + ", rmtShutdownPolicy=" + rmtShutdownPlc +
@@ -1368,7 +1371,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             if (ctx.security().enabled()) {
                 Boolean rmtSecurityCompatibilityEnabled = n.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
-                if (!F.eq(locSecurityCompatibilityEnabled, rmtSecurityCompatibilityEnabled)) {
+                if (!Objects.equals(locSecurityCompatibilityEnabled, rmtSecurityCompatibilityEnabled)) {
                     throw new IgniteCheckedException("Local node's " + IGNITE_SECURITY_COMPATIBILITY_MODE +
                         " property value differs from remote node's value " +
                         "(to make sure all nodes in topology have identical Ignite security compatibility mode enabled, " +
@@ -1686,7 +1689,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     offlineNodes.removeAll(discoCache.aliveBaselineNodes());
 
-                    offlineConsistentIds = ' ' + F.nodeConsistentIds(offlineNodes).toString();
+                    offlineConsistentIds = ' ' + nodeConsistentIds(offlineNodes).toString();
                 }
 
                 if (bltOffline == 0) {
@@ -2677,7 +2680,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         // which contains all topology versions since the cluster was started.
         for (Collection<ClusterNode> top : topHist.headMap(lastCheckedLocTopVer, false).descendingMap().values()) {
             for (ClusterNode node : top) {
-                if (F.eq(node.id(), nodeId))
+                if (Objects.equals(node.id(), nodeId))
                     return node;
             }
         }
@@ -3157,7 +3160,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
 
                     case EVT_NODE_SEGMENTED: {
-                        assert F.eqNodes(localNode(), node);
+                        assert eqNodes(localNode(), node);
 
                         if (nodeSegFired) {
                             if (log.isDebugEnabled()) {

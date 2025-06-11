@@ -82,10 +82,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -110,10 +109,8 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -1330,7 +1327,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 IgniteConfiguration nodeCfg = node.configuration();
 
                 log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
-                    + ", marshaller=" + nodeCfg.getMarshaller()
                     + ", discovery=" + nodeCfg.getDiscoverySpi()
                     + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
                     + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
@@ -2028,7 +2024,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected BinaryMarshaller createStandaloneBinaryMarshaller(IgniteConfiguration cfg) throws IgniteCheckedException {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
+        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), cfg, new NullLogger());
 
         marsh.setContext(new MarshallerContextTestImpl());
 
@@ -2080,18 +2076,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * @param marshaller Marshaller to get checkpoint path for.
-     * @return Path for specific marshaller.
-     */
-    @SuppressWarnings({"IfMayBeConditional"})
-    protected String getDefaultCheckpointPath(Marshaller marshaller) {
-        if (marshaller instanceof JdkMarshaller)
-            return SharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
-        else
-            return SharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + marshaller.getClass().getSimpleName() + '/';
-    }
-
-    /**
      * @param name Name to mask.
      * @return Masked name.
      */
@@ -2121,7 +2105,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         cfg.setIgniteInstanceName(igniteInstanceName);
         cfg.setGridLogger(rsrcs.getLogger());
-        cfg.setMarshaller(rsrcs.getMarshaller());
         cfg.setNodeId(rsrcs.getNodeId());
         cfg.setIgniteHome(rsrcs.getIgniteHome());
         cfg.setMBeanServer(rsrcs.getMBeanServer());
@@ -2169,7 +2152,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         Collection<String> paths = new ArrayList<>();
 
-        paths.add(getDefaultCheckpointPath(cfg.getMarshaller()));
+        paths.add(SharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + BinaryMarshaller.class.getSimpleName() + '/');
 
         cpSpi.setDirectoryPaths(paths);
 
@@ -2256,7 +2239,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         GridClassLoaderCache.clear();
         U.clearClassCache();
         MarshallerExclusions.clearCache();
-        BinaryEnumCache.clear();
+        BinaryUtils.clearCache();
         serializedObj.clear();
 
         if (err != null)
@@ -3221,7 +3204,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /** @return Ignite directories for specific {@code folderName}. */
     protected NodeFileTree nodeFileTree(String folderName) {
         try {
-            return new NodeFileTree(U.defaultWorkDirectory(), folderName);
+            return new NodeFileTree(new File(U.defaultWorkDirectory()), folderName);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

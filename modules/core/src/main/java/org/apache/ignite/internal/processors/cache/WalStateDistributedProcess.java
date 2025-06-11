@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -150,7 +151,7 @@ public class WalStateDistributedProcess {
             if (changed == null)
                 changed = curChanged;
             else {
-                if (!F.eq(curChanged, changed)) {
+                if (!Objects.equals(curChanged, changed)) {
                     return new WalStateFinishMessage(msg.operationId(), msg.groupId(), msg.groupDeploymentId(),
                         false, "Operation result is unknown because nodes reported different results (please " +
                         "re-try operation).");

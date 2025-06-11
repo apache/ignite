@@ -250,14 +250,14 @@ public class BinaryEnumsSelfTest extends AbstractBinaryArraysTest {
 
         BinaryEnumObjectImpl srcBinEnum = new BinaryEnumObjectImpl(binCtx, typeId, clsName, ord);
 
-        Marshaller marsh = node1.configuration().getMarshaller();
+        Marshaller marsh = marshaller(node1);
 
         byte[] bytes = marsh.marshal(srcBinEnum);
 
         BinaryEnumObjectImpl binEnum = new BinaryEnumObjectImpl(binCtx, bytes);
 
         assertEquals(srcBinEnum.size(), binEnum.size());
-        assertEquals(clsName, binEnum.className());
+        assertEquals(clsName, binEnum.enumClassName());
         assertEquals(typeId, binEnum.typeId());
         assertEquals(ord, binEnum.enumOrdinal());
     }
