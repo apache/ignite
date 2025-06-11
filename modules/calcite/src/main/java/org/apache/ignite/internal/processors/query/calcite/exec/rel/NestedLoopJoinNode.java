@@ -23,15 +23,20 @@ import java.util.BitSet;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.BiPredicate;
+import java.util.function.Supplier;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
+    /** */
+    private static final int HALF_BUF_SIZE = IN_BUFFER_SIZE >> 1;
+
     /** Special value to highlights that all row were received and we are not waiting any more. */
     protected static final int NOT_WAITING = -1;
 
@@ -43,6 +48,12 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
     /** */
     protected int requested;
+
+    /** */
+    protected Row left;
+
+    /** */
+    protected int rightIdx;
 
     /** */
     protected int waitingLeft;
@@ -98,6 +109,9 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
         rightMaterialized.clear();
         leftInBuf.clear();
+
+        left = null;
+        rightIdx = 0;
     }
 
     /** {@inheritDoc} */
@@ -151,7 +165,8 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
         leftInBuf.add(row);
 
-        join();
+        if (waitingLeft <= 0)
+            join();
     }
 
     /** */
@@ -247,26 +262,12 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
     /** */
     private static class InnerJoin<Row> extends NestedLoopJoinNode<Row> {
-        /** */
-        private Row left;
-
-        /** */
-        private int rightIdx;
-
         /**
          * @param ctx Execution context.
          * @param cond Join expression.
          */
         public InnerJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void rewindInternal() {
-            left = null;
-            rightIdx = 0;
-
-            super.rewindInternal();
         }
 
         /** */
@@ -300,16 +301,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            if (waitingRight == 0)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE);
-
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                leftSource().request(waitingLeft = IN_BUFFER_SIZE);
-
-            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                requested = 0;
-                downstream().end();
-            }
+            tryGetMoreOrEnd();
         }
     }
 
@@ -320,12 +312,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
         /** Whether current left row was matched or not. */
         private boolean matched;
-
-        /** */
-        private Row left;
-
-        /** */
-        private int rightIdx;
 
         /**
          * @param ctx Execution context.
@@ -345,8 +331,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
         /** */
         @Override protected void rewindInternal() {
             matched = false;
-            left = null;
-            rightIdx = 0;
 
             super.rewindInternal();
         }
@@ -398,16 +382,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            if (waitingRight == 0)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE);
-
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                leftSource().request(waitingLeft = IN_BUFFER_SIZE);
-
-            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                requested = 0;
-                downstream().end();
-            }
+            tryGetMoreOrEnd();
         }
     }
 
@@ -421,12 +396,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
         /** */
         private int lastPushedInd;
-
-        /** */
-        private Row left;
-
-        /** */
-        private int rightIdx;
 
         /**
          * @param ctx Execution context.
@@ -445,10 +414,8 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
         /** {@inheritDoc} */
         @Override protected void rewindInternal() {
-            left = null;
             rightNotMatchedIndexes.clear();
             lastPushedInd = 0;
-            rightIdx = 0;
 
             super.rewindInternal();
         }
@@ -523,17 +490,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            if (waitingRight == 0)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE);
-
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                leftSource().request(waitingLeft = IN_BUFFER_SIZE);
-
-            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
-                && leftInBuf.isEmpty() && rightNotMatchedIndexes.isEmpty()) {
-                requested = 0;
-                downstream().end();
-            }
+            tryGetMoreOrEnd(() -> rightNotMatchedIndexes.isEmpty());
         }
     }
 
@@ -554,12 +511,6 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
         /** */
         private int lastPushedInd;
 
-        /** */
-        private Row left;
-
-        /** */
-        private int rightIdx;
-
         /**
          * @param ctx Execution context.
          * @param cond Join expression.
@@ -579,11 +530,9 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
         /** {@inheritDoc} */
         @Override protected void rewindInternal() {
-            left = null;
             leftMatched = false;
             rightNotMatchedIndexes.clear();
             lastPushedInd = 0;
-            rightIdx = 0;
 
             super.rewindInternal();
         }
@@ -673,42 +622,18 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            if (waitingRight == 0)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE);
-
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                leftSource().request(waitingLeft = IN_BUFFER_SIZE);
-
-            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
-                && leftInBuf.isEmpty() && rightNotMatchedIndexes.isEmpty()) {
-                requested = 0;
-                downstream().end();
-            }
+            tryGetMoreOrEnd(() -> rightNotMatchedIndexes.isEmpty());
         }
     }
 
     /** */
     private static class SemiJoin<Row> extends NestedLoopJoinNode<Row> {
-        /** */
-        private Row left;
-
-        /** */
-        private int rightIdx;
-
         /**
          * @param ctx Execution context.
          * @param cond Join expression.
          */
         public SemiJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void rewindInternal() {
-            left = null;
-            rightIdx = 0;
-
-            super.rewindInternal();
         }
 
         /** {@inheritDoc} */
@@ -739,42 +664,18 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            if (waitingRight == 0)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE);
-
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                leftSource().request(waitingLeft = IN_BUFFER_SIZE);
-
-            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null
-                && leftInBuf.isEmpty()) {
-                downstream().end();
-                requested = 0;
-            }
+            tryGetMoreOrEnd();
         }
     }
 
     /** */
     private static class AntiJoin<Row> extends NestedLoopJoinNode<Row> {
-        /** */
-        private Row left;
-
-        /** */
-        private int rightIdx;
-
         /**
          * @param ctx Execution context.
          * @param cond Join expression.
          */
         public AntiJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
-        }
-
-        /** */
-        @Override protected void rewindInternal() {
-            left = null;
-            rightIdx = 0;
-
-            super.rewindInternal();
         }
 
         /** {@inheritDoc} */
@@ -809,16 +710,41 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            if (waitingRight == 0)
-                rightSource().request(waitingRight = IN_BUFFER_SIZE);
-
-            if (waitingLeft == 0 && leftInBuf.isEmpty())
-                leftSource().request(waitingLeft = IN_BUFFER_SIZE);
-
-            if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
-                requested = 0;
-                downstream().end();
-            }
+            tryGetMoreOrEnd();
         }
+    }
+
+    /** */
+    protected void tryGetMoreOrEnd(@Nullable Supplier<Boolean> extCheck) throws Exception {
+        if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()
+            && (extCheck == null || extCheck.get())
+        ) {
+            requested = 0;
+            rightMaterialized.clear();
+
+            downstream().end();
+
+            return;
+        }
+
+        if (waitingLeft == 0 && requested > 0 && leftInBuf.size() <= HALF_BUF_SIZE)
+            leftSource().request(waitingLeft = IN_BUFFER_SIZE - leftInBuf.size());
+
+        if (waitingRight == 0 && requested > 0 && rightMaterialized.size() <= HALF_BUF_SIZE)
+            rightSource().request(waitingRight = IN_BUFFER_SIZE - rightMaterialized.size());
+    }
+
+    /** */
+    protected void tryGetMoreOrEnd() throws Exception {
+        tryGetMoreOrEnd(null);
+    }
+
+    /** */
+    protected void tryToRequestInputs() throws Exception {
+        if (waitingLeft == 0 && requested > 0 && leftInBuf.size() <= HALF_BUF_SIZE)
+            leftSource().request(waitingLeft = IN_BUFFER_SIZE - leftInBuf.size());
+
+        if (waitingRight == 0 && requested > 0 && rightMaterialized.size() <= HALF_BUF_SIZE)
+            rightSource().request(waitingRight = IN_BUFFER_SIZE - rightMaterialized.size());
     }
 }
