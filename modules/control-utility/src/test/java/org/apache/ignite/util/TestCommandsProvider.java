@@ -19,8 +19,8 @@ package org.apache.ignite.util;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsProvider;
 import org.apache.ignite.internal.util.typedef.F;
@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /** Enables registration of additional commands for testing purposes. */
 public class TestCommandsProvider implements CommandsProvider {
     /** Commands. */
-    private static final Set<Command<?, ?>> COMMANDS = new HashSet<>();
+    private static final Set<Command<?, ?>> COMMANDS = ConcurrentHashMap.newKeySet();
 
     /**
      * Registers new commands.
