@@ -229,14 +229,14 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);
         GridTestKernalContext ctx = newContext(cfg);
-        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(ctx);
+        GridLogCommandHandler cmdHnd = new GridLogCommandHandler(ctx);
         GridRestLogRequest req = new GridRestLogRequest();
 
         req.to(1);
         req.from(0);
         req.path(p);
 
-        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+        IgniteInternalFuture<GridRestResponse> resp = cmdHnd.handleAsync(req);
 
         assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
         assertNull(resp.result().getResponse());
