@@ -156,7 +156,6 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_ZIP_WAL_SEG_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.WAL_SEGMENT_FILE_EXT;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_WAL_SEG_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory.LATEST_SERIALIZER_VERSION;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
@@ -177,18 +176,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private static final byte[] FILL_BUF = new byte[1024 * 1024];
 
     /** */
-    public static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(ZIP_WAL_SEG_FILE_EXT);
-
-    /** WAL segment file filter, see {@link NodeFileTree#walSegment(File)} */
-    public static final FileFilter WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = file -> NodeFileTree.walSegment(file) ||
-        (!file.isDirectory() && WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
-
-    /** */
     private static final Pattern WAL_SEGMENT_TEMP_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(TMP_ZIP_WAL_SEG_FILE_EXT);
-
-    /** */
-    public static final FileFilter WAL_SEGMENT_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
-        WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
 
     /** */
     public static final FileFilter WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
@@ -1236,7 +1224,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private long lastArchivedIndex() {
         long lastIdx = -1;
 
-        for (File file : ft.walArchive().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
+        for (File file : ft.walArchiveCompactedOrRawSegments()) {
             try {
                 long idx = ft.walSegmentIndex(file.toPath());
 
@@ -1443,7 +1431,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     segmentAware.setLastArchivedAbsoluteIndex(absIdx - 1);
 
                 // Getting segment sizes.
-                F.asList(ft.walArchive().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)).stream()
+                F.asList(ft.walArchiveCompactedOrRawSegments()).stream()
                     .map(FileDescriptor::new)
                     .forEach(fd -> {
                         if (fd.isCompressed())
@@ -1737,7 +1725,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return Raw or compressed WAL segments from archive.
      */
     public FileDescriptor[] walArchiveFiles() {
-        return scan(ft.walArchive().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
+        return scan(ft.walArchiveCompactedOrRawSegments());
     }
 
     /**
@@ -1842,7 +1830,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private IgniteBiTuple<Long, Long> scanMinMaxArchiveIndices() throws IgniteCheckedException {
             TreeMap<Long, FileDescriptor> archiveIndices = new TreeMap<>();
 
-            for (File file : ft.walArchive().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
+            for (File file : ft.walArchiveCompactedOrRawSegments()) {
                 try {
                     long idx = new FileDescriptor(file).idx();
 
@@ -1879,7 +1867,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             // If WAL archive is empty, try to find last not archived segment in work directory and copy to WAL archive.
             TreeMap<Long, FileDescriptor> workIndices = new TreeMap<>();
 
-            for (File file : ft.wal().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)) {
+            for (File file : ft.walCompactedOrRawSegments()) {
                 FileDescriptor desc = readFileDescriptor(file, ioFactory);
 
                 if (desc != null)
@@ -3198,7 +3186,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return found WAL file descriptors
      */
     public static FileDescriptor[] loadFileDescriptors(final File walFilesDir) throws IgniteCheckedException {
-        final File[] files = walFilesDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+        final File[] files = walFilesDir.listFiles(NodeFileTree::walCompactedOrRawSegment);
 
         if (files == null) {
             throw new IgniteCheckedException("WAL files directory does not not denote a " +
@@ -3416,7 +3404,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (!F.isEmpty(workSegments) && (workSegments.length > dsCfg.getWalSegments() || workSegments[0].idx() != 0))
             toMove.addAll(F.asList(workSegments).subList(0, workSegments.length - 1));
 
-        toMove.addAll(F.asList(scan(ft.wal().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER))));
+        toMove.addAll(F.asList(scan(ft.walCompactedSegments())));
 
         if (!toMove.isEmpty()) {
             log.warning("Content of WAL working directory needs rearrangement, some WAL segments will be moved to " +
