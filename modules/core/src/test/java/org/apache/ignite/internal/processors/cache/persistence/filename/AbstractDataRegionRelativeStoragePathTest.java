@@ -60,6 +60,9 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     protected static final int PARTS_CNT = 15;
 
     /** */
+    protected static final int GRID_CNT = 3;
+
+    /** */
     @Parameterized.Parameter()
     public boolean absPath;
 
@@ -180,7 +183,7 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
     /** */
     IgniteEx startAndActivate() throws Exception {
-        IgniteEx srv = startGrids(3);
+        IgniteEx srv = startGrids(GRID_CNT);
 
         srv.cluster().state(ClusterState.ACTIVE);
 

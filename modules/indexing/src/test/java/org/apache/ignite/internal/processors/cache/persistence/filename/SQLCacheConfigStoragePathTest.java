@@ -90,6 +90,17 @@ public class SQLCacheConfigStoragePathTest extends CacheConfigStoragePathTest {
     }
 
     /** {@inheritDoc} */
+    @Override void restoreAndCheck(String name, String path) throws Exception {
+        super.restoreAndCheck(name, path);
+
+        for (int i = 0; i < GRID_CNT; i++) {
+            List<List<?>> rows = executeSql(grid(0), "SELECT TABLE_NAME FROM SYS.TABLES WHERE IS_INDEX_REBUILD_IN_PROGRESS = 'TRUE'");
+
+            assertTrue(rows.isEmpty());
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override protected boolean idxPartMustExistsInSnapshot() {
         return true;
     }
