@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
@@ -258,7 +257,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         SnapshotFileTree sft = snapshotFileTree(srv, SNP);
 
-        File[] segments = sft.incrementalSnapshotFileTree(1).wal().listFiles(NodeFileTree::walCompactedSegment);
+        File[] segments = sft.incrementalSnapshotFileTree(1).walCompactedSegments();
 
         Arrays.sort(segments);
 
@@ -361,7 +360,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
     private void deleteWalSegment(int idx) {
         SnapshotFileTree sft = snapshotFileTree(srv, SNP);
 
-        File[] segments = sft.incrementalSnapshotFileTree(1).wal().listFiles(NodeFileTree::walCompactedSegment);
+        File[] segments = sft.incrementalSnapshotFileTree(1).walCompactedSegments();
 
         Arrays.sort(segments);
 

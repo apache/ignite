@@ -212,7 +212,7 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
 
         Map<Long, Long> expSegmentSize = new HashMap<>();
 
-        F.asList(ft.walArchive().listFiles(NodeFileTree::walCompactedOrRawSegment))
+        F.asList(ft.walArchiveCompactedOrRawSegments())
             .stream()
             .map(FileDescriptor::new)
             .forEach(fd -> {
