@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot;
+package org.apache.ignite.internal.management.api;
 
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Snapshot operation warning. Warnings do not interrupt snapshot process but raise exception at the end to make the
- * operation status {@code EXIT_CODE_COMPLETED_WITH_WARNINGS} if no other error occurred.
+ * An exception indicating that a command completed its execution successfully, but produced non-critical warnings
+ * that should be handled separately from regular errors.
  */
-public class SnapshotWarningException extends IgniteCheckedException {
+public class CommandWarningException extends IgniteCheckedException {
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public SnapshotWarningException(String wrnMsg) {
-        super(wrnMsg);
+    public CommandWarningException(Throwable cause) {
+        super(cause);
     }
 }
