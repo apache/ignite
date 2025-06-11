@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.io.IOUtils;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -115,9 +114,7 @@ import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.dumpPartFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.CACHE_0;
@@ -125,10 +122,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.d
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.KEYS_CNT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.USER_FACTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dump;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.dumpDirectory;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.encryptionSpi;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.invokeCheckCommand;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.CreateDumpFutureTask.DUMP_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntrySerializer.HEADER_SZ;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -137,6 +132,12 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
+    /** */
+    private static final String CUSTOM_LOCATION = "custom_location";
+
+    /** */
+    private static final String DUMP_CUSTOM_LOCATION = "dump_custom_location";
+
     /** */
     private LogListener lsnr;
 
@@ -155,10 +156,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             cfg.setGridLogger(testLog);
         }
 
-        if (persistence) {
-            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
-        }
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
+
+        if (persistence)
+            cfg.getDataStorageConfiguration().setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+
+        cfg.getDataStorageConfiguration()
+            .setExtraStoragePaths(CUSTOM_LOCATION)
+            .setDataRegionConfigurations(new DataRegionConfiguration()
+            .setPersistenceEnabled(persistence)
+            .setName(CUSTOM_LOCATION));
 
         cfg.setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT);
 
@@ -179,21 +186,69 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        U.delete(new File(U.defaultWorkDirectory(), DUMP_CUSTOM_LOCATION));
+        U.delete(new File(U.defaultWorkDirectory(), CUSTOM_LOCATION));
     }
 
     /** */
     @Test
     public void testDumpRawData() throws Exception {
+        doTestDumpRawData(false, false);
+    }
+
+    /** */
+    @Test
+    public void testDumpRawDataAndDumpPath() throws Exception {
+        doTestDumpRawData(false, true);
+    }
+
+    /** */
+    @Test
+    public void testDumpRawCustomStoragePath() throws Exception {
+        doTestDumpRawData(true, false);
+    }
+
+    /** */
+    @Test
+    public void testDumpRawCustomStoragePathAndDumpPath() throws Exception {
+        doTestDumpRawData(true, true);
+    }
+
+    /** */
+    private void doTestDumpRawData(boolean dataCustomLocation, boolean dumpAbsPath) throws Exception {
         IgniteEx ign = startGrids(3);
 
-        Ignite cli = startClientGrid(G.allGrids().size());
+        IgniteEx cli = startClientGrid(G.allGrids().size());
 
-        cli.createCache(defaultCacheConfiguration());
+        CacheConfiguration<Object, Object> ccfg = defaultCacheConfiguration();
+
+        if (dataCustomLocation)
+            ccfg.setStoragePaths(CUSTOM_LOCATION);
+
+        cli.createCache(ccfg);
 
         for (int i = 0; i < KEYS_CNT; ++i)
             cli.cache(DEFAULT_CACHE_NAME).put(i, USER_FACTORY.apply(i));
 
-        cli.snapshot().createDump(DMP_NAME, null).get();
+        String dumpPath = null;
+
+        if (dumpAbsPath) {
+            dumpPath = new File(U.defaultWorkDirectory(), DUMP_CUSTOM_LOCATION).getAbsolutePath();
+
+            ign.context().cache().context().snapshotMgr().createSnapshot(
+                DMP_NAME,
+                dumpPath,
+                null,
+                false,
+                false,
+                true,
+                false,
+                false
+            ).get();
+        }
+        else
+            cli.snapshot().createDump(DMP_NAME, null).get();
 
         AtomicBoolean keepRaw = new AtomicBoolean();
         AtomicBoolean keepBinary = new AtomicBoolean();
@@ -244,13 +299,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
                 new DumpReader(
                     new DumpReaderConfiguration(
-                        dumpDirectory(ign, DMP_NAME),
+                        DMP_NAME,
+                        dumpPath,
+                        ign.configuration(),
                         cnsmr,
                         DFLT_THREAD_CNT,
                         DFLT_TIMEOUT,
                         true,
                         keepBinary.get(),
                         keepRaw.get(),
+                        null,
                         null,
                         false,
                         null
@@ -264,17 +322,29 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** Checks a dump when it is created with the data streamer just after a restart. */
     @Test
     public void testDumpAfterRestartWithStreamer() throws Exception {
-        doTestDumpAfterRestart(true);
+        doTestDumpAfterRestart(true, false);
+    }
+
+    /** Checks a dump when it is created with the data streamer just after a restart. */
+    @Test
+    public void testDumpAfterRestartWithStreamerCustomLocation() throws Exception {
+        doTestDumpAfterRestart(true, true);
     }
 
     /** Checks a dump when it is created just after a restart. */
     @Test
     public void testDumpAfterRestart() throws Exception {
-        doTestDumpAfterRestart(false);
+        doTestDumpAfterRestart(false, false);
+    }
+
+    /** Checks a dump when it is created just after a restart. */
+    @Test
+    public void testDumpAfterRestartCustomLocation() throws Exception {
+        doTestDumpAfterRestart(false, true);
     }
 
     /** Doest dump test when it is created just after restart. */
-    private void doTestDumpAfterRestart(boolean useDataStreamer) throws Exception {
+    private void doTestDumpAfterRestart(boolean useDataStreamer, boolean dataCustomLocation) throws Exception {
         persistence = true;
 
         int nodes = 2;
@@ -283,7 +353,12 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         ign0.cluster().state(ClusterState.ACTIVE);
 
-        ign0.createCache(defaultCacheConfiguration());
+        CacheConfiguration<Object, Object> ccfg = defaultCacheConfiguration();
+
+        if (dataCustomLocation)
+            ccfg.setStoragePaths(CUSTOM_LOCATION);
+
+        ign0.createCache(ccfg);
 
         try (IgniteDataStreamer<Integer, String> ds = ign0.dataStreamer(DEFAULT_CACHE_NAME)) {
             IgniteCache<Integer, String> cache = ign0.cache(DEFAULT_CACHE_NAME);
@@ -297,14 +372,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         }
 
         stopAllGrids(false);
+
         IgniteEx ign1 = startGrids(nodes);
+
         ign1.cluster().state(ClusterState.ACTIVE);
 
         ign1.snapshot().createDump(DMP_NAME, Collections.singletonList(DEFAULT_CACHE_NAME)).get(getTestTimeout());
 
         ign1.destroyCache(DEFAULT_CACHE_NAME);
 
-        new DumpReader(new DumpReaderConfiguration(dumpDirectory(ign1, DMP_NAME), new DumpConsumer() {
+        new DumpReader(new DumpReaderConfiguration(DMP_NAME, null, ign1.configuration(), new DumpConsumer() {
             @Override public void start() {
                 // No-op.
             }
@@ -345,10 +422,12 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     @Test
     public void testSnapshotDirectoryCreatedLazily() throws Exception {
         try (IgniteEx ign = startGrid(new IgniteConfiguration())) {
-            NodeFileTree ft = nodeFileTree(ign.context().pdsFolderResolver().resolveFolders().folderName());
+            NodeFileTree ft = ign.context().pdsFolderResolver().fileTree();
 
             assertFalse(ft.snapshotsRoot() + " must created lazily for in-memory node", ft.snapshotsRoot().exists());
-            assertFalse(ft.snapshotTempRoot() + " must created lazily for in-memory node", ft.snapshotTempRoot().exists());
+
+            for (File tmpRoot : ft.snapshotsTempRoots())
+                assertFalse(tmpRoot + " must created lazily for in-memory node", tmpRoot.exists());
         }
     }
 
@@ -380,16 +459,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         ign.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
 
-        SnapshotFileTree sft = snapshotFileTree(grid(1), DMP_NAME);
+        List<SnapshotFileTree> sfts = G.allGrids().stream()
+            .filter(n -> !n.configuration().isClientMode())
+            .map(n -> snapshotFileTree(((IgniteEx)n), DMP_NAME))
+            .collect(Collectors.toList());
 
         stopAllGrids();
 
-        Dump dump = dump(ign, DMP_NAME);
+        Dump dump = new Dump(ign.context(), sfts, DumpReader.metadata(F.first(sfts).root()), true, false, null, log);
 
-        List<String> nodes = dump.nodesDirectories();
-
-        assertNotNull(nodes);
-        assertEquals(2, nodes.size());
+        SnapshotFileTree sft = F.first(dump.fileTrees());
 
         assertTrue(sft.dumpLock().createNewFile());
 
@@ -397,7 +476,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             "This means, dump creation not finished prior to node fail. " +
             "Directory will be deleted: " + sft.nodeStorage().getAbsolutePath()).build();
 
-        startGridsMultiThreaded(2);
+        startGridsMultiThreaded(1);
 
         assertFalse(sft.nodeStorage().exists());
         assertTrue(lsnr.check());
@@ -418,14 +497,14 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             Dump dump = dump(ign, DMP_NAME);
 
-            List<String> nodes = dump.nodesDirectories();
+            List<SnapshotFileTree> sfts = dump.fileTrees();
 
-            assertNotNull(nodes);
-            assertEquals(1, nodes.size());
+            assertNotNull(sfts);
+            assertEquals(1, sfts.size());
 
-            NodeFileTree ft = dump.fileTrees().get(0);
+            NodeFileTree sft = sfts.get(0);
 
-            File cacheDumpDir = ft.cacheStorage(false, DEFAULT_CACHE_NAME);
+            File cacheDumpDir = sft.defaultCacheStorage(cache.getConfiguration(CacheConfiguration.class));
 
             assertTrue(cacheDumpDir.exists());
 
@@ -440,9 +519,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 })
                 .collect(Collectors.toSet());
 
-            String partDumpName = PART_FILE_PREFIX + 0 + DUMP_FILE_EXT;
+            String partDumpName = dumpPartFileName(0, false);
 
-            assertTrue(dumpFiles.stream().anyMatch(f -> f.getName().equals(CACHE_DATA_FILENAME)));
+            assertTrue(dumpFiles.stream().anyMatch(NodeFileTree::cacheConfigFile));
             assertTrue(dumpFiles.stream().anyMatch(f -> f.getName().equals(partDumpName)));
 
             try (FileChannel fc = FileChannel.open(Paths.get(cacheDumpDir.getAbsolutePath(), partDumpName), READ, WRITE)) {
@@ -472,7 +551,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
             assertThrows(
                 null,
-                () -> dump.iterator(nodes.get(0), CU.cacheId(DEFAULT_CACHE_NAME), 0).next(),
+                () -> dump.iterator(sfts.get(0).folderName(), CU.cacheId(DEFAULT_CACHE_NAME), 0, null).next(),
                 IgniteException.class,
                 "Data corrupted"
             );
@@ -608,11 +687,27 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCustomLocation() throws Exception {
+        doTestCustomLocation(false);
+    }
+
+    /** */
+    @Test
+    public void testCustomLocationWithDataCustomLocation() throws Exception {
+        doTestCustomLocation(true);
+    }
+
+    /** */
+    private void doTestCustomLocation(boolean dataCustomLocation) throws Exception {
         try (IgniteEx ign = startGrid()) {
-            IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
+            CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>()
                 .setName("test-cache-0")
                 .setBackups(1)
-                .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC);
+
+            if (dataCustomLocation)
+                ccfg.setStoragePaths(CUSTOM_LOCATION);
+
+            IgniteCache<Integer, Integer> cache = ign.createCache(ccfg);
 
             IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
 
@@ -631,17 +726,15 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 false
             ).get();
 
-            NodeFileTree ft = nodeFileTree(ign.context().pdsFolderResolver().resolveFolders().folderName());
+            NodeFileTree ft = ign.context().pdsFolderResolver().fileTree();
 
             assertFalse(
                 "Standard snapshot directory must created lazily for in-memory node",
                 ft.snapshotsRoot().exists()
             );
 
-            assertFalse(
-                "Temporary snapshot directory must created lazily for in-memory node",
-                ft.snapshotTempRoot().exists()
-            );
+            for (File tmpRoot : ft.snapshotsTempRoots())
+                assertFalse("Temporary snapshot directory must created lazily for in-memory node", tmpRoot.exists());
 
             assertTrue(snpDir.exists());
 
@@ -708,10 +801,11 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         int parts = 20;
 
-        IgniteCache<Integer, Integer> cache = ign.createCache(new CacheConfiguration<Integer, Integer>()
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>()
             .setName(CACHE_0)
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(parts))
-        );
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(parts));
+
+        IgniteCache<Integer, Integer> cache = ign.createCache(ccfg);
 
         IntStream.range(0, KEYS_CNT).forEach(i -> cache.put(i, i));
 
@@ -730,25 +824,22 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         stopAllGrids();
 
+        SnapshotFileTree rawFt = snapshotFileTree(ign, rawDump);
+        SnapshotFileTree zipFt = snapshotFileTree(ign, zipDump);
+
         Map<Integer, Long> rawSizes = Arrays
-            .stream(new File(dumpDirectory(ign, rawDump) + "/db/" + id + "/cache-" + CACHE_0).listFiles())
-            .filter(f -> !f.getName().equals("cache_data.dat"))
-            .peek(f -> assertTrue(NodeFileTree.partitionFile(f) && f.getName().endsWith(DUMP_FILE_EXT)))
-            .collect(Collectors.toMap(
-                f -> Integer.parseInt(f.getName().substring(PART_FILE_PREFIX.length(), f.getName().length() - DUMP_FILE_EXT.length())),
-                File::length
-            ));
+            .stream(rawFt.cacheStorages(ccfg))
+            .flatMap(cs -> Arrays.stream(cs.listFiles()))
+            .filter(f -> !NodeFileTree.cacheConfigFile(f))
+            .peek(f -> assertTrue(SnapshotFileTree.dumpPartitionFile(f, false)))
+            .collect(Collectors.toMap(NodeFileTree::partId, File::length));
 
         Map<Integer, Long> zipSizes = Arrays
-            .stream(new File(dumpDirectory(ign, zipDump) + "/db/" + id + "/cache-" + CACHE_0).listFiles())
-            .filter(f -> !f.getName().equals("cache_data.dat"))
-            .peek(f -> assertTrue(NodeFileTree.partitionFile(f) && f.getName().endsWith(DUMP_FILE_EXT + ZIP_SUFFIX)))
-            .collect(Collectors.toMap(
-                f -> Integer.parseInt(f.getName().substring(PART_FILE_PREFIX.length(),
-                    f.getName().length() - (DUMP_FILE_EXT + ZIP_SUFFIX).length())
-                ),
-                File::length
-            ));
+            .stream(zipFt.cacheStorages(ccfg))
+            .flatMap(cs -> Arrays.stream(cs.listFiles()))
+            .filter(f -> !NodeFileTree.cacheConfigFile(f))
+            .peek(f -> assertTrue(SnapshotFileTree.dumpPartitionFile(f, true)))
+            .collect(Collectors.toMap(NodeFileTree::partId, File::length));
 
         assertEquals(parts, rawSizes.keySet().size());
 
@@ -764,19 +855,14 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         IntStream.range(0, parts).forEach(i -> {
             try {
-                String entryName = PART_FILE_PREFIX + i + DUMP_FILE_EXT;
-
-                NodeFileTree rawFt = new NodeFileTree(dumpDirectory(ign, rawDump), id);
-                NodeFileTree zipFt = new NodeFileTree(dumpDirectory(ign, zipDump), id);
-
-                File rawFile = new File(rawFt.cacheStorage(false, CACHE_0), entryName);
-                File zipFile = new File(zipFt.cacheStorage(false, CACHE_0), entryName + ZIP_SUFFIX);
+                File rawFile = rawFt.dumpPartition(ccfg, i, false);
+                File zipFile = zipFt.dumpPartition(ccfg, i, true);
 
                 byte[] rawFileContent = Files.readAllBytes(rawFile.toPath());
 
                 ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile));
 
-                assertEquals(entryName, zis.getNextEntry().getName());
+                assertEquals(dumpPartFileName(i, false), zis.getNextEntry().getName());
 
                 byte[] zipFileContent = IOUtils.toByteArray(zis);
 
@@ -861,13 +947,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         new DumpReader(
             new DumpReaderConfiguration(
-                dumpDirectory(ign, DMP_NAME),
+                DMP_NAME,
+                null,
+                ign.configuration(),
                 cnsmr,
                 DFLT_THREAD_CNT,
                 DFLT_TIMEOUT,
                 true,
                 false,
                 false,
+                null,
                 null,
                 false,
                 null
@@ -915,12 +1004,14 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             srv.context().cache().context().snapshotMgr()
                 .createSnapshot(DMP_NAME, null, null, false, false, true, false, true).get(getTestTimeout());
 
-            dumpDir = dumpDirectory(srv, DMP_NAME);
+            dumpDir = snapshotFileTree(srv, DMP_NAME).root();
         }
 
         assertThrows(null, () -> new DumpReader(
             new DumpReaderConfiguration(
-                dumpDir,
+                null,
+                dumpDir.getAbsolutePath(),
+                null,
                 new TestDumpConsumer() {
                     @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
                         data.forEachRemaining(e -> {
@@ -933,6 +1024,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 true,
                 false,
                 false,
+                null,
                 null,
                 false,
                 null
@@ -949,7 +1041,9 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
                 new DumpReader(
                     new DumpReaderConfiguration(
-                        dumpDir,
+                        null,
+                        dumpDir.getAbsolutePath(),
+                        null,
                         new TestDumpConsumer() {
                             @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
                                 data.forEachRemaining(e -> {
@@ -962,6 +1056,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                         true,
                         false,
                         false,
+                        null,
                         null,
                         false,
                         encSpi
@@ -989,13 +1084,16 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         new DumpReader(
             new DumpReaderConfiguration(
-                dumpDir,
+                null,
+                dumpDir.getAbsolutePath(),
+                null,
                 cnsmr,
                 DFLT_THREAD_CNT,
                 DFLT_TIMEOUT,
                 true,
                 false,
                 false,
+                null,
                 null,
                 false,
                 encryptionSpi()

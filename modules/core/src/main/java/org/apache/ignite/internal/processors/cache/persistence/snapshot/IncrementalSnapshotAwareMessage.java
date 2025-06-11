@@ -103,7 +103,7 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -111,25 +111,25 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeUuid("id", id))
+                if (!writer.writeUuid(id))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMessage("payload", payload))
+                if (!writer.writeMessage(payload))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeLong(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeUuid("txSnpId", txSnpId))
+                if (!writer.writeUuid(txSnpId))
                     return false;
 
                 writer.incrementState();
@@ -143,15 +143,12 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 3:
-                id = reader.readUuid("id");
+                id = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -159,7 +156,7 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
-                payload = reader.readMessage("payload");
+                payload = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -167,7 +164,7 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
                 reader.incrementState();
 
             case 5:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -175,7 +172,7 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
                 reader.incrementState();
 
             case 6:
-                txSnpId = reader.readUuid("txSnpId");
+                txSnpId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -184,17 +181,12 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead(IncrementalSnapshotAwareMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 7;
     }
 
     /** {@inheritDoc} */

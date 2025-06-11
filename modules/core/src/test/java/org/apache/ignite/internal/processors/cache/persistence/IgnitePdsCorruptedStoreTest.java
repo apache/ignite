@@ -65,7 +65,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 
 /**
  *
@@ -316,11 +315,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         ignite0.cluster().state(ClusterState.INACTIVE);
 
-        File workDir = ignite0.context().pdsFolderResolver().fileTree().nodeStorage();
-        File metaStoreDir = new File(workDir, MetaStorage.METASTORAGE_CACHE_NAME.toLowerCase());
-        File metaStoreFile = new File(metaStoreDir, String.format(NodeFileTree.PART_FILE_TEMPLATE, 0));
-
-        readOnlyFile.set(metaStoreFile);
+        readOnlyFile.set(ignite0.context().pdsFolderResolver().fileTree().metaStoragePartition(0));
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
@@ -414,7 +409,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         failingFileIOFactory.createClosure((file, options) -> {
             FileIO delegate = failingFileIOFactory.delegateFactory().create(file, options);
 
-            if (WAL_NAME_PATTERN.matcher(file.getName()).matches()) {
+            if (NodeFileTree.walSegment(file)) {
                 return new FileIODecorator(delegate) {
                     @Override public int write(ByteBuffer srcBuf) throws IOException {
                         throw new IOException("No space left on device");

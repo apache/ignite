@@ -80,9 +80,11 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
+import org.apache.ignite.internal.binary.streams.BinaryStreamsTestUtils;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
@@ -109,7 +111,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.THREAD_LOCAL;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -2502,7 +2503,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      * @return Copy.
      */
     private BinaryObject copy(BinaryObject po, Map<String, Object> fields) {
-        BinaryObjectBuilder builder = BinaryObjectBuilderImpl.wrap(po);
+        BinaryObjectBuilder builder = BinaryObjectBuilders.builder(po);
 
         if (fields != null) {
             for (Map.Entry<String, Object> e : fields.entrySet())
@@ -2820,7 +2821,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             BinaryObjectOffheapImpl offheapObj = new BinaryObjectOffheapImpl(ctx,
                 ptr,
                 0,
-                obj.array().length);
+                obj.bytes().length);
 
             assertTrue(offheapObj.equals(offheapObj));
             assertEquals(offheapObj.size(), obj.size());
@@ -2834,7 +2835,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             BinaryObjectOffheapImpl offheapObj1 = new BinaryObjectOffheapImpl(ctx,
                 ptr1,
                 0,
-                obj.array().length);
+                obj.bytes().length);
 
             assertTrue(offheapObj.equals(offheapObj1));
             assertTrue(offheapObj1.equals(offheapObj));
@@ -2875,7 +2876,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             BinaryObjectOffheapImpl offheapObj2 = new BinaryObjectOffheapImpl(ctx,
                 ptr2,
                 0,
-                obj.array().length);
+                obj.bytes().length);
 
             assertFalse(offheapObj.equals(offheapObj2));
             assertFalse(offheapObj2.equals(offheapObj));
@@ -2902,7 +2903,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryObjectImpl binaryObj = marshal(MySingleton.INSTANCE, marsh);
 
-        assertTrue(binaryObj.array().length <= 1024); // Check that big string was not serialized.
+        assertTrue(binaryObj.bytes().length <= 1024); // Check that big string was not serialized.
 
         MySingleton singleton = binaryObj.deserialize();
 
@@ -3015,40 +3016,40 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
     @Test
     public void testThreadLocalArrayReleased() throws Exception {
         // Checking the writer directly.
-        assertEquals(false, THREAD_LOCAL.isAcquired());
+        assertEquals(false, BinaryStreamsTestUtils.threadLocalIsAcquired());
 
         BinaryMarshaller marsh = binaryMarshaller();
 
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryContext(marsh))) {
-            assertEquals(true, THREAD_LOCAL.isAcquired());
+        try (BinaryWriterEx writer = BinaryUtils.writer(binaryContext(marsh))) {
+            assertEquals(true, BinaryStreamsTestUtils.threadLocalIsAcquired());
 
             writer.writeString("Thread local test");
 
             writer.array();
 
-            assertEquals(true, THREAD_LOCAL.isAcquired());
+            assertEquals(true, BinaryStreamsTestUtils.threadLocalIsAcquired());
         }
 
         // Checking the binary marshaller.
-        assertEquals(false, THREAD_LOCAL.isAcquired());
+        assertEquals(false, BinaryStreamsTestUtils.threadLocalIsAcquired());
 
         marsh = binaryMarshaller();
 
         marsh.marshal(new SimpleObject());
 
-        assertEquals(false, THREAD_LOCAL.isAcquired());
+        assertEquals(false, BinaryStreamsTestUtils.threadLocalIsAcquired());
 
         marsh = binaryMarshaller();
 
         // Checking the builder.
-        BinaryObjectBuilder builder = new BinaryObjectBuilderImpl(binaryContext(marsh),
+        BinaryObjectBuilder builder = BinaryObjectBuilders.builder(binaryContext(marsh),
             "org.gridgain.foo.bar.TestClass");
 
         builder.setField("a", "1");
 
         BinaryObject binaryObj = builder.build();
 
-        assertEquals(false, THREAD_LOCAL.isAcquired());
+        assertEquals(false, BinaryStreamsTestUtils.threadLocalIsAcquired());
     }
 
     /**
@@ -3235,15 +3236,15 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
     private void testReadDetachObjectProperly(Object obj, IgniteThrowableConsumer<Object> action, boolean deserialize) throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
-        BinaryHeapOutputStream os = new BinaryHeapOutputStream(1024);
+        BinaryOutputStream os = BinaryStreams.outputStream(1024);
 
-        BinaryWriterExImpl writer = marsh.binaryMarshaller().writer(os);
+        BinaryWriterEx writer = marsh.binaryMarshaller().writer(os);
 
         writer.writeObject(obj);
 
-        BinaryHeapInputStream is = new BinaryHeapInputStream(os.array());
+        BinaryInputStream is = BinaryStreams.inputStream(os.array());
 
-        BinaryReaderExImpl reader = marsh.binaryMarshaller().reader(is);
+        BinaryReaderEx reader = marsh.binaryMarshaller().reader(is);
 
         Object bObj = reader.readObjectDetached(deserialize);
 
@@ -3518,9 +3519,9 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         BinaryObjectImpl binObjRaw0 = marshal(objRaw, m0);
         BinaryObjectImpl binObjRaw1 = marshal(objRaw, m1);
 
-        assertNotEquals(binObj0.array().length, binObj1.array().length);
-        assertNotEquals(binObjWithRaw0.array().length, binObjWithRaw1.array().length);
-        assertNotEquals(binObjRaw0.array().length, binObjRaw1.array().length);
+        assertNotEquals(binObj0.bytes().length, binObj1.bytes().length);
+        assertNotEquals(binObjWithRaw0.bytes().length, binObjWithRaw1.bytes().length);
+        assertNotEquals(binObjRaw0.bytes().length, binObjRaw1.bytes().length);
 
         checkEquals(binObj0, binObj1);
 
@@ -3648,18 +3649,18 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         BinaryObjectImpl binObj02 = marshal(obj2, m0);
 
         // The length of array must be equal. Object are different only by the class.
-        assertEquals(binObj00.array().length, binObj01.array().length);
-        assertEquals(binObj00.array().length, binObj02.array().length);
+        assertEquals(binObj00.bytes().length, binObj01.bytes().length);
+        assertEquals(binObj00.bytes().length, binObj02.bytes().length);
 
         BinaryObjectImpl binObj10 = marshal(obj0, m1);
         BinaryObjectImpl binObj11 = marshal(obj1, m1);
         BinaryObjectImpl binObj12 = marshal(obj2, m1);
 
         // The length of array must be equal. Object are different only by the class.
-        assertEquals(binObj10.array().length, binObj11.array().length);
-        assertEquals(binObj10.array().length, binObj12.array().length);
+        assertEquals(binObj10.bytes().length, binObj11.bytes().length);
+        assertEquals(binObj10.bytes().length, binObj12.bytes().length);
 
-        assertNotEquals(binObj10.array().length, binObj00.array().length);
+        assertNotEquals(binObj10.bytes().length, binObj00.bytes().length);
 
         assertEquals(binObj00, binObj10);
         assertEquals(binObj01, binObj11);
@@ -3725,7 +3726,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryMarshaller m = binaryMarshaller();
 
-        BinaryObjectBuilder builder = new BinaryObjectBuilderImpl(binaryContext(m), "MyFakeClass");
+        BinaryObjectBuilder builder = BinaryObjectBuilders.builder(binaryContext(m), "MyFakeClass");
 
         String[] fieldNames = {"field9", "field8", "field0", "field1", "field2"};
 
@@ -3752,13 +3753,13 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      * @param marsh Binary marshaller.
      * @return Instance of BinaryObjectOffheapImpl.
      */
-    private BinaryObjectOffheapImpl marshalOffHeap(BinaryObjectImpl obj, BinaryMarshaller marsh) {
+    private BinaryObjectOffheapImpl marshalOffHeap(BinaryObjectEx obj, BinaryMarshaller marsh) {
         long ptr = copyOffheap(obj);
 
         return new BinaryObjectOffheapImpl(binaryContext(marsh),
             ptr,
             0,
-            obj.array().length);
+            obj.bytes().length);
     }
 
     /**
@@ -3978,8 +3979,8 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      * @param obj Object.
      * @return Offheap address.
      */
-    private long copyOffheap(BinaryObjectImpl obj) {
-        byte[] arr = obj.array();
+    private long copyOffheap(BinaryObjectEx obj) {
+        byte[] arr = obj.bytes();
 
         long ptr = GridUnsafe.allocateMemory(arr.length);
 
@@ -4062,8 +4063,8 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      * @param marsh Marshaller.
      * @return Result object.
      */
-    private <T> T unmarshal(BinaryObjectImpl bo, BinaryMarshaller marsh) throws IgniteCheckedException {
-        return marsh.unmarshal(bo.array(), null);
+    private <T> T unmarshal(BinaryObjectEx bo, BinaryMarshaller marsh) throws IgniteCheckedException {
+        return marsh.unmarshal(bo.bytes(), null);
     }
 
     /**
@@ -4165,7 +4166,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         });
         iCfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
 
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
+        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), iCfg, new NullLogger());
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
@@ -4226,7 +4227,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         });
         iCfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
 
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
+        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), iCfg, new NullLogger());
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
@@ -4244,7 +4245,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         marsh.setBinaryContext(ctx, iCfg);
 
-        return new BinaryObjectBuilderImpl(ctx, typeName);
+        return BinaryObjectBuilders.builder(ctx, typeName);
     }
 
     /**
@@ -5378,7 +5379,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            BinaryRawWriterEx raw = (BinaryRawWriterEx)writer.rawWriter();
+            BinaryWriterEx raw = (BinaryWriterEx)writer.rawWriter();
 
             raw.writeObject(inner1);
             raw.writeObjectDetached(inner2);
@@ -5388,7 +5389,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            BinaryRawReaderEx raw = (BinaryRawReaderEx)reader.rawReader();
+            BinaryReaderEx raw = (BinaryReaderEx)reader.rawReader();
 
             inner1 = (DetachedInnerTestObject)raw.readObject();
             inner2 = raw.readObjectDetached();

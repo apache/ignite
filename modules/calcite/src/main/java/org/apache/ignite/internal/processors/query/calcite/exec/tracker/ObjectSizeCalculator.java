@@ -38,17 +38,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.ToLongBiFunction;
 import org.apache.calcite.avatica.util.ByteString;
-import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.binary.BinaryEnumArray;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.IterableAccumulator;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.GridUnsafe.OBJ_REF_SIZE;
+import static org.apache.ignite.internal.util.GridUnsafe.align;
 
 /**
  * Object size calculator.
@@ -61,25 +60,12 @@ public class ObjectSizeCalculator<Row> {
     /** Object header size. */
     private static final long OBJ_HEADER_SIZE = GridUnsafe.objectFieldOffset(U.findField(Dummy.class, "field"));
 
-    /** Reference type size. */
-    public static final long OBJ_REF_SIZE = GridUnsafe.arrayIndexScale(Object[].class);
-
-    /** Objects allignment. */
-    private static final long OBJ_ALIGN = calcAlign();
-
     /** HashMap entry size. */
     public static final long HASH_MAP_ENTRY_SIZE =
         classInfo(new HashMap<>(F.asMap(0, 0)).entrySet().iterator().next().getClass()).shallowSize;
 
     /** Cache for shallow size of classes. */
     private final Map<Class<?>, ClassInfo> clsInfoCache = new IdentityHashMap<>();
-
-    /** */
-    private static long calcAlign() {
-        // Note: Alignment can also be set explicitly by -XX:ObjectAlignmentInBytes JVM property.
-        return OBJ_REF_SIZE == 8L ? 8L :
-            U.nearestPow2(Math.max(8, (int)(Runtime.getRuntime().maxMemory() >> 32)), false);
-    }
 
     static {
         addSysClsSize(Boolean.class, null);
@@ -112,11 +98,10 @@ public class ObjectSizeCalculator<Row> {
 
         // Binary objects.
         // Assume objects is not deserialized.
-        addSysClsSize(BinaryObjectImpl.class, (c, bo) -> align(byteArrOffset + bo.array().length));
-        addSysClsSize(BinaryObjectOffheapImpl.class, null); // No extra heap memory.
-        addSysClsSize(BinaryArray.class, (c, bo) -> c.sizeOf0(bo.array(), true));
-        addSysClsSize(BinaryEnumArray.class, (c, bo) -> c.sizeOf0(bo.array(), true));
-        addSysClsSize(BinaryEnumObjectImpl.class, (c, bo) -> bo.size());
+        BinaryUtils.unwrapFuncForSizeCalc().forEach((cls, unwrapFunc) ->
+            addSysClsSize(cls, (c, bo) -> c.sizeOf0(unwrapFunc.apply(bo), true)));
+        BinaryUtils.sizeProviders().forEach((cls, szFunc) ->
+            addSysClsSize(cls, (c, bo) -> szFunc.applyAsInt(bo)));
 
         // Other.
         addSysClsSize(GroupKey.class, (c, k) -> c.sizeOf0(k.fields(), true));
@@ -186,11 +171,6 @@ public class ObjectSizeCalculator<Row> {
         }
 
         return OBJ_REF_SIZE;
-    }
-
-    /** Calculate size with alignment. */
-    private static long align(long size) {
-        return (size + (OBJ_ALIGN - 1L)) & (-OBJ_ALIGN);
     }
 
     /** */

@@ -39,7 +39,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -279,7 +279,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     }
 
     /** */
-    private Ignite startGridInASeparateWorkDir(String nodeName) throws Exception {
+    private IgniteEx startGridInASeparateWorkDir(String nodeName) throws Exception {
         customWorkSubDir = String.format(CUSTOM_WORK_DIR_NAME_PATTERN, nodeName);
         return startGrid(nodeName);
     }
@@ -301,9 +301,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         final String decimalFieldName = "decField";
 
         Ignite igniteA = startGridInASeparateWorkDir("A");
-        Ignite igniteB = startGridInASeparateWorkDir("B");
-
-        String bConsId = igniteB.cluster().localNode().consistentId().toString();
+        IgniteEx igniteB = startGridInASeparateWorkDir("B");
 
         igniteA.cluster().state(ClusterState.ACTIVE);
 
@@ -318,8 +316,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         stopAllGrids();
 
-        Ignite igniteC = startGridInASeparateWorkDir("C");
-        String cConsId = igniteC.cluster().localNode().consistentId().toString();
+        IgniteEx igniteC = startGridInASeparateWorkDir("C");
         igniteC.cluster().state(ClusterState.ACTIVE);
 
         cache = igniteC.cache(CACHE_NAME);
@@ -329,12 +326,13 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         stopAllGrids();
 
-        copyIncompatibleBinaryMetadata(
-            String.format(CUSTOM_WORK_DIR_NAME_PATTERN, "C"),
-            cConsId,
-            String.format(CUSTOM_WORK_DIR_NAME_PATTERN, "B"),
-            bConsId,
-            BinaryUtils.binaryMetaFileName(DYNAMIC_TYPE_NAME.toLowerCase().hashCode()));
+        String fileName = NodeFileTree.binaryMetaFileName(DYNAMIC_TYPE_NAME.toLowerCase().hashCode());
+
+        Files.copy(
+            new File(igniteC.context().pdsFolderResolver().fileTree().binaryMeta(), fileName).toPath(),
+            new File(igniteB.context().pdsFolderResolver().fileTree().binaryMeta(), fileName).toPath(),
+            StandardCopyOption.REPLACE_EXISTING
+        );
 
         startGridInASeparateWorkDir("A");
 
@@ -362,24 +360,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         assertTrue("Cause is not correct [expected='" + expectedMsg + "', actual='" + actualMsg + "'].",
             actualMsg.contains(expectedMsg));
-    }
-
-    /** */
-    private void copyIncompatibleBinaryMetadata(String fromWorkDir,
-        String fromConsId,
-        String toWorkDir,
-        String toConsId,
-        String fileName
-    ) throws Exception {
-        String workDir = U.defaultWorkDirectory();
-
-        NodeFileTree fromFt = new NodeFileTree(new File(workDir, fromWorkDir), fromConsId);
-        NodeFileTree toFt = new NodeFileTree(new File(workDir, toWorkDir), toConsId);
-
-        File fromFile = new File(fromFt.binaryMeta(), fileName);
-        File toFile = new File(toFt.binaryMeta(), fileName);
-
-        Files.copy(fromFile.toPath(), toFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
 
     /**

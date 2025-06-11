@@ -576,15 +576,15 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         // Resolve cache directory. Emulating cache destroy in the middle of checkpoint.
         IgniteInternalCache<Object, Object> destoryCache = ig2.cachex(CACHE_TO_DESTROY_NAME);
 
-        File destroyCacheWorkDir = ig2.context().pdsFolderResolver().fileTree().cacheStorage(destoryCache.configuration());
+        File destroyCacheWorkDir = ig2.context().pdsFolderResolver().fileTree().defaultCacheStorage(destoryCache.configuration());
 
         // Stop the whole cluster
         stopAllGrids();
 
         // Delete cache_data.bin file for this cache. Binary recovery should complete successfully after it.
-        final File[] files = destroyCacheWorkDir.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile);
+        final List<File> files = NodeFileTree.existingCacheConfigFiles(destroyCacheWorkDir);
 
-        assertTrue(files.length > 0);
+        assertTrue(!files.isEmpty());
 
         for (final File file : files)
             assertTrue("Can't remove " + file.getAbsolutePath(), file.delete());
@@ -742,13 +742,13 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-        stopGrid(1);
+        final File cacheDir = ft.defaultCacheStorage(ignite.cachex(CACHE_NAME).configuration());
 
-        final File cacheDir = ft.cacheStorage(false, CACHE_NAME);
+        stopGrid(1);
 
         assertTrue(cacheDir.exists());
 
-        renamed = cacheDir.renameTo(ft.cacheStorage(false, RENAMED_CACHE_NAME));
+        renamed = cacheDir.renameTo(ft.defaultCacheStorage(new CacheConfiguration<>(RENAMED_CACHE_NAME)));
 
         assert renamed;
 

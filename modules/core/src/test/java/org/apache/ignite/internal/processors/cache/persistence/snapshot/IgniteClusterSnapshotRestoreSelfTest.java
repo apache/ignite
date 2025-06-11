@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.OpenOption;
-import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -57,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
@@ -73,14 +77,12 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.TMP_CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -665,7 +667,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         dfltCacheCfg.setCacheMode(CacheMode.REPLICATED)
             .setAffinity(new RendezvousAffinityFunction());
 
-        startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
+        IgniteEx srv = startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(2));
         CountDownLatch stopLatch = new CountDownLatch(1);
@@ -673,8 +675,10 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
             ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD.ordinal());
 
-        String failingFilePath = Paths.get(NodeFileTree.cacheDirName(false, DEFAULT_CACHE_NAME),
-            PART_FILE_PREFIX + (dfltCacheCfg.getAffinity().partitions() / 2) + FILE_SUFFIX).toString();
+        SnapshotFileTree sft = snapshotFileTree(srv, SNAPSHOT_NAME);
+
+        String failingFilePath = sft.partitionFile(dfltCacheCfg, dfltCacheCfg.getAffinity().partitions() / 2).getAbsolutePath()
+            .replace(sft.nodeStorage().getAbsolutePath(), "");
 
         grid(2).context().cache().context().snapshotMgr().ioFactory(
             new CustomFileIOFactory(new RandomAccessFileIOFactory(),
@@ -686,7 +690,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
                     }
                 }));
 
-        File node2dbDir = grid(2).context().pdsFolderResolver().fileTree().cacheStorage(dfltCacheCfg).getParentFile();
+        NodeFileTree ft = grid(2).context().pdsFolderResolver().fileTree();
 
         IgniteInternalFuture<Object> stopFut = runAsync(() -> {
             U.await(stopLatch, TIMEOUT, TimeUnit.MILLISECONDS);
@@ -703,8 +707,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class, null);
 
-        File[] files = node2dbDir.listFiles(file -> file.getName().startsWith(TMP_CACHE_DIR_PREFIX));
-        assertEquals("A temp directory with potentially corrupted files must exist.", 1, files.length);
+        List<File> files = ft.existingTmpCacheStorages();
+
+        assertEquals("A temp directory with potentially corrupted files must exist.", 1, files.size());
 
         ensureCacheAbsent(dfltCacheCfg);
 
@@ -712,8 +717,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         startGrid(2);
 
-        files = node2dbDir.listFiles(file -> file.getName().startsWith(TMP_CACHE_DIR_PREFIX));
-        assertEquals("A temp directory should be removed at node startup", 0, files.length);
+        files = ft.existingTmpCacheStorages();
+
+        assertEquals("A temp directory should be removed at node startup", 0, files.size());
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED);
     }
@@ -814,6 +820,43 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         ign.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
         assertCacheKeys(ign.cache(DEFAULT_CACHE_NAME), keysCnt);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testNonSerializableCacheGroupsRestore() throws Exception {
+        int keysCnt = dfltCacheCfg.getAffinity().partitions();
+
+        Ignite ignite = startGridsWithSnapshot(1, keysCnt, false, true);
+
+        Collection<String> grpsAsKeySet = Map.of(DEFAULT_CACHE_NAME, 0).keySet();
+
+        assertFalse(grpsAsKeySet instanceof Serializable);
+
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, grpsAsKeySet).get(TIMEOUT);
+
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testRestoreCacheGroupsWithDuplication() throws Exception {
+        int keysCnt = dfltCacheCfg.getAffinity().partitions();
+
+        Ignite ignite = startGridsWithSnapshot(1, keysCnt, false, true);
+
+        Collection<String> duplicatedGrps = Arrays.asList(DEFAULT_CACHE_NAME, DEFAULT_CACHE_NAME);
+
+        Throwable thrown = assertThrowsWithCause(
+            () -> ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, duplicatedGrps).get(TIMEOUT),
+            IllegalArgumentException.class
+        );
+
+        assertTrue(thrown.getMessage().contains("Cache group names must be unique."));
     }
 
     /**

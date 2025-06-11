@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryType;
@@ -96,7 +97,7 @@ public class PlatformComputeBinarizableArgTask extends ComputeTaskAdapter<Object
             if (meta.fieldNames() == null || !meta.fieldNames().contains("Field"))
                 throw new IgniteException("Field metadata doesn't exist.");
 
-            if (!F.eq("int", meta.fieldTypeName("Field")))
+            if (!Objects.equals("int", meta.fieldTypeName("Field")))
                 throw new IgniteException("Invalid field type: " + meta.fieldTypeName("Field"));
 
             if (meta.affinityKeyFieldName() != null)

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -188,6 +188,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.fromStore;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.util.IgniteUtils.GB;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
@@ -265,12 +266,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Defragmentation regions size percentage of configured ones. */
     private final int defragmentationRegionSizePercentageOfConfiguredSize =
         getInteger(IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE, DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE);
-
-    /** */
-    private static final String MBEAN_NAME = "DataStorageMetrics";
-
-    /** */
-    private static final String MBEAN_GROUP = "Persistent Store";
 
     /** WAL marker prefix for meta store. */
     private static final String WAL_KEY_PREFIX = "grp-wal-";
@@ -1319,10 +1314,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 assert cctx.pageStore() instanceof FilePageStoreManager :
                     "Invalid page store manager was created: " + cctx.pageStore();
 
-                Path anyIdxPartFile = IgniteUtils.searchFileRecursively(
-                    cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage().toPath(),
-                    NodeFileTree.INDEX_FILE_NAME
-                );
+                NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
+
+                File anyIdxPartFile = ft.existingCacheDirs().stream()
+                    .map(f -> new File(f, partitionFileName(PageIdAllocator.INDEX_PARTITION)))
+                    .filter(File::exists)
+                    .findFirst().orElse(null);
 
                 if (anyIdxPartFile != null) {
                     memCfg.setPageSize(resolvePageSizeFromPartitionFile(anyIdxPartFile));
@@ -1346,10 +1343,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param partFile Partition file.
      */
-    private int resolvePageSizeFromPartitionFile(Path partFile) throws IOException, IgniteCheckedException {
+    private int resolvePageSizeFromPartitionFile(File partFile) throws IOException, IgniteCheckedException {
         FileIOFactory ioFactory = persistenceCfg.getFileIOFactory();
 
-        try (FileIO fileIO = ioFactory.create(partFile.toFile())) {
+        try (FileIO fileIO = ioFactory.create(partFile)) {
             int minimalHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minimalHdr)
@@ -1891,7 +1888,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.warning("Maintenance task found, stop restoring memory");
 
             mntcRegistry.registerWorkflowCallback(CORRUPTED_DATA_FILES_MNTC_TASK_NAME,
-                new CorruptedPdsMaintenanceCallback(cctx.kernalContext().pdsFolderResolver().fileTree().nodeStorage(),
+                new CorruptedPdsMaintenanceCallback(cctx.kernalContext().pdsFolderResolver().fileTree(),
                     Arrays.asList(mntcTask.parameters().split(Pattern.quote(File.separator))))
             );
 
@@ -3566,7 +3563,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 CheckpointRecord cpRec = (CheckpointRecord)rec;
 
                 // We roll memory up until we find a checkpoint start record registered in the status.
-                if (F.eq(cpRec.checkpointId(), status.cpStartId)) {
+                if (Objects.equals(cpRec.checkpointId(), status.cpStartId)) {
                     if (log.isInfoEnabled()) {
                         log.info("Found last checkpoint marker [cpId=" + cpRec.checkpointId() +
                             ", pos=" + rec.position() + ']');
@@ -3574,7 +3571,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     needApplyBinaryUpdates = false;
                 }
-                else if (!F.eq(cpRec.checkpointId(), status.cpEndId))
+                else if (!Objects.equals(cpRec.checkpointId(), status.cpEndId))
                     U.warn(log, "Found unexpected checkpoint marker, skipping [cpId=" + cpRec.checkpointId() +
                         ", expCpId=" + status.cpStartId + ", pos=" + rec.position() + ']');
             }

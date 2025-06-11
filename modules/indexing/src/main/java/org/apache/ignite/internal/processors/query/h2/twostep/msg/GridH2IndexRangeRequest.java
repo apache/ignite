@@ -141,7 +141,7 @@ public class GridH2IndexRangeRequest implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -149,37 +149,37 @@ public class GridH2IndexRangeRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("batchLookupId", batchLookupId))
+                if (!writer.writeInt(batchLookupId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeCollection("bounds", bounds, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(bounds, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeUuid("originNodeId", originNodeId))
+                if (!writer.writeUuid(originNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeLong("qryId", qryId))
+                if (!writer.writeLong(qryId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeInt("segmentId", segmentId))
+                if (!writer.writeInt(segmentId))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeInt("originSegId", originSegmentId))
+                if (!writer.writeInt(originSegmentId))
                     return false;
 
                 writer.incrementState();
@@ -192,12 +192,9 @@ public class GridH2IndexRangeRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                batchLookupId = reader.readInt("batchLookupId");
+                batchLookupId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -205,7 +202,7 @@ public class GridH2IndexRangeRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                bounds = reader.readCollection("bounds", MessageCollectionItemType.MSG);
+                bounds = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -213,7 +210,7 @@ public class GridH2IndexRangeRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                originNodeId = reader.readUuid("originNodeId");
+                originNodeId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -221,7 +218,7 @@ public class GridH2IndexRangeRequest implements Message {
                 reader.incrementState();
 
             case 3:
-                qryId = reader.readLong("qryId");
+                qryId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -229,7 +226,7 @@ public class GridH2IndexRangeRequest implements Message {
                 reader.incrementState();
 
             case 4:
-                segmentId = reader.readInt("segmentId");
+                segmentId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -237,7 +234,7 @@ public class GridH2IndexRangeRequest implements Message {
                 reader.incrementState();
 
             case 5:
-                originSegmentId = reader.readInt("originSegId");
+                originSegmentId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -245,17 +242,12 @@ public class GridH2IndexRangeRequest implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(GridH2IndexRangeRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -30;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 6;
     }
 
     /** {@inheritDoc} */

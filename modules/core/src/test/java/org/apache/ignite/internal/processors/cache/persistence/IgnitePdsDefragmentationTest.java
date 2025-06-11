@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
@@ -55,12 +56,11 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.maintenance.MaintenanceFileStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.filename.CacheFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -71,12 +71,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentationCompletionMarkerFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedIndexFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartFile;
-import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils.defragmentedPartMappingFile;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.toStore;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /** */
 public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
@@ -229,13 +224,17 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         createMaintenanceRecord();
 
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
+
+        CacheConfiguration<?, ?> ccfg = ig.cachex(DEFAULT_CACHE_NAME).configuration();
+
         stopGrid(0);
 
-        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(true, GRP_NAME);
+        CacheFileTree cft = ft.cacheTree(ccfg);
 
-        long[] oldPartLen = partitionSizes(workDir);
+        long[] oldPartLen = partitionSizes(ft, ccfg);
 
-        long oldIdxFileLen = new File(workDir, NodeFileTree.INDEX_FILE_NAME).length();
+        long oldIdxFileLen = ft.partitionFile(ccfg, INDEX_PARTITION).length();
 
         startGrid(0);
 
@@ -254,16 +253,16 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             "Failed to activate cluster (node is in maintenance mode)"
         );
 
-        long[] newPartLen = partitionSizes(workDir);
+        long[] newPartLen = partitionSizes(ft, ccfg);
 
         for (int p = 0; p < PARTS; p++)
             assertTrue(newPartLen[p] < oldPartLen[p]);
 
-        long newIdxFileLen = new File(workDir, NodeFileTree.INDEX_FILE_NAME).length();
+        long newIdxFileLen = ft.partitionFile(ccfg, INDEX_PARTITION).length();
 
         assertTrue(newIdxFileLen <= oldIdxFileLen);
 
-        File completionMarkerFile = defragmentationCompletionMarkerFile(workDir);
+        File completionMarkerFile = cft.defragmentationCompletionMarkerFile();
         assertTrue(completionMarkerFile.exists());
 
         stopGrid(0);
@@ -276,7 +275,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         validateCache(grid(0).cache(DEFAULT_CACHE_NAME));
 
-        validateLeftovers(workDir);
+        validateLeftovers(cft);
     }
 
     /** */
@@ -342,12 +341,13 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      * Returns array that contains sizes of partition files in gived working directories. Assumes that partitions
      * {@code 0} to {@code PARTS - 1} exist in that dir.
      *
-     * @param workDir Working directory.
+     * @param ft Node file tree.
+     * @param ccfg Cache configuration to check
      * @return The array.
      */
-    protected long[] partitionSizes(File workDir) {
+    protected long[] partitionSizes(NodeFileTree ft, CacheConfiguration<?, ?> ccfg) {
         return IntStream.range(0, PARTS)
-            .mapToObj(p -> new File(workDir, String.format(NodeFileTree.PART_FILE_TEMPLATE, p)))
+            .mapToObj(p -> ft.partitionFile(ccfg, p))
             .mapToLong(File::length)
             .toArray();
     }
@@ -359,17 +359,19 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailoverRestartWithoutDefragmentation() throws Exception {
-        testFailover(workDir -> {
+        testFailover(cft -> {
             try {
-                File mntcRecFile = new File(workDir.getParent(), MaintenanceFileStore.MAINTENANCE_FILE_NAME);
+                NodeFileTree ft = GridTestUtils.getFieldValue(cft, "ft");
+
+                File mntcRecFile = ft.maintenanceFile();
 
                 assertTrue(mntcRecFile.exists());
 
-                Files.delete(mntcRecFile.toPath());
+                U.delete(mntcRecFile);
 
                 startGrid(0);
 
-                validateLeftovers(workDir);
+                validateLeftovers(cft);
             }
             catch (Exception e) {
                 throw new IgniteCheckedException(e);
@@ -389,7 +391,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailoverOnLastStage() throws Exception {
-        testFailover(workDir -> {});
+        testFailover(cft -> {});
     }
 
     /**
@@ -399,9 +401,9 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailoverIncompletedIndex() throws Exception {
-        testFailover(workDir -> move(
-            DefragmentationFileUtils.defragmentedIndexFile(workDir),
-            DefragmentationFileUtils.defragmentedIndexTmpFile(workDir)
+        testFailover(cft -> move(
+            cft.defragmentedIndexFile(),
+            cft.defragmentedIndexTmpFile()
         ));
     }
 
@@ -412,12 +414,12 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailoverIncompletedPartition1() throws Exception {
-        testFailover(workDir -> {
-            DefragmentationFileUtils.defragmentedIndexFile(workDir).delete();
+        testFailover(cft -> {
+            cft.defragmentedIndexFile().delete();
 
             move(
-                DefragmentationFileUtils.defragmentedPartFile(workDir, PARTS - 1),
-                DefragmentationFileUtils.defragmentedPartTmpFile(workDir, PARTS - 1)
+                cft.defragmentedPartFile(PARTS - 1),
+                cft.defragmentedPartTmpFile(PARTS - 1)
             );
         });
     }
@@ -429,10 +431,10 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailoverIncompletedPartition2() throws Exception {
-        testFailover(workDir -> {
-            DefragmentationFileUtils.defragmentedIndexFile(workDir).delete();
+        testFailover(cft -> {
+            cft.defragmentedIndexFile().delete();
 
-            DefragmentationFileUtils.defragmentedPartMappingFile(workDir, PARTS - 1).delete();
+            cft.defragmentedPartMappingFile(PARTS - 1).delete();
         });
     }
 
@@ -447,7 +449,7 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void testFailover(IgniteThrowableConsumer<File> c) throws Exception {
+    private void testFailover(IgniteThrowableConsumer<CacheFileTree> c) throws Exception {
         IgniteEx ig = startGrid(0);
 
         ig.cluster().state(ClusterState.ACTIVE);
@@ -458,14 +460,14 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         createMaintenanceRecord();
 
+        CacheFileTree cft = ig.context().pdsFolderResolver().fileTree().cacheTree(ig.cachex(DEFAULT_CACHE_NAME).configuration());
+
         stopGrid(0);
 
-        File workDir = ig.context().pdsFolderResolver().fileTree().cacheStorage(true, GRP_NAME);
-
         //Defragmentation should fail when node starts.
-        startAndAwaitNodeFail(workDir);
+        startAndAwaitNodeFail(cft);
 
-        c.accept(workDir);
+        c.accept(cft);
 
         startGrid(0); // Fails here VERY rarely. WTF?
 
@@ -478,13 +480,13 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         validateCache(grid(0).cache(DEFAULT_CACHE_NAME));
 
-        validateLeftovers(workDir);
+        validateLeftovers(cft);
     }
 
     /**
      * @throws IgniteInterruptedCheckedException If fail.
      */
-    private void startAndAwaitNodeFail(File workDir) throws IgniteInterruptedCheckedException {
+    private void startAndAwaitNodeFail(CacheFileTree cft) throws IgniteInterruptedCheckedException {
         String errMsg = "Failed to create defragmentation completion marker.";
 
         AtomicBoolean errOccurred = new AtomicBoolean();
@@ -493,9 +495,10 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
             DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
             FileIOFactory delegate = dsCfg.getFileIOFactory();
+            File marker = cft.defragmentationCompletionMarkerFile();
 
             dsCfg.setFileIOFactory((file, modes) -> {
-                if (file.equals(defragmentationCompletionMarkerFile(workDir))) {
+                if (file.equals(marker)) {
                     errOccurred.set(true);
 
                     throw new IOException(errMsg);
@@ -536,13 +539,13 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void validateLeftovers(File workDir) {
-        assertFalse(defragmentedIndexFile(workDir).exists());
+    public void validateLeftovers(CacheFileTree cft) {
+        assertFalse(cft.defragmentedIndexFile().exists());
 
         for (int p = 0; p < PARTS; p++) {
-            assertFalse(defragmentedPartMappingFile(workDir, p).exists());
+            assertFalse(cft.defragmentedPartMappingFile(p).exists());
 
-            assertFalse(defragmentedPartFile(workDir, p).exists());
+            assertFalse(cft.defragmentedPartFile(p).exists());
         }
     }
 
@@ -559,43 +562,47 @@ public class IgnitePdsDefragmentationTest extends GridCommonAbstractTest {
 
         createMaintenanceRecord();
 
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
+
+        String grpDirName = ft.defaultCacheStorage(ig.cachex(DEFAULT_CACHE_NAME).configuration()).getName();
+
         stopGrid(0);
 
         startGrid(0);
 
         waitForDefragmentation(0);
 
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
         AtomicReference<File> cachePartFile = new AtomicReference<>();
         AtomicReference<File> defragCachePartFile = new AtomicReference<>();
 
-        Files.walkFileTree(workDir.toPath(), new FileVisitor<Path>() {
-            @Override public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-                if (path.toString().contains(NodeFileTree.cacheDirName(true, "group"))) {
-                    File file = path.toFile();
-
-                    if (file.getName().contains("part-dfrg-"))
-                        cachePartFile.set(file);
-                    else if (file.getName().contains("part-"))
-                        defragCachePartFile.set(file);
+        for (Path s : ft.allStorages().map(File::toPath).collect(Collectors.toList())) {
+            Files.walkFileTree(s, new FileVisitor<Path>() {
+                @Override public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+                    return FileVisitResult.CONTINUE;
                 }
 
-                return FileVisitResult.CONTINUE;
-            }
+                @Override public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+                    if (path.toString().contains(grpDirName)) {
+                        File file = path.toFile();
 
-            @Override public FileVisitResult visitFileFailed(Path path, IOException e) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
+                        if (file.getName().contains("part-dfrg-"))
+                            cachePartFile.set(file);
+                        else if (NodeFileTree.partitionFile(file))
+                            defragCachePartFile.set(file);
+                    }
 
-            @Override public FileVisitResult postVisitDirectory(Path path, IOException e) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-        });
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult visitFileFailed(Path path, IOException e) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult postVisitDirectory(Path path, IOException e) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
 
         assertNull(cachePartFile.get()); //TODO Fails.
         assertNotNull(defragCachePartFile.get());

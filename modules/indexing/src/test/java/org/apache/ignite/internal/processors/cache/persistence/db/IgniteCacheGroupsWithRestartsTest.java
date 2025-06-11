@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.management.cache.CacheFindGarbageCommandArg;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceJobResult;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTask;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.function.ThrowableBiFunction;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -183,6 +185,10 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         prepareCachesAndData(ex);
 
+        NodeFileTree ft = grid(2).context().pdsFolderResolver().fileTree();
+
+        File[] grpDirs = ft.cacheStorages(grid(2).cachex(getCacheName(0)).configuration());
+
         stopGrid(2, true);
 
         ex.destroyCache(getCacheName(0));
@@ -202,7 +208,8 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
                     contains("Joining node has caches with data which are not presented on cluster")));
         }
 
-        U.delete(nodeFileTree(getTestIgniteInstanceName(2).replace(".", "_")).cacheStorage(true, "group"));
+        for (File grpDir : grpDirs)
+            U.delete(grpDir);
 
         IgniteEx node2 = startGrid(2);
 

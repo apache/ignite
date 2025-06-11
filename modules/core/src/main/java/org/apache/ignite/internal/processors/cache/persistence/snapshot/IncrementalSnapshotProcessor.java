@@ -38,7 +38,8 @@ import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.IncrementalSnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -52,7 +53,6 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TX_RECORD;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 
 /** Processes incremental snapshot: parse WAL segments and handles records. */
@@ -63,11 +63,8 @@ abstract class IncrementalSnapshotProcessor {
     /** Ignite logger. */
     private final IgniteLogger log;
 
-    /** Snapshot name. */
-    private final String snpName;
-
-    /** Snapshot path. */
-    private final String snpPath;
+    /** Snapshot file tree. */
+    private final SnapshotFileTree sft;
 
     /** Incremental snapshot index. */
     private final int incIdx;
@@ -76,10 +73,9 @@ abstract class IncrementalSnapshotProcessor {
     private final Set<Integer> cacheIds;
 
     /** */
-    IncrementalSnapshotProcessor(GridCacheSharedContext<?, ?> cctx, String snpName, String snpPath, int incIdx, Set<Integer> cacheIds) {
+    IncrementalSnapshotProcessor(GridCacheSharedContext<?, ?> cctx, SnapshotFileTree sft, int incIdx, Set<Integer> cacheIds) {
         this.cctx = cctx;
-        this.snpName = snpName;
-        this.snpPath = snpPath;
+        this.sft = sft;
         this.incIdx = incIdx;
         this.cacheIds = cacheIds;
 
@@ -97,20 +93,18 @@ abstract class IncrementalSnapshotProcessor {
         @Nullable Consumer<TxRecord> txHnd
     ) throws IgniteCheckedException, IOException {
         IncrementalSnapshotMetadata meta = cctx.snapshotMgr()
-            .readIncrementalSnapshotMetadata(snpName, snpPath, incIdx);
+            .readIncrementalSnapshotMetadata(sft.incrementalSnapshotFileTree(incIdx).meta());
 
-        File[] segments = walSegments(meta.folderName());
+        File[] segments = walSegments();
 
         totalWalSegments(segments.length);
 
         UUID incSnpId = meta.requestId();
 
-        NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
-
         File lastSeg = Arrays.stream(segments)
             .map(File::toPath)
-            .max(Comparator.comparingLong(ft::walSegmentIndex))
-            .orElseThrow(() -> new IgniteCheckedException("Last WAL segment wasn't found [snpName=" + snpName + ']'))
+            .max(Comparator.comparingLong(sft::walSegmentIndex))
+            .orElseThrow(() -> new IgniteCheckedException("Last WAL segment wasn't found [snpName=" + sft.name() + ']'))
             .toFile();
 
         IncrementalSnapshotFinishRecord incSnpFinRec = readFinishRecord(lastSeg, incSnpId);
@@ -145,22 +139,20 @@ abstract class IncrementalSnapshotProcessor {
 
                 WALRecord rec = walRec.getValue();
 
-                if (rec.type() == CLUSTER_SNAPSHOT) {
-                    if (((ClusterSnapshotRecord)rec).clusterSnapshotName().equals(snpName)) {
-                        startIdx = walRec.getKey().index();
+                if (rec.type() == CLUSTER_SNAPSHOT && ((ClusterSnapshotRecord)rec).clusterSnapshotName().equals(sft.name())) {
+                    startIdx = walRec.getKey().index();
 
-                        break;
-                    }
+                    break;
                 }
             }
 
             if (startIdx < 0) {
                 throw new IgniteCheckedException("System WAL record for full snapshot wasn't found " +
-                    "[snpName=" + snpName + ", walSegFile=" + segments[0] + ']');
+                    "[snpName=" + sft.name() + ", walSegFile=" + segments[0] + ']');
             }
 
             UUID prevIncSnpId = incIdx > 1
-                ? cctx.snapshotMgr().readIncrementalSnapshotMetadata(snpName, snpPath, incIdx - 1).requestId()
+                ? cctx.snapshotMgr().readIncrementalSnapshotMetadata(sft.incrementalSnapshotFileTree(incIdx - 1).meta()).requestId()
                 : null;
 
             IgnitePredicate<GridCacheVersion> txVerFilter = prevIncSnpId != null
@@ -223,24 +215,22 @@ abstract class IncrementalSnapshotProcessor {
     }
 
     /** @return WAL segments to restore for specified incremental index since the base snapshot. */
-    private File[] walSegments(String folderName) throws IgniteCheckedException {
+    private File[] walSegments() throws IgniteCheckedException {
         File[] segments = null;
 
         for (int i = 1; i <= incIdx; i++) {
-            File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, i);
+            IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(i);
 
-            if (!incSnpDir.exists())
-                throw new IgniteCheckedException("Incremental snapshot doesn't exists [dir=" + incSnpDir + ']');
+            if (!ift.root().exists())
+                throw new IgniteCheckedException("Incremental snapshot doesn't exists [dir=" + ift.root() + ']');
 
-            File incSnpWalDir = incrementalSnapshotWalsDir(incSnpDir, folderName);
+            if (!ift.wal().exists())
+                throw new IgniteCheckedException("Incremental snapshot WAL directory doesn't exists [dir=" + ift.wal() + ']');
 
-            if (!incSnpWalDir.exists())
-                throw new IgniteCheckedException("Incremental snapshot WAL directory doesn't exists [dir=" + incSnpWalDir + ']');
-
-            File[] incSegs = incSnpWalDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+            File[] incSegs = ift.wal().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
 
             if (incSegs == null)
-                throw new IgniteCheckedException("Failed to list WAL segments from snapshot directory [dir=" + incSnpDir + ']');
+                throw new IgniteCheckedException("Failed to list WAL segments from snapshot directory [dir=" + ift.root() + ']');
 
             if (segments == null)
                 segments = incSegs;
@@ -255,7 +245,7 @@ abstract class IncrementalSnapshotProcessor {
 
         if (F.isEmpty(segments)) {
             throw new IgniteCheckedException("No WAL segments found for incremental snapshot " +
-                "[snpName=" + snpName + ", snpPath=" + snpPath + ", incrementIndex=" + incIdx + ']');
+                "[snpName=" + sft.name() + ", snpPath=" + sft.path() + ", incrementIndex=" + incIdx + ']');
         }
 
         return segments;

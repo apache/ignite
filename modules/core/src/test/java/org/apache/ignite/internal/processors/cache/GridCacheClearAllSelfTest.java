@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Objects;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -188,7 +189,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
-            return F.eq(attrValue, clusterNode.attribute(TEST_ATTRIBUTE));
+            return Objects.equals(attrValue, clusterNode.attribute(TEST_ATTRIBUTE));
         }
     }
 }

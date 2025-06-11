@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
@@ -117,8 +116,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreV2.VERSION;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_TEMPLATE;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.util.GridUnsafe.allocateBuffer;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.GridUnsafe.freeBuffer;
@@ -272,16 +270,16 @@ public class IgniteIndexReader implements AutoCloseable {
         idxStore = filePageStore(INDEX_PARTITION, FLAG_IDX, storeFactory);
 
         if (isNull(idxStore))
-            throw new IgniteCheckedException(INDEX_FILE_NAME + " file not found");
+            throw new IgniteCheckedException(partitionFileName(INDEX_PARTITION) + " file not found");
 
-        log.info("Analyzing file: " + INDEX_FILE_NAME);
+        log.info("Analyzing file: " + partitionFileName(INDEX_PARTITION));
 
         partStores = new FilePageStore[partCnt];
 
         for (int i = 0; i < partCnt; i++)
             partStores[i] = filePageStore(i, FLAG_DATA, storeFactory);
 
-        Arrays.stream(FilePageStoreManager.cacheDataFiles(root)).forEach(f -> {
+        NodeFileTree.existingCacheConfigFiles(root).forEach(f -> {
             try {
                 StoredCacheData data = GridLocalConfigManager.readCacheData(f, null, null);
 
@@ -305,7 +303,8 @@ public class IgniteIndexReader implements AutoCloseable {
             Collections.emptyList(),
             asList(
                 argument(DIR_ARG, String.class)
-                    .withUsage("partition directory, where " + INDEX_FILE_NAME + " and (optionally) partition files are located.")
+                    .withUsage("partition directory, where " + partitionFileName(INDEX_PARTITION) +
+                        " and (optionally) partition files are located.")
                     .build(),
                 optionalArgument(PART_CNT_ARG, Integer.class).withUsage("full partitions count in cache group.").withDefault(0).build(),
                 optionalArgument(PAGE_SIZE_ARG, Integer.class).withUsage("page size.").withDefault(DFLT_PAGE_SIZE).build(),
@@ -345,7 +344,7 @@ public class IgniteIndexReader implements AutoCloseable {
             reader.readIndex();
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(INDEX_FILE_NAME + " scan problem", e);
+            throw new IgniteException(partitionFileName(INDEX_PARTITION) + " scan problem", e);
         }
     }
 
@@ -1194,7 +1193,7 @@ public class IgniteIndexReader implements AutoCloseable {
         byte type,
         FileVersionCheckingFactory storeFactory
     ) throws IgniteCheckedException {
-        File file = new File(root, partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId));
+        File file = new File(root, partitionFileName(partId));
 
         if (!file.exists())
             return null;

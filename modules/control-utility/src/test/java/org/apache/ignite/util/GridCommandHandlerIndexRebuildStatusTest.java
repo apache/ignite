@@ -40,6 +40,7 @@ import org.apache.ignite.internal.management.cache.IndexRebuildStatusInfoContain
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -146,11 +147,14 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
 
         final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
+        NodeFileTree ft1 = grid(GRIDS_NUM - 1).context().pdsFolderResolver().fileTree();
+        NodeFileTree ft2 = grid(GRIDS_NUM - 2).context().pdsFolderResolver().fileTree();
+
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
 
-        deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 1));
-        deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 2));
+        deleteIndexBin(ft1);
+        deleteIndexBin(ft2);
 
         IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
         startGrid(GRIDS_NUM - 1);
@@ -204,11 +208,14 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
 
         final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
+        NodeFileTree ft1 = grid(GRIDS_NUM - 1).context().pdsFolderResolver().fileTree();
+        NodeFileTree ft2 = grid(GRIDS_NUM - 2).context().pdsFolderResolver().fileTree();
+
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
 
-        deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 1));
-        deleteIndexBin(getTestIgniteInstanceName(GRIDS_NUM - 2));
+        deleteIndexBin(ft1);
+        deleteIndexBin(ft2);
 
         IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
         IgniteEx ignite1 = startGrid(GRIDS_NUM - 1);
@@ -273,7 +280,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
     private void checkRebuildStartOutput(String output, int nodeIdx, String grpName, String cacheName) {
         IgniteEx ignite = grid(nodeIdx);
 
-        int locPartsCnt = ignite.context().cache().cache(cacheName).context().topology().localPartitions().size();
+        int locPartsCnt = ignite.context().cache().cache(cacheName).context().topology().localPartitionsNumber();
 
         assertContains(
             log,

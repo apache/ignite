@@ -87,6 +87,23 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
     /** */
     @Test
+    public void testCheckWithCustomHandlersUnallowed() throws Exception {
+        createFullSnapshot();
+
+        int incSnpCnt = 1;
+
+        createIncrementalSnapshots(incSnpCnt);
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> snp(grid(1)).checkSnapshot(SNP, null, null, true, 1, true).get(getTestTimeout()),
+            IllegalArgumentException.class,
+            "Snapshot handlers aren't supported for incremental snapshot"
+        );
+    }
+
+    /** */
+    @Test
     public void testCheckCorrectIncrementalSnapshot() throws Exception {
         createFullSnapshot();
 
@@ -263,7 +280,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         File incMetaFile = snapshotFileTree(srv, SNP).incrementalSnapshotFileTree(1).meta();
 
-        IncrementalSnapshotMetadata meta = snp(srv).readFromFile(incMetaFile);
+        IncrementalSnapshotMetadata meta = snp(srv).readIncrementalSnapshotMetadata(incMetaFile);
 
         U.delete(incMetaFile);
 
@@ -294,7 +311,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         File incMetaFile = snapshotFileTree(srv, SNP).incrementalSnapshotFileTree(1).meta();
 
-        IncrementalSnapshotMetadata meta = snp(srv).readFromFile(incMetaFile);
+        IncrementalSnapshotMetadata meta = snp(srv).readIncrementalSnapshotMetadata(incMetaFile);
 
         U.delete(incMetaFile);
 

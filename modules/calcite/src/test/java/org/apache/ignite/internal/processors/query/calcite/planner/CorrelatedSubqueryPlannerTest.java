@@ -27,14 +27,17 @@ import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.logical.LogicalCorrelate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -281,6 +284,14 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
             ")) FROM th1";
         assertPlan(sql, schema, colocatedPredicate);
 
+        // Correlate on top of another join.
+        sql = "SELECT a FROM ta1 WHERE ta1.a IN (SELECT a FROM th1) AND EXISTS (SELECT 1 FROM ta2 WHERE ta2.b = ta1.a)";
+        assertPlan(sql, schema, hasChildThat(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(input(0, isInstanceOf(AbstractIgniteJoin.class)))
+            .and(input(1, isInstanceOf(IgniteColocatedAggregateBase.class)
+                .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate())
+        ))));
+
         // Condition on not colocated column.
         sql = "SELECT a FROM ta1 WHERE EXISTS (SELECT a FROM ta2 WHERE ta2.a = ta1.a)";
         assertPlan(sql, schema, colocatedPredicate.negate());
@@ -310,6 +321,34 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
             "   SELECT a FROM th3 WHERE th3.a = th1.a AND th3.c = th1.b" +
             ")) FROM th1";
         assertPlan(sql, schema, colocatedPredicate.negate());
+    }
+
+    /** */
+    @Test
+    public void testFunctionsRewriteWithCorrelatedSubquery() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("T1", IgniteDistributions.single(), "ID", Integer.class),
+            createTable("T2", IgniteDistributions.single(), "ID", Integer.class)
+        );
+
+        // Also check result type inference.
+        Predicate<RelDataType> rowTypeCheckerChar = t -> t.getFieldCount() == 1
+            && t.getFieldList().get(0).getType().getSqlTypeName() == SqlTypeName.CHAR;
+
+        Predicate<RelDataType> rowTypeCheckerNotNull = t -> rowTypeCheckerChar.test(t)
+            && !t.getFieldList().get(0).getType().isNullable();
+
+        Predicate<RelDataType> rowTypeCheckerNullable = t -> rowTypeCheckerChar.test(t)
+            && t.getFieldList().get(0).getType().isNullable();
+
+        assertPlan("SELECT COALESCE((SELECT MAX('0') FROM T1 WHERE T1.ID = T2.ID), '1') FROM T2", schema,
+            n -> rowTypeCheckerNotNull.test(n.getRowType()));
+
+        assertPlan("SELECT NVL((SELECT MAX('0') FROM T1 WHERE T1.ID = T2.ID), '1') FROM T2", schema,
+            n -> rowTypeCheckerNotNull.test(n.getRowType()));
+
+        assertPlan("SELECT NULLIF((SELECT MAX('0') FROM T1 WHERE T1.ID = T2.ID), '1') FROM T2", schema,
+            n -> rowTypeCheckerNullable.test(n.getRowType()));
     }
 
     /** */

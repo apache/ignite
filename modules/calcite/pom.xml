@@ -46,6 +46,7 @@
         <reflections.version>0.10.2</reflections.version>
         <commons.math.version>3.6.1</commons.math.version>
         <commons.text.version>1.11.0</commons.text.version>
+        <io.trino.tpch.version>1.2</io.trino.tpch.version>
     </properties>
 
     <url>https://ignite.apache.org</url>
@@ -54,6 +55,18 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-commons</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-binary-api</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!--
@@ -244,6 +257,13 @@
             <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>io.trino.tpch</groupId>
+            <artifactId>tpch</artifactId>
+            <version>${io.trino.tpch.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -360,6 +380,17 @@
                             <lookAhead>2</lookAhead>
                             <isStatic>false</isStatic>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

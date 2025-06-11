@@ -209,6 +209,8 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                 continue;
             }
             else if (predKind == SqlKind.SEARCH) {
+                // Intentionally use of RexUtil.expandSearch (not RexUtils.expandSearchNullable), since here we
+                // expand operator not for bytecode generation and expect output with OR/AND operators.
                 sel *= getTablePredicateBasedSelectivity(rel, mq,
                     RexUtil.expandSearch(rel.getCluster().getRexBuilder(), null, pred));
 

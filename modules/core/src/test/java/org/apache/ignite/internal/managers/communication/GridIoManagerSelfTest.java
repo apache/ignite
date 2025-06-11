@@ -28,7 +28,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -42,6 +41,7 @@ import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.eq;
@@ -72,7 +72,6 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ctx.config().setCommunicationSpi(new TcpCommunicationSpi());
-        ctx.config().setMarshaller(new JdkMarshaller());
 
         // Turn off peer class loading to simplify mocking.
         ctx.config().setPeerClassLoadingEnabled(false);
@@ -122,7 +121,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         verify(ioMgr).sendToGridTopic(eq(locNode), eq(GridTopic.TOPIC_COMM_USER), any(GridIoUserMessage.class),
             eq(GridIoPolicy.PUBLIC_POOL));
 
-        Collection<? extends ClusterNode> rmtNodes = F.view(F.asList(rmtNode), F.remoteNodes(locNode.id()));
+        Collection<? extends ClusterNode> rmtNodes = F.view(F.asList(rmtNode), remoteNodes(locNode.id()));
 
         verify(ioMgr).sendToGridTopic(argThat(new IsEqualCollection(rmtNodes)), eq(GridTopic.TOPIC_COMM_USER),
             any(GridIoUserMessage.class), eq(GridIoPolicy.PUBLIC_POOL));
@@ -148,7 +147,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         verify(ioMgr).sendToGridTopic(eq(locNode), eq(GridTopic.TOPIC_COMM_USER), any(GridIoUserMessage.class),
             eq(GridIoPolicy.PUBLIC_POOL));
 
-        Collection<? extends ClusterNode> rmtNodes = F.view(F.asList(rmtNode), F.remoteNodes(locNode.id()));
+        Collection<? extends ClusterNode> rmtNodes = F.view(F.asList(rmtNode), remoteNodes(locNode.id()));
 
         verify(ioMgr).sendToGridTopic(argThat(new IsEqualCollection(rmtNodes)), eq(GridTopic.TOPIC_COMM_USER),
             any(GridIoUserMessage.class), eq(GridIoPolicy.PUBLIC_POOL));
@@ -245,11 +244,6 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public short directType() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
             return 0;
         }
     }

@@ -89,7 +89,7 @@ public class ServiceSingleNodeDeploymentResult implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -97,13 +97,13 @@ public class ServiceSingleNodeDeploymentResult implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("cnt", cnt))
+                if (!writer.writeInt(cnt))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeCollection("errors", errors, BYTE_ARR))
+                if (!writer.writeCollection(errors, BYTE_ARR))
                     return false;
 
                 writer.incrementState();
@@ -116,12 +116,9 @@ public class ServiceSingleNodeDeploymentResult implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                cnt = reader.readInt("cnt");
+                cnt = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -129,7 +126,7 @@ public class ServiceSingleNodeDeploymentResult implements Message {
                 reader.incrementState();
 
             case 1:
-                errors = reader.readCollection("errors", BYTE_ARR);
+                errors = reader.readCollection(BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -137,17 +134,12 @@ public class ServiceSingleNodeDeploymentResult implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(ServiceSingleNodeDeploymentResult.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 169;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

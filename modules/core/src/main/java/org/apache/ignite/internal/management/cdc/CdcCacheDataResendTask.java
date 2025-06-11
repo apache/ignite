@@ -50,6 +50,8 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+
 /**
  * Task to forcefully resend all cache data to CDC.
  * Iterates over caches and writes primary copies of data entries to the WAL to get captured by CDC.
@@ -80,7 +82,7 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
         // Cancel resend if affinity will change.
         topVer = ignite.context().cache().context().exchange().lastAffinityChangedTopologyVersion(fut.topologyVersion());
 
-        return F.nodeIds(ignite.cluster().forServers().nodes());
+        return nodeIds(ignite.cluster().forServers().nodes());
     }
 
     /** {@inheritDoc} */

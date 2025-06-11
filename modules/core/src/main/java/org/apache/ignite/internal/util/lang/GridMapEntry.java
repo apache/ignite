@@ -19,8 +19,8 @@ package org.apache.ignite.internal.util.lang;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -76,7 +76,7 @@ public class GridMapEntry<K, V> implements Map.Entry<K, V>, Serializable {
 
         GridMapEntry e = (GridMapEntry)o;
 
-        return F.eq(key, e.key) && F.eq(val, e.val);
+        return Objects.equals(key, e.key) && Objects.equals(val, e.val);
     }
 
     /** {@inheritDoc} */

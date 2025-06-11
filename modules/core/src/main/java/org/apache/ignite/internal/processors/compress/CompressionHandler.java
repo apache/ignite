@@ -117,7 +117,7 @@ public class CompressionHandler {
 
         int lvl = CompressionProcessor.getCompressionLevel(cfg.getDiskPageCompressionLevel(), diskPageCompr);
 
-        File dbPath = ctx.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
+        File dbPath = ctx.pdsFolderResolver().fileTree().root();
 
         assert dbPath != null;
 

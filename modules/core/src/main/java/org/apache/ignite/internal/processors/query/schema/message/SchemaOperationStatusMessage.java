@@ -101,7 +101,7 @@ public class SchemaOperationStatusMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -109,19 +109,19 @@ public class SchemaOperationStatusMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("opId", opId))
+                if (!writer.writeUuid(opId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeBoolean("nop", nop))
+                if (!writer.writeBoolean(nop))
                     return false;
 
                 writer.incrementState();
@@ -134,12 +134,9 @@ public class SchemaOperationStatusMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                opId = reader.readUuid("opId");
+                opId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -147,7 +144,7 @@ public class SchemaOperationStatusMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -155,7 +152,7 @@ public class SchemaOperationStatusMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                nop = reader.readBoolean("nop");
+                nop = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -163,7 +160,7 @@ public class SchemaOperationStatusMessage implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(SchemaOperationStatusMessage.class);
+        return true;
     }
 
     /**
@@ -176,11 +173,6 @@ public class SchemaOperationStatusMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -53;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

@@ -70,7 +70,7 @@ public class TestVolatilePayloadMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -78,17 +78,17 @@ public class TestVolatilePayloadMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt(null, idx))
+                if (!writer.writeInt(idx))
                     return false;
 
                 writer.incrementState();
             case 1:
-                if (!writer.writeInt(null, payloadLen))
+                if (!writer.writeInt(payloadLen))
                     return false;
 
                 writer.incrementState();
             case 2:
-                if (!writer.writeByteArray(null, payload))
+                if (!writer.writeByteArray(payload))
                     return false;
 
                 writer.incrementState();
@@ -103,7 +103,7 @@ public class TestVolatilePayloadMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                idx = reader.readInt(null);
+                idx = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -111,7 +111,7 @@ public class TestVolatilePayloadMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                payloadLen = reader.readInt(null);
+                payloadLen = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -122,7 +122,7 @@ public class TestVolatilePayloadMessage implements Message {
                 if (buf.remaining() < payloadLen)
                     return false;
 
-                payload = reader.readByteArray(null);
+                payload = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -136,10 +136,5 @@ public class TestVolatilePayloadMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return DIRECT_TYPE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 }

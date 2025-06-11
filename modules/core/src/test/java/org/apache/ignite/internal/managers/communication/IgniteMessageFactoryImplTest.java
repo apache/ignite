@@ -159,11 +159,6 @@ public class IgniteMessageFactoryImplTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
         @Override public void onAckReceived() {
             // No-op.
         }
@@ -187,11 +182,6 @@ public class IgniteMessageFactoryImplTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
         @Override public void onAckReceived() {
             // No-op.
         }
@@ -212,11 +202,6 @@ public class IgniteMessageFactoryImplTest {
         /** {@inheritDoc} */
         @Override public short directType() {
             return TEST_MSG_42_TYPE;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 0;
         }
 
         /** {@inheritDoc} */

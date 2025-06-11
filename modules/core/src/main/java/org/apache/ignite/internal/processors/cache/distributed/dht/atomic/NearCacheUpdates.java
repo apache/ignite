@@ -203,7 +203,7 @@ public class NearCacheUpdates implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -211,37 +211,37 @@ public class NearCacheUpdates implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("nearExpireTimes", nearExpireTimes))
+                if (!writer.writeMessage(nearExpireTimes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeCollection("nearSkipIdxs", nearSkipIdxs, MessageCollectionItemType.INT))
+                if (!writer.writeCollection(nearSkipIdxs, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("nearTtls", nearTtls))
+                if (!writer.writeMessage(nearTtls))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeCollection("nearVals", nearVals, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(nearVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("nearValsIdxs", nearValsIdxs, MessageCollectionItemType.INT))
+                if (!writer.writeCollection(nearValsIdxs, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("nearVer", nearVer))
+                if (!writer.writeMessage(nearVer))
                     return false;
 
                 writer.incrementState();
@@ -255,12 +255,9 @@ public class NearCacheUpdates implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                nearExpireTimes = reader.readMessage("nearExpireTimes");
+                nearExpireTimes = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -268,7 +265,7 @@ public class NearCacheUpdates implements Message {
                 reader.incrementState();
 
             case 1:
-                nearSkipIdxs = reader.readCollection("nearSkipIdxs", MessageCollectionItemType.INT);
+                nearSkipIdxs = reader.readCollection(MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -276,7 +273,7 @@ public class NearCacheUpdates implements Message {
                 reader.incrementState();
 
             case 2:
-                nearTtls = reader.readMessage("nearTtls");
+                nearTtls = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -284,7 +281,7 @@ public class NearCacheUpdates implements Message {
                 reader.incrementState();
 
             case 3:
-                nearVals = reader.readCollection("nearVals", MessageCollectionItemType.MSG);
+                nearVals = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -292,7 +289,7 @@ public class NearCacheUpdates implements Message {
                 reader.incrementState();
 
             case 4:
-                nearValsIdxs = reader.readCollection("nearValsIdxs", MessageCollectionItemType.INT);
+                nearValsIdxs = reader.readCollection(MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -300,7 +297,7 @@ public class NearCacheUpdates implements Message {
                 reader.incrementState();
 
             case 5:
-                nearVer = reader.readMessage("nearVer");
+                nearVer = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -309,17 +306,12 @@ public class NearCacheUpdates implements Message {
 
         }
 
-        return reader.afterMessageRead(NearCacheUpdates.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -51;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 6;
     }
 
     /** {@inheritDoc} */

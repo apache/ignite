@@ -55,7 +55,7 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -63,7 +63,7 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("connIdx", connIdx))
+                if (!writer.writeInt(connIdx))
                     return false;
 
                 writer.incrementState();
@@ -82,12 +82,9 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                connIdx = reader.readInt("connIdx");
+                connIdx = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -96,17 +93,12 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
 
         }
 
-        return reader.afterMessageRead(TcpInverseConnectionResponseMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 177;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

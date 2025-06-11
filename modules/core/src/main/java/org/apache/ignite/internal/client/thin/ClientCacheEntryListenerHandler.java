@@ -33,9 +33,9 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -145,7 +145,7 @@ public class ClientCacheEntryListenerHandler<K, V> implements NotificationListen
     /** {@inheritDoc} */
     @Override public void acceptNotification(ByteBuffer payload, Exception err) {
         if (err == null && payload != null) {
-            BinaryInputStream in = BinaryByteBufferInputStream.create(payload);
+            BinaryInputStream in = BinaryStreams.inputStream(payload);
 
             int cnt = in.readInt();
 

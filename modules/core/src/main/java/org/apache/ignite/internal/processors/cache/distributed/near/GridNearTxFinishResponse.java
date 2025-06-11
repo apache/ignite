@@ -125,7 +125,7 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -133,19 +133,19 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
 
         switch (writer.state()) {
             case 7:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeLong("nearThreadId", nearThreadId))
+                if (!writer.writeLong(nearThreadId))
                     return false;
 
                 writer.incrementState();
@@ -159,15 +159,12 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 7:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -175,7 +172,7 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
                 reader.incrementState();
 
             case 8:
-                miniId = reader.readInt("miniId");
+                miniId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -183,7 +180,7 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
                 reader.incrementState();
 
             case 9:
-                nearThreadId = reader.readLong("nearThreadId");
+                nearThreadId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -192,17 +189,12 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
 
         }
 
-        return reader.afterMessageRead(GridNearTxFinishResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 54;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 10;
     }
 
     /** {@inheritDoc} */

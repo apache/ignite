@@ -174,7 +174,7 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         }
 
         if (rightDistr.getType() == HASH_DISTRIBUTED && right2leftProjectedDistr != random()) {
-            outTraits = nodeTraits.replace(rightDistr);
+            outTraits = nodeTraits.replace(right2leftProjectedDistr);
             leftTraits = left.replace(right2leftProjectedDistr);
             rightTraits = right.replace(rightDistr);
 

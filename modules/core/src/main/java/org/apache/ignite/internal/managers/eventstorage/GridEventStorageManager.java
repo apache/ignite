@@ -85,6 +85,8 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_EVENT;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.localNode;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 
 /**
  * Grid event storage SPI manager.
@@ -136,7 +138,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public GridEventStorageManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getEventStorageSpi());
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         int[] cfgInclEvtTypes0 = ctx.config().getIncludeEventTypes();
 
@@ -1144,9 +1146,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      */
     private void sendMessage(Collection<? extends ClusterNode> nodes, GridTopic topic,
         GridEventStorageMessage msg, byte plc) throws IgniteCheckedException {
-        ClusterNode locNode = F.find(nodes, null, F.localNode(ctx.localNodeId()));
+        ClusterNode locNode = F.find(nodes, null, localNode(ctx.localNodeId()));
 
-        Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(ctx.localNodeId()));
+        Collection<? extends ClusterNode> rmtNodes = F.view(nodes, remoteNodes(ctx.localNodeId()));
 
         if (locNode != null)
             ctx.io().sendToGridTopic(locNode, topic, msg, plc);

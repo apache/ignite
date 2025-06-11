@@ -28,9 +28,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.SensitiveInfoTestLoggerProxy;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
@@ -46,9 +46,6 @@ import org.jetbrains.annotations.Nullable;
  * Test resources for injection.
  */
 public class IgniteTestResources {
-    /** Marshaller class name. */
-    public static final String MARSH_CLASS_NAME = "test.marshaller.class";
-
     /** */
     private static final IgniteLogger rootLog = new GridTestLog4jLogger(false);
 
@@ -248,36 +245,15 @@ public class IgniteTestResources {
 
     /**
      * @return Marshaller.
-     * @throws IgniteCheckedException If failed.
      */
-    public static synchronized Marshaller getMarshaller() throws IgniteCheckedException {
-        String marshallerName = System.getProperty(MARSH_CLASS_NAME);
-
-        Marshaller marsh;
-
-        if (marshallerName == null)
-            marsh = new BinaryMarshaller();
-        else {
-            try {
-                Class<? extends Marshaller> cls = (Class<? extends Marshaller>)Class.forName(marshallerName);
-
-                marsh = cls.newInstance();
-            }
-            catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                throw new IgniteCheckedException("Failed to create test marshaller [marshaller=" +
-                    marshallerName + ']', e);
-            }
-        }
+    public static synchronized Marshaller getMarshaller() {
+        BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextTestImpl());
-
-        if (marsh instanceof BinaryMarshaller) {
-            BinaryMarshaller binaryMarsh = (BinaryMarshaller)marsh;
-
-            BinaryContext ctx =
-                new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), new NullLogger());
-            binaryMarsh.setBinaryContext(ctx, new IgniteConfiguration());
-        }
+        marsh.setBinaryContext(
+            new BinaryContext(BinaryUtils.cachingMetadataHandler(), new IgniteConfiguration(), new NullLogger()),
+            new IgniteConfiguration()
+        );
 
         return marsh;
     }

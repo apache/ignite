@@ -73,7 +73,7 @@ public class CacheEntryInfoCollection implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -81,7 +81,7 @@ public class CacheEntryInfoCollection implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("infos", infos, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(infos, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -95,12 +95,9 @@ public class CacheEntryInfoCollection implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                infos = reader.readCollection("infos", MessageCollectionItemType.MSG);
+                infos = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -109,17 +106,12 @@ public class CacheEntryInfoCollection implements Message {
 
         }
 
-        return reader.afterMessageRead(CacheEntryInfoCollection.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 92;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

@@ -56,18 +56,10 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
-        return reader.afterMessageRead(CacheEntryPredicateAdapter.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -75,7 +67,7 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();

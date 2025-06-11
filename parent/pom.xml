@@ -77,7 +77,7 @@
         <grpc-context.version>1.62.2</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hamcrest.version>2.2</hamcrest.version>
-        <jackson.version>2.14.0</jackson.version>
+        <jackson.version>2.19.0</jackson.version>
         <javassist.version>3.28.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.1.0</javax.cache.tck.version>
@@ -86,7 +86,7 @@
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
         <jetty.version>11.0.24</jetty.version>
         <jetty-jakarta-servlet-api.version>5.0.2</jetty-jakarta-servlet-api.version>
-        <jmh.version>1.13</jmh.version>
+        <jmh.version>1.36</jmh.version>
         <jna.version>4.5.2</jna.version>
         <jnr.posix.version>3.1.15</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
@@ -930,16 +930,11 @@
                         <version>3.7.0</version>
                         <configuration>
                             <compilerArgs>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/sun.net.util=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
+                                <arg>--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.base/sun.net.util=ALL-UNNAMED</arg>
                             </compilerArgs>
                         </configuration>
                     </plugin>

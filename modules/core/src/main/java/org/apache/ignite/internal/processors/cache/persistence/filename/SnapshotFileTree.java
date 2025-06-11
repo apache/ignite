@@ -18,13 +18,26 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import org.apache.ignite.internal.IgniteEx;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.dump.DumpReader;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.resolveStorage;
 
 /**
  * {@link NodeFileTree} extension with the methods required to work with snapshot file tree.
@@ -33,25 +46,31 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_I
  */
 public class SnapshotFileTree extends NodeFileTree {
     /** File with delta pages suffix. */
-    public static final String DELTA_SUFFIX = ".delta";
+    private static final String DELTA_SUFFIX = ".delta";
 
     /** File with delta pages index suffix. */
-    public static final String DELTA_IDX_SUFFIX = ".idx";
+    private static final String DELTA_IDX_SUFFIX = ".idx";
 
     /** Snapshot metafile extension. */
-    public static final String SNAPSHOT_METAFILE_EXT = ".smf";
+    private static final String SNAPSHOT_METAFILE_EXT = ".smf";
 
     /** File name template consists of delta pages. */
-    public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
+    private static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
 
     /** File name template for index delta pages. */
-    public static final String INDEX_DELTA_NAME = INDEX_FILE_NAME + DELTA_SUFFIX;
+    private static final String INDEX_DELTA_NAME = INDEX_FILE_NAME + DELTA_SUFFIX;
 
     /** Lock file for dump directory. */
-    public static final String DUMP_LOCK = "dump.lock";
+    private static final String DUMP_LOCK = "dump.lock";
 
     /** Incremental snapshots directory name. */
-    public static final String INC_SNP_DIR = "increments";
+    private static final String INC_SNP_DIR = "increments";
+
+    /** Pattern for incremental snapshot directory names. */
+    private static final Pattern INC_SNP_NAME_PATTERN = U.fixedLengthNumberNamePattern(null);
+
+    /** Dump files name. */
+    private static final String DUMP_FILE_EXT = ".dump";
 
     /** Snapshot name. */
     private final String name;
@@ -59,29 +78,71 @@ public class SnapshotFileTree extends NodeFileTree {
     /** Snapshot path. */
     @Nullable private final String path;
 
-    /** Consistent id for snapshot. */
-    private final String consId;
+    /**
+     * Consistent id for snapshot.
+     * Nullable, only for {@link DumpReader} when we don't know specific consistenId.
+     */
+    @Nullable private final String consId;
 
     /** Node file tree relative to {@link #tempFileTree()}. */
-    private final NodeFileTree tmpFt;
+    private NodeFileTree tmpFt;
 
     /**
-     * @param loc Local node.
+     * @param ctx Kernal context.
      * @param name Snapshot name.
      * @param path Optional snapshot path.
      */
-    public SnapshotFileTree(IgniteEx loc, String name, @Nullable String path) {
-        super(root(loc.context().pdsFolderResolver().fileTree(), name, path), loc.context().pdsFolderResolver().fileTree().folderName());
+    public SnapshotFileTree(GridKernalContext ctx, String name, @Nullable String path) {
+        this(ctx, name, path, ctx.pdsFolderResolver().fileTree().folderName(), ctx.discovery().localNode().consistentId().toString());
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param consId Consistent id.
+     * @param name Snapshot name.
+     * @param path Optional snapshot path.
+     */
+    public SnapshotFileTree(GridKernalContext ctx, String name, @Nullable String path, String folderName, String consId) {
+        this(ctx.config(), ctx.pdsFolderResolver().fileTree(), name, path, folderName, consId);
+
+        A.notNull(consId, "consistent id");
+
+        this.tmpFt = tempFileTree(ctx);
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @param ft Node file tree.
+     * @param name Snapshot name.
+     * @param path Snapshot path.
+     * @param folderName Folder name.
+     * @param consId Consistent id.
+     */
+    public SnapshotFileTree(
+        IgniteConfiguration cfg,
+        NodeFileTree ft,
+        String name,
+        @Nullable String path,
+        String folderName,
+        @Nullable String consId
+    ) {
+        super(cfg, root(ft, name, path), folderName, true);
 
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        NodeFileTree ft = loc.context().pdsFolderResolver().fileTree();
-
         this.name = name;
         this.path = path;
-        this.consId = loc.localNode().consistentId().toString();
-        this.tmpFt = new NodeFileTree(new File(ft.snapshotTempRoot(), name), folderName());
+        this.consId = consId;
+
+        Map<String, File> snpExtraStorages = snapshotExtraStorages(ft, cfg.getSnapshotPath());
+
+        if (snpExtraStorages.isEmpty())
+            extraStorages.clear();
+        else
+            extraStorages.putAll(snpExtraStorages);
+
+        this.tmpFt = null;
     }
 
     /** @return Snapshot name. */
@@ -100,8 +161,11 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * Returns file tree for specific incremental snapshot.
+     * Root will be something like {@code "work/snapshots/mybackup/increments/0000000000000001"}.
+     *
      * @param incIdx Increment index.
-     * @return Root directory for incremental snapshot.
+     * @return Incremental snapshot file tree.
      */
     public IncrementalSnapshotFileTree incrementalSnapshotFileTree(int incIdx) {
         return new IncrementalSnapshotFileTree(
@@ -112,12 +176,20 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
-     * @param cacheDirName Cache dir name.
-     * @param partId Cache partition identifier.
-     * @return A file representation.
+     * @param ccfg Cache configuration.
+     * @param part Partition.
+     * @return Cache partition delta file.
      */
-    public File partDeltaFile(String cacheDirName, int partId) {
-        return new File(tmpFt.cacheStorage(cacheDirName), partDeltaFileName(partId));
+    public File partDeltaFile(CacheConfiguration<?, ?> ccfg, int part) {
+        return new File(resolveStorage(tmpFt.cacheStorages(ccfg), part), partitionFileName(part, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
+    }
+
+    /**
+     * @param part Partition.
+     * @return Metastorage partition delta file.
+     */
+    public File metastorageDeltaFile(int part) {
+        return new File(tmpFt.metaStorage(), partitionFileName(part, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
     }
 
     /**
@@ -152,20 +224,103 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
-     * @param partId Partition id.
-     * @return File name of delta partition pages.
+     * Note, this consistent id can differ from the local consistent id.
+     * In case snapshot was moved from other node.
+     * @return Consistent id of the snapshot.
      */
-    public static String partDeltaFileName(int partId) {
-        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
+    public String consistentId() {
+        return consId;
+    }
 
-        return partId == INDEX_PARTITION ? INDEX_DELTA_NAME : String.format(PART_DELTA_TEMPLATE, partId);
+    /**
+     * @param ccfg Cache configuration.
+     * @param part partition.
+     * @param compress {@code True} if dump compressed.
+     * @return Path to the dump partition file;
+     */
+    public File dumpPartition(CacheConfiguration<?, ?> ccfg, int part, boolean compress) {
+        return new File(resolveStorage(cacheStorages(ccfg), part), dumpPartFileName(part, compress));
+    }
+
+    /**
+     * @param grpId Cache group id.
+     * @return Files that match cache or cache group pattern.
+     */
+    public File existingCacheDirectory(int grpId) {
+        return F.first(existingCacheDirs(true, f -> CU.cacheId(cacheName(f)) == grpId));
+    }
+
+    /**
+     * @param cacheDir Cache directory to check.
+     * @param dump If {@code true} then list dump files.
+     * @param compress If {@code true} then list compressed files.
+     * @return List of cache partitions in given directory.
+     */
+    public List<File> existingCachePartitionFiles(File cacheDir, boolean dump, boolean compress) {
+        File[] files = cacheDir.listFiles(f -> f.isFile() && f.getName().endsWith(partExtension(dump, compress)));
+
+        return files == null
+            ? Collections.emptyList()
+            : Arrays.asList(files);
+    }
+
+    /**
+     * @param part Partition number.
+     * @param compressed If {@code true} then compressed partition file.
+     * @return Dump partition file name.
+     */
+    public static String dumpPartFileName(int part, boolean compressed) {
+        return PART_FILE_PREFIX + part + partExtension(true, compressed);
+    }
+
+    /**
+     * @param dump Extension for dump files.
+     * @param compressed If {@code true} then files compressed.
+     * @return Partition file extension.
+     */
+    private static String partExtension(boolean dump, boolean compressed) {
+        return (dump ? DUMP_FILE_EXT : FILE_SUFFIX) + (compressed ? ZIP_SUFFIX : "");
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms partition dump file name pattern.
+     */
+    public static boolean dumpPartitionFile(File f, boolean compressed) {
+        return partitionFile(f) && f.getName().endsWith(partExtension(true, compressed));
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms snapshot meta name pattern.
+     */
+    public static boolean snapshotMetaFile(File f) {
+        return f.getName().toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT);
+    }
+
+    /**
+     * @param snpDir Directory to check.
+     * @return {@code True} if directory conforms increment snapshot directory pattern.
+     */
+    public static boolean incrementSnapshotDir(File snpDir) {
+        return INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR);
+    }
+
+    /**
+     * Partition delta index file. Represents a sequence of page indexes that written to a delta.
+     *
+     * @param delta File with delta pages.
+     * @return File with delta pages index.
+     */
+    public static File partDeltaIndexFile(File delta) {
+        return new File(delta.getParent(), delta.getName() + DELTA_IDX_SUFFIX);
     }
 
     /**
      * @param consId Consistent node id.
      * @return Snapshot metadata file name.
      */
-    private String snapshotMetaFileName(String consId) {
+    public static String snapshotMetaFileName(String consId) {
         return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
     }
 
@@ -175,7 +330,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param path Optional snapshot path.
      * @return Path to the snapshot root directory.
      */
-    private static File root(NodeFileTree ft, String name, @Nullable String path) {
+    public static File root(SharedFileTree ft, String name, @Nullable String path) {
         assert name != null : "Snapshot name cannot be empty or null.";
 
         return path == null ? new File(ft.snapshotsRoot(), name) : new File(path, name);
@@ -216,5 +371,69 @@ public class SnapshotFileTree extends NodeFileTree {
         @Override public File walSegment(long idx) {
             return new File(wal(), U.fixedLengthNumberName(idx, ZIP_WAL_SEG_FILE_EXT));
         }
+    }
+
+    /**
+     * Modifies {@link #extraStorages} for this tree to reflect snapshot options.
+     * In case {@link IgniteConfiguration#getSnapshotPath()} points to absolute directory or {@link #path} for snapshot provided
+     * then all snapshot files must be stored inside one folder.
+     * Otherwise, we use configured by {@link DataStorageConfiguration#getExtraStoragePaths()} structure to save snapshot.
+     * This will distribute workload to all physical device on host.
+     *
+     * @param ft Node file tree.
+     * @param snpDfltPath Snapshot default path.
+     */
+    private Map<String, File> snapshotExtraStorages(NodeFileTree ft, String snpDfltPath) {
+        // If path provided then create snapshot inside it, only.
+        // Same rule applies if absolute path to the snapshot root dir configured.
+        if (path != null || new File(snpDfltPath).isAbsolute())
+            return Collections.emptyMap();
+
+        Map<String, File> snpExtraStorages = new HashMap<>();
+
+        ft.extraStorages().forEach((cfgStoragePath, storagePath) -> {
+            // In case we want to make snapshot in several folders the paths will be the following:
+            // {storage_path}/db/{folder_name} - node cache storage.
+            // {storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
+            snpExtraStorages.put(
+                cfgStoragePath,
+                new File(storagePath.getParentFile().getParentFile(), Path.of(snpDfltPath, name, DB_DIR, folderName()).toString())
+            );
+        });
+
+        return snpExtraStorages;
+    }
+
+    /**
+     * Creates file tree for temporary files.
+     * Required, only for snapshot operation inside running node.
+     *
+     * @param ctx Kernal context.
+     * @return File tree for temporary files.
+     * @see NodeFileTree#SNAPSHOT_TMP_DIR
+     */
+    private NodeFileTree tempFileTree(GridKernalContext ctx) {
+        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
+
+        NodeFileTree res = new NodeFileTree(ctx.config(), new File(ft.snapshotTempRoot(ft.nodeStorage()), name), folderName(), true);
+
+        Map<String, File> snpTmpExtraStorages = new HashMap<>();
+
+        // Iterating via snapshot extra storages,
+        // because they may differ from the node one in case snapshot created using absolute path.
+        ft.extraStorages.forEach((cfgStoragePath, storagePath) -> snpTmpExtraStorages.put(
+            cfgStoragePath,
+            new File(storagePath, Path.of(SNAPSHOT_TMP_DIR, name).toString())
+        ));
+
+        res.extraStorages.putAll(snpTmpExtraStorages);
+
+        return res;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SnapshotFileTree.class, this);
     }
 }

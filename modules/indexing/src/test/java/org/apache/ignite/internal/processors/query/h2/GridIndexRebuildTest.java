@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -54,7 +53,8 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  * Tesing index full and partial rebuild.
@@ -193,19 +193,29 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
             }
         }).start();
 
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
         long diff = System.currentTimeMillis() - start;
 
         U.sleep(7500 - (diff % 5000));
+
+        NodeFileTree ft = ignite(3).context().pdsFolderResolver().fileTree();
 
         stopGrid(3);
 
         stop.set(true);
 
-        for (File grp : new File(workDir, U.maskForFileName(getTestIgniteInstanceName(3))).listFiles()) {
-            new File(grp, "index.bin").delete();
+        boolean idxRmvd = false;
+
+        for (File grp : ft.existingCacheDirsWithoutMeta()) {
+            File idx = new File(grp, partitionFileName(INDEX_PARTITION));
+
+            assertTrue(idx.exists());
+
+            idx.delete();
+
+            idxRmvd = true;
         }
+
+        assertTrue(idxRmvd);
 
         startGrid(3);
 
@@ -337,18 +347,6 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
         assertFalse(hasIssue);
 
         assertFalse("B+Tree is corrupted.", lsnr.check());
-    }
-
-    /** */
-    private void cleanPersistenceFiles(String igName) throws Exception {
-        NodeFileTree ft = nodeFileTree(igName);
-
-        U.delete(ft.nodeStorage());
-
-        Files.createDirectory(ft.nodeStorage().toPath());
-
-        U.delete(ft.wal());
-        U.delete(ft.walArchive());
     }
 
     /** */

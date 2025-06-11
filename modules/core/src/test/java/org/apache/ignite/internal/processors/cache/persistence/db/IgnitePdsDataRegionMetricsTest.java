@@ -60,7 +60,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.DataRegion
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -407,8 +406,8 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         boolean metaStore = METASTORAGE_CACHE_NAME.equals(cacheName);
 
         File cacheWorkDir = metaStore
-            ? new File(ft.nodeStorage(), METASTORAGE_DIR_NAME)
-            : ft.cacheStorage(node.cachex(cacheName).configuration());
+            ? ft.metaStorage()
+            : ft.defaultCacheStorage(node.cachex(cacheName).configuration());
 
         long totalPersistenceSize = 0;
 

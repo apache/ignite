@@ -18,14 +18,27 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.cdc.CdcManager;
+import org.apache.ignite.internal.cdc.CdcMode;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -39,9 +52,9 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.resolveStorage;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 
 /**
  * Provides access to Ignite node file tree.
@@ -64,6 +77,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  *     which equal to {@code ${IGNITE_WORK_DIR}/db}, by default.</li>
  * </ul>
  *
+ * Node, user can configure several extra storages by {@link DataStorageConfiguration#setExtraStoragePaths(String...)}
+ * Which can be used by the cache to store data. See {@link CacheConfiguration#setStoragePaths(String...)}.
+ * Partition files will be spread evenly among all configured storages.
+ * In case extra storages configured, each storage will repeat structure described below.
+ * {@link NodeFileTree#defaultCacheStorage(CacheConfiguration)} will be used to store cache config.
+ *
  * <pre>
  * ❯ tree
  * .                                                                            ← root (work directory, shared between all local nodes).
@@ -82,8 +101,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← nodeStorage (node 0).
  * │  │  ├── cache-default                                                      ← cacheStorage (cache name "default").
  * │  │  │  ├── cache_data.dat                                                  ← cache("default") configuration file.
- * │  │  │  ├── index.bin
- * │  │  │  ├── part-0.bin
+ * │  │  │  ├── index.bin                                                       ← cache("default") index partition.
+ * │  │  │  ├── part-0.bin                                                      ← cache("default") partition 0.
  * │  │  │  ├── part-1.bin
  * ...
  * │  │  │  └── part-9.bin
@@ -93,8 +112,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  │  ├── cacheGroup-tx-cache                                                ← cacheStorage (cache group "tx-cache").
  * │  │  │  ├── tx-cachecache_data.dat                                          ← cache("tx-cache") configuration file inside group.
  * │  │  │  ├── othercache_data.dat                                             ← cache("other") configuration file inside group.
- * │  │  │  ├── index.bin
- * │  │  │  ├── part-0.bin
+ * │  │  │  ├── index.bin                                                       ← cache group ("tx-cache") index partition.
+ * │  │  │  ├── part-0.bin                                                      ← cache group ("tx-cache") partition 0.
  * │  │  │  ├── part-1.bin
  * ...
  * │  │  │  └── part-9.bin
@@ -102,7 +121,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  │  │  ├── 1737804007693-96128bb0-5361-495a-b593-53dc4339a56d-END.bin
  * │  │  │  └── 1737804007693-96128bb0-5361-495a-b593-53dc4339a56d-START.bin
  * │  │  ├── lock
- * │  │  ├── maintenance_tasks.mntc
+ * │  │  ├── maintenance_tasks.mntc                                             ← maintenance file (node 0).
  * │  │  ├── metastorage
  * │  │  │  ├── part-0.bin
  * │  │  │  └── part-1.bin
@@ -117,7 +136,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  │  ├── cp                                                                 ← checkpoint (node 1).
  * ...
  * │  │  ├── lock
- * │  │  ├── maintenance_tasks.mntc
+ * │  │  ├── maintenance_tasks.mntc                                             ← maintenance file (node 1).
  * │  │  ├── metastorage
  * ...
  * │  │  └── snp                                                                ← snpTmp (node 1)
@@ -131,10 +150,17 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │      ├── cdc
  * │      │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                    ← walCdc (node 0)
  * │      │      ├── lock
- * │      │      └── state
- * │      │          ├── cdc-caches-state.bin
- * │      │          ├── cdc-mappings-state.bin
- * │      │          └── cdc-types-state.bin
+ * │      │      └── state                                                      ← cdcState (node 0)
+ * │      │          ├── cdc-caches-state.bin                                   ← cdcCachesState
+ * │      │          ├── cdc-caches-state.bin.tmp                               ← tmpCdcCachesState
+ * │      │          ├── cdc-mappings-state.bin                                 ← cdcMappingsState
+ * │      │          ├── cdc-mappings-state.bin.tmp                             ← tmpCdcMappingsState
+ * │      │          ├── cdc-mode.bin                                           ← cdcModeState
+ * │      │          ├── cdc-mode.bin.tmp                                       ← tmpCdcModeState
+ * │      │          ├── cdc-types-state.bin                                    ← cdcTypesState
+ * │      │          ├── cdc-types-state.bin.tmp                                ← tmpCdcTypesState
+ * │      │          ├── cdc-wal-state.bin                                      ← cdcWalState
+ * │      │          └── cdc-wal-state.bin.tmp                                  ← tmpCdcWalState
  * ...
  * │      │  └── node01-e57e62a9-2ccf-4e1b-a11e-d35d32c0fe5d                    ← walCdc (node 1)
  * │      └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                       ← wal (node 0)
@@ -159,16 +185,19 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  */
 public class NodeFileTree extends SharedFileTree {
     /** Default snapshot directory for loading remote snapshots. */
-    public static final String SNAPSHOT_TMP_DIR = "snp";
+    protected static final String SNAPSHOT_TMP_DIR = "snp";
+
+    /** Metastorage cache directory to store data. */
+    private static final String METASTORAGE_DIR_NAME = "metastorage";
 
     /** Checkpoint directory name. */
-    public static final String CHECKPOINT_DIR = "cp";
+    private static final String CHECKPOINT_DIR = "cp";
 
     /** File extension of WAL segment. */
     public static final String WAL_SEGMENT_FILE_EXT = ".wal";
 
     /** File suffix. */
-    public static final String FILE_SUFFIX = ".bin";
+    static final String FILE_SUFFIX = ".bin";
 
     /** Suffix for tmp files */
     public static final String TMP_SUFFIX = ".tmp";
@@ -177,7 +206,7 @@ public class NodeFileTree extends SharedFileTree {
     public static final String ZIP_SUFFIX = ".zip";
 
     /** File extension of temp WAL segment. */
-    public static final String TMP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + TMP_SUFFIX;
+    private static final String TMP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + TMP_SUFFIX;
 
     /** File extension of zipped WAL segment. */
     public static final String ZIP_WAL_SEG_FILE_EXT = WAL_SEGMENT_FILE_EXT + ZIP_SUFFIX;
@@ -186,36 +215,80 @@ public class NodeFileTree extends SharedFileTree {
     public static final String TMP_ZIP_WAL_SEG_FILE_EXT = ZIP_WAL_SEG_FILE_EXT + TMP_SUFFIX;
 
     /** Filter out all cache directories. */
-    public static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
-
-    /** Prefix for {@link #cacheStorage(String)} directory in case of single cache. */
-    private static final String CACHE_DIR_PREFIX = "cache-";
-
-    /** Prefix for {@link #cacheStorage(String)} directory in case of cache group. */
-    private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
+    private static final Predicate<File> CACHE_DIR_FILTER = dir -> cacheDir(dir) || cacheGroupDir(dir);
 
     /** Filter out all cache directories including {@link MetaStorage}. */
-    public static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
+    private static final Predicate<File> CACHE_DIR_WITH_META_FILTER = dir ->
         CACHE_DIR_FILTER.test(dir) ||
-            dir.getName().equals(MetaStorage.METASTORAGE_DIR_NAME);
+            dir.getName().equals(METASTORAGE_DIR_NAME);
+
+    /** Pattern for segment file names. */
+    private static final Pattern WAL_NAME_PATTERN = U.fixedLengthNumberNamePattern(WAL_SEGMENT_FILE_EXT);
+
+    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN} */
+    private static final Predicate<File> WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
+        WAL_NAME_PATTERN.matcher(file.getName()).matches();
+
+    /** Pattern for WAL temp files - these files will be cleared at startup. */
+    private static final Pattern WAL_TEMP_NAME_PATTERN = U.fixedLengthNumberNamePattern(TMP_WAL_SEG_FILE_EXT);
+
+    /** WAL segment temporary file filter, see {@link #WAL_TEMP_NAME_PATTERN} */
+    private static final Predicate<File> WAL_SEGMENT_TEMP_FILE_FILTER = file -> !file.isDirectory() &&
+        WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches();
 
     /** Partition file prefix. */
-    public static final String PART_FILE_PREFIX = "part-";
+    static final String PART_FILE_PREFIX = "part-";
 
     /** Index file prefix. */
-    public static final String INDEX_FILE_PREFIX = "index";
+    static final String INDEX_FILE_PREFIX = "index";
 
     /** Index file name. */
-    public static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
+    protected static final String INDEX_FILE_NAME = INDEX_FILE_PREFIX + FILE_SUFFIX;
 
     /** Partition file template. */
-    public static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
+    protected static final String PART_FILE_TEMPLATE = PART_FILE_PREFIX + "%d" + FILE_SUFFIX;
 
     /** */
-    public static final String CACHE_DATA_FILENAME = "cache_data.dat";
+    private static final String CACHE_DATA_FILENAME = "cache_data.dat";
 
     /** */
-    public static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
+    private static final String CACHE_DATA_TMP_FILENAME = CACHE_DATA_FILENAME + TMP_SUFFIX;
+
+    /** Temporary cache directory prefix. */
+    private static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
+
+    /** Prefix for {@link #cacheStorages(CacheConfiguration)} directory in case of single cache. */
+    private static final String CACHE_DIR_PREFIX = "cache-";
+
+    /** Prefix for {@link #cacheStorages(CacheConfiguration)} directory in case of cache group. */
+    private static final String CACHE_GRP_DIR_PREFIX = "cacheGroup-";
+
+    /** CDC state directory name. */
+    private static final String CDC_STATE_DIR = "state";
+
+    /**
+     * The file stores state of CDC mode. Content of the file is a {@link CdcMode} value:
+     * <ul>
+     *     <li>{@link CdcMode#CDC_UTILITY_ACTIVE} means that {@link CdcMain} utility captures data.</li>
+     *     <li>{@link CdcMode#IGNITE_NODE_ACTIVE} means that {@link CdcManager} captures data within Ignite node.</li>
+     * </ul>
+     */
+    private static final String CDC_MODE_FILE_NAME = "cdc-mode" + FILE_SUFFIX;
+
+    /** CDC WAL state file name. */
+    private static final String CDC_WAL_STATE_FILE_NAME = "cdc-wal-state" + FILE_SUFFIX;
+
+    /** CDC types state file name. */
+    private static final String CDC_TYPES_STATE_FILE_NAME = "cdc-types-state" + FILE_SUFFIX;
+
+    /** CDC mappings state file name. */
+    private static final String CDC_MAPPINGS_STATE_FILE_NAME = "cdc-mappings-state" + FILE_SUFFIX;
+
+    /** CDC caches state file name. */
+    private static final String CDC_CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
+
+    /** Maintenance file name. */
+    private static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
 
     /** Folder name for consistent id. */
     private final String folderName;
@@ -224,42 +297,25 @@ public class NodeFileTree extends SharedFileTree {
     private final File binaryMeta;
 
     /** Path to the storage directory. */
-    private final @Nullable File nodeStorage;
+    private final File nodeStorage;
+
+    /**
+     * Key is the path from {@link DataStorageConfiguration#getExtraStoragePaths()}, may be relative. Value is storage.
+     * @see DataStorageConfiguration#getExtraStoragePaths()
+     */
+    protected final Map<String, File> extraStorages;
 
     /** Path to the checkpoint directory. */
-    private final @Nullable File checkpoint;
+    private final File checkpoint;
 
     /** Path to the directory containing active WAL segments. */
-    private final @Nullable File wal;
+    private final File wal;
 
     /** Path to the directory containing archive WAL segments. */
-    private final @Nullable File walArchive;
+    private final File walArchive;
 
     /** Path to the directory containing archive WAL segments for CDC. */
-    private final @Nullable File walCdc;
-
-    /**
-     * Working directory for loaded snapshots from the remote nodes and storing
-     * temporary partition delta-files of locally started snapshot process.
-     */
-    private final @Nullable File snpTmpRoot;
-
-    /**
-     * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
-     *
-     * @param root Root directory.
-     * @param folderName Name of the folder for current node.
-     *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
-     *
-     * @see IgniteConfiguration#getWorkDirectory()
-     * @see IgniteConfiguration#setWorkDirectory(String)
-     * @see U#workDirectory(String, String)
-     * @see U#resolveWorkDirectory(String, String, boolean, boolean)
-     * @see U#IGNITE_WORK_DIR
-     */
-    public NodeFileTree(String root, String folderName) {
-        this(new File(root), folderName);
-    }
+    private final File walCdc;
 
     /**
      * Root directory can be Ignite work directory or snapshot root, see {@link U#workDirectory(String, String)} and other methods.
@@ -282,12 +338,12 @@ public class NodeFileTree extends SharedFileTree {
         this.folderName = folderName;
 
         binaryMeta = new File(binaryMetaRoot, folderName);
+        nodeStorage = rootRelative(DB_DIR);
+        checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
         wal = rootRelative(DFLT_WAL_PATH);
         walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
         walCdc = rootRelative(DFLT_WAL_CDC_PATH);
-        nodeStorage = rootRelative(DB_DEFAULT_FOLDER);
-        snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
-        checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
+        extraStorages = Collections.emptyMap();
     }
 
     /**
@@ -304,7 +360,26 @@ public class NodeFileTree extends SharedFileTree {
      * @see U#IGNITE_WORK_DIR
      */
     public NodeFileTree(IgniteConfiguration cfg, String folderName) {
-        super(cfg);
+        this(cfg, resolveRoot(cfg), folderName, false);
+    }
+
+    /**
+     * Creates instance based on config and folder name.
+     *
+     * @param root Root directory.
+     * @param cfg Ignite configuration to get parameter from.
+     * @param folderName Name of the folder for current node.
+     *                   Usually, it a {@link IgniteConfiguration#getConsistentId()} masked to be correct file name.
+     * @param isSnapshot {@code True} if tree relfects snapshot structure.
+     *
+     * @see IgniteConfiguration#getWorkDirectory()
+     * @see IgniteConfiguration#setWorkDirectory(String)
+     * @see U#workDirectory(String, String)
+     * @see U#resolveWorkDirectory(String, String, boolean, boolean)
+     * @see U#IGNITE_WORK_DIR
+     */
+    protected NodeFileTree(IgniteConfiguration cfg, File root, String folderName, boolean isSnapshot) {
+        super(root, cfg.getSnapshotPath());
 
         A.notNull(folderName, "Node directory");
 
@@ -315,28 +390,42 @@ public class NodeFileTree extends SharedFileTree {
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
-            nodeStorage = dsCfg.getStoragePath() == null
-                ? rootRelative(DB_DEFAULT_FOLDER)
+            // Snapshots MUST use root relative node storage path.
+            nodeStorage = (dsCfg.getStoragePath() == null || isSnapshot)
+                ? rootRelative(DB_DIR)
                 : resolveDirectory(dsCfg.getStoragePath());
-            snpTmpRoot = new File(nodeStorage, SNAPSHOT_TMP_DIR);
             checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
             wal = resolveDirectory(dsCfg.getWalPath());
             walArchive = resolveDirectory(dsCfg.getWalArchivePath());
             walCdc = resolveDirectory(dsCfg.getCdcWalPath());
         }
         else {
-            nodeStorage = null;
-            snpTmpRoot = null;
-            checkpoint = null;
-            wal = null;
-            walArchive = null;
-            walCdc = null;
+            nodeStorage = rootRelative(DB_DIR);
+            checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
+            wal = rootRelative(DFLT_WAL_PATH);
+            walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
+            walCdc = rootRelative(DFLT_WAL_CDC_PATH);
         }
+
+        extraStorages = extraStorages(
+            dsCfg,
+            storagePath -> resolveDirectory(Path.of(storagePath, DB_DIR).toString())
+        );
     }
 
     /** @return Node storage directory. */
     public File nodeStorage() {
         return nodeStorage;
+    }
+
+    /** @return Extra storages. */
+    public Map<String, File> extraStorages() {
+        return extraStorages;
+    }
+
+    /** @return All storages directories. */
+    public Stream<File> allStorages() {
+        return Stream.concat(Stream.of(nodeStorage), extraStorages.values().stream());
     }
 
     /** @return Folder name. */
@@ -352,6 +441,16 @@ public class NodeFileTree extends SharedFileTree {
     /** @return Path to the directory containing active WAL segments. */
     public @Nullable File wal() {
         return wal;
+    }
+
+    /** @return An array of WAL segment files. */
+    public File[] walSegments() {
+        return wal().listFiles(f -> walSegment(f));
+    }
+
+    /** @return An array of WAL segment files for CDC. */
+    public File[] walCdcSegments() {
+        return walCdc().listFiles(f -> walSegment(f));
     }
 
     /**
@@ -412,9 +511,19 @@ public class NodeFileTree extends SharedFileTree {
         return walCdc;
     }
 
-    /** @return Path to the directory form temp snapshot files. */
-    public @Nullable File snapshotTempRoot() {
-        return snpTmpRoot;
+    /** @return Path to the directories for temp snapshot files. */
+    public List<File> snapshotsTempRoots() {
+        return allStorages()
+            .map(this::snapshotTempRoot)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @param root Root directory.
+     * @return Root directory for snapshot temp files.
+     */
+    protected File snapshotTempRoot(File root) {
+        return new File(root, SNAPSHOT_TMP_DIR);
     }
 
     /** @return Path to the checkpoint directory. */
@@ -429,15 +538,6 @@ public class NodeFileTree extends SharedFileTree {
      */
     public File mkdirBinaryMeta() {
         return mkdir(binaryMeta, "binary metadata");
-    }
-
-    /**
-     * Creates {@link #snapshotTempRoot()} directory.
-     * @return Created directory.
-     * @see #snapshotTempRoot()
-     */
-    public File mkdirSnapshotTempRoot() {
-        return mkdir(snpTmpRoot, "temp directory for snapshot creation");
     }
 
     /**
@@ -456,29 +556,62 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param ccfg Cache configuration.
-     * @return Store dir for given cache.
+     * @return Default store dir for given cache. Used for storing configuration.
      */
-    public File cacheStorage(CacheConfiguration<?, ?> ccfg) {
-        return cacheStorage(cacheDirName(ccfg));
-    }
-
-    /**
-     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
-     * @param cacheOrGroupName Cache name.
-     * @return The full cache directory name.
-     */
-    public File cacheStorage(boolean isSharedGroup, String cacheOrGroupName) {
-        return cacheStorage(cacheDirName(isSharedGroup, cacheOrGroupName));
+    public File defaultCacheStorage(CacheConfiguration<?, ?> ccfg) {
+        return cacheStorages(ccfg)[0];
     }
 
     /**
      * @param ccfg Cache configuration.
-     * @return The full cache directory name.
+     * @return Store dirs for given cache.
      */
-    public String cacheDirName(CacheConfiguration<?, ?> ccfg) {
-        boolean isSharedGrp = ccfg.getGroupName() != null;
+    public File[] cacheStorages(CacheConfiguration<?, ?> ccfg) {
+        String cacheDirName = ccfg.getGroupName() != null
+            ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
+            : CACHE_DIR_PREFIX + ccfg.getName();
 
-        return cacheDirName(isSharedGrp, CU.cacheOrGroupName(ccfg));
+        String[] csp = ccfg.getStoragePaths();
+
+        if (F.isEmpty(csp))
+            return new File[] {new File(cacheStorageRoot(null), cacheDirName)};
+
+        File[] cs = new File[csp.length];
+
+        for (int i = 0; i < cs.length; i++)
+            cs[i] = new File(cacheStorageRoot(csp[i]), cacheDirName);
+
+        return cs;
+    }
+
+    /**
+     * @return All cache directories.
+     */
+    public List<File> existingCacheDirs() {
+        return existingCacheDirs(true, f -> true);
+    }
+
+    /**
+     * @return Cache directories. Metatorage directory excluded.
+     */
+    public List<File> existingCacheDirsWithoutMeta() {
+        return existingCacheDirs(false, f -> true);
+    }
+
+    /**
+     * @return Cache directories. Metatorage directory excluded.
+     */
+    public List<File> existingUserCacheDirs() {
+        final String utilityCacheStorage = CACHE_DIR_PREFIX + UTILITY_CACHE_NAME;
+
+        return existingCacheDirs(false, f -> !f.getName().equals(utilityCacheStorage));
+    }
+
+    /**
+     * @return Temp cache storages.
+     */
+    public List<File> existingTmpCacheStorages() {
+        return filesInStorages(NodeFileTree::isTmpCacheStorage).collect(Collectors.toList());
     }
 
     /**
@@ -486,12 +619,19 @@ public class NodeFileTree extends SharedFileTree {
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
     public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
-        return new File(cacheStorage(ccfg), cacheDataFilename(ccfg));
+        return new File(defaultCacheStorage(ccfg), ccfg.getGroupName() == null
+            ? CACHE_DATA_FILENAME
+            : (ccfg.getName() + CACHE_DATA_FILENAME));
     }
 
-    /** @return Name of cache data filename. */
-    public static String cacheDataFilename(CacheConfiguration<?, ?> ccfg) {
-        return ccfg.getGroupName() == null ? CACHE_DATA_FILENAME : (ccfg.getName() + CACHE_DATA_FILENAME);
+    /**
+     * @param ccfg Cache configuration.
+     * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
+     */
+    public File tmpCacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
+        return new File(defaultCacheStorage(ccfg), ccfg.getGroupName() == null
+            ? (CACHE_DATA_TMP_FILENAME)
+            : (ccfg.getName() + CACHE_DATA_TMP_FILENAME));
     }
 
     /**
@@ -500,52 +640,89 @@ public class NodeFileTree extends SharedFileTree {
      * @return Partition file.
      */
     public File partitionFile(CacheConfiguration<?, ?> ccfg, int part) {
-        return partitionFile(cacheDirName(ccfg), part);
+        return new File(resolveStorage(cacheStorages(ccfg), part), partitionFileName(part));
     }
 
     /**
-     * @param cacheDirName Cache directory name.
-     * @param part Partition id.
-     * @return Partition file.
-     */
-    public File partitionFile(String cacheDirName, int part) {
-        return new File(cacheStorage(cacheDirName), partitionFileName(part));
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
+     * @param ccfg Cache configuration.
      * @return Store directory for given cache.
      */
-    public File cacheStorage(String cacheDirName) {
-        return new File(nodeStorage, cacheDirName);
+    public File[] tmpCacheStorages(CacheConfiguration<?, ?> ccfg) {
+        File[] cacheStorages = cacheStorages(ccfg);
+        File[] tmpCacheStorages = new File[cacheStorages.length];
+
+        for (int i = 0; i < cacheStorages.length; i++)
+            tmpCacheStorages[i] = new File(cacheStorages[i].getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorages[i].getName());
+
+        return tmpCacheStorages;
     }
 
     /**
-     * @param workDir Cache work directory.
+     * Temporary cache storage and partitions are created while snapshot restoring.
+     * Moving to regular cache storage when finished.
+     *
+     * @param storagePath Cache storage path.
      * @param cacheDirName Cache directory name.
-     * @param part Partition id.
-     * @return Partition file.
+     * @return Temp store directory for given cache.
+     * @see CacheConfiguration#getStoragePaths()
      */
-    public static File partitionFile(File workDir, String cacheDirName, int part) {
-        return new File(cacheStorage(workDir, cacheDirName), partitionFileName(part));
+    public File tmpCacheStorage(@Nullable String storagePath, String cacheDirName) {
+        return new File(cacheStorageRoot(storagePath), TMP_CACHE_DIR_PREFIX + cacheDirName);
     }
 
     /**
-     * @param part Partition id.
-     * @return File name.
+     * Temporary cache storage and partitions are created while snapshot restoring.
+     * Moving to regular cache storage when finished.
+     *
+     * @param cacheStorage cache storage.
+     * @return Temp store directory for given cache storage.
      */
-    public static String partitionFileName(int part) {
+    public static File tmpCacheStorage(File cacheStorage) {
+        return new File(cacheStorage.getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorage.getName());
+    }
+
+    /**
+     * @param part Partition.
+     * @return File for metastorage partition.
+     */
+    public File metaStoragePartition(int part) {
+        return new File(metaStorage(), partitionFileName(part));
+    }
+
+    /** @return Path to the metastorage directory. */
+    public File metaStorage() {
+        return new File(nodeStorage, METASTORAGE_DIR_NAME);
+    }
+
+    /**
+     * Temporary cache partitions are created while snapshot restoring.
+     *
+     * @param ccfg Cache configuration.
+     * @param partId partition id.
+     * @return Path to the temp partition file.
+     */
+    public File tmpPartition(CacheConfiguration<?, ?> ccfg, int partId) {
+        return new File(resolveStorage(tmpCacheStorages(ccfg), partId), partitionFileName(partId));
+    }
+
+    /**
+     * Temporary cache partitions are created while snapshot restoring.
+     *
+     * @param storagePath Cache storage path.
+     * @param cacheDirName Cache directory name.
+     * @param partId partition id.
+     * @return Path to the temp partition file.
+     * @see CacheConfiguration#getStoragePaths()
+     */
+    public File tmpPartition(@Nullable String storagePath, String cacheDirName, int partId) {
+        return new File(tmpCacheStorage(storagePath, cacheDirName), partitionFileName(partId));
+    }
+
+    /** */
+    protected static String partitionFileName(int part, String idxName, String format) {
         assert part <= MAX_PARTITION_ID || part == INDEX_PARTITION;
 
-        return part == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, part);
-    }
-
-    /**
-     * @param cacheDirName Cache directory name.
-     * @return Store directory for given cache.
-     */
-    public static File cacheStorage(File storeWorkDir, String cacheDirName) {
-        return new File(storeWorkDir, cacheDirName);
+        return part == INDEX_PARTITION ? idxName : format(format, part);
     }
 
     /**
@@ -561,7 +738,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param dir Directory.
      * @return {@code True} if directory conforms cache group storage name pattern.
      */
-    public static boolean cacheGroupDir(File dir) {
+    private static boolean cacheGroupDir(File dir) {
         return dir.getName().startsWith(CACHE_GRP_DIR_PREFIX);
     }
 
@@ -577,7 +754,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param f File.
      * @return {@code True} if file conforms cache(including cache group caches) config file name pattern.
      */
-    public static boolean cacheOrCacheGroupConfigFile(File f) {
+    private static boolean cacheOrCacheGroupConfigFile(File f) {
         return f.getName().endsWith(CACHE_DATA_FILENAME);
     }
 
@@ -590,34 +767,139 @@ public class NodeFileTree extends SharedFileTree {
     }
 
     /**
-     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
-     * @param cacheOrGroupName Cache name.
-     * @return The full cache directory name.
+     * @param f File.
+     * @return {@code True} if file conforms cache config file name pattern.
      */
-    public static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
-        if (cacheOrGroupName.equals(METASTORAGE_CACHE_NAME))
-            return METASTORAGE_DIR_NAME;
-
-        return isSharedGroup
-            ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
-            : CACHE_DIR_PREFIX + cacheOrGroupName;
+    public static boolean binFile(File f) {
+        return f.getName().endsWith(FILE_SUFFIX);
     }
 
     /**
-     * @param dir Directory
+     * @param f File.
+     * @return {@code True} if file conforms temp cache storage name pattern.
+     */
+    private static boolean isTmpCacheStorage(File f) {
+        return f.isDirectory() && f.getName().startsWith(TMP_CACHE_DIR_PREFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file conforms temp cache configuration file name pattern.
+     */
+    public static boolean tmpCacheConfig(File f) {
+        return f.getName().endsWith(CACHE_DATA_TMP_FILENAME);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file is regular(not temporary).
+     */
+    public static boolean notTmpFile(File f) {
+        return !f.getName().endsWith(TMP_SUFFIX);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file matches WAL segment file criteria.
+     */
+    public static boolean walSegment(File f) {
+        return WAL_SEGMENT_FILE_FILTER.test(f);
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file matches WAL segment temp file criteria.
+     */
+    public static boolean walTmpSegment(File f) {
+        return WAL_SEGMENT_TEMP_FILE_FILTER.test(f);
+    }
+
+    /**
+     * @param f Temporary cache directory.
+     * @return Cache or group id.
+     */
+    public static String tmpDirCacheName(File f) {
+        assert isTmpCacheStorage(f) : f;
+
+        return cacheName(f.getName().substring(TMP_CACHE_DIR_PREFIX.length()));
+    }
+
+    /**
+     * @param f Directory
      * @return Cache name for directory, if it conforms cache storage pattern.
      */
-    public static String cacheName(File dir) {
-        String name = dir.getName();
+    public static String cacheName(File f) {
+        return cacheName(f.getName());
+    }
 
+    /**
+     * @param root Root directory.
+     * @return List of cache data files.
+     */
+    public static List<File> existingCacheConfigFiles(File root) {
+        if (cacheDir(root)) {
+            File cfg = new File(root, CACHE_DATA_FILENAME);
+
+            return cfg.exists() ? Collections.singletonList(cfg) : Collections.emptyList();
+        }
+
+        return allExisingConfigFiles(root);
+    }
+
+    /**
+     * @param root Root directory.
+     * @return List of cache data files regardless directory name.
+     */
+    public static List<File> allExisingConfigFiles(File root) {
+        return F.asList(root.listFiles(NodeFileTree::cacheOrCacheGroupConfigFile));
+    }
+
+    /**
+     * @param part Partition id.
+     * @return File name.
+     */
+    public static String partitionFileName(int part) {
+        return partitionFileName(part, INDEX_FILE_NAME, PART_FILE_TEMPLATE);
+    }
+
+    /**
+     * @param name File name.
+     * @return Cache name.
+     */
+    private static String cacheName(String name) {
         if (name.startsWith(CACHE_GRP_DIR_PREFIX))
             return name.substring(CACHE_GRP_DIR_PREFIX.length());
         else if (name.startsWith(CACHE_DIR_PREFIX))
             return name.substring(CACHE_DIR_PREFIX.length());
-        else if (name.equals(MetaStorage.METASTORAGE_DIR_NAME))
+        else if (name.equals(METASTORAGE_DIR_NAME))
             return METASTORAGE_CACHE_NAME;
         else
-            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
+            throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + name);
+    }
+
+    /**
+     * @param storagePath Value from config.
+     * @return File storage.
+     * @see CacheConfiguration#getStoragePaths()
+     */
+    private File cacheStorageRoot(@Nullable String storagePath) {
+        return storagePath == null ? nodeStorage : extraStorages.getOrDefault(storagePath, nodeStorage);
+    }
+
+    /**
+     * Key is storage path from config, may be relative.
+     * Value is actual storage path.
+     *
+     * @param dsCfg Data storage configuration.
+     * @return Node storages.
+     * @see DataStorageConfiguration#setExtraStoragePaths(String...)
+     */
+    private Map<String, File> extraStorages(@Nullable DataStorageConfiguration dsCfg, Function<String, File> resolver) {
+        if (dsCfg == null || F.isEmpty(dsCfg.getExtraStoragePaths()))
+            return Collections.emptyMap();
+
+        return Arrays.stream(dsCfg.getExtraStoragePaths())
+            .collect(Collectors.toMap(Function.identity(), resolver));
     }
 
     /**
@@ -628,6 +910,92 @@ public class NodeFileTree extends SharedFileTree {
         String fn = segment.getFileName().toString();
 
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));
+    }
+
+    /**
+     * @return Tree for metastorage cache.
+     */
+    public CacheFileTree metastoreTree() {
+        return new CacheFileTree(this, true, null);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return Tree for cache.
+     */
+    public CacheFileTree cacheTree(CacheConfiguration<?, ?> ccfg) {
+        return new CacheFileTree(this, false, ccfg);
+    }
+
+    /** @return CDC state directory path. */
+    public Path cdcState() {
+        return walCdc().toPath().resolve(CDC_STATE_DIR);
+    }
+
+    /** @return CDC WAL state file path. */
+    public Path cdcWalState() {
+        return cdcState().resolve(CDC_WAL_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC WAL state file path. */
+    public Path tmpCdcWalState() {
+        return cdcState().resolve(CDC_WAL_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC types state file path. */
+    public Path cdcTypesState() {
+        return cdcState().resolve(CDC_TYPES_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC types state file path. */
+    public Path tmpCdcTypesState() {
+        return cdcState().resolve(CDC_TYPES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC mappings state file path. */
+    public Path cdcMappingsState() {
+        return cdcState().resolve(CDC_MAPPINGS_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC mappings state file path. */
+    public Path tmpCdcMappingsState() {
+        return cdcState().resolve(CDC_MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC caches state file path. */
+    public Path cdcCachesState() {
+        return cdcState().resolve(CDC_CACHES_STATE_FILE_NAME);
+    }
+
+    /** @return Temp CDC caches state file path. */
+    public Path tmpCdcCachesState() {
+        return cdcState().resolve(CDC_CACHES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return CDC manager mode state file path. */
+    public Path cdcModeState() {
+        return cdcState().resolve(CDC_MODE_FILE_NAME);
+    }
+
+    /** @return Temp CDC manager mode state file path. */
+    public Path tmpCdcModeState() {
+        return cdcState().resolve(CDC_MODE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return Maintenance file. */
+    public File maintenanceFile() {
+        return new File(nodeStorage, MAINTENANCE_FILE_NAME);
+    }
+
+    /**
+     * @param includeMeta If {@code true} then include metadata directory into results.
+     * @param filter Cache group names to filter.
+     * @return Cache directories that matches filters criteria.
+     */
+    protected List<File> existingCacheDirs(boolean includeMeta, Predicate<File> filter) {
+        Predicate<File> dirFilter = includeMeta ? CACHE_DIR_WITH_META_FILTER : CACHE_DIR_FILTER;
+
+        return filesInStorages(f -> f.isDirectory() && dirFilter.test(f) && filter.test(f)).collect(Collectors.toList());
     }
 
     /**
@@ -643,6 +1011,20 @@ public class NodeFileTree extends SharedFileTree {
             return Integer.parseInt(name.substring(PART_FILE_PREFIX.length(), name.indexOf('.')));
 
         throw new IllegalStateException("Illegal partition file name: " + name);
+    }
+
+    /**
+     * @param filter Dir file filter.
+     * @return All files from all {@link #extraStorages} and {@link #nodeStorage} matching the filter.
+     */
+    private Stream<File> filesInStorages(FileFilter filter) {
+        return allStorages().flatMap(storage -> {
+            File[] storageFiles = storage.listFiles(filter);
+
+            return storageFiles == null
+                ? Stream.empty()
+                : Arrays.stream(storageFiles);
+        });
     }
 
     /**
@@ -662,6 +1044,24 @@ public class NodeFileTree extends SharedFileTree {
     /** @return {@code ${root}/${path}/${folderName}} path. */
     private File rootRelative(String path) {
         return Paths.get(root.getAbsolutePath(), path, folderName).toFile();
+    }
+
+    /**
+     * @param typeId Type id.
+     * @return Binary metadata file name.
+     */
+    public static String binaryMetaFileName(int typeId) {
+        return typeId + FILE_SUFFIX;
+    }
+
+    /**
+     * @param fileName File name.
+     * @return Type id
+     * @see #binaryMetaFileName(int)
+     * @see NodeFileTree#FILE_SUFFIX
+     */
+    public static int typeId(String fileName) {
+        return Integer.parseInt(fileName.substring(0, fileName.length() - FILE_SUFFIX.length()));
     }
 
     /** {@inheritDoc} */

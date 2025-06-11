@@ -847,7 +847,7 @@ public class GridMapQueryExecutor {
             if (node.isLocal())
                 h2.reduceQueryExecutor().onDmlResponse(node, rsp);
             else {
-                rsp.marshall(ctx.config().getMarshaller());
+                rsp.marshall(ctx.marshaller());
 
                 ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, rsp, QUERY_POOL);
             }

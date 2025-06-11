@@ -18,49 +18,52 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.jetbrains.annotations.NotNull;
-
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.CACHE_DATA_FILENAME;
 
 /**
  *
  */
 public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallback {
     /** */
-    private final File workDir;
-
-    /** */
-    private final List<String> cacheStoreDirs;
+    private final List<File> cacheStoreDirs;
 
     /**
-     * @param workDir
-     * @param cacheStoreDirs
+     * @param ft Node file tree.
+     * @param cacheStoreDirs Cache dirs names.
      */
     public CorruptedPdsMaintenanceCallback(
-        @NotNull File workDir,
+        @NotNull NodeFileTree ft,
         @NotNull List<String> cacheStoreDirs
     ) {
-        this.workDir = workDir;
-        this.cacheStoreDirs = cacheStoreDirs;
+        this.cacheStoreDirs = new ArrayList<>();
+
+        ft.allStorages().forEach(storageRoot -> {
+            for (String cacheStoreDirName : cacheStoreDirs) {
+                File cacheStoreDir = new File(storageRoot, cacheStoreDirName);
+
+                if (cacheStoreDir.exists() && cacheStoreDir.isDirectory())
+                    this.cacheStoreDirs.add(cacheStoreDir);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public boolean shouldProceedWithMaintenance() {
-        for (String cacheStoreDirName : cacheStoreDirs) {
-            File cacheStoreDir = new File(workDir, cacheStoreDirName);
+        for (File cacheStoreDir : cacheStoreDirs) {
+            File[] files = cacheStoreDir.listFiles();
 
-            if (cacheStoreDir.exists()
-                && cacheStoreDir.isDirectory()
-                && cacheStoreDir.listFiles().length > 0
-            ) {
-                for (File f : cacheStoreDir.listFiles()) {
-                    if (!f.getName().equals(CACHE_DATA_FILENAME))
-                        return true;
-                }
+            if (files == null)
+                continue;
+
+            for (File f : files) {
+                if (!NodeFileTree.cacheConfigFile(f))
+                    return true;
             }
         }
 
@@ -70,8 +73,8 @@ public class CorruptedPdsMaintenanceCallback implements MaintenanceWorkflowCallb
     /** {@inheritDoc} */
     @Override public List<MaintenanceAction<?>> allActions() {
         return Arrays.asList(
-            new CleanCacheStoresMaintenanceAction(workDir, cacheStoreDirs.toArray(new String[0])),
-            new CheckCorruptedCacheStoresCleanAction(workDir, cacheStoreDirs.toArray(new String[0])));
+            new CleanCacheStoresMaintenanceAction(cacheStoreDirs.toArray(new File[0])),
+            new CheckCorruptedCacheStoresCleanAction(cacheStoreDirs.toArray(new File[0])));
     }
 
     /** {@inheritDoc} */

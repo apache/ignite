@@ -103,7 +103,7 @@ public class ContinuousRoutineStartResultMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -111,25 +111,25 @@ public class ContinuousRoutineStartResultMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("cntrsMapBytes", cntrsMapBytes))
+                if (!writer.writeByteArray(cntrsMapBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("flags", flags))
+                if (!writer.writeInt(flags))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeUuid("routineId", routineId))
+                if (!writer.writeUuid(routineId))
                     return false;
 
                 writer.incrementState();
@@ -143,12 +143,9 @@ public class ContinuousRoutineStartResultMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                cntrsMapBytes = reader.readByteArray("cntrsMapBytes");
+                cntrsMapBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -156,7 +153,7 @@ public class ContinuousRoutineStartResultMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -164,7 +161,7 @@ public class ContinuousRoutineStartResultMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                flags = reader.readInt("flags");
+                flags = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -172,7 +169,7 @@ public class ContinuousRoutineStartResultMessage implements Message {
                 reader.incrementState();
 
             case 3:
-                routineId = reader.readUuid("routineId");
+                routineId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -181,17 +178,12 @@ public class ContinuousRoutineStartResultMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(ContinuousRoutineStartResultMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 134;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 
     /** {@inheritDoc} */

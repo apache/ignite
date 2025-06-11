@@ -19,16 +19,12 @@ package org.apache.ignite.internal.cdc;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.cdc.CdcConsumerState.CDC_MODE_FILE_NAME;
-import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
 
 /**
  * CDC manager that delegates consuming CDC events to the {@link CdcMain} utility.
@@ -43,10 +39,7 @@ public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter im
     @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         if (fut.localJoinExchange() || fut.activateCluster()) {
             try {
-                File cdcModeFile = Paths.get(
-                    cctx.kernalContext().pdsFolderResolver().fileTree().walCdc().getAbsolutePath(),
-                    STATE_DIR,
-                    CDC_MODE_FILE_NAME).toFile();
+                File cdcModeFile = cctx.kernalContext().pdsFolderResolver().fileTree().cdcModeState().toAbsolutePath().toFile();
 
                 if (!cdcModeFile.exists())
                     cctx.wal(true).log(new CdcManagerStopRecord());

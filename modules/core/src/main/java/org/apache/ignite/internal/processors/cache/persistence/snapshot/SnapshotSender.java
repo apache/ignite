@@ -26,6 +26,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.jetbrains.annotations.Nullable;
@@ -104,10 +105,10 @@ public abstract class SnapshotSender {
     }
 
     /**
-     * @param ccfg Cache configuration file.
-     * @param cacheDirName Cache group directory name.
+     * @param ccfgFile Cache configuration file.
+     * @param ccfg Cache configuration.
      */
-    public final void sendCacheConfig(File ccfg, String cacheDirName) {
+    public final void sendCacheConfig(File ccfgFile, CacheConfiguration<?, ?> ccfg) {
         if (!lock.readLock().tryLock())
             return;
 
@@ -115,7 +116,7 @@ public abstract class SnapshotSender {
             if (closed)
                 return;
 
-            sendCacheConfig0(ccfg, cacheDirName);
+            sendCacheConfig0(ccfgFile, ccfg);
         }
         finally {
             lock.readLock().unlock();
@@ -123,12 +124,14 @@ public abstract class SnapshotSender {
     }
 
     /**
-     * @param part Partition file to send.
-     * @param cacheDirName Cache group directory name.
+     * @param from Partition file to send.
+     * @param to Destination file.
+     * @param storagePath Cache storage path.
      * @param pair Group id with partition id pair.
      * @param length Partition length.
+     * @see CacheConfiguration#getStoragePaths()
      */
-    public final void sendPart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+    public final void sendPart(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
         if (!lock.readLock().tryLock())
             return;
 
@@ -136,7 +139,7 @@ public abstract class SnapshotSender {
             if (closed)
                 return;
 
-            sendPart0(part, cacheDirName, pair, length);
+            sendPart0(from, to, storagePath, pair, length);
         }
         finally {
             lock.readLock().unlock();
@@ -145,10 +148,10 @@ public abstract class SnapshotSender {
 
     /**
      * @param delta Delta pages file.
-     * @param cacheDirName Cache group directory name.
+     * @param snpPart Snapshot partition.
      * @param pair Group id with partition id pair.
      */
-    public final void sendDelta(File delta, String cacheDirName, GroupPartitionId pair) {
+    public final void sendDelta(File delta, File snpPart, GroupPartitionId pair) {
         if (!lock.readLock().tryLock())
             return;
 
@@ -156,7 +159,7 @@ public abstract class SnapshotSender {
             if (closed)
                 return;
 
-            sendDelta0(delta, cacheDirName, pair);
+            sendDelta0(delta, snpPart, pair);
         }
         finally {
             lock.readLock().unlock();
@@ -188,19 +191,21 @@ public abstract class SnapshotSender {
     protected abstract void init(int partsCnt);
 
     /**
-     * @param part Partition file to send.
-     * @param cacheDirName Cache group directory name.
+     * @param from Partition file to send.
+     * @param to Patition file to copy to.
+     * @param storagePath Cache storage path.
      * @param pair Group id with partition id pair.
      * @param length Partition length.
+     * @see CacheConfiguration#getStoragePaths()
      */
-    protected abstract void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length);
+    protected abstract void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length);
 
     /**
      * @param delta Delta pages file.
-     * @param cacheDirName Cache group directory name.
+     * @param snpPart Snapshot partition.
      * @param pair Group id with partition id pair.
      */
-    protected abstract void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair);
+    protected abstract void sendDelta0(File delta, File snpPart, GroupPartitionId pair);
 
     /**
      * @param mappings Local node marshaller mappings.
@@ -217,10 +222,10 @@ public abstract class SnapshotSender {
     }
 
     /**
-     * @param ccfg Cache configuration file.
-     * @param cacheDirName Cache group directory name.
+     * @param ccfgFile Cache configuration file.
+     * @param ccfg Cache configuration.
      */
-    protected void sendCacheConfig0(File ccfg, String cacheDirName) {
+    protected void sendCacheConfig0(File ccfgFile, CacheConfiguration<?, ?> ccfg) {
         // No-op by default.
     }
 
