@@ -180,8 +180,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
                 Throwable[] suppressed = ex.getSuppressed();
 
-                // Each node gets 2 attempts (initial + retry), so we expect (CLUSTER_SIZE-1)*2 suppressed exceptions.
-                assertEquals((CLUSTER_SIZE - 1) * 2, suppressed.length);
+                assertEquals(CLUSTER_SIZE - 1, suppressed.length);
 
                 assertTrue(Stream.of(suppressed).allMatch(t -> t instanceof ClientConnectionException));
             }
