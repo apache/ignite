@@ -1351,8 +1351,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (!F.isEmpty(snpReq.warnings())) {
                         String wrnsLst = U.nl() + "\t- " + String.join(U.nl() + "\t- ", snpReq.warnings());
 
-                        SnapshotWarningException wrn = new SnapshotWarningException("Snapshot task '" +
-                            snpReq.snapshotName() + "' completed with the warnings:" + wrnsLst);
+                        SnapshotWarningException wrn = new SnapshotWarningException(
+                            "Snapshot create operation completed with warnings [name=" + snpReq.snapshotName() +
+                                (snpReq.requestId() != null ? ", id=" + snpReq.requestId() : "") + "]:" + wrnsLst);
 
                         clusterSnpFut.onDone(wrn);
 
