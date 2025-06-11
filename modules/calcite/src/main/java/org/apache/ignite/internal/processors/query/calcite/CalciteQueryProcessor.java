@@ -132,6 +132,15 @@ import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 
 /** */
 public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
+    static {
+        // Required to avoid excessive dump message of Calcite VolcanoPlanner
+        //
+        // Note, Calcite system properties must be overriden here, because the properties are finalized while the class
+        // org.apache.calcite.config.CalciteSystemProperty is loaded.
+        System.setProperty("calcite.volcano.dump.graphviz", "false");
+        System.setProperty("calcite.volcano.dump.sets", "false");
+    }
+
     /**
      * Default planner timeout, in ms.
      */
