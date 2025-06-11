@@ -154,7 +154,6 @@ import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_WAL_SEG_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_ZIP_WAL_SEG_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.WAL_SEGMENT_FILE_EXT;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.ZIP_WAL_SEG_FILE_EXT;
@@ -176,13 +175,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** Zero-filled buffer for file formatting. */
     private static final byte[] FILL_BUF = new byte[1024 * 1024];
-
-    /** Pattern for WAL temp files - these files will be cleared at startup. */
-    public static final Pattern WAL_TEMP_NAME_PATTERN = U.fixedLengthNumberNamePattern(TMP_WAL_SEG_FILE_EXT);
-
-    /** WAL segment temporary file filter, see {@link #WAL_TEMP_NAME_PATTERN} */
-    private static final FileFilter WAL_SEGMENT_TEMP_FILE_FILTER = file -> !file.isDirectory() &&
-        WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches();
 
     /** */
     public static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(ZIP_WAL_SEG_FILE_EXT);
@@ -1603,7 +1595,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         Collection<File> tmpFiles = new HashSet<>();
 
         for (File walDir : F.asList(ft.wal(), ft.walArchive())) {
-            tmpFiles.addAll(F.asList(walDir.listFiles(WAL_SEGMENT_TEMP_FILE_FILTER)));
+            tmpFiles.addAll(F.asList(walDir.listFiles(NodeFileTree::walTmpSegment)));
             tmpFiles.addAll(F.asList(walDir.listFiles(WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER)));
         }
 
