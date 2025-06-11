@@ -24,29 +24,9 @@ public class ClientAuthorizationException extends ClientException {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Message. */
-    private static final String MSG = "User is not authorized to perform this operation";
-
-    /**
-     * Default constructor.
-     */
-    public ClientAuthorizationException() {
-        this(MSG);
-    }
-
     /** @param msg the detail message. */
     public ClientAuthorizationException(String msg) {
         super(msg);
-    }
-
-    /**
-     * Constructs a new exception with the specified cause and a detail
-     * message of <tt>(cause==null ? null : cause.toString())</tt>.
-     *
-     * @param cause the cause.
-     */
-    public ClientAuthorizationException(Throwable cause) {
-        super(MSG, cause);
     }
 
     /**
