@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
@@ -367,7 +368,7 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
 
             try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(SERVER))) {
                 Consumer<ClientCacheConfiguration> check = initCfg -> {
-                    cli.createCache(initCfg);
+                    ClientCache<Integer, Integer> c = cli.createCache(initCfg);
 
                     CacheConfiguration<?, ?> srvCfg = srv.cachex(initCfg.getName()).configuration();
                     ClientCacheConfiguration cliCfg = cli.cache(initCfg.getName()).getConfiguration();
@@ -377,6 +378,9 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
 
                     assertEquals(initCfg.getIndexPath(), srvCfg.getIndexPath());
                     assertEquals(initCfg.getIndexPath(), cliCfg.getIndexPath());
+
+                    IntStream.range(0, 100).forEach(i -> c.put(i, i));
+                    IntStream.range(0, 100).forEach(i -> assertEquals((Integer)i, c.get(i)));
                 };
 
                 check.accept(new ClientCacheConfiguration()
