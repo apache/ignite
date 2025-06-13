@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -258,8 +257,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         SnapshotFileTree sft = snapshotFileTree(srv, SNP);
 
-        File[] segments = sft.incrementalSnapshotFileTree(1).wal()
-            .listFiles(f -> FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches());
+        File[] segments = sft.incrementalSnapshotFileTree(1).walCompactedSegments();
 
         Arrays.sort(segments);
 
@@ -362,8 +360,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
     private void deleteWalSegment(int idx) {
         SnapshotFileTree sft = snapshotFileTree(srv, SNP);
 
-        File[] segments = sft.incrementalSnapshotFileTree(1).wal()
-            .listFiles(f -> FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches());
+        File[] segments = sft.incrementalSnapshotFileTree(1).walCompactedSegments();
 
         Arrays.sort(segments);
 
