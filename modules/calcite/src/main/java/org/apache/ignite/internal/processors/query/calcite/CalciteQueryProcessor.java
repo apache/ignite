@@ -162,6 +162,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     public static final String IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR =
         "IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR";
 
+    static {
+        // TODO Workaround for https://issues.apache.org/jira/browse/CALCITE-7009
+        // See Apache Calcite ticket for more information, assertion is incorrect.
+        // FRAMEWORK_CONFIG initialize SqlToRelConverter class. Assertions should be disabled before class initialization.
+        SqlToRelConverter.class.getClassLoader().setClassAssertionStatus(SqlToRelConverter.class.getName(), false);
+    }
+
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
         .executor(new RexExecutorImpl(DataContexts.EMPTY))
