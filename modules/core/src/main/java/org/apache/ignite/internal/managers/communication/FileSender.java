@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.managers.communication.GridIoManager.DFLT_ACQUIRE_TIMEOUT_MS;
 import static org.apache.ignite.internal.util.IgniteUtils.assertParameter;
 
 /**
@@ -47,6 +49,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.assertParameter;
  * @see FileChannel#transferTo(long, long, WritableByteChannel)
  */
 class FileSender extends AbstractTransmission {
+    /** The total amount of permits for the 1 second period of time per the node instance for upload. */
+    private final TimedSemaphore outBytePermits;
+
     /** Corresponding file channel to work with a given file. */
     @GridToStringExclude
     private FileIO fileIo;
@@ -72,12 +77,14 @@ class FileSender extends AbstractTransmission {
         BooleanSupplier stopChecker,
         IgniteLogger log,
         FileIOFactory factory,
-        int chunkSize
+        int chunkSize,
+        TimedSemaphore outBytePermits
     ) throws IOException {
         super(new TransmissionMeta(file.getName(), off, cnt, params, plc, null), stopChecker, log, chunkSize);
 
         assert file != null;
 
+        this.outBytePermits = outBytePermits;
         fileIo = factory.create(file);
     }
 
@@ -111,6 +118,16 @@ class FileSender extends AbstractTransmission {
 
             if (stopped())
                 throw new IgniteException("Sender has been cancelled due to the local node is stopping");
+
+            // If the limit of permits at appropriate period of time reached,
+            // the furhter invocations of the #acuqire(int) method will be blocked.
+            boolean acquired = outBytePermits.tryAcquire(chunkSize,
+                DFLT_ACQUIRE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+            if (!acquired) {
+                throw new IgniteException("Download speed is too slow " +
+                    "[downloadSpeed=" + outBytePermits.permitsPerSec() + " byte/sec]");
+            }
 
             writeChunk(ch);
         }
