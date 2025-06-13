@@ -193,6 +193,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
+            long lastLink = row.link();
+
             int rowSize = row.size();
             int oldFreeSpace = io.getFreeSpace(pageAddr);
 
@@ -202,8 +204,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             written = (written == 0 && oldFreeSpace >= rowSize) ? addRowFull(pageId, page, pageAddr, io, row, rowSize) :
                 addRowFragment(pageId, page, pageAddr, io, row, written, rowSize);
 
-            if (written == rowSize)
+            if (written == rowSize) {
                 evictionTracker.touchPage(pageId);
+
+                if (lastLink != 0)
+                    evictionTracker.trackFragmentPage(pageId, lastLink, true);
+            }
+            else
+                evictionTracker.trackFragmentPage(pageId, lastLink, false);
 
             // Avoid boxing with garbage generation for usual case.
             return written == rowSize ? COMPLETE : written;
@@ -340,8 +348,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 written = writeRowHnd.addRow(pageId, page, pageAddr, io, row, written);
 
                 assert written == COMPLETE;
-
-                evictionTracker.touchPage(pageId);
             }
 
             writeRowHnd.putPage(io.getFreeSpace(pageAddr), pageId, page, pageAddr, statHolder);
