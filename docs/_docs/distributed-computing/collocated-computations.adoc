@@ -80,8 +80,47 @@ tab:Java[]
 ----
 include::{javaSourceFile}[tag=calculate-average,indent=0]
 ----
-tab:C#/.NET[unsupported]
-affinityCall(..) method with partition id as parameter is unsupported in Ignite .NET
+tab:C#/.NET[]
+[source,csharp]
+----
+ICache<long, Person> cache = ignite.GetOrCreateCache<long, Person>("person");
+cache[1] = new("John Doe", 25_000);
+cache[2] = new("Don Joe", 35_000);
+
+long[] keys = { 1, 2 };
+ICacheAffinity affinity = ignite.GetAffinity(cache.Name);
+
+var keysByPartition = keys.GroupBy(affinity.GetPartition);
+decimal total = 0;
+
+// Perform one compute call for every partition.
+foreach (IGrouping<int, long> part in keysByPartition)
+{
+    int partition = part.Key;
+    List<long> partitionKeys = part.ToList();
+
+    // Partition is reserved while the compute job executes, all keys are guaranteed to be local.
+    total += ignite.GetCompute().AffinityCall(
+        cacheNames: new[] { cache.Name }, partition, new SumTask(partitionKeys));
+}
+
+var averageSalary = total / keys.Length;
+Console.WriteLine($"The average salary is {averageSalary}");
+
+record SumTask(ICollection<long> Keys) : IComputeFunc<decimal>
+{
+    [InstanceResource]
+    private readonly IIgnite _ignite;
+
+    public decimal Invoke()
+    {
+        var cache = _ignite.GetCache<long, Person>("person");
+        return Keys.Select(k => cache.LocalPeek(k).Salary).Sum();
+    }
+}
+
+record Person(string Name, decimal Salary);
+----
 
 tab:C++[unsupported]
 --
@@ -95,7 +134,28 @@ tab:Java[]
 ----
 include::{javaSourceFile}[tag=sum-by-partition,indent=0]
 ----
-tab:C#/.NET[unsupported]
+tab:C#/.NET[]
+[source,csharp]
+----
+record SumByPartitionTask(int Partition) : IComputeFunc<decimal>
+{
+[InstanceResource]
+private readonly IIgnite _ignite;
+
+    public decimal Invoke()
+    {
+        var cache = _ignite.GetCache<long, Person>("person");
+
+        var query = new ScanQuery<long, Person>
+        {
+            Partition = Partition,
+            Local = true
+        };
+
+        return cache.Query(query).Sum(x => x.Value.Salary);
+    }
+}
+----
 
 tab:C++[unsupported]
 --
