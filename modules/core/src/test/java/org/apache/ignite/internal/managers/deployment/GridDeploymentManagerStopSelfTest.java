@@ -48,7 +48,7 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         ctx.config().setDeploymentSpi(spi);
 
         GridResourceProcessor resProc = new GridResourceProcessor(ctx);
-        resProc.setSpringContext(null);
+        resProc.setInjectionContext(null);
 
         ctx.add(resProc);
 

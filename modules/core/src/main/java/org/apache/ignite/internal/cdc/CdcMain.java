@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContextBridge;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -394,7 +395,7 @@ public class CdcMain implements Runnable {
             }
         };
 
-        kctx.resource().setSpringContext(ctx);
+        kctx.resource().setInjectionContext(new GridSpringResourceContextBridge(ctx));
 
         startAllComponents(kctx);
 
