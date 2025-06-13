@@ -23,7 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -35,7 +35,7 @@ import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.util.typedef.internal.U.DELIM;
 
 /** */
-public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String, ClusterState>> {
+public class StateCommand implements NativeCommand<NoArg, GridTuple3<UUID, String, ClusterState>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print current cluster state";

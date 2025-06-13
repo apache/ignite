@@ -26,7 +26,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ClientClusterImpl;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.api.PreparableCommand;
 import org.apache.ignite.internal.util.typedef.F;
@@ -38,7 +38,7 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 
 /** */
 @Deprecated
-public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoArg>, PreparableCommand<DeactivateCommandArg, NoArg> {
+public class DeactivateCommand implements NativeCommand<DeactivateCommandArg, NoArg>, PreparableCommand<DeactivateCommandArg, NoArg> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Deactivate cluster (deprecated. Use --set-state instead)";

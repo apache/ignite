@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Command that must be executed directly using {@link IgniteClient} or {@link Ignite} instance.
  */
-public interface LocalCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
+public interface NativeCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
     /**
      * Executes command logic.
      * Commands invoked in two different environments:
