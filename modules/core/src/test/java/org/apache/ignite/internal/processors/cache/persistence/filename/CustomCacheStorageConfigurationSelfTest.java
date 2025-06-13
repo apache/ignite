@@ -111,6 +111,11 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                 () -> srv.createCache(new CacheConfiguration<>("my-cache").setStoragePaths("other")),
                 IgniteCheckedException.class
             );
+
+            assertThrowsWithCause(
+                () -> srv.createCache(new CacheConfiguration<>("my-cache").setIndexPath("other")),
+                IgniteCheckedException.class
+            );
         };
 
         try (IgniteEx srv = startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
@@ -157,6 +162,13 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                 IgniteCheckedException.class
             );
 
+            assertThrowsWithCause(
+                () -> srv.createCache(new CacheConfiguration<>("my-cache2").setGroupName("grp")
+                    .setStoragePaths(myPath3.getAbsolutePath())
+                    .setIndexPath(myPath.getAbsolutePath())),
+                IgniteCheckedException.class
+            );
+
             srv.createCache(new CacheConfiguration<>("my-cache2")
                 .setGroupName("grp-2"));
 
@@ -171,6 +183,13 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                 () -> srv.createCache(new CacheConfiguration<>("my-cache3")
                     .setGroupName("grp-2")
                     .setStoragePaths(myPath.getAbsolutePath(), myPath2.getAbsolutePath())),
+                IgniteCheckedException.class
+            );
+
+            assertThrowsWithCause(
+                () -> srv.createCache(new CacheConfiguration<>("my-cache3")
+                    .setGroupName("grp-2")
+                    .setIndexPath(myPath.getAbsolutePath())),
                 IgniteCheckedException.class
             );
 
@@ -189,6 +208,14 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                 () -> srv.createCache(new CacheConfiguration<>("my-cache4")
                     .setGroupName("grp-3")
                     .setStoragePaths(myPath3.getAbsolutePath(), myPath2.getAbsolutePath())),
+                IgniteCheckedException.class
+            );
+
+            assertThrowsWithCause(
+                () -> srv.createCache(new CacheConfiguration<>("my-cache4")
+                    .setGroupName("grp-3")
+                    .setStoragePaths(myPath2.getAbsolutePath(), myPath3.getAbsolutePath())
+                    .setIndexPath(myPath.getAbsolutePath())),
                 IgniteCheckedException.class
             );
         };
@@ -227,6 +254,14 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
 
             srv.createCache(new CacheConfiguration<>("my-cache2")
                 .setGroupName("grp").setStoragePaths(myPath3.getAbsolutePath()));
+
+            srv.createCache(new CacheConfiguration<>("my-cache3")
+                .setGroupName("grp2").setStoragePaths(myPath3.getAbsolutePath())
+                .setIndexPath(myPath.getAbsolutePath()));
+
+            srv.createCache(new CacheConfiguration<>("my-cache4")
+                .setGroupName("grp2").setStoragePaths(myPath3.getAbsolutePath())
+                .setIndexPath(myPath.getAbsolutePath()));
         }
     }
 
@@ -238,7 +273,8 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setStoragePaths(myPath.getAbsolutePath());
+            .setStoragePaths(myPath.getAbsolutePath())
+            .setIndexPath(myPath.getAbsolutePath());
 
         try (IgniteEx srv = startGrid(getConfiguration("srv")
             .setDataStorageConfiguration(dsCfg)

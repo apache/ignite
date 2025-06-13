@@ -442,6 +442,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     @IgniteExperimental
     @Nullable private String[] storagePaths;
 
+    /**
+     * Root directory where index file are stored.
+     * @see DataStorageConfiguration#setStoragePath(String)
+     * @see DataStorageConfiguration#setExtraStoragePaths(String[])
+     */
+    @IgniteExperimental
+    @Nullable private String idxPath;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -541,6 +549,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlOnheapCacheMaxSize = cc.getSqlOnheapCacheMaxSize();
         evtsDisabled = cc.isEventsDisabled();
         storagePaths = cc.getStoragePaths();
+        idxPath = cc.getIndexPath();
     }
 
     /**
@@ -2484,6 +2493,28 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     @IgniteExperimental
     public CacheConfiguration<K, V> setStoragePaths(String... storagePaths) {
         this.storagePaths = storagePaths;
+
+        return this;
+    }
+
+    /**
+     * @return A path to the root directory where the Persistent Store for cache group will persist index.
+     */
+    @IgniteExperimental
+    @Nullable public String getIndexPath() {
+        return idxPath;
+    }
+
+    /**
+     * Sets a path to the root directory where the Persistent Store will persist index partition.
+     * By default, the Persistent Store's files are located under {@link DataStorageConfiguration#getStoragePath()}.
+     *
+     * @param idxPath Index path.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public CacheConfiguration<K, V> setIndexPath(String idxPath) {
+        this.idxPath = idxPath;
 
         return this;
     }
