@@ -42,10 +42,15 @@ public class ClientCachePutAllRequest extends ClientCacheDataRequest implements 
 
         int cnt = reader.readInt();
 
-        map = new GridArrayMap<>(cnt);
+        Object[] keys = new Object[cnt];
+        Object[] vals = new Object[cnt];
 
-        for (int i = 0; i < cnt; i++)
-            map.put(reader.readObjectDetached(), reader.readObjectDetached());
+        for (int i = 0; i < cnt; i++) {
+            keys[i] = reader.readObjectDetached();
+            vals[i] = reader.readObjectDetached();
+        }
+
+        map = new ImmutableArrayMap<>(keys, vals);
     }
 
     /** {@inheritDoc} */

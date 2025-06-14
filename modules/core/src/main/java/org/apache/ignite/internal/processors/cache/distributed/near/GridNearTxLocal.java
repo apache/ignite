@@ -534,8 +534,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         GridCacheContext cacheCtx,
         Map<KeyCacheObject, GridCacheDrInfo> drMap
     ) {
-        Iterator<GridCacheDrInfo> itDrPut = drMap.values().iterator();
-
         Set<?> keySet = drMap.keySet();
         Iterator<?> itVals = F.iterator(drMap.values().iterator(),
             (IgniteClosure<GridCacheDrInfo, Object>)GridCacheDrInfo::value, true);
@@ -546,7 +544,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             itVals,
             null,
             null,
-            itDrPut,
+            drMap,
             false);
     }
 
@@ -733,7 +731,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param itVals Key-value map values to store.
      * @param itInvokeVals Iterator of entry processors for invoke operation.
      * @param invokeArgs Optional arguments for EntryProcessor.
-     * @param itDrPut DR put iterator.
+     * @param drMap DR map.
      * @param retval Key-transform value map to store.
      * @return Operation future.
      */
@@ -745,7 +743,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable Iterator<? extends V> itVals,
         @Nullable Iterator<? extends EntryProcessor<K, V, Object>> itInvokeVals,
         @Nullable final Object[] invokeArgs,
-        @Nullable Iterator<GridCacheDrInfo> itDrPut,
+        @Nullable Map<KeyCacheObject, GridCacheDrInfo> drMap,
         final boolean retval
     ) {
         try {
@@ -760,8 +758,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final Byte dataCenterId;
 
         if (opCtx != null && opCtx.hasDataCenterId()) {
-            assert itDrPut == null : itDrPut;
-            assert keySet != null;
+            assert drMap == null : drMap;
+            assert keySet != null || itInvokeVals != null;
 
             dataCenterId = opCtx.dataCenterId();
         }
@@ -772,7 +770,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             log.debug("Called putAllAsync(...) [tx=" + this + ", map=[" + S.toString(Set.class, keySet) + ", " +
                 S.toString(Iterator.class, itVals) + "], retval=" + retval + "]");
 
-        assert keySet != null;
+        assert keySet != null || itInvokeVals != null;
 
         final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
@@ -805,7 +803,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 CU.filterArray(null),
                 ret,
                 enlisted,
-                itDrPut,
+                drMap,
                 null,
                 opCtx != null && opCtx.skipStore(),
                 false,
@@ -1023,8 +1021,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param filter User filters.
      * @param ret Return value.
      * @param enlisted Collection of keys enlisted into this transaction.
-     * @param itDrPut DR put info values iterator (optional).
-     * @param itDrRmv DR remove version values iterator (optional).
+     * @param drPutMap DR put map (optional).
+     * @param drRmvMap DR remove map (optional).
      * @param skipStore Skip store flag.
      * @param singleRmv {@code True} for single key remove operation ({@link Cache#remove(Object)}.
      * @param keepBinary Keep binary flag.
@@ -1044,8 +1042,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final CacheEntryPredicate[] filter,
         final GridCacheReturn ret,
         Collection<KeyCacheObject> enlisted,
-        @Nullable Iterator<GridCacheDrInfo> itDrPut,
-        @Nullable Iterator<GridCacheVersion> itDrRmv,
+        @Nullable Map<KeyCacheObject, GridCacheDrInfo> drPutMap,
+        @Nullable Map<KeyCacheObject, GridCacheVersion> drRmvMap,
         boolean skipStore,
         final boolean singleRmv,
         final boolean keepBinary,
@@ -1098,8 +1096,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     long drTtl;
                     long drExpireTime;
 
-                    if (itDrPut != null) {
-                        GridCacheDrInfo info = itDrPut.next();
+                    if (drPutMap != null) {
+                        GridCacheDrInfo info = drPutMap.get(key);
 
                         assert info != null;
 
@@ -1107,11 +1105,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         drTtl = info.ttl();
                         drExpireTime = info.expireTime();
                     }
-                    else if (itDrRmv != null) {
-                        drVer = itDrRmv.next();
+                    else if (drRmvMap != null) {
+                        assert drRmvMap.get(key) != null;
 
-                        assert drVer != null;
-
+                        drVer = drRmvMap.get(key);
                         drTtl = -1L;
                         drExpireTime = -1L;
                     }
@@ -1601,13 +1598,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             needReturnValue(true);
 
         final Collection<?> keys0;
-        Iterator<GridCacheVersion> itVals0 = null;
 
         if (drMap != null) {
             assert keys == null;
 
             keys0 = drMap.keySet();
-            itVals0 = drMap.values().iterator();
         }
         else
             keys0 = keys;
@@ -1683,7 +1678,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             ret,
             enlisted,
             null,
-            itVals0,
+            drMap,
             opCtx != null && opCtx.skipStore(),
             singleRmv,
             keepBinary,
