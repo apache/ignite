@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_MAX_LENGTH;
@@ -28,9 +29,6 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_
  * These properties and variables can be used to affect the behavior of Ignite.
  */
 public class IgniteCommonsSystemProperties {
-    /** @see IgniteCommonsSystemProperties#IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD */
-    public static final long DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD = 0L;
-
     /**
      * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
      */

@@ -21,6 +21,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,6 +37,9 @@ public abstract class CommonUtils {
      * @see java.util.ArrayList#MAX_ARRAY_SIZE
      */
     public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
+    /** @see IgniteCommonsSystemProperties#IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD */
+    public static final long DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD = 0L;
 
     /** Sun-specific JDK constructor factory for objects that don't have empty constructor. */
     private static final Method CTOR_FACTORY;

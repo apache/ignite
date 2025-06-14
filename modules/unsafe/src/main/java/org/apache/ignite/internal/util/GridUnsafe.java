@@ -34,9 +34,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
-import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MEMORY_UNALIGNED_ACCESS;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD;
 import static org.apache.ignite.internal.util.CommonUtils.jdkVersion;
 import static org.apache.ignite.internal.util.CommonUtils.majorJavaVersion;
 
