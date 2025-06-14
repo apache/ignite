@@ -110,8 +110,8 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
-import org.apache.ignite.internal.processors.platform.client.cache.GridArrayMap;
-import org.apache.ignite.internal.processors.platform.client.cache.GridArraySet;
+import org.apache.ignite.internal.processors.platform.client.cache.ImmutableArrayMap;
+import org.apache.ignite.internal.processors.platform.client.cache.ImmutableArraySet;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -4524,7 +4524,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (m == null || m.size() <= 1)
             return;
 
-        if (m instanceof SortedMap || m instanceof GridSerializableMap || m instanceof GridArrayMap)
+        if (m instanceof SortedMap || m instanceof GridSerializableMap || m instanceof ImmutableArrayMap)
             return;
 
         Transaction tx = ctx.kernalContext().cache().transactions().tx();
@@ -4551,7 +4551,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (coll == null || coll.size() <= 1)
             return;
 
-        if (coll instanceof SortedSet || coll instanceof GridCacheAdapter.KeySet || coll instanceof GridArraySet)
+        if (coll instanceof SortedSet || coll instanceof GridCacheAdapter.KeySet || coll instanceof ImmutableArraySet)
             return;
 
         // To avoid false positives, once removeAll() is called, cache will never issue Remove All warnings.
@@ -4572,7 +4572,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** */
-    public enum BulkOperation {
+    protected enum BulkOperation {
         /** */
         GET,
 

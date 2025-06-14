@@ -28,20 +28,15 @@ import java.util.function.BiConsumer;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.thin.TcpClientCache;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -131,66 +126,42 @@ public class ClientOrderedCollectionWarnTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testPutAllAtomic() throws Exception {
-        testPutAll(ATOMIC, new HashMap<>(), MAP_LSNR, false);
+    public void testPutAll() throws Exception {
+        testPutAll(new TreeMap<>(), MAP_LSNR, false);
     }
 
     /** */
     @Test
-    public void testPutAllTransactional() throws Exception {
-        testPutAll(TRANSACTIONAL, new TreeMap<>(), MAP_LSNR, false);
+    public void testPutAllWarn() throws Exception {
+        testPutAll(new HashMap<>(), List.of(HASH_MAP_WARN_LSNR), true);
     }
 
     /** */
     @Test
-    public void testPutAllTransactionalWarn() throws Exception {
-        testPutAll(TRANSACTIONAL, new HashMap<>(), List.of(HASH_MAP_WARN_LSNR), true);
+    public void testInvokeAll() throws Exception {
+        testInvokeAll(new TreeSet<>(), SET_LSNR, false);
     }
 
     /** */
     @Test
-    public void testInvokeAllAtomic() throws Exception {
-        testInvokeAll(ATOMIC, new HashSet<>(), SET_LSNR, false);
+    public void testInvokeAllWarn() throws Exception {
+        testInvokeAll(new HashSet<>(), List.of(HASH_SET_WARN_LSNR), true);
     }
 
     /** */
     @Test
-    public void testInvokeAllTransactional() throws Exception {
-        testInvokeAll(TRANSACTIONAL, new TreeSet<>(), SET_LSNR, false);
+    public void testRemoveAll() throws Exception {
+        testSetAllOp(new TreeSet<>(), ClientCache::removeAll);
+
+        testSetAllOp(new HashSet<>(), ClientCache::removeAll);
     }
 
     /** */
     @Test
-    public void testInvokeAllTransactionalWarn() throws Exception {
-        testInvokeAll(TRANSACTIONAL, new HashSet<>(), List.of(HASH_SET_WARN_LSNR), true);
-    }
+    public void testGetAll() throws Exception {
+        testSetAllOp(new TreeSet<>(), ClientCache::getAll);
 
-    /** */
-    @Test
-    public void testRemoveAllAtomic() throws Exception {
-        testSetAllOp(ATOMIC, new HashSet<>(), ClientCache::removeAll, SET_LSNR, false);
-    }
-
-    /** */
-    @Test
-    public void testRemoveAllTransactional() throws Exception {
-        testSetAllOp(TRANSACTIONAL, new TreeSet<>(), ClientCache::removeAll, SET_LSNR, false);
-
-        testSetAllOp(TRANSACTIONAL, new HashSet<>(), ClientCache::removeAll, SET_LSNR, false);
-    }
-
-    /** */
-    @Test
-    public void testGetAllAtomic() throws Exception {
-        testSetAllOp(ATOMIC, new HashSet<>(), ClientCache::getAll, SET_LSNR, false);
-    }
-
-    /** */
-    @Test
-    public void testGetAllTransactional() throws Exception {
-        testSetAllOp(TRANSACTIONAL, new TreeSet<>(), ClientCache::getAll, SET_LSNR, false);
-
-        testSetAllOp(TRANSACTIONAL, new HashSet<>(), ClientCache::getAll, SET_LSNR, false);
+        testSetAllOp(new HashSet<>(), ClientCache::getAll);
     }
 
     /**
@@ -210,76 +181,35 @@ public class ClientOrderedCollectionWarnTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testPutAllConflictAtomic() throws Exception {
-        testPutAllConflict(ATOMIC, new HashMap<>(), MAP_LSNR, false);
-    }
-
-    /** */
-    @Test
-    public void testPutAllConflictTransactional() throws Exception {
-        testPutAllConflict(TRANSACTIONAL, new TreeMap<>(), MAP_LSNR, false);
-    }
-
-    /** */
-    @Test
-    public void testPutAllConflictTransactionalWarn() throws Exception {
-        testPutAllConflict(TRANSACTIONAL, new HashMap<>(), List.of(HASH_MAP_WARN_LSNR), true);
-    }
-
-    /** */
-    @Test
-    public void testRemoveAllConflictAtomic() throws Exception {
-        testRemoveAllConflict(ATOMIC, new HashMap<>(), MAP_LSNR, false);
-    }
-
-    /** */
-    @Test
-    public void testRemoveAllConflictTransactional() throws Exception {
-        testRemoveAllConflict(TRANSACTIONAL, new TreeMap<>(), MAP_LSNR, false);
-    }
-
-    /** */
-    @Test
-    public void testRemoveAllConflictTransactionalWarn() throws Exception {
-        testRemoveAllConflict(TRANSACTIONAL, new HashMap<>(), List.of(HASH_MAP_WARN_LSNR), true);
-    }
-
-    /** */
     private void testPutAll(
-        CacheAtomicityMode cacheMode,
         Map<Long, Long> map,
         List<LogListener> lsnrs,
         boolean warnPresent
     ) throws Exception {
-        createCache(cacheMode).putAll(fillMap(map));
+        createTransactionalCache().putAll(fillMap(map));
 
         checkOp(warnPresent, lsnrs);
     }
 
     /** */
     private void testInvokeAll(
-        CacheAtomicityMode cacheMode,
         Set<Long> set,
         List<LogListener> lsnrs,
         boolean warnPresent
     ) throws Exception {
-        createCache(cacheMode).invokeAll(fillSet(set), new TestEntryProcessor());
+        createTransactionalCache().invokeAll(fillSet(set), new TestEntryProcessor());
 
         checkOp(warnPresent, lsnrs);
     }
 
     /** */
     private void testSetAllOp(
-        CacheAtomicityMode cacheMode,
         Set<Long> set,
-        BiConsumer<ClientCache, Set> cacheOp,
-        List<LogListener> lsnrs,
-        boolean warnPresent
+        BiConsumer<ClientCache, Set> cacheOp
     ) throws Exception {
-        cacheOp.accept(createCache(cacheMode), fillSet(set));
+        cacheOp.accept(createTransactionalCache(), fillSet(set));
 
-        checkOp(warnPresent, lsnrs);
+        checkOp(false, SET_LSNR);
     }
 
     /** */
@@ -289,7 +219,7 @@ public class ClientOrderedCollectionWarnTest extends GridCommonAbstractTest {
         List<LogListener> lsnrs,
         boolean warnPresent
     ) throws Exception {
-        ClientCache<Long, Long> c = createCache(TRANSACTIONAL);
+        ClientCache<Long, Long> c = createTransactionalCache();
 
         ClientTransaction tx = cli.transactions().txStart(concurrency, SERIALIZABLE);
 
@@ -297,30 +227,6 @@ public class ClientOrderedCollectionWarnTest extends GridCommonAbstractTest {
 
         tx.commit();
         tx.close();
-
-        checkOp(warnPresent, lsnrs);
-    }
-
-    /** */
-    private void testPutAllConflict(
-        CacheAtomicityMode cacheMode,
-        Map<Object, T3<Object, GridCacheVersion, Long>> map,
-        List<LogListener> lsnrs,
-        boolean warnPresent
-    ) throws Exception {
-        ((TcpClientCache<Object, Object>)createCache(cacheMode)).putAllConflict(fillConflictPutMap(map));
-
-        checkOp(warnPresent, lsnrs);
-    }
-
-    /** */
-    private void testRemoveAllConflict(
-        CacheAtomicityMode cacheMode,
-        Map<Object, GridCacheVersion> map,
-        List<LogListener> lsnrs,
-        boolean warnPresent
-    ) throws Exception {
-        ((TcpClientCache<Object, Object>)createCache(cacheMode)).removeAllConflict(fillConflictRmvMap(map));
 
         checkOp(warnPresent, lsnrs);
     }
@@ -336,10 +242,10 @@ public class ClientOrderedCollectionWarnTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private <K, V> ClientCache<K, V> createCache(CacheAtomicityMode cacheMode) {
+    private <K, V> ClientCache<K, V> createTransactionalCache() {
         ClientCacheConfiguration cacheCfg = new ClientCacheConfiguration()
-            .setName(DEFAULT_CACHE_NAME + "-" + cacheMode)
-            .setAtomicityMode(cacheMode);
+            .setName(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL);
 
         return cli.getOrCreateCache(cacheCfg);
     }
@@ -358,26 +264,6 @@ public class ClientOrderedCollectionWarnTest extends GridCommonAbstractTest {
         set.add(1L);
 
         return set;
-    }
-
-    /** */
-    private Map<Object, T3<Object, GridCacheVersion, Long>> fillConflictPutMap(Map<Object, T3<Object, GridCacheVersion, Long>> map) {
-        GridCacheVersion ver = new GridCacheVersion(1, 1, 1, 1);
-
-        map.put(0L, new T3<>(0L, ver, 0L));
-        map.put(1L, new T3<>(1L, ver, 0L));
-
-        return map;
-    }
-
-    /** */
-    private Map<Object, GridCacheVersion> fillConflictRmvMap(Map<Object, GridCacheVersion> map) {
-        GridCacheVersion ver = new GridCacheVersion(1, 1, 1, 1);
-
-        map.put(0L, ver);
-        map.put(1L, ver);
-
-        return map;
     }
 
     /** */

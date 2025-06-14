@@ -220,7 +220,7 @@ public class TcpIgniteClient implements IgniteClient {
         ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
             req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
-        return new TcpClientCache<>(cfg, ch, marsh, transactions, lsnrsRegistry, log);
+        return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry, log);
     }
 
     /** {@inheritDoc} */
@@ -231,7 +231,7 @@ public class TcpIgniteClient implements IgniteClient {
         return new IgniteClientFutureImpl<>(
                 ch.requestAsync(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
                         req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()))
-                        .thenApply(x -> new TcpClientCache<>(cfg, ch, marsh, transactions, lsnrsRegistry, log)));
+                        .thenApply(x -> new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry, log)));
     }
 
     /** {@inheritDoc} */
@@ -296,7 +296,7 @@ public class TcpIgniteClient implements IgniteClient {
         ch.request(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION,
             req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
-        return new TcpClientCache<>(cfg, ch, marsh, transactions, lsnrsRegistry, log);
+        return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry, log);
     }
 
     /** {@inheritDoc} */
@@ -307,7 +307,7 @@ public class TcpIgniteClient implements IgniteClient {
         return new IgniteClientFutureImpl<>(
                 ch.requestAsync(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION,
                         req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()))
-                        .thenApply(x -> new TcpClientCache<>(cfg, ch, marsh, transactions, lsnrsRegistry, log)));
+                        .thenApply(x -> new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry, log)));
     }
 
     /** {@inheritDoc} */

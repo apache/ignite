@@ -59,12 +59,12 @@ public class ClientCacheKeysRequest extends ClientCacheDataRequest implements Cl
     private static Set<Object> readSet(BinaryReaderEx reader) {
         int cnt = reader.readInt();
 
-        Set<Object> keys = new GridArraySet<>(cnt);
+        Object[] elements = new Object[cnt];
 
         for (int i = 0; i < cnt; i++)
-            keys.add(reader.readObjectDetached());
+            elements[i] = reader.readObjectDetached();
 
-        return keys;
+        return new ImmutableArraySet<>(elements);
     }
 
     /** {@inheritDoc} */

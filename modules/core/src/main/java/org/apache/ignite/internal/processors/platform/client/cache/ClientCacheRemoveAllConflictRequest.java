@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
@@ -47,7 +48,7 @@ public class ClientCacheRemoveAllConflictRequest extends ClientCacheDataRequest 
 
         int cnt = reader.readInt();
 
-        map = new GridArrayMap<>(cnt);
+        map = new LinkedHashMap<>(cnt);
 
         for (int i = 0; i < cnt; i++) {
             KeyCacheObject key = readCacheObject(reader, true);
