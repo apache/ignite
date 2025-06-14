@@ -91,6 +91,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -420,7 +421,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     ) {
         return (IgniteInternalFuture<GridCacheReturn>)putAllAsync0(cacheCtx,
             entryTopVer,
-            map,
+            map.keySet(),
+            map.values().iterator(),
             null,
             null,
             null,
@@ -476,6 +478,30 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /**
      * @param cacheCtx Cache context.
+     * @param keySet Keys to store.
+     * @param itInvokeVals Iterator of entry processors for invoke operation.
+     * @param invokeArgs Optional arguments for entry processor.
+     * @return Operation future.
+     */
+    public <K, V> IgniteInternalFuture<GridCacheReturn> invokeAsync(
+        GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
+        @Nullable Set<? extends K> keySet,
+        @Nullable Iterator<? extends EntryProcessor<K, V, Object>> itInvokeVals,
+        Object... invokeArgs
+    ) {
+        return (IgniteInternalFuture<GridCacheReturn>)putAllAsync0(cacheCtx,
+            entryTopVer,
+            keySet,
+            null,
+            itInvokeVals,
+            invokeArgs,
+            null,
+            true);
+    }
+
+    /**
+     * @param cacheCtx Cache context.
      * @param map Entry processors map.
      * @param invokeArgs Optional arguments for entry processor.
      * @return Operation future.
@@ -486,10 +512,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> map,
         Object... invokeArgs
     ) {
+        A.notNull(map, "map");
+
         return (IgniteInternalFuture<GridCacheReturn>)putAllAsync0(cacheCtx,
             entryTopVer,
+            map.keySet(),
             null,
-            map,
+            map.values().iterator(),
             invokeArgs,
             null,
             true);
@@ -504,11 +533,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         GridCacheContext cacheCtx,
         Map<KeyCacheObject, GridCacheDrInfo> drMap
     ) {
-        Map<KeyCacheObject, Object> map = F.viewReadOnly(drMap, (IgniteClosure<GridCacheDrInfo, Object>)GridCacheDrInfo::value);
+        Set<?> keySet = drMap.keySet();
+        Iterator<?> itVals = F.iterator(drMap.values().iterator(),
+            (IgniteClosure<GridCacheDrInfo, Object>)GridCacheDrInfo::value, true);
 
         return this.<Object, Object>putAllAsync0(cacheCtx,
             null,
-            map,
+            keySet,
+            itVals,
             null,
             null,
             drMap,
@@ -694,8 +726,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * maps must be non-null.
      *
      * @param cacheCtx Context.
-     * @param map Key-value map to store.
-     * @param invokeMap Invoke map.
+     * @param keySet Key-value map keys to store.
+     * @param itVals Key-value map values to store.
+     * @param itInvokeVals Iterator of entry processors for invoke operation.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param drMap DR map.
      * @param retval Key-transform value map to store.
@@ -705,8 +738,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private <K, V> IgniteInternalFuture putAllAsync0(
         final GridCacheContext cacheCtx,
         @Nullable AffinityTopologyVersion entryTopVer,
-        @Nullable Map<? extends K, ? extends V> map,
-        @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> invokeMap,
+        @Nullable Set<? extends K> keySet,
+        @Nullable Iterator<? extends V> itVals,
+        @Nullable Iterator<? extends EntryProcessor<K, V, Object>> itInvokeVals,
         @Nullable final Object[] invokeArgs,
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> drMap,
         final boolean retval
@@ -724,23 +758,22 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (opCtx != null && opCtx.hasDataCenterId()) {
             assert drMap == null : drMap;
-            assert map != null || invokeMap != null;
+            assert keySet != null || itInvokeVals != null;
 
             dataCenterId = opCtx.dataCenterId();
         }
         else
             dataCenterId = null;
 
-        final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
-
         if (log.isDebugEnabled())
-            log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map + ", retval=" + retval + "]");
+            log.debug("Called putAllAsync(...) [tx=" + this + ", map=[" + S.toString(Set.class, keySet) + ", " +
+                S.toString(Iterator.class, itVals) + "], retval=" + retval + "]");
 
-        assert map != null || invokeMap0 != null;
+        assert keySet != null || itInvokeVals != null;
 
         final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
-        if (F.isEmpty(map) && F.isEmpty(invokeMap0)) {
+        if (F.isEmpty(keySet) && itVals == null && itInvokeVals != null) {
             if (implicit())
                 try {
                     commit();
@@ -753,8 +786,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
 
         try {
-            Set<?> keySet = map != null ? map.keySet() : invokeMap0.keySet();
-
             final Collection<KeyCacheObject> enlisted = new ArrayList<>(keySet.size());
 
             final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
@@ -764,8 +795,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 entryTopVer,
                 keySet,
                 opCtx != null ? opCtx.expiry() : null,
-                map,
-                invokeMap0,
+                itVals,
+                itInvokeVals,
                 invokeArgs,
                 retval,
                 CU.filterArray(null),
@@ -801,7 +832,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                     timeout,
                     this,
-                    /*read*/invokeMap != null, // Needed to force load from store.
+                    /*read*/itInvokeVals != null, // Needed to force load from store.
                     retval,
                     isolation,
                     isInvalidate(),
@@ -982,8 +1013,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param cacheCtx Cache context.
      * @param keys Keys to enlist.
      * @param expiryPlc Explicitly specified expiry policy for entry.
-     * @param lookup Value lookup map ({@code null} for remove).
-     * @param invokeMap Map with entry processors for invoke operation.
+     * @param itVals Value lookup iterator ({@code null} for remove).
+     * @param itInvokeVals Iterator of entry processors for invoke operation.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param retval Flag indicating whether a value should be returned.
      * @param filter User filters.
@@ -1003,8 +1034,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable AffinityTopologyVersion entryTopVer,
         Collection<?> keys,
         @Nullable ExpiryPolicy expiryPlc,
-        @Nullable Map<?, ?> lookup,
-        @Nullable Map<?, EntryProcessor<K, V, Object>> invokeMap,
+        @Nullable Iterator<?> itVals,
+        @Nullable Iterator<? extends EntryProcessor<K, V, Object>> itInvokeVals,
         @Nullable Object[] invokeArgs,
         final boolean retval,
         final CacheEntryPredicate[] filter,
@@ -1018,7 +1049,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean recovery,
         Byte dataCenterId
     ) {
-        assert retval || invokeMap == null;
+        assert retval || itInvokeVals == null;
 
         try (TraceSurroundings ignored2 =
                  MTC.support(context().kernalContext().tracing().create(TX_NEAR_ENLIST_WRITE, MTC.span()))) {
@@ -1034,7 +1065,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 return finishFuture(enlistFut, e, false);
             }
 
-            boolean rmv = lookup == null && invokeMap == null;
+            boolean rmv = itVals == null && itInvokeVals == null;
 
             final boolean hasFilters = !F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter);
             final boolean needVal = singleRmv || retval || hasFilters;
@@ -1042,7 +1073,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             try {
                 // Set transform flag for transaction.
-                if (invokeMap != null)
+                if (itInvokeVals != null)
                     transform = true;
 
                 Set<KeyCacheObject> missedForLoad = null;
@@ -1057,8 +1088,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         throw new NullPointerException("Null key.");
                     }
 
-                    Object val = rmv || lookup == null ? null : lookup.get(key);
-                    EntryProcessor entryProc = invokeMap == null ? null : invokeMap.get(key);
+                    Object val = rmv || itVals == null ? null : itVals.next();
+                    EntryProcessor entryProc = itInvokeVals == null ? null : itInvokeVals.next();
 
                     GridCacheVersion drVer;
                     long drTtl;
@@ -1142,7 +1173,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         needReadVer,
                         singleRmv,
                         hasFilters,
-                        /*read through*/(invokeMap != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
+                        /*read through*/(itInvokeVals != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
                         retval,
                         keepBinary,
                         recovery,
@@ -1638,8 +1669,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             entryTopVer,
             keys0,
             plc,
-            /*lookup map*/null,
-            /*invoke map*/null,
+            /*values*/null,
+            /*invoke iterator*/null,
             /*invoke arguments*/null,
             retval,
             filters,

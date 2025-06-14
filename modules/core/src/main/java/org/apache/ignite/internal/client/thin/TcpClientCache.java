@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -37,6 +40,7 @@ import javax.cache.integration.CacheWriter;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -67,15 +71,27 @@ import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTra
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ARR_LIST;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
+import static org.apache.ignite.internal.client.thin.TcpClientCache.BulkOperation.GET;
+import static org.apache.ignite.internal.client.thin.TcpClientCache.BulkOperation.INVOKE;
+import static org.apache.ignite.internal.client.thin.TcpClientCache.BulkOperation.PUT;
+import static org.apache.ignite.internal.client.thin.TcpClientCache.BulkOperation.REMOVE;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Implementation of {@link ClientCache} over TCP protocol.
@@ -123,19 +139,23 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** JCache adapter. */
     private final Cache<K, V> jCacheAdapter;
 
+    /** */
+    private final IgniteLogger log;
+
     /** Exception thrown when a non-transactional ClientCache operation is invoked within a transaction. */
     public static final String NON_TRANSACTIONAL_CLIENT_CACHE_IN_TX_ERROR_MESSAGE = "Failed to invoke a " +
         "non-transactional ClientCache %s operation within a transaction.";
 
     /** Constructor. */
     TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
-        ClientCacheEntryListenersRegistry lsnrsRegistry) {
-        this(name, ch, marsh, transactions, lsnrsRegistry, false, null);
+        ClientCacheEntryListenersRegistry lsnrsRegistry, IgniteLogger log) {
+        this(name, ch, marsh, transactions, lsnrsRegistry, false, null, log);
     }
 
     /** Constructor. */
-    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
-        ClientCacheEntryListenersRegistry lsnrsRegistry, boolean keepBinary, ExpiryPolicy expiryPlc) {
+    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh,
+        TcpClientTransactions transactions, ClientCacheEntryListenersRegistry lsnrsRegistry, boolean keepBinary,
+        ExpiryPolicy expiryPlc, IgniteLogger log) {
         this.name = name;
         this.cacheId = ClientUtils.cacheId(name);
         this.ch = ch;
@@ -151,6 +171,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         jCacheAdapter = new ClientJCacheAdapter<>(this);
 
         this.ch.registerCacheIfCustomAffinity(this.name);
+
+        this.log = log;
     }
 
     /** {@inheritDoc} */
@@ -324,6 +346,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return new HashMap<>();
 
+        warnIfUnordered(keys, GET);
+
         TcpClientTransaction tx = transactions.tx();
 
         return txAwareService(null, tx,
@@ -339,6 +363,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         if (keys.isEmpty())
             return IgniteClientFutureImpl.completedFuture(new HashMap<>());
+
+        warnIfUnordered(keys, GET);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -357,6 +383,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (map.isEmpty())
             return;
 
+        warnIfUnordered(map, PUT);
+
         TcpClientTransaction tx = transactions.tx();
 
         txAwareService(null, tx,
@@ -372,6 +400,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         if (map.isEmpty())
             return IgniteClientFutureImpl.completedFuture(null);
+
+        warnIfUnordered(map, PUT);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -523,6 +553,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return;
 
+        warnIfUnordered(keys, REMOVE);
+
         TcpClientTransaction tx = transactions.tx();
 
         txAwareService(null, tx,
@@ -541,6 +573,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         if (keys.isEmpty())
             return IgniteClientFutureImpl.completedFuture(null);
+
+        warnIfUnordered(keys, REMOVE);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -931,6 +965,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (entryProc == null)
             throw new NullPointerException("entryProc");
 
+        warnIfUnordered(keys, INVOKE);
+
         TcpClientTransaction tx = transactions.tx();
 
         return txAwareService(null, tx,
@@ -953,6 +989,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         if (entryProc == null)
             throw new NullPointerException("entryProc");
+
+        warnIfUnordered(keys, INVOKE);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -1006,12 +1044,12 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** {@inheritDoc} */
     @Override public <K1, V1> ClientCache<K1, V1> withKeepBinary() {
         return keepBinary ? (ClientCache<K1, V1>)this :
-            new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry, true, expiryPlc);
+            new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry, true, expiryPlc, log);
     }
 
     /** {@inheritDoc} */
     @Override public <K1, V1> ClientCache<K1, V1> withExpirePolicy(ExpiryPolicy expirePlc) {
-        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry, keepBinary, expirePlc);
+        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry, keepBinary, expirePlc, log);
     }
 
     /** {@inheritDoc} */
@@ -1615,5 +1653,88 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         throws ClientFeatureNotSupportedByServerException {
         if (!protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.DATA_REPLICATION_OPERATIONS))
             throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.DATA_REPLICATION_OPERATIONS);
+    }
+
+    /**
+     * Checks that given map is sorted or otherwise constant order, or processed inside deadlock-detecting transaction.
+     *
+     * @param m Map to examine.
+     */
+    protected void warnIfUnordered(Map<?, ?> m, BulkOperation op) {
+        if (m == null || m.size() <= 1)
+            return;
+
+        if (m instanceof SortedMap || m instanceof GridSerializableMap)
+            return;
+
+        TcpClientTransaction tx = transactions.tx();
+
+        if (tx != null && !op.canBlockTx(tx.getConcurrency(), tx.getIsolation()))
+            return;
+
+        LT.warn(log, "Unordered map " + m.getClass().getName() +
+            " is used for " + op.title() + " operation on cache " + name + ". " +
+            "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead.");
+    }
+
+    /**
+     * Checks that given collection is sorted set, or processed inside deadlock-detecting transaction.
+     *
+     * Issues developer warning otherwise.
+     *
+     * @param coll Collection to examine.
+     */
+    protected void warnIfUnordered(Collection<?> coll, BulkOperation op) {
+        if (coll == null || coll.size() <= 1)
+            return;
+
+        if (coll instanceof SortedSet)
+            return;
+
+        if (op == REMOVE)
+            return;
+
+        TcpClientTransaction tx = transactions.tx();
+
+        if (op == GET && tx == null)
+            return;
+
+        if (tx != null && !op.canBlockTx(tx.getConcurrency(), tx.getIsolation()))
+            return;
+
+        LT.warn(log, "Unordered collection " + coll.getClass().getName() +
+            " is used for " + op.title() + " operation on cache " + name + ". " +
+            "This can lead to a distributed deadlock. Switch to a sorted set like TreeSet instead.");
+    }
+
+    /** */
+    protected enum BulkOperation {
+        /** */
+        GET,
+
+        /** */
+        PUT,
+
+        /** */
+        INVOKE,
+
+        /** */
+        REMOVE;
+
+        /** */
+        public String title() {
+            return name().toLowerCase() + "All";
+        }
+
+        /** */
+        public boolean canBlockTx(TransactionConcurrency concurrency, TransactionIsolation isolation) {
+            if (concurrency == OPTIMISTIC && isolation == SERIALIZABLE)
+                return false;
+
+            if (this == GET && concurrency == PESSIMISTIC && isolation == READ_COMMITTED)
+                return false;
+
+            return true;
+        }
     }
 }
