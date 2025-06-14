@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.nodevalidation;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -33,7 +34,10 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
  */
 public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
     /** */
-    private static final int MAX_VER_DIFF_FOR_RU = 2;
+    private static final int MAX_MINOR_DIFF = 1;
+
+    /** */
+    private final AtomicReference<IgniteProductVersion> rmtVerAllowedRef = new AtomicReference<>();
 
     /**
      * @param ctx Kernal context.
@@ -56,12 +60,24 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
         if (!isRollingUpgradeEligible(locVer, rmtVer)) {
-            String errMsg = "Remote node [rmtBuildVer=" + rmtBuildVer + ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                ", rmtNodeId=" + node.id() + "] rejected: Incompatible version for cluster join. Allowed major version " +
-                "range: " + locVer.major() + '.' + (locVer.minor() - 2) + '.' + locVer.maintenance() +
-                " to " + locVer.major() + '.' + (locVer.minor() + 2) + '.' + locVer.maintenance() +
-                " [locBuildVer=" + locBuildVer + ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                ", locNodeId=" + locNode.id() + ']';
+            String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
+                + "Remote node info:\n"
+                + "  - Version     : " + rmtBuildVer + "\n"
+                + "  - Addresses   : " + U.addressesAsString(node) + "\n"
+                + "  - Node ID     : " + node.id() + "\n"
+                + "Local node info:\n"
+                + "  - Version     : " + locBuildVer + "\n"
+                + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
+                + "  - Node ID     : " + locNode.id() + "\n"
+                + "Allowed versions for joining:\n"
+                + "  - " + locVer.major() + '.' + locVer.minor() + ".X";
+
+            IgniteProductVersion curRmtVerAllowed = rmtVerAllowedRef.get();
+
+            if (curRmtVerAllowed == null) {
+                errMsg += "\n  - " + locVer.major() + '.' + (locVer.minor() + 1) + ".X";
+                errMsg += "\n  - " + locVer.major() + '.' + (locVer.minor() - 1) + ".X";
+            }
 
             LT.warn(log, errMsg);
 
@@ -75,13 +91,51 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
     }
 
     /**
-     * Checks whether remote node is eligible for rolling upgrade.
+     * Determines whether the remote node's version is eligible for rolling upgrade with the local node.
+     * <p>
+     * A remote version is considered eligible if:
+     * <ul>
+     *   <li>It exactly matches the local version; or</li>
+     *   <li>It has the same major version as the local node and the difference in minor versions is within {@link #MAX_MINOR_DIFF}.</li>
+     * </ul>
+     * If the version is deemed eligible, this method attempts to store the remote version for future validation.
      *
-     * @param locVer - Ignite build version for local node.
-     * @param rmtVer - Ignite build version for remote node.
-     * @return True - if remote node is eligible for rolling upgrade, thus can enter the cluster. False - otherwise.
+     * @param locVer Local node's Ignite product version.
+     * @param rmtVer Remote node's Ignite product version.
+     * @return {@code true} if the remote version is compatible and eligible for rolling upgrade, {@code false} otherwise.
      */
     private boolean isRollingUpgradeEligible(IgniteProductVersion locVer, IgniteProductVersion rmtVer) {
-        return Math.abs(locVer.minor() - rmtVer.minor()) <= MAX_VER_DIFF_FOR_RU;
+        if (locVer.major() == rmtVer.major() && locVer.minor() == rmtVer.minor())
+            return true;
+
+        boolean isEligible = locVer.major() == rmtVer.major() && Math.abs(locVer.minor() - rmtVer.minor()) <= MAX_MINOR_DIFF;
+
+        if (isEligible)
+            return updateEligibleRemoteVersion(rmtVer);
+
+        return false;
+    }
+
+    /**
+     * Atomically updates the allowed remote version for rolling upgrade, if not already set.
+     * <p>
+     * This method ensures that only one remote version is accepted as eligible across multiple threads.
+     * If the reference is already set, it checks whether the incoming version matches the stored one.
+     *
+     * @param rmtVer Remote node's Ignite product version to check or set.
+     * @return {@code true} if the version was successfully set or matches the already accepted version;
+     *         {@code false} if the version conflicts with an already accepted different version.
+     */
+    private boolean updateEligibleRemoteVersion(IgniteProductVersion rmtVer) {
+        while (true) {
+            IgniteProductVersion curRmtVerAllowed = rmtVerAllowedRef.get();
+
+            if (curRmtVerAllowed == null) {
+                if (rmtVerAllowedRef.compareAndSet(null, rmtVer))
+                    return true;
+            }
+            else
+                return curRmtVerAllowed.major() == rmtVer.major() && curRmtVerAllowed.minor() == rmtVer.minor();
+        }
     }
 }

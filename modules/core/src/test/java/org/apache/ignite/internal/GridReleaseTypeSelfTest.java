@@ -21,11 +21,16 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.function.ThrowableSupplier;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Test Rolling Upgrade release types.
@@ -59,87 +64,236 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testRollingUpgradeConflictVersions() throws Exception {
-        nodeVer = "2.20.0";
+    public void testTwoConflictVersions() {
+        testConflictVersions("2.18.0", "2.16.0", false);
+        testConflictVersions("2.19.0", "2.17.6", false);
+        testConflictVersions("2.20.0", "2.22.2", false);
+        testConflictVersions("2.21.0", "2.23.1", false);
+    }
 
-        startGrid(0);
+    /** */
+    @Test
+    public void testThreeConflictVersions() {
+        testConflictVersions("2.18.0", "2.18.2", "2.16.0", false);
+        testConflictVersions("2.18.0", "2.18.3", "2.20.0", false);
 
-        try {
-            nodeVer = "2.17.1";
+        testConflictVersions("2.18.0", "2.19.2", "2.17.0", false);
+        testConflictVersions("2.18.0", "2.17.3", "2.19.0", false);
 
-            startGrid(1);
+        testConflictVersions("2.18.0", "2.19.2", "2.20.0", false);
+        testConflictVersions("2.18.0", "2.17.3", "2.16.0", false);
+    }
 
-            fail("Exception has not been thrown.");
-        }
-        catch (IgniteCheckedException e) {
-            StringWriter errors = new StringWriter();
+    /** */
+    @Test
+    public void testTwoConflictVersionsWithClient() {
+        testConflictVersions("2.18.0", "2.16.0", true);
+        testConflictVersions("2.19.0", "2.17.6", true);
+        testConflictVersions("2.20.0", "2.22.2", true);
+        testConflictVersions("2.21.0", "2.23.1", true);
+    }
 
-            e.printStackTrace(new PrintWriter(errors));
+    /** */
+    @Test
+    public void testThreeConflictVersionsWithClients() {
+        testConflictVersions("2.18.0", "2.18.2", "2.16.0", true);
+        testConflictVersions("2.18.0", "2.18.3", "2.20.0", true);
 
-            String stackTrace = errors.toString();
+        testConflictVersions("2.18.0", "2.19.2", "2.17.0", true);
+        testConflictVersions("2.18.0", "2.17.3", "2.19.0", true);
 
-            if (!stackTrace.contains("Incompatible version for cluster join"))
-                throw e;
-        }
+        testConflictVersions("2.18.0", "2.19.2", "2.20.0", true);
+        testConflictVersions("2.18.0", "2.17.3", "2.16.0", true);
     }
 
     /**
-     * @throws Exception If failed.
      */
     @Test
-    public void testRollingUpgradeConflictVersionsWithClient() throws Exception {
-        nodeVer = "2.20.0";
-
-        startGrid(0);
-
-        try {
-            nodeVer = "2.17.1";
-
-            startClientGrid(1);
-
-            fail("Exception has not been thrown.");
-        }
-        catch (IgniteCheckedException e) {
-            StringWriter errors = new StringWriter();
-
-            e.printStackTrace(new PrintWriter(errors));
-
-            String stackTrace = errors.toString();
-
-            if (!stackTrace.contains("Incompatible version for cluster join"))
-                throw e;
-        }
+    public void tesTwoCompatibleVersions() throws Exception {
+        testCompatibleVersions("2.18.0", "2.17.0", false);
+        testCompatibleVersions("2.19.0", "2.20.6", false);
+        testCompatibleVersions("2.20.0", "2.20.2", false);
+        testCompatibleVersions("2.21.0", "2.21.1", false);
     }
 
     /**
-     * @throws Exception If failed.
      */
     @Test
-    public void testRollingUpgradeCompatibleVersions() throws Exception {
-        nodeVer = "2.20.0";
+    public void tesThreeCompatibleVersions() throws Exception {
+        testCompatibleVersions("2.18.0", "2.18.2", "2.17.0", false);
+        testCompatibleVersions("2.18.0", "2.18.3", "2.19.0", false);
 
-        startGrid(0);
+        testCompatibleVersions("2.18.0", "2.19.2", "2.18.1", false);
+        testCompatibleVersions("2.18.0", "2.17.3", "2.18.2", false);
 
-        nodeVer = "2.18.1";
+        testCompatibleVersions("2.18.0", "2.19.2", "2.19.6", false);
+        testCompatibleVersions("2.18.0", "2.17.3", "2.17.1", false);
 
-        startGrid(1);
+        testCompatibleVersions("2.18.1", "2.18.2", "2.18.3", false);
     }
 
     /**
-     * @throws Exception If failed.
      */
     @Test
-    public void testRollingUpgradeCompatibleVersionsWithClient() throws Exception {
-        nodeVer = "2.20.0";
+    public void tesTwoCompatibleVersionsWithClient() throws Exception {
+        testCompatibleVersions("2.18.0", "2.17.0", true);
+        testCompatibleVersions("2.19.0", "2.20.6", true);
+        testCompatibleVersions("2.20.0", "2.20.2", true);
+        testCompatibleVersions("2.21.0", "2.21.1", true);
+    }
 
-        startGrid(0);
+    /**
+     */
+    @Test
+    public void tesThreeCompatibleVersionsWithClients() throws Exception {
+        testCompatibleVersions("2.18.0", "2.18.2", "2.17.0", true);
+        testCompatibleVersions("2.18.0", "2.18.3", "2.19.0", true);
 
-        nodeVer = "2.18.1";
+        testCompatibleVersions("2.18.0", "2.19.2", "2.18.1", true);
+        testCompatibleVersions("2.18.0", "2.17.3", "2.18.2", true);
 
-        startClientGrid(1);
+        testCompatibleVersions("2.18.0", "2.19.2", "2.19.6", true);
+        testCompatibleVersions("2.18.0", "2.17.3", "2.17.1", true);
+
+        testCompatibleVersions("2.18.1", "2.18.2", "2.18.3", true);
+    }
+
+    /** */
+    @Test
+    public void testRollingUpgrade0() throws Exception {
+        IgniteEx ign0 = startGrid(0, "2.18.0", false);
+        IgniteEx ign1 = startGrid(1, "2.18.0", false);
+        IgniteEx ign2 = startGrid(2, "2.18.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+
+        ign0.close();
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+
+        startGrid(3, "2.19.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+
+        ign1.close();
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+
+        startGrid(4, "2.19.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+
+        ign2.close();
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+
+        startGrid(5, "2.19.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testRollingUpgrade1() throws Exception {
+        IgniteEx ign0 = startGrid(0, "2.18.0", false);
+        IgniteEx ign1 = startGrid(1, "2.19.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+
+        ign0.close();
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 1, getTestTimeout()));
+
+        ign0 = startGrid(2, "2.20.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+
+        ign1.close();
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 1, getTestTimeout()));
+
+        startGrid(3, "2.21.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+    }
+
+    /** */
+    private void testConflictVersions(String acceptedVer, String rejVer, boolean withClient) {
+        ThrowableSupplier<IgniteEx, Exception> sup = () -> {
+            IgniteEx ign = startGrid(0, acceptedVer, false);
+
+            startGrid(1, rejVer, withClient);
+
+            return ign;
+        };
+
+        assertRemoteRejected(sup);
+
+        stopAllGrids();
+    }
+
+    /** */
+    private void testConflictVersions(String acceptedVer1, String acceptedVer2, String rejVer, boolean withClients) {
+        ThrowableSupplier<IgniteEx, Exception> sup = () -> {
+            IgniteEx ign = startGrid(0, acceptedVer1, false);
+
+            startGrid(1, acceptedVer2, withClients);
+
+            startGrid(2, rejVer, withClients);
+
+            return ign;
+        };
+
+        assertRemoteRejected(sup);
+
+        stopAllGrids();
+    }
+
+    /** */
+    private void assertRemoteRejected(ThrowableSupplier<IgniteEx, Exception> gridStart) {
+        Throwable e = assertThrows(log, gridStart::get, IgniteCheckedException.class, null);
+
+        StringWriter errors = new StringWriter();
+
+        e.printStackTrace(new PrintWriter(errors));
+
+        String stackTrace = errors.toString();
+
+        assert stackTrace.contains("Remote node rejected due to incompatible version for cluster join");
+    }
+
+    /** */
+    private void testCompatibleVersions(String acceptedVer1, String acceptedVer2, boolean withClient) throws Exception {
+        startGrid(0, acceptedVer1, false);
+        startGrid(1, acceptedVer2, withClient);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+
+        stopAllGrids();
+    }
+
+    /** */
+    private void testCompatibleVersions(
+        String acceptedVer1,
+        String acceptedVer2,
+        String acceptedVer3,
+        boolean withClients
+    ) throws Exception {
+        startGrid(0, acceptedVer1, false);
+        startGrid(1, acceptedVer2, withClients);
+        startGrid(2, acceptedVer3, withClients);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+
+        stopAllGrids();
+    }
+
+    /** */
+    private IgniteEx startGrid(int idx, String ver, boolean isClient) throws Exception {
+        nodeVer = ver;
+
+        return isClient ? startClientGrid(idx) : startGrid(idx);
     }
 }
