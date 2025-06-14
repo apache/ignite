@@ -17,21 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexVisitor;
-import org.apache.calcite.rex.RexVisitorImpl;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
@@ -42,8 +41,11 @@ public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
     /** */
     public static final RelOptRule INSTANCE = new HashJoinConverterRule();
 
+    /** */
+    private static final EnumSet<JoinRelType> NON_EQ_CONDITIONS_SUPPORT = EnumSet.of(JoinRelType.INNER, JoinRelType.SEMI);
+
     /** Ctor. */
-    public HashJoinConverterRule() {
+    private HashJoinConverterRule() {
         super("HashJoinConverter", HintDefinition.HASH_JOIN);
     }
 
@@ -51,28 +53,21 @@ public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
     @Override public boolean matchesJoin(RelOptRuleCall call) {
         LogicalJoin join = call.rel(0);
 
-        return !F.isEmpty(join.analyzeCondition().pairs()) && join.analyzeCondition().isEqui() && checkConditions(join.getCondition());
-    }
-
-    /** */
-    private static boolean checkConditions(RexNode node) {
-        RexVisitor<Void> v = new RexVisitorImpl<>(true) {
-            @Override public Void visitCall(RexCall call) {
-                if (call.getOperator().getKind() != SqlKind.EQUALS && call.getOperator().getKind() != SqlKind.AND)
-                    throw Util.FoundOne.NULL;
-
-                return super.visitCall(call);
-            }
-        };
-
-        try {
-            node.accept(v);
-
-            return true;
-        }
-        catch (Util.FoundOne e) {
+        if (F.isEmpty(join.analyzeCondition().pairs()))
             return false;
-        }
+
+        List<Boolean> filterNulls = new ArrayList<>();
+
+        RelOptUtil.splitJoinCondition(join.getLeft(), join.getRight(), join.getCondition(), new ArrayList<>(),
+            new ArrayList<>(), filterNulls);
+
+        // IS NOT DISTINCT currently not supported by HashJoin
+        if (filterNulls.stream().anyMatch(filter -> !filter))
+            return false;
+
+        // Current limitation: unmatched products on left or right part requires special handling of non-equi condition
+        // on execution level.
+        return join.analyzeCondition().isEqui() || NON_EQ_CONDITIONS_SUPPORT.contains(join.getJoinType());
     }
 
     /** {@inheritDoc} */

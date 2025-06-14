@@ -37,6 +37,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -273,8 +274,23 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteHashJoin rel) {
-        Node<Row> node = HashJoinNode.create(ctx, rel.getRowType(), rel.getLeft().getRowType(), rel.getRight().getRowType(),
-            rel.getJoinType(), rel.analyzeCondition());
+        RelDataType outType = rel.getRowType();
+        RelDataType leftType = rel.getLeft().getRowType();
+        RelDataType rightType = rel.getRight().getRowType();
+        JoinRelType joinType = rel.getJoinType();
+
+        RexNode nonEquiConditionExpression = RexUtil.composeConjunction(Commons.emptyCluster().getRexBuilder(),
+            rel.analyzeCondition().nonEquiConditions, true);
+
+        BiPredicate<Row, Row> nonEquiCondition = null;
+
+        if (nonEquiConditionExpression != null) {
+            RelDataType rowType = combinedRowType(ctx.getTypeFactory(), leftType, rightType);
+
+            nonEquiCondition = expressionFactory.biPredicate(rel.getCondition(), rowType);
+        }
+
+        Node<Row> node = HashJoinNode.create(ctx, outType, leftType, rightType, joinType, rel.analyzeCondition(), nonEquiCondition);
 
         node.register(Arrays.asList(visit(rel.getLeft()), visit(rel.getRight())));
 
