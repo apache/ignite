@@ -920,7 +920,8 @@ final class ReliableChannel implements AutoCloseable {
                 catch (ClientConnectionException e) {
                     if (c0 == c && shouldRetry(op, F.size(failures), e)) {
                         // In case of stale channel try to reconnect to the same channel and repeat the operation.
-                        onChannelFailure(hld, c, e, failures);
+                        if (c != null && c == hld.ch)
+                            hld.closeChannel();
 
                         c = hld.getOrCreateChannel();
 
