@@ -137,25 +137,25 @@ public class TxLock implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("nearNodeId", nearNodeId))
+                if (!writer.writeUuid(nearNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByte("ownership", ownership))
+                if (!writer.writeByte(ownership))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("threadId", threadId))
+                if (!writer.writeLong(threadId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeMessage("txId", txId))
+                if (!writer.writeMessage(txId))
                     return false;
 
                 writer.incrementState();
@@ -169,12 +169,9 @@ public class TxLock implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                nearNodeId = reader.readUuid("nearNodeId");
+                nearNodeId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -182,7 +179,7 @@ public class TxLock implements Message {
                 reader.incrementState();
 
             case 1:
-                ownership = reader.readByte("ownership");
+                ownership = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -190,7 +187,7 @@ public class TxLock implements Message {
                 reader.incrementState();
 
             case 2:
-                threadId = reader.readLong("threadId");
+                threadId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -198,7 +195,7 @@ public class TxLock implements Message {
                 reader.incrementState();
 
             case 3:
-                txId = reader.readMessage("txId");
+                txId = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -207,7 +204,7 @@ public class TxLock implements Message {
 
         }
 
-        return reader.afterMessageRead(TxLock.class);
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -45,6 +45,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -54,10 +55,13 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -70,6 +74,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -400,7 +405,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         Map<Integer, Value> iterated = new HashMap<>();
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
+        try (GridCloseableIterator<CacheDataRow> iter = partitionRowIterator(snp(ignite),
+            SNAPSHOT_NAME,
             ccfg,
             0,
             ignite.context().encryption())
@@ -445,7 +451,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         int rows = 0;
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
+        try (GridCloseableIterator<CacheDataRow> iter = partitionRowIterator(snp(ignite),
+            SNAPSHOT_NAME,
             dfltCacheCfg,
             0,
             ignite.context().encryption())
@@ -491,7 +498,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         int rows = 0;
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
+        try (GridCloseableIterator<CacheDataRow> iter = partitionRowIterator(snp(ignite),
+            SNAPSHOT_NAME,
             dfltCacheCfg,
             part,
             ignite.context().encryption())
@@ -644,6 +652,65 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
      */
     private static void snapshotStoreFactory(IgniteEx ignite, BiFunction<Integer, Boolean, FileVersionCheckingFactory> factory) {
         setFieldValue(snp(ignite), "storeFactory", factory);
+    }
+
+    /**
+     * @param mgr Snapshot manager.
+     * @param snpName Snapshot name.
+     * @param ccfg Cache configuration.
+     * @param partId Partition id.
+     * @param encrKeyProvider Encryption keys provider to create encrypted IO. If {@code null}, no encrypted IO is used.
+     * @return Iterator over partition.
+     * @throws IgniteCheckedException If and error occurs.
+     */
+    private static GridCloseableIterator<CacheDataRow> partitionRowIterator(
+        IgniteSnapshotManager mgr,
+        String snpName,
+        CacheConfiguration<?, ?> ccfg,
+        int partId,
+        @Nullable EncryptionCacheKeyProvider encrKeyProvider
+    ) throws IgniteCheckedException {
+        GridCacheSharedContext<?, ?> cctx = GridTestUtils.getFieldValue(mgr, IgniteSnapshotManager.class, "cctx");
+
+        SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, null);
+
+        if (!sft.root().exists())
+            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + sft.root().getAbsolutePath());
+
+        if (!sft.nodeStorage().exists())
+            throw new IgniteCheckedException("Consistent id directory doesn't exists: " + sft.nodeStorage().getAbsolutePath());
+
+        File snpPart = sft.partitionFile(ccfg, partId);
+
+        String grpName = CU.cacheOrGroupName(ccfg);
+        int grpId = CU.cacheId(grpName);
+
+        FilePageStoreManager storeMgr = GridTestUtils.getFieldValue(mgr, IgniteSnapshotManager.class, "storeMgr");
+
+        FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
+                        encrKeyProvider == null || encrKeyProvider.getActiveKey(grpId) == null ? null : encrKeyProvider).
+                createPageStore(getTypeByPartId(partId),
+                        snpPart::toPath,
+                        val -> {});
+
+        GridCloseableIterator<CacheDataRow> partIter = mgr.partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore);
+
+        return new GridCloseableIteratorAdapter<CacheDataRow>() {
+            /** {@inheritDoc} */
+            @Override protected CacheDataRow onNext() throws IgniteCheckedException {
+                return partIter.nextX();
+            }
+
+            /** {@inheritDoc} */
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                return partIter.hasNextX();
+            }
+
+            /** {@inheritDoc} */
+            @Override protected void onClose() {
+                U.closeQuiet(pageStore);
+            }
+        };
     }
 
     /** */

@@ -229,7 +229,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
 
         if (Initiator.THIN_CLIENT == initiator) {
             cause = ClientAuthorizationException.class;
-            errMsg = "User is not authorized to perform this operation";
+            errMsg = "Client is not authorized to perform this operation [errMsg=" + errMsg;
         }
         else if (Initiator.REMOTE_CONTROL == initiator)
             cause = GridClientException.class;

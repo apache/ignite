@@ -87,13 +87,13 @@ public class UserAuthenticateResponseMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("errMsg", errMsg))
+                if (!writer.writeString(errMsg))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("id", id))
+                if (!writer.writeIgniteUuid(id))
                     return false;
 
                 writer.incrementState();
@@ -107,12 +107,9 @@ public class UserAuthenticateResponseMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                errMsg = reader.readString("errMsg");
+                errMsg = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -120,7 +117,7 @@ public class UserAuthenticateResponseMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                id = reader.readIgniteUuid("id");
+                id = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -129,7 +126,7 @@ public class UserAuthenticateResponseMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(UserAuthenticateResponseMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -51,6 +51,7 @@ import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
+import org.apache.ignite.internal.management.api.CommandWarningException;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.HelpCommand;
@@ -114,6 +115,9 @@ public class CommandHandler {
 
     /** */
     public static final int EXIT_CODE_UNEXPECTED_ERROR = 4;
+
+    /** */
+    public static final int EXIT_CODE_COMPLETED_WITH_WARNINGS = 5;
 
     /** */
     private static final long DFLT_PING_INTERVAL = 5000L;
@@ -295,6 +299,13 @@ public class CommandHandler {
             return EXIT_CODE_OK;
         }
         catch (Throwable e) {
+            if (X.hasCause(e, CommandWarningException.class)) {
+                logger.warning(e.getMessage());
+                logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_COMPLETED_WITH_WARNINGS);
+
+                return EXIT_CODE_COMPLETED_WITH_WARNINGS;
+            }
+
             logger.error("Failed to perform operation.");
 
             if (isAuthError(e)) {

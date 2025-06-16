@@ -150,13 +150,13 @@ public class TxLocksRequest extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong(futId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeObjectArray("txKeysArr", txKeysArr, MessageCollectionItemType.MSG))
+                if (!writer.writeObjectArray(txKeysArr, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -170,15 +170,12 @@ public class TxLocksRequest extends GridCacheMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 3:
-                futId = reader.readLong("futId");
+                futId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -186,7 +183,7 @@ public class TxLocksRequest extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
-                txKeysArr = reader.readObjectArray("txKeysArr", MessageCollectionItemType.MSG, IgniteTxKey.class);
+                txKeysArr = reader.readObjectArray(MessageCollectionItemType.MSG, IgniteTxKey.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -195,7 +192,7 @@ public class TxLocksRequest extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead(TxLocksRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
