@@ -125,6 +125,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                     @Override public void saveWal(T2<WALPointer, Integer> state) throws IOException {
                         super.saveWal(state);
 
+                        log.info(">>> Check conditions");
+
                         if (!F.isEmpty(conditions)) {
                             for (GridAbsPredicate p : conditions) {
                                 log.info(">>> predicate: " + p);
