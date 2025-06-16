@@ -29,7 +29,7 @@ import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsProvider;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -63,7 +63,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
     }
 
     /** */
-    public static class TestCommandCommand implements LocalCommand<TestCommandCommandArg, Void> {
+    public static class TestCommandCommand implements NativeCommand<TestCommandCommandArg, Void> {
         /** {@inheritDoc} */
         @Override public String description() {
             return TEST_COMMAND_USAGE;
