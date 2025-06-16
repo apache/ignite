@@ -543,6 +543,8 @@ public class CdcMain implements Runnable {
      * @return {@code true} if mode switched.
      */
     private boolean consumeSegment(Path segment) {
+        log.info(">>> consumeSegment segment=" + segment.toAbsolutePath());
+
         updateMetadata();
 
         if (log.isInfoEnabled())
@@ -663,6 +665,8 @@ public class CdcMain implements Runnable {
     private void updateMetadata() {
         long start = System.currentTimeMillis();
 
+        log.info(">>> updateMetadata");
+
         updateMappings();
 
         updateTypes();
@@ -675,6 +679,8 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link BinaryType} and notifies the consumer. */
     private void updateTypes() {
         try {
+            log.info(">>> updateTypes");
+
             File[] files = ft.binaryMeta().listFiles();
 
             if (files == null)
@@ -722,6 +728,8 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
     private void updateMappings() {
         try {
+            log.info(">>> updateMappings");
+
             File[] files = ft.marshaller().listFiles(NodeFileTree::notTmpFile);
 
             if (files == null)
@@ -750,6 +758,8 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link CdcCacheEvent} and notifies the consumer. */
     private void updateCaches() {
         try {
+            log.info(">>> updateCaches");
+
             if (ft.allStorages().noneMatch(File::exists))
                 return;
 
