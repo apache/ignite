@@ -159,7 +159,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         leftInBuf.add(row);
 
-        join();
+        if (waitingLeft == 0 && waitingRight <= 0)
+            join();
     }
 
     /** */
@@ -173,7 +174,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         rightInBuf.add(row);
 
-        join();
+        if (waitingRight == 0 && waitingLeft <= 0)
+            join();
     }
 
     /** */
