@@ -93,7 +93,7 @@ public class FileTreeUtils {
      * @return All known storages.
      * @throws IgniteCheckedException
      */
-    public static Set<String> nodeStorages(@Nullable DataStorageConfiguration dsCfg) throws IgniteCheckedException {
+    public static Set<String> nodeStorages(DataStorageConfiguration dsCfg) throws IgniteCheckedException {
         if (dsCfg == null)
             throw new IgniteCheckedException("Data storage must be configured");
 

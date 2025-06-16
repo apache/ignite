@@ -923,9 +923,11 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param storagePath Value from config.
+     * @param cacheDirName Regular or temporary directory name for cache.
      * @return File storage.
      * @see CacheConfiguration#getStoragePaths()
      * @see CacheConfiguration#getIndexPath()
+     * @see #cacheDirName(CacheConfiguration)
      */
     private File cacheStorage(@Nullable String storagePath, String cacheDirName) {
         return new File(storagePath == null ? nodeStorage : extraStorages.getOrDefault(storagePath, nodeStorage), cacheDirName);

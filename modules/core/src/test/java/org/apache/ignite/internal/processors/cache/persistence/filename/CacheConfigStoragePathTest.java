@@ -79,7 +79,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
         };
     }
 
-    /** Sanity checks - all pathes for all partitions are different and contains cacheDir. */
+    /** Sanity checks - all paths for all partitions are different and contain cacheDir. */
     @Test
     public void testPathGeneration() throws Exception {
         IgniteEx srv = startAndActivate();
