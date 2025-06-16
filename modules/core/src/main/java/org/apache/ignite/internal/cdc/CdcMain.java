@@ -463,11 +463,16 @@ public class CdcMain implements Runnable {
     /** Waits and consumes new WAL segments until stopped. */
     public void consumeWalSegmentsUntilStopped() {
         try {
+            log.info(">>> consumeWalSegmentsUntilStopped");
             Set<Path> seen = new HashSet<>();
 
             AtomicLong lastSgmnt = new AtomicLong(-1);
 
+            log.info(">>> consumeWalSegmentsUntilStopped -> BEFORE WHILE");
+
             while (!stopped) {
+                log.info(">>> consumeWalSegmentsUntilStopped -> INSIDE WHILE");
+
                 if (!consumer.alive()) {
                     log.warning("Consumer is not alive. Ignite Change Data Capture Application will be stopped.");
 
@@ -494,6 +499,8 @@ public class CdcMain implements Runnable {
                             lastSgmnt.set(nextSgmnt);
                         }).iterator();
 
+                    log.info(">>> consumeWalSegmentsUntilStopped -> SEGMENTS: " + segments);
+
                     while (segments.hasNext()) {
                         Path segment = segments.next();
 
@@ -518,6 +525,8 @@ public class CdcMain implements Runnable {
                     if (lastSgmnt.get() == -1) //Forcefully updating metadata if no new segments found.
                         updateMetadata();
                 }
+
+                log.info(">>> consumeWalSegmentsUntilStopped -> stopped=" + stopped);
 
                 if (!stopped)
                     U.sleep(cdcCfg.getCheckFrequency());
