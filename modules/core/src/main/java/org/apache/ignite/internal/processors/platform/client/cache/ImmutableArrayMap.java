@@ -42,35 +42,35 @@ public class ImmutableArrayMap<K, V> implements Map<K, V>, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Backing array for keys. */
-    private final K[] keys;
+    /** Backing immutable array for keys. */
+    private final Set<K> keys;
 
-    /** Backing array for values. */
-    private final V[] values;
+    /** Backing immutable array for values. */
+    private final List<V> values;
 
     /**
      * Constructs a new {@code ImmutableArrayMap} with the given keys and values.
      * The arrays must be of the same length, and represent a one-to-one mapping.
      *
-     * @param keys   Array of keys.
-     * @param values Array of values.
+     * @param keysArr   Array of keys.
+     * @param valuesArr Array of values.
      * @throws AssertionError if the array lengths differ.
      */
-    public ImmutableArrayMap(K[] keys, V[] values) {
-        assert keys.length == values.length : "Arrays should be equal in size!";
+    public ImmutableArrayMap(K[] keysArr, V[] valuesArr) {
+        assert keysArr.length == valuesArr.length : "Arrays should be equal in size!";
 
-        this.keys = keys;
-        this.values = values;
+        this.keys = new ImmutableArraySet<>(keysArr);
+        this.values = List.of(valuesArr);
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return keys.length;
+        return keys.size();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return keys.length == 0;
+        return keys.isEmpty();
     }
 
     /**
@@ -142,7 +142,7 @@ public class ImmutableArrayMap<K, V> implements Map<K, V>, Serializable {
      * @return An immutable {@code Set} of keys.
      */
     @Override public @NotNull Set<K> keySet() {
-        return Set.of(keys);
+        return keys;
     }
 
     /**
@@ -151,7 +151,7 @@ public class ImmutableArrayMap<K, V> implements Map<K, V>, Serializable {
      * @return An immutable {@code Collection} of values.
      */
     @Override public @NotNull Collection<V> values() {
-        return List.of(values);
+        return values;
     }
 
     /**
