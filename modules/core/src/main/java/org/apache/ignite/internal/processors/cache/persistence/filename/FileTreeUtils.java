@@ -75,10 +75,8 @@ public class FileTreeUtils {
      * @return Storage path from config for partition.
      */
     public static @Nullable String partitionStorage(CacheConfiguration<?, ?> ccfg, int part) {
-        if (part == INDEX_PARTITION) {
-            if (!F.isEmpty(ccfg.getIndexPath()))
-                return ccfg.getIndexPath();
-        }
+        if (part == INDEX_PARTITION && !F.isEmpty(ccfg.getIndexPath()))
+            return ccfg.getIndexPath();
 
         String[] csp = ccfg.getStoragePaths();
 
