@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.ignite.console.agent.db.HtmlTableTemplate;
+import org.apache.ignite.console.agent.ddl.HtmlTableTemplate;
 import org.apache.ignite.console.agent.db.Dialect;
 import org.apache.ignite.console.agent.db.IntrospectedTable;
 import org.apache.ignite.console.agent.utils.DBMetadataUtils;

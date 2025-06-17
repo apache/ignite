@@ -11,18 +11,25 @@ import java.util.zip.ZipOutputStream;
 import com.stranger.common.config.GenConfig;
 import com.stranger.domain.GenTable;
 import com.stranger.domain.GenTableData;
+import com.stranger.mapper.impl.GenMapperImpl;
+import com.stranger.mapper.impl.GenTableColumnMapperImpl;
 import com.stranger.service.GenService;
+import com.stranger.service.impl.GenServiceImpl;
 import org.apache.commons.io.IOUtils;
 
 public class CrudUICodeGenerator {
 
 
-	private GenService genService;
+	private final GenService genService;
+
+	public CrudUICodeGenerator(){
+		genService = new GenServiceImpl(new GenMapperImpl(),new GenTableColumnMapperImpl());
+	}
 
 	private void generatorTable(GenConfig config,Map<String,Object> context) throws IOException {
 		try {
-			List<GenTable> genTables = genService.selectDbTableList();
-			List<GenTableData> genTableData = genService.buildTableInfo(genTables,config);
+			List<GenTable> genTables = genService.selectDbTableList(context);
+			List<GenTableData> genTableData = genService.buildTableInfo(genTables,config,context);
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			ZipOutputStream zip = new ZipOutputStream(outputStream);
 			genService.generatorCode(genTableData, zip);

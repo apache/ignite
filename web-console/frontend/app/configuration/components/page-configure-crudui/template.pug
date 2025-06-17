@@ -1,0 +1,10 @@
+
+
+nav.pca-menu
+    ul
+        li(ng-repeat='item in $ctrl.menuItems')
+            a.pca-menu-link.btn-ignite(ui-sref-active='active' ui-sref='{{::item.sref}}')
+                svg(ng-if='::item.icon' ignite-icon='{{::item.icon}}').icon-left
+                |{{::item.text}}
+
+ui-view

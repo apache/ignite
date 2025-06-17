@@ -1,8 +1,8 @@
-package org.apache.ignite.console.agent.db;
-
+package org.apache.ignite.console.agent.ddl;
 
 import com.stranger.common.config.VelocityInitializer;
 import org.apache.commons.io.IOUtils;
+import org.apache.ignite.console.agent.db.IntrospectedTable;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;

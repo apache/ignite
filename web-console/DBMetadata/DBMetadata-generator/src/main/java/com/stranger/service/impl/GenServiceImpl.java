@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -32,19 +33,24 @@ import java.util.zip.ZipOutputStream;
 public class GenServiceImpl implements GenService {
     private static final Logger log = LoggerFactory.getLogger(com.stranger.service.GenService.class);
 
-    @Autowired(required=true)
+
     private GenTableColumnMapper genTableColumnMapper;
 
-    @Autowired(required=true)
+
     private GenMapper genTableMapper;
 
-    @Override
-    public List<GenTable> selectDbTableList() {
-        return this.genTableMapper.selectDbTableList();
+    public GenServiceImpl(GenMapper genTableMapper,GenTableColumnMapper genTableColumnMapper){
+        this.genTableMapper = genTableMapper;
+        this.genTableColumnMapper = genTableColumnMapper;
     }
 
     @Override
-    public List<GenTableData> buildTableInfo(List<GenTable> genTables,GenConfig genConfig) {
+    public List<GenTable> selectDbTableList(Map<String,Object> context) {
+        return this.genTableMapper.selectDbTableList(context);
+    }
+
+    @Override
+    public List<GenTableData> buildTableInfo(List<GenTable> genTables,GenConfig genConfig,Map<String,Object> context) {
         String author = genConfig.author;
         List<GenTableData> objects = new ArrayList<>();
         try {
@@ -54,7 +60,7 @@ public class GenServiceImpl implements GenService {
                 String tableName = table.getTableName();
                 GenUtils.initTable(table, author,genConfig);
                 genTableData.setGenTables(table);
-                List<GenTableColumn> genTableColumns = genTableColumnMapper.selectDbTableColumnsByName(tableName);
+                List<GenTableColumn> genTableColumns = genTableColumnMapper.selectDbTableColumnsByName(tableName,context);
                 for (GenTableColumn column : genTableColumns) {
                     GenUtils.initColumnField(column, table);
                     tableColumns.add(column);
