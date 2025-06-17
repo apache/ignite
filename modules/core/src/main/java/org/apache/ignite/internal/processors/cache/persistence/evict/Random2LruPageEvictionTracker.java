@@ -104,9 +104,9 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             long newTrackingData;
 
             if (firstTs <= secondTs)
-                newTrackingData = toLong((int)latestTs, secondTs);
+                newTrackingData = U.toLong((int)latestTs, secondTs);
             else
-                newTrackingData = toLong(firstTs, (int)latestTs);
+                newTrackingData = U.toLong(firstTs, (int)latestTs);
 
             success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackingData, newTrackingData);
         } while (!success);
@@ -199,13 +199,6 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         return firstTs > 0;
     }
 
-    /** */
-    private long trackingData(long pageId) {
-        int trackingIdx = trackingIdx(PageIdUtils.pageIndex(pageId));
-
-        return GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
-    }
-
     /** {@inheritDoc} */
     @Override public void forgetPage(long pageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
@@ -242,14 +235,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     private void linkFragmentPages(int pageIdx, int nextPageIdx) {
         int trackingIdx = trackingIdx(pageIdx);
 
-        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, toLong(-1, nextPageIdx));
-    }
-
-    /**
-     * Helper to encode a pair of integer values into a single long.
-     */
-    private long toLong(int first, int second) {
-        return U.toLong(first, second);
+        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, U.toLong(-1, nextPageIdx));
     }
 
     /**
@@ -275,7 +261,9 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     private int tailPageIdx(long prevPageId) {
         int tailPageIdx;
 
-        long trackingData = trackingData(prevPageId);
+        int trackingIdx = trackingIdx(PageIdUtils.pageIndex(prevPageId));
+
+        long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
         if (trackingData == 0L) {
             // The previous page is just the tail one.
