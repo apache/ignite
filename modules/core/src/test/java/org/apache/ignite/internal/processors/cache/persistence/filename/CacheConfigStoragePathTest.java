@@ -200,7 +200,6 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
             // Sanity check storagePath returns different paths.
             assertEquals(path != null ? 1 : (idxPathUsed ? 4 : 3), roots.size());
 
-
             // Root -> cache -> partition set.
             Map<File, Map<String, Set<Integer>>> snpFiles = new HashMap<>();
 

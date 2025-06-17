@@ -169,7 +169,6 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
             }
         }
 
-        //TODO: add case for dump.
         check.accept("mysnp", null);
         check.accept("mysnp2", fullPathSnp.getAbsolutePath());
     }

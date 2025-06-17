@@ -168,7 +168,7 @@ public class Dump implements AutoCloseable {
                 }
                 // Keep only caches from filter.
             }).filter(scd -> cacheIds == null || cacheIds.contains(scd.cacheId()))
-            .collect(Collectors.toList()));
+                .collect(Collectors.toList()));
         }
 
         return res;
