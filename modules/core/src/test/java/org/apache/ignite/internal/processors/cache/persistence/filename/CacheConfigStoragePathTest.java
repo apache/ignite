@@ -28,21 +28,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.DB_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 
 /**
- * Test cases when {@link CacheConfiguration#setStoragePath(String)} used to set custom data region storage path.
+ * Test cases when {@link CacheConfiguration#setStoragePaths(String...)} used to set custom data region storage path.
  */
 public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
 
@@ -62,14 +64,14 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
     /** {@inheritDoc} */
     @Override CacheConfiguration[] ccfgs() {
         return new CacheConfiguration[]{
-            ccfg("cache0", null, null),
-            ccfg("cache1", "grp1", null),
-            ccfg("cache2", "grp1", null),
-            ccfg("cache3", null, storagePath(STORAGE_PATH)),
-            ccfg("cache4", "grp2", storagePath(STORAGE_PATH)),
-            ccfg("cache5", null, storagePath(STORAGE_PATH_2)),
-            ccfg("cache6", "grp3", storagePath(STORAGE_PATH_2)),
-            ccfg("cache7", "grp3", storagePath(STORAGE_PATH_2))
+            ccfg("cache0", null),
+            ccfg("cache1", "grp1"),
+            ccfg("cache2", "grp1"),
+            ccfg("cache3", null, storagePaths(STORAGE_PATH, STORAGE_PATH_2)),
+            ccfg("cache4", "grp2", storagePaths(STORAGE_PATH_2, STORAGE_PATH)),
+            ccfg("cache5", null, storagePaths(STORAGE_PATH_2, STORAGE_PATH)),
+            ccfg("cache6", "grp3", storagePaths(STORAGE_PATH_2, STORAGE_PATH)),
+            ccfg("cache7", "grp3", storagePaths(STORAGE_PATH_2, STORAGE_PATH))
         };
     }
 
@@ -105,16 +107,19 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
     @Override void checkFileTrees(List<NodeFileTree> fts) {
         for (NodeFileTree ft : fts) {
             for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
-                String storagePath = ccfg.getStoragePath();
+                String[] csp = ccfg.getStoragePaths();
 
-                File customRoot = storagePath == null ? ft.root() : ensureExists(useAbsStoragePath
-                    ? new File(storagePath)
-                    : new File(ft.root(), storagePath)
-                );
-                File db = ensureExists(new File(customRoot, DB_DIR));
-                File nodeStorage = ensureExists(new File(db, ft.folderName()));
+                for (File cacheDir : ft.cacheStorages(ccfg)) {
+                    ensureExists(cacheDir);
 
-                ensureExists(new File(nodeStorage, ft.cacheStorage(ccfg).getName()));
+                    if (!F.isEmpty(csp)) {
+                        for (File partfile : cacheDir.listFiles(NodeFileTree::partitionFile)) {
+                            int part = NodeFileTree.partId(partfile);
+
+                            assertTrue(partfile.getAbsolutePath().contains(csp[part % csp.length]));
+                        }
+                    }
+                }
             }
         }
     }
@@ -134,7 +139,7 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
             else if (storage == null)
                 snpRoot = ft.snapshotsRoot();
             else {
-                File nodeStorage = useAbsStoragePath
+                File nodeStorage = absPath
                     ? new File(storage)
                     : new File(ft.root(), storage);
 
@@ -162,13 +167,28 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
             assertTrue(snpRoot.isDirectory());
 
             try (Stream<Path> files = Files.walk(snpRoot.toPath())) {
-                files.filter(p -> NodeFileTree.partitionFile(p.toFile())).forEach(part -> {
-                    File root = roots.stream().filter(r -> part.startsWith(r.toPath())).findFirst().orElseThrow();
+                files.filter(p -> NodeFileTree.partitionFile(p.toFile())).forEach(partFile -> {
+                    File root = roots.stream().filter(r -> partFile.startsWith(r.toPath())).findFirst().orElseThrow();
+
+                    String cacheName = NodeFileTree.cacheName(partFile.getParent().toFile());
+
+                    if (cacheName.equals(METASTORAGE_CACHE_NAME))
+                        return;
+
+                    int part = NodeFileTree.partId(partFile.toFile());
+
+                    String[] cs = Arrays.stream(ccfgs())
+                        .filter(ccfg -> CU.cacheOrGroupName(ccfg).equals(cacheName))
+                        .findFirst().orElseThrow().getStoragePaths();
+
+                    File expStorage = snpRootF.apply(F.isEmpty(cs) ? null : cs[part % cs.length]);
+
+                    assertEquals(expStorage, root);
 
                     snpFiles
                         .computeIfAbsent(root, r -> new HashMap<>())
-                        .computeIfAbsent(NodeFileTree.cacheName(part.getParent().toFile()), c -> new HashSet<>())
-                        .add(NodeFileTree.partId(part.toFile()));
+                        .computeIfAbsent(cacheName, c -> new HashSet<>())
+                        .add(part);
                 });
             }
             catch (IOException e) {
@@ -186,18 +206,33 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
 
             seenGrps.add(cname);
 
-            File expRoot = snpRootF.apply(ccfg.getStoragePath());
+            Set<Integer> parts = new HashSet<>();
 
-            assertTrue(cname + " must be found", snpFiles.containsKey(expRoot));
+            String[] storagePaths = ccfg.getStoragePaths();
 
-            Set<Integer> parts = snpFiles.get(expRoot).get(cname);
+            if (F.isEmpty(storagePaths)) {
+                storagePaths = new String[1];
+            }
 
-            assertNotNull(cname + " partitions must be found", parts);
+            for (String storagePath : storagePaths) {
+                File expRoot = snpRootF.apply(storagePath);
+
+                assertTrue(cname + " must be found", snpFiles.containsKey(expRoot));
+
+                parts.addAll(snpFiles.get(expRoot).get(cname));
+            }
+
+            assertFalse(cname + " partitions must be found", parts.isEmpty());
             assertEquals("All partitions for " + cname + " must be found", PARTS_CNT, parts.size());
 
             IntStream.range(0, PARTS_CNT).forEach(i -> assertTrue(i + " partition must be found", parts.contains(i)));
         });
 
-        assertEquals(6, seenGrps.size());
+        assertEquals(grpCount(), seenGrps.size());
+    }
+
+    /** */
+    private int grpCount() {
+        return Arrays.stream(ccfgs()).map(CU::cacheOrGroupName).collect(Collectors.toSet()).size();
     }
 }

@@ -107,19 +107,19 @@ public class GridH2RowRangeBounds implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("first", first))
+                if (!writer.writeMessage(first))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("last", last))
+                if (!writer.writeMessage(last))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("rangeId", rangeId))
+                if (!writer.writeInt(rangeId))
                     return false;
 
                 writer.incrementState();
@@ -133,12 +133,9 @@ public class GridH2RowRangeBounds implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                first = reader.readMessage("first");
+                first = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -146,7 +143,7 @@ public class GridH2RowRangeBounds implements Message {
                 reader.incrementState();
 
             case 1:
-                last = reader.readMessage("last");
+                last = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -154,7 +151,7 @@ public class GridH2RowRangeBounds implements Message {
                 reader.incrementState();
 
             case 2:
-                rangeId = reader.readInt("rangeId");
+                rangeId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -163,7 +160,7 @@ public class GridH2RowRangeBounds implements Message {
 
         }
 
-        return reader.afterMessageRead(GridH2RowRangeBounds.class);
+        return true;
     }
 
     /** {@inheritDoc} */

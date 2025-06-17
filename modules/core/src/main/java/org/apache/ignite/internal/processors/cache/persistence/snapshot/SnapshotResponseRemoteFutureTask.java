@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +33,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -112,11 +114,18 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                 File snpPart = sinfo.sft.partitionFile(ccfg, gp.getPartitionId());
 
                 if (!snpPart.exists()) {
-                    throw new IgniteException("Snapshot partition file not found [cacheDir=" + sinfo.sft.cacheStorage(ccfg) +
+                    throw new IgniteException("Snapshot partition file not found [" +
+                        "cacheDirs=" + Arrays.toString(sinfo.sft.cacheStorages(ccfg)) +
                         ", pair=" + gp + ']');
                 }
 
-                snpSndr.sendPart(snpPart, sft.partitionFile(ccfg, gp.getPartitionId()), ccfg.getStoragePath(), gp, snpPart.length());
+                snpSndr.sendPart(
+                    snpPart,
+                    sft.partitionFile(ccfg, gp.getPartitionId()),
+                    FileTreeUtils.partitionStorage(ccfg, gp.getPartitionId()),
+                    gp,
+                    snpPart.length()
+                );
             }), snpSndr.executor())
                 .whenComplete((r, t) -> {
                     if (t != null)

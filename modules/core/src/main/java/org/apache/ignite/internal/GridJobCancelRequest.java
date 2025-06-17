@@ -128,19 +128,19 @@ public class GridJobCancelRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("jobId", jobId))
+                if (!writer.writeIgniteUuid(jobId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("sesId", sesId))
+                if (!writer.writeIgniteUuid(sesId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeBoolean("sys", sys))
+                if (!writer.writeBoolean(sys))
                     return false;
 
                 writer.incrementState();
@@ -154,12 +154,9 @@ public class GridJobCancelRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                jobId = reader.readIgniteUuid("jobId");
+                jobId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -167,7 +164,7 @@ public class GridJobCancelRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                sesId = reader.readIgniteUuid("sesId");
+                sesId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -175,7 +172,7 @@ public class GridJobCancelRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                sys = reader.readBoolean("sys");
+                sys = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -184,7 +181,7 @@ public class GridJobCancelRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GridJobCancelRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

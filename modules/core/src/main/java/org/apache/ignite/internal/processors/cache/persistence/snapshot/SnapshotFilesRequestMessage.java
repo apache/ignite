@@ -141,25 +141,25 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
         switch (writer.state()) {
             case 1:
-                if (!writer.writeMap("parts", parts, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
+                if (!writer.writeMap(parts, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeUuid("requestId", reqId))
+                if (!writer.writeUuid(reqId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeString("snpName", snpName))
+                if (!writer.writeString(snpName))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeString("snpPath", snpPath))
+                if (!writer.writeString(snpPath))
                     return false;
 
                 writer.incrementState();
@@ -173,15 +173,12 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 1:
-                parts = reader.readMap("parts", MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
+                parts = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -189,7 +186,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
                 reader.incrementState();
 
             case 2:
-                reqId = reader.readUuid("requestId");
+                reqId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -197,7 +194,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
                 reader.incrementState();
 
             case 3:
-                snpName = reader.readString("snpName");
+                snpName = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -205,7 +202,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
                 reader.incrementState();
 
             case 4:
-                snpPath = reader.readString("snpPath");
+                snpPath = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -214,7 +211,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
         }
 
-        return reader.afterMessageRead(SnapshotFilesRequestMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */

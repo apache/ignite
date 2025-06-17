@@ -73,7 +73,7 @@ public class JobStealingRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("delta", delta))
+                if (!writer.writeInt(delta))
                     return false;
 
                 writer.incrementState();
@@ -87,12 +87,9 @@ public class JobStealingRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                delta = reader.readInt("delta");
+                delta = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -101,7 +98,7 @@ public class JobStealingRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(JobStealingRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

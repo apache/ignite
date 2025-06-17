@@ -98,7 +98,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeUuid("secSubjId", secSubjId))
+                if (!writer.writeUuid(secSubjId))
                     return false;
 
                 writer.incrementState();
@@ -112,15 +112,12 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 8:
-                secSubjId = reader.readUuid("secSubjId");
+                secSubjId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -129,6 +126,6 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
         }
 
-        return reader.afterMessageRead(GridIoSecurityAwareMessage.class);
+        return true;
     }
 }

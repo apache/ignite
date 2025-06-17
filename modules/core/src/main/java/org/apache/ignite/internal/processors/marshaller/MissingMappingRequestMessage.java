@@ -73,13 +73,13 @@ public class MissingMappingRequestMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByte("platformId", platformId))
+                if (!writer.writeByte(platformId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("typeId", typeId))
+                if (!writer.writeInt(typeId))
                     return false;
 
                 writer.incrementState();
@@ -93,12 +93,9 @@ public class MissingMappingRequestMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                platformId = reader.readByte("platformId");
+                platformId = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -106,7 +103,7 @@ public class MissingMappingRequestMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                typeId = reader.readInt("typeId");
+                typeId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -115,7 +112,7 @@ public class MissingMappingRequestMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(MissingMappingRequestMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */

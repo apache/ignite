@@ -4811,6 +4811,28 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
+     * @param in Input.
+     * @return Deserialized set.
+     * @throws IOException If deserialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @Nullable public static <E> LinkedHashSet<E> readLinkedSet(ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            return null;
+
+        LinkedHashSet<E> set = new LinkedHashSet<>(size);
+
+        for (int i = 0; i < size; i++)
+            set.add((E)in.readObject());
+
+        return set;
+    }
+
+    /**
      * Writes string to output stream accounting for {@code null} values.
      * <p>
      * Limitation for max string lenght of <code>65535</code> bytes is caused by {@link DataOutput#writeUTF}
@@ -8268,9 +8290,6 @@ public abstract class IgniteUtils extends CommonUtils {
         assert out != null;
         assert buf != null;
         assert buf.hasArray();
-
-        if (writer != null)
-            writer.setCurrentWriteClass(msg.getClass());
 
         boolean finished = false;
         int cnt = 0;

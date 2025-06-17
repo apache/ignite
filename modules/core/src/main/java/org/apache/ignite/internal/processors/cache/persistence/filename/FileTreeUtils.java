@@ -22,7 +22,10 @@ import java.io.IOException;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility methods for {@link NodeFileTree}.
@@ -42,7 +45,7 @@ public class FileTreeUtils {
         createAndCheck(ft.nodeStorage(), "page store work directory", log);
 
         for (Map.Entry<String, File> e : ft.extraStorages().entrySet())
-            createAndCheck(e.getValue(), "page store work directory [dataRegion=" + e.getKey() + ']', log);
+            createAndCheck(e.getValue(), "page store work directory [storagePath=" + e.getKey() + ']', log);
     }
 
     /**
@@ -59,6 +62,20 @@ public class FileTreeUtils {
 
         for (File tmpDrStorage : tmpFt.extraStorages().values())
             removeTmpDir(tmpDrStorage.getParentFile(), err, log);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @param part Partition.
+     * @return Storage path from config for partition.
+     */
+    public static @Nullable String partitionStorage(CacheConfiguration<?, ?> ccfg, int part) {
+        String[] csp = ccfg.getStoragePaths();
+
+        if (F.isEmpty(csp))
+            return null;
+
+        return resolveStorage(csp, part);
     }
 
     /**
@@ -99,5 +116,14 @@ public class FileTreeUtils {
                 "DataStorageConfiguration#storagePath, DataRegionConfiguration#storagePath properties). " +
                 "Current persistence store directory is: [" + dir.getAbsolutePath() + "]");
         }
+    }
+
+    /**
+     * @param storages Storages to select from.
+     * @param part Partition.
+     * @return Storage for partition.
+     */
+    static <T> T resolveStorage(T[] storages, int part) {
+        return storages[part % storages.length];
     }
 }
