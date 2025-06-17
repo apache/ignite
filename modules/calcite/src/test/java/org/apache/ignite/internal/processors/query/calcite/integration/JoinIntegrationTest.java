@@ -51,6 +51,9 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
     @Override protected void init() throws Exception {
         super.init();
 
+        sql("CREATE TABLE t00 (id INT primary key, padding_col1 INT, padding_col2 INT, val INT) WITH " + atomicity());
+        sql("CREATE TABLE t11 (id INT primary key, val INT) WITH " + atomicity());
+
         executeSql("create table t1 (c1 int, c2 int, c3 int) WITH " + atomicity());
         executeSql("create table t2 (c1 int, c2 int, c3 int) WITH " + atomicity());
 
@@ -64,6 +67,12 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
     /** {@inheritDoc} */
     @Override protected void afterTest() {
         // NO-OP
+    }
+
+    /** */
+    @Test
+    public void test2() {
+        sql("SELECT t11.ID FROM t00 JOIN t11 ON (t11.id = (SELECT inner_t1.id FROM t11 AS inner_t1 WHERE inner_t1.val = t00.val))");
     }
 
     /**
