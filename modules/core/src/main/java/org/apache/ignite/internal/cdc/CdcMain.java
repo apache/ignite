@@ -760,6 +760,8 @@ public class CdcMain implements Runnable {
 
             File[] files = ft.marshaller().listFiles(NodeFileTree::notTmpFile);
 
+            log.info(">>> updateMappings -> files=" + Arrays.toString(files));
+
             if (files == null)
                 return;
 
@@ -768,15 +770,25 @@ public class CdcMain implements Runnable {
                 tm -> mappingsState.add(new T2<>(tm.typeId(), (byte)tm.platformType().ordinal()))
             );
 
+            log.info(">>> updateMappings -> changedMappings.hasNext=" + changedMappings.hasNext());
+
             if (!changedMappings.hasNext())
                 return;
 
+            log.info(">>> updateMappings -> BEFORE consumer.onMappings");
+
             consumer.onMappings(changedMappings);
+
+            log.info(">>> updateMappings -> AFTER consumer.onMappings");
 
             if (changedMappings.hasNext())
                 throw new IllegalStateException("Consumer should handle all changed mappings");
 
+            log.info(">>> updateMappings -> BEFORE state.saveMappings");
+
             state.saveMappings(mappingsState);
+
+            log.info(">>> updateMappings -> AFTER state.saveMappings");
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -817,7 +829,11 @@ public class CdcMain implements Runnable {
                 .filter(Objects::nonNull)
                 .iterator();
 
+            log.info(">>> updateMappings -> BEFORE consumer.onCacheEvents");
+
             consumer.onCacheEvents(cacheEvts);
+
+            log.info(">>> updateMappings -> AFTER consumer.onCacheEvents");
 
             if (cacheEvts.hasNext())
                 throw new IllegalStateException("Consumer should handle all cache change events");
@@ -825,13 +841,21 @@ public class CdcMain implements Runnable {
             if (!destroyed.isEmpty()) {
                 Iterator<Integer> destroyedIter = destroyed.iterator();
 
+                log.info(">>> updateMappings -> BEFORE consumer.onCacheDestroyEvents");
+
                 consumer.onCacheDestroyEvents(destroyedIter);
+
+                log.info(">>> updateMappings -> AFTER consumer.onCacheDestroyEvents");
 
                 if (destroyedIter.hasNext())
                     throw new IllegalStateException("Consumer should handle all cache destroy events");
             }
 
+            log.info(">>> updateMappings -> BEFORE state.saveCaches");
+
             state.saveCaches(cachesState);
+
+            log.info(">>> updateMappings -> AFTER state.saveCaches");
         }
         catch (IOException e) {
             throw new IgniteException(e);

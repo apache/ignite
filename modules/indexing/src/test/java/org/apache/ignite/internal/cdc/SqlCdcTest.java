@@ -274,6 +274,8 @@ public class SqlCdcTest extends AbstractCdcTest {
 
             assertEquals("onMappings must be executed first", 3, mappingCnt);
 
+            log.info(">>> BinaryCdcConsumer#onTypes -> AFTER assertEquals");
+
             while (types.hasNext()) {
                 BinaryType type = types.next();
 
