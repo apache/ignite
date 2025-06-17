@@ -514,14 +514,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 }
 
                 // Retry must reset these fields when we release the whole branch without remove.
-                assert r.needReplaceInner == FALSE: "needReplaceInner";
-                assert r.needMergeEmptyBranch == FALSE: "needMergeEmptyBranch";
+                assert !r.needReplaceInner && r.needMergeEmptyBranch == FALSE
+                        : "needReplaceInner=" + r.needReplaceInner + ", needMergeEmptyBranch=" + r.needMergeEmptyBranch;
 
                 if (cnt == 1) // It was the last element on the leaf.
                     r.needMergeEmptyBranch = TRUE;
 
-                if (needReplaceInner)
-                    r.needReplaceInner = TRUE;
+                r.needReplaceInner = needReplaceInner;
 
                 Tail<L> t = r.addTail(leafId, leafPage, leafAddr, io, 0, Tail.EXACT);
 
@@ -3949,7 +3948,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         Tail<L> tail;
 
         /** */
-        Bool needReplaceInner = FALSE;
+        boolean needReplaceInner;
 
         /** */
         Bool needMergeEmptyBranch = FALSE;
@@ -4144,7 +4143,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 assert !isRemoved(): "removed";
 
                 // These fields will be setup again on remove from leaf.
-                needReplaceInner = FALSE;
+                needReplaceInner = false;
                 needMergeEmptyBranch = FALSE;
 
                 releaseTail();
@@ -4170,8 +4169,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Here we wanted to do a regular merge after all the important operations,
             // so we can leave this invalid tail as is. We have no other choice here
             // because our tail is not long enough for retry. Exiting.
-            assert isRemoved();
-            assert needReplaceInner != TRUE && needMergeEmptyBranch != TRUE;
+            assert isRemoved() && !needReplaceInner && needMergeEmptyBranch != TRUE
+                    : "isRemoved=" + isRemoved() + ", needReplaceInner=" + needReplaceInner
+                    + ", needMergeEmptyBranch=" + needMergeEmptyBranch;
 
             return false;
         }
@@ -4183,8 +4183,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         private Result finishTail() throws IgniteCheckedException {
-            assert !isFinished();
-            assert tail.type == Tail.EXACT && tail.lvl >= 0: tail;
+            assert !isFinished() && tail.type == Tail.EXACT && tail.lvl >= 0 && needMergeEmptyBranch != READY
+                    : "isFinished=" + isFinished() + ", tail=" + tail + ", needMergeEmptyBranch=" + needMergeEmptyBranch;
 
             if (tail.lvl == 0) {
                 // At the bottom level we can't have a tail without a sibling, it means we have higher levels.
@@ -4202,14 +4202,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 }
                 else {
                     // Try to find inner key on inner level.
-                    if (needReplaceInner == TRUE) {
+                    if (needReplaceInner && !isInnerKeyInTail()) {
                         // Since we setup needReplaceInner in leaf page write lock and do not release it,
                         // we should not be able to miss the inner key. Even if concurrent merge
                         // happened the inner key must still exist.
-                        if (!isInnerKeyInTail())
-                            return NOT_FOUND; // Lock the whole branch up to the inner key.
-
-                        needReplaceInner = READY;
+                        return NOT_FOUND; // Lock the whole branch up to the inner key.
                     }
 
                     // Try to merge an empty branch.
@@ -4236,13 +4233,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     // The actual row remove may happen here as well.
                     mergeBottomUp(tail);
 
-                    if (needReplaceInner == READY) {
+                    if (needReplaceInner) {
                         replaceInner(); // Replace inner key with new max key for the left subtree.
 
-                        needReplaceInner = DONE;
+                        needReplaceInner = false;
                     }
-
-                    assert needReplaceInner != TRUE;
 
                     if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel() == tail.lvl) {
                         // Free root if it became empty after merge.
@@ -4469,8 +4464,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             if (t.down == null) {
                 // It is just a regular merge in progress.
-                assert needMergeEmptyBranch != TRUE;
-                assert needReplaceInner != TRUE;
+                assert needMergeEmptyBranch != TRUE && !needReplaceInner
+                        : "needMergeEmptyBranch=" + needMergeEmptyBranch + ", needReplaceInner" + needReplaceInner;
 
                 return true;
             }
@@ -4643,7 +4638,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         private void replaceInner() throws IgniteCheckedException {
-            assert needReplaceInner == READY : needReplaceInner;
+            assert needReplaceInner;
 
             int innerIdx;
 
