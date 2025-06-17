@@ -117,7 +117,7 @@ import static org.apache.calcite.sql.fun.SqlLibraryOperators.LEFT;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.LOG;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.MD5;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.MONTHNAME;
-import static org.apache.calcite.sql.fun.SqlLibraryOperators.REGEXP_REPLACE_2;
+import static org.apache.calcite.sql.fun.SqlLibraryOperators.REGEXP_REPLACE_3;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.REPEAT;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.REVERSE;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.RIGHT;
@@ -443,11 +443,9 @@ public class RexImpTable {
             NotImplementor.of(insensitiveImplementor));
         map.put(NEGATED_POSIX_REGEX_CASE_SENSITIVE,
             NotImplementor.of(sensitiveImplementor));
-        defineReflective(REGEXP_REPLACE_2,
-            BuiltInMethod.REGEXP_REPLACE2.method,
+        defineReflective(REGEXP_REPLACE_3,
             BuiltInMethod.REGEXP_REPLACE3.method,
             BuiltInMethod.REGEXP_REPLACE4.method,
-            BuiltInMethod.REGEXP_REPLACE5_MATCHTYPE.method,
             BuiltInMethod.REGEXP_REPLACE5_OCCURRENCE.method,
             BuiltInMethod.REGEXP_REPLACE6.method);
 

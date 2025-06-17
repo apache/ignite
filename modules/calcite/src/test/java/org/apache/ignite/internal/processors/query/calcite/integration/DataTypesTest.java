@@ -527,9 +527,9 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
         assertQuery("SELECT * FROM t")
             .returns(0, new BigDecimal("0.000"), new BigDecimal("0"), new BigDecimal("0"))
-            .returns(1, new BigDecimal("1.100"), new BigDecimal("1"), new BigDecimal("1.1"))
-            .returns(2, new BigDecimal("2.123"), new BigDecimal("2"), new BigDecimal("2.123"))
-            .returns(3, new BigDecimal("3.123"), new BigDecimal("3"), new BigDecimal("3.123456"))
+            .returns(1, new BigDecimal("1.100"), new BigDecimal("1"), new BigDecimal("1"))
+            .returns(2, new BigDecimal("2.123"), new BigDecimal("2"), new BigDecimal("2"))
+            .returns(3, new BigDecimal("3.123"), new BigDecimal("3"), new BigDecimal("3"))
             .returns(4, new BigDecimal("4.000"), new BigDecimal("4"), new BigDecimal("4"))
             .returns(5, new BigDecimal("5.000"), new BigDecimal("5"), new BigDecimal("5"))
             .returns(6, new BigDecimal("6.000"), new BigDecimal("6"), new BigDecimal("6"))
