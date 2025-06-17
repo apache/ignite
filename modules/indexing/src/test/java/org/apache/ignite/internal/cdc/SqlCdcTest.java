@@ -334,6 +334,8 @@ public class SqlCdcTest extends AbstractCdcTest {
 
             BinaryBasicIdMapper mapper = new BinaryBasicIdMapper();
 
+            log.info(">>> onMappings -> mappings.hasNext()=" + mappings.hasNext());
+
             while (mappings.hasNext()) {
                 mappingCnt++;
 
@@ -342,6 +344,8 @@ public class SqlCdcTest extends AbstractCdcTest {
                 assertNotNull(m);
 
                 String typeName = m.typeName();
+
+                log.info(">>> onMappings -> typeName=" + typeName + ", mappingCnt=" + mappingCnt);
 
                 assertFalse(typeName.isEmpty());
                 assertEquals(mapper.typeId(typeName), m.typeId());
