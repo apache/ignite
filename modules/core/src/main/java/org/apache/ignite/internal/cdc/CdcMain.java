@@ -471,7 +471,7 @@ public class CdcMain implements Runnable {
             log.info(">>> consumeWalSegmentsUntilStopped -> BEFORE WHILE");
 
             while (!stopped) {
-                log.info(">>> consumeWalSegmentsUntilStopped -> INSIDE WHILE");
+                log.info(">>> consumeWalSegmentsUntilStopped -> INSIDE WHILE, consumer.alive()=" + consumer.alive());
 
                 if (!consumer.alive()) {
                     log.warning("Consumer is not alive. Ignite Change Data Capture Application will be stopped.");
@@ -499,10 +499,12 @@ public class CdcMain implements Runnable {
                             lastSgmnt.set(nextSgmnt);
                         }).iterator();
 
-                    log.info(">>> consumeWalSegmentsUntilStopped -> SEGMENTS: " + segments);
+                    log.info(">>> consumeWalSegmentsUntilStopped -> SEGMENTS.hasNext: " + segments.hasNext());
 
                     while (segments.hasNext()) {
                         Path segment = segments.next();
+
+                        log.info(">>> Segment: " + segment.toAbsolutePath());
 
                         if (walState != null && removeProcessedOnFailover(segment))
                             continue;
@@ -686,6 +688,8 @@ public class CdcMain implements Runnable {
             if (files == null)
                 return;
 
+            log.info(">>> updateTypes -> files.length=" + files.length);
+
             Iterator<BinaryType> changedTypes = Arrays.stream(files)
                 .filter(NodeFileTree::binFile)
                 .map(f -> {
@@ -709,6 +713,8 @@ public class CdcMain implements Runnable {
                 })
                 .filter(Objects::nonNull)
                 .iterator();
+
+            log.info(">>> updateTypes -> changedTypes.hasNext()=" + changedTypes.hasNext());
 
             if (!changedTypes.hasNext())
                 return;

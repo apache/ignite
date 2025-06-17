@@ -272,8 +272,12 @@ public class SqlCdcTest extends AbstractCdcTest {
         @Override public void onTypes(Iterator<BinaryType> types) {
             assertEquals("onMappings must be executed first", 3, mappingCnt);
 
+            log.info(">>> BinaryCdcConsumer#onTypes");
+
             while (types.hasNext()) {
                 BinaryType type = types.next();
+
+                log.info(">>> BinaryType=" + type);
 
                 assertNotNull(type);
 
