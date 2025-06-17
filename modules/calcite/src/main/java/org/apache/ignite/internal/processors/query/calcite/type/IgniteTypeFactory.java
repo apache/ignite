@@ -361,6 +361,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     @Override public RelDataType createSqlType(SqlTypeName typeName) {
         checkUnsupportedType(typeName);
 
+        if (typeName == SqlTypeName.UUID)
+            return createCustomType(UUID.class);
+
         return super.createSqlType(typeName);
     }
 
