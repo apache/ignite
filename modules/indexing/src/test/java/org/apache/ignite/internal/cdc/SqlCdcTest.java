@@ -270,9 +270,9 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         /** {@inheritDoc} */
         @Override public void onTypes(Iterator<BinaryType> types) {
-            assertEquals("onMappings must be executed first", 3, mappingCnt);
+            log.info(">>> BinaryCdcConsumer#onTypes -> mappingCnt=" + mappingCnt + ", types.hasNext()=" + types.hasNext());
 
-            log.info(">>> BinaryCdcConsumer#onTypes");
+            assertEquals("onMappings must be executed first", 3, mappingCnt);
 
             while (types.hasNext()) {
                 BinaryType type = types.next();
@@ -283,6 +283,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
                 switch (type.typeName()) {
                     case USER_KEY_TYPE:
+                        log.info(">>> BinaryType=" + USER_KEY_TYPE);
                         assertTrue(type.fieldNames().containsAll(Arrays.asList(ID, CITY_ID)));
                         assertEquals(2, type.fieldNames().size());
                         assertEquals(int.class.getSimpleName(), type.fieldTypeName(ID));
@@ -293,6 +294,7 @@ public class SqlCdcTest extends AbstractCdcTest {
                         break;
 
                     case USER_VAL_TYPE:
+                        log.info(">>> BinaryType=" + USER_VAL_TYPE);
                         assertTrue(type.fieldNames().contains(NAME));
                         assertEquals(1, type.fieldNames().size());
                         assertEquals(String.class.getSimpleName(), type.fieldTypeName(NAME));
@@ -302,6 +304,7 @@ public class SqlCdcTest extends AbstractCdcTest {
                         break;
 
                     case CITY_VAL_TYPE:
+                        log.info(">>> BinaryType=" + CITY_VAL_TYPE);
                         assertTrue(type.fieldNames().containsAll(Arrays.asList(NAME, ZIP_CODE)));
                         assertEquals(cityValType ? 3 : 2, type.fieldNames().size());
                         assertEquals(String.class.getSimpleName(), type.fieldTypeName(NAME));
@@ -317,6 +320,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
                         break;
                     default:
+                        log.info(">>> BinaryType Unexpected type =" + type.typeName());
                         fail("Unexpected type name " + type.typeName());
                 }
             }

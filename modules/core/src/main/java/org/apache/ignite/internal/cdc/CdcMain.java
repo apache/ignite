@@ -669,11 +669,23 @@ public class CdcMain implements Runnable {
 
         log.info(">>> updateMetadata");
 
+        log.info(">>> BEFORE updateMappings");
+
         updateMappings();
+
+        log.info(">>> AFTER updateMappings");
+
+        log.info(">>> BEFORE updateTypes");
 
         updateTypes();
 
+        log.info(">>> AFTER updateTypes");
+
+        log.info(">>> BEFORE updateCaches");
+
         updateCaches();
+
+        log.info(">>> AFTER updateCaches");
 
         metaUpdate.value(System.currentTimeMillis() - start);
     }
@@ -719,12 +731,22 @@ public class CdcMain implements Runnable {
             if (!changedTypes.hasNext())
                 return;
 
+            log.info(">>> updateTypes -> BEFORE consumer.onTypes(changedTypes)");
+
             consumer.onTypes(changedTypes);
+
+            log.info(">>> updateTypes -> AFTER consumer.onTypes(changedTypes)");
+
+            log.info(">>> updateTypes2 -> changedTypes.hasNext()=" + changedTypes.hasNext());
 
             if (changedTypes.hasNext())
                 throw new IllegalStateException("Consumer should handle all changed types");
 
+            log.info(">>> updateTypes -> BEFORE state.saveTypes(typesState)");
+
             state.saveTypes(typesState);
+
+            log.info(">>> updateTypes -> AFTER state.saveTypes(typesState)");
         }
         catch (IOException e) {
             throw new IgniteException(e);
