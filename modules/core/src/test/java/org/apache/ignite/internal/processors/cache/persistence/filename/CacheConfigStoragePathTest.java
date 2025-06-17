@@ -35,9 +35,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -53,16 +53,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  */
 public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+    @Override protected DataStorageConfiguration dataStorageConfiguration() {
+        return new DataStorageConfiguration()
             .setExtraStoragePaths(storagePath(STORAGE_PATH), storagePath(STORAGE_PATH_2), storagePath(IDX_PATH));
-
-        dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
-
-        return super.getConfiguration(igniteInstanceName)
-            .setConsistentId(U.maskForFileName(igniteInstanceName))
-            .setDataStorageConfiguration(dsCfg)
-            .setCacheConfiguration(ccfgs());
     }
 
     /** {@inheritDoc} */
@@ -166,110 +159,130 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
      * @param path Snapshot path.
      */
     private void checkSnapshotFiles(String name, String path) {
-        NodeFileTree ft = grid(0).context().pdsFolderResolver().fileTree();
+        // Only in "separate root" mode snapshots for nodes will have different roots.
+        List<NodeFileTree> fts = pathMode == PathMode.SEPARATE_ROOT
+            ? Ignition.allGrids().stream().map(n -> ((IgniteEx)n).context().pdsFolderResolver().fileTree()).collect(Collectors.toList())
+            : Collections.singletonList(grid(0).context().pdsFolderResolver().fileTree());
 
-        Function<String, File> snpRootF = storage -> {
-            File snpRoot;
+        Map<Integer, Set<Integer>> partsMap = new HashMap<>();
 
-            if (path != null)
-                snpRoot = new File(path);
-            else if (storage == null)
-                snpRoot = ft.snapshotsRoot();
-            else {
-                File nodeStorage = absPath
-                    ? new File(storage)
-                    : new File(ft.root(), storage);
+        for (NodeFileTree ft : fts) {
+            Function<String, File> snpRootF = storage -> {
+                File snpRoot;
 
-                snpRoot = new File(nodeStorage, DFLT_SNAPSHOT_DIRECTORY);
+                if (path != null)
+                    snpRoot = new File(path);
+                else if (storage == null)
+                    snpRoot = ft.snapshotsRoot();
+                else {
+                    File nodeStorage = pathMode == PathMode.ABS
+                        ? new File(storage)
+                        : new File(ft.root(), storage);
+
+                    snpRoot = new File(nodeStorage, DFLT_SNAPSHOT_DIRECTORY);
+                }
+
+                return new File(snpRoot, name);
+            };
+
+            // Snapshot root directories.
+            Set<File> roots = new HashSet<>(Arrays.asList(
+                snpRootF.apply(null),
+                snpRootF.apply(storagePath(STORAGE_PATH)),
+                snpRootF.apply(storagePath(STORAGE_PATH_2))
+            ));
+
+            boolean idxPathUsed = idxStorage && idxPartMustExistsInSnapshot();
+
+            if (idxPathUsed)
+                roots.add(snpRootF.apply(storagePath(IDX_PATH)));
+
+            // Sanity check storagePath returns different paths.
+            assertEquals(path != null ? 1 : (idxPathUsed ? 4 : 3), roots.size());
+
+
+            // Root -> cache -> partition set.
+            Map<File, Map<String, Set<Integer>>> snpFiles = new HashMap<>();
+
+            // Collecting all partition files under each snapshot root.
+            for (File snpRoot : roots) {
+                assertTrue(snpRoot.exists());
+                assertTrue(snpRoot.isDirectory());
+
+                Predicate<Path> pathPredicate = p -> NodeFileTree.partitionFile(p.toFile())
+                    || p.getFileName().toString().equals(NodeFileTree.partitionFileName(INDEX_PARTITION));
+
+                try (Stream<Path> files = Files.walk(snpRoot.toPath())) {
+                    files.filter(pathPredicate).forEach(partFile -> {
+                        File root = roots.stream().filter(r -> partFile.startsWith(r.toPath())).findFirst().orElseThrow();
+
+                        String cacheName = NodeFileTree.cacheName(partFile.getParent().toFile());
+
+                        if (cacheName.equals(METASTORAGE_CACHE_NAME))
+                            return;
+
+                        int part = NodeFileTree.partId(partFile.toFile());
+
+                        String[] cs = Arrays.stream(ccfgs())
+                            .filter(ccfg -> CU.cacheOrGroupName(ccfg).equals(cacheName))
+                            .findFirst().orElseThrow().getStoragePaths();
+
+                        File expStorage = (idxPathUsed && part == INDEX_PARTITION)
+                            ? snpRootF.apply(storagePath(IDX_PATH))
+                            : snpRootF.apply(F.isEmpty(cs) ? null : cs[part % cs.length]);
+
+                        assertEquals(expStorage, root);
+
+                        snpFiles
+                            .computeIfAbsent(root, r -> new HashMap<>())
+                            .computeIfAbsent(cacheName, c -> new HashSet<>())
+                            .add(part);
+                    });
+                }
+                catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
-            return new File(snpRoot, name);
-        };
+            Set<String> seenGrps = new HashSet<>();
 
-        // Snapshot root directories.
-        Set<File> roots = new HashSet<>(Arrays.asList(
-            snpRootF.apply(null),
-            snpRootF.apply(storagePath(STORAGE_PATH)),
-            snpRootF.apply(storagePath(STORAGE_PATH_2))
-        ));
+            Arrays.stream(ccfgs()).forEach(ccfg -> {
+                String cname = CU.cacheOrGroupName(ccfg);
 
-        boolean idxPathUsed = idxStorage && idxPartMustExistsInSnapshot();
+                if (seenGrps.contains(cname))
+                    return;
 
-        if (idxPathUsed)
-            roots.add(snpRootF.apply(storagePath(IDX_PATH)));
+                seenGrps.add(cname);
 
-        // Sanity check storagePath returns different paths.
-        assertEquals(path != null ? 1 : (idxPathUsed ? 4 : 3), roots.size());
+                Set<Integer> parts = new HashSet<>();
 
-        // Root -> cache -> partition set.
-        Map<File, Map<String, Set<Integer>>> snpFiles = new HashMap<>();
+                List<String> storagePaths = new ArrayList<>(F.isEmpty(ccfg.getStoragePaths())
+                    ? Collections.singletonList(null)
+                    : Arrays.asList(ccfg.getStoragePaths()));
 
-        // Collecting all partition files under each snapshot root.
-        for (File snpRoot : roots) {
-            assertTrue(snpRoot.exists());
-            assertTrue(snpRoot.isDirectory());
+                if (!F.isEmpty(ccfg.getIndexPath()) && idxPartMustExistsInSnapshot())
+                    storagePaths.add(ccfg.getIndexPath());
 
-            Predicate<Path> pathPredicate = p -> NodeFileTree.partitionFile(p.toFile())
-                || p.getFileName().toString().equals(NodeFileTree.partitionFileName(INDEX_PARTITION));
+                for (String storagePath : storagePaths) {
+                    File expRoot = snpRootF.apply(storagePath);
 
-            try (Stream<Path> files = Files.walk(snpRoot.toPath())) {
-                files.filter(pathPredicate).forEach(partFile -> {
-                    File root = roots.stream().filter(r -> partFile.startsWith(r.toPath())).findFirst().orElseThrow();
+                    assertTrue(cname + " must be found", snpFiles.containsKey(expRoot));
 
-                    String cacheName = NodeFileTree.cacheName(partFile.getParent().toFile());
+                    parts.addAll(snpFiles.get(expRoot).get(cname));
+                }
 
-                    if (cacheName.equals(METASTORAGE_CACHE_NAME))
-                        return;
+                assertFalse(cname + " partitions must be found", parts.isEmpty());
 
-                    int part = NodeFileTree.partId(partFile.toFile());
+                partsMap.computeIfAbsent(CU.cacheGroupId(ccfg), key -> new HashSet<>()).addAll(parts);
+            });
 
-                    String[] cs = Arrays.stream(ccfgs())
-                        .filter(ccfg -> CU.cacheOrGroupName(ccfg).equals(cacheName))
-                        .findFirst().orElseThrow().getStoragePaths();
-
-                    File expStorage = (idxPathUsed && part == INDEX_PARTITION)
-                        ? snpRootF.apply(storagePath(IDX_PATH))
-                        : snpRootF.apply(F.isEmpty(cs) ? null : cs[part % cs.length]);
-
-                    assertEquals(expStorage, root);
-
-                    snpFiles
-                        .computeIfAbsent(root, r -> new HashMap<>())
-                        .computeIfAbsent(cacheName, c -> new HashSet<>())
-                        .add(part);
-                });
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            assertEquals(grpCount(), seenGrps.size());
         }
-
-        Set<String> seenGrps = new HashSet<>();
 
         Arrays.stream(ccfgs()).forEach(ccfg -> {
             String cname = CU.cacheOrGroupName(ccfg);
 
-            if (seenGrps.contains(cname))
-                return;
-
-            seenGrps.add(cname);
-
-            Set<Integer> parts = new HashSet<>();
-
-            List<String> storagePaths = new ArrayList<>(F.isEmpty(ccfg.getStoragePaths())
-                ? Collections.singletonList(null)
-                : Arrays.asList(ccfg.getStoragePaths()));
-
-            if (!F.isEmpty(ccfg.getIndexPath()) && idxPartMustExistsInSnapshot())
-                storagePaths.add(ccfg.getIndexPath());
-
-            for (String storagePath : storagePaths) {
-                File expRoot = snpRootF.apply(storagePath);
-
-                assertTrue(cname + " must be found", snpFiles.containsKey(expRoot));
-
-                parts.addAll(snpFiles.get(expRoot).get(cname));
-            }
+            Set<Integer> parts = partsMap.get(CU.cacheGroupId(ccfg));
 
             assertFalse(cname + " partitions must be found", parts.isEmpty());
 
@@ -284,8 +297,6 @@ public class CacheConfigStoragePathTest extends AbstractDataRegionRelativeStorag
             if (idxPartMustExistsInSnapshot())
                 assertTrue(parts.contains(INDEX_PARTITION));
         });
-
-        assertEquals(grpCount(), seenGrps.size());
     }
 
     /** */
