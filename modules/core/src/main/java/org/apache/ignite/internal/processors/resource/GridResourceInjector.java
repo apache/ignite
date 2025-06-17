@@ -24,7 +24,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
  * Resource injector implementations contain logic and resources that
  * should be injected for selected target objects.
  */
-interface GridResourceInjector {
+public interface GridResourceInjector {
     /**
      * Injects resource into field. Caches injected resource with the given key if needed.
      *

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Simple injector which wraps only one resource object.
  * @param <T> Type of injected resource.
  */
-class GridResourceBasicInjector<T> implements GridResourceInjector {
+public class GridResourceBasicInjector<T> implements GridResourceInjector {
     /** Resource to inject. */
     private final T rsrc;
 
@@ -34,7 +34,7 @@ class GridResourceBasicInjector<T> implements GridResourceInjector {
      *
      * @param rsrc Resource to inject.
      */
-    GridResourceBasicInjector(T rsrc) {
+    public GridResourceBasicInjector(T rsrc) {
         this.rsrc = rsrc;
     }
 

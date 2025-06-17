@@ -15,34 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.resource;
+package org.apache.ignite.ioc;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgnitionEx;
 
 /**
- * Interface was introduced to avoid compile-time dependency on spring framework. Spring resource context
- * provides optional spring resource injectors, it can be passed to factory method
- * starting Ignite {@link IgnitionEx#start(GridSpringResourceContext)}.
+ * Facade to other dependency injection mechanisms and bean registries.
+ * <p>
+ * Purpose of this type is detachment of actual lookup from ignite specific SPI.
+ * Both operations can be called by Ignite itself to initialize fields annotated with
+ * {@link org.apache.ignite.resources.InjectResource}.
+ *
+ * @author ldywicki
  */
-@Deprecated
-public interface GridSpringResourceContext {
+public interface Registry {
     /**
-     * @return Spring bean injector.
+     * Finds and returns a bean of type T.
+     *
+     * @param <T> Type of the bean to lookup.
+     * @param type Type.
+     * @return Bean.
      */
-    public GridResourceInjector springBeanInjector();
+    <T> T lookup(Class<T> type);
 
     /**
-     * @return Spring context injector.
+     * Finds and returns a bean with specific name.
+     *
+     * @param name Bean name.
+     * @return Bean.
      */
-    public GridResourceInjector springContextInjector();
+    Object lookup(String name);
 
     /**
-     * Return original object if AOP used with proxy objects.
+     * Return original object if AOP or proxies are used with given object.
      *
      * @param target Target object.
      * @return Original object wrapped by proxy.
      * @throws IgniteCheckedException If unwrap failed.
      */
-    public Object unwrapTarget(Object target) throws IgniteCheckedException;
+    Object unwrapTarget(Object target) throws IgniteCheckedException;
 }

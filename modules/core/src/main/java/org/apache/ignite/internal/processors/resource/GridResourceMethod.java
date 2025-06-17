@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Wrapper for data where resource should be injected.
  * Bean contains {@link Method} and {@link Annotation} for that method.
  */
-class GridResourceMethod {
+public class GridResourceMethod {
     /** */
     static final GridResourceMethod[] EMPTY_ARRAY = new GridResourceMethod[0];
 
