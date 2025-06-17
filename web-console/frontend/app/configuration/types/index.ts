@@ -229,3 +229,13 @@ export interface DatasourceDto {
 }
 
 export type ClusterLike = Cluster | ShortCluster;
+
+// IGFS
+type DefaultModes = 'PRIMARY' | 'PROXY' | 'DUAL_SYNC' | 'DUAL_ASYNC';
+
+export interface ShortIGFS {
+    id: string,
+    name: string,
+    defaultMode: DefaultModes,
+    affinnityGroupSize: number
+}

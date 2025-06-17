@@ -3,6 +3,7 @@ import {JavaTypesNonEnum} from './JavaTypesNonEnum.service';
 import IgniteClusterDefaults from './generator/defaults/Cluster.service';
 import IgniteCacheDefaults from './generator/defaults/Cache.service';
 import IgniteEventGroups from './generator/defaults/Event-groups.service';
+import IgniteIGFSDefaults from './generator/defaults/IGFS.service';
 import IgniteConfigurationGenerator from './generator/ConfigurationGenerator';
 import IgniteSpringTransformer from './generator/SpringTransformer.service';
 import IgniteJavaTransformer from './generator/JavaTransformer.service';
@@ -24,6 +25,7 @@ export default angular
     .service('IgniteEventGroups', IgniteEventGroups)
     .service('IgniteClusterDefaults', IgniteClusterDefaults)
     .service('IgniteCacheDefaults', IgniteCacheDefaults)
+    .service('IgniteIGFSDefaults', IgniteIGFSDefaults)
     .service('IgnitePropertiesGenerator', IgniteGeneratorProperties)
     .service('IgniteReadmeGenerator', IgniteReadmeGenerator)
     .service('IgniteDockerGenerator', IgniteDockerGenerator)

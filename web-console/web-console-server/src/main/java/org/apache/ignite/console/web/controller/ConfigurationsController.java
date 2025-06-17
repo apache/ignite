@@ -100,7 +100,7 @@ public class ConfigurationsController {
         @PathVariable("clusterId") String clusterId
     ) {
     	UUID clusterGUID = findClusterId(acc, demo, clusterId);
-        return ResponseEntity.ok(cfgsSrv.loadCluster(new ConfigurationKey(acc.getId(), demo), clusterGUID));
+        return ResponseEntity.ok(cfgsSrv.loadCluster(new ConfigurationKey(acc.getId(), demo), clusterGUID).json());
     }
 
     /**
@@ -140,6 +140,24 @@ public class ConfigurationsController {
     }
 
     /**
+     * Load cluster models short list.
+     *
+     * @param acc Account.
+     * @param clusterId Cluster ID.
+     * @return Models short list.
+     */
+    @Operation(summary = "Get igfss short list.")
+    @GetMapping(path = "/clusters/{clusterId}/igfss")
+    public ResponseEntity<JsonArray> loadIGFSShortList(
+            @AuthenticationPrincipal Account acc,
+            @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo,
+            @PathVariable("clusterId") String clusterId
+    ) {
+        UUID clusterGUID = findClusterId(acc, demo, clusterId);
+        return ResponseEntity.ok(cfgsSrv.loadShortIGFSs(new ConfigurationKey(acc.getId(), demo), clusterGUID));
+    }
+
+    /**
      * @param acc Account.
      * @param cacheId Cache ID.
      */
@@ -150,7 +168,21 @@ public class ConfigurationsController {
         @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo,
         @PathVariable("cacheId") UUID cacheId
     ) {    	
-        return ResponseEntity.ok(cfgsSrv.loadCache(new ConfigurationKey(acc.getId(), demo), cacheId));
+        return ResponseEntity.ok(cfgsSrv.loadCache(new ConfigurationKey(acc.getId(), demo), cacheId).json());
+    }
+
+    /**
+     * @param acc Account.
+     * @param igfsId IGFS ID.
+     */
+    @Operation(summary = "Get igfs configuration.")
+    @GetMapping(path = "/igfss/{igfsId}")
+    public ResponseEntity<String> loadIGFS(
+            @AuthenticationPrincipal Account acc,
+            @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo,
+            @PathVariable("igfsId") UUID igfsId
+    ) {
+        return ResponseEntity.ok(cfgsSrv.loadIGFS(new ConfigurationKey(acc.getId(), demo), igfsId).json());
     }
 
     /**
@@ -164,7 +196,7 @@ public class ConfigurationsController {
         @RequestHeader(value = "demoMode", defaultValue = "false") boolean demo,
         @PathVariable("modelId") UUID mdlId
     ) {
-        return ResponseEntity.ok(cfgsSrv.loadModel(new ConfigurationKey(acc.getId(), demo), mdlId));
+        return ResponseEntity.ok(cfgsSrv.loadModel(new ConfigurationKey(acc.getId(), demo), mdlId).json());
     }
     
     /**
@@ -180,7 +212,7 @@ public class ConfigurationsController {
         @PathVariable("schema") String schema,
         @PathVariable("table") String table
     ) {
-        return ResponseEntity.ok(cfgsSrv.loadModel(new ConfigurationKey(acc.getId(), demo), catalog, schema, table));
+        return ResponseEntity.ok(cfgsSrv.loadModel(new ConfigurationKey(acc.getId(), demo), catalog, schema, table).json());
     }
 
     /**

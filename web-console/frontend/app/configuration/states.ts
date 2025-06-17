@@ -5,6 +5,7 @@ import pageConfigureAdvancedClusterComponent from './components/page-configure-a
 import pageConfigureAdvancedServicesComponent from './components/page-configure-advanced/components/page-configure-advanced-services/component';
 import pageConfigureAdvancedModelsComponent from './components/page-configure-advanced/components/page-configure-advanced-models/component';
 import pageConfigureAdvancedCachesComponent from './components/page-configure-advanced/components/page-configure-advanced-caches/component';
+import pageConfigureAdvancedIGFSComponent from './components/page-configure-advanced/components/page-configure-advanced-igfs/component';
 
 import {from, combineLatest} from 'rxjs';
 import {switchMap, take, map} from 'rxjs/operators';
@@ -32,7 +33,8 @@ const shortCachesAndModels = ['ConfigSelectors', 'ConfigureState', 'ConfigEffect
         map((cluster) => {
             return Promise.all([
                 etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster.id}),
-                etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster.id})
+                etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster.id}),
+                etp('LOAD_SHORT_IGFSS', {ids: cluster.igfss, clusterID: cluster.id})
             ]);
         })
     ).toPromise();
@@ -218,7 +220,42 @@ function registerStates($stateProvider) {
         resolvePolicy: {
             async: 'NOWAIT'
         }
+    })
+    .state('base.configuration.edit.advanced.igfs', {
+        url: '/igfs',
+        component: pageConfigureAdvancedIGFSComponent.name,
+        permission: 'configuration',
+        resolve: {
+            _shortCachesAndModels: shortCachesAndModels
+        },
+        resolvePolicy: {
+            async: 'NOWAIT'
+        },
+        tfMetaTags: {
+            title: 'Configure IGFS'
+        }
+    })
+    .state('base.configuration.edit.advanced.igfs.igfs', {
+        url: `/{igfsID}`,
+        permission: 'configuration',
+        resolve: {
+            _igfs: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
+                const {clusterID, igfsID} = $transition$.params();
+
+                if (igfsID === 'new')
+                    return Promise.resolve();
+
+                return etp('LOAD_IGFS', {igfsID});
+            }]
+        },
+        data: {
+            errorState: 'base.configuration.edit.advanced.igfs'
+        },
+        resolvePolicy: {
+            async: 'NOWAIT'
+        }
     });
+    
 }
 
 registerStates.$inject = ['$stateProvider'];

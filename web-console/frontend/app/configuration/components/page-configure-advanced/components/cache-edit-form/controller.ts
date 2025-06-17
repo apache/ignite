@@ -13,6 +13,11 @@ import FormUtilsFactory from 'app/services/FormUtils.service';
 export default class CacheEditFormController {
     modelsMenu: Menu<string>;
 
+    igfssMenu: Menu<string>;
+
+    /** IGFS IDs to validate against. */
+    igfsIDs: string[];
+
     onSave: ng.ICompiledExpression;
 
     cache: any;
@@ -80,6 +85,10 @@ export default class CacheEditFormController {
         }
         if ('models' in changes)
             this.modelsMenu = (changes.models.currentValue || []).map((m) => ({value: m.id, label: m.valueType}));
+        if ('igfss' in changes) {
+            this.igfssMenu = (changes.igfss.currentValue || []).map((i) => ({value: i.id, label: i.name}));
+            this.igfsIDs = (changes.igfss.currentValue || []).map((i) => i.id);
+        }
     }
 
     getValuesToCompare() {

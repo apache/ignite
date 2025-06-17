@@ -140,7 +140,7 @@ export default class PageConfigureBasicController {
                 this.originalCluster.status =  this.clonedCluster.status;
                 
                 this.callService('ClusterInfoService').then((m)=>{
-                    if(m){
+                    if(m && m.metrics){
                         this.clusterMetrics = this.LegacyUtils.objectToKvList(m.metrics);
                         this.nodesAttrs = m.nodes;
                         this.nodeList = this._nodeList();                        

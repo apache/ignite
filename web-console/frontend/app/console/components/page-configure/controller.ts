@@ -35,7 +35,7 @@ export default class PageConfigureController {
         const isNew$ = this.clusterID$.pipe(map((v) => v === 'new'));
 
         this.clusterName$ = combineLatest(cluster$, isNew$, (cluster, isNew) => {
-            return `${isNew ? 'Create' : 'Edit'} cluster configuration ${isNew ? '' : `‘${get(cluster, 'name')}’`}`;
+            return `${isNew ? 'Create' : 'View'} cluster configuration and properties ${isNew ? '' : `‘${get(cluster, 'name')}’`}`;
         });
 
         this.cluster$ = cluster$

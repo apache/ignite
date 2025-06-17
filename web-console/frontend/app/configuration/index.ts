@@ -19,6 +19,7 @@ import effects from './store/effects';
 import Clusters from './services/Clusters';
 import Caches from './services/Caches';
 import Models from './services/Models';
+import IGFSs from './services/IGFSs';
 
 import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
@@ -61,6 +62,8 @@ import {
     shortCachesActionTypes,
     modelsActionTypes,
     shortModelsActionTypes,
+    igfssActionTypes,
+    shortIGFSsActionTypes,
     refsReducer
 } from './store/reducer';
 
@@ -117,6 +120,8 @@ export default angular.module('ignite-console.configuration', [
             shortCaches: mapCacheReducerFactory(shortCachesActionTypes)(state.shortCaches, action),
             models: mapStoreReducerFactory(modelsActionTypes)(state.models, action),
             shortModels: mapCacheReducerFactory(shortModelsActionTypes)(state.shortModels, action),
+            igfss: mapStoreReducerFactory(igfssActionTypes)(state.igfss, action),
+            shortIgfss: mapCacheReducerFactory(shortIGFSsActionTypes)(state.shortIgfss, action),
             edit: editReducer2(state.edit, action)
         }));
 
@@ -159,6 +164,7 @@ export default angular.module('ignite-console.configuration', [
     .service('Clusters', Clusters)
     .service('Caches', Caches)
     .service('Models', Models)
+    .service('IGFSs', IGFSs)
     .service('Datasource', Datasource)
     .directive('pcIsInCollection', isInCollection)
     .directive('fakeUiCanExit', fakeUiCanExit)

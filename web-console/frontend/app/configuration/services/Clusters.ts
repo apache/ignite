@@ -84,6 +84,10 @@ export default class Clusters {
         return this.$http.get<{data: ShortDomainModel[]}>(`/api/v1/configuration/clusters/${clusterID}/models`);
     }
 
+    getClusterIGFSs(clusterID) {
+        return this.$http.get(`/api/v1/configuration/clusters/${clusterID}/igfss`);
+    }
+
     getClustersOverview() {
         return this.$http.get<{data: ShortCluster[]}>('/api/v1/configuration/clusters');
     }
@@ -152,6 +156,7 @@ export default class Clusters {
             collision: {kind: 'Noop', JobStealing: {stealingEnabled: true}, PriorityQueue: {starvationPreventionEnabled: true}},
             failoverSpi: [],
             caches: [],
+            igfss: [],
             models: [],
             checkpointSpi: [],
             loadBalancingSpi: [],
@@ -173,7 +178,8 @@ export default class Clusters {
             status: cluster.status,
             discovery: cluster.discovery.kind,
             cachesCount: (cluster.caches || []).length,
-            modelsCount: (cluster.models || []).length
+            modelsCount: (cluster.models || []).length,
+            igfsCount: (cluster.igfss || []).length
         };
     }    
 

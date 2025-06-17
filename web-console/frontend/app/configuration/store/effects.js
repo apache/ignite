@@ -10,8 +10,10 @@ import {
     cachesActionTypes,
     clustersActionTypes,
     modelsActionTypes,
+    igfssActionTypes,
     shortCachesActionTypes,
     shortClustersActionTypes,
+    shortIGFSsActionTypes,
     shortModelsActionTypes
 } from './reducer';
 
@@ -22,6 +24,7 @@ import {
     ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK,
     ADVANCED_SAVE_COMPLETE_CONFIGURATION_ERR,
     ADVANCED_SAVE_MODEL,
+    ADVANCED_SAVE_IGFS,
     BASIC_SAVE,
     BASIC_SAVE_AND_DOWNLOAD,
     BASIC_SAVE_OK,
@@ -47,6 +50,7 @@ import ConfigSelectors from './selectors';
 import Clusters from '../services/Clusters';
 import Caches from '../services/Caches';
 import Models from '../services/Models';
+import IGFSs from '../services/IGFSs';
 import {Confirm} from 'app/services/Confirm.service';
 
 export const ofType = (type) => (s) => s.pipe(filter((a) => a.type === type));
@@ -56,6 +60,7 @@ export default class ConfigEffects {
         'ConfigureState',
         'Caches',
         'Models',
+        'IGFSs',
         'ConfigSelectors',
         'Clusters',
         '$state',
@@ -68,6 +73,7 @@ export default class ConfigEffects {
     /**
      * @param {ConfigureState} ConfigureState
      * @param {Caches} Caches
+     * @param {IGFSs} IGFSs
      * @param {Models} Models
      * @param {ConfigSelectors} ConfigSelectors
      * @param {Clusters} Clusters
@@ -77,10 +83,11 @@ export default class ConfigEffects {
      * @param {Confirm} Confirm
      * @param {ConfigurationDownload} ConfigurationDownload
      */
-    constructor(ConfigureState, Caches, Models, ConfigSelectors, Clusters, $state, IgniteMessages, IgniteConfirm, Confirm, ConfigurationDownload) {
+    constructor(ConfigureState, Caches, Models, IGFSs, ConfigSelectors, Clusters, $state, IgniteMessages, IgniteConfirm, Confirm, ConfigurationDownload) {
         this.ConfigureState = ConfigureState;
         this.ConfigSelectors = ConfigSelectors;
         this.Models = Models;
+        this.IGFSs = IGFSs;
         this.Caches = Caches;
         this.Clusters = Clusters;
         this.$state = $state;
@@ -109,10 +116,11 @@ export default class ConfigEffects {
 
         this.storeConfigurationEffect$ = this.ConfigureState.actions$.pipe(
             ofType(COMPLETE_CONFIGURATION),
-            exhaustMap(({configuration: {cluster, caches, models}}) => of(...[
+            exhaustMap(({configuration: {cluster, caches, models, igfss}}) => of(...[
                 cluster && {type: clustersActionTypes.UPSERT, items: [cluster]},
                 caches && caches.length && {type: cachesActionTypes.UPSERT, items: caches},
-                models && models.length && {type: modelsActionTypes.UPSERT, items: models}
+                models && models.length && {type: modelsActionTypes.UPSERT, items: models},
+                igfss && igfss.length && {type: igfssActionTypes.UPSERT, items: igfss}
             ].filter((v) => v)))
         );
 
@@ -127,6 +135,14 @@ export default class ConfigEffects {
                     {
                         type: shortModelsActionTypes.UPSERT,
                         items: action.changedItems.models.map((m) => this.Models.toShortModel(m))
+                    },
+                    {
+                        type: igfssActionTypes.UPSERT,
+                        items: action.changedItems.igfss
+                    },
+                    {
+                        type: shortIGFSsActionTypes.UPSERT,
+                        items: action.changedItems.igfss
                     },
                     {
                         type: cachesActionTypes.UPSERT,
@@ -204,7 +220,7 @@ export default class ConfigEffects {
             })
         );
 
-        this.loadAndEditClusterEffect$ = ConfigureState.actions$.pipe(
+        this.loadAndEditClusterEffect$ = this.ConfigureState.actions$.pipe(
             ofType('LOAD_AND_EDIT_CLUSTER'),
             withLatestFrom(this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortClustersValue())),
             exhaustMap(([a, shortClusters]) => {
@@ -280,7 +296,7 @@ export default class ConfigEffects {
             map((a) => ({type: cachesActionTypes.UPSERT, items: [a.cache]}))
         );
 
-        this.loadShortCachesEffect$ = ConfigureState.actions$.pipe(
+        this.loadShortCachesEffect$ = this.ConfigureState.actions$.pipe(
             ofType('LOAD_SHORT_CACHES'),
             exhaustMap((a) => {
                 if (!(a.ids || []).length)
@@ -304,6 +320,72 @@ export default class ConfigEffects {
                         type: `${a.type}_ERR`,
                         error: {
                             message: `Failed to load caches: ${error.data.message}.`
+                        },
+                        action: a
+                    }))
+                );
+            })
+        );
+
+        this.loadIgfsEffect$ = this.ConfigureState.actions$.pipe(
+            ofType('LOAD_IGFS'),
+            exhaustMap((a) => {
+                return this.ConfigureState.state$.pipe(
+                    this.ConfigSelectors.selectIGFS(a.igfsID),
+                    take(1),
+                    switchMap((igfs) => {
+                        if (igfs)
+                            return of({type: `${a.type}_OK`, igfs});
+
+                        return from(this.IGFSs.getIGFS(a.igfsID)).pipe(
+                            switchMap(({data}) => of(
+                                {type: 'IGFS', igfs: data},
+                                {type: `${a.type}_OK`, igfs: data}
+                            ))
+                        );
+                    }),
+                    catchError((error) => of({
+                        type: `${a.type}_ERR`,
+                        error: {
+                            message: `Failed to load IGFS: ${error.data}.`
+                        }
+                    }))
+                );
+            })
+        );
+
+        this.storeIgfsEffect$ = this.ConfigureState.actions$.pipe(
+            ofType('IGFS'),
+            map((a) => ({type: igfssActionTypes.UPSERT, items: [a.igfs]}))
+        );
+
+        this.loadShortIgfssEffect$ = this.ConfigureState.actions$.pipe(
+            ofType('LOAD_SHORT_IGFSS'),
+            exhaustMap((a) => {
+                if (!(a.ids || []).length) {
+                    return of(
+                        {type: shortIGFSsActionTypes.UPSERT, items: []},
+                        {type: `${a.type}_OK`}
+                    );
+                }
+                return this.ConfigureState.state$.pipe(
+                    this.ConfigSelectors.selectShortIGFSs(),
+                    take(1),
+                    switchMap((items) => {
+                        if (!items.pristine && a.ids && a.ids.every((id) => items.value.has(id)))
+                            return of({type: `${a.type}_OK`});
+
+                        return from(this.Clusters.getClusterIGFSs(a.clusterID)).pipe(
+                            switchMap(({data}) => of(
+                                {type: shortIGFSsActionTypes.UPSERT, items: data},
+                                {type: `${a.type}_OK`}
+                            ))
+                        );
+                    }),
+                    catchError((error) => of({
+                        type: `${a.type}_ERR`,
+                        error: {
+                            message: `Failed to load IGFSs: ${error.data}.`
                         },
                         action: a
                     }))
@@ -395,6 +477,7 @@ export default class ConfigEffects {
             this.ConfigureState.actions$.pipe(ofType(ADVANCED_SAVE_CLUSTER)),
             this.ConfigureState.actions$.pipe(ofType(ADVANCED_SAVE_CACHE)),
             this.ConfigureState.actions$.pipe(ofType(ADVANCED_SAVE_MODEL)),
+            this.ConfigureState.actions$.pipe(ofType(ADVANCED_SAVE_IGFS)),
         ).pipe(
             filter((a) => a.download),
             zip(this.ConfigureState.actions$.pipe(ofType('ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK'))),
@@ -436,6 +519,16 @@ export default class ConfigEffects {
 
                         if (this.$state.is(state) && this.$state.params.cacheID !== value.id)
                             return go(state, {cacheID: value.id});
+
+                        break;
+                    }
+
+                    case 'igfss': {
+                        const state = 'base.configuration.edit.advanced.igfs.igfs';
+                        this.IgniteMessages.showInfo(`IGFS "${value.name}" saved`);
+
+                        if (this.$state.is(state) && this.$state.params.igfsID !== value.id)
+                            return go(state, {igfsID: value.id});
 
                         break;
                     }
@@ -543,20 +636,23 @@ export default class ConfigEffects {
             ignoreElements()
         );
 
-        const _applyChangedIDs = (edit, {cache, model, cluster} = {}) => ({
+        const _applyChangedIDs = (edit, {cache, model, igfs, cluster} = {}) => ({
             cluster: {
                 ...edit.changes.cluster,
                 ...(cluster ? cluster : {}),
                 caches: cache ? uniq([...edit.changes.caches.ids, cache.id]) : edit.changes.caches.ids,
+                igfss: igfs ? uniq([...edit.changes.igfss.ids, igfs.id]) : edit.changes.igfss.ids,
                 models: model ? uniq([...edit.changes.models.ids, model.id]) : edit.changes.models.ids
             },
             caches: cache ? uniq([...edit.changes.caches.changedItems, cache]) : edit.changes.caches.changedItems,
+            igfss: igfs ? uniq([...edit.changes.igfss.changedItems, igfs]) : edit.changes.igfss.changedItems,
             models: model ? uniq([...edit.changes.models.changedItems, model]) : edit.changes.models.changedItems
         });
 
         this.advancedSaveCacheEffect$ = merge(
             this.ConfigureState.actions$.pipe(ofType(ADVANCED_SAVE_CLUSTER)),
             this.ConfigureState.actions$.pipe(ofType(ADVANCED_SAVE_CACHE)),
+            this.ConfigureState.actions$.pipe(ofType(ADVANCED_SAVE_IGFS)),
             this.ConfigureState.actions$.pipe(ofType(ADVANCED_SAVE_MODEL)),
         ).pipe(
             withLatestFrom(this.ConfigureState.state$.pipe(pluck('edit'))),

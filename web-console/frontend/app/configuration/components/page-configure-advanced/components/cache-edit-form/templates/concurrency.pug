@@ -31,9 +31,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     min: '0',
                     tip: 'Default lock acquisition timeout in milliseconds<br/>\
                          If <b>0</b> then lock acquisition will never timeout'
-                })
-
-           
+                })           
 
             .pc-form-grid-col-60
                 +form-field__dropdown({
@@ -42,16 +40,16 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     name: '"writeSynchronizationMode"',
                     placeholder: 'PRIMARY_SYNC',
                     options: '[\
-                                            {value: "FULL_SYNC", label: "FULL_SYNC"},\
-                                            {value: "FULL_ASYNC", label: "FULL_ASYNC"},\
-                                            {value: "PRIMARY_SYNC", label: "PRIMARY_SYNC"}\
-                                        ]',
+                            {value: "FULL_SYNC", label: "FULL_SYNC"},\
+                            {value: "FULL_ASYNC", label: "FULL_ASYNC"},\
+                            {value: "PRIMARY_SYNC", label: "PRIMARY_SYNC"}\
+                        ]',
                     tip: 'Write synchronization mode\
-                                        <ul>\
-                                            <li>FULL_SYNC - Ignite will wait for write or commit replies from all nodes</li>\
-                                            <li>FULL_ASYNC - Ignite will not wait for write or commit responses from participating nodes</li>\
-                                            <li>PRIMARY_SYNC - Makes sense for PARTITIONED mode. Ignite will wait for write or commit to complete on primary node</li>\
-                                        </ul>'
+                        <ul>\
+                            <li>FULL_SYNC - Ignite will wait for write or commit replies from all nodes</li>\
+                            <li>FULL_ASYNC - Ignite will not wait for write or commit responses from participating nodes</li>\
+                            <li>PRIMARY_SYNC - Makes sense for PARTITIONED mode. Ignite will wait for write or commit to complete on primary node</li>\
+                        </ul>'
                 })
         .pca-form-column-6
             +preview-xml-java(model, 'cacheConcurrency')

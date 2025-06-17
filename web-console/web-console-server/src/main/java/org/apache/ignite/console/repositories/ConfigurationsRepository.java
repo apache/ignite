@@ -10,10 +10,7 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.console.db.OneToManyIndex;
 import org.apache.ignite.console.db.Table;
-import org.apache.ignite.console.dto.Cache;
-import org.apache.ignite.console.dto.Cluster;
-import org.apache.ignite.console.dto.DataObject;
-import org.apache.ignite.console.dto.Model;
+import org.apache.ignite.console.dto.*;
 
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
@@ -53,11 +50,16 @@ public class ConfigurationsRepository {
     /** */
     private Table<Model> modelsTbl;
 
+    private Table<IGFS> igfssTbl;
+
     /** */
     private OneToManyIndex<UUID, UUID> cachesIdx;
 
     /** */
     private OneToManyIndex<UUID, UUID> modelsIdx;
+
+    /** */
+    private OneToManyIndex<UUID, UUID> igfssIdx;
 
     /** */
     protected OneToManyIndex<ConfigurationKey, UUID> clustersIdx;
@@ -75,10 +77,12 @@ public class ConfigurationsRepository {
         txMgr.registerStarter(() -> {
             clustersTbl = new Table<>(ignite, "wc_account_clusters");
             cachesTbl = new Table<>(ignite, "wc_cluster_caches");
-            modelsTbl = new Table<>(ignite, "wc_cluster_models");            
+            modelsTbl = new Table<>(ignite, "wc_cluster_models");
+            igfssTbl = new Table<>(ignite, "wc_cluster_igfss");
 
             cachesIdx = new OneToManyIndex<>(ignite, "wc_cluster_caches_idx");
             modelsIdx = new OneToManyIndex<>(ignite, "wc_cluster_models_idx");
+            igfssIdx = new OneToManyIndex<>(ignite, "wc_cluster_igfss_idx");
             clustersIdx = new OneToManyIndex<>(ignite, "wc_account_clusters_idx");
             cfgIdx = new OneToManyIndex<>(ignite, "wc_account_configs_idx");
         });
@@ -100,10 +104,12 @@ public class ConfigurationsRepository {
 
             Collection<Cache> caches = cachesTbl.loadAll(cachesIdx.get(clusterId));
             Collection<Model> models = modelsTbl.loadAll(modelsIdx.get(clusterId));
+            Collection<IGFS> igfss = igfssTbl.loadAll(igfssIdx.get(clusterId));
 
             return new JsonObject().put("demo", key.isDemo())
                 .put("cluster", fromJson(cluster.json()))
                 .put("caches", toJsonArray(caches))
+                .put("igfss", toJsonArray(igfss))
                 .put("models", toJsonArray(models));
         });
     }
@@ -117,13 +123,14 @@ public class ConfigurationsRepository {
 
         int cachesCnt = cachesIdx.get(clusterId).size();
         int modelsCnt = modelsIdx.get(clusterId).size();
-
+        int igfssCnt = igfssIdx.get(clusterId).size();
         return new JsonObject()
             .put("id", cluster.getId())
             .put("name", cluster.name())
             .put("comment", cluster.comment())
             .put("discovery", cluster.discovery())
             .put("cachesCount", cachesCnt)
+            .put("igfssCount", igfssCnt)
             .put("modelsCount", modelsCnt);
     }
 
@@ -192,6 +199,19 @@ public class ConfigurationsRepository {
 
             if (mdl == null)
                 throw new IllegalStateException(messages.getMessageWithArgs("err.model-not-found-by-id", mdlId));
+
+            cfgIdx.validate(key, mdlId);
+
+            return mdl;
+        });
+    }
+
+    public IGFS loadIGFS(ConfigurationKey key, UUID mdlId) {
+        return txMgr.doInTransaction(() -> {
+            IGFS mdl = igfssTbl.get(mdlId);
+
+            if (mdl == null)
+                throw new IllegalStateException(messages.getMessageWithArgs("err.igfs-not-found-by-id", mdlId));
 
             cfgIdx.validate(key, mdlId);
 
@@ -279,6 +299,23 @@ public class ConfigurationsRepository {
             cfgIdx.validateAll(key, modelsIds);
 
             return modelsTbl.loadAll(modelsIds);
+        });
+    }
+
+    /**
+     * @param key Configuration key.
+     * @param clusterId Cluster ID.
+     * @return Collection of cluster models.
+     */
+    public Collection<IGFS> loadIGFSs(ConfigurationKey key, UUID clusterId) {
+        return txMgr.doInTransaction(() -> {
+            clustersIdx.validate(key, clusterId);
+
+            Set<UUID> modelsIds = igfssIdx.get(clusterId);
+
+            cfgIdx.validateAll(key, modelsIds);
+
+            return igfssTbl.loadAll(modelsIds);
         });
     }
 
@@ -413,6 +450,28 @@ public class ConfigurationsRepository {
         modelsTbl.saveAll(mdls);
     }
 
+    private void saveIGFSs(ConfigurationKey key, Cluster cluster, JsonObject json) {
+        JsonArray jsonModels = json.getJsonArray("igfss");
+
+        if (F.isEmpty(jsonModels))
+            return;
+
+        Map<UUID, IGFS> mdls = jsonModels
+                .stream()
+                .map(item -> IGFS.fromJson(asJson(item)))
+                .collect(toMap(IGFS::getId, m -> m));
+
+        Set<UUID> mdlIds = mdls.keySet();
+
+        cfgIdx.validateBeforeSave(key, mdlIds, modelsTbl);
+
+        cfgIdx.addAll(key, mdlIds);
+
+        igfssIdx.addAll(cluster.getId(), mdlIds);
+
+        igfssTbl.saveAll(mdls);
+    }
+
     /**
      * Save full cluster.
      *
@@ -425,6 +484,7 @@ public class ConfigurationsRepository {
 
             saveCaches(key, cluster, json, false);
             saveModels(key, cluster, json);
+            saveIGFSs(key, cluster, json);
         });
     }
 

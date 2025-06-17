@@ -5,7 +5,8 @@ package org.apache.ignite.console.services;
 import java.util.Collection;
 import java.util.TreeSet;
 import java.util.UUID;
-import org.apache.ignite.console.dto.DataObject;
+
+import org.apache.ignite.console.dto.*;
 
 import org.apache.ignite.console.repositories.ConfigurationsRepository;
 import org.apache.ignite.console.web.model.ConfigurationKey;
@@ -61,8 +62,8 @@ public class ConfigurationsService {
      * @param clusterId Cluster ID.
      * @return Cluster.
      */
-    public String loadCluster(ConfigurationKey key, UUID clusterId) {
-        return cfgsRepo.loadCluster(key, clusterId).json();
+    public Cluster loadCluster(ConfigurationKey key, UUID clusterId) {
+        return cfgsRepo.loadCluster(key, clusterId);
     }
 
     /**
@@ -70,17 +71,17 @@ public class ConfigurationsService {
      * @param cacheId Cache ID.
      * @return Cache.
      */
-    public String loadCache(ConfigurationKey key, UUID cacheId) {
-        return cfgsRepo.loadCache(key, cacheId).json();
+    public Cache loadCache(ConfigurationKey key, UUID cacheId) {
+        return cfgsRepo.loadCache(key, cacheId);
     }
 
     /**
      * @param key Configuration key.
-     * @param mdlId Model ID.
+     * @param tableName String.
      * @return Model.
      */
-    public String loadModel(ConfigurationKey key, String catalog, String schema,String tableName) {
-        return cfgsRepo.loadModel(key, catalog, schema, tableName).json();
+    public Model loadModel(ConfigurationKey key, String catalog, String schema,String tableName) {
+        return cfgsRepo.loadModel(key, catalog, schema, tableName);
     }
     
     /**
@@ -88,8 +89,12 @@ public class ConfigurationsService {
      * @param mdlId Model ID.
      * @return Model.
      */
-    public String loadModel(ConfigurationKey key, UUID mdlId) {
-        return cfgsRepo.loadModel(key, mdlId).json();
+    public Model loadModel(ConfigurationKey key, UUID mdlId) {
+        return cfgsRepo.loadModel(key, mdlId);
+    }
+
+    public IGFS loadIGFS(ConfigurationKey key, UUID mdlId) {
+        return cfgsRepo.loadIGFS(key, mdlId);
     }
 
     /**
@@ -122,6 +127,10 @@ public class ConfigurationsService {
      */
     public JsonArray loadShortModels(ConfigurationKey key, UUID clusterId) {
         return toShortList(cfgsRepo.loadModels(key, clusterId));
+    }
+
+    public JsonArray loadShortIGFSs(ConfigurationKey key, UUID clusterId) {
+        return toShortList(cfgsRepo.loadIGFSs(key, clusterId));
     }
 
     /**

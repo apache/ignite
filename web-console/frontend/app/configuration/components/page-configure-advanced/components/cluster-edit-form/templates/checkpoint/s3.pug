@@ -102,9 +102,9 @@ include /app/helpers/jade/mixins
             name: '"checkpointS3Protocol"',
             placeholder: 'HTTPS',
             options: '[\
-                            {value: "HTTP", label: "HTTP"},\
-                            {value: "HTTPS", label: "HTTPS"}\
-                        ]',
+                    {value: "HTTP", label: "HTTP"},\
+                    {value: "HTTPS", label: "HTTPS"}\
+                ]',
             tip: 'Provides an ability to save an intermediate job state\
                     <ul>\
                         <li>HTTP - Using the HTTP protocol is less secure than HTTPS, but can slightly reduce\
@@ -203,12 +203,12 @@ include /app/helpers/jade/mixins
             name: '"checkpointS3RetryPolicy"',
             placeholder: 'Default',
             options: '[\
-                                                        {value: "Default", label: "Default SDK retry policy"},\
-                                                        {value: "DefaultMaxRetries", label: "Default with the specified max retry count"},\
-                                                        {value: "DynamoDB", label: "Default for DynamoDB client"},\
-                                                        {value: "DynamoDBMaxRetries", label: "DynamoDB with the specified max retry count"},\
-                                                        {value: "Custom", label: "Custom configured"}\
-                                                    ]',
+                        {value: "Default", label: "Default SDK retry policy"},\
+                        {value: "DefaultMaxRetries", label: "Default with the specified max retry count"},\
+                        {value: "DynamoDB", label: "Default for DynamoDB client"},\
+                        {value: "DynamoDBMaxRetries", label: "DynamoDB with the specified max retry count"},\
+                        {value: "Custom", label: "Custom configured"}\
+                    ]',
             tip: 'Provides an ability to save an intermediate job state\
                     <ul>\
                         <li>SDK default retry policy - This policy will honor the maxErrorRetry set in ClientConfiguration</li>\

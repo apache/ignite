@@ -6,17 +6,19 @@ import IgniteConfigurationGenerator from './ConfigurationGenerator';
 
 import IgniteClusterDefaults from './defaults/Cluster.service';
 import IgniteCacheDefaults from './defaults/Cache.service';
+import IgniteIGFSDefaults from './defaults/IGFS.service';
 
 import JavaTypes from '../../../services/JavaTypes.service';
 import {JavaTypesNonEnum} from '../JavaTypesNonEnum.service';
 
 const clusterDflts = new IgniteClusterDefaults();
 const cacheDflts = new IgniteCacheDefaults();
+const igfsDflts = new IgniteIGFSDefaults();
 
 export default class AbstractTransformer {
     static generator = IgniteConfigurationGenerator;
     static javaTypes = new JavaTypes();
-    static javaTypesNonEnum = new JavaTypesNonEnum(clusterDflts, cacheDflts, new JavaTypes());
+    static javaTypesNonEnum = new JavaTypesNonEnum(clusterDflts, cacheDflts, igfsDflts, new JavaTypes());
 
     // Append comment with time stamp.
     static mainComment(sb, ...lines) {
@@ -103,6 +105,11 @@ export default class AbstractTransformer {
         return this.toSection(this.generator.clusterFailover(cluster, available));
     }
 
+    // Generate cluster IGFSs group.
+    static clusterIgfss(igfss, available) {
+        return this.toSection(this.generator.clusterIgfss(igfss, available));
+    }
+
     // Generate load balancing SPI group.
     static clusterLoadBalancing(cluster) {
         return this.toSection(this.generator.clusterLoadBalancing(cluster));
@@ -157,12 +164,7 @@ export default class AbstractTransformer {
     static clusterSsl(cluster, available) {
         return this.toSection(this.generator.clusterSsl(cluster, available));
     }
-
-    // Generate swap group.
-    static clusterSwap(cluster) {
-        return this.toSection(this.generator.clusterSwap(cluster));
-    }
-
+    
     // Generate time group.
     static clusterTime(cluster, available) {
         return this.toSection(this.generator.clusterTime(cluster, available));
@@ -181,6 +183,31 @@ export default class AbstractTransformer {
     // Generate user attributes group.
     static clusterUserAttributes(cluster) {
         return this.toSection(this.generator.clusterUserAttributes(cluster));
+    }
+
+    // Generate IGFS general group.
+    static igfsGeneral(igfs, available) {
+        return this.toSection(this.generator.igfsGeneral(igfs, available));
+    }
+
+    // Generate IGFS secondary file system group.
+    static igfsSecondFS(igfs) {
+        return this.toSection(this.generator.igfsSecondFS(igfs));
+    }
+
+    // Generate IGFS IPC group.
+    static igfsIPC(igfs) {
+        return this.toSection(this.generator.igfsIPC(igfs));
+    }
+
+    // Generate IGFS fragmentizer group.
+    static igfsFragmentizer(igfs) {
+        return this.toSection(this.generator.igfsFragmentizer(igfs));
+    }
+
+    // Generate IGFS miscellaneous group.
+    static igfsMisc(igfs, available) {
+        return this.toSection(this.generator.igfsMisc(igfs, available));
     }
 
     // Generate cache general group.
@@ -224,8 +251,8 @@ export default class AbstractTransformer {
     }
 
     // Generate cache node filter group.
-    static cacheNodeFilter(cache) {
-        return this.toSection(this.generator.cacheNodeFilter(cache));
+    static cacheNodeFilter(cache, igfss) {
+        return this.toSection(this.generator.cacheNodeFilter(cache, igfss));
     }
 
     // Generate cache rebalance group.

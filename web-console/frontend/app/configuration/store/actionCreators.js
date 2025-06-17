@@ -10,6 +10,7 @@ import {
     ADVANCED_SAVE_CLUSTER,
     ADVANCED_SAVE_CACHE,
     ADVANCED_SAVE_MODEL,
+    ADVANCED_SAVE_IGFS,
     BASIC_SAVE,
     BASIC_SAVE_AND_DOWNLOAD,
     BASIC_SAVE_OK,
@@ -138,6 +139,7 @@ export const completeConfiguration = (configuration) => ({
 export const advancedSaveCluster = (cluster, download = false) => ({type: ADVANCED_SAVE_CLUSTER, cluster, download});
 export const advancedSaveCache = (cache, download = false) => ({type: ADVANCED_SAVE_CACHE, cache, download});
 export const advancedSaveModel = (model, download = false) => ({type: ADVANCED_SAVE_MODEL, model, download});
+export const advancedSaveIGFS = (igfs, download = false) => ({type: ADVANCED_SAVE_IGFS, igfs, download});
 
 export const basicSave = (cluster) => ({type: BASIC_SAVE, cluster});
 export const basicSaveAndDownload = (cluster) => ({type: BASIC_SAVE_AND_DOWNLOAD, cluster});

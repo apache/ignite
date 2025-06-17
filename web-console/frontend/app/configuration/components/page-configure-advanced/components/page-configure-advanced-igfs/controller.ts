@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import cloneDeep from 'lodash/cloneDeep';
+import uuidv4 from 'uuid/v4';
 import {Observable, Subject, combineLatest, merge} from 'rxjs';
 import {tap, map, distinctUntilChanged, pluck, publishReplay, refCount, switchMap} from 'rxjs/operators';
 import naturalCompare from 'natural-compare-lite';
@@ -88,7 +89,7 @@ export default class PageConfigureAdvancedIGFS {
         this.shortItems$ = this.ConfigureState.state$.pipe(
             this.ConfigSelectors.selectCurrentShortIGFSs,
             map((items = []) => items.map((i) => ({
-                _id: i._id,
+                id: i.id,
                 name: i.name,
                 affinnityGroupSize: i.affinnityGroupSize || this.IGFSs.affinnityGroupSize.default,
                 defaultMode: i.defaultMode || this.IGFSs.defaultMode.default
@@ -122,7 +123,7 @@ export default class PageConfigureAdvancedIGFS {
             {
                 action: 'Clone',
                 click: () => this.clone(selectedItems),
-                available: false
+                available: selectedItems.length==1
             },
             {
                 action: 'Delete',
@@ -138,6 +139,20 @@ export default class PageConfigureAdvancedIGFS {
             this.selectionManager.editGoes$.pipe(tap((id) => this.edit(id))),
             this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.configuration.edit.advanced.igfs', null, options)))
         ).subscribe();
+    }
+
+    clone(itemIDs: Array<string>) {
+        this.originalItem$.pipe(            
+            switchMap((igfs) => {
+                let clonedIgfs = cloneDeep(igfs);
+                clonedIgfs.id = uuidv4();
+                clonedIgfs.name = igfs.name+'_cloned';
+                this.ConfigureState.dispatchAction(
+                    advancedSaveIGFS(clonedIgfs, false)
+                );
+                return clonedIgfs;
+            })
+        )
     }
 
     edit(igfsID) {

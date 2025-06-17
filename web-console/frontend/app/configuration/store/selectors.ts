@@ -6,8 +6,9 @@ import {defaultNames} from '../defaultNames';
 
 import {default as Caches} from '../services/Caches';
 import {default as Clusters} from '../services/Clusters';
+import {default as IGFSs} from '../services/IGFSs';
 import {default as Models} from '../services/Models';
-import {Cluster,Cache,ShortCache,DomainModel,ShortDomainModel} from '../types';
+import {Cluster,Cache,ShortCache,DomainModel,ShortDomainModel,ShortIGFS} from '../types';
 
 const isDefined = filter((v:any) => v);
 
@@ -38,7 +39,7 @@ const currentShortItems = ({changesKey, shortKey}) => (state$) => {
         state$.pipe(pluck('edit', 'changes', changesKey), isDefined, distinctUntilChanged()),
         state$.pipe(pluck(shortKey, 'value'), isDefined, distinctUntilChanged())
     ).pipe(
-        map(([{ids = [], changedItems}, shortItems]) => {
+        map(([{ids=[], changedItems=[]}, shortItems]) => {
             if (!ids.length || !shortItems)
                 return [];
 
@@ -54,14 +55,15 @@ const selectNames = (itemIDs, nameAt = 'name') => pipe(
 );
 
 export default class ConfigSelectors {
-    static $inject = ['Caches', 'Clusters', 'Models'];
+    static $inject = ['Caches', 'Clusters', 'IGFSs', 'Models'];
 
     /**
      * @param {Caches} Caches
      * @param {Clusters} Clusters
+     * @param {IGFSs} IGFSs
      * @param {Models} Models
      */
-    constructor(private Caches: Caches, private Clusters: Clusters, private Models: Models) {}
+    constructor(private Caches: Caches, private Clusters: Clusters, private IGFSs: IGFSs, private Models: Models) {}
 
     /**
      * @returns {(state$: Observable) => Observable<DomainModel>}
@@ -106,6 +108,12 @@ export default class ConfigSelectors {
      */
     selectCache = (id) => selectMapItem('caches', id);
 
+    /**
+     * @returns {(state$: Observable) => Observable<ShortIGFS>}
+     */
+    selectIGFS = (id) => selectMapItem('igfss', id);
+    
+
      /**
      * @returns {(state$: Observable) => Observable<{pristine: boolean, value: Map<string, ShortCache>}>}
      */
@@ -115,6 +123,12 @@ export default class ConfigSelectors {
      * @returns {(state$: Observable) => Observable<Array<ShortCache>>}
      */
     selectShortCachesValue = () => (state$) => state$.pipe(this.selectShortCaches(), selectValues);
+    
+     /**
+     * @returns {(state$: Observable) => Observable<{pristine: boolean, value: Map<string, ShortIGFS>}>}
+     */
+    selectShortIGFSs = () => selectItems('shortIgfss');
+    selectShortIGFSsValue = () => (state$) => state$.pipe(this.selectShortIGFSs(), selectValues);
 
    /**
      * @returns {(state$: Observable) => Observable<Array<string>>}
@@ -137,7 +151,20 @@ export default class ConfigSelectors {
             itemID: cacheID
         })
     );
-
+    
+     /**
+     * @returns {(state$: Observable) => Observable<IGFS>}
+     */
+    selectIGFSToEdit = (itemID) => (state$) => state$.pipe(
+        this.selectIGFS(itemID),
+        distinctUntilChanged(),
+        selectItemToEdit({
+            items: state$.pipe(this.selectCurrentShortIGFSs),
+            itemFactory: () => this.IGFSs.getBlankIGFS(),
+            defaultName: defaultNames.igfs,
+            itemID
+        })
+    );
      /**
      * @returns {(state$: Observable) => Observable<DomainModel>}
      */
@@ -169,7 +196,10 @@ export default class ConfigSelectors {
      * @returns {(state$: Observable) => Observable<Array<ShortCache>>}
      */
     selectCurrentShortCaches = currentShortItems({changesKey: 'caches', shortKey: 'shortCaches'});
-
+    /**
+     * @returns {(state$: Observable) => Observable<Array<ShortIGFS>>}
+     */
+    selectCurrentShortIGFSs = currentShortItems({changesKey: 'igfss', shortKey: 'shortIgfss'});
     /**
      * @returns {(state$: Observable) => Observable<Array<ShortDomainModel>>}
      */
@@ -202,13 +232,15 @@ export default class ConfigSelectors {
 
                 return forkJoin(
                     state$.pipe(selectMapItems('caches', cluster.caches || []), take(1)),
-                    state$.pipe(selectMapItems('models', cluster.models || []), take(1))
-                ).pipe(map(([caches, models]) => ({
+                    state$.pipe(selectMapItems('models', cluster.models || []), take(1)),
+                    state$.pipe(selectMapItems('igfss', cluster.igfss || []), take(1)),
+                ).pipe(map(([caches, models, igfss]) => ({
                     cluster,
                     caches,
                     domains: models,
+                    igfss,
                     spaces: [{id: cluster.space, demo: isDemo}],
-                    __isComplete: !!cluster && !(!hasValues(caches) || !hasValues(models))
+                    __isComplete: !!cluster && !(!hasValues(caches) || !hasValues(models) || !hasValues(igfss))
                 })));
             })
         );

@@ -1,4 +1,4 @@
-
+import _ from 'lodash';
 
 export default class IgniteUiAceGeneratorFactory {
     constructor($scope, $attrs, Version, generatorFactory) {
@@ -34,7 +34,15 @@ export default class IgniteUiAceGeneratorFactory {
 
                 break;
             case 'cacheNodeFilter':
-                this.generate = (cache) => this.generatorFactory.cacheNodeFilter(cache);
+                this.generate = (cache, igfss) => {
+                    const cacheIgfss = _.reduce(igfss, (acc, igfs) => {
+                        acc.push(igfs.igfs);
+
+                        return acc;
+                    }, []);
+
+                    return this.generatorFactory.cacheNodeFilter(cache, cacheIgfss);
+                };
 
                 break;
             case 'clusterServiceConfiguration':
@@ -46,6 +54,19 @@ export default class IgniteUiAceGeneratorFactory {
             case 'clusterCheckpoint':
                 this.generate = (cluster, caches) => {
                     return this.generatorFactory.clusterCheckpoint(cluster, available, caches);
+                };
+
+                break;
+            case 'igfss':
+                this.generate = (cluster, igfss) => {
+                    const clusterIgfss = _.reduce(igfss, (acc, igfs) => {
+                        if (_.includes(cluster.igfss, igfs.value))
+                            acc.push(igfs.igfs);
+
+                        return acc;
+                    }, []);
+
+                    return this.generatorFactory.clusterIgfss(clusterIgfss, available);
                 };
 
                 break;
