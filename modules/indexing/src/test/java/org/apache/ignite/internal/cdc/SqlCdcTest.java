@@ -328,6 +328,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         /** {@inheritDoc} */
         @Override public void onMappings(Iterator<TypeMapping> mappings) {
+            log.info(">>> START onMappings -> mappingCnt=" + mappingCnt);
             assertEquals(0, mappingCnt);
             assertFalse("onMappings must be executed first", cityValType || userValType || userKeyType);
 
@@ -345,6 +346,8 @@ public class SqlCdcTest extends AbstractCdcTest {
                 assertFalse(typeName.isEmpty());
                 assertEquals(mapper.typeId(typeName), m.typeId());
             }
+
+            log.info(">>> END onMappings -> mappingCnt=" + mappingCnt);
         }
 
         /** {@inheritDoc} */
