@@ -19,12 +19,10 @@ package org.apache.ignite.client;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.BiConsumer;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignition;
@@ -35,40 +33,28 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /** */
 public class ClientOrderedCollectionWarnTest extends GridCommonAbstractTest {
     /** */
-    private static final String WARN_LSNR_MSG = "Unordered %s java.util.%s is used for"; //
+    private static final String WARN_LSNR_MSG = "Unordered %s java.util."; //
 
     /** */
-    private static final LogListener LINKED_HASH_MAP_WARN_LSNR =
-        LogListener.matches(String.format(WARN_LSNR_MSG, "map", "LinkedHashMap")).times(1).build();
+    private static final LogListener MAP_WARN_LSNR =
+        LogListener.matches(String.format(WARN_LSNR_MSG, "map")).times(1).build();
 
     /** */
-    private static final LogListener HASH_MAP_WARN_LSNR =
-        LogListener.matches(String.format(WARN_LSNR_MSG, "map", "HashMap")).times(1).build();
-
-    /** */
-    private static final LogListener LINKED_HASH_SET_WARN_LSNR =
-        LogListener.matches(String.format(WARN_LSNR_MSG, "collection", "LinkedHashSet")).times(1).build();
-
-    /** */
-    private static final LogListener HASH_SET_WARN_LSNR =
-        LogListener.matches(String.format(WARN_LSNR_MSG, "collection", "HashSet")).times(1).build();
-
-    /** */
-    private static final List<LogListener> MAP_LSNR = List.of(LINKED_HASH_MAP_WARN_LSNR, HASH_MAP_WARN_LSNR);
-
-    /** */
-    private static final List<LogListener> SET_LSNR = List.of(LINKED_HASH_SET_WARN_LSNR, HASH_SET_WARN_LSNR);
+    private static final LogListener SET_WARN_LSNR =
+        LogListener.matches(String.format(WARN_LSNR_MSG, "collection")).times(1).build();
 
     /** */
     private final ListeningTestLogger testLog = new ListeningTestLogger(log);
@@ -80,13 +66,14 @@ public class ClientOrderedCollectionWarnTest extends GridCommonAbstractTest {
     private static IgniteClient cli;
 
     /** */
+    private static ClientCache<Long, Long> cache;
+
+    /** */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        testLog.registerListener(LINKED_HASH_MAP_WARN_LSNR);
-        testLog.registerListener(HASH_MAP_WARN_LSNR);
-        testLog.registerListener(LINKED_HASH_SET_WARN_LSNR);
-        testLog.registerListener(HASH_SET_WARN_LSNR);
+        testLog.registerListener(MAP_WARN_LSNR);
+        testLog.registerListener(SET_WARN_LSNR);
 
         cfg.setGridLogger(testLog);
 
@@ -98,12 +85,21 @@ public class ClientOrderedCollectionWarnTest extends GridCommonAbstractTest {
         return new ClientConfiguration().setAddresses(Config.SERVER).setLogger(testLog);
     }
 
+    /** */
+    private ClientCacheConfiguration getClientClientConfiguration() {
+        return new ClientCacheConfiguration()
+            .setName(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         ign = startGrid();
         cli = Ignition.startClient(getClientConfiguration());
+
+        cache = cli.getOrCreateCache(getClientClientConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -118,136 +114,82 @@ public class ClientOrderedCollectionWarnTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        LINKED_HASH_MAP_WARN_LSNR.reset();
-        HASH_MAP_WARN_LSNR.reset();
-        LINKED_HASH_SET_WARN_LSNR.reset();
-        HASH_SET_WARN_LSNR.reset();
+        MAP_WARN_LSNR.reset();
+        SET_WARN_LSNR.reset();
     }
 
     /** */
     @Test
-    public void testPutAll() throws Exception {
-        testPutAll(new TreeMap<>(), MAP_LSNR, false);
+    public void putAll() throws Exception {
+        Runnable cacheOpTreeMap = () -> cache.putAll(fillMap(new TreeMap<>()));
+        Runnable cacheOpHashMap = () -> cache.putAll(fillMap(new HashMap<>()));
+
+        testOp(cacheOpTreeMap, cacheOpHashMap, MAP_WARN_LSNR);
     }
 
     /** */
     @Test
-    public void testPutAllWarn() throws Exception {
-        testPutAll(new HashMap<>(), List.of(HASH_MAP_WARN_LSNR), true);
-    }
+    public void invokeAll() throws Exception {
+        Runnable cacheOpTreeSet = () -> cache.invokeAll(fillSet(new TreeSet<>()), new TestEntryProcessor());
+        Runnable cacheOpHashSet = () -> cache.invokeAll(fillSet(new HashSet<>()), new TestEntryProcessor());
 
-    /** */
-    @Test
-    public void testInvokeAll() throws Exception {
-        testInvokeAll(new TreeSet<>(), SET_LSNR, false);
-    }
-
-    /** */
-    @Test
-    public void testInvokeAllWarn() throws Exception {
-        testInvokeAll(new HashSet<>(), List.of(HASH_SET_WARN_LSNR), true);
+        testOp(cacheOpTreeSet, cacheOpHashSet, SET_WARN_LSNR);
     }
 
     /** */
     @Test
     public void testRemoveAll() throws Exception {
-        testSetAllOp(new TreeSet<>(), ClientCache::removeAll);
+        Runnable cacheOpTreeSet = () -> cache.removeAll(fillSet(new TreeSet<>()));
+        Runnable cacheOpHashSet = () -> cache.removeAll(fillSet(new HashSet<>()));
 
-        testSetAllOp(new HashSet<>(), ClientCache::removeAll);
+        testOp(cacheOpTreeSet, cacheOpHashSet, SET_WARN_LSNR);
     }
 
     /** */
     @Test
     public void testGetAll() throws Exception {
-        testSetAllOp(new TreeSet<>(), ClientCache::getAll);
+        Runnable cacheOpTreeSet = () -> cache.removeAll(fillSet(new TreeSet<>()));
+        Runnable cacheOpHashSet = () -> cache.removeAll(fillSet(new HashSet<>()));
 
-        testSetAllOp(new HashSet<>(), ClientCache::getAll);
-    }
+        testOp(cacheOpTreeSet, cacheOpHashSet, SET_WARN_LSNR);
 
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPutAllExplicitOptimistic() throws Exception {
-        testPutAllWithTx(new HashMap<>(), OPTIMISTIC, MAP_LSNR, false);
-    }
+        SET_WARN_LSNR.reset();
 
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPutAllExplicitPessimistic() throws Exception {
-        testPutAllWithTx(new HashMap<>(), PESSIMISTIC, List.of(HASH_MAP_WARN_LSNR), true);
+        withTx(cacheOpHashSet, PESSIMISTIC, READ_COMMITTED);
+
+        checkOp(false, SET_WARN_LSNR);
     }
 
     /** */
-    private void testPutAll(
-        Map<Long, Long> map,
-        List<LogListener> lsnrs,
-        boolean warnPresent
-    ) throws Exception {
-        createTransactionalCache().putAll(fillMap(map));
+    private void testOp(Runnable cacheOpWithOrdered, Runnable cacheOpWithNoOrdered, LogListener lsnr) throws Exception {
+        cacheOpWithOrdered.run();
 
-        checkOp(warnPresent, lsnrs);
+        withTx(cacheOpWithOrdered, PESSIMISTIC, SERIALIZABLE);
+
+        withTx(cacheOpWithNoOrdered, OPTIMISTIC, SERIALIZABLE);
+
+        checkOp(false, lsnr);
+
+        withTx(cacheOpWithNoOrdered, PESSIMISTIC, READ_COMMITTED);
+
+        checkOp(true, lsnr);
     }
 
     /** */
-    private void testInvokeAll(
-        Set<Long> set,
-        List<LogListener> lsnrs,
-        boolean warnPresent
-    ) throws Exception {
-        createTransactionalCache().invokeAll(fillSet(set), new TestEntryProcessor());
+    private void withTx(Runnable cacheOp, TransactionConcurrency concurrency, TransactionIsolation isolation) {
+        try (ClientTransaction tx = cli.transactions().txStart(concurrency, isolation)) {
+            cacheOp.run();
 
-        checkOp(warnPresent, lsnrs);
-    }
-
-    /** */
-    private void testSetAllOp(
-        Set<Long> set,
-        BiConsumer<ClientCache, Set> cacheOp
-    ) throws Exception {
-        cacheOp.accept(createTransactionalCache(), fillSet(set));
-
-        checkOp(false, SET_LSNR);
-    }
-
-    /** */
-    private void testPutAllWithTx(
-        Map<Long, Long> map,
-        TransactionConcurrency concurrency,
-        List<LogListener> lsnrs,
-        boolean warnPresent
-    ) throws Exception {
-        ClientCache<Long, Long> c = createTransactionalCache();
-
-        ClientTransaction tx = cli.transactions().txStart(concurrency, SERIALIZABLE);
-
-        c.putAll(fillMap(map));
-
-        tx.commit();
-        tx.close();
-
-        checkOp(warnPresent, lsnrs);
-    }
-
-    /** */
-    private void checkOp(boolean warnPresent, List<LogListener> lsnrs) throws Exception {
-        for (LogListener lsnr : lsnrs) {
-            if (warnPresent)
-                assertTrue(waitForCondition(lsnr::check, getTestTimeout()));
-            else
-                assertFalse(lsnr.check());
+            tx.commit();
         }
     }
 
     /** */
-    private <K, V> ClientCache<K, V> createTransactionalCache() {
-        ClientCacheConfiguration cacheCfg = new ClientCacheConfiguration()
-            .setName(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(TRANSACTIONAL);
-
-        return cli.getOrCreateCache(cacheCfg);
+    private void checkOp(boolean warnPresent, LogListener lsnr) throws Exception {
+        if (warnPresent)
+            assertTrue(waitForCondition(lsnr::check, getTestTimeout()));
+        else
+            assertFalse(lsnr.check());
     }
 
     /** */
@@ -267,9 +209,9 @@ public class ClientOrderedCollectionWarnTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestEntryProcessor implements EntryProcessor<Object, Object, Boolean> {
+    private static class TestEntryProcessor implements EntryProcessor<Long, Long, Boolean> {
         /** {@inheritDoc} */
-        @Override public Boolean process(MutableEntry<Object, Object> entry, Object... args) {
+        @Override public Boolean process(MutableEntry<Long, Long> entry, Object... args) {
             return true;
         }
     }

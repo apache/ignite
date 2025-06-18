@@ -83,10 +83,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ARR_LIST;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
-import static org.apache.ignite.internal.client.thin.TcpClientCache.BulkOperation.GET;
-import static org.apache.ignite.internal.client.thin.TcpClientCache.BulkOperation.INVOKE;
-import static org.apache.ignite.internal.client.thin.TcpClientCache.BulkOperation.PUT;
-import static org.apache.ignite.internal.client.thin.TcpClientCache.BulkOperation.REMOVE;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -346,7 +342,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return new HashMap<>();
 
-        warnIfUnordered(keys, GET);
+        warnIfUnordered(keys, true);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -364,7 +360,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return IgniteClientFutureImpl.completedFuture(new HashMap<>());
 
-        warnIfUnordered(keys, GET);
+        warnIfUnordered(keys, true);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -383,7 +379,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (map.isEmpty())
             return;
 
-        warnIfUnordered(map, PUT);
+        warnIfUnordered(map);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -401,7 +397,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (map.isEmpty())
             return IgniteClientFutureImpl.completedFuture(null);
 
-        warnIfUnordered(map, PUT);
+        warnIfUnordered(map);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -553,7 +549,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return;
 
-        warnIfUnordered(keys, REMOVE);
+        warnIfUnordered(keys, false);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -574,7 +570,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return IgniteClientFutureImpl.completedFuture(null);
 
-        warnIfUnordered(keys, REMOVE);
+        warnIfUnordered(keys, false);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -965,7 +961,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (entryProc == null)
             throw new NullPointerException("entryProc");
 
-        warnIfUnordered(keys, INVOKE);
+        warnIfUnordered(keys, false);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -990,7 +986,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (entryProc == null)
             throw new NullPointerException("entryProc");
 
-        warnIfUnordered(keys, INVOKE);
+        warnIfUnordered(keys, false);
 
         TcpClientTransaction tx = transactions.tx();
 
@@ -1656,85 +1652,75 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /**
-     * Checks that given map is sorted or otherwise constant order, or processed inside deadlock-detecting transaction.
+     * Warns if an unordered map is used in an operation that may lead to a distributed deadlock
+     * during an explicit transaction.
+     * <p>
+     * This check is relevant only for explicit user-managed transactions. Implicit transactions
+     * (such as those started automatically by the system) are not inspected by this method.
+     * </p>
      *
-     * @param m Map to examine.
+     * @param m        The map being used in the cache operation.
      */
-    protected void warnIfUnordered(Map<?, ?> m, BulkOperation op) {
+    protected void warnIfUnordered(Map<?, ?> m) {
         if (m == null || m.size() <= 1)
+            return;
+
+        TcpClientTransaction tx = transactions.tx();
+
+        // Only explicit transactions are checked
+        if (tx == null)
             return;
 
         if (m instanceof SortedMap || m instanceof GridSerializableMap)
             return;
 
-        TcpClientTransaction tx = transactions.tx();
-
-        if (tx != null && !op.canBlockTx(tx.getConcurrency(), tx.getIsolation()))
+        if (!canBlockTx(false, tx.getConcurrency(), tx.getIsolation()))
             return;
 
-        LT.warn(log, "Unordered map " + m.getClass().getName() +
-            " is used for " + op.title() + " operation on cache " + name + ". " +
-            "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead.");
+        LT.warn(log, "Unordered map " + m.getClass().getName() + " is used for putAll operation on cache " +
+            name + ". This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead.");
     }
 
     /**
-     * Checks that given collection is sorted set, or processed inside deadlock-detecting transaction.
+     * Warns if an unordered map is used in an operation that may lead to a distributed deadlock
+     * during an explicit transaction.
+     * <p>
+     * This check is relevant only for explicit user-managed transactions. Implicit transactions
+     * (such as those started automatically by the system) are not inspected by this method.
+     * </p>
      *
-     * Issues developer warning otherwise.
-     *
-     * @param coll Collection to examine.
+     * @param coll        The collection being used in the cache operation.
+     * @param isGetOp  {@code true} if the operation is a get (e.g., {@code getAll}).
      */
-    protected void warnIfUnordered(Collection<?> coll, BulkOperation op) {
+    protected void warnIfUnordered(Collection<?> coll, boolean isGetOp) {
         if (coll == null || coll.size() <= 1)
+            return;
+
+        TcpClientTransaction tx = transactions.tx();
+
+        // Only explicit transactions are checked
+        if (tx == null)
             return;
 
         if (coll instanceof SortedSet)
             return;
 
-        if (op == REMOVE)
-            return;
-
-        TcpClientTransaction tx = transactions.tx();
-
-        if (op == GET && tx == null)
-            return;
-
-        if (tx != null && !op.canBlockTx(tx.getConcurrency(), tx.getIsolation()))
+        if (!canBlockTx(isGetOp, tx.getConcurrency(), tx.getIsolation()))
             return;
 
         LT.warn(log, "Unordered collection " + coll.getClass().getName() +
-            " is used for " + op.title() + " operation on cache " + name + ". " +
+            " is used for " + (isGetOp ? "getAll" : "") + " operation on cache " + name + ". " +
             "This can lead to a distributed deadlock. Switch to a sorted set like TreeSet instead.");
     }
 
     /** */
-    protected enum BulkOperation {
-        /** */
-        GET,
+    private boolean canBlockTx(boolean isGetOp, TransactionConcurrency concurrency, TransactionIsolation isolation) {
+        if (concurrency == OPTIMISTIC && isolation == SERIALIZABLE)
+            return false;
 
-        /** */
-        PUT,
+        if (isGetOp && concurrency == PESSIMISTIC && isolation == READ_COMMITTED)
+            return false;
 
-        /** */
-        INVOKE,
-
-        /** */
-        REMOVE;
-
-        /** */
-        public String title() {
-            return name().toLowerCase() + "All";
-        }
-
-        /** */
-        public boolean canBlockTx(TransactionConcurrency concurrency, TransactionIsolation isolation) {
-            if (concurrency == OPTIMISTIC && isolation == SERIALIZABLE)
-                return false;
-
-            if (this == GET && concurrency == PESSIMISTIC && isolation == READ_COMMITTED)
-                return false;
-
-            return true;
-        }
+        return true;
     }
 }
