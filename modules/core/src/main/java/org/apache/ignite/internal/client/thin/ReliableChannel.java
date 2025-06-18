@@ -302,10 +302,7 @@ final class ReliableChannel implements AutoCloseable {
                     if (hld == null)
                         throw connEx;
 
-                    if (ch != null && ch == hld.ch)
-                        hld.closeChannel();
-
-                    retryCh = hld.getOrCreateChannel();
+                    retryCh = getRetryChannel(hld, ch);
                 }
                 catch (ClientConnectionException reconnectEx) {
                     failures.add(reconnectEx);
@@ -913,10 +910,7 @@ final class ReliableChannel implements AutoCloseable {
                 catch (ClientConnectionException e) {
                     if (c0 == c && shouldRetry(op, F.size(failures), e)) {
                         // In case of stale channel try to reconnect to the same channel and repeat the operation.
-                        if (c != null && c == hld.ch)
-                            hld.closeChannel();
-
-                        c = hld.getOrCreateChannel();
+                        c = getRetryChannel(hld, c);
 
                         return function.apply(c);
                     }
@@ -970,14 +964,11 @@ final class ReliableChannel implements AutoCloseable {
                 return function.apply(channel);
             }
             catch (ClientConnectionException e) {
-                onChannelFailure(hld, channel, e, failures);
-
                 if (!shouldRetry(op, 0, e))
                     throw e;
 
                 try {
-                    // In case of stale channel try to reconnect to the same channel and repeat the operation.
-                    channel = hld.getOrCreateChannel();
+                    channel = getRetryChannel(hld, channel);
 
                     return function.apply(channel);
                 }
@@ -996,6 +987,19 @@ final class ReliableChannel implements AutoCloseable {
         }
 
         return applyOnDefaultChannel(function, op, failures);
+    }
+
+    /**
+     * Returns the client channel that should be used to retry sending the request.
+     */
+    private ClientChannel getRetryChannel(ClientChannelHolder hld, ClientChannel ch)
+        throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
+        if (ch != null && ch == hld.ch)
+            hld.closeChannel();
+
+        rollCurrentChannel(hld);
+
+        return hld.getOrCreateChannel();
     }
 
     /** Get retry limit. */
