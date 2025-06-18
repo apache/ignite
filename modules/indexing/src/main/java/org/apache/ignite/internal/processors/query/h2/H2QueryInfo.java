@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -37,10 +36,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class H2QueryInfo implements TrackableQuery {
     /** Type. */
-    private QueryType type;
+    private final QueryType type;
 
     /** Begin timestamp. */
-    private long beginTs;
+    private final long beginTs;
 
     /** The most recent point in time when the tracking of a long query was suspended. */
     private volatile long lastSuspendTs;
@@ -52,22 +51,22 @@ public class H2QueryInfo implements TrackableQuery {
     private volatile boolean isSuspended;
 
     /** Query schema. */
-    private String schema;
+    private final String schema;
 
     /** Query SQL. */
-    private String sql;
+    private final String sql;
 
     /** Enforce join order. */
-    private boolean enforceJoinOrder;
+    private final boolean enforceJoinOrder;
 
     /** Join batch enabled (distributed join). */
-    private boolean distributedJoin;
+    private final boolean distributedJoin;
 
     /** Lazy mode. */
-    private boolean lazy;
+    private final boolean lazy;
 
     /** Prepared statement. */
-    private Prepared stmt;
+    private final Prepared stmt;
 
     /** Originator node uid. */
     private final UUID nodeId;
@@ -77,20 +76,6 @@ public class H2QueryInfo implements TrackableQuery {
 
     /** Query SQL plan. */
     private volatile String plan;
-
-    /** If {@code true}, then the {@code time()} method will always return {@code 0}. */
-    private boolean isTimeDisabled;
-
-    /**
-     * @param nodeId Node id.
-     * @param qryId Query id.
-     */
-    public H2QueryInfo(UUID nodeId, long qryId) {
-        this.nodeId = nodeId;
-        this.queryId = qryId;
-
-        isTimeDisabled = true;
-    }
 
     /**
      * @param type Query type.
@@ -171,28 +156,7 @@ public class H2QueryInfo implements TrackableQuery {
 
     /** {@inheritDoc} */
     @Override public long time() {
-        if (isTimeDisabled)
-            return 0;
-
         return (isSuspended ? lastSuspendTs : U.currentTimeMillis()) - beginTs - extWait;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (!(o instanceof H2QueryInfo))
-            return false;
-
-        H2QueryInfo info = (H2QueryInfo)o;
-
-        return nodeId.equals(info.nodeId) && queryId == info.queryId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(nodeId, queryId);
     }
 
     /** */

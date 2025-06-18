@@ -21,12 +21,15 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -61,6 +64,7 @@ import org.junit.runners.model.Statement;
 
 import static java.lang.Thread.currentThread;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.h2.engine.Constants.DEFAULT_PAGE_SIZE;
 
 /**
@@ -461,7 +465,11 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @Test
     @MultiNodeTest
     public void testEmptyHeavyQueriesTrackerWithCancelledQuery() {
-        cancelQuery(runNotFullyFetchedQuery(false));
+        long qryId = runNotFullyFetchedQuery(false);
+
+        checkQryInfoCount(gridCount());
+
+        cancelQuery(qryId);
     }
 
     /**
@@ -472,6 +480,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @MultiNodeTest
     public void testEmptyHeavyQueriesTrackerWithCancelledLocalQuery() {
         long qryId = runNotFullyFetchedQuery(true);
+
+        checkQryInfoCount(1);
 
         ((IgniteEx)ignite).context().query().cancelLocalQueries(Set.of(qryId));
     }
@@ -489,26 +499,22 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         for (int i = 0; i < qryCnt; i++)
             runNotFullyFetchedQuery(false);
 
-        for (int i = 0; i < gridCount(); ++i)
-            assertEquals(qryCnt, heavyQueriesTracker(i).getQueries().size());
+        checkQryInfoCount(gridCount() * qryCnt);
+
+        ArrayDeque<Long> qryIds = new ArrayDeque<>(getQueryIdsOnNode(0));
+
+        Set<Long> cnldQryIds = new HashSet<>();
 
         for (int i = 0; i < cnldQryCnt; i++)
-            cancelQuery(i + 1);
+            cnldQryIds.add(cancelQuery(qryIds.poll()));
 
-        for (int i = 0; i < gridCount(); ++i) {
-            Set<TrackableQuery> qrys = heavyQueriesTracker(i).getQueries();
+        checkQryInfoCount(gridCount() * (qryCnt - cnldQryCnt));
 
-            assertEquals(cnldQryCnt, qrys.size());
+        for (int i = 0; i < gridCount(); i++)
+            assertTrue(getQueryIdsOnNode(i).stream().allMatch(id -> !cnldQryIds.contains(id) && qryIds.contains(id)));
 
-            assertFalse(qrys.stream().anyMatch(qryInfo -> {
-                long id = ((H2QueryInfo)qryInfo).queryId();
-
-                return IntStream.range(0, cnldQryCnt).anyMatch(x -> x == id);
-            }));
-        }
-
-        for (int i = cnldQryCnt; i < qryCnt; ++i)
-            cancelQuery(i + 1);
+        while (!qryIds.isEmpty())
+            cancelQuery(qryIds.poll());
     }
 
     /**
@@ -708,10 +714,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @param loc Flag indicating if the query is local.
      * @return Query id.
      */
-    public long runNotFullyFetchedQuery(boolean loc) {
+    private long runNotFullyFetchedQuery(boolean loc) {
         queryCursor(loc).iterator().next();
-
-        checkQryInfoCount(loc ? 1 : gridCount());
 
         H2QueryInfo qryInfo = (H2QueryInfo)heavyQueriesTracker().getQueries().iterator().next();
 
@@ -724,15 +728,28 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @param loc Flag indicating if the query is local.
      * @return Query cursor.
      */
-    public FieldsQueryCursor<List<?>> queryCursor(boolean loc) {
+    private FieldsQueryCursor<List<?>> queryCursor(boolean loc) {
         return ignite.cache("test").query(new SqlFieldsQuery("select * from test").setLocal(loc).setPageSize(1));
     }
 
     /**
      * @param qryId Query id.
+     * @return Cancelled query id.
      */
-    public void cancelQuery(long qryId) {
+    private long cancelQuery(long qryId) {
         ((IgniteEx)ignite).context().query().cancelQuery(qryId, ignite.cluster().node().id(), false);
+
+        return qryId;
+    }
+
+    /**
+     * @param nodeIdx Node index.
+     * @return Set of query ids registered on a node.
+     */
+    private Set<Long> getQueryIdsOnNode(int nodeIdx) {
+        return heavyQueriesTracker(nodeIdx).getQueries().stream()
+            .map(query -> ((H2QueryInfo)query).queryId())
+            .collect(Collectors.toSet());
     }
 
     /**
@@ -760,7 +777,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         @QuerySqlFunction
         public static int wait_func() {
             try {
-                GridTestUtils.waitForCondition(() -> lsnrDml.check(), 10_000);
+                waitForCondition(() -> lsnrDml.check(), 10_000);
             }
             catch (IgniteInterruptedCheckedException ignored) {
                 // No-op
@@ -803,20 +820,23 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         return ((IgniteH2Indexing)grid(idx).context().query().getIndexing()).heavyQueriesTracker();
     }
 
-    /** */
+    /**
+     * @param exp Expected number of {@link TrackableQuery} instances registered in {@link HeavyQueriesTracker}
+     * on all cluster nodes.
+     */
     private void checkQryInfoCount(int exp) {
-        int res = 0;
-
-        for (int i = 0; i < gridCount(); i++) {
-            if (!heavyQueriesTracker(i).getQueries().isEmpty())
-                res++;
+        try {
+            assertTrue(waitForCondition(
+                () -> IntStream.range(0, gridCount()).map(i -> heavyQueriesTracker(i).getQueries().size()).sum() == exp,
+                3_000));
         }
-
-        assertEquals(exp, res);
+        catch (IgniteInterruptedCheckedException ignored) {
+            // No-op
+        }
     }
 
     /** */
-    public int gridCount() {
+    private int gridCount() {
         return Ignition.allGrids().size();
     }
 

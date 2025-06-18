@@ -55,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
-import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.H2StatementCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -177,8 +176,6 @@ public class GridMapQueryExecutor {
             }
 
             nodeRess.cancelRequest(qryReqId);
-
-            h2.heavyQueriesTracker().stopTracking(new H2QueryInfo(node.id(), qryReqId), null);
         }
     }
 
