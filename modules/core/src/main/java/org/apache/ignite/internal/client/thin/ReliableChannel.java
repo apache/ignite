@@ -991,9 +991,9 @@ final class ReliableChannel implements AutoCloseable {
 
     /**
      * Returns the client channel that should be used to retry sending the request.
+     * Unlike onChannelFailure, invoked only for a reconnection attempt on the same channel without channels initialization.
      */
-    private ClientChannel getRetryChannel(ClientChannelHolder hld, ClientChannel ch)
-        throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
+    private ClientChannel getRetryChannel(ClientChannelHolder hld, ClientChannel ch) {
         if (ch != null && ch == hld.ch)
             hld.closeChannel();
 
