@@ -2601,6 +2601,10 @@ public class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
             "storagePath", "Storage path",
             cfg.getStoragePaths(), startCfg.getStoragePaths(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
+            "indexPath", "Index path",
+            cfg.getIndexPath(), startCfg.getIndexPath(), true);
     }
 
     /**

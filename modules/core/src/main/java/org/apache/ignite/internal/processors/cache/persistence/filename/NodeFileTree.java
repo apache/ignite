@@ -78,7 +78,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * </ul>
  *
  * Node, user can configure several extra storages by {@link DataStorageConfiguration#setExtraStoragePaths(String...)}
- * Which can be used by the cache to store data. See {@link CacheConfiguration#setStoragePaths(String...)}.
+ * Which can be used by the cache to store data. See {@link CacheConfiguration#setStoragePaths(String...)}
+ * and {@link CacheConfiguration#setIndexPath(String)}.
  * Partition files will be spread evenly among all configured storages.
  * In case extra storages configured, each storage will repeat structure described below.
  * {@link NodeFileTree#defaultCacheStorage(CacheConfiguration)} will be used to store cache config.
@@ -567,19 +568,34 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store dirs for given cache.
      */
     public File[] cacheStorages(CacheConfiguration<?, ?> ccfg) {
-        String cacheDirName = ccfg.getGroupName() != null
-            ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
-            : CACHE_DIR_PREFIX + ccfg.getName();
+        return cacheStorages(ccfg, true);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @param includeIdxPath If {@code true} then add optional index store to results.
+     * @return Store dirs for given cache.
+     */
+    private File[] cacheStorages(CacheConfiguration<?, ?> ccfg, boolean includeIdxPath) {
+        String cacheDirName = cacheDirName(ccfg);
 
         String[] csp = ccfg.getStoragePaths();
+        String idxPath = ccfg.getIndexPath();
+        boolean idxPathEmpty = !includeIdxPath || F.isEmpty(idxPath);
 
-        if (F.isEmpty(csp))
-            return new File[] {new File(cacheStorageRoot(null), cacheDirName)};
+        if (F.isEmpty(csp)) {
+            return idxPathEmpty
+                ? new File[]{cacheStorage(null, cacheDirName)}
+                : new File[]{cacheStorage(null, cacheDirName), cacheStorage(idxPath, cacheDirName)};
+        }
 
-        File[] cs = new File[csp.length];
+        File[] cs = new File[csp.length + (idxPathEmpty ? 0 : 1)];
 
-        for (int i = 0; i < cs.length; i++)
-            cs[i] = new File(cacheStorageRoot(csp[i]), cacheDirName);
+        for (int i = 0; i < csp.length; i++)
+            cs[i] = cacheStorage(csp[i], cacheDirName);
+
+        if (!idxPathEmpty)
+            cs[cs.length - 1] = cacheStorage(idxPath, cacheDirName);
 
         return cs;
     }
@@ -640,7 +656,14 @@ public class NodeFileTree extends SharedFileTree {
      * @return Partition file.
      */
     public File partitionFile(CacheConfiguration<?, ?> ccfg, int part) {
-        return new File(resolveStorage(cacheStorages(ccfg), part), partitionFileName(part));
+        if (part == INDEX_PARTITION) {
+            String idxPath = ccfg.getIndexPath();
+
+            if (!F.isEmpty(idxPath))
+                return new File(cacheStorage(idxPath, cacheDirName(ccfg)), partitionFileName(INDEX_PARTITION));
+        }
+
+        return new File(resolveStorage(cacheStorages(ccfg, false), part), partitionFileName(part));
     }
 
     /**
@@ -648,11 +671,20 @@ public class NodeFileTree extends SharedFileTree {
      * @return Store directory for given cache.
      */
     public File[] tmpCacheStorages(CacheConfiguration<?, ?> ccfg) {
-        File[] cacheStorages = cacheStorages(ccfg);
+        return tmpCacheStorages(ccfg, true);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @param includeIdxPath If {@code true} then add optional index store to results.
+     * @return Store directory for given cache.
+     */
+    private File[] tmpCacheStorages(CacheConfiguration<?, ?> ccfg, boolean includeIdxPath) {
+        File[] cacheStorages = cacheStorages(ccfg, includeIdxPath);
         File[] tmpCacheStorages = new File[cacheStorages.length];
 
         for (int i = 0; i < cacheStorages.length; i++)
-            tmpCacheStorages[i] = new File(cacheStorages[i].getParentFile(), TMP_CACHE_DIR_PREFIX + cacheStorages[i].getName());
+            tmpCacheStorages[i] = tmpCacheStorage(cacheStorages[i]);
 
         return tmpCacheStorages;
     }
@@ -665,9 +697,10 @@ public class NodeFileTree extends SharedFileTree {
      * @param cacheDirName Cache directory name.
      * @return Temp store directory for given cache.
      * @see CacheConfiguration#getStoragePaths()
+     * @see CacheConfiguration#getIndexPath()
      */
     public File tmpCacheStorage(@Nullable String storagePath, String cacheDirName) {
-        return new File(cacheStorageRoot(storagePath), TMP_CACHE_DIR_PREFIX + cacheDirName);
+        return tmpCacheStorage(cacheStorage(storagePath, cacheDirName));
     }
 
     /**
@@ -702,7 +735,17 @@ public class NodeFileTree extends SharedFileTree {
      * @return Path to the temp partition file.
      */
     public File tmpPartition(CacheConfiguration<?, ?> ccfg, int partId) {
-        return new File(resolveStorage(tmpCacheStorages(ccfg), partId), partitionFileName(partId));
+        if (partId == INDEX_PARTITION) {
+            String idxPath = ccfg.getIndexPath();
+
+            if (!F.isEmpty(idxPath)) {
+                File idxPartFile = partitionFile(ccfg, INDEX_PARTITION);
+
+                return new File(tmpCacheStorage(idxPartFile.getParentFile()), idxPartFile.getName());
+            }
+        }
+
+        return new File(resolveStorage(tmpCacheStorages(ccfg, false), partId), partitionFileName(partId));
     }
 
     /**
@@ -713,6 +756,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param partId partition id.
      * @return Path to the temp partition file.
      * @see CacheConfiguration#getStoragePaths()
+     * @see CacheConfiguration#getIndexPath()
      */
     public File tmpPartition(@Nullable String storagePath, String cacheDirName, int partId) {
         return new File(tmpCacheStorage(storagePath, cacheDirName), partitionFileName(partId));
@@ -879,11 +923,14 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param storagePath Value from config.
+     * @param cacheDirName Regular or temporary directory name for cache.
      * @return File storage.
      * @see CacheConfiguration#getStoragePaths()
+     * @see CacheConfiguration#getIndexPath()
+     * @see #cacheDirName(CacheConfiguration)
      */
-    private File cacheStorageRoot(@Nullable String storagePath) {
-        return storagePath == null ? nodeStorage : extraStorages.getOrDefault(storagePath, nodeStorage);
+    private File cacheStorage(@Nullable String storagePath, String cacheDirName) {
+        return new File(storagePath == null ? nodeStorage : extraStorages.getOrDefault(storagePath, nodeStorage), cacheDirName);
     }
 
     /**
@@ -1004,6 +1051,7 @@ public class NodeFileTree extends SharedFileTree {
      */
     public static int partId(File part) {
         String name = part.getName();
+
         if (name.equals(INDEX_FILE_NAME))
             return INDEX_PARTITION;
 
@@ -1044,6 +1092,16 @@ public class NodeFileTree extends SharedFileTree {
     /** @return {@code ${root}/${path}/${folderName}} path. */
     private File rootRelative(String path) {
         return Paths.get(root.getAbsolutePath(), path, folderName).toFile();
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return Cache directory name.
+     */
+    private static String cacheDirName(CacheConfiguration<?, ?> ccfg) {
+        return ccfg.getGroupName() != null
+            ? CACHE_GRP_DIR_PREFIX + ccfg.getGroupName()
+            : CACHE_DIR_PREFIX + ccfg.getName();
     }
 
     /**
