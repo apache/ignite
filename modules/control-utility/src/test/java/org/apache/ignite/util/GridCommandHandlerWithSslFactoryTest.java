@@ -105,4 +105,11 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
 
         factoryUsed = true; // It's an SSL free test. Setting to `true` to avoid fail on check.
     }
+
+    /** {@inheritDoc} */
+    @Override public void testOfflineCommand() throws Exception {
+        super.testOfflineCommand();
+
+        factoryUsed = true;
+    }
 }
