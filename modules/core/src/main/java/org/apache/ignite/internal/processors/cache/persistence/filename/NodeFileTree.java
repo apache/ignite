@@ -226,27 +226,11 @@ public class NodeFileTree extends SharedFileTree {
     /** Pattern for segment file names. */
     private static final Pattern WAL_NAME_PATTERN = U.fixedLengthNumberNamePattern(WAL_SEGMENT_FILE_EXT);
 
-    /** WAL segment file filter, see {@link #WAL_NAME_PATTERN}. */
-    private static final Predicate<File> WAL_SEGMENT_FILE_FILTER = file -> !file.isDirectory() &&
-        WAL_NAME_PATTERN.matcher(file.getName()).matches();
-
     /** Pattern for WAL temp files - these files will be cleared at startup. */
     private static final Pattern WAL_TEMP_NAME_PATTERN = U.fixedLengthNumberNamePattern(TMP_WAL_SEG_FILE_EXT);
 
-    /** WAL segment temporary file filter, see {@link #WAL_TEMP_NAME_PATTERN}. */
-    private static final Predicate<File> WAL_SEGMENT_TEMP_FILE_FILTER = file -> !file.isDirectory() &&
-        WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches();
-
     /** Pattern for WAL compacted files. */
     private static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = U.fixedLengthNumberNamePattern(ZIP_WAL_SEG_FILE_EXT);
-
-    /** WAL segment compacted file filter, see {@link #WAL_SEGMENT_FILE_COMPACTED_PATTERN}. */
-    private static final Predicate<File> WAL_SEGMENT_FILE_COMPACTED_FILTER = file -> !file.isDirectory() &&
-        WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches();
-
-    /** WAL segment compacted or raw file filter. */
-    private static final Predicate<File> WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER = file -> walSegment(file) ||
-        walCompactedSegment(file);
 
     /** Partition file prefix. */
     static final String PART_FILE_PREFIX = "part-";
@@ -873,7 +857,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return {@code True} if file matches WAL segment file criteria.
      */
     public static boolean walSegment(File f) {
-        return WAL_SEGMENT_FILE_FILTER.test(f);
+        return !f.isDirectory() && WAL_NAME_PATTERN.matcher(f.getName()).matches();
     }
 
     /**
@@ -881,7 +865,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return {@code True} if file matches WAL segment temp file criteria.
      */
     public static boolean walTmpSegment(File f) {
-        return WAL_SEGMENT_TEMP_FILE_FILTER.test(f);
+        return !f.isDirectory() && WAL_TEMP_NAME_PATTERN.matcher(f.getName()).matches();
     }
 
     /**
@@ -889,7 +873,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return {@code True} if file matches compacted or raw WAL segment file criteria.
      */
     public static boolean walCompactedOrRawSegment(File f) {
-        return WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER.test(f);
+        return walSegment(f) || walCompactedSegment(f);
     }
 
     /**
@@ -897,7 +881,7 @@ public class NodeFileTree extends SharedFileTree {
      * @return {@code True} if file matches compacted WAL segment file criteria.
      */
     public static boolean walCompactedSegment(File f) {
-        return WAL_SEGMENT_FILE_COMPACTED_FILTER.test(f);
+        return !f.isDirectory() && WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches();
     }
 
     /**
