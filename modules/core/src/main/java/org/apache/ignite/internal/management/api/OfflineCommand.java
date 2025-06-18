@@ -15,27 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.management.api;
 
-/**
- * Indicates user has no permission to perform operation.
- */
-public class ClientAuthorizationException extends ClientException {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
-    /** @param msg the detail message. */
-    public ClientAuthorizationException(String msg) {
-        super(msg);
-    }
-
+/** Represents commands that can be executed without connecting to the cluster. */
+public interface OfflineCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
     /**
-     * Constructs a new exception with the specified detail message and cause.
+     * Executes the command in offline mode without cluster connection.
      *
-     * @param msg the detail message.
-     * @param cause the cause.
+     * @param arg Command argument.
+     * @param printer Consumer for command output printing.
+     * @return Command execution result.
      */
-    public ClientAuthorizationException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
+    public R execute(
+        A arg,
+        Consumer<String> printer
+    );
 }
