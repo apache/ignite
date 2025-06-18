@@ -23,6 +23,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -50,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
-import org.apache.ignite.internal.processors.query.running.TrackableQuery;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -473,7 +473,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Verifies that when a local not fully fetched query is cancelled, its {@link H2QueryInfo} is removed from
+     * Verifies that when a not fully fetched local query is cancelled, its {@link H2QueryInfo} is removed from
      * {@link HeavyQueriesTracker} on all cluster nodes.
      */
     @Test
@@ -487,9 +487,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Verifies that when there are multiple not fully fetched queries, and they are cancelled separately, corresponding
+     * Verifies that when multiple not fully fetched queries are cancelled separately, corresponding
      * {@link H2QueryInfo} instances are removed from {@link HeavyQueriesTracker} on all cluster nodes.
-     * */
+     */
     @Test
     @MultiNodeTest
     public void testEmptyHeavyQueriesTrackerWithMultipleCancelledQueries() {
@@ -501,7 +501,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         checkQryInfoCount(gridCount() * qryCnt);
 
-        ArrayDeque<Long> qryIds = new ArrayDeque<>(getQueryIdsOnNode(0));
+        Deque<Long> qryIds = new ArrayDeque<>(getQueryIdsOnNode(0));
 
         Set<Long> cnldQryIds = new HashSet<>();
 
@@ -821,7 +821,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * @param exp Expected number of {@link TrackableQuery} instances registered in {@link HeavyQueriesTracker}
+     * @param exp Expected number of {@link H2QueryInfo} instances registered in {@link HeavyQueriesTracker}
      * on all cluster nodes.
      */
     private void checkQryInfoCount(int exp) {
