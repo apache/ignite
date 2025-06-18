@@ -130,7 +130,6 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
         else if (pathMode == PathMode.SEPARATE_ROOT) {
             for (File f : new File(U.defaultWorkDirectory()).listFiles(f -> !f.getName().equals("log")))
                 U.delete(f);
-
         }
         else
             throw new IllegalStateException("Unknown path mode");
