@@ -870,18 +870,18 @@ public class NodeFileTree extends SharedFileTree {
 
     /**
      * @param f File.
-     * @return {@code True} if file matches compacted or raw WAL segment file criteria.
-     */
-    public static boolean walCompactedOrRawSegment(File f) {
-        return walSegment(f) || walCompactedSegment(f);
-    }
-
-    /**
-     * @param f File.
      * @return {@code True} if file matches compacted WAL segment file criteria.
      */
     public static boolean walCompactedSegment(File f) {
         return !f.isDirectory() && WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches();
+    }
+
+    /**
+     * @param f File.
+     * @return {@code True} if file matches compacted or raw WAL segment file criteria.
+     */
+    public static boolean walCompactedOrRawSegment(File f) {
+        return walSegment(f) || walCompactedSegment(f);
     }
 
     /**
