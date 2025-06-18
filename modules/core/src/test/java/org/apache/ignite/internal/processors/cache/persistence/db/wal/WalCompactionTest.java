@@ -50,7 +50,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
 
 /**
  *
@@ -397,7 +396,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         // Allow compressor to compress WAL segments.
         assertTrue(GridTestUtils.waitForCondition(zippedWalSegment::exists, 15_000));
 
-        File[] compressedSegments = ft.walArchive().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
+        File[] compressedSegments = ft.walArchive().listFiles(NodeFileTree::walCompactedSegment);
 
         long maxIdx = -1;
         for (File f : compressedSegments)
