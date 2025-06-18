@@ -17,26 +17,23 @@ pc-items-table(
             a.link-success(
                 ui-sref='base.configuration.edit.advanced.caches.cache({cacheID: "new"})'
                 ui-sref-opts='{location: "replace"}'
-            ) Create one?           
-        a.link-success(
-            ui-sref='base.configuration.edit.advanced.caches.cache({cacheID: "new"})'
-            ui-sref-opts='{location: "replace"}'
-            ng-show='($ctrl.shortCaches$|async:this).length'
-        ) + Add new cache
+            ) Create one? 
 
-h2.pc-page-header.ng-animate-disabled(ng-hide='($ctrl.isBlocked$|async:this)')
-    | {{ ($ctrl.selectionManager.selectedItemIDs$|async:this).length ? 'Multiple' : 'No' }} caches selected
-    span.pc-page-header-sub Select only one cache to see settings and edit it
+        button.btn.dropdown-toggle(ng-click="$ctrl.openDrawer = true") 打开操作面板
 
-h2.pc-page-header.ng-animate-disabled(ng-if='$ctrl.isBlocked$|async:this')
-    | {{ $ctrl.itemEditTitle$|async:this }}
 
-cache-edit-form(
-    cache='$ctrl.originalCache$|async:this'
-    caches='$ctrl.shortCaches$|async:this'
-    models='$ctrl.shortModels$|async:this'
-    on-save='$ctrl.save($event)'
-    ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'
-    fake-ui-can-exit='base.configuration.edit.advanced.caches.cache'
-    form-ui-can-exit-guard
+app-drawer(
+  is-open="$ctrl.openDrawer && ($ctrl.isBlocked$|async:this)"
+  on-close="$ctrl.openDrawer = false"
+  title=`$ctrl.itemEditTitle$|async:this`
+  width="55%"
 )
+    cache-edit-ui-form(
+        cache='$ctrl.originalCache$|async:this'
+        caches='$ctrl.shortCaches$|async:this'
+        models='$ctrl.shortModels$|async:this'
+        on-save='$ctrl.save($event)'
+        ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'
+        fake-ui-can-exit='base.configuration.edit.crudui.caches.cache'
+        form-ui-can-exit-guard
+    )

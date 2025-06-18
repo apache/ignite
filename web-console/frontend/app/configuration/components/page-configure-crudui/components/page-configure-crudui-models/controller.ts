@@ -5,9 +5,9 @@ import {pluck, tap, publishReplay, refCount, distinctUntilChanged, switchMap, ma
 
 import get from 'lodash/get';
 
-import hasIndexTemplate from './hasIndex.template.pug';
-import keyCellTemplate from './keyCell.template.pug';
-import valueCellTemplate from './valueCell.template.pug';
+import hasIndexTemplate from 'app/configuration/components/page-configure-advanced/components/page-configure-advanced-models/hasIndex.template.pug';
+import keyCellTemplate from 'app/configuration/components/page-configure-advanced/components/page-configure-advanced-models/keyCell.template.pug';
+import valueCellTemplate from 'app/configuration/components/page-configure-advanced/components/page-configure-advanced-models/valueCell.template.pug';
 
 import {removeClusterItems, advancedSaveModel} from '../../../../store/actionCreators';
 
@@ -21,7 +21,7 @@ import {IColumnDefOf} from 'ui-grid';
 import ConfigSelectionManager from '../../../../services/ConfigSelectionManager';
 
 
-export default class PageConfigureAdvancedModels {
+export default class PageConfigureCrudUIModels {
     static $inject = ['ConfigSelectors', 'ConfigureState', '$uiRouter', 'Models', '$state', 'configSelectionManager'];
 
     constructor(
@@ -32,6 +32,8 @@ export default class PageConfigureAdvancedModels {
         private $state: StateService,
         private configSelectionManager: ReturnType<typeof ConfigSelectionManager>
     ) {}
+
+    openDrawer = false;
     visibleRows$: Subject<Array<ShortDomainModel>>;
     selectedRows$: Subject<Array<ShortDomainModel>>;
     columnDefs: Array<IColumnDefOf<ShortDomainModel>>;
@@ -70,7 +72,7 @@ export default class PageConfigureAdvancedModels {
                     placeholder: 'Filter by key type…'
                 },
                 cellTemplate: keyCellTemplate,
-                minWidth: 165
+                width: 165
             },
             {
                 name: 'valueType',
@@ -82,7 +84,8 @@ export default class PageConfigureAdvancedModels {
                 },
                 sort: {direction: 'asc', priority: 0},
                 cellTemplate: valueCellTemplate,
-                minWidth: 165
+                minWidth: 200,
+                maxWidth: 350
             },
             {
                 name: 'valueLabel',
@@ -94,7 +97,7 @@ export default class PageConfigureAdvancedModels {
                 },
                 sort: {direction: 'asc', priority: 0},
                 cellTemplate: valueCellTemplate,
-                minWidth: 165
+                minWidth: 200
             }           
         ];
 
@@ -153,15 +156,15 @@ export default class PageConfigureAdvancedModels {
         this.subscription = merge(
             this.originalItem$,
             this.selectionManager.editGoes$.pipe(tap((id) => this.edit(id))),
-            this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.configuration.edit.advanced.models', null, options)))
+            this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.configuration.edit.crudui.models', null, options)))
         ).subscribe();
     }
 
     edit(modelID) {
-        this.$state.go('base.configuration.edit.advanced.models.model', {modelID});
+        this.$state.go('base.configuration.edit.crudui.models.model', {modelID});
     }
 
-    save({model, download}) {
+    save({model, download}) {        
         this.ConfigureState.dispatchAction(advancedSaveModel(model, download));
     }
 

@@ -66,7 +66,7 @@ export default class PageConfigureAdvancedIGFS {
                 },
                 sort: {direction: 'asc', priority: 0},
                 sortingAlgorithm: naturalCompare,
-                minWidth: 165
+                minWidth: 200
             },
             {
                 name: 'defaultMode',
@@ -76,11 +76,25 @@ export default class PageConfigureAdvancedIGFS {
                 width: 160
             },
             {
-                name: 'affinnityGroupSize',
-                displayName: 'Group size',
-                field: 'affinnityGroupSize',
+                name: 'fragmentizerEnabled',
+                displayName: 'Fragmentizer enabled',
+                field: 'fragmentizerEnabled',
                 enableFiltering: false,
-                width: 130
+                width: 160
+            },
+            {
+                name: 'backups',
+                displayName: 'Data backups',
+                field: 'backups',
+                enableFiltering: false,
+                width: 160
+            },
+            {
+                name: 'blockSize',
+                displayName: 'Data block size',
+                field: 'blockSize',
+                enableFiltering: false,
+                width: 160
             }
         ];
 
@@ -91,8 +105,10 @@ export default class PageConfigureAdvancedIGFS {
             map((items = []) => items.map((i) => ({
                 id: i.id,
                 name: i.name,
-                affinnityGroupSize: i.affinnityGroupSize || this.IGFSs.affinnityGroupSize.default,
-                defaultMode: i.defaultMode || this.IGFSs.defaultMode.default
+                backups: i.backups || this.IGFSs.backups.default,
+                blockSize: i.blockSize || 65536,
+                fragmentizerEnabled: i.fragmentizerEnabled || true,
+                defaultMode: i.defaultMode || i.igfsMode || this.IGFSs.defaultMode.default
             })))
         );
 

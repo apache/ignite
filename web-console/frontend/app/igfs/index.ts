@@ -9,9 +9,9 @@ import {withLatestFrom, tap, filter, scan} from 'rxjs/operators';
 import Datasource from 'app/datasource/services/Datasource';
 import ConfigureState from '../configuration/services/ConfigureState';
 import ConfigSelectionManager from '../configuration/services/ConfigSelectionManager';
+import Clusters from 'app/configuration/services/Clusters';
 
-
-import itemsTable from '../configuration/components/pc-items-table';
+import pcItemsTable from '../configuration/components/pc-items-table';
 import pcUiGridFilters from '../configuration/components/pc-ui-grid-filters';
 import isInCollection from '../configuration/components/pcIsInCollection';
 import pcValidation from '../configuration/components/pcValidation';
@@ -40,7 +40,7 @@ export default angular
         pageIgfsChinaMap.name,
 
         pcUiGridFilters.name,    
-        itemsTable.name,
+        pcItemsTable.name,
         pcValidation.name,      
         pcSplitButton.name
       
@@ -66,6 +66,8 @@ export default angular
        
     }])
     .factory('configSelectionManager', ConfigSelectionManager)
+    .directive('pcIsInCollection', isInCollection)
     .service('ConfigureState', ConfigureState)
+    .service('Clusters', Clusters)
     .service('Datasource', Datasource)
     ;

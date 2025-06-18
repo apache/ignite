@@ -65,7 +65,7 @@ export default class PageDatasourceOverviewController {
             displayName: 'driverClass',
             field: 'driverCls',                     
             enableFiltering: false,           
-            width: 300
+            width: 240
         },
         {
             name: 'db',

@@ -90,6 +90,9 @@ public class FileSystemConfiguration {
 
     /** File's data block size (bytes). */
     private int blockSize = DFLT_BLOCK_SIZE;
+    
+    /** File's data backups size (bytes). */
+    private int backups = 0;
 
     /** The number of pre-fetched blocks if specific file's chunk is requested. */
     private int prefetchBlocks;
@@ -173,6 +176,7 @@ public class FileSystemConfiguration {
          * Must preserve alphabetical order!
          */
         blockSize = cfg.getBlockSize();
+        backups = cfg.getBackups();
         bufSize = cfg.getBufferSize();
         colocateMeta = cfg.isColocateMetadata();
         dataCacheCfg = cfg.getDataCacheConfiguration();
@@ -286,6 +290,29 @@ public class FileSystemConfiguration {
      */
     public int getBlockSize() {
         return blockSize;
+    }
+
+    /**
+     * Sets file's data backups size.
+     *
+     * @param backups File's data backups or {@code -1} to reset default value.
+     * @return {@code this} for chaining.
+     */
+    public FileSystemConfiguration setBackups(int backups) {
+        A.ensure(backups >= 0, "backups >= 0");
+
+        this.backups = backups;
+
+        return this;
+    }
+    
+    /**
+     * Get file's data backups size.
+     *
+     * @return File's data backups size.
+     */
+    public int getBackups() {
+        return backups;
     }
 
     /**

@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipOutputStream;
@@ -45,20 +46,26 @@ public class CrudUICodeGenerator {
 		}
 	}
 	
-	public List<String> generator(String destPath, Map<String,Object> context) {
+	public List<String> generator(String destPath, Map<String,Object> context, Collection<String> validTokens) {
 		List<String> message = new ArrayList<>();
 		GenConfig config = new GenConfig();
-		String pkgPath = destPath+"org/demo/";
-		String domain = "Test";
-		
+		String pkgPath = "org.demo";
+		String name = context.get("name").toString();
+		boolean isLastNode = (Boolean)context.getOrDefault("isLastNode",true);
+		if(!isLastNode){
+			return message;
+		}
+		boolean demo = (Boolean)context.getOrDefault("demo",false);
+		List<Map<String,String>> attributes = (List)context.get("attributes");
+		List<String> models = (List)context.get("models");
+		List<String> caches = (List)context.get("caches");
 		try {
-			config.setPackageName(destPath+"org/demo/");
-			config.setFileDownLoadPath(destPath);
+			config.setPackageName(pkgPath);
+			config.setFileDownLoadPath(destPath+"src/java");
 			config.setAuthor("demo");
 			generatorTable(config,context);
 			
 		} catch (IOException e) {
-			
 			e.printStackTrace();
 			message.add(e.getMessage());
 		}

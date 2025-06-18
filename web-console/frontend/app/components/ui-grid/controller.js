@@ -1,5 +1,5 @@
 
-
+import _ from 'lodash';
 import debounce from 'lodash/debounce';
 import headerTemplate from 'app/primitives/ui-grid-header/index.tpl.pug';
 

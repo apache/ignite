@@ -1,7 +1,0 @@
-
-
-.ui-grid-cell-contents(ng-class=`{'page-configure-advanced__invalid-model-cell': !row.entity.keyType}`)
-    span(ng-if='row.entity[col.field]')
-        | {{ row.entity[col.field] }}
-    i(ng-if-start='!row.entity[col.field]') No keyType defined
-    svg(ignite-icon='attention' ng-if-end)

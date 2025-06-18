@@ -5,15 +5,15 @@
             +form-field__text({
                 label: 'Storage Name:',
                 model: `${model}.id`,
-                name: '"id"',
+                name: '"id"',                
                 placeholder: ''
-            })
+            })(ng-disabled= '!($ctrl.isNew$|async:this)')
 
         .pc-form-grid-col-30
             +form-field__text({
                 label: 'Display Name:',
-                model: `${model}.clusterName`,
-                name: '"clusterName"',
+                model: `${model}.comment`,
+                name: '"comment"',
                 placeholder: ''
             })
 

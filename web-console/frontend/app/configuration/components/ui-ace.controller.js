@@ -35,13 +35,7 @@ export default class IgniteUiAceGeneratorFactory {
                 break;
             case 'cacheNodeFilter':
                 this.generate = (cache, igfss) => {
-                    const cacheIgfss = _.reduce(igfss, (acc, igfs) => {
-                        acc.push(igfs.igfs);
-
-                        return acc;
-                    }, []);
-
-                    return this.generatorFactory.cacheNodeFilter(cache, cacheIgfss);
+                    return this.generatorFactory.cacheNodeFilter(cache, igfss);
                 };
 
                 break;

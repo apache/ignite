@@ -3,9 +3,10 @@ import {map,switchMap, distinctUntilChanged, catchError} from 'rxjs/operators';
 import naturalCompare from 'natural-compare-lite';
 
 import {UIRouter} from '@uirouter/angularjs';
-import {DatasourceDto} from 'app/configuration/types';
+import {ShortCluster} from 'app/configuration/types';
 import ConfigureState from 'app/configuration/services/ConfigureState';
-import Datasource from 'app/datasource/services/Datasource';
+import Clusters from 'app/configuration/services/Clusters';
+
 import AgentManager from 'app/modules/agent/AgentManager.service';
 import {IColumnDefOf} from 'ui-grid';
 
@@ -14,8 +15,13 @@ const cellTemplate = (state) => `
         <a
             class="link-success"
             ui-sref="base.igfs.edit.basic({storageID: row.entity.id})"
-            title='Click to Visit'
-        >{{ 'File Manager' }}</a>
+            title='Click to Visit data'
+        >{{ 'File Manager' }}</a> &nbsp;|&nbsp;
+        <a
+            class="link-success"
+            ui-sref="base.igfs.edit.advanced({storageID: row.entity.id})"
+            title='Click to Configure storage settings'
+        >{{ 'Setting' }}</a>
     </div>
 `;
 
@@ -24,7 +30,7 @@ export default class PageIgfsOverviewController {
         '$uiRouter',
         'ConfigureState',
         'AgentManager',
-        'Datasource'        
+        'Clusters'
     ];
     
 
@@ -32,19 +38,19 @@ export default class PageIgfsOverviewController {
         private $uiRouter: UIRouter,
         private ConfigureState: ConfigureState,
         private AgentManager: AgentManager,
-        private Datasource: Datasource    
+        private Clusters: Clusters,
     ) {}
 
-    shortClusters$: Observable<Array<DatasourceDto>>;    
-    selectedRows$: Subject<Array<DatasourceDto>>;
+    shortClusters$: Observable<Array<ShortCluster>>;    
+    selectedRows$: Subject<Array<any>>;
     selectedRowsIDs$: Observable<Array<string>>;
     
     
     datasourceColumnDefs: Array<any> = [
         {
-            name: 'Id',
+            name: 'Name',
             displayName: 'Storage Id',
-            field: 'id',
+            field: 'name',
             enableHiding: false,
             enableFiltering: true,
             sort: {direction: 'asc'},
@@ -52,9 +58,9 @@ export default class PageIgfsOverviewController {
             width: 150
         },
         {
-            name: 'clusterName',
+            name: 'Comment',
             displayName: 'Display Name',
-            field: 'clusterName',
+            field: 'comment',
             enableHiding: false,
             enableFiltering: true,
             sort: {direction: 'asc'},
@@ -70,22 +76,15 @@ export default class PageIgfsOverviewController {
             },
             sort: {direction: 'asc'},
             sortingAlgorithm: naturalCompare,
-            minWidth: 300
+            minWidth: 250
         },       
         {
             name: 'accessMode',
-            displayName: 'Storage Access Mode',
+            displayName: 'Access Mode',
             field: 'accessMode',                   
             enableFiltering: false,           
-            width: 180
-        },
-        {
-            name: 'bucketName',
-            displayName: 'Bucket Name',
-            field: 'bucketName',                     
-            enableFiltering: false,            
-            width: 180
-        },
+            width: 150
+        },        
         {
             name: 'status',
             displayName: 'Status',
@@ -106,7 +105,7 @@ export default class PageIgfsOverviewController {
             cellTemplate: cellTemplate,
             enableFiltering: false,
             type: 'string',
-            width: 180
+            width: 200
         }
     ];
     
@@ -150,20 +149,26 @@ export default class PageIgfsOverviewController {
         }
     }
 
-    $onInit() {       
-        this.dataSourceList$ = from(this.getLocalStorageJsonList('igfsStorages')).pipe(            
-            switchMap((data) => of(
-                data            
-            )),
-            catchError((error) => of({
-                type: `DATASOURCE_ERR`,
-                error: {
-                    message: `Failed to load datasoure:  ${error.data.message}`
-                },
-                action: {}
-            }))           
-        ).subscribe((data)=> {
-            this.dataSourceList = data
+    $onInit() {
+        this.shortClusters$ = from(this.Clusters.getClustersOverview().then(({data}) => data));
+
+        // 尝试从localStorage中读取数据
+        const jsonString = localStorage.igfsStorages;
+        let storageSetting = {};
+        if (jsonString) {
+            storageSetting = JSON.parse(jsonString);
+        }
+
+        this.shortClusters$.subscribe((data)=> {
+            const dataSourceList = data.filter((item) => item.igfssCount > 0 || storageSetting[item.name]);
+
+            this.dataSourceList = dataSourceList.map((cluster) => {
+                cluster.id = cluster.name;
+                const storage = storageSetting[cluster.name];
+                if(storage)
+                    return { ...cluster,  ...storage };
+                return cluster;
+            });
         }); 
         
         this.selectedRows$ = new Subject();

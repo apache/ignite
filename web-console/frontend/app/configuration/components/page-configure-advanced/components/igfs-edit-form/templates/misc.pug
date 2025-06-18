@@ -37,7 +37,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 })
 
             //- Since ignite 2.0
-            .pc-form-grid-col-30(ng-if='$ctrl.available("2.0.0")')
+            .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Buffer size:',
                     model: `${model}.streamBufferSize`,
@@ -127,9 +127,8 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                          It is recommended to set this flag to <b>false</b> if your application has conflicting\
                          operations, or you do not know how exactly users will use your system'
                 })
-
-            //- Since ignite 2.0
-            .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
+          
+            .pc-form-grid-col-60
                 +form-field__checkbox({
                     label: 'Update file length on flush',
                     model: model + '.updateFileLengthOnFlush',

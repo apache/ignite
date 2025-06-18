@@ -60,7 +60,7 @@ export default class CacheEditFormController {
                     <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>                    
                 </ul>
             `},
-            {name: 'Read Backup:', cellClass: 'pc-form-grid-col-10', tip: `
+            {name: 'Read Backup:', cellClass: 'pc-form-grid-col-5', tip: `
                 Read from source cache used to back up single partition for partitioned cache
             `}
         ]; 

@@ -32,6 +32,7 @@ import org.apache.ignite.console.demo.service.DemoServiceClusterSingleton;
 import org.apache.ignite.console.demo.service.DemoServiceKeyAffinity;
 import org.apache.ignite.console.demo.service.DemoServiceMultipleInstances;
 import org.apache.ignite.console.demo.service.DemoServiceNodeSingleton;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -69,9 +70,6 @@ public class AgentClusterDemo {
 
     /** */
     public static final String CLN_NODE_NAME = "demo-client";
-
-    /** Node count */
-    private static final int NODE_CNT = 10;
 
     /** */
     private static final int WAL_SEGMENTS = 5;
@@ -120,7 +118,7 @@ public class AgentClusterDemo {
 
         int discoPort = basePort + 20;
 
-        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:" + discoPort  + ".." + (discoPort + NODE_CNT)));
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:" + discoPort  + ".." + (discoPort + 10)));
 
         // Configure discovery SPI.
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -163,6 +161,9 @@ public class AgentClusterDemo {
         cfg.setDataStorageConfiguration(dataStorageCfg);
 
         cfg.setClientMode(client);
+
+        cfg.setFailureHandler(new StopNodeFailureHandler());
+        cfg.setMetricsLogFrequency(0);
 
         return cfg;
     }

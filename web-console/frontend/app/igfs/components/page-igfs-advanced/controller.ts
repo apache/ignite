@@ -106,7 +106,7 @@ export default class PageIgfsAdvancedController {
         catch (ignored) {
             
         }
-        return {id: id, clusterName: "Ignite FileSystem", url: ""}
+        return {id: id, comment: "Ignite FileSystem", url: ""}
     }
 
     _saveMongoExpress(preset) {
@@ -119,8 +119,7 @@ export default class PageIgfsAdvancedController {
             mongoExpress = JSON.parse(localStorage.igfsStorages)
         }
         mongoExpress[preset.id] = preset;
-        localStorage.igfsStorages = JSON.stringify(mongoExpress);
-        
+        localStorage.igfsStorages = JSON.stringify(mongoExpress);        
     }
 
     _removeMongoExpress(id: string) {

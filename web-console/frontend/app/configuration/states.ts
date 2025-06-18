@@ -6,6 +6,9 @@ import pageConfigureAdvancedServicesComponent from './components/page-configure-
 import pageConfigureAdvancedModelsComponent from './components/page-configure-advanced/components/page-configure-advanced-models/component';
 import pageConfigureAdvancedCachesComponent from './components/page-configure-advanced/components/page-configure-advanced-caches/component';
 import pageConfigureAdvancedIGFSComponent from './components/page-configure-advanced/components/page-configure-advanced-igfs/component';
+import pageConfigureCrudUIClusterComponent from './components/page-configure-crudui/components/page-configure-crudui-cluster/component';
+import pageConfigureCrudUICachesComponent from './components/page-configure-crudui/components/page-configure-crudui-caches/component';
+import pageConfigureCrudUIModelsComponent from './components/page-configure-crudui/components/page-configure-crudui-models/component';
 
 import {from, combineLatest} from 'rxjs';
 import {switchMap, take, map} from 'rxjs/operators';
@@ -25,6 +28,21 @@ const shortCachesResolve = ['ConfigSelectors', 'ConfigureState', 'ConfigEffects'
 }];
 
 const shortCachesAndModels = ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
+    if ($transition$.params().clusterID === 'new')
+        return Promise.resolve();
+
+    return from($transition$.injector().getAsync('_cluster')).pipe(
+        switchMap(() => ConfigureState.state$.pipe(ConfigSelectors.selectCluster($transition$.params().clusterID), take(1))),
+        map((cluster) => {
+            return Promise.all([
+                etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster.id}),
+                etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster.id})
+            ]);
+        })
+    ).toPromise();
+}]
+
+const shortCachesAndIGFSs = ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
     if ($transition$.params().clusterID === 'new')
         return Promise.resolve();
 
@@ -79,24 +97,7 @@ function registerStates($stateProvider) {
         data: {
             errorState: 'base.configuration.overview'
         },
-        redirectTo: ($transition$) => {
-            const [ConfigureState, ConfigSelectors] = ['ConfigureState', 'ConfigSelectors'].map((t) => $transition$.injector().get(t));
-            const waitFor = ['_cluster', '_shortClusters'].map((t) => $transition$.injector().getAsync(t));
-            return from(Promise.all(waitFor)).pipe(
-                switchMap(() => {
-                    return combineLatest(
-                        ConfigureState.state$.pipe(ConfigSelectors.selectCluster($transition$.params().clusterID), take(1)),
-                        ConfigureState.state$.pipe(ConfigSelectors.selectShortClusters(), take(1))
-                    );
-                }),
-                map(([cluster = {caches: []}, clusters]) => {
-                    return (clusters.value.size > 10 || cluster.caches.length > 5)
-                        ? 'base.configuration.edit.advanced'
-                        : 'base.configuration.edit.basic';
-                })
-            )
-            .toPromise();
-        },
+        redirectTo: 'base.configuration.edit.basic',
         failState: 'signin',
         tfMetaTags: {
             title: 'Configuration'
@@ -155,7 +156,7 @@ function registerStates($stateProvider) {
         permission: 'configuration',
         component: pageConfigureAdvancedCachesComponent.name,
         resolve: {
-            _shortCachesAndModels: shortCachesAndModels
+            _shortCachesAndIGFSs: shortCachesAndIGFSs
         },
         resolvePolicy: {
             async: 'NOWAIT'
@@ -220,13 +221,13 @@ function registerStates($stateProvider) {
         resolvePolicy: {
             async: 'NOWAIT'
         }
-    })
+    })    
     .state('base.configuration.edit.advanced.igfs', {
         url: '/igfs',
         component: pageConfigureAdvancedIGFSComponent.name,
         permission: 'configuration',
         resolve: {
-            _shortCachesAndModels: shortCachesAndModels
+            _shortCachesAndIGFSs: shortCachesAndIGFSs
         },
         resolvePolicy: {
             async: 'NOWAIT'
@@ -254,8 +255,99 @@ function registerStates($stateProvider) {
         resolvePolicy: {
             async: 'NOWAIT'
         }
-    });
-    
+    })
+    .state('base.configuration.edit.crudui', {
+        url: '/crudui',
+        component: 'pageConfigureCrudui',
+        permission: 'configuration',
+        redirectTo: 'base.configuration.edit.crudui.cluster'
+    })
+    .state('base.configuration.edit.crudui.cluster', {
+        url: '/cluster',
+        component: pageConfigureCrudUIClusterComponent.name,
+        permission: 'configuration',
+        resolve: {
+            _shortCaches: shortCachesResolve
+        },
+        resolvePolicy: {
+            async: 'NOWAIT'
+        },
+        tfMetaTags: {
+            title: 'Configure Cluster'
+        }
+    })
+    .state('base.configuration.edit.crudui.caches', {
+        url: '/caches',
+        permission: 'configuration',
+        component: pageConfigureCrudUICachesComponent.name,
+        resolve: {
+            _shortCachesAndModels: shortCachesAndModels
+        },
+        resolvePolicy: {
+            async: 'NOWAIT'
+        },
+        tfMetaTags: {
+            title: 'Configure Caches'
+        }
+    })
+    .state('base.configuration.edit.crudui.caches.cache', {
+        url: `/{cacheID}`,
+        permission: 'configuration',
+        resolve: {
+            _cache: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
+                const {clusterID, cacheID} = $transition$.params();
+
+                if (cacheID === 'new')
+                    return Promise.resolve();
+
+                return etp('LOAD_CACHE', {cacheID});
+            }]
+        },
+        data: {
+            errorState: 'base.configuration.edit.crudui.caches'
+        },
+        resolvePolicy: {
+            async: 'NOWAIT'
+        },
+        tfMetaTags: {
+            title: 'Configure Caches'
+        }
+    })
+    .state('base.configuration.edit.crudui.models', {
+        url: '/models',
+        component: pageConfigureCrudUIModelsComponent.name,
+        permission: 'configuration',
+        resolve: {
+            _shortCachesAndModels: shortCachesAndModels
+        },
+        resolvePolicy: {
+            async: 'NOWAIT'
+        },
+        tfMetaTags: {
+            title: 'Configure SQL Schemes'
+        }
+    })
+    .state('base.configuration.edit.crudui.models.model', {
+        url: `/{modelID}`,
+        resolve: {
+            _cache: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
+                const {clusterID, modelID} = $transition$.params();
+
+                if (modelID === 'new')
+                    return Promise.resolve();
+
+                return etp('LOAD_MODEL', {modelID});
+            }]
+        },
+        data: {
+            errorState: 'base.configuration.edit.crudui.models'
+        },
+        permission: 'configuration',
+        resolvePolicy: {
+            async: 'NOWAIT'
+        }
+    })
+    ;    
 }
 
 registerStates.$inject = ['$stateProvider'];

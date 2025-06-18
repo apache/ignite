@@ -49,8 +49,6 @@ export default class PageConfigureAdvancedServicesController {
         private ConfigurationDownload: ConfigurationDownload,
         private $scope: ng.IScope
     ) {}
-
-    
     
     $onDestroy() {
         this.subscription.unsubscribe();

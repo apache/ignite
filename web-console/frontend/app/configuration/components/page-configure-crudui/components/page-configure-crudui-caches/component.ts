@@ -4,7 +4,7 @@ import template from './template.pug';
 import controller from './controller';
 
 export default {
-    name: 'pageConfigureAdvancedCaches',
+    name: 'pageConfigureCrudUICaches',
     template,
     controller
 };

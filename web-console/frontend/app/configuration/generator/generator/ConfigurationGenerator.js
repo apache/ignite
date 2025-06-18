@@ -370,26 +370,7 @@ export default class IgniteConfigurationGenerator {
 
         return cfg;
     }
-
-    static igfsDataCache(igfs, available) {
-        return this.cacheConfiguration({
-            name: igfs.name + '-data',
-            cacheMode: 'PARTITIONED',
-            atomicityMode: 'TRANSACTIONAL',
-            writeSynchronizationMode: 'FULL_SYNC',
-            backups: 0,
-            igfsAffinnityGroupSize: igfs.affinnityGroupSize || 512
-        }, available);
-    }
-
-    static igfsMetaCache(igfs, available) {
-        return this.cacheConfiguration({
-            name: igfs.name + '-meta',
-            cacheMode: 'REPLICATED',
-            atomicityMode: 'TRANSACTIONAL',
-            writeSynchronizationMode: 'FULL_SYNC'
-        }, available);
-    }
+    
 
     /**
      * Get dependency artifact for specified datasource.

@@ -83,7 +83,7 @@
               return ;
             }
             else if(item.name.endsWith('.ipynb') ){
-              var msg = 'Use %s "filemanager/s3-rest%s" as url for import external jupiter nodebook to zeppelin'
+              var msg = 'Use %s "filemanager/file%s" as url for import external jupiter nodebook to zeppelin'
                               .replace('%s', item.type)
                               .replace('%s', item.fullPath());
               window.alert(msg);
@@ -95,7 +95,7 @@
             }
             
             
-            var msg = 'Picked %s "filemanager/s3%s" for external use'
+            var msg = 'Picked %s "filemanager/file%s" for external use'
                               .replace('%s', item.type)
                               .replace('%s', item.fullPath());
                       window.alert(msg);

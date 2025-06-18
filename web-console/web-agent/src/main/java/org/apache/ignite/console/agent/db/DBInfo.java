@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import org.apache.ignite.console.websocket.TopologySnapshot;
 
-import lombok.Data;
 
 /**
  * add@byron 保存当前的关系数据库连接信息

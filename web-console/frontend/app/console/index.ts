@@ -19,9 +19,8 @@ import modalImportService from './components/modal-import-service';
 import buttonImportService from './components/button-import-service';
 
 
-import itemsTable from '../configuration/components/pc-items-table';
+import pcItemsTable from '../configuration/components/pc-items-table';
 import pcUiGridFilters from '../configuration/components/pc-ui-grid-filters';
-
 import pcValidation from '../configuration/components/pcValidation';
 import pcSplitButton from '../configuration/components/pc-split-button';
 
@@ -50,14 +49,14 @@ export default angular
         pageConsoleService.name,
         pageConsoleCacheService.name,
         pageConsoleOverview.name,
-        pcUiGridFilters.name,
+        
 
         modalImportService.name,
         buttonImportService.name,
         
-        itemsTable.name,
-        pcValidation.name,
-      
+        pcUiGridFilters.name,
+        pcItemsTable.name,
+        pcValidation.name,      
         pcSplitButton.name
       
     ])

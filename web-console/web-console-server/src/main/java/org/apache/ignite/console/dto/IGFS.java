@@ -1,19 +1,12 @@
 
-
 package org.apache.ignite.console.dto;
-
 import io.vertx.core.json.JsonObject;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.console.dto.DataObject;
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.igfs.IgfsMode;
 import org.springframework.context.support.MessageSourceAccessor;
-
 import java.util.UUID;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.console.utils.Utils.toJson;
 
 /**
@@ -24,20 +17,20 @@ public class IGFS extends DataObject {
     private String name;
 
     /** */
-    private IgfsMode igfsMode;
+    private IgfsMode defaultMode = FileSystemConfiguration.DFLT_MODE;
     /** */
-    private boolean fragmentizerEnabled;
+    private boolean fragmentizerEnabled = FileSystemConfiguration.DFLT_FRAGMENTIZER_ENABLED;
 
-    private int blockSize;
+    private int blockSize = FileSystemConfiguration.DFLT_BLOCK_SIZE;
     /** */
-    private int backups;
+    private int backups = 0;
 
     /**
      * @param json JSON data.
      * @return New instance of cache DTO.
      */
     public static IGFS fromJson(JsonObject json) {
-    	UUID id = getUUID(json,"id");
+        UUID id = getUUID(json,"id");
         MessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
 
         if (id == null)
@@ -46,9 +39,9 @@ public class IGFS extends DataObject {
         return new IGFS(
             id,
             json.getString("name"),
-            IgfsMode.valueOf(json.getString("igfsMode", IgfsMode.PRIMARY.name())),
-            json.getBoolean("fragmentizerEnabled", false),
-            json.getInteger("blockSize", 1024*64),
+            IgfsMode.valueOf(json.getString("defaultMode", IgfsMode.PRIMARY.name())),
+            json.getBoolean("fragmentizerEnabled", true),
+            json.getInteger("blockSize", FileSystemConfiguration.DFLT_BLOCK_SIZE),
             json.getInteger("backups", 0),
             toJson(json)
         );
@@ -64,7 +57,7 @@ public class IGFS extends DataObject {
     public IGFS(
         UUID id,
         String name,
-        IgfsMode igfsMode,
+        IgfsMode defaultMode,
         boolean fragmentizerEnabled,
         int blockSize,
         int backups,
@@ -73,7 +66,7 @@ public class IGFS extends DataObject {
         super(id, json);
 
         this.name = name;
-        this.igfsMode = igfsMode;
+        this.defaultMode = defaultMode;
         this.fragmentizerEnabled = fragmentizerEnabled;
         this.backups = backups;
         this.blockSize = blockSize;
@@ -99,7 +92,7 @@ public class IGFS extends DataObject {
         return new JsonObject()
             .put("id", getId())
             .put("name", name)
-            .put("igfsMode", igfsMode)
+            .put("defaultMode", defaultMode)
             .put("fragmentizerEnabled", fragmentizerEnabled)
             .put("blockSize", blockSize)
             .put("backups", backups);

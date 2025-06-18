@@ -33,9 +33,9 @@ export default class IGFSs {
         };
     }
 
-    affinnityGroupSize = {
-        default: 512,
-        min: 1
+    backups = {
+        default: 0,
+        min: 0
     };
 
     defaultMode = {

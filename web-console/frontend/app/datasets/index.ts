@@ -12,7 +12,7 @@ import ConfigureState from '../configuration/services/ConfigureState';
 import ConfigSelectionManager from '../configuration/services/ConfigSelectionManager';
 
 
-import itemsTable from '../configuration/components/pc-items-table';
+import pcItemsTable from '../configuration/components/pc-items-table';
 import pcUiGridFilters from '../configuration/components/pc-ui-grid-filters';
 import isInCollection from '../configuration/components/pcIsInCollection';
 import pcValidation from '../configuration/components/pcValidation';
@@ -43,7 +43,7 @@ export default angular
         pageChinaMap.name,
 
         pcUiGridFilters.name,    
-        itemsTable.name,
+        pcItemsTable.name,
         pcValidation.name,      
         pcSplitButton.name
       

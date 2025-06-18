@@ -24,11 +24,12 @@ import IGFSs from './services/IGFSs';
 import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
 import pageConfigureAdvanced from './components/page-configure-advanced';
+import pageConfigureCrudUI from './components/page-configure-crudui';
 import pageConfigureOverview from './components/page-configure-overview';
 import Datasource from 'app/datasource/services/Datasource';
 
 import projectStructurePreview from './components/modal-preview-project';
-import itemsTable from './components/pc-items-table';
+import pcItemsTable from './components/pc-items-table';
 import pcUiGridFilters from './components/pc-ui-grid-filters';
 import isInCollection from './components/pcIsInCollection';
 import pcValidation from './components/pcValidation';
@@ -85,17 +86,19 @@ export default angular.module('ignite-console.configuration', [
         pageConfigure.name,
         pageConfigureBasic.name,
         pageConfigureAdvanced.name,
+        pageConfigureCrudUI.name,
         pageConfigureOverview.name,
         pcUiGridFilters.name,
-        projectStructurePreview.name,
-        itemsTable.name,
-        pcValidation.name,
+        projectStructurePreview.name,        
         modalImportModels.name,
         buttonImportModels.name,
         buttonDownloadProject.name,
         buttonPreviewProject.name,
         previewPanel.name,
+        
         pcSplitButton.name,
+        pcItemsTable.name,
+        pcValidation.name,
         uiAceJava.name,
         uiAceSpring.name
     ])

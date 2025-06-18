@@ -69,6 +69,7 @@ export default class Caches {
 
     nodeFilterKinds = [
         {value: 'Custom', label: 'Custom'},
+        {value: 'IGFS', label: 'IGFS'},
         {value: null, label: 'Not set'}
     ];
 

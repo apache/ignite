@@ -1,16 +1,15 @@
 
 
-export default class PageConfigureAdvancedController {
+export default class PageConfigureCrudUIController {
     static menuItems = [
-        { text: 'Cluster', sref: 'base.configuration.edit.advanced.cluster' },
-        { text: 'SQL Scheme', sref: 'base.configuration.edit.advanced.models' },
-        { text: 'Caches', sref: 'base.configuration.edit.advanced.caches' },
-        { text: 'Services', sref: 'base.configuration.edit.advanced.services' }
+        { text: 'Cluster', sref: 'base.configuration.edit.crudui.cluster' },
+        { text: 'SQL Scheme', sref: 'base.configuration.edit.crudui.models' },
+        { text: 'Caches', sref: 'base.configuration.edit.crudui.caches' },
     ];
 
     menuItems: Array<{text: string, sref: string}>;
 
     $onInit() {
-        this.menuItems = this.constructor.menuItems;
+        this.menuItems = PageConfigureCrudUIController.menuItems;
     }
 }

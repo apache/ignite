@@ -88,7 +88,19 @@ export default class Controller {
             cellTemplate: `
                 <div class="ui-grid-cell-contents">{{ grid.appScope.$ctrl.Caches.getCacheBackupsCount(row.entity) }}</div>
             `
-        }
+        },
+        {
+            name: 'actions',
+            displayName: 'Actions',
+            enableFiltering: false,
+            field: 'name',
+            cellTemplate: `
+                <div class="ui-grid-cell-contents"><a class="link-success"  ui-sref="base.console.edit.advanced.models.model({modelID: row.entity.domains[0]})"
+                    title='Click to visit cache domains' ></a>
+                </div>
+            `,         
+            minWidth: 0,
+        },
     ];
 
     $onInit() {

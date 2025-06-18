@@ -59,14 +59,13 @@ panel-collapsible(opened=`::true` ng-form=form)
                 })
             .pc-form-grid-col-30
                 +form-field__number({
-                    label: 'Group size:',
-                    model: `${model}.affinnityGroupSize`,
-                    name: '"affinnityGroupSize"',
-                    placeholder: '{{::$ctrl.IGFSs.affinnityGroupSize.default}}',
-                    min: '{{::$ctrl.IGFSs.affinnityGroupSize.min}}',
+                    label: 'Data backup size:',
+                    model: `${model}.backups`,
+                    name: '"backups"',
+                    placeholder: '{{::$ctrl.IGFSs.backups.default}}',
+                    min: '{{::$ctrl.IGFSs.backups.min}}',
                     tip: `
-                        Size of the group in blocks<br/>
-                        Required for construction of affinity mapper in IGFS data cache
+                        Size of the backup in blocks                      
                     `
                 })
         .pca-form-column-6

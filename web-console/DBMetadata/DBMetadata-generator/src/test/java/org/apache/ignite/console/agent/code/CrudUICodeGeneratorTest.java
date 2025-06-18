@@ -15,7 +15,7 @@ public class CrudUICodeGeneratorTest {
 
     public void testGenCode(){
         JsonObject context = new JsonObject("");
-        gen.generator("/tmp/code",context.getMap());
+        gen.generator("/tmp/code",context.getMap(),null);
     }
 
     public static void main(String[] args) throws Exception {

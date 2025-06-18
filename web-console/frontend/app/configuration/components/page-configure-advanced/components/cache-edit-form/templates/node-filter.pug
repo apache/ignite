@@ -8,6 +8,7 @@ include /app/configuration/mixins
 -var nodeFilter = model + '.nodeFilter';
 -var nodeFilterKind = nodeFilter + '.kind';
 -var customFilter = nodeFilterKind + ' === "Custom"'
+-var igfsFilter = nodeFilterKind + ' === "IGFS"'
 
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Node filter
@@ -49,4 +50,4 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     validationActive: customFilter
                 })
         .pca-form-column-6
-            +preview-xml-java(model, 'cacheNodeFilter','igfss')
+            +preview-xml-java(model, 'cacheNodeFilter', '$ctrl.igfss')

@@ -13,7 +13,7 @@ import {ShortCache} from '../../../../types';
 import {IColumnDefOf} from 'ui-grid';
 
 // Controller for Caches screen.
-export default class Controller {
+export default class PageConfigureCrudUICaches {
     static $inject = [
         'ConfigSelectors',
         'configSelectionManager',
@@ -36,6 +36,7 @@ export default class Controller {
         private Caches: Caches
     ) {}
 
+    openDrawer = false;
     visibleRows$ = new Subject();
     selectedRows$ = new Subject();
 
@@ -50,7 +51,8 @@ export default class Controller {
                 placeholder: 'Filter by name…'
             },
             sortingAlgorithm: naturalCompare,
-            minWidth: 165
+            minWidth: 250,
+            maxWidth: 350
         },
         {
             name: 'cacheMode',
@@ -75,7 +77,19 @@ export default class Controller {
             cellTemplate: `
                 <div class="ui-grid-cell-contents">{{ grid.appScope.$ctrl.Caches.getCacheBackupsCount(row.entity) }}</div>
             `
-        }
+        },
+        {
+            name: 'actions',
+            displayName: 'Actions',
+            enableFiltering: false,
+            field: 'name',
+            cellTemplate: `
+                <div class="ui-grid-cell-contents"><a class="link-success"  ui-sref="base.console.edit.advanced.models.model({modelID: row.entity.domains[0]})"
+                    title='Click to visit cache domains' ></a>
+                </div>
+            `,         
+            minWidth: 0,
+        },
     ];
 
     $onInit() {
@@ -108,7 +122,7 @@ export default class Controller {
         this.subscription = merge(
             this.originalCache$,
             this.selectionManager.editGoes$.pipe(tap((id) => this.edit(id))),
-            this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.configuration.edit.advanced.caches', null, options)))
+            this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.configuration.edit.crudui.caches', null, options)))
         ).subscribe();
 
         this.isBlocked$ = cacheID$;
@@ -157,7 +171,7 @@ export default class Controller {
     }
 
     edit(cacheID: string) {
-        this.$state.go('base.configuration.edit.advanced.caches.cache', {cacheID});
+        this.$state.go('base.configuration.edit.crudui.caches.cache', {cacheID});
     }
 
     save({cache, download}) {

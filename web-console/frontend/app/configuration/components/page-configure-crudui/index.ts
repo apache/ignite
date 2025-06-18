@@ -18,4 +18,4 @@ export default angular
         cacheEditForm.name,
         clusterEditForm.name
     ])
-    .component('pageConfigureCrudUI', component);
+    .component('pageConfigureCrudui', component);

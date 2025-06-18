@@ -16,11 +16,7 @@ pc-items-table {
     }
     .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-cell:last-child {
         border-right: none;
-    }
-    .ui-grid--ignite .ui-grid-header-cell .ui-grid-cell-contents {
-        padding-top: (69px - 20px) / 2;
-        padding-bottom: (69px - 20px) / 2;
-    }
+    }    
     footer-slot {
         $height: 36px + 11px;
         $line-height: 16px;

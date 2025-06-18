@@ -11,13 +11,12 @@ import ConfigureState from '../configuration/services/ConfigureState';
 import ConfigSelectionManager from '../configuration/services/ConfigSelectionManager';
 
 
-import itemsTable from '../configuration/components/pc-items-table';
+import pcItemsTable from '../configuration/components/pc-items-table';
 import pcUiGridFilters from '../configuration/components/pc-ui-grid-filters';
 import isInCollection from '../configuration/components/pcIsInCollection';
 import pcValidation from '../configuration/components/pcValidation';
 
 import pcSplitButton from '../configuration/components/pc-split-button';
-import uiAceTabs from '../configuration/components/ui-ace-tabs.directive';
 
 import pageDatasource from './components/page-datasource';
 import pageDatasourceBasic from './components/page-datasource-basic';
@@ -51,11 +50,10 @@ export default angular
         pageDatasourceBasic.name,
         pageDatasourceAdvanced.name,
         pageDatasourceOverview.name,
-        pcUiGridFilters.name,
-    
-        itemsTable.name,
+
+        pcUiGridFilters.name,    
+        pcItemsTable.name,
         pcValidation.name,
-      
         pcSplitButton.name
       
     ])
@@ -86,7 +84,7 @@ export default angular
        
     }])
     .factory('configSelectionManager', ConfigSelectionManager)      
-    
+    .directive('pcIsInCollection', isInCollection)
     .service('ConfigureState', ConfigureState)           
     .service('Datasource', Datasource)
     ;

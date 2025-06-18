@@ -201,9 +201,11 @@ export type FailoverSPIs = 'JobStealing' | 'Never' | 'Always' | 'Custom';
 export interface Cluster {
     id: string,
     name: string,
+    comment: string,
     discovery: DiscoveryKinds,
     caches: string[],
     models: string[],
+    igfss: string[],
     // TODO: cover with types
     [key: string]: any
 }
@@ -211,9 +213,11 @@ export interface Cluster {
 export interface ShortCluster {
     id: string,
     name: string,
+    comment: string,
     discovery: DiscoveryKinds,
-    caches: number,
-    models: number
+    cachesCount: number,
+    modelsCount: number,
+    igfssCount: number
 }
 
 export interface DatasourceDto {
@@ -237,5 +241,5 @@ export interface ShortIGFS {
     id: string,
     name: string,
     defaultMode: DefaultModes,
-    affinnityGroupSize: number
+    backups: number
 }

@@ -2,13 +2,12 @@
 
 header.header-with-selector
     div
-        h1 {{ $ctrl.clusterName$|async:this }}
-        
+        h1 {{ $ctrl.clusterName$|async:this }}        
 
 div.pc-content-container
     ul.tabs.tabs--blue
         li(role='presentation' ui-sref-active='active')
-            a(ui-sref='base.igfs.edit.basic') Basic Configuration        
+            a(ui-sref='base.igfs.edit.basic') File Manager         
         li(role='presentation' ui-sref-active='{active: "base.igfs.edit.advanced"}')
             a(ui-sref='base.igfs.edit.advanced') Advanced
         li(role='presentation' ui-sref-active='{active: "base.igfs.edit.china-map"}')

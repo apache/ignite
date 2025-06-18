@@ -408,7 +408,7 @@ public class IgfsUtils {
                 CacheConfiguration ccfgMeta = igfsCfg.getMetaCacheConfiguration();
 
                 if (ccfgMeta == null) {
-                    ccfgMeta = defaultMetaCacheConfig();
+                    ccfgMeta = defaultMetaCacheConfig(igfsCfg);
 
                     igfsCfg.setMetaCacheConfiguration(ccfgMeta);
                 }
@@ -420,7 +420,7 @@ public class IgfsUtils {
                 CacheConfiguration ccfgData = igfsCfg.getDataCacheConfiguration();
 
                 if (ccfgData == null) {
-                    ccfgData = defaultDataCacheConfig();
+                    ccfgData = defaultDataCacheConfig(igfsCfg);
 
                     igfsCfg.setDataCacheConfiguration(ccfgData);
                 }
@@ -527,25 +527,22 @@ public class IgfsUtils {
         }
     }
 
-    /**
-     * @return Default IGFS cache configuration.
-     */
-    private static CacheConfiguration defaultCacheConfig() {
-        CacheConfiguration cfg = new CacheConfiguration();
-        cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setCacheMode(CacheMode.PARTITIONED);
-
-        return cfg;
-    }
+    
 
     /**
      * @return Default IGFS meta cache configuration.
      */
-    private static CacheConfiguration defaultMetaCacheConfig() {
-        CacheConfiguration cfg = defaultCacheConfig();
-
-        cfg.setBackups(1);
+    private static CacheConfiguration defaultMetaCacheConfig(FileSystemConfiguration igfsCfg) {
+    	CacheConfiguration cfg = new CacheConfiguration();
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setCacheMode(CacheMode.PARTITIONED);
+        if(igfsCfg.isColocateMetadata()) {
+    		cfg.setCacheMode(CacheMode.REPLICATED);
+    	}
+        else {
+        	cfg.setBackups(1);
+        }
 
         return cfg;
     }
@@ -553,8 +550,15 @@ public class IgfsUtils {
     /**
      * @return Default IGFS data cache configuration.
      */
-    private static CacheConfiguration defaultDataCacheConfig() {
-        return defaultCacheConfig();
+    private static CacheConfiguration defaultDataCacheConfig(FileSystemConfiguration igfsCfg) {
+    	CacheConfiguration cfg = new CacheConfiguration();
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setCacheMode(CacheMode.PARTITIONED);
+    	if(igfsCfg.getBackups()>=0)
+    		cfg.setBackups(igfsCfg.getBackups());
+
+        return cfg;
     }
 
     /**

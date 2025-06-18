@@ -75,22 +75,7 @@ function registerStates($stateProvider) {
         data: {
             errorState: 'base.console.overview'
         },
-        redirectTo: ($transition$) => {
-            const [ConfigureState, ConfigSelectors] = ['ConfigureState', 'ConfigSelectors'].map((t) => $transition$.injector().get(t));
-            const waitFor = ['_cluster', '_shortClusters'].map((t) => $transition$.injector().getAsync(t));
-            return from(Promise.all(waitFor)).pipe(
-                switchMap(() => {
-                    return combineLatest(
-                        ConfigureState.state$.pipe(ConfigSelectors.selectCluster($transition$.params().clusterID), take(1)),
-                        ConfigureState.state$.pipe(ConfigSelectors.selectShortClusters(), take(1))
-                    );
-                }),
-                map(([cluster = {caches: []}, clusters]) => {
-                    return 'base.console.edit.basic'
-                })
-            )
-            .toPromise();
-        },
+        redirectTo: 'base.console.edit.basic',
         failState: 'signin',
         tfMetaTags: {
             title: 'Console'

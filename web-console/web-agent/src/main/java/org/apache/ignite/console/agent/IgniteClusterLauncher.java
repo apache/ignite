@@ -155,8 +155,12 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         
         // Custom ClusterSerializable
         BinaryTypeConfiguration jsonBinCfg = new BinaryTypeConfiguration();
-        jsonBinCfg.setTypeName("io.vertx.*");
+        jsonBinCfg.setTypeName(JsonObject.class.getName());
         jsonBinCfg.setSerializer(new JsonBinarySerializer());
+
+		BinaryTypeConfiguration arrayBinCfg = new BinaryTypeConfiguration();
+		arrayBinCfg.setTypeName(JsonArray.class.getName());
+		arrayBinCfg.setSerializer(new JsonBinarySerializer());
         
         if(cfg.getBinaryConfiguration().getTypeConfigurations()==null) {
         	cfg.getBinaryConfiguration().setTypeConfigurations(new ArrayList<>());
@@ -164,6 +168,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         
         // add@byron
         cfg.getBinaryConfiguration().getTypeConfigurations().add(jsonBinCfg);
+		cfg.getBinaryConfiguration().getTypeConfigurations().add(arrayBinCfg);
         
         // Configure discovery SPI.
         if(cfg.getDiscoverySpi()==null) {
@@ -365,7 +370,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
      * Start ignite node with cacheEmployee and populate it with data.
      * @throws IgniteCheckedException 
      */
-    public static String saveBlobToFile(JsonObject json,List<String> messages) throws IgniteCheckedException {    	
+    public static String saveBlobToFile(JsonObject json,Collection<String> validTokens,List<String> messages) throws IgniteCheckedException {
     	String clusterName = json.getString("name");    	
     	String base64 = json.getString("blob");    	 
         String prefix = "data:application/octet-stream;base64,";
@@ -389,7 +394,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 				
 				if(json.containsKey("crudui")) {
 					CrudUICodeGenerator codeGen = new CrudUICodeGenerator();
-					List<String> codeMessages = codeGen.generator(descDir,json.getMap());
+					List<String> codeMessages = codeGen.generator(descDir,json.getMap(),validTokens);
 					messages.addAll(codeMessages);
 				}
 				
@@ -429,7 +434,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
     }
     
     /**
-     * @param tok Token to revoke.
+     * @param json Token to revoke.
      */
     public static JsonObject callClusterCommand(Ignite ignite,String cmdName,JsonObject json) {
         log.info("Cluster cmd is invoking: " + cmdName);                

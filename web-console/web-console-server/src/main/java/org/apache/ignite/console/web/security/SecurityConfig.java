@@ -203,12 +203,12 @@ public class SecurityConfig {
         http.securityContext(context->
                 context.securityContextRepository(new HttpSessionSecurityContextRepository())
         );
-
+        */
         http.rememberMe(rememberMe -> rememberMe
                 .rememberMeCookieName("ignite-remember")
                 .key("admin")
                 .tokenValiditySeconds(3600 * 12));
-        */
+
         return http.build();
     }
 

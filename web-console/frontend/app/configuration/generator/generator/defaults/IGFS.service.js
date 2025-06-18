@@ -45,11 +45,11 @@ const DFLT_IGFS = {
         memorySize: 262144,
         tokenDirectoryPath: 'ipc/shmem'
     },
+    fragmentizerEnabled: true,
     fragmentizerConcurrentFiles: 0,
     fragmentizerThrottlingBlockLength: 16777216,
     fragmentizerThrottlingDelay: 200,
-    dualModeMaxPendingPutsSize: 0,
-    dualModePutExecutorServiceShutdown: false,
+    backups: 0,
     blockSize: 65536,
     streamBufferSize: 65536,
     maxSpaceSize: 0,

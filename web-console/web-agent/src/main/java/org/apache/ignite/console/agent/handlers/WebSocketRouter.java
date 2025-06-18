@@ -392,7 +392,7 @@ public class WebSocketRouter implements AutoCloseable {
     
 
     /**
-     * @param tok Token to revoke.
+     * @param json Token to revoke.
      */
     private Ignite getIgnite(JsonObject json,JsonObject stat) {                
         String clusterId = json.getString("id");        
@@ -436,7 +436,7 @@ public class WebSocketRouter implements AutoCloseable {
     }
 
     /**
-     * @param tok Token to revoke.
+     * @param evt Token to revoke.
      */
     private JsonObject processClusterStart(WebSocketRequest evt) {
         
@@ -455,7 +455,7 @@ public class WebSocketRouter implements AutoCloseable {
 		
         try {			
 
-			String unzipDest = IgniteClusterLauncher.saveBlobToFile(json,messages);
+			String unzipDest = IgniteClusterLauncher.saveBlobToFile(json,validTokens,messages);
 			
 			Boolean restart = json.getBoolean("restart",false);
 			if(restart) {			
@@ -571,7 +571,7 @@ public class WebSocketRouter implements AutoCloseable {
     }
     
     /**
-     * @param tok Token to revoke.
+     * @param evt Token to revoke.
      */
     private JsonObject processClusterStop(WebSocketRequest evt) {
         log.info("Cluster stop msg has been revoked: " + evt.getPayload());
@@ -607,7 +607,7 @@ public class WebSocketRouter implements AutoCloseable {
     }
     
     /**
-     * @param tok Token to revoke.
+     * @param msg Token to revoke.
      */
     private JsonObject processCallClusterService(String msg) {
         log.info("Cluster status msg has been revoked: " + msg);
@@ -710,7 +710,7 @@ public class WebSocketRouter implements AutoCloseable {
 
     
     /**
-     * @param tok Token to revoke.
+     * @param msg Token to revoke.
      */
     private JsonObject processCallClusterCommand(String msg) {
         log.info("Cluster cmd has been revoked: " + msg);        
