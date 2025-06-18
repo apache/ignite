@@ -297,22 +297,12 @@ final class ReliableChannel implements AutoCloseable {
                 ClientChannelHolder hld;
 
                 try {
-                    // Will try to reinit channels if topology changed.
-                    onChannelFailure(ch, connEx, failures);
-                }
-                catch (Throwable ex) {
-                    fut.completeExceptionally(ex);
-
-                    return null;
-                }
-
-                try {
                     hld = (nodeId != null) ? nodeChannels.get(nodeId) : null;
 
                     if (hld == null)
                         throw connEx;
 
-                    retryCh = hld.getOrCreateChannel();
+                    retryCh = getRetryChannel(hld, ch);
                 }
                 catch (ClientConnectionException reconnectEx) {
                     failures.add(reconnectEx);
@@ -920,9 +910,7 @@ final class ReliableChannel implements AutoCloseable {
                 catch (ClientConnectionException e) {
                     if (c0 == c && shouldRetry(op, F.size(failures), e)) {
                         // In case of stale channel try to reconnect to the same channel and repeat the operation.
-                        onChannelFailure(hld, c, e, failures);
-
-                        c = hld.getOrCreateChannel();
+                        c = getRetryChannel(hld, c);
 
                         return function.apply(c);
                     }
@@ -976,14 +964,11 @@ final class ReliableChannel implements AutoCloseable {
                 return function.apply(channel);
             }
             catch (ClientConnectionException e) {
-                onChannelFailure(hld, channel, e, failures);
-
                 if (!shouldRetry(op, 0, e))
                     throw e;
 
                 try {
-                    // In case of stale channel try to reconnect to the same channel and repeat the operation.
-                    channel = hld.getOrCreateChannel();
+                    channel = getRetryChannel(hld, channel);
 
                     return function.apply(channel);
                 }
@@ -1002,6 +987,19 @@ final class ReliableChannel implements AutoCloseable {
         }
 
         return applyOnDefaultChannel(function, op, failures);
+    }
+
+    /**
+     * Returns the client channel that should be used to retry sending the request.
+     * Unlike onChannelFailure, invoked only for a reconnection attempt on the same channel without channels initialization.
+     */
+    private ClientChannel getRetryChannel(ClientChannelHolder hld, ClientChannel ch) {
+        if (ch != null && ch == hld.ch)
+            hld.closeChannel();
+
+        rollCurrentChannel(hld);
+
+        return hld.getOrCreateChannel();
     }
 
     /** Get retry limit. */
