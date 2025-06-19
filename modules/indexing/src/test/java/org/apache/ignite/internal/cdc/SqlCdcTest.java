@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
@@ -47,6 +46,7 @@ import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @RunWith(Parameterized.class)
@@ -168,22 +168,18 @@ public class SqlCdcTest extends AbstractCdcTest {
                 Integer.toString(127000 + i));
         }
 
-        // Wait while both predicte will become true and state saved on the disk.
-        IgniteInternalFuture<?> awaitFut = runAsync(() -> assertTrue(latch.await(getTestTimeout(), MILLISECONDS)));
-
-        AtomicReference<Throwable> err = new AtomicReference<>();
-
-        fut.listen(f -> {
-            if (f.error() != null && !awaitFut.isDone())
-                err.set(f.error());
-        });
-
-        while (!awaitFut.isDone()) {
-            if (err.get() != null) {
-                awaitFut.cancel();
-                throw err.get();
+        // Wait until both CDC predicates become true and state saved on the disk or
+        // until CdcMain future completes when assertions fail in BinaryCdcConsumer methods.
+        waitForCondition(() -> {
+            try {
+                return fut.isDone() || latch.await(100, MILLISECONDS);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-        }
+        }, getTestTimeout());
+
+        if (fut.error() != null)
+            throw fut.error();
 
         checkMetrics(cdc, KEYS_CNT * 2);
 
