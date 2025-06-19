@@ -434,8 +434,8 @@ public class AgentsService extends AbstractSocketHandler {
      * @param accIds Account ids.
      */
     private void sendAgentStats(Set<UUID> accIds) {
-        sendAgentStats(accIds, true);
         sendAgentStats(accIds, false);
+        sendAgentStats(accIds, true);
     }
 
     /**

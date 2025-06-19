@@ -10,10 +10,14 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.ignite.console.agent.db.DBInfo;
+import org.apache.ignite.console.agent.db.DataSourceManager;
 import org.h2.tools.RunScript;
 import org.h2.tools.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
 
 import static org.apache.ignite.console.agent.AgentUtils.resolvePath;
 
@@ -38,6 +42,22 @@ public class AgentMetadataDemo {
      */
     public static boolean isTestDriveUrl(String jdbcUrl) {
         return "jdbc:h2:mem:demo-db".equals(jdbcUrl);
+    }
+
+    public static DataSource bindTestDatasource() {
+        String jndi = "dsH2";
+        try {
+            testDrive();
+            return DataSourceManager.getDataSource(jndi);
+        } catch (SQLException e) {
+            DBInfo demoDB = new DBInfo();
+            demoDB.setDb("demo-db");
+            demoDB.setJdbcUrl("jdbc:h2:mem:demo-db");
+            demoDB.setUserName("sa");
+            demoDB.setPassword("");
+            return DataSourceManager.bindDataSource(jndi,demoDB);
+        }
+
     }
 
     /**
@@ -68,6 +88,7 @@ public class AgentMetadataDemo {
                 log.info("DEMO: TcpServer stared.");
 
                 log.info("DEMO: JDBC URL for test drive metadata load: jdbc:h2:mem:demo-db");
+
             }
             catch (ClassNotFoundException e) {
                 log.error("DEMO: Failed to load H2 driver!", e);

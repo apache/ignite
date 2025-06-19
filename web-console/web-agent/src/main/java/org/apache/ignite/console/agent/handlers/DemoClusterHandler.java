@@ -69,7 +69,7 @@ public class DemoClusterHandler extends AbstractClusterHandler{
 
         if (AgentClusterDemo.getDemoUrl() != null) {
         	try {
-	            IgniteEx ignite = (IgniteEx)Ignition.ignite(AgentClusterDemo.SRV_NODE_NAME);
+	            IgniteEx ignite = (IgniteEx)Ignition.ignite(DEMO_CLUSTER_NAME);
 	            if(DEMO_CLUSTER_ID == null) {
 	            	DEMO_CLUSTER_ID = ignite.cluster().id().toString();
 	            }

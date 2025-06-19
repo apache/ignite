@@ -3,7 +3,6 @@ package org.apache.ignite.console.web.controller;
 import java.util.Collection;
 import java.util.UUID;
 import io.swagger.v3.oas.annotations.Operation;
-import lombok.Synchronized;
 
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.dto.TaskFlow;
@@ -34,7 +33,7 @@ public class TaskFlowController {
     
     /**
      * @param acc Account.
-     * @param flowId Notebook ID.
+     * @param taskflowId Notebook ID.
      */
     @Operation(summary = "get user's taskflow.")
     @GetMapping(path = "/{taskflowId}")
@@ -126,7 +125,7 @@ public class TaskFlowController {
     
     /**
      * @param acc Account.
-     * @param flowId Notebook ID.
+     * @param grpId Notebook ID.
      */
     @Operation(summary = "Delete user's grouped flow.")
     @DeleteMapping(path = "/group/{groupId}")

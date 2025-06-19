@@ -40,6 +40,8 @@ import java.util.StringTokenizer;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -103,7 +105,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 
     /** Warning guard. */
     @GridToStringExclude
-    private final AtomicBoolean warnGuard = new AtomicBoolean();
+    private final AtomicInteger nodeCounter = new AtomicInteger();
 
     /** Init guard. */
     @GridToStringExclude
@@ -214,7 +216,6 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
             			.build();
             	
             }
-            
 
             try {
                 File tmp;
@@ -326,8 +327,8 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
     @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
 
-        initFolder();        
-
+        initFolder();
+        nodeCounter.incrementAndGet();
         try {        	
         	String addresses = "";
             for (String name : distinctNames(addrs)) {
@@ -363,9 +364,8 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
     /** {@inheritDoc} */
     @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
-
         initFolder();
-
+        nodeCounter.decrementAndGet();
         try {
         	
         	String addresses = "";

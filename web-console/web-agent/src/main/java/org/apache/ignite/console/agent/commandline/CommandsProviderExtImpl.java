@@ -28,6 +28,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.console.agent.IgniteClusterLauncher;
+import org.apache.ignite.console.agent.handlers.RestClusterHandler;
 import org.apache.ignite.internal.client.GridClient;
 
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -74,8 +75,8 @@ public class CommandsProviderExtImpl implements CommandsProvider {
 			try {
 				ignite = IgniteClusterLauncher.trySingleStart(arg.clusterId(), arg.instanceName(), 0, isLastNode, arg.cfgPath());
 				if(ignite!=null && isLastNode) {
-					IgniteClusterLauncher.registerNodeUrl(ignite,arg.clusterId());
-					
+					String nodeRestUrl = IgniteClusterLauncher.getNodeRestUrl(ignite);
+                    RestClusterHandler.registerNodeUrl(arg.clusterId(),arg.instanceName(),nodeRestUrl);
 					IgniteClusterLauncher.deployServices(ignite.services(ignite.cluster().forServers()));
 		        	return true;
 				}

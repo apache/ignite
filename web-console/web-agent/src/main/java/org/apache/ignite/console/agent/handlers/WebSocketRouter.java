@@ -11,6 +11,7 @@ import static org.apache.ignite.console.agent.AgentUtils.entry;
 import static org.apache.ignite.console.agent.AgentUtils.secured;
 import static org.apache.ignite.console.agent.AgentUtils.sslContextFactory;
 import static org.apache.ignite.console.agent.handlers.DemoClusterHandler.DEMO_CLUSTER_ID;
+import static org.apache.ignite.console.agent.handlers.DemoClusterHandler.DEMO_CLUSTER_NAME;
 import static org.apache.ignite.console.utils.Utils.fromJson;
 import static org.apache.ignite.console.websocket.AgentHandshakeRequest.CURRENT_VER;
 import static org.apache.ignite.console.websocket.WebSocketEvents.AGENTS_PATH;
@@ -58,6 +59,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.AgentUtils;
 import org.apache.ignite.console.agent.IgniteClusterLauncher;
+import org.apache.ignite.console.agent.code.CrudUICodeGenerator;
 import org.apache.ignite.console.agent.db.DataSourceManager;
 import org.apache.ignite.console.agent.rest.GremlinExecutor;
 import org.apache.ignite.console.agent.rest.RestExecutor;
@@ -69,6 +71,7 @@ import org.apache.ignite.console.agent.service.ClusterAgentServiceManager;
 import org.apache.ignite.console.agent.service.ServiceResult;
 import org.apache.ignite.console.agent.task.CacheServiceMapperTask;
 import org.apache.ignite.console.demo.AgentClusterDemo;
+import org.apache.ignite.console.demo.AgentMetadataDemo;
 import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.console.websocket.AgentHandshakeRequest;
 import org.apache.ignite.console.websocket.AgentHandshakeResponse;
@@ -122,7 +125,7 @@ public class WebSocketRouter implements AutoCloseable {
         collect(entriesToMap()));
 
     /** Close agent latch. */
-    private final CountDownLatch closeLatch = new CountDownLatch(1);
+    private CountDownLatch closeLatch = new CountDownLatch(1);
 
     /** Agent configuration. */
     private final AgentConfiguration cfg;
@@ -214,6 +217,7 @@ public class WebSocketRouter implements AutoCloseable {
      */
     public void start() {
         log.info("Starting Web Console Agent...");
+        closeLatch = new CountDownLatch(1);
 
         Runtime.getRuntime().addShutdownHook(new Thread(closeLatch::countDown));
         
@@ -443,33 +447,50 @@ public class WebSocketRouter implements AutoCloseable {
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(evt.getPayload());
         
-        boolean isLastNode = json.getBoolean("isLastNode",false);       
+        boolean isLastNode = json.getBoolean("isLastNode",false);
         String clusterId = json.getString("id");
-        if(clusterId.equals(DEMO_CLUSTER_ID) || AgentClusterDemo.SRV_NODE_NAME.equals(clusterId)) {
+        String clusterName = Utils.escapeFileName(json.getString("name"));
+        if(clusterId.equals(DEMO_CLUSTER_ID) || DEMO_CLUSTER_NAME.equals(clusterName)) {
         	json.put("demo", true);
         }
-        String clusterName = Utils.escapeFileName(json.getString("name"));
+        boolean isDemo = json.getBoolean("demo",false);
+
         List<String> messages = new ArrayList<>();
         
         log.info("Cluster start msg has been revoked: " + clusterName);
 		
-        try {			
-
-			String unzipDest = IgniteClusterLauncher.saveBlobToFile(json,validTokens,messages);
+        try {
+            String work = U.workDirectory(null, null);
+            if(isDemo){
+                work = work + "/demo-work";
+            }
+            boolean success = IgniteClusterLauncher.saveBlobToFile(json,work+"/config/",messages);
+            if(success){
+                if(json.containsKey("crudui")) {
+                    String descDir = work+"/config/" + clusterName+"/";
+                    CrudUICodeGenerator codeGen = new CrudUICodeGenerator();
+                    List<String> codeMessages = codeGen.generator(descDir,json.getMap(),validTokens);
+                    messages.addAll(codeMessages);
+                }
+            }
+            else if(!success) {
+                stat.put("message", String.join("\n",messages));
+                stat.put("status", "stoped");
+            }
 			
 			Boolean restart = json.getBoolean("restart",false);
-			if(restart) {			
-	        	IgniteClusterLauncher.stopIgnite(clusterName,clusterId);
-			}
-			else if(unzipDest!=null) {
-				stat.put("message", String.join("\n",messages));
-				stat.put("status", "stoped");
-				return stat;
+			if(restart) {
+                if(isDemo){
+                    AgentClusterDemo.stop();
+                }
+                else {
+                    IgniteClusterLauncher.stopIgnite(clusterName, clusterId);
+                }
 			}
 			
 			Ignite ignite = null;
 			// 不是演示环境
-			if(!json.getBoolean("demo",false)) {
+			if(!isDemo) {
 				// 如果包含hosts，ports则远程启动节点。
 				
 				File startIniFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-start-nodes.ini");				
@@ -481,7 +502,8 @@ public class WebSocketRouter implements AutoCloseable {
 						try {						
 			        		ignite = Ignition.allGrids().get(0);
 			        		ignite.cluster().startNodes(startIniFile, restart, 60*1000, 1);
-				    		stat.put("status", "started");
+                            stat.put("message", "start nodes by {name}-start-nodes.ini file.");
+                            stat.put("status", "started");
 			    		}
 				    	catch(IgniteIllegalStateException e) {	
 				    		stat.put("message", e.getMessage());
@@ -492,8 +514,7 @@ public class WebSocketRouter implements AutoCloseable {
 					}
 				}
 				else {
-				
-					String work = U.workDirectory(null, null);			
+
 		        	String cfgFile = String.format("%s/config/%s/src/main/resources/META-INF/%s-server.xml", work, clusterName,clusterName);
 		        	File configWorkFile = new File(cfgFile);
 		        	
@@ -514,7 +535,8 @@ public class WebSocketRouter implements AutoCloseable {
 		        	}
 					
 					if(ignite!=null) {
-						IgniteClusterLauncher.registerNodeUrl(ignite,clusterId);
+                        String nodeRestUrl = IgniteClusterLauncher.getNodeRestUrl(ignite);
+                        RestClusterHandler.registerNodeUrl(clusterId,clusterName,nodeRestUrl);
 						
 			        	stat.put("status", "started");
 			        	stat.put("message","Ignite started successfully.");
@@ -528,28 +550,10 @@ public class WebSocketRouter implements AutoCloseable {
 			}
 			else {
 				// 启动一个内存型的node，有多少个Agent就有多少个Demo Node
-				String work = U.workDirectory(null, null);
+                AgentMetadataDemo.bindTestDatasource();
 				String cfgFile = String.format("%s/config/%s/src/main/resources/META-INF/%s-server.xml", work, clusterName,clusterName);
-	        	File configWorkFile = new File(cfgFile);
-	        	
-				IgniteConfiguration icfg = new IgniteConfiguration();
-				if(configWorkFile.exists()) {
-					IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap=null;
-			    	if(ignite==null) {
-						URL springPreCfgUrl = U.resolveSpringUrl(configWorkFile.toString());			
-						cfgMap = IgnitionEx.loadConfigurations(springPreCfgUrl);
-						
-						Collection<IgniteConfiguration> cfgList = cfgMap.get1();
-						for(IgniteConfiguration cfg0: cfgList) {
-							if(clusterName.equals(cfg0.getIgniteInstanceName())){
-								icfg = cfg0;
-							}				
-						}
-					}
-				}
-				
 				// 启动Demo节点，并且在最后一个节点部署服务
-	        	ignite = AgentClusterDemo.tryStart(icfg,cfg.serverId(),isLastNode);
+	        	ignite = AgentClusterDemo.tryStart(clusterName,cfgFile,cfg.serverId(),isLastNode);
 	        	if(ignite!=null) {
 	        		stat.put("status", "started");
 	        	}

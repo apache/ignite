@@ -232,11 +232,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      * @return {@code True} if Vertx started.
      */
     private boolean configSingletonJetty() throws IgniteCheckedException {
-    	
-    	String jettyHost = System.getProperty(IGNITE_JETTY_HOST, ctx.config().getLocalHost());
 
         try {
-            System.setProperty(IGNITE_JETTY_HOST, U.resolveLocalHost(jettyHost).getHostAddress());
+
             String jettyPath = config().getJettyPath();
 	        final URL cfgUrl;
 	
@@ -259,7 +257,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to resolve host to bind address: " + jettyHost, e);
+            throw new IgniteCheckedException("Failed to loadJettyConfiguration: ", e);
         }
 
         return true;
@@ -304,22 +302,29 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     	
     	context.start();
     	
-        if (cfgUrl == null) {        	
+        if (cfgUrl == null || cfgUrl.getPort()>0) {
         	HttpServerOptions srvConn = new HttpServerOptions();
 
-            String srvPortStr = System.getProperty(IGNITE_JETTY_PORT, ""+8080);
+            String jettyHost = System.getProperty(IGNITE_JETTY_HOST, ctx.config().getLocalHost());
 
             int srvPort;
 
-            try {
-                srvPort = Integer.parseInt(srvPortStr);
+            if(cfgUrl == null) {
+                jettyHost = U.resolveLocalHost(jettyHost).getHostAddress();
+                String srvPortStr = System.getProperty(IGNITE_JETTY_PORT, "" + 8080);
+                try {
+                    srvPort = Integer.parseInt(srvPortStr);
+                } catch (NumberFormatException ignore) {
+                    context.close();
+                    throw new IgniteCheckedException("Failed to start Vertx server because IGNITE_JETTY_PORT system property cannot be cast to integer: " + srvPortStr);
+                }
             }
-            catch (NumberFormatException ignore) {
-            	context.close();
-                throw new IgniteCheckedException("Failed to start Vertx server because IGNITE_JETTY_PORT system property cannot be cast to integer: " + srvPortStr);
-            }            
+            else{
+                srvPort = cfgUrl.getPort();
+                jettyHost = cfgUrl.getHost();
+            }
 
-            srvConn.setHost(System.getProperty(IGNITE_JETTY_HOST, "localhost"));
+            srvConn.setHost(jettyHost);
             srvConn.setPort(srvPort);
             srvConn.setIdleTimeout(60000);
             srvConn.setReuseAddress(true);

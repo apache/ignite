@@ -44,7 +44,6 @@ import io.vertx.core.json.JsonObject;
  */
 public class RestClusterHandler extends AbstractClusterHandler {
 
-
     /** Index of alive node URI. */
     private final Map<List<String>, Integer> startIdxs = U.newHashMap(2);
     
@@ -75,7 +74,7 @@ public class RestClusterHandler extends AbstractClusterHandler {
         serverUri = cfg.serverUri();
     }
     
-    public static void registerNodeUrl(String clusterId,String url,String clusterName) {
+    public static void registerNodeUrl(String clusterId,String clusterName,String url) {
     	List<String> urls = clusterUrlMap.get(clusterId);
     	if(urls==null) {
     		urls = new ArrayList<>(1);

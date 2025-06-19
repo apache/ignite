@@ -3,6 +3,7 @@
 package org.apache.ignite.console.demo;
 
 import java.io.File;
+import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,9 +34,12 @@ import org.apache.ignite.console.demo.service.DemoServiceKeyAffinity;
 import org.apache.ignite.console.demo.service.DemoServiceMultipleInstances;
 import org.apache.ignite.console.demo.service.DemoServiceNodeSingleton;
 import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -66,12 +70,6 @@ public class AgentClusterDemo {
     private static final AtomicBoolean initGuard = new AtomicBoolean();
 
     /** */
-    public static final String SRV_NODE_NAME = "demo-server";
-
-    /** */
-    public static final String CLN_NODE_NAME = "demo-client";
-
-    /** */
     private static final int WAL_SEGMENTS = 5;
 
     /** WAL file segment size, 16MBytes. */
@@ -94,7 +92,7 @@ public class AgentClusterDemo {
 
         cfg.setGridLogger(new Slf4jLogger());
 
-        cfg.setIgniteInstanceName((client ? CLN_NODE_NAME : SRV_NODE_NAME));
+        cfg.setIgniteInstanceName(DemoClusterHandler.DEMO_CLUSTER_NAME);
         cfg.setLocalHost("127.0.0.1");
         cfg.setEventStorageSpi(new MemoryEventStorageSpi());
         
@@ -111,32 +109,34 @@ public class AgentClusterDemo {
         cfg.setIncludeEventTypes(evts);
 
         cfg.getConnectorConfiguration().setPort(basePort + gridIdx);
+        cfg.getConnectorConfiguration().setJettyPath("http://0.0.0.0:"+(basePort + 10 + gridIdx));
 
-        System.setProperty(IGNITE_JETTY_PORT, String.valueOf(basePort + 10 + gridIdx));
+        if(cfg.getCommunicationSpi()!=null) {
+            TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
+            int discoPort = basePort + 20;
 
-        int discoPort = basePort + 20;
+            ipFinder.setAddresses(Collections.singletonList("127.0.0.1:" + discoPort  + ".." + (discoPort + 10)));
 
-        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:" + discoPort  + ".." + (discoPort + 10)));
+            // Configure discovery SPI.
+            TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        // Configure discovery SPI.
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+            discoSpi.setLocalPort(discoPort);
+            discoSpi.setIpFinder(ipFinder);
 
-        discoSpi.setLocalPort(discoPort);
-        discoSpi.setIpFinder(ipFinder);
+            cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setDiscoverySpi(discoSpi);
+            TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+            commSpi.setMessageQueueLimit(10);
 
-        commSpi.setMessageQueueLimit(10);
+            int commPort = basePort + 30;
 
-        int commPort = basePort + 30;
+            commSpi.setLocalPort(commPort);
 
-        commSpi.setLocalPort(commPort);
+            cfg.setCommunicationSpi(commSpi);
+        }
 
-        cfg.setCommunicationSpi(commSpi);
         cfg.setGridLogger(new Slf4jLogger(log));
         cfg.setMetricsLogFrequency(0);
 
@@ -191,6 +191,30 @@ public class AgentClusterDemo {
         return demoUrl;
     }
 
+    public static Ignite tryStart(String clusterName, String cfgFile, int idx, boolean lastNode) throws IgniteCheckedException {
+        File configWorkFile = new File(cfgFile);
+        Ignite ignite = null;
+        IgniteConfiguration icfg = new IgniteConfiguration();
+        if(configWorkFile.exists()) {
+            IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap=null;
+            if(ignite==null) {
+                URL springPreCfgUrl = U.resolveSpringUrl(configWorkFile.toString());
+                cfgMap = IgnitionEx.loadConfigurations(springPreCfgUrl);
+
+                Collection<IgniteConfiguration> cfgList = cfgMap.get1();
+                for(IgniteConfiguration cfg0: cfgList) {
+                    if(clusterName.equals(cfg0.getIgniteInstanceName())){
+                        icfg = cfg0;
+                    }
+                }
+            }
+        }
+
+        // 启动Demo节点，并且在最后一个节点部署服务
+        ignite = AgentClusterDemo.tryStart(icfg,idx,lastNode);
+        return ignite;
+    }
+
     /**
      * Start ignite node with cacheEmployee and populate it with data.
      */
@@ -232,28 +256,8 @@ public class AgentClusterDemo {
                 ignite = Ignition.start(cfg);
 
                 if (ignite!=null) {
-                    ClusterNode node = ignite.cluster().localNode();
-
-                    Collection<String> jettyAddrs = node.attribute(ATTR_REST_JETTY_ADDRS);
-                    Integer jettyPort = node.attribute(ATTR_REST_JETTY_PORT);
-                    if (jettyAddrs==null || jettyPort == null) {
-                    	ignite.close();
-                        throw new IgniteException("DEMO: Failed to start Jetty REST server on embedded node");
-                    }
-                    
-                    String jettyHost = "127.0.0.1";
-                    for(String host: jettyAddrs) {
-	                   	 if(!host.startsWith("0")) {
-	                   		 jettyHost = host;
-	                   	 }
-                    }
-
-                    log.info("Cluster: Started embedded node for data analysis purpose [TCP binary port={}, Jetty REST port={}]", ignite.configuration().getConnectorConfiguration().getPort(), jettyPort);
-
-                    String nodeUrl = String.format("http://%s:%d/%s", jettyHost, jettyPort, ignite.configuration().getIgniteInstanceName());
-
-                    demoUrl = nodeUrl;                    
-                    
+                    demoUrl = IgniteClusterLauncher.getNodeRestUrl(ignite);;
+                    log.info("Cluster: Started embedded node for data analysis purpose Jetty REST {}]", demoUrl);
                 }                    
             }
             catch (Throwable e) {
@@ -270,10 +274,11 @@ public class AgentClusterDemo {
                     try {    
                     	Thread.sleep(1000*idx);
                     	while(ignite.cluster().nodes().size()<idx) {
-                    		Thread.sleep(1000);                    		
+                    		Thread.sleep(1000);
                     	}                       
                     	ignite.cluster().state(ClusterState.ACTIVE);
-                        deployServices(ignite.services(ignite.cluster().forServers()));
+
+                        //deployServices(ignite.services(ignite.cluster().forServers()));
 
                         log.info("DEMO: All embedded nodes for demo successfully started");
                     }
@@ -291,9 +296,7 @@ public class AgentClusterDemo {
     public static void stop() {
         demoUrl = null;
 
-        Ignition.stop(SRV_NODE_NAME,true);
-        
-        Ignition.stop(CLN_NODE_NAME,true);
+        Ignition.stop(DemoClusterHandler.DEMO_CLUSTER_NAME,true);
         
         initGuard.compareAndSet(true, false);
     }

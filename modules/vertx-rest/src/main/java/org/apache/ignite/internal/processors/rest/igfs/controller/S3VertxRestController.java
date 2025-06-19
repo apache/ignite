@@ -92,7 +92,10 @@ public class S3VertxRestController extends VertxInstanceAware{
     	if(s3==null) {
     		try {
     			Ignite ignite = Ignition.ignite(region);
-    			s3 = new S3IgfsServiceImpl(region,systemConfig);
+                if(!ignite.fileSystems().isEmpty())
+    			    s3 = new S3IgfsServiceImpl(region,systemConfig);
+                else
+                    s3 = new S3LocalFileServiceImpl(region,systemConfig);
     		}
     		catch(Exception e) {
     			s3 = new S3LocalFileServiceImpl(region,systemConfig);

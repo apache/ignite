@@ -1,7 +1,8 @@
 
-
+import _ from 'lodash';
 import {StateService} from '@uirouter/angularjs';
 import {default as LegacyConfirmFactory} from 'app/services/Confirm.service';
+import AgentManager from 'app/modules/agent/AgentManager.service';
 import {UserService} from '../../../../modules/user/User.service';
 import {take} from 'rxjs/operators';
 

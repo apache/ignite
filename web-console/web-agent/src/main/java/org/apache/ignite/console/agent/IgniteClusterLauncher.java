@@ -206,37 +206,32 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         //services.deployKeyAffinitySingleton("loadDataKeyAffinityService",new ClusterLoadDataService(), cacheName, "id");
     }
 
-    /** */
-    public static String registerNodeUrl(Ignite ignite,String clusterId) {
-    	 ClusterNode node = ignite.cluster().localNode();    	 
+	public static String getNodeRestUrl(Ignite ignite) {
+		ClusterNode node = ignite.cluster().localNode();
 
-         Collection<String> jettyAddrs = node.attribute(ATTR_REST_JETTY_ADDRS);
+		Collection<String> jettyAddrs = node.attribute(ATTR_REST_JETTY_ADDRS);
 
-         if (jettyAddrs == null) {
-             throw new IgniteException("Cluster: Failed to start Jetty REST server on embedded node");
-         }
+		if (jettyAddrs == null) {
+			throw new IgniteException("Cluster: Failed to start Jetty REST server on embedded node");
+		}
 
-         String jettyHost = "127.0.0.1";
-         for(String host: jettyAddrs) {
-        	 if(!host.startsWith("0")) {
-        		 jettyHost = host;
-        	 }
-         }
+		String jettyHost = "127.0.0.1";
+		for(String host: jettyAddrs) {
+			if(!host.startsWith("0")) {
+				jettyHost = host;
+			}
+		}
 
-         Integer jettyPort = node.attribute(ATTR_REST_JETTY_PORT);
+		Integer jettyPort = node.attribute(ATTR_REST_JETTY_PORT);
 
-         if (F.isEmpty(jettyHost) || jettyPort == null)
-             throw new IgniteException("Cluster: Failed to start Jetty REST handler on embedded node");
+		if (F.isEmpty(jettyHost) || jettyPort == null)
+			throw new IgniteException("Cluster: Failed to start Jetty REST handler on embedded node");
 
-         log.info("Cluster: Started embedded node for data analysis purpose [TCP binary port={}, Jetty REST port={}]", ignite.configuration().getConnectorConfiguration().getPort(), jettyPort);
+		log.info("Cluster: Started embedded node for data analysis purpose [TCP binary port={}, Jetty REST port={}]", ignite.configuration().getConnectorConfiguration().getPort(), jettyPort);
 
-         String nodeUrl = String.format("http://%s:%d", jettyHost, jettyPort);
-
-         RestClusterHandler.registerNodeUrl(clusterId,nodeUrl,ignite.name());
-         
-         return nodeUrl;
-    }
-
+		String nodeUrl = String.format("http://%s:%d", jettyHost, jettyPort);
+		return nodeUrl;
+	}
 
     /** */
     public static void stopIgnite(String clusterName,String clusterId) {  
@@ -370,20 +365,18 @@ public class IgniteClusterLauncher implements StartNodeCallable{
      * Start ignite node with cacheEmployee and populate it with data.
      * @throws IgniteCheckedException 
      */
-    public static String saveBlobToFile(JsonObject json,Collection<String> validTokens,List<String> messages) throws IgniteCheckedException {
-    	String clusterName = json.getString("name");    	
+    public static boolean saveBlobToFile(JsonObject json,String destPath,List<String> messages) throws IgniteCheckedException {
+
+		String clusterName = json.getString("name");
     	String base64 = json.getString("blob");    	 
         String prefix = "data:application/octet-stream;base64,";
-        if (base64!=null && base64.startsWith(prefix)) {        	
-        	
+        if (base64!=null && base64.startsWith(prefix)) {
         	String fileName = Utils.escapeFileName(clusterName);
-        	
-        	String work = U.workDirectory(null, null)+ "/config/";
-			U.mkdirs(new File(work));
+			U.mkdirs(new File(destPath));
 			
 			byte[] zip = Base64.decodeBase64(base64.substring(prefix.length()));
-			File zipFile = new File(work, fileName+".zip");
-			String descDir = work + fileName+"/";
+			File zipFile = new File(destPath, fileName+".zip");
+			String descDir = destPath + fileName+"/";
 			
 			try {
 				FileOutputStream writer = new FileOutputStream(zipFile);
@@ -392,20 +385,14 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 				
 				AgentUtils.unZip(zipFile, descDir);
 				
-				if(json.containsKey("crudui")) {
-					CrudUICodeGenerator codeGen = new CrudUICodeGenerator();
-					List<String> codeMessages = codeGen.generator(descDir,json.getMap(),validTokens);
-					messages.addAll(codeMessages);
-				}
-				
-				return descDir;
+				return true;
 				
 			} catch (IOException e) {
 				log.error("Failed to save zip blob data!",e);
 				messages.add(e.getMessage());
 			}
         }
-        return null;
+        return false;
         
     } 
     
@@ -487,7 +474,6 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         	else {
         		cmdReg = ((IgniteEx)ignite).commandsRegistry();
         	}
-        	
         	
         	List<JsonObject> results = new ArrayList<>(10);
         	Iterator<Entry<String, Command<?, ?>>> it = cmdReg.commands();

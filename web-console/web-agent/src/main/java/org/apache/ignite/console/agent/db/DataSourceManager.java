@@ -114,12 +114,6 @@ public class DataSourceManager {
 			// Activate the initial context
 			NamingManager.setInitialContextFactoryBuilder(environment -> environment1 -> new DBinitialContext());
 
-			DBInfo demoDB = new DBInfo();
-			demoDB.setDb("demodb");
-			demoDB.setJdbcUrl("jdbc:h2:mem:demodb");
-			demoDB.setUserName("sa");
-
-			bindDataSource("dsH2",demoDB);
 		} catch (NamingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
