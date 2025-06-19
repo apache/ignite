@@ -41,6 +41,7 @@
         <module>modules/tools</module>
         <module>modules/commons</module>
         <module>modules/binary/api</module>
+        <module>modules/unsafe</module>
         <module>modules/core</module>
         <module>modules/compress</module>
         <module>modules/direct-io</module>

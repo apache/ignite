@@ -78,6 +78,11 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
+                <artifactId>ignite-grid-unsafe</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-jta</artifactId>
                 <version>${revision}</version>
             </dependency>

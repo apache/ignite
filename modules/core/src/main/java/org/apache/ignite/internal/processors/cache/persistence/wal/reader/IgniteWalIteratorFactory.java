@@ -57,8 +57,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.arraycopy;
 import static java.nio.file.Files.walkFileTree;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
@@ -342,10 +340,7 @@ public class IgniteWalIteratorFactory {
         if (file.length() < HEADER_RECORD_SIZE)
             return; // Filter out this segment as it is too short.
 
-        String fileName = file.getName();
-
-        if (!WAL_NAME_PATTERN.matcher(fileName).matches() &&
-            !WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(fileName).matches())
+        if (!NodeFileTree.walSegment(file) && !NodeFileTree.walCompactedSegment(file))
             return;  // Filter out this because it is not segment file.
 
         FileDescriptor desc = readFileDescriptor(file, ioFactory);

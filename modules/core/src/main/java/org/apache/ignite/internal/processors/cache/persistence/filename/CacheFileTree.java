@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.INDEX_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.PART_FILE_PREFIX;
@@ -63,8 +64,8 @@ public class CacheFileTree {
     /** Node file tree. */
     private final NodeFileTree ft;
 
-    /** Cache storage. */
-    private final File storage;
+    /** Cache storages. */
+    private final File[] storages;
 
     /** {@code True} if tree for metastore, {@code false} otherwise. */
     private final boolean metastore;
@@ -85,16 +86,16 @@ public class CacheFileTree {
 
         this.ft = ft;
         this.metastore = metastore;
-        this.storage = metastore ? ft.metaStorage() : ft.cacheStorage(ccfg);
+        this.storages = metastore ? new File[] {ft.metaStorage()} : ft.cacheStorages(ccfg);
         this.ccfg = ccfg;
         this.grpId = metastore ? MetaStorage.METASTORAGE_CACHE_ID : CU.cacheGroupId(ccfg);
     }
 
     /**
-     * @return Storage for cache.
+     * @return Storages for cache.
      */
-    public File storage() {
-        return storage;
+    public File[] storages() {
+        return storages;
     }
 
     /**
@@ -144,7 +145,7 @@ public class CacheFileTree {
      * @see CacheFileTree#defragmentedIndexFile()
      */
     public File defragmentedIndexTmpFile() {
-        return new File(storage(), DFRG_INDEX_TMP_FILE_NAME);
+        return new File(partitionRoot(INDEX_PARTITION), DFRG_INDEX_TMP_FILE_NAME);
     }
 
     /**
@@ -156,7 +157,7 @@ public class CacheFileTree {
      * @see #defragmentedIndexTmpFile()
      */
     public File defragmentedIndexFile() {
-        return new File(storage(), DFRG_INDEX_FILE_NAME);
+        return new File(partitionRoot(INDEX_PARTITION), DFRG_INDEX_FILE_NAME);
     }
 
     /**
@@ -169,7 +170,7 @@ public class CacheFileTree {
      * @see #defragmentedPartFile(int)
      */
     public File defragmentedPartTmpFile(int partId) {
-        return new File(storage(), String.format(DFRG_PARTITION_TMP_FILE_TEMPLATE, partId));
+        return new File(partitionRoot(partId), String.format(DFRG_PARTITION_TMP_FILE_TEMPLATE, partId));
     }
 
     /**
@@ -182,7 +183,7 @@ public class CacheFileTree {
      * @see #defragmentedPartTmpFile(int)
      */
     public File defragmentedPartFile(int partId) {
-        return new File(storage(), String.format(DFRG_PARTITION_FILE_TEMPLATE, partId));
+        return new File(partitionRoot(partId), String.format(DFRG_PARTITION_FILE_TEMPLATE, partId));
     }
 
     /**
@@ -195,7 +196,7 @@ public class CacheFileTree {
      * @see LinkMap
      */
     public File defragmentedPartMappingFile(int partId) {
-        return new File(storage(), String.format(DFRG_LINK_MAPPING_FILE_TEMPLATE, partId));
+        return new File(partitionRoot(partId), String.format(DFRG_LINK_MAPPING_FILE_TEMPLATE, partId));
     }
 
     /**
@@ -209,7 +210,17 @@ public class CacheFileTree {
      * @see DefragmentationFileUtils#batchRenameDefragmentedCacheGroupPartitions(CacheFileTree)
      */
     public File defragmentationCompletionMarkerFile() {
-        return new File(storage(), DFRG_COMPLETION_MARKER_FILE_NAME);
+        return new File(storages()[0], DFRG_COMPLETION_MARKER_FILE_NAME);
+    }
+
+    /**
+     * @param part Partition index.
+     * @return Root directory for partition file.
+     */
+    private File partitionRoot(int part) {
+        return metastore
+            ? ft.metaStorage()
+            : ft.partitionFile(ccfg, part).getParentFile();
     }
 
     /**

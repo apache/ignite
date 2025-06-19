@@ -19,6 +19,8 @@ package org.apache.ignite.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -49,6 +51,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
@@ -80,6 +83,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.OfflineCommand;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
@@ -115,6 +121,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -159,6 +166,7 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_COMPLETED_WITH_WARNINGS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -185,6 +193,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.util.TestCommandsProvider.registerCommands;
+import static org.apache.ignite.util.TestCommandsProvider.unregisterAll;
 import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
 
 /**
@@ -3036,17 +3046,24 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             int code = execute(new ArrayList<>(F.asList("--snapshot", "create", "testDsSnp", "--sync")));
 
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
+            assertEquals(EXIT_CODE_COMPLETED_WITH_WARNINGS, code);
+
+            String out = testOut.toString();
 
             LogListener logLsnr = LogListener.matches(DataStreamerUpdatesHandler.WRN_MSG).times(1).build();
-            logLsnr.accept(testOut.toString());
+            logLsnr.accept(out);
             logLsnr.check();
+
+            assertNotContains(log, out, "Failed to perform operation");
+            assertContains(log, out, "Snapshot create operation completed with warnings [name=testDsSnp");
+            assertContains(log, out, "DataStreamer with property 'allowOverwrite' set to `false` was working " +
+                "during the snapshot creation");
 
             code = execute(new ArrayList<>(F.asList("--snapshot", "check", "testDsSnp")));
 
             assertEquals(EXIT_CODE_OK, code);
 
-            String out = testOut.toString();
+            out = testOut.toString();
 
             logLsnr = LogListener.matches(DataStreamerUpdatesHandler.WRN_MSG).times(1).build();
             logLsnr.accept(out);
@@ -3059,6 +3076,51 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             cm.stopBlock();
             loadFut.get();
         }
+    }
+
+    /**
+     * Verifies that if an error occurs during the snapshot operation, it takes precedence over any warnings
+     * and is properly logged.
+     */
+    @Test
+    public void testClusterCreateSnapshotWarningAndError() throws Exception {
+        String snpName = "testSnp";
+
+        startGrids(2).cluster().state(ACTIVE);
+
+        TestRecordingCommunicationSpi failNodeSpi = TestRecordingCommunicationSpi.spi(grid(1));
+
+        failNodeSpi.blockMessages((n, msg) ->
+            msg instanceof SingleNodeMessage
+                && ((SingleNodeMessage<?>)msg).type() == DistributedProcess.DistributedProcessType.START_SNAPSHOT.ordinal());
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        runAsync(() -> {
+            try (IgniteDataStreamer<Integer, Object> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+                ds.allowOverwrite(false);
+
+                int idx = 0;
+
+                while (!stop.get())
+                    ds.addData(++idx, idx);
+            }
+        });
+
+        injectTestSystemOut();
+
+        IgniteInternalFuture<Integer> fut = runAsync(() -> execute("--snapshot", "create", snpName, "--sync"));
+
+        failNodeSpi.waitForBlocked(1, 5_000);
+
+        grid(1).close();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, (int)fut.get());
+
+        stop.set(true);
+
+        assertContains(log, testOut.toString(), "Snapshot operation interrupted, because baseline node left the cluster");
+        assertNotContains(log, testOut.toString(), "Snapshot create operation completed with warnings [name=" + snpName);
     }
 
     /**
@@ -3857,6 +3919,27 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
     }
 
+    /** */
+    @Test
+    public void testOfflineCommand() throws Exception {
+        try {
+            registerCommands(new OfflineTestCommand());
+
+            startGrid(0);
+
+            injectTestSystemOut();
+
+            String input = "Test Offline Command";
+
+            assertEquals(EXIT_CODE_OK, execute("--offline-test", "--input", input));
+
+            assertTrue(testOut.toString().contains(input));
+        }
+        finally {
+            unregisterAll();
+        }
+    }
+
     /**
      * @param ignite Ignite to execute task on.
      * @param delFoundGarbage If clearing mode should be used.
@@ -3952,5 +4035,52 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     public static void assertClusterState(ClusterState state, String logOutput) {
         assertTrue(Pattern.compile("Cluster state: " + state + "\\s+").matcher(logOutput).find());
+    }
+
+    /** */
+    public static class OfflineTestCommand implements OfflineCommand<OfflineTestCommandArg, Void> {
+        /** {@inheritDoc} */
+        @Override public String description() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<OfflineTestCommandArg> argClass() {
+            return OfflineTestCommandArg.class;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void execute(OfflineTestCommandArg arg, Consumer<String> printer) {
+            printer.accept(arg.input());
+
+            return null;
+        }
+    }
+
+    /** */
+    public static class OfflineTestCommandArg extends IgniteDataTransferObject {
+        /** */
+        @Argument
+        private String input;
+
+        /** */
+        public String input() {
+            return input;
+        }
+
+        /** */
+        public void input(String input) {
+            this.input = input;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            U.writeString(out, input);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(ObjectInput in) throws IOException {
+            input = U.readString(in);
+        }
     }
 }

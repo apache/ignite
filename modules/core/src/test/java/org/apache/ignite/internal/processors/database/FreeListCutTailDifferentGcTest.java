@@ -20,50 +20,52 @@ package org.apache.ignite.internal.processors.database;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.CallbackExecutorLogListener;
 import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList.IGNITE_PAGES_LIST_STRIPES_PER_BUCKET;
-import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
-
 /**
- * Test freelists ensuring that the optimization by the C2 Jit compilator was done.
+ * Test {@link PagesList.CutTail#run} ensuring that the optimization by the C2 Jit compiler was done for it.
+ * Tests done with different garbarge collectors and both with assertions turned on and off.
+ * <p>
+ * If method is broken by the C2 Jit compiler (see <a href="https://issues.apache.org/jira/browse/IGNITE-17734">IGNITE-17734</a>)
+ * it would fail during row put and cache clear.
  */
 @RunWith(Parameterized.class)
-@WithSystemProperty(key = IGNITE_PAGES_LIST_STRIPES_PER_BUCKET, value = "1")
 public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
-    /** */
-    private static final int KEYS_COUNT = 5_000;
+    /** Name of Ignite atomic to inform job in remove server node about C2 compilation. */
+    private static final String COMPILED_ATOMIC_NAME = "compiled";
 
-    /** Signals once method under test is C2 Jit compiled in server node. */
-    CountDownLatch c2JitCompiled = new CountDownLatch(1);
+    /** Signals once method under test is C2 Jit compiled in remote server node. */
+    private final CountDownLatch c2JitCompiledLatch = new CountDownLatch(1);
+
+    /** List of error messages logged in remote server node. */
+    private final ArrayList<String> errors = new ArrayList<>();
+
+    /** Page size. */
+    private int pageSize;
 
     /** JVM options to start the server node in remote JVM. */
     @Parameterized.Parameter
@@ -86,33 +88,33 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
         return params;
     }
 
-    /**
-     * Ensure that the PagesList$CutTail::run handler is not broken if C2 Jit-compiled.
-     * With various garbage collectors and with assertions both turned on and off.
-     */
+    /** */
     @Test
     public void testCutTail() throws Exception {
         try (Ignite ignite = prepareCluster(jvmOpts,
             "org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList$CutTail::run")) {
-            IgniteFuture<Void> jobFut = ignite.compute().runAsync(new TestCutTailJob());
+            IgniteAtomicReference<Boolean> compiled = ignite.atomicReference(COMPILED_ATOMIC_NAME, false, true);
 
-            assertTrue(c2JitCompiled.await(getTestTimeout() / 2, TimeUnit.MILLISECONDS));
+            IgniteFuture<Void> jobFut = ignite.compute().runAsync(new TestCutTailJob(pageSize));
 
-            try {
-                // Let it work for 2 seconds with the optimized C2 Jit-compiled variant of the
-                // PagesList$CutTail::run method. It's enough to reproduce problem if it is broken.
-                jobFut.get(2000, TimeUnit.MILLISECONDS);
-            }
-            catch (IgniteFutureTimeoutException e) {
-                jobFut.cancel();
-            }
+            assertTrue(c2JitCompiledLatch.await(getTestTimeout() / 2, TimeUnit.MILLISECONDS));
+
+            compiled.set(true);
+
+            jobFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+            assertTrue("Failures are logged in remote JVM server node:\n\t" + String.join("\n\t", errors),
+                errors.isEmpty());
         }
     }
 
     /**
      * Starts server node in remote JVM with the JVM options passed.
-     * Registers listener to signal once the method passed is C2 Jit-compiled in server node.
+     * <p>
      * Starts client node in local JVM.
+     * <p>
+     * Registers listeners to signal once the method passed is C2 Jit-compiled
+     * and if errors are logged in the server node.
      *
      * @param jvmOpts JVM options for the server node.
      * @param method Fully qualified name of method.
@@ -128,7 +130,9 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
 
         lsnrLog.registerListener(new CallbackExecutorLogListener(
             ".*Compiled method \\(c2\\).*" + method.replace("$", "\\$") + ".*",
-            c2JitCompiled::countDown));
+            c2JitCompiledLatch::countDown));
+
+        lsnrLog.registerListener(new CallbackExecutorLogListener(".*\\[SEVERE].*", errors::add));
 
         IgniteConfiguration cfg = optimize(getConfiguration("remote-jvm-server"));
 
@@ -154,67 +158,87 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Perfrom concurrent updates and deletes ensuring the CutTail called enough
-     * times to invoke the C2 optimizing Jit compiler.
+     * Test that {@link PagesList.CutTail#run} is not broken called from the {@code cache.put()} and {@code cache.clear()}.
+     * <p>
+     * Notes:
+     * <ul>
+     * <li> Insert rows of the same size (which is bigger than a half of the page capacity) so that free
+     *      pages are accumulated in the single bucket of the freelist (other than the very first one which
+     *      will be saved in one of the currently free page in another bucket).
+     * <li> Insert rows in reverse key order and use one partition. This ensures that the most recently
+     *      inserted rows will be removed first during cache clear. This forces that freelist's bucket will be shrinked
+     *      from the tail and {@link PagesList#mergeNoNext} and therefore the {@link PagesList.CutTail#run} will be called.
+     * <li> To force the {@link PagesList.CutTail#run} C2 Jit compilation:<ul>
+     *     <li> Remove several rows to have some pages in the reuse bucket.
+     *     <li> Number of the reuse pages should be just above the {@link PagesListNodeIO} capacity.
+     *          So that adding single row would remove tail page from the reuse bucket list (cutting of the bucket's tail).
+     *          And removing of this row would add new tail page again.
+     *     <li> Removing of exactly {@link PagesListNodeIO} capacity rows will add (capacity+3) pages to reuse bucket.
+     *          From data comes capacity pages. Two pages come from freeing up BPlusTree pages as data pages are freed up.
+     *          And one page - from freeing the bucket's tail page.
+     *     <li> Repeatedly insert and remove row generating the {@link PagesList.CutTail#run} calls until it's C2 compiled.
+     *          The record size is adjusted so that 3 pages are taken from the reuse list. Two for data and one for new
+     *          node in bucket list since new free page goes into the same bucket.
+     *     </ul>
+     * <li> Once the {@link PagesList.CutTail#run} is compiled and if it's broken {@code cache.put()} would fail with
+     *      the "Tail not found: 0" error.
+     * <li> Number of remaining rows should be also above the {@link PagesListNodeIO} capacity. So that freelist bucket has
+     *      more than one page.
+     * <li> If the {@link PagesList.CutTail#run} is compiled and is broken the subsequent call to
+     *      {@code cache.clear()} would fail in two ways:<ul>
+     *      <li>"Tail not found: 0" - just in the {@link PagesList.CutTail#run} during the attempts to cut the freelist bucket tail.
+     *      <li>"Tail not found: 844420635166728" (or other non-zero page id) - during the attempt to cut tail page or remove of
+     *          the last page, since bucket's tail link wasn't correctly updated by previous failure
+     *          in {@link PagesList.CutTail#run} and contains outdated value.</ul>
+     * </ul>
      */
     private static class TestCutTailJob implements IgniteRunnable {
         /** */
         @IgniteInstanceResource
         Ignite ignite;
 
+        /** */
+        private final int pageSize;
+
+        /** */
+        private TestCutTailJob(int pageSize) {
+            this.pageSize = pageSize;
+        }
+
         /** {@inheritDoc} */
         @Override public void run() {
-            IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+            IgniteAtomicReference<Boolean> compiled = ignite.atomicReference(COMPILED_ATOMIC_NAME, false, true);
 
-            for (int i = 0; i < KEYS_COUNT; i++)
-                cache.put(i, value());
+            IgniteCache<Object, Object> cache = ignite.createCache(
+                new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                    .setAffinity(new RendezvousAffinityFunction(false, 1)));
 
-            AtomicBoolean stop = new AtomicBoolean(false);
+            int capacity = PagesListNodeIO.VERSIONS.forVersion(1).getCapacity(pageSize);
 
-            CyclicBarrier barrier = new CyclicBarrier(6);
+            int keyCnt = capacity * 5 + 1;
 
-            IgniteInternalFuture<Long> updateFut = runMultiThreadedAsync(() -> {
-                while (!stop.get()) {
-                    try {
-                        barrier.await(100, TimeUnit.MILLISECONDS);
+            int dataSize = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
-                        cache.put(key(), value());
-                    }
-                    catch (InterruptedException | BrokenBarrierException ignored) {
-                        stop.set(true);
-                    }
-                    catch (TimeoutException ignored) {
-                        // No-op.
-                    }
-                    catch (Exception ex) {
-                        stop.set(true);
+            for (int i = keyCnt; i > 0; i--)
+                cache.put(i, new byte[pageSize / 2]);
 
-                        throw ex;
-                    }
+            for (int i = 1; i <= capacity; i++)
+                cache.remove(i);
+
+            while (!compiled.get()) {
+                try {
+                    cache.put(0, new byte[dataSize + pageSize / 2 - 16]);
+
+                    cache.remove(0);
                 }
-            }, 24, "update");
+                catch (Exception e) {
+                    ignite.log().error(e.getMessage(), e);
 
-            while (!stop.get())
-                cache.remove(key());
-
-            barrier.reset();
-
-            try {
-                updateFut.get();
+                    compiled.set(true);
+                }
             }
-            catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
-            }
-        }
 
-        /** */
-        private int key() {
-            return ThreadLocalRandom.current().nextInt(KEYS_COUNT);
-        }
-
-        /** */
-        private byte[] value() {
-            return new byte[ThreadLocalRandom.current().nextInt(12000) + 3000];
+            cache.clear();
         }
     }
 
@@ -241,10 +265,7 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
-        int pageSize = dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize();
-
-        dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(pageSize * 10L * KEYS_COUNT));
+        pageSize = dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize();
 
         cfg.setDataStorageConfiguration(dsCfg);
 
