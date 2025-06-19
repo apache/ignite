@@ -55,12 +55,84 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      */
     @Test
     public void testComplexPk() {
+        checkComplexPk(false);
+    }
+
+    /**
+     * Test using PK indexes for complex primary key for DDL on existing cache.
+     */
+    @Test
+    public void testComplexPkExistingCache() {
+        checkComplexPk(true);
+    }
+
+    /** */
+    private void checkComplexPk(boolean existingCache) {
         String tblName = createTableName();
 
+        if (existingCache)
+            node().createCache(tblName);
+
         executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
-            "primary key (id, name, city))");
+            "primary key (id, name, city))" + (existingCache ? " WITH \"CACHE_NAME=" + tblName + "\"" : ""));
 
         checkUsingIndexes(tblName, "1", 2);
+    }
+
+    /**
+     * Test using PK indexes for complex primary key and affinity key.
+     */
+    @Test
+    public void testComplexPkWithAffinityKey() {
+        checkComplexPkWithAffinityKey(false);
+    }
+
+    /**
+     * Test using PK indexes for complex primary key and affinity key for DDL on existing cache.
+     */
+    @Test
+    public void testComplexPkWithAffinityKeyExistingCache() {
+        checkComplexPkWithAffinityKey(true);
+    }
+
+    /** */
+    private void checkComplexPkWithAffinityKey(boolean existingCache) {
+        String tblName = createTableName();
+
+        if (existingCache)
+            node().createCache(tblName);
+
+        executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
+            "primary key (id, name, city)) " +
+            "WITH \"affinity_key=id" +
+            (existingCache ? ",CACHE_NAME=" + tblName : "") + "\"");
+
+        // For the new cache unwrapped key field is used as affinity key, but for the existing cache
+        // affinity key can't be changed, so we can't prune partitions for query on ID field.
+        checkUsingIndexes(tblName, "1", existingCache ? 2 : 1);
+    }
+
+    /**
+     * Test using PK indexes for complex primary key for DDL on existing cache on multiple nodes.
+     */
+    @Test
+    public void testComplexPkExistingCacheMultiNode() throws Exception {
+        String tblName = createTableName();
+
+        try (IgniteEx ignite1 = startGrid(1)) {
+            node().createCache(tblName);
+
+            executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
+                "primary key (id, name, city)) WITH \"CACHE_NAME=" + tblName + "\"");
+
+            // Check on remote node, started before table created.
+            checkUsingIndexes(ignite1, tblName, "1", 2);
+
+            try (IgniteEx ignite2 = startGrid(2)) {
+                // Check on remote node, started after table created.
+                checkUsingIndexes(ignite2, tblName, "1", 2);
+            }
+        }
     }
 
     /**
@@ -68,6 +140,19 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      */
     @Test
     public void testSimplePk() {
+        checkSimplePk(false);
+    }
+
+    /**
+     * Test using PK indexes for simple primary key for DDL on existing cache.
+     */
+    @Test
+    public void testSimplePkExistingCache() {
+        checkSimplePk(true);
+    }
+
+    /** */
+    private void checkSimplePk(boolean existingCache) {
         //ToDo: IGNITE-8386: need to add DATE type into the test.
         HashMap<String, String> types = new HashMap() {
             {
@@ -85,21 +170,23 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
                 put("bigint", "1");
                 put("varchar_ignorecase", "'1'");
                 put("time", "'11:11:11'");
-                put("timestamp", "'20018-11-02 11:11:11'");
+                put("timestamp", "'2018-11-02 11:11:11'");
                 put("uuid", "'1'");
             }
         };
 
         for (Map.Entry<String, String> entry : types.entrySet()) {
-
             String tblName = createTableName();
+
+            if (existingCache)
+                node().createCache(tblName);
 
             String type = entry.getKey();
             String val = entry.getValue();
 
             executeSql("CREATE TABLE " + tblName +
                 " (id " + type + " , name varchar, age int, company varchar, city varchar," +
-                " primary key (id))");
+                " primary key (id))" + (existingCache ? " WITH \"CACHE_NAME=" + tblName + "\"" : ""));
 
             checkUsingIndexes(tblName, val, 1);
         }
@@ -110,6 +197,19 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      */
     @Test
     public void testSimplePkWithAffinityKey() {
+        checkSimplePkWithAffinityKey(false);
+    }
+
+    /**
+     * Test using PK indexes for simple primary key and affinity key on existing cache.
+     */
+    @Test
+    public void testSimplePkWithAffinityKeyExistingCache() {
+        checkSimplePkWithAffinityKey(true);
+    }
+
+    /** */
+    private void checkSimplePkWithAffinityKey(boolean existingCache) {
         //ToDo: IGNITE-8386: need to add DATE type into the test.
         HashMap<String, String> types = new HashMap() {
             {
@@ -127,21 +227,24 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
                 put("bigint", "1");
                 put("varchar_ignorecase", "'1'");
                 put("time", "'11:11:11'");
-                put("timestamp", "'20018-11-02 11:11:11'");
+                put("timestamp", "'2018-11-02 11:11:11'");
                 put("uuid", "'1'");
             }
         };
 
         for (Map.Entry<String, String> entry : types.entrySet()) {
-
             String tblName = createTableName();
 
             String type = entry.getKey();
             String val = entry.getValue();
 
+            if (existingCache)
+                node().createCache(tblName);
+
             executeSql("CREATE TABLE " + tblName +
                 " (id " + type + " , name varchar, age int, company varchar, city varchar," +
-                " primary key (id)) WITH \"affinity_key=id\"");
+                " primary key (id)) WITH \"affinity_key=id" +
+                (existingCache ? ",CACHE_NAME=" + tblName : "") + "\"");
 
             checkUsingIndexes(tblName, val, 1);
         }
@@ -152,12 +255,31 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      */
     @Test
     public void testWrappedPk() {
+        checkWrappedPk(false);
+    }
+
+    /**
+     * Test using PK indexes for wrapped primary key on existsing cache.
+     */
+    @Test
+    public void testWrappedPkExistingCache() {
+        checkWrappedPk(true);
+    }
+
+    /** */
+    private void checkWrappedPk(boolean existingCache) {
         String tblName = createTableName();
 
-        executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
-            "primary key (id)) WITH \"wrap_key=true\"");
+        if (existingCache)
+            node().createCache(tblName);
 
-        checkUsingIndexes(tblName, "1", 1);
+        executeSql("CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
+            "primary key (id)) WITH \"wrap_key=true" +
+            (existingCache ? ",CACHE_NAME=" + tblName : "") + "\"");
+
+        // For the new cache unwrapped key field is used as affinity key, but for the existing cache
+        // affinity key can't be changed, so we can't prune partitions for query on ID field.
+        checkUsingIndexes(tblName, "1", existingCache ? 2 : 1);
     }
 
     /**
@@ -165,13 +287,31 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      */
     @Test
     public void testInlineSizeNoWrap() {
-        executeSql("DROP TABLE IF EXISTS TABLE1");
-        executeSql("CREATE TABLE IF NOT EXISTS TABLE1 ( " +
+        checkInlineSizeNoWrap(false);
+    }
+
+    /**
+     * Test single column PK without wrapping calculate correct inline size on existing cache.
+     */
+    @Test
+    public void testInlineSizeNoWrapExistingCache() {
+        checkInlineSizeNoWrap(true);
+    }
+
+    /** */
+    private void checkInlineSizeNoWrap(boolean existingCache) {
+        String tblName = createTableName();
+
+        if (existingCache)
+            node().createCache(tblName);
+
+        executeSql("CREATE TABLE IF NOT EXISTS " + tblName + "( " +
             "  id varchar(15), " +
             "  col varchar(100), " +
-            "  PRIMARY KEY(id) ) ");
-        assertEquals(18, executeSql(
-            "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'TABLE1' and IS_PK = true").get(0).get(0));
+            "  PRIMARY KEY(id) ) " +
+            (existingCache ? "WITH \"CACHE_NAME=" + tblName + "\"" : "")
+        );
+        assertEquals(18, pkInlineSize(tblName));
     }
 
     /**
@@ -179,13 +319,30 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      */
     @Test
     public void testInlineSizeWrap() {
-        executeSql("DROP TABLE IF EXISTS TABLE1");
-        executeSql("CREATE TABLE IF NOT EXISTS TABLE1 ( " +
+        checkInlineSizeWrap(false);
+    }
+
+    /**
+     * Test single column PK with wrapping calculate correct inline size on existing cache.
+     */
+    @Test
+    public void testInlineSizeWrapExistingCache() {
+        checkInlineSizeWrap(true);
+    }
+
+    /** */
+    private void checkInlineSizeWrap(boolean existingCache) {
+        String tblName = createTableName();
+
+        if (existingCache)
+            node().createCache(tblName);
+
+        executeSql("CREATE TABLE IF NOT EXISTS " + tblName + "( " +
             "  id varchar(15), " +
             "  col varchar(100), " +
-            "  PRIMARY KEY(id) )  WITH \"wrap_key=true\"");
-        assertEquals(18, executeSql(
-            "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'TABLE1' and IS_PK = true").get(0).get(0));
+            "  PRIMARY KEY(id) )  " +
+            "  WITH \"wrap_key=true" + (existingCache ? ",CACHE_NAME=" + tblName : "") + "\"");
+        assertEquals(18, pkInlineSize(tblName));
     }
 
     /**
@@ -193,14 +350,37 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      */
     @Test
     public void testInlineSizeWrap2() {
-        executeSql("DROP TABLE IF EXISTS TABLE1");
-        executeSql("CREATE TABLE IF NOT EXISTS TABLE1 ( " +
+        checkInlineSizeWrap2(false);
+    }
+
+    /**
+     * Test two column PK with wrapping calculate correct inline size on existing cache.
+     */
+    @Test
+    public void testInlineSizeWrap2ExistingCache() {
+        checkInlineSizeWrap2(true);
+    }
+
+    /** */
+    private void checkInlineSizeWrap2(boolean existingCache) {
+        String tblName = createTableName();
+
+        if (existingCache)
+            node().createCache(tblName);
+
+        executeSql("CREATE TABLE IF NOT EXISTS " + tblName + "( " +
             "  id varchar(15), " +
             "  id2 uuid, " +
             "  col varchar(100), " +
-            "  PRIMARY KEY(id, id2) )  WITH \"wrap_key=true\"");
-        assertEquals(35, executeSql(
-            "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'TABLE1' and IS_PK = true").get(0).get(0));
+            "  PRIMARY KEY(id, id2) ) " +
+            "  WITH \"wrap_key=true" + (existingCache ? ",CACHE_NAME=" + tblName : "") + "\"");
+        assertEquals(35, pkInlineSize(tblName));
+    }
+
+    /** */
+    private int pkInlineSize(String tblName) {
+        return (int)executeSql("select INLINE_SIZE from SYS.INDEXES " +
+            "where TABLE_NAME = '" + tblName + "' and IS_PK = true").get(0).get(0);
     }
 
     /**
@@ -210,17 +390,28 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
      * @param expResCnt Expceted result count.
      */
     private void checkUsingIndexes(String tblName, String idVal, int expResCnt) {
+        checkUsingIndexes(node(), tblName, idVal, expResCnt);
+    }
+
+    /**
+     * Check using PK indexes for few cases.
+     *
+     * @param node Ignite node.
+     * @param tblName Name of table which should be checked to using PK indexes.
+     * @param expResCnt Expceted result count.
+     */
+    private void checkUsingIndexes(IgniteEx node, String tblName, String idVal, int expResCnt) {
         String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
 
-        List<List<?>> results = executeSql(explainSQL + "id=" + idVal);
+        List<List<?>> results = executeSql(node, explainSQL + "id=" + idVal);
 
         assertUsingPkIndex(results, expResCnt);
 
-        results = executeSql(explainSQL + "id=" + idVal + " and name=''");
+        results = executeSql(node, explainSQL + "id=" + idVal + " and name=''");
 
         assertUsingPkIndex(results, expResCnt);
 
-        results = executeSql(explainSQL + "id=" + idVal + " and name='' and city='' and age=0");
+        results = executeSql(node, explainSQL + "id=" + idVal + " and name='' and city='' and age=0");
 
         assertUsingPkIndex(results, expResCnt);
     }

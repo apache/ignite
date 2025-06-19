@@ -2196,7 +2196,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo, op0.entities(),
                     op0.isSqlEscape());
 
-                registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
+                registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), true);
 
                 if (idxRebuildFutStorage.prepareRebuildIndexes(singleton(cacheInfo.cacheId()), null).isEmpty())
                     rebuildIndexesFromHash0(cacheInfo.cacheContext(), false, cancelTok);
