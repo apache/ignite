@@ -461,13 +461,14 @@ public class WebSocketRouter implements AutoCloseable {
 		
         try {
             String work = U.workDirectory(null, null);
+            String configPath = work+"/config/";
             if(isDemo){
-                work = work + "/demo-work";
+                configPath = work + "/demo-config/";
             }
-            boolean success = IgniteClusterLauncher.saveBlobToFile(json,work+"/config/",messages);
+            boolean success = IgniteClusterLauncher.saveBlobToFile(json,configPath,messages);
             if(success){
                 if(json.containsKey("crudui")) {
-                    String descDir = work+"/config/" + clusterName+"/";
+                    String descDir = configPath + clusterName+"/";
                     CrudUICodeGenerator codeGen = new CrudUICodeGenerator();
                     List<String> codeMessages = codeGen.generator(descDir,json.getMap(),validTokens);
                     messages.addAll(codeMessages);
@@ -515,7 +516,7 @@ public class WebSocketRouter implements AutoCloseable {
 				}
 				else {
 
-		        	String cfgFile = String.format("%s/config/%s/src/main/resources/META-INF/%s-server.xml", work, clusterName,clusterName);
+		        	String cfgFile = String.format("%s%s/src/main/resources/META-INF/%s-server.xml", configPath, clusterName,clusterName);
 		        	File configWorkFile = new File(cfgFile);
 		        	
 		        	if(configWorkFile.exists() && configFile.exists()) {
@@ -551,7 +552,7 @@ public class WebSocketRouter implements AutoCloseable {
 			else {
 				// 启动一个内存型的node，有多少个Agent就有多少个Demo Node
                 AgentMetadataDemo.bindTestDatasource();
-				String cfgFile = String.format("%s/config/%s/src/main/resources/META-INF/%s-server.xml", work, clusterName,clusterName);
+				String cfgFile = String.format("%s%s/src/main/resources/META-INF/%s-server.xml", configPath, clusterName,clusterName);
 				// 启动Demo节点，并且在最后一个节点部署服务
 	        	ignite = AgentClusterDemo.tryStart(clusterName,cfgFile,cfg.serverId(),isLastNode);
 	        	if(ignite!=null) {

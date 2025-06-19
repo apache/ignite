@@ -25,7 +25,7 @@ export default class DemoModeButton {
 
     async startDemo() {
         const connectionState = this.agentMgr.connectionSbj.getValue();
-        const disconnected = _.get(connectionState, 'state') === 'AGENT_DISCONNECTED';
+        const disconnected = _.get(connectionState, 'state') === 'AGENT_DISCONNECTED' ||  _.get(connectionState, 'state') === 'CLUSTER_DISCONNECTED';
         const demoEnabled = _.get(connectionState, 'hasDemo');
         const user = await this.User.current$.pipe(take(1)).toPromise();
 

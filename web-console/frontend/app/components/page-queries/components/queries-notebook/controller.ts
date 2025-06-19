@@ -834,7 +834,7 @@ export class NotebookCtrl {
 
         const _startWatch = () => {
             const finishLoading$ = defer(() => {
-                if (!this.Demo.enabled)
+                //-if (!this.Demo.enabled)
                     Loading.finish('sqlLoading');
             }).pipe(take(1));
 

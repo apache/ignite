@@ -236,7 +236,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         try {
 
             String jettyPath = config().getJettyPath();
-	        final URL cfgUrl;
+	        URL cfgUrl;
 	
 	        if (jettyPath == null) {
 	            cfgUrl = null;
@@ -246,7 +246,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 	        }
 	        else {
 	            cfgUrl = U.resolveIgniteUrl(jettyPath);
-	
+                if (cfgUrl == null && (jettyPath.startsWith("http://") || jettyPath.startsWith("https://"))){
+                    cfgUrl = new URL(jettyPath);
+                }
 	            if (cfgUrl == null)
 	                throw new IgniteSpiException("Invalid Vertx configuration file: " + jettyPath);
 	            else if (log.isDebugEnabled())
