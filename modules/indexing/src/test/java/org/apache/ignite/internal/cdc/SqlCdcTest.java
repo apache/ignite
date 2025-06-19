@@ -169,8 +169,8 @@ public class SqlCdcTest extends AbstractCdcTest {
                 Integer.toString(127000 + i));
         }
 
-        // Wait until both CDC predicates become true and state saved on the disk or
-        // until CdcMain future completes when assertions fail in BinaryCdcConsumer methods.
+        // Wait while both predicate will become true and state saved on the disk or
+        // while CdcMain future completes when assertions fail in BinaryCdcConsumer methods.
         assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
 
         if (fut.error() != null)

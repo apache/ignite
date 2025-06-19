@@ -109,7 +109,7 @@ public class CdcPushMetricsExporterTest extends AbstractCdcTest {
 
     /** Test checks that metrics are exported via exporter based on the push metrics exporter adapter. */
     @Test
-    public void testPushMetricsExporter() throws Exception {
+    public void testPushMetricsExporter() throws Throwable {
         IgniteConfiguration cfg = getSrcClusterCfg("ignite-0");
 
         Ignite ign = startGrid(cfg);
