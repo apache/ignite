@@ -124,7 +124,7 @@ public class ImmutableArrayMap<K, V> implements Map<K, V>, Serializable {
      * @throws UnsupportedOperationException always.
      */
     @Override public void putAll(@NotNull Map<? extends K, ? extends V> m) {
-        throw new UnsupportedOperationException("'remove' operation is not supported by ImmutableArrayMap.");
+        throw new UnsupportedOperationException("'putAll' operation is not supported by ImmutableArrayMap.");
     }
 
     /**
@@ -160,7 +160,7 @@ public class ImmutableArrayMap<K, V> implements Map<K, V>, Serializable {
      * @throws UnsupportedOperationException always.
      */
     @Override public @NotNull Set<Entry<K, V>> entrySet() {
-        throw new UnsupportedOperationException("'remove' operation is not supported by ImmutableArrayMap.");
+        throw new UnsupportedOperationException("'entrySet' operation is not supported by ImmutableArrayMap.");
     }
 
     /** {@inheritDoc} */

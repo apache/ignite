@@ -2116,7 +2116,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     Collections.nCopies(keys.size(), (EntryProcessor<K, V, Object>)entryProcessor);
 
                 IgniteInternalFuture<GridCacheReturn> fut =
-                    tx.invokeAsync(ctx, null, keys, invokeVals.iterator(), args);
+                    tx.invokeAsync(ctx, null, keys, invokeVals, args);
 
                 Map<K, EntryProcessorResult<T>> res = fut.get().value();
 
@@ -2146,10 +2146,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         IgniteInternalFuture<?> fut = asyncOp(new AsyncOp() {
             @Override public IgniteInternalFuture op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
-                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap =
-                    Collections.singletonMap(key, (EntryProcessor<K, V, Object>)entryProcessor);
-
-                return tx.invokeAsync(ctx, readyTopVer, invokeMap, args);
+                return tx.invokeAsync(ctx, readyTopVer, Set.of(key), List.of((EntryProcessor<K, V, Object>)entryProcessor), args);
             }
 
             @Override public String toString() {
@@ -2205,7 +2202,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 Collection<EntryProcessor<K, V, Object>> invokeVals =
                     Collections.nCopies(keys.size(), (EntryProcessor<K, V, Object>)entryProcessor);
 
-                return tx.invokeAsync(ctx, readyTopVer, keys, invokeVals.iterator(), args);
+                return tx.invokeAsync(ctx, readyTopVer, keys, invokeVals, args);
             }
 
             @Override public String toString() {
@@ -2252,10 +2249,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteInternalFuture<?> fut = asyncOp(new AsyncOp(map.keySet()) {
             @Override public IgniteInternalFuture<GridCacheReturn> op(GridNearTxLocal tx,
                 AffinityTopologyVersion readyTopVer) {
-                return tx.invokeAsync(ctx,
+                return tx.invokeAsync(
+                    ctx,
                     readyTopVer,
-                    (Map<? extends K, ? extends EntryProcessor<K, V, Object>>)map,
-                    args);
+                    map.keySet(),
+                    (Collection<? extends EntryProcessor<K, V, Object>>)map.values(),
+                    args
+                );
             }
 
             @Override public String toString() {
@@ -2303,7 +2303,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             @Nullable @Override public Map<K, EntryProcessorResult<T>> op(GridNearTxLocal tx)
                 throws IgniteCheckedException {
                 IgniteInternalFuture<GridCacheReturn> fut =
-                    tx.invokeAsync(ctx, null, (Map<? extends K, ? extends EntryProcessor<K, V, Object>>)map, args);
+                    tx.invokeAsync(
+                        ctx,
+                        null,
+                        map.keySet(),
+                        (Collection<? extends EntryProcessor<K, V, Object>>)map.values(),
+                        args
+                    );
 
                 Map<K, EntryProcessorResult<T>> val = fut.get().value();
 
