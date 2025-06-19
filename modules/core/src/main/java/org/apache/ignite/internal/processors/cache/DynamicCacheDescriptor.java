@@ -368,6 +368,8 @@ public class DynamicCacheDescriptor {
             schema.finish(msg);
 
             if (msg.operation() instanceof SchemaAddQueryEntityOperation) {
+                sql = true;
+
                 cacheCfg = GridCacheUtils.patchCacheConfiguration(cacheCfg,
                         (SchemaAddQueryEntityOperation)msg.operation());
             }
