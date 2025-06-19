@@ -46,7 +46,6 @@ import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @RunWith(Parameterized.class)
@@ -140,6 +139,8 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
+        fut.listen(latch::countDown);
+
         executeSql(
             ign,
             "CREATE TABLE USER(id int, city_id int, name varchar, PRIMARY KEY (id, city_id)) " +
@@ -170,13 +171,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         // Wait until both CDC predicates become true and state saved on the disk or
         // until CdcMain future completes when assertions fail in BinaryCdcConsumer methods.
-        waitForCondition(() -> {
-            try {
-                return fut.isDone() || latch.await(100, MILLISECONDS);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }, getTestTimeout());
+        assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
 
         if (fut.error() != null)
             throw fut.error();
