@@ -2074,8 +2074,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             // metrics from DMS. Initially the test was correct as createCache/destroyCache methods are synchronous
             // and block test-runner thread for long enough for pending messages to be discarded.
             // But at some point aforementioned operations were added and implicit assumption the test relies on was broken.
-            boolean pendingMessagesDiscarded = waitPendingMessagesDiscarded(spi);
-            assertTrue(pendingMessagesDiscarded);
+            boolean pendingMsgsDiscarded = waitPendingMessagesDiscarded(spi);
+            assertTrue(pendingMsgsDiscarded);
 
             stopGrid(1);
 
