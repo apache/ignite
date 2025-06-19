@@ -67,7 +67,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
     public void testViewHelp() throws Exception {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        final IgniteWalConverterArguments parseArgs = parse(new PrintStream(out), null);
+        final IgniteWalConverterArguments parseArgs = parse( null);
 
         Assert.assertNull(parseArgs);
 
@@ -96,11 +96,11 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
     @Test
     public void testRequiredRootDir() throws Exception {
         assertThrows(log, () -> {
-            parse(System.out, new String[] {"pageSize=4096"});
+            parse("pageSize=4096");
         }, IgniteException.class, "The paths to the node files are not specified.");
 
         assertThrows(log, () -> {
-            parse(System.out, new String[] {"pageSize=4096", "root=."});
+            parse("pageSize=4096", "root=.");
         }, IgniteException.class, "The paths to the node files are not specified.");
     }
 
@@ -112,7 +112,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
     @Test
     public void testIncorrectRootDir() throws Exception {
         assertThrows(log, () -> {
-            parse(System.out, new String[] {"root=non_existing_path", "folderName=unknown"});
+            parse("root=non_existing_path", "folderName=unknown");
         }, IgniteException.class, "Incorrect path to the root dir: non_existing_path");
     }
 
@@ -133,7 +133,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
                 "pageSize=not_integer"
             };
 
-            parse(System.out, args);
+            parse(args);
         }, IgniteException.class, "Incorrect page size. Error parse: not_integer"));
     }
 
@@ -153,7 +153,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
                 "keepBinary=not_boolean"
             };
 
-            parse(System.out, args);
+            parse(args);
         }, IgniteException.class, "Incorrect flag keepBinary, valid value: true or false. Error parse: not_boolean");
     }
 
@@ -173,7 +173,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
                 "recordTypes=not_exist"
             };
 
-            parse(System.out, args);
+            parse(args);
         }, IgniteException.class, "Unknown record types: [not_exist].");
     }
 
@@ -193,7 +193,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
                 "recordTypes=not_exist1,not_exist2"
             };
 
-            parse(System.out, args);
+            parse(args);
         }, IgniteException.class, "Unknown record types: [not_exist1, not_exist2].");
     }
 
@@ -213,7 +213,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
                 "walTimeFromMillis=not_long"
             };
 
-            parse(System.out, args);
+            parse(args);
         }, IgniteException.class, "Incorrect walTimeFromMillis. Error parse: not_long");
     }
 
@@ -233,7 +233,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
                 "walTimeToMillis=not_long"
             };
 
-            parse(System.out, args);
+            parse(args);
         }, IgniteException.class, "Incorrect walTimeToMillis. Error parse: not_long");
     }
 
@@ -253,7 +253,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
                 "processSensitiveData=unknown"
             };
 
-            parse(System.out, args);
+            parse(args);
         }, IgniteException.class, "Unknown processSensitiveData: unknown. Supported: ");
     }
 
@@ -273,7 +273,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
                 "printStat=not_boolean"
             };
 
-            parse(System.out, args);
+            parse(args);
         }, IgniteException.class, "Incorrect flag printStat, valid value: true or false. Error parse: not_boolean");
     }
 
@@ -293,7 +293,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
                 "skipCrc=not_boolean"
             };
 
-            parse(System.out, args);
+            parse(args);
         }, IgniteException.class, "Incorrect flag skipCrc, valid value: true or false. Error parse: not_boolean");
     }
 
@@ -310,7 +310,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
                 "folderName=" + ft.folderName()
             };
 
-            final IgniteWalConverterArguments parseArgs = parse(System.out, args);
+            final IgniteWalConverterArguments parseArgs = parse(args);
 
             Assert.assertEquals(4096, parseArgs.getPageSize());
             Assert.assertNotNull(parseArgs.getFileTree());
@@ -351,7 +351,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
             "printStat=true",
             "skipCrc=true"};
 
-        final IgniteWalConverterArguments parseArgs = parse(System.out, args);
+        final IgniteWalConverterArguments parseArgs = parse(args);
         Assert.assertEquals(ft.wal(), parseArgs.getFileTree().wal());
         Assert.assertEquals(ft.walArchive(), parseArgs.getFileTree().walArchive());
         Assert.assertEquals(2048, parseArgs.getPageSize());
@@ -472,23 +472,23 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             PrintStream ps = new PrintStream(baos);
 
-            assertThrows(log, () -> parse(ps, root, folderName, "pages=1"), IllegalArgumentException.class, null);
-            assertThrows(log, () -> parse(ps, root, folderName, "pages="), IllegalArgumentException.class, null);
+            assertThrows(log, () -> parse(root, folderName, "pages=1"), IllegalArgumentException.class, null);
+            assertThrows(log, () -> parse(root, folderName, "pages="), IllegalArgumentException.class, null);
 
-            assertEqualsCollections(F.asList(new T2<>(1, 1L)), parse(ps, root, folderName, "pages=1:1").getPages());
+            assertEqualsCollections(F.asList(new T2<>(1, 1L)), parse(root, folderName, "pages=1:1").getPages());
 
             File f = new File(System.getProperty("java.io.tmpdir"), "test");
 
             try {
                 String pagesFileStr = "pages=" + f.getAbsolutePath();
 
-                assertThrows(log, () -> parse(ps, root, folderName, pagesFileStr), IllegalArgumentException.class, null);
+                assertThrows(log, () -> parse(root, folderName, pagesFileStr), IllegalArgumentException.class, null);
 
                 assertTrue(f.createNewFile());
-                assertTrue(parse(ps, root, folderName, pagesFileStr).getPages().isEmpty());
+                assertTrue(parse(root, folderName, pagesFileStr).getPages().isEmpty());
 
                 U.writeStringToFile(f, "1:1", defaultCharset().toString(), false);
-                assertEqualsCollections(F.asList(new T2<>(1, 1L)), parse(ps, root, folderName, pagesFileStr).getPages());
+                assertEqualsCollections(F.asList(new T2<>(1, 1L)), parse(root, folderName, pagesFileStr).getPages());
             }
             finally {
                 assertTrue(U.delete(f));
@@ -513,11 +513,8 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
             assertTrue(f.isFile());
             assertTrue(f.length() > 0);
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            PrintStream ps = new PrintStream(baos);
-
             IgniteWalConverterArguments args =
-                parse(ps, "root=" + ft.root().getAbsolutePath(), "folderName=test", "pages=" + f.getAbsolutePath());
+                parse("root=" + ft.root().getAbsolutePath(), "folderName=test", "pages=" + f.getAbsolutePath());
 
             assertNotNull(args.getPages());
 

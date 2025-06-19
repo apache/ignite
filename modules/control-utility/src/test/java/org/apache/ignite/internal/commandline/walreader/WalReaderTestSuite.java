@@ -30,5 +30,5 @@ import org.junit.runners.Suite;
     IgniteWalConverterArgumentsTest.class,
     IgniteWalConverterSensitiveDataTest.class
 })
-public class DevUtilsTestSuite {
+public class WalReaderTestSuite {
 }

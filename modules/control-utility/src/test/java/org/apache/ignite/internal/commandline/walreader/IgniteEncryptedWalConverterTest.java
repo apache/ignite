@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.commandline.walreader;
 
 import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -32,6 +32,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.emptyList;
+import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverterTest.runWalConverter;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 
@@ -71,8 +72,6 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
 
         ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
-        PrintStream out = new PrintStream(outByte);
-
         IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
@@ -87,9 +86,13 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
             emptyList()
         );
 
-        IgniteWalConverter.convert(out, arg);
+        new IgniteWalConverter(log).convert(arg); // fixme это очень странно
+        // todo возможно конструктор конвертера должен быть широким и включать в себя параметры аргумета
+        // todo типа converter(1,2,3,4...).convertWal()
 
-        String result = outByte.toString();
+        String result = runWalConverter(arg);
+
+
 
         assertThat(result, containsString("EncryptedRecord"));
     }

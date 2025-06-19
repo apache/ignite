@@ -21,7 +21,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,6 +32,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
@@ -152,7 +152,7 @@ public class IgniteWalConverterArguments {
         this.printStat = printStat;
         this.skipCrc = skipCrc;
         this.pages = pages;
-    }
+    } // todo: check test only. iof it still needed or find way to WA
 
     /**
      * Node file tree.
@@ -257,10 +257,9 @@ public class IgniteWalConverterArguments {
      * Parse command line arguments and return filled IgniteWalConverterArguments
      *
      * @param args Command line arguments.
-     * @param out Out print stream.
      * @return IgniteWalConverterArguments.
      */
-    public static IgniteWalConverterArguments parse(final PrintStream out, String... args) {
+    public static IgniteWalConverterArguments parse(String... args) {
         CLIArgumentParser p = new CLIArgumentParser(
             Collections.emptyList(),
             asList(
@@ -270,10 +269,10 @@ public class IgniteWalConverterArguments {
                 argument(FOLDER_NAME, String.class)
                         .withUsage("Node specific folderName.")
                         .build(),
-                    optionalArgument(PAGE_SIZE, String.class)
-                            .withUsage("Size of pages, which was selected for file store (1024, 2048, 4096, etc.).")
-                            .withDefault("4096")
-                            .build(),
+                optionalArgument(PAGE_SIZE, String.class)
+                        .withUsage("Size of pages, which was selected for file store (1024, 2048, 4096, etc.).")
+                        .withDefault("4096")
+                        .build(),
                 optionalArgument(KEEP_BINARY, String.class)
                     .withUsage("Keep binary flag")
                     .withDefault("true")
@@ -311,22 +310,7 @@ public class IgniteWalConverterArguments {
         );
 
         if (args == null || args.length < 1) {
-            out.println("Print WAL log data in human-readable form.");
-
             System.out.println(p.usage());
-
-            out.println("For example:");
-            out.println("    --root=ft"); // fixme
-            out.println("    --folder-name="); // fixme
-            out.println("    --page-size=4096");
-            out.println("    --keep-binary=true");
-            out.println("    --record-types=DataRecord,TxRecord");
-            out.println("    --wal-time-from-millis=1575158400000");
-            out.println("    --wal-time-to-millis=1577836740999");
-            out.println("    --record-contains-text=search string");
-            out.println("    --process-sensitive-data=SHOW");
-            out.println("    --skip-crc=true");
-            out.println("    --pages=123456:789456123,123456:789456124");
             return null;
         }
 
@@ -444,31 +428,31 @@ public class IgniteWalConverterArguments {
         if (ft == null)
             throw new IllegalArgumentException("The paths to the node files are not specified.");
 
-        out.println("Program arguments:");
-
-        out.printf("\t%s = %s\n", ROOT_DIR, root.getAbsolutePath());
-        out.printf("\t%s = %s\n", FOLDER_NAME, folderName);
-        out.printf("\t%s = %d\n", PAGE_SIZE, pageSize);
-        out.printf("\t%s = %s\n", KEEP_BINARY, keepBinary);
+        StringBuilder programArguments = new StringBuilder("Program arguments:")
+                .append(String.format("\t%s = %s\n", ROOT_DIR, root.getAbsolutePath()))
+                .append(String.format("\t%s = %s\n", FOLDER_NAME, folderName))
+                .append(String.format("\t%s = %d\n", PAGE_SIZE, pageSize))
+                .append(String.format("\t%s = %s\n", KEEP_BINARY, keepBinary));
 
         if (!F.isEmpty(recordTypes))
-            out.printf("\t%s = %s\n", RECORD_TYPES, recordTypes);
+           programArguments.append(String.format("\t%s = %s\n", RECORD_TYPES, recordTypes));
 
         if (fromTime != null)
-            out.printf("\t%s = %s\n", WAL_TIME_FROM_MILLIS, new Date(fromTime));
+           programArguments.append(String.format("\t%s = %s\n", WAL_TIME_FROM_MILLIS, new Date(fromTime)));
 
         if (toTime != null)
-            out.printf("\t%s = %s\n", WAL_TIME_TO_MILLIS, new Date(toTime));
+           programArguments.append(String.format("\t%s = %s\n", WAL_TIME_TO_MILLIS, new Date(toTime)));
 
         if (recordContainsText != null)
-            out.printf("\t%s = %s\n", RECORD_CONTAINS_TEXT, recordContainsText);
+           programArguments.append(String.format("\t%s = %s\n", RECORD_CONTAINS_TEXT, recordContainsText));
 
-        out.printf("\t%s = %b\n", PRINT_STAT, printStat);
-
-        out.printf("\t%s = %b\n", SKIP_CRC, skipCrc);
+       programArguments
+               .append(String.format("\t%s = %b\n", PRINT_STAT, printStat))
+               .append(String.format("\t%s = %b\n", SKIP_CRC, skipCrc));
 
         if (!pages.isEmpty())
-            out.printf("\t%s = %s\n", PAGES, pages);
+           programArguments.append(String.format("\t%s = %s\n", PAGES, pages));
+
 
         return new IgniteWalConverterArguments(ft, pageSize,
             keepBinary, recordTypes, fromTime, toTime, recordContainsText, procSensitiveData, printStat, skipCrc,

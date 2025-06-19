@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.commandline.walreader;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -52,20 +50,19 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.CacheView;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Collections.emptyList;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverter.convert;
 import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverterArguments.parse;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
  * Test for IgniteWalConverter
  */
-public class IgniteWalConverterTest extends GridCommonAbstractTest {
+public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
     /** */
     public static final String PERSON_NAME_PREFIX = "Name ";
 
@@ -152,6 +149,16 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         return new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 200L));
     }
 
+    protected static String runWalConverter(IgniteWalConverterArguments args) {
+        testOut.reset();
+
+        IgniteWalConverter converter = new IgniteWalConverter(log); // or createTestLogger()
+
+        converter.convert(args);
+
+        return testOut.toString();
+    }
+
     /**
      * Checking utility IgniteWalConverter
      * <ul>
@@ -172,10 +179,6 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final NodeFileTree ft = createWal(list, null);
 
-        final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
-
-        final PrintStream out = new PrintStream(outByte);
-
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
@@ -184,9 +187,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             null, null, null, null, true, true, emptyList()
         );
 
-        convert(out, arg);
-
-        final String result = outByte.toString();
+        final String result = runWalConverter(arg);
 
         int idx = 0;
 
@@ -236,10 +237,6 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         U.delete(ft.binaryMeta());
         U.delete(ft.marshaller());
 
-        final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
-
-        final PrintStream out = new PrintStream(outByte);
-
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
@@ -248,9 +245,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             null, null, null, null, true, true, emptyList()
         );
 
-        convert(out, arg);
-
-        final String result = outByte.toString();
+        final String result = runWalConverter(arg);
 
         int idx = 0;
 
@@ -265,7 +260,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                 if (idx > 0) {
                     int start = idx + 6;
 
-                    idx = result.indexOf("]", start);
+                    idx = result.indexOf(']', start);
 
                     if (idx > 0) {
                         final String val = result.substring(start, idx);
@@ -348,10 +343,6 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             }
         }
 
-        final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
-
-        final PrintStream out = new PrintStream(outByte);
-
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
@@ -360,9 +351,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             null, null, null, null, true, true, emptyList()
         );
 
-        convert(out, arg);
-
-        final String result = outByte.toString();
+        final String result = runWalConverter(arg);
 
         int idx = 0;
 
@@ -436,9 +425,6 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                             raf.write(Byte.MAX_VALUE);
                         }
                     }
-
-                    final long idx = raf.readLong();
-
                     final int fileOff = Integer.reverseBytes(raf.readInt());
 
                     final int len = Integer.reverseBytes(raf.readInt());
@@ -448,10 +434,6 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             }
         }
 
-        final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
-
-        final PrintStream out = new PrintStream(outByte);
-
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
             ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
@@ -460,9 +442,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             null, null, null, null, true, true, emptyList()
         );
 
-        convert(out, arg);
-
-        final String result = outByte.toString();
+        final String result = runWalConverter(arg);
 
         int idx = 0;
 
@@ -530,24 +510,18 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         assertTrue(U.fileCount(ft.wal().toPath()) > 0);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream(baos);
-
         T2<PageSnapshot, String> expRec = walRecords.get(0);
 
-        IgniteWalConverterArguments args = parse(
-            ps,
+        IgniteWalConverterArguments args = parse( // fixme whats wrong
             "root=" + ft.root(),
             "folderName=" + ft.folderName(),
             "pages=" + expRec.get1().fullPageId().groupId() + ':' + expRec.get1().fullPageId().pageId(),
             "skipCrc=" + true
         );
 
-        baos.reset();
+        String result = runWalConverter(args);
 
-        convert(ps, args);
-
-        assertContains(log, baos.toString(), expRec.get2());
+        assertContains(log, result, expRec.get2());
     }
 
     /**
@@ -582,13 +556,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                     null, null, null, null, true, true, emptyList()
             );
 
-            final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
-
-            final PrintStream out = new PrintStream(outByte);
-
-            convert(out, arg);
-
-            final String result = outByte.toString();
+            String result = runWalConverter(arg);
 
             assertTrue(result.contains("expireTime="));
         }
@@ -603,10 +571,6 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final NodeFileTree ft = createWal(list, null);
 
-        final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
-
-        final PrintStream out = new PrintStream(outByte);
-
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
                 ft,
                 DataStorageConfiguration.DFLT_PAGE_SIZE,
@@ -615,9 +579,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                 null, null, null, ProcessSensitiveData.HIDE, true, true, emptyList()
         );
 
-        convert(out, arg);
-
-        final String result = outByte.toString();
+        String result = runWalConverter(arg);
 
         int idx;
 
@@ -630,7 +592,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                 idx = result.indexOf("UnwrapDataEntry", idx + "DataRecord".length());
 
                 if (idx > 0)
-                    idx = result.indexOf("k = , v = ,", idx + "UnwrapDataEntry".length());
+                    idx = result.indexOf("k = , v = ", idx + "UnwrapDataEntry".length());
             }
 
             find = idx == -1;

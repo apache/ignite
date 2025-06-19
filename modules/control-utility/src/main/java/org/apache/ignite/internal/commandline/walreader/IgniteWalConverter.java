@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.commandline.walreader;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -26,7 +25,9 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -52,26 +53,33 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
  * Print WAL log data in human-readable form.
  */
 public class IgniteWalConverter {
+
+    private IgniteLogger log;
+
+    public IgniteWalConverter(IgniteLogger log) {
+        this.log = log;
+    }
+
     /**
      * @param args Args.
      * @throws Exception If failed.
      */
     public static void main(String[] args) {
-        final IgniteWalConverterArguments parameters = IgniteWalConverterArguments.parse(System.out, args);
+        final IgniteWalConverterArguments parameters = IgniteWalConverterArguments.parse(args);
 
         if (parameters != null)
-            convert(System.out, parameters);
+            new IgniteWalConverter(CommandHandler.setupJavaLogger("wal-reader", IgniteWalConverter.class))
+                    .convert(parameters);
     }
 
     /**
      * Write to out WAL log data in human-readable form.
      *
-     * @param out        Receiver of result.
      * @param params Parameters.
      */
-    public static void convert(final PrintStream out, final IgniteWalConverterArguments params) {
+    public void convert(final IgniteWalConverterArguments params) {
         System.setProperty(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE,
-            Boolean.toString(params.getProcessSensitiveData() == ProcessSensitiveData.HIDE));
+            Boolean.toString(params.getProcessSensitiveData() == ProcessSensitiveData.HIDE)); // todo: think about system.setproperty
 
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_SKIP_CRC, Boolean.toString(params.isSkipCrc()));
         RecordV1Serializer.skipCrc = params.isSkipCrc();
@@ -103,7 +111,7 @@ public class IgniteWalConverter {
                 final String curRecordWalPath = getCurrentWalFilePath(stIt);
 
                 if (curWalPath == null || !curWalPath.equals(curRecordWalPath)) {
-                    out.println("File: " + curRecordWalPath);
+                    log.info("File: " + curRecordWalPath);
 
                     curWalPath = curRecordWalPath;
                 }
@@ -126,16 +134,16 @@ public class IgniteWalConverter {
                     final String recordStr = toString(record, params.getProcessSensitiveData());
 
                     if (print && (F.isEmpty(params.getRecordContainsText()) || recordStr.contains(params.getRecordContainsText())))
-                        out.println(recordStr);
+                        log.info(recordStr);
                 }
             }
         }
-        catch (Exception e) {
-            e.printStackTrace(out);
+        catch (IgniteCheckedException e) {
+            log.warning("Getting wal iterator failed [grpId:pageId =" + params.getPages() + ']'); // todo: check how it prints
         }
 
         if (stat != null)
-            out.println("Statistic collected:\n" + stat.toString());
+            log.info("Statistic collected:\n" + stat.toString());
     }
 
     /**
