@@ -439,8 +439,10 @@ public class JavaLogger implements IgniteLoggerEx {
     private static <T> T findHandler(Logger log, Class<T> cls) {
         while (log != null) {
             for (Handler hnd : log.getHandlers()) {
-                if (cls.isInstance(hnd))
+                if (cls.isInstance(hnd)) {
+                    System.err.println("Returning handler: " + hnd.getClass().getName() + " for " + cls.getName() + ".");
                     return (T)hnd;
+                }
             }
 
             log = log.getParent();
