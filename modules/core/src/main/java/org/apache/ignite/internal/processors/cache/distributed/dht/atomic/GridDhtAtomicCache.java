@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
@@ -115,7 +116,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
@@ -663,7 +663,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected void putAll0(Map<? extends K, ? extends V> m) throws IgniteCheckedException {
         updateAll0(
-            m,
+            m.keySet(),
+            m.values(),
             null,
             null,
             null,
@@ -677,7 +678,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllAsync0(Map<? extends K, ? extends V> m) {
         return updateAll0(
-            m,
+            m.keySet(),
+            m.values(),
             null,
             null,
             null,
@@ -706,10 +708,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         warnIfUnordered(conflictMap, BulkOperation.PUT);
 
         IgniteInternalFuture<?> fut = updateAll0(
+            conflictMap.keySet(),
             null,
             null,
             null,
-            conflictMap,
+            conflictMap.values(),
             null,
             false,
             UPDATE,
@@ -938,11 +941,22 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
+        Collection<EntryProcessor<K, V, T>> invokeVals = Collections.nCopies(keys.size(), entryProcessor);
+
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> resFut = updateAll0(async, keys, entryProcessor, args);
+        IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> resFut = updateAll0(
+            keys,
+            null,
+            invokeVals,
+            args,
+            null,
+            null,
+            false,
+            TRANSFORM,
+            async);
 
         return resFut.chain(
             new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, Map<K, EntryProcessorResult<T>>>() {
@@ -959,75 +973,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             });
     }
 
-    /**
-     * @param async Async operation flag.
-     * @param invokeKeys Keys.
-     * @param entryProcessor Entry processor.
-     * @param invokeArgs Optional arguments for EntryProcessor.
-     * @return Completion future.
-     */
-    @SuppressWarnings("ConstantConditions")
-    private IgniteInternalFuture updateAll0(
-        boolean async,
-        Set<?> invokeKeys,
-        final EntryProcessor entryProcessor,
-        Object... invokeArgs
-    ) {
-        assert ctx.updatesAllowed();
-
-        ctx.checkSecurity(SecurityPermission.CACHE_PUT);
-
-        final CacheOperationContext opCtx = ctx.operationContextPerCall();
-
-        Collection<EntryProcessor> invokeVals = Collections.nCopies(invokeKeys.size(), entryProcessor);
-
-        Collection<GridCacheDrInfo> conflictPutVals = null;
-
-        if (opCtx != null && opCtx.hasDataCenterId()) {
-            GridCacheVersion ver = nextVersion(opCtx.dataCenterId());
-            GridCacheDrInfo info = new GridCacheDrInfo(entryProcessor, ver);
-
-            conflictPutVals = Collections.nCopies(invokeKeys.size(), info);
-        }
-
-        int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
-
-        final GridNearAtomicUpdateFuture updateFut = new GridNearAtomicUpdateFuture(
-            ctx,
-            this,
-            ctx.config().getWriteSynchronizationMode(),
-            TRANSFORM,
-            invokeKeys,
-            invokeVals,
-            invokeArgs,
-            conflictPutVals,
-            null,
-            false,
-            opCtx != null ? opCtx.expiry() : null,
-            CU.filterArray(null),
-            taskNameHash,
-            opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary(),
-            opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
-            opCtx != null ? opCtx.applicationAttributes() : null);
-
-        if (async) {
-            return asyncOp(new CO<IgniteInternalFuture<Object>>() {
-                @Override public IgniteInternalFuture<Object> apply() {
-                    updateFut.map();
-
-                    return updateFut;
-                }
-            });
-        }
-        else {
-            updateFut.map();
-
-            return updateFut;
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
@@ -1041,8 +986,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
         Map<K, EntryProcessorResult<T>> updateResults = (Map<K, EntryProcessorResult<T>>)updateAll0(
+            map.keySet(),
             null,
-            map,
+            map.values(),
             args,
             null,
             null,
@@ -1070,8 +1016,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
         IgniteInternalFuture updateResults = updateAll0(
+            map.keySet(),
             null,
-            map,
+            map.values(),
             args,
             null,
             null,
@@ -1088,69 +1035,71 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * Entry point for all public API put/transform methods. Except for invokeAll operations with {@code Set}.
      *
-     * @param map Put map. Either {@code map}, {@code invokeMap} or {@code conflictPutMap} should be passed.
-     * @param invokeMap Invoke map. Either {@code map}, {@code invokeMap} or {@code conflictPutMap} should be passed.
+     * @param keys Put keys.
+     * @param vals Put values. Either {@code vals}, {@code invokeVals} or {@code conflictPutVals} should be passed.
+     * @param invokeVals Invoke values. Either {@code vals}, {@code invokeVals} or {@code conflictPutVals} should be passed.
      * @param invokeArgs Optional arguments for EntryProcessor.
-     * @param conflictPutMap Conflict put map.
-     * @param conflictRmvMap Conflict remove map.
+     * @param conflictPutVals Conflict put values.
+     * @param conflictRmvVals Conflict remove values.
      * @param retval Return value required flag.
      * @param async Async operation flag.
      * @return Completion future.
      */
     @SuppressWarnings("ConstantConditions")
     private IgniteInternalFuture updateAll0(
-        @Nullable Map<? extends K, ? extends V> map,
-        @Nullable Map<? extends K, ? extends EntryProcessor> invokeMap,
+        @Nullable Collection<?> keys,
+        @Nullable Collection<? extends V> vals,
+        @Nullable Collection<? extends EntryProcessor> invokeVals,
         @Nullable Object[] invokeArgs,
-        @Nullable Map<KeyCacheObject, GridCacheDrInfo> conflictPutMap,
-        @Nullable Map<KeyCacheObject, GridCacheVersion> conflictRmvMap,
+        @Nullable Collection<GridCacheDrInfo> conflictPutVals,
+        @Nullable Collection<GridCacheVersion> conflictRmvVals,
         final boolean retval,
         final GridCacheOperation op,
         boolean async
     ) {
         assert ctx.updatesAllowed();
 
+        assert keys != null : keys;
+
         ctx.checkSecurity(SecurityPermission.CACHE_PUT);
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         if (opCtx != null && opCtx.hasDataCenterId()) {
-            assert conflictPutMap == null : conflictPutMap;
-            assert conflictRmvMap == null : conflictRmvMap;
+            assert conflictPutVals == null : conflictPutVals;
+            assert conflictRmvVals == null : conflictRmvVals;
 
             if (op == GridCacheOperation.TRANSFORM) {
-                assert invokeMap != null : invokeMap;
+                assert invokeVals != null : invokeVals;
 
-                conflictPutMap = F.viewReadOnly((Map)invokeMap,
-                    new IgniteClosure<EntryProcessor, GridCacheDrInfo>() {
-                        @Override public GridCacheDrInfo apply(EntryProcessor o) {
-                            return new GridCacheDrInfo(o, nextVersion(opCtx.dataCenterId()));
-                        }
-                    });
+                conflictPutVals = invokeVals
+                    .stream()
+                    .map(o -> new GridCacheDrInfo(o, nextVersion(opCtx.dataCenterId())))
+                    .collect(Collectors.toUnmodifiableList());
 
-                invokeMap = null;
+                invokeVals = null;
             }
             else if (op == GridCacheOperation.DELETE) {
-                assert map != null : map;
+                assert keys != null : keys;
+                assert vals != null : vals;
 
-                conflictRmvMap = F.viewReadOnly((Map)map, new IgniteClosure<V, GridCacheVersion>() {
-                    @Override public GridCacheVersion apply(V o) {
-                        return nextVersion(opCtx.dataCenterId());
-                    }
-                });
+                conflictRmvVals = vals
+                    .stream()
+                    .map(o -> nextVersion(opCtx.dataCenterId()))
+                    .collect(Collectors.toUnmodifiableList());
 
-                map = null;
+                vals = null;
             }
             else {
-                assert map != null : map;
+                assert keys != null : keys;
+                assert vals != null : vals;
 
-                conflictPutMap = F.viewReadOnly((Map)map, new IgniteClosure<V, GridCacheDrInfo>() {
-                    @Override public GridCacheDrInfo apply(V o) {
-                        return new GridCacheDrInfo(ctx.toCacheObject(o), nextVersion(opCtx.dataCenterId()));
-                    }
-                });
+                conflictPutVals = vals
+                    .stream()
+                    .map(o -> new GridCacheDrInfo(ctx.toCacheObject(o), nextVersion(opCtx.dataCenterId())))
+                    .collect(Collectors.toUnmodifiableList());
 
-                map = null;
+                vals = null;
             }
         }
 
@@ -1161,12 +1110,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             this,
             ctx.config().getWriteSynchronizationMode(),
             op,
-            map != null ? map.keySet() : invokeMap != null ? invokeMap.keySet() : conflictPutMap != null ?
-                conflictPutMap.keySet() : conflictRmvMap.keySet(),
-            map != null ? map.values() : invokeMap != null ? invokeMap.values() : null,
+            keys,
+            vals != null ? vals : invokeVals,
             invokeArgs,
-            (Collection)(conflictPutMap != null ? conflictPutMap.values() : null),
-            conflictRmvMap != null ? conflictRmvMap.values() : null,
+            conflictPutVals,
+            conflictRmvVals,
             retval,
             opCtx != null ? opCtx.expiry() : null,
             CU.filterArray(null),

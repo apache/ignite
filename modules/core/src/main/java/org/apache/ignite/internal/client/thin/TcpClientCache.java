@@ -75,7 +75,6 @@ import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -1667,17 +1666,17 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         TcpClientTransaction tx = transactions.tx();
 
-        // Only explicit transactions are checked
+        // Only explicit transactions are checked.
         if (tx == null)
             return;
 
         if (m instanceof SortedMap || m instanceof GridSerializableMap)
             return;
 
-        if (!canBlockTx(false, tx.getConcurrency(), tx.getIsolation()))
+        if (!canBlockTx(false, tx.concurrency(), tx.isolation()))
             return;
 
-        LT.warn(log, "Unordered map " + m.getClass().getName() + " is used for putAll operation on cache " +
+        log.warning("Unordered map " + m.getClass().getName() + " is used for putAll operation on cache " +
             name + ". This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead.");
     }
 
@@ -1698,17 +1697,17 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         TcpClientTransaction tx = transactions.tx();
 
-        // Only explicit transactions are checked
+        // Only explicit transactions are checked.
         if (tx == null)
             return;
 
         if (coll instanceof SortedSet)
             return;
 
-        if (!canBlockTx(isGetOp, tx.getConcurrency(), tx.getIsolation()))
+        if (!canBlockTx(isGetOp, tx.concurrency(), tx.isolation()))
             return;
 
-        LT.warn(log, "Unordered collection " + coll.getClass().getName() +
+        log.warning("Unordered collection " + coll.getClass().getName() +
             " is used for " + (isGetOp ? "getAll" : "") + " operation on cache " + name + ". " +
             "This can lead to a distributed deadlock. Switch to a sorted set like TreeSet instead.");
     }

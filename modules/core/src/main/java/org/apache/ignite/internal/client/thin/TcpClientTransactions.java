@@ -106,7 +106,12 @@ class TcpClientTransactions implements ClientTransactions {
                     writer.writeString(lb);
                 }
             },
-            res -> new TcpClientTransaction(res.in().readInt(), res.clientChannel(), concurrency, isolation)
+            res -> new TcpClientTransaction(
+                res.in().readInt(),
+                res.clientChannel(),
+                concurrency == null ? txCfg.getDefaultTxConcurrency() : concurrency,
+                isolation == null ? txCfg.getDefaultTxIsolation() : isolation
+            )
         );
 
         threadLocTxUid.set(tx0.txUid);
@@ -295,12 +300,12 @@ class TcpClientTransactions implements ClientTransactions {
         }
 
         /** */
-        public TransactionConcurrency getConcurrency() {
+        public TransactionConcurrency concurrency() {
             return concurrency;
         }
 
         /** */
-        public TransactionIsolation getIsolation() {
+        public TransactionIsolation isolation() {
             return isolation;
         }
     }
