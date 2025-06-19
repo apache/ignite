@@ -262,7 +262,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
     ) {
         RelDataType syncedType = toType;
         if (fromType != null) {
-            syncedType = factory.createTypeWithNullability(syncedType, fromType.isNullable());
+            syncedType = factory.createTypeWithNullability(syncedType, toType.isNullable());
             if (SqlTypeUtil.inCharOrBinaryFamilies(fromType)
                 && SqlTypeUtil.inCharOrBinaryFamilies(toType)) {
                 Charset charset = fromType.getCharset();

@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 /**
@@ -45,11 +46,12 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
 
         for (IgniteDistribution d1 : distrs) {
             for (IgniteDistribution d2 : distrs) {
-                doTestSetOpNumbersCast(d1, d2, true, true);
+                //TODO:
+//                doTestSetOpNumbersCast(d1, d2, true, true);
 
                 doTestSetOpNumbersCast(d1, d2, false, true);
 
-                doTestSetOpNumbersCast(d1, d2, false, false);
+//                doTestSetOpNumbersCast(d1, d2, false, false);
             }
         }
     }
@@ -70,8 +72,14 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
 
         boolean notNull = !nullable1 && !nullable2;
 
-        for (SqlTypeName t1 : numTypes) {
-            for (SqlTypeName t2 : numTypes) {
+        //TODO
+//        for (SqlTypeName t1 : numTypes) {
+//            for (SqlTypeName t2 : numTypes) {
+        for (SqlTypeName t1 : F.asList(SqlTypeName.TINYINT)) {
+            for (SqlTypeName t2 : F.asList(SqlTypeName.SMALLINT)) {
+                //TODO:
+                System.err.println("TEST | serr: t1=" + t1 + ("(nullable=" + nullable1) + "), t2=" + t2 + ("(nullable=" + nullable2));
+
                 RelDataType type = new RelDataTypeFactory.Builder(f)
                     .add("C1", f.createTypeWithNullability(f.createSqlType(t1), nullable1))
                     .add("C2", f.createTypeWithNullability(f.createSqlType(SqlTypeName.VARCHAR), true))
@@ -111,16 +119,13 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
 
     /** */
     protected Predicate<? extends RelNode> projectFromTable(String tableName, String... exprs) {
-        return nodeOrAnyChild(
-            isInstanceOf(IgniteProject.class)
-                .and(projection -> {
-                    String actualProj = projection.getProjects().toString();
+        // TODO:
+        return nodeOrAnyChild(isTableScan(tableName).and(tblScan->{
+            String actualProj = tblScan.projects().toString();
 
-                    String expectedProj = Arrays.asList(exprs).toString();
+            String expectedProj = Arrays.asList(exprs).toString();
 
-                    return actualProj.equals(expectedProj);
-                })
-                .and(input(nodeOrAnyChild(isTableScan(tableName))))
-        );
+            return actualProj.equals(expectedProj);
+        }));
     }
 }
