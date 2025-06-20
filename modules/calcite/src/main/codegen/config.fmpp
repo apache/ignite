@@ -78,7 +78,6 @@ data: {
     # items in this list become non-reserved.
     nonReservedKeywordsToAdd: [
       # Keywords introduced by Ignite
-      "ASOF"
       "TEMPLATE"
       "BACKUPS"
       "AFFINITY_KEY"
