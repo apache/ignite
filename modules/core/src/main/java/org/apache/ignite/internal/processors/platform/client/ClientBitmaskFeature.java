@@ -86,7 +86,7 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     TX_AWARE_QUERIES(18),
 
     /** Force deactivation flag. See {@link org.apache.ignite.client.ClientCluster#state(ClusterState, boolean)}. */
-    FORCE_DEACTIVATION_FLAG(20),
+    FORCE_DEACTIVATION_FLAG(19),
 
     /**
      * Cache storages.
