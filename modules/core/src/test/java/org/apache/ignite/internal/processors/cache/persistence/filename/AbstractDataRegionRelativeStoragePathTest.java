@@ -30,6 +30,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.F;
@@ -50,6 +52,9 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     /** Second custom storage path. */
     static final String STORAGE_PATH_2 = "storage2";
 
+    /** Custom indexes path. */
+    static final String IDX_PATH = "idxs";
+
     /** */
     static final String SNP_PATH = "ex_snapshots";
 
@@ -57,25 +62,51 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     protected static final int PARTS_CNT = 15;
 
     /** */
+    protected static final int GRID_CNT = 3;
+
+    /** */
     @Parameterized.Parameter()
-    public boolean absPath;
+    public PathMode pathMode;
 
     /** */
     @Parameterized.Parameter(1)
     public boolean severalCacheStorages;
 
     /** */
-    @Parameterized.Parameters(name = "absPath={0},severalCacheStorages={1}")
+    @Parameterized.Parameter(2)
+    public boolean idxStorage;
+
+    /** */
+    @Parameterized.Parameters(name = "path={0},severalCacheStorages={1},idxStorage={2}")
     public static List<Object[]> params() {
         List<Object[]> res = new ArrayList<>();
 
-        for (boolean absPath : new boolean[]{true, false}) {
+        for (PathMode absPathMode : PathMode.values()) {
             for (boolean severalCacheStorages : new boolean[]{true, false}) {
-                res.add(new Object[] {absPath, severalCacheStorages});
+                for (boolean idxStorage : new boolean[]{true, false})
+                    res.add(new Object[]{absPathMode, severalCacheStorages, idxStorage});
             }
         }
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        DataStorageConfiguration dsCfg = dataStorageConfiguration();
+
+        dsCfg.getDefaultDataRegionConfiguration()
+            .setPersistenceEnabled(true);
+
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        return cfg
+            .setConsistentId(consId(cfg))
+            .setDataStorageConfiguration(dsCfg)
+            .setCacheConfiguration(ccfgs())
+            .setWorkDirectory(pathMode == PathMode.SEPARATE_ROOT
+                ? new File(U.defaultWorkDirectory(), consId(cfg)).getAbsolutePath()
+                : null);
     }
 
     /** {@inheritDoc} */
@@ -86,14 +117,22 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
         cleanPersistenceDir();
 
-        if (absPath) {
+        if (pathMode == PathMode.ABS) {
             U.delete(new File(storagePath(STORAGE_PATH)).getParentFile());
             U.delete(new File(storagePath(STORAGE_PATH_2)).getParentFile());
+            U.delete(new File(storagePath(IDX_PATH)).getParentFile());
         }
-        else {
+        else if (pathMode == PathMode.RELATIVE) {
             U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH));
             U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH_2));
+            U.delete(new File(U.defaultWorkDirectory(), IDX_PATH));
         }
+        else if (pathMode == PathMode.SEPARATE_ROOT) {
+            for (File f : new File(U.defaultWorkDirectory()).listFiles(f -> !f.getName().equals("log")))
+                U.delete(f);
+        }
+        else
+            throw new IllegalStateException("Unknown path mode");
 
         U.delete(new File(U.defaultWorkDirectory(), SNP_PATH));
     }
@@ -116,7 +155,7 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
             ft.extraStorages().values().forEach(U::delete);
         });
 
-        U.delete(F.first(fts).db());
+        fts.forEach(ft -> U.delete(ft.db()));
 
         IgniteEx srv = startAndActivate();
 
@@ -170,7 +209,7 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
     /** */
     IgniteEx startAndActivate() throws Exception {
-        IgniteEx srv = startGrids(3);
+        IgniteEx srv = startGrids(GRID_CNT);
 
         srv.cluster().state(ClusterState.ACTIVE);
 
@@ -193,6 +232,9 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
         if (!F.isEmpty(storagePath))
             ccfg.setStoragePaths(storagePath);
 
+        if (idxStorage)
+            ccfg.setIndexPath(storagePath(IDX_PATH));
+
         return ccfg;
     }
 
@@ -213,7 +255,7 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     /** */
     String storagePath(String storagePath) {
         try {
-            return absPath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
+            return pathMode == PathMode.ABS ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
         }
         catch (IgniteCheckedException e) {
             throw new RuntimeException(e);
@@ -223,6 +265,26 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     /** @param fts Nodes file trees. */
     abstract void checkFileTrees(List<NodeFileTree> fts) throws IgniteCheckedException;
 
+    /** Data storage configuration. */
+    abstract DataStorageConfiguration dataStorageConfiguration();
+
     /** Cache configs. */
     abstract CacheConfiguration[] ccfgs();
+
+    /** */
+    public enum PathMode {
+        /** Absolute path for custom directories. */
+        ABS,
+
+        /** Relative path for custom directories. Same root. */
+        RELATIVE,
+
+        /** Relative path for custom directories. Separate root for each node. */
+        SEPARATE_ROOT
+    }
+
+    /** */
+    static String consId(IgniteConfiguration cfg) {
+        return U.maskForFileName(cfg.getIgniteInstanceName());
+    }
 }

@@ -34,6 +34,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -194,14 +195,18 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
 
             Thread.sleep(firstSpi().failureDetectionTimeout());
 
-            firstSpi().cntConnCheckMsg = false;
-            nextSpi.cntConnCheckMsg = false;
+            TestTcpDiscoverySpi first = firstSpi();
+            TestTcpDiscoverySpi next = nextSpi;
 
-            int sent = firstSpi().connCheckStatusMsgCntSent;
-            int received = nextSpi.connCheckStatusMsgCntReceived;
+            // The check message is sent in case no any discovery message were sent in configured period,
+            // but there are TcpDiscoveryMetricsUpdateMessage that is sent every 2 seconds and may affect
+            // the counters.
+            assertTrue(GridTestUtils.waitForCondition(() -> {
+                int sent = first.connCheckStatusMsgCntSent;
+                int received = next.connCheckStatusMsgCntReceived;
 
-            assert sent >= 15 && sent < 25 : "messages sent: " + sent;
-            assert received >= 15 && received < 25 : "messages received: " + received;
+                return sent > 5 && received > 5;
+            }, firstSpi().failureDetectionTimeout(), 500));
         }
         finally {
             firstSpi().resetState();
