@@ -138,14 +138,14 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
                     // For page containing fragmented row data timestamps stored in the row's head page are used.
                     // Fragment page (other than the tail one) contains link to tail page. Tail page contains link to
                     // head page. So head page is found no more than in two hops.
-                    trackingIdx = trackingIdx(second(trackingData));
+                    trackingIdx = second(trackingData);
 
                     trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
                     firstTs = first(trackingData);
 
                     if (firstTs == -1) {
-                        trackingIdx = trackingIdx(second(trackingData));
+                        trackingIdx = second(trackingData);
 
                         trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
