@@ -559,6 +559,7 @@ public class WebSocketRouter implements AutoCloseable {
 	        		stat.put("status", "started");
 	        	}
 	        	else {
+                    stat.put("status", "started");
 	        		stat.put("message","Demo Ignite already started.");
 	        	}
 	        	return stat;

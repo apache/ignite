@@ -195,6 +195,7 @@ public class AgentClusterDemo {
         File configWorkFile = new File(cfgFile);
         Ignite ignite = null;
         IgniteConfiguration icfg = new IgniteConfiguration();
+        GridSpringResourceContext springCtx = null;
         if(configWorkFile.exists()) {
             IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap=null;
             if(ignite==null) {
@@ -207,18 +208,19 @@ public class AgentClusterDemo {
                         icfg = cfg0;
                     }
                 }
+                springCtx = cfgMap.getValue();
             }
         }
 
         // 启动Demo节点，并且在最后一个节点部署服务
-        ignite = AgentClusterDemo.tryStart(icfg,idx,lastNode);
+        ignite = AgentClusterDemo.tryStart(icfg,idx,lastNode,springCtx);
         return ignite;
     }
 
     /**
      * Start ignite node with cacheEmployee and populate it with data.
      */
-    public static Ignite tryStart(IgniteConfiguration cfg, int idx, boolean lastNode) {
+    public static Ignite tryStart(IgniteConfiguration cfg, int idx, boolean lastNode,GridSpringResourceContext springCtx) {
         if (initGuard.compareAndSet(false, true)) {
             log.info("DEMO: Starting embedded nodes for demo...");
 
@@ -253,7 +255,7 @@ public class AgentClusterDemo {
                 	cfg.setConsistentId(cfg.getIgniteInstanceName()+"_"+ idx);
                 }
 
-                ignite = Ignition.start(cfg);
+                ignite = IgnitionEx.start(cfg,springCtx);
 
                 if (ignite!=null) {
                     demoUrl = IgniteClusterLauncher.getNodeRestUrl(ignite);;
@@ -278,7 +280,7 @@ public class AgentClusterDemo {
                     	}                       
                     	ignite.cluster().state(ClusterState.ACTIVE);
 
-                        //deployServices(ignite.services(ignite.cluster().forServers()));
+                        deployServices(ignite.services(ignite.cluster().forServers()));
 
                         log.info("DEMO: All embedded nodes for demo successfully started");
                     }

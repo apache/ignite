@@ -936,28 +936,23 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
                 sb.startBlock(`private static DataSource create${ds.id}() {`);
 
-                if (dsClsName === 'OracleDataSource')
-                    sb.startBlock('try {');
-                
-                if (dsClsName === 'JndiObjectFactoryBean'){
-                	
-                	imports.push('javax.naming.InitialContext', 'javax.naming.NamingException');
-                	sb.startBlock('try {');
-                	sb.append("InitialContext _nameCtx = new InitialContext();");
-                	sb.append(`return (DataSource) _nameCtx.lookup("java:jdbc/${ds.id}");`)
-                }
-                else{
-                	this.constructBean(sb, ds);
-                	sb.emptyLine();
-                	sb.append(`return ${ds.id};`);
-                }
 
-                if (dsClsName === 'OracleDataSource' || dsClsName === 'JndiObjectFactoryBean') {
-                    sb.endBlock('}');
-                    sb.startBlock('catch (Exception ex) {');
-                    sb.append('throw new Error(ex);');
-                    sb.endBlock('}');
-                }
+                sb.startBlock('try {');
+                
+                  if (dsClsName === 'JndiObjectFactoryBean'){
+                    sb.append("javax.naming.InitialContext _nameCtx = new javax.naming.InitialContext();");
+                    sb.append(`return (DataSource) _nameCtx.lookup("java:jdbc/${ds.id}");`)
+                  }
+                  else{
+                    this.constructBean(sb, ds);
+                    sb.emptyLine();
+                    sb.append(`return ${ds.id};`);
+                  }
+
+                  sb.endBlock('}');
+                  sb.startBlock('catch (Exception ex) {');
+                  sb.append('throw new Error(ex);');
+                  sb.endBlock('}');
 
                 sb.endBlock('}');
             });
