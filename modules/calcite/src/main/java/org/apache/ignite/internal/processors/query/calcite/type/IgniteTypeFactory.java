@@ -268,12 +268,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         // least restrictive may variate between them and issue FLOAT instead of DOUBLE. DOUBLE is more preferable.
         if (res != null && res.getSqlTypeName() == SqlTypeName.FLOAT && types.size() > 1) {
             for (RelDataType type : types) {
-                if (type.getSqlTypeName() == SqlTypeName.DOUBLE && type.getPrecision() >= res.getPrecision()) {
-                    // Nullable is less restrictive.
-                    return type.isNullable() == res.isNullable()
-                        ? type
-                        : createTypeWithNullability(type, true);
-                }
+                if (type.getSqlTypeName() == SqlTypeName.DOUBLE && type.getPrecision() >= res.getPrecision())
+                    return type.isNullable() == res.isNullable() ? type : createTypeWithNullability(type, true);
             }
         }
 

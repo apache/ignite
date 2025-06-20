@@ -95,8 +95,8 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         CALCITE_CONNECTION_CONFIG = new CalciteConnectionConfigImpl(props) {
             /**
-             * Might be set with {@link CalciteConnectionProperty#CONFORMANCE} property.
-             * But tries to cast interface {@link SqlConformance} to enum {@link SqlConformanceEnum}.
+             * Might be set by property {@link CalciteConnectionProperty#CONFORMANCE}.
+             * But will try to cast interface {@link SqlConformance} to enum {@link SqlConformanceEnum}.
              */
             @Override public SqlConformance conformance() {
                 return FRAMEWORK_CONFIG.getParserConfig().conformance();

@@ -2515,7 +2515,7 @@ public class RexImpTable {
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> args) {
             return Expressions.call(BuiltInMethod.REPLACE.method, args.get(0), args.get(1), args.get(2),
-                Expressions.constant(true, Boolean.class));
+                Expressions.constant(true, boolean.class));
         }
     }
 
