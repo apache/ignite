@@ -162,7 +162,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        File dir = snapshotFileTree(ignite, SNAPSHOT_NAME).cacheStorage(dfltCacheCfg);
+        File dir = snapshotFileTree(ignite, SNAPSHOT_NAME).defaultCacheStorage(dfltCacheCfg);
 
         assertTrue(dir.toString(), dir.exists());
         assertTrue(U.delete(dir));
@@ -173,7 +173,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         res.print(b::append, true);
 
         assertFalse(F.isEmpty(res.exceptions()));
-        assertContains(log, b.toString(), "Snapshot data doesn't contain required cache groups");
+        assertContains(log, b.toString(), "Snapshot data doesn't contain required cache group");
     }
 
     /** @throws Exception If fails. */

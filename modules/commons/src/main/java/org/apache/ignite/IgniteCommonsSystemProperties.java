@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_MAX_LENGTH;
@@ -46,6 +47,26 @@ public class IgniteCommonsSystemProperties {
     @SystemProperty(value = "Number of collection (map, array) elements to output",
         type = Integer.class, defaults = "" + DFLT_TO_STRING_COLLECTION_LIMIT)
     public static final String IGNITE_TO_STRING_COLLECTION_LIMIT = "IGNITE_TO_STRING_COLLECTION_LIMIT";
+
+    /**
+     * When unsafe memory copy if performed below this threshold, Ignite will do it on per-byte basis instead of
+     * calling to Unsafe.copyMemory().
+     * <p>
+     * Defaults to 0, meaning that threshold is disabled.
+     */
+    @SystemProperty(value = "When unsafe memory copy if performed below this threshold, Ignite will do it " +
+        "on per-byte basis instead of calling to Unsafe.copyMemory(). 0 disables threshold",
+        type = Long.class, defaults = "" + DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD)
+    public static final String IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD = "IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD";
+
+    /**
+     * Whether Ignite can access unaligned memory addresses.
+     * <p>
+     * Defaults to {@code false}, meaning that unaligned access will be performed only on x86 architecture.
+     */
+    @SystemProperty("Whether Ignite can access unaligned memory addresses. Defaults to false, " +
+        "meaning that unaligned access will be performed only on x86 architecture")
+    public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
 
     /**
      * @param enumCls Enum type.

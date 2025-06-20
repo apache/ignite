@@ -49,6 +49,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandWarningException;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,6 +58,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_COMPLETED_WITH_WARNINGS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -256,6 +258,13 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
                 throw new IgniteException(e);
             }
             catch (Throwable e) {
+                if (X.hasCause(e, CommandWarningException.class)) {
+                    log.warning(e.getMessage());
+                    log.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_COMPLETED_WITH_WARNINGS);
+
+                    return EXIT_CODE_COMPLETED_WITH_WARNINGS;
+                }
+
                 log.error("Failed to perform operation.");
                 log.error(CommandLogger.errorMessage(e));
 

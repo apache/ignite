@@ -222,7 +222,7 @@ public class IgniteCacheDumpFilterTest extends GridCommonAbstractTest {
 
     /** */
     private static void corruptAllPartitions(SnapshotFileTree sft, CacheConfiguration<?, ?> ccfg) throws IOException {
-        for (File partFile : sft.existingCachePartitionFiles(sft.cacheStorage(ccfg), true, false)) {
+        for (File partFile : sft.existingCachePartitionFiles(sft.defaultCacheStorage(ccfg), true, false)) {
             try (FileOutputStream fos = new FileOutputStream(partFile)) {
                 // Corrupt file by writing zeroes to it.
                 fos.write(new byte[200]);
