@@ -149,7 +149,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         int from,
         int to,
         boolean waitForCommit
-    ) throws Exception {
+    ) throws Throwable {
         GridAbsPredicate cachePredicate = sizePredicate(to - from, cache.getName(), UPDATE, cnsmr);
         GridAbsPredicate txPredicate = txCache == null
             ? null
@@ -169,13 +169,19 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
+        fut.listen(latch::countDown);
+
         addData.apply(cache, from, to);
 
         if (txCache != null)
             addData.apply(txCache, from, to);
 
-        if (waitForCommit)
+        if (waitForCommit) {
             latch.await(getTestTimeout(), MILLISECONDS);
+
+            if (fut.error() != null)
+                throw fut.error();
+        }
         else {
             assertTrue(waitForCondition(cachePredicate, getTestTimeout()));
 
