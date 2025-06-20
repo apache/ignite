@@ -94,7 +94,7 @@ public class MessageProcessor extends AbstractProcessor {
 
         for (Map.Entry<TypeElement, List<VariableElement>> type: msgFields.entrySet()) {
             try {
-                new MessageSerializer(processingEnv).generate(type.getKey(), type.getValue());
+                new MessageSerializerGenerator(processingEnv).generate(type.getKey(), type.getValue());
             }
             catch (Exception e) {
                 processingEnv.getMessager().printMessage(

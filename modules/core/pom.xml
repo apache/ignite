@@ -34,6 +34,7 @@
 
     <properties>
         <ignite.update.notifier.product>apache-ignite</ignite.update.notifier.product>
+        <ignite.generated.source.path>${project.build.directory}/generated-sources/communication</ignite.generated.source.path>
     </properties>
 
     <dependencies>
@@ -349,11 +350,21 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>${project.build.directory}/generated-sources/annotations</source>
+                                <source>${ignite.generated.source.path}</source>
                             </sources>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <generatedSourcesDirectory>${ignite.generated.source.path}</generatedSourcesDirectory>
+                    <annotationProcessors>
+                        <annotationProcessor>org.apache.ignite.internal.MessageProcessor</annotationProcessor>
+                    </annotationProcessors>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -90,7 +90,7 @@ import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
  * }
  * </pre>
  */
-class MessageSerializer {
+class MessageSerializerGenerator {
     /** */
     private static final String EMPTY = "";
 
@@ -123,7 +123,7 @@ class MessageSerializer {
     private int indent;
 
     /** */
-    MessageSerializer(ProcessingEnvironment env) {
+    MessageSerializerGenerator(ProcessingEnvironment env) {
         this.env = env;
     }
 
