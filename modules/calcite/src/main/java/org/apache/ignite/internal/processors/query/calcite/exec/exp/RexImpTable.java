@@ -243,7 +243,6 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TRIM;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TRUNCATE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_MINUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_PLUS;
-import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNION;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UPPER;
 import static org.apache.calcite.util.ReflectUtil.isStatic;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.BITAND;
@@ -294,7 +293,7 @@ public class RexImpTable {
         defineMethod(SUBSTRING, BuiltInMethod.SUBSTRING.method, NullPolicy.STRICT);
         defineMethod(LEFT, BuiltInMethod.LEFT.method, NullPolicy.ANY);
         defineMethod(RIGHT, BuiltInMethod.RIGHT.method, NullPolicy.ANY);
-        defineMethod(REPLACE, BuiltInMethod.REPLACE.method, NullPolicy.STRICT);
+        define(REPLACE, new ReplaceImplementor());
         defineMethod(TRANSLATE3, BuiltInMethod.TRANSLATE3.method, NullPolicy.STRICT);
         defineMethod(CHR, BuiltInMethod.CHAR_FROM_UTF8.method, NullPolicy.STRICT);
         defineMethod(CHAR_LENGTH, BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT);
@@ -2503,6 +2502,20 @@ public class RexImpTable {
         @Override Expression implementSafe(final RexToLixTranslator translator,
             final RexCall call, final List<Expression> argValueList) {
             return Expressions.constant(null);
+        }
+    }
+
+    /**  */
+    private static class ReplaceImplementor extends AbstractRexCallImplementor {
+        /** */
+        private ReplaceImplementor() {
+            super("replace", NullPolicy.STRICT, false);
+        }
+
+        /** {@inheritDoc} */
+        @Override Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> args) {
+            return Expressions.call(BuiltInMethod.REPLACE.method, args.get(0), args.get(1), args.get(2),
+                Expressions.constant(true, Boolean.class));
         }
     }
 
