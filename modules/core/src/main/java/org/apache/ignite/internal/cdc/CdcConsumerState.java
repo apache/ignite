@@ -80,6 +80,8 @@ public class CdcConsumerState {
      * @param state WAL pointer and index of {@link DataEntry} inside {@link DataRecord}.
      */
     public void saveWal(T2<WALPointer, Integer> state) throws IOException {
+        log.info(">>> saveWal START");
+
         ByteBuffer buf = ByteBuffer.allocate(POINTER_SIZE);
 
         buf.putLong(state.get1().index());
@@ -96,6 +98,8 @@ public class CdcConsumerState {
         }
 
         Files.move(tmpWalPtr, ft.cdcWalState(), ATOMIC_MOVE, REPLACE_EXISTING);
+
+        log.info(">>> saveWal END");
     }
 
     /**
