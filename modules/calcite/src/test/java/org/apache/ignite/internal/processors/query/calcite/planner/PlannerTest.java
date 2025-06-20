@@ -803,7 +803,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
-    public void testMergeJoinIsNotAppliedForNonEquiJoin() throws Exception {
+    public void testMergeJoinIsAppliedForNonEquiJoin() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
         TestTable emp = new TestTable(
@@ -847,7 +847,7 @@ public class PlannerTest extends AbstractPlannerTest {
         assertEquals("" +
                 "IgniteSort(sort0=[$3], sort1=[$0], dir0=[ASC-nulls-first], dir1=[ASC-nulls-first])\n" +
                 "  IgniteProject(DEPTNO=[$3], NAME=[$4], ID=[$0], NAME0=[$1])\n" +
-                "    IgniteNestedLoopJoin(condition=[AND(=($3, $2), >=($1, $4))], joinType=[inner])\n" +
+                "    IgniteHashJoin(condition=[AND(=($3, $2), >=($1, $4))], joinType=[inner])\n" +
                 "      IgniteTableScan(table=[[PUBLIC, EMP]])\n" +
                 "      IgniteTableScan(table=[[PUBLIC, DEPT]])\n",
             RelOptUtil.toString(phys));
