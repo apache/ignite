@@ -106,8 +106,6 @@ data: {
       "REFRESH"
       "ANALYZE"
       "MAX_CHANGED_PARTITION_ROWS_PERCENT"
-      "MATCH_CONDITION"
-      "MEASURE"
       "TOTAL"
 
       # Keywords reserved by Calcite, but not required to be reserved in Ignite.
@@ -117,6 +115,7 @@ data: {
       "ARE"
       "ARRAY_MAX_CARDINALITY"
       "ASENSITIVE"
+      "ASOF"
       "AT"
       "ATOMIC"
       "AUTHORIZATION"
@@ -244,9 +243,11 @@ data: {
       "LOWER"
       "MATCH"
       "MATCHES"
+      "MATCH_CONDITION"
       "MATCH_NUMBER"
       "MATCH_RECOGNIZE"
       "MAX"
+      "MEASURE"
       "MEASURES"
       "MEMBER"
       "METHOD"
