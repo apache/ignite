@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -39,7 +38,7 @@ public class Random2LruPageEvictionPutLargeObjectsTest extends GridCommonAbstrac
     private static final int RECORD_SIZE = 80 * 1024 * 1024;
 
     /** Number of entries. */
-    static final int ENTRIES = 100;
+    static final int ENTRIES = 50;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -70,21 +69,11 @@ public class Random2LruPageEvictionPutLargeObjectsTest extends GridCommonAbstrac
 
         IgniteCache<Integer, Object> cache = ignite.createCache(DEFAULT_CACHE_NAME);
 
-        Affinity<Integer> aff = ignite.affinity(DEFAULT_CACHE_NAME);
-
         Object val = new byte[RECORD_SIZE];
 
-        int counter = 0;
+        for (Integer key : primaryKeys(grid(1).cache(DEFAULT_CACHE_NAME), ENTRIES))
+            cache.put(key, val);
 
-        for (int key = 1; key <= ENTRIES; key++) {
-            // Skip keys local node is primary for to force async processing in system striped pool in the non-local node.
-            if (!aff.isPrimary(ignite.localNode(), key)) {
-                cache.put(key, val);
-
-                counter++;
-
-                System.out.println(">>> Key put: " + key + ", total entries put: " + counter);
-            }
-        }
+        assertTrue(cache.size() < ENTRIES);
     }
 }
