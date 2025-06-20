@@ -19,9 +19,12 @@ package org.apache.ignite.internal.management.snapshot;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
+import org.apache.ignite.internal.management.api.CommandWarningException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotWarningException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
@@ -52,25 +55,32 @@ public class SnapshotCreateTask extends VisorOneNodeTask<SnapshotCreateCommandAr
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(SnapshotCreateCommandArg arg) throws IgniteException {
-            IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr().createSnapshot(
-                arg.snapshotName(),
-                arg.dest(),
-                arg.incremental(),
-                false
-            );
+        @Override protected String run(SnapshotCreateCommandArg arg) {
+            try {
+                IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr().createSnapshot(
+                    arg.snapshotName(),
+                    arg.dest(),
+                    arg.incremental(),
+                    false
+                );
 
-            IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
-                fut.internalFuture() instanceof IgniteSnapshotManager.ClusterSnapshotFuture ?
-                    (IgniteSnapshotManager.ClusterSnapshotFuture)fut.internalFuture() : null;
+                IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
+                    fut.internalFuture() instanceof IgniteSnapshotManager.ClusterSnapshotFuture ?
+                        (IgniteSnapshotManager.ClusterSnapshotFuture)fut.internalFuture() : null;
 
-            if (arg.sync() || fut.isDone())
-                fut.get();
+                if (arg.sync() || fut.isDone())
+                    fut.get();
 
-            String msgOperId = snpFut != null && snpFut.requestId() != null ? ", id=" + snpFut.requestId() : "";
+                String msgOperId = snpFut != null && snpFut.requestId() != null ? ", id=" + snpFut.requestId() : "";
 
-            return "Snapshot create operation " + (arg.sync() ? "completed successfully" : "started") +
-                " [name=" + arg.snapshotName() + msgOperId + ']';
+                return "Snapshot create operation " + (arg.sync() ? "completed successfully" : "started") +
+                    " [name=" + arg.snapshotName() + msgOperId + ']';
+            }
+            catch (Exception e) {
+                Throwable ex = X.hasCause(e, SnapshotWarningException.class) ? new CommandWarningException(e) : e;
+
+                throw new IgniteException(ex);
+            }
         }
     }
 }

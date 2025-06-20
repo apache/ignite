@@ -102,6 +102,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         startGrid("listener");
 
+        awaitPartitionMapExchange();
+
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
 
@@ -162,6 +164,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         startGrid("listener");
 
+        awaitPartitionMapExchange();
+
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
 
@@ -208,6 +212,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         //Node which should received all fail message in any way.
         startGrid("listener");
+
+        awaitPartitionMapExchange();
 
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
