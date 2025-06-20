@@ -78,6 +78,7 @@ data: {
     # items in this list become non-reserved.
     nonReservedKeywordsToAdd: [
       # Keywords introduced by Ignite
+      "ASOF"
       "TEMPLATE"
       "BACKUPS"
       "AFFINITY_KEY"
@@ -105,6 +106,8 @@ data: {
       "REFRESH"
       "ANALYZE"
       "MAX_CHANGED_PARTITION_ROWS_PERCENT"
+      "MATCH_CONDITION"
+      "MEASURE"
       "TOTAL"
 
       # Keywords reserved by Calcite, but not required to be reserved in Ignite.
