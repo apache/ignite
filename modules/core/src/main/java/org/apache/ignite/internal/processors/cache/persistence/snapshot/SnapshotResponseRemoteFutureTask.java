@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -204,21 +205,25 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
             if (cacheData.containsKey(grpId))
                 return cacheData.get(grpId);
 
-            File cacheDir = sft.existingCacheDirectory(grpId);
+            List<File> cacheDirs = sft.existingCacheDirectories(grpId);
 
-            if (cacheDir == null) {
+            if (F.isEmpty(cacheDirs)) {
                 throw new IgniteException("Cache directory not found [snpName=" + snpName + ", meta=" + meta +
                     ", grp=" + grpId + ']');
             }
 
-            List<StoredCacheData> res = NodeFileTree.existingCacheConfigFiles(cacheDir).stream().map(f -> {
-                try {
-                    return cctx.cache().configManager().readCacheData(f);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }).collect(Collectors.toList());
+            List<StoredCacheData> res = new ArrayList<>();
+
+            for (File cacheDir : cacheDirs) {
+                res.addAll(NodeFileTree.existingCacheConfigFiles(cacheDir).stream().map(f -> {
+                    try {
+                        return cctx.cache().configManager().readCacheData(f);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }).collect(Collectors.toList()));
+            }
 
             if (res.isEmpty()) {
                 throw new IgniteException("Cache configs not found [snpName=" + snpName + ", meta=" + meta +

@@ -50,8 +50,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
-
 /** Snapshot task to verify snapshot metadata on the baseline nodes for given snapshot name. */
 @GridInternal
 public class SnapshotMetadataVerificationTask
@@ -221,7 +219,7 @@ public class SnapshotMetadataVerificationTask
 
             List<FileDescriptor> walSeg = factory.resolveWalFiles(
                 new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                    .filesOrDirs(ift.wal().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER)));
+                    .filesOrDirs(ift.walCompactedSegments()));
 
             if (walSeg.isEmpty())
                 throw new IgniteException("No WAL segments found for incremental snapshot [dir=" + ift.wal() + ']');
