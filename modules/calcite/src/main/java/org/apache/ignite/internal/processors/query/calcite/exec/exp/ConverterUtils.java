@@ -369,7 +369,7 @@ public class ConverterUtils {
                     case DOUBLE:
                     case FLOAT:
                         return Expressions.call(
-                            IgniteSqlFunctions.class,
+                            SqlFunctions.class,
                             "toString",
                             operand);
                     default:
