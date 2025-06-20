@@ -154,7 +154,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
 
         IgniteWalConverter converter = new IgniteWalConverter(log); // or createTestLogger()
 
-        converter.convert(args);
+        converter.convert();
 
         return testOut.toString();
     }

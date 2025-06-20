@@ -86,13 +86,7 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
             emptyList()
         );
 
-        new IgniteWalConverter(log).convert(arg); // fixme это очень странно
-        // todo возможно конструктор конвертера должен быть широким и включать в себя параметры аргумета
-        // todo типа converter(1,2,3,4...).convertWal()
-
         String result = runWalConverter(arg);
-
-
 
         assertThat(result, containsString("EncryptedRecord"));
     }
