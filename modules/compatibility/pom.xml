@@ -48,12 +48,6 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-grid-unsafe</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
             <scope>test</scope>
         </dependency>
