@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.junit.Assume;
 
 import static org.apache.ignite.compatibility.clients.JavaThinCompatibilityTest.ADDR;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -61,10 +62,25 @@ public class JavaThinCompatibilityStoragePathTest extends AbstractClientCompatib
     }
 
     /** {@inheritDoc} */
+    @Override public void testOldClientToCurrentServer() throws Exception {
+        Assume.assumeTrue("Cluster state API exists only from 2.9.0 release", ver.compareTo(VER_2_9_0) >= 0);
+
+        super.testOldClientToCurrentServer();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testCurrentClientToOldServer() throws Exception {
+        Assume.assumeTrue("Cluster state API exists only from 2.9.0 release", ver.compareTo(VER_2_9_0) >= 0);
+
+        super.testCurrentClientToOldServer();
+    }
+
+
+    /** {@inheritDoc} */
     @Override protected void testClient(IgniteProductVersion clientVer, IgniteProductVersion serverVer) throws Exception {
         try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
-            boolean storagePathSupportedBySrv = VER_2_17_0.compareTo(serverVer) < 0;
-            boolean storagePathSupportedByClient = VER_2_17_0.compareTo(clientVer) < 0;
+            boolean storagePathSupportedBySrv = serverVer.compareTo(VER_2_18_0) >= 0;
+            boolean storagePathSupportedByClient = clientVer.compareTo(VER_2_18_0) >= 0;
 
             cli.cluster().state(ClusterState.ACTIVE);
 
