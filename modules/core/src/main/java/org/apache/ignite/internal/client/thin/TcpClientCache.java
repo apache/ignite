@@ -71,7 +71,6 @@ import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTra
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
-import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -1670,7 +1669,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (tx == null)
             return;
 
-        if (m instanceof SortedMap || m instanceof GridSerializableMap)
+        if (m instanceof SortedMap)
             return;
 
         if (!canBlockTx(false, tx.concurrency(), tx.isolation()))

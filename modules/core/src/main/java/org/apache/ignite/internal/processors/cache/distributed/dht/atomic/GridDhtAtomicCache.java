@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
@@ -1033,9 +1032,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /**
-     * Entry point for all public API put/transform methods. Except for invokeAll operations with {@code Set}.
+     * Entry point for all public API put/transform methods.
      *
-     * @param keys Put keys.
+     * @param keys Keys.
      * @param vals Put values. Either {@code vals}, {@code invokeVals} or {@code conflictPutVals} should be passed.
      * @param invokeVals Invoke values. Either {@code vals}, {@code invokeVals} or {@code conflictPutVals} should be passed.
      * @param invokeArgs Optional arguments for EntryProcessor.
@@ -1072,10 +1071,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (op == GridCacheOperation.TRANSFORM) {
                 assert invokeVals != null : invokeVals;
 
-                conflictPutVals = invokeVals
-                    .stream()
-                    .map(o -> new GridCacheDrInfo(o, nextVersion(opCtx.dataCenterId())))
-                    .collect(Collectors.toUnmodifiableList());
+                conflictPutVals = F.viewReadOnly(invokeVals, o -> new GridCacheDrInfo(o, nextVersion(opCtx.dataCenterId())));
 
                 invokeVals = null;
             }
@@ -1083,10 +1079,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 assert keys != null : keys;
                 assert vals != null : vals;
 
-                conflictRmvVals = vals
-                    .stream()
-                    .map(o -> nextVersion(opCtx.dataCenterId()))
-                    .collect(Collectors.toUnmodifiableList());
+                conflictRmvVals = F.viewReadOnly(vals, o -> nextVersion(opCtx.dataCenterId()));
 
                 vals = null;
             }
@@ -1094,10 +1087,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 assert keys != null : keys;
                 assert vals != null : vals;
 
-                conflictPutVals = vals
-                    .stream()
-                    .map(o -> new GridCacheDrInfo(ctx.toCacheObject(o), nextVersion(opCtx.dataCenterId())))
-                    .collect(Collectors.toUnmodifiableList());
+                conflictPutVals = F.viewReadOnly(vals,
+                    o -> new GridCacheDrInfo(ctx.toCacheObject(o), nextVersion(opCtx.dataCenterId())));
 
                 vals = null;
             }

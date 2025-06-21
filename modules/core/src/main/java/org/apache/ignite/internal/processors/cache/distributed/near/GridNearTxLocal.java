@@ -30,7 +30,6 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
@@ -513,7 +512,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         Map<KeyCacheObject, GridCacheDrInfo> drMap
     ) {
         Set<?> keySet = drMap.keySet();
-        Collection<?> vals = drMap.values().stream().map(GridCacheDrInfo::value).collect(Collectors.toUnmodifiableList());
+        Collection<?> vals = F.viewReadOnly(drMap.values(), GridCacheDrInfo::value);
 
         return this.<Object, Object>putAllAsync0(cacheCtx,
             null,
@@ -704,8 +703,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * maps must be non-null.
      *
      * @param cacheCtx Context.
-     * @param keySet Key-value map keys to store.
-     * @param vals Key-value map values to store.
+     * @param keySet Keys.
+     * @param vals Put values to store.
      * @param invokeVals Collection of entry processors for invoke operation.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param drMap DR map.
@@ -736,7 +735,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (opCtx != null && opCtx.hasDataCenterId()) {
             assert drMap == null : drMap;
-            assert keySet != null || invokeVals != null;
 
             dataCenterId = opCtx.dataCenterId();
         }
@@ -747,11 +745,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             log.debug("Called putAllAsync(...) [tx=" + this +
                 ", map=[" + keySet + ", " + vals + "], retval=" + retval + "]");
 
-        assert keySet != null || invokeVals != null;
+        assert vals != null || invokeVals != null;
 
         final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
-        if (F.isEmpty(keySet) && vals == null && invokeVals != null) {
+        if (F.isEmpty(vals) && F.isEmpty(invokeVals)) {
             if (implicit())
                 try {
                     commit();
