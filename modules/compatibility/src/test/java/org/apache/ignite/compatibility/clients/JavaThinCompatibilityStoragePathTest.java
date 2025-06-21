@@ -83,10 +83,7 @@ public class JavaThinCompatibilityStoragePathTest extends AbstractClientCompatib
 
         assertEquals("Must be able to receive config from server", "nodeCache", ccfg.getName());
 
-        if (!storagePathSupportedByClient)
-            return;
-
-        checkConfig(storagePathSupportedBySrv, ccfg);
+        checkConfig(storagePathSupportedByClient, storagePathSupportedBySrv, ccfg);
     }
 
     /** */
@@ -111,11 +108,18 @@ public class JavaThinCompatibilityStoragePathTest extends AbstractClientCompatib
 
         ClientCacheConfiguration cfg = cliCache.getConfiguration();
 
-        checkConfig(storagePathSupportedBySrv, cfg);
+        checkConfig(storagePathSupportedByClient, storagePathSupportedBySrv, cfg);
     }
 
     /** */
-    private static void checkConfig(boolean storagePathSupportedBySrv, ClientCacheConfiguration ccfg) {
+    private static void checkConfig(
+        boolean storagePathSupportedByClient,
+        boolean storagePathSupportedBySrv,
+        ClientCacheConfiguration ccfg
+    ) {
+        if (!storagePathSupportedByClient)
+            return;
+
         if (storagePathSupportedBySrv) {
             assertEquals("one", ccfg.getIndexPath());
             assertTrue(Arrays.compare(STORAGE_PATH, ccfg.getStoragePaths()) == 0);
