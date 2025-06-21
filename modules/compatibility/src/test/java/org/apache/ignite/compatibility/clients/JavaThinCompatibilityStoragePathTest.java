@@ -23,7 +23,6 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
-import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -35,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.compatibility.clients.JavaThinCompatibilityTest.ADDR;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Tests java thin client compatibility. This test only checks that thin client can perform basic operations with
@@ -99,7 +98,7 @@ public class JavaThinCompatibilityStoragePathTest extends AbstractClientCompatib
                 .setStoragePaths(STORAGE_PATH);
 
             if (!storagePathSupportedBySrv) {
-                assertThrowsWithCause(() -> cli.createCache(ccfg), ClientFeatureNotSupportedByServerException.class);
+                assertThrows(null, () -> cli.createCache(ccfg), RuntimeException.class, "Cache storages are not supported by the server");
 
                 ccfg.setStoragePaths((String[])null);
                 ccfg.setIndexPath(null);
