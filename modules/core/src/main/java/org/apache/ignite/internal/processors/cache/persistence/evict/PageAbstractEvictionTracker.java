@@ -211,7 +211,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         int link = getFragmentLink(prevPageTrackingIdx);
 
-        if (link == 0L) {
+        if (link == 0) {
             // The previous page is just the tail one.
             return prevPageTrackingIdx;
         }
