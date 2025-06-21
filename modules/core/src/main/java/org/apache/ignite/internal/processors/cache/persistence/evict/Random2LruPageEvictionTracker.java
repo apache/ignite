@@ -96,7 +96,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
             int firstTs = first(trackingData);
 
-            assert firstTs >= 0;
+            assert firstTs >= 0 : "[firstTs=" + firstTs + ", trackingData=" + trackingData + "]";
 
             int secondTs = second(trackingData);
 
@@ -225,7 +225,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override protected int getFragmentLink(int pageTrackingIdx) {
         int link = first(GridUnsafe.getLongVolatile(null, trackingArrPtr + pageTrackingIdx * 8L));
 
-        assert link <= 0;
+        assert link <= 0 : "[link=" + link + "]";
 
         return -link;
     }
