@@ -22,11 +22,14 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,6 +64,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.CLIArgumentBuilder.argument;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.CLIArgumentBuilder.optionalArgument;
+import static org.apache.ignite.internal.commandline.walreader.ProcessSensitiveData.SHOW;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.checkpoint;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.pageOwner;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.partitionMetaStateUpdate;
@@ -143,12 +147,12 @@ public class IgniteWalConverter implements AutoCloseable {
     /**
      * Size of pages, which was selected for file store (1024, 2048, 4096, etc).
      */
-    private final int pageSize;
+    private final Integer pageSize;
 
     /**
      * Keep binary flag.
      */
-    private final boolean keepBinary;
+    private final Boolean keepBinary;
 
     /**
      * WAL record types (TX_RECORD, DATA_RECORD, etc).
@@ -178,12 +182,12 @@ public class IgniteWalConverter implements AutoCloseable {
     /**
      * Write summary statistics for WAL
      */
-    private final boolean printStat;
+    private final Boolean printStat;
 
     /**
      * Skip CRC calculation/check flag
      */
-    private final boolean skipCrc;
+    private final Boolean skipCrc;
 
     /**
      * Pages for searching in format grpId:pageId.
@@ -212,15 +216,15 @@ public class IgniteWalConverter implements AutoCloseable {
      */
     public IgniteWalConverter(
             NodeFileTree ft,
-            int pageSize,
-            boolean keepBinary,
+            Integer pageSize,
+            Boolean keepBinary,
             Set<WALRecord.RecordType> recordTypes,
             Long fromTime,
             Long toTime,
             String recordContainsText,
             ProcessSensitiveData procSensitiveData,
-            boolean printStat,
-            boolean skipCrc,
+            Boolean printStat,
+            Boolean skipCrc,
             Collection<T2<Integer, Long>> pages,
             IgniteLogger log
     ) {
@@ -243,50 +247,50 @@ public class IgniteWalConverter implements AutoCloseable {
      */
     public static void main(String[] args) {
         CLIArgumentParser p = new CLIArgumentParser(
-                Collections.emptyList(),
-                asList(
-                        argument(ROOT_DIR, String.class)
-                                .withUsage("Root pds directory.")
-                                .build(),
-                        argument(FOLDER_NAME, String.class)
-                                .withUsage("Node specific folderName.")
-                                .build(),
-                        optionalArgument(PAGE_SIZE, Integer.class)
-                                .withUsage("Size of pages, which was selected for file store (1024, 2048, 4096, etc.).")
-                                .withDefault(4096)
-                                .build(),
-                        optionalArgument(KEEP_BINARY, Boolean.class)
-                                .withUsage("Keep binary flag")
-                                .withDefault(true)
-                                .build(),
-                        optionalArgument(RECORD_TYPES, String.class)
-                                .withUsage("Comma-separated WAL record types (TX_RECORD, DATA_RECORD, etc.).")
-                                .withDefault("all")
-                                .build(),
-                        optionalArgument(WAL_TIME_FROM_MILLIS, Long.class)
-                                .withUsage("The start time interval for the record time in milliseconds.")
-                                .build(),
-                        optionalArgument(WAL_TIME_TO_MILLIS, Long.class)
-                                .withUsage("The end time interval for the record time in milliseconds.")
-                                .build(),
-                        optionalArgument(RECORD_CONTAINS_TEXT, String.class)
-                                .withUsage("Filter by substring in the WAL record.")
-                                .build(),
-                        optionalArgument(PROCESS_SENSITIVE_DATA, String.class)
-                                .withUsage("Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5)")
-                                .withDefault("SHOW")
-                                .build(),
-                        optionalArgument(PRINT_STAT, Boolean.class)
-                                .withUsage("Write summary statistics for WAL")
-                                .withDefault(false)
-                                .build(),
-                        optionalArgument(SKIP_CRC, Boolean.class)
-                                .withUsage("Skip CRC calculation/check flag.")
-                                .withDefault(false)
-                                .build(),
-                        optionalArgument(PAGES, String.class)
-                                .withUsage("Comma-separated pages or path to file with pages on each line in grpId:pageId format.")
-                                .build()
+            Collections.emptyList(),
+            asList(
+                argument(ROOT_DIR, String.class)
+                    .withUsage("Root pds directory.")
+                    .build(),
+                argument(FOLDER_NAME, String.class)
+                    .withUsage("Node specific folderName.")
+                    .build(),
+                optionalArgument(PAGE_SIZE, Integer.class)
+                    .withUsage("Size of pages, which was selected for file store (1024, 2048, 4096, etc.).")
+                    .withDefault(4096)
+                    .build(),
+                optionalArgument(KEEP_BINARY, Boolean.class)
+                    .withUsage("Keep binary flag")
+                    .withDefault(true)
+                    .build(),
+                optionalArgument(RECORD_TYPES, String.class)
+                    .withUsage("Comma-separated WAL record types (TX_RECORD, DATA_RECORD, etc.).")
+                    .withDefault("all")
+                    .build(),
+                optionalArgument(WAL_TIME_FROM_MILLIS, Long.class)
+                    .withUsage("The start time interval for the record time in milliseconds.")
+                    .build(),
+                optionalArgument(WAL_TIME_TO_MILLIS, Long.class)
+                    .withUsage("The end time interval for the record time in milliseconds.")
+                    .build(),
+                optionalArgument(RECORD_CONTAINS_TEXT, String.class)
+                    .withUsage("Filter by substring in the WAL record.")
+                    .build(),
+                optionalArgument(PROCESS_SENSITIVE_DATA, ProcessSensitiveData.class)
+                    .withUsage("Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5)")
+                    .withDefault(SHOW)
+                    .build(),
+                optionalArgument(PRINT_STAT, Boolean.class)
+                    .withUsage("Write summary statistics for WAL")
+                    .withDefault(false)
+                    .build(),
+                optionalArgument(SKIP_CRC, Boolean.class)
+                    .withUsage("Skip CRC calculation/check flag.")
+                    .withDefault(false)
+                    .build(),
+                optionalArgument(PAGES, String.class)
+                    .withUsage("Comma-separated pages or path to file with pages on each line in grpId:pageId format.")
+                    .build()
                 ),
                 null
         );
@@ -303,17 +307,15 @@ public class IgniteWalConverter implements AutoCloseable {
 
         NodeFileTree ft = ensureNodeStorageExists(root, p.get(FOLDER_NAME));
 
-        String pagesStr = p.get(PAGES);
+        Collection<T2<Integer, Long>> pages = collectPages( p.get(PAGES));
 
-        File pagesFile = new File(pagesStr);
-
-        Collection<T2<Integer, Long>> pages = pagesFile.exists() ? parsePageIds(pagesFile) : parsePageIds(pagesStr.split(","));
+        Set<WALRecord.RecordType> validRecordTypes = validateRecordTypes(p.get(RECORD_TYPES));
 
         try (IgniteWalConverter reader = new IgniteWalConverter(
                 ft,
                 p.get(PAGE_SIZE),
                 p.get(KEEP_BINARY),
-                p.get(RECORD_TYPES),
+                validRecordTypes,
                 p.get(WAL_TIME_FROM_MILLIS),
                 p.get(WAL_TIME_TO_MILLIS),
                 p.get(RECORD_CONTAINS_TEXT),
@@ -325,6 +327,32 @@ public class IgniteWalConverter implements AutoCloseable {
         )) {
             reader.convert();
         }
+    }
+
+    /**
+     * @param recordTypesStr Record types string.
+     */
+    static Set<WALRecord.RecordType> validateRecordTypes(String recordTypesStr) {
+        Set<WALRecord.RecordType> validRecordTypes = new HashSet<>();
+
+        final String[] recordTypesStrArr = recordTypesStr.split(",");
+
+        final SortedSet<String> unknownRecordTypes = new TreeSet<>();
+
+        for (String recordTypeStr : recordTypesStrArr) {
+            try {
+                validRecordTypes.add(WALRecord.RecordType.valueOf(recordTypeStr));
+            }
+            catch (Exception e) {
+                unknownRecordTypes.add(recordTypeStr);
+            }
+        }
+
+        if (!unknownRecordTypes.isEmpty())
+            throw new IllegalArgumentException("Unknown record types: " + unknownRecordTypes +
+                    ". Supported record types: " + Arrays.toString(WALRecord.RecordType.values()));
+
+        return validRecordTypes;
     }
 
     /**
@@ -344,6 +372,18 @@ public class IgniteWalConverter implements AutoCloseable {
     }
 
     /**
+     * @param pagesStr Pages string.
+     */
+    static Collection<T2<Integer, Long>> collectPages(String pagesStr) {
+        File pagesFile = new File(pagesStr);
+
+        if (pagesFile.exists())
+            return parsePageIds(pagesFile);
+        else
+            return parsePageIds(pagesStr.split(","));
+    }
+
+    /**
      * Parsing and checking the string representation of the page in grpId:pageId format.
      * Example: 123:456.
      *
@@ -351,7 +391,7 @@ public class IgniteWalConverter implements AutoCloseable {
      * @return Parsed value.
      * @throws IllegalArgumentException If the string value is invalid.
      */
-    private static T2<Integer, Long> parsePageId(@Nullable String s) throws IllegalArgumentException {
+    static T2<Integer, Long> parsePageId(@Nullable String s) throws IllegalArgumentException {
         if (s == null)
             throw new IllegalArgumentException("Null value.");
         else if (s.isEmpty())
@@ -375,7 +415,7 @@ public class IgniteWalConverter implements AutoCloseable {
      * @throws IllegalArgumentException If there is an error when working with a file or parsing lines.
      * @see #parsePageId
      */
-    private static Collection<T2<Integer, Long>> parsePageIds(File f) throws IllegalArgumentException {
+    static Collection<T2<Integer, Long>> parsePageIds(File f) throws IllegalArgumentException {
         try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
             int i = 0;
             String s;
@@ -411,7 +451,7 @@ public class IgniteWalConverter implements AutoCloseable {
      * @throws IllegalArgumentException If there is an error parsing the strs.
      * @see #parsePageId
      */
-    private static Collection<T2<Integer, Long>> parsePageIds(String... strs) throws IllegalArgumentException {
+    static Collection<T2<Integer, Long>> parsePageIds(String... strs) throws IllegalArgumentException {
         Collection<T2<Integer, Long>> res = new ArrayList<>();
 
         for (int i = 0; i < strs.length; i++) {
