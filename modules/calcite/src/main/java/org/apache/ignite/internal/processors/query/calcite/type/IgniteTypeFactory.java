@@ -269,7 +269,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         if (res != null && res.getSqlTypeName() == SqlTypeName.FLOAT && types.size() > 1) {
             for (RelDataType type : types) {
                 if (type.getSqlTypeName() == SqlTypeName.DOUBLE && type.getPrecision() >= res.getPrecision())
-                    return type;
+                    return type.isNullable() == res.isNullable() ? type : createTypeWithNullability(type, true);
             }
         }
 
@@ -360,6 +360,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     /** {@inheritDoc} */
     @Override public RelDataType createSqlType(SqlTypeName typeName) {
         checkUnsupportedType(typeName);
+
+        if (typeName == SqlTypeName.UUID)
+            return createCustomType(UUID.class);
 
         return super.createSqlType(typeName);
     }

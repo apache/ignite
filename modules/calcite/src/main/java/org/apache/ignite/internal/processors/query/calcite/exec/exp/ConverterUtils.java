@@ -368,8 +368,6 @@ public class ConverterUtils {
                 switch (fromPrimitive) {
                     case DOUBLE:
                     case FLOAT:
-                        // E.g. from "double" to "String"
-                        // Generate "SqlFunctions.toString(x)"
                         return Expressions.call(
                             SqlFunctions.class,
                             "toString",
@@ -384,8 +382,6 @@ public class ConverterUtils {
                 }
             }
             else if (fromType == BigDecimal.class) {
-                // E.g. from "BigDecimal" to "String"
-                // Generate "SqlFunctions.toString(x)"
                 return Expressions.condition(
                     Expressions.equal(operand, RexImpTable.NULL_EXPR),
                     RexImpTable.NULL_EXPR,

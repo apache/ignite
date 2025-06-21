@@ -103,7 +103,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
 
     /** */
     private void doTestBitwiseOperations(boolean dynamic) {
-        for (List<Object> paramSet : bitwiseParams(dynamic)) {
+        for (List<Object> paramSet : bitwiseParams()) {
             assert paramSet.size() == 6;
 
             int idx = 0;
@@ -118,7 +118,8 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
             cast1 = cast1 == null ? "" : "::" + cast1;
             cast2 = cast2 == null ? "" : "::" + cast2;
 
-            log.info("Op: " + op + ", dynamic=" + dynamic + ", p1=" + p1 + ", p2=" + p2 + ", expected=" + res);
+            if (log.isInfoEnabled())
+                log.info("Op: " + op + ", dynamic=" + dynamic + ", p1=" + p1 + ", p2=" + p2 + ", expected=" + res);
 
             if (dynamic) {
                 String sql = "SELECT BIT" + op + "(?" + cast1 + ", ?" + cast2 + ')';
@@ -140,7 +141,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
     }
 
     /** Bitwise operation params: operation, param1, cast1, param2, cast2, result. */
-    private Iterable<List<Object>> bitwiseParams(boolean dynamic) {
+    private Iterable<List<Object>> bitwiseParams() {
         List<List<Object>> res = new ArrayList<>(100);
 
         SqlValidatorException andErr = new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null);
@@ -257,6 +258,8 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT REPLACE('1', NULL, '5')").returns(NULL_RESULT).check();
         assertQuery("SELECT REPLACE('11', '1', NULL)").returns(NULL_RESULT).check();
         assertQuery("SELECT REPLACE('11', '1', '')").returns("").check();
+        assertQuery("SELECT REPLACE('aA', 'a', 'b')").returns("bA").check();
+        assertQuery("SELECT REPLACE('aA', 'A', 'b')").returns("ab").check();
     }
 
     /** */

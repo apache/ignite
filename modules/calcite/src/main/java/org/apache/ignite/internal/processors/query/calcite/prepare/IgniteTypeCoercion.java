@@ -183,6 +183,13 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             if (SqlTypeUtil.isIntType(fromType) && fromType.getSqlTypeName() != toType.getSqlTypeName())
                 return true;
         }
+        else if (SqlTypeUtil.isCharacter(toType)) {
+            RelDataType fromType = validator.deriveType(scope, node);
+
+            // Do not extend strings with spaces.
+            if (SqlTypeUtil.isCharacter(fromType) && toType.getPrecision() >= fromType.getPrecision())
+                return false;
+        }
 
         return super.needToCast(scope, node, toType);
     }

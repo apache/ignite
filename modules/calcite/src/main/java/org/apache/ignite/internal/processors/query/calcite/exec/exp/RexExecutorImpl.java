@@ -81,35 +81,45 @@ public class RexExecutorImpl implements RexExecutor {
     ) {
         final RexProgramBuilder programBuilder =
             new RexProgramBuilder(rowType, rexBuilder);
+
         for (RexNode node : constExps) {
             programBuilder.addProject(
                 node, "c" + programBuilder.getProjectList().size());
         }
+
         final JavaTypeFactoryImpl javaTypeFactory =
             new JavaTypeFactoryImpl(rexBuilder.getTypeFactory().getTypeSystem());
         final BlockBuilder blockBuilder = new BlockBuilder();
         final ParameterExpression root0_ =
             Expressions.parameter(Object.class, "root0");
         final ParameterExpression root_ = DataContext.ROOT;
+
         blockBuilder.add(
             Expressions.declare(
                 Modifier.FINAL, root_,
                 Expressions.convert_(root0_, DataContext.class)));
+
         final SqlConformance conformance = SqlConformanceEnum.DEFAULT;
         final RexProgram program = programBuilder.getProgram();
+
         final List<Expression> expressions =
             RexToLixTranslator.translateProjects(program, javaTypeFactory,
                 conformance, blockBuilder, null, root_, getter, null);
+
         blockBuilder.add(
             Expressions.return_(null,
                 Expressions.newArrayInit(Object[].class, expressions)));
+
         final MethodDeclaration mtdDecl =
             Expressions.methodDecl(Modifier.PUBLIC, Object[].class,
                 BuiltInMethod.FUNCTION1_APPLY.method.getName(),
                 ImmutableList.of(root0_), blockBuilder.toBlock());
+
         String code = Expressions.toString(mtdDecl);
+
         if (CalciteSystemProperty.DEBUG.value())
             Util.debugCode(System.out, code);
+
         return code;
     }
 
