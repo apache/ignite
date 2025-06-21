@@ -20,21 +20,29 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.ConsumerX;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.client.Config.SERVER;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -343,6 +351,63 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
             assertEquals(partCnt + 1, parts.size());
             assertTrue(parts.contains(INDEX_PARTITION));
             assertTrue(IntStream.range(0, partCnt).boxed().allMatch(parts::contains));
+        }
+    }
+
+    /** */
+    @Test
+    public void testThinClientCreation() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("srv")
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+            .setStoragePath(myPath.getAbsolutePath())
+            .setExtraStoragePaths(myPath2.getAbsolutePath(), myPath3.getAbsolutePath())
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+
+        try (IgniteEx srv = startGrid(cfg)) {
+            srv.cluster().state(ClusterState.ACTIVE);
+
+            try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(SERVER))) {
+                Consumer<ClientCacheConfiguration> check = initCfg -> {
+                    ClientCache<Integer, Integer> c = cli.createCache(initCfg);
+
+                    CacheConfiguration<?, ?> srvCfg = srv.cachex(initCfg.getName()).configuration();
+                    ClientCacheConfiguration cliCfg = cli.cache(initCfg.getName()).getConfiguration();
+
+                    assertEquals(0, F.compareArrays(initCfg.getStoragePaths(), srvCfg.getStoragePaths()));
+                    assertEquals(0, F.compareArrays(initCfg.getStoragePaths(), cliCfg.getStoragePaths()));
+
+                    assertEquals(initCfg.getIndexPath(), srvCfg.getIndexPath());
+                    assertEquals(initCfg.getIndexPath(), cliCfg.getIndexPath());
+
+                    IntStream.range(0, 100).forEach(i -> c.put(i, i));
+                    IntStream.range(0, 100).forEach(i -> assertEquals((Integer)i, c.get(i)));
+                };
+
+                check.accept(new ClientCacheConfiguration()
+                    .setName("c0"));
+
+                check.accept(new ClientCacheConfiguration()
+                    .setName("c1")
+                    .setStoragePaths(myPath.getAbsolutePath()));
+
+                check.accept(new ClientCacheConfiguration()
+                    .setName("c2")
+                    .setStoragePaths(myPath.getAbsolutePath(), myPath2.getAbsolutePath()));
+
+                check.accept(new ClientCacheConfiguration()
+                    .setName("c3")
+                    .setIndexPath(myPath.getAbsolutePath()));
+
+                check.accept(new ClientCacheConfiguration()
+                    .setName("c4")
+                    .setStoragePaths(myPath.getAbsolutePath())
+                    .setIndexPath(myPath2.getAbsolutePath()));
+
+                check.accept(new ClientCacheConfiguration()
+                    .setName("c5")
+                    .setStoragePaths(myPath.getAbsolutePath(), myPath2.getAbsolutePath())
+                    .setIndexPath(myPath3.getAbsolutePath()));
+            }
         }
     }
 }

@@ -85,7 +85,8 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
                         .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
-                ));
+                )
+                .setExtraStoragePaths("one", "two", "three"));
 
         cfg.setBinaryConfiguration(
             new BinaryConfiguration()
