@@ -1076,7 +1076,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 invokeVals = null;
             }
             else if (op == GridCacheOperation.DELETE) {
-                assert keys != null : keys;
                 assert vals != null : vals;
 
                 conflictRmvVals = F.viewReadOnly(vals, o -> nextVersion(opCtx.dataCenterId()));
@@ -1084,7 +1083,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 vals = null;
             }
             else {
-                assert keys != null : keys;
                 assert vals != null : vals;
 
                 conflictPutVals = F.viewReadOnly(vals,
