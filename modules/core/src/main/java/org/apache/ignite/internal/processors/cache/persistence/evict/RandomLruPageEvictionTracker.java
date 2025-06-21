@@ -113,6 +113,9 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
                 int compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
 
                 if (compactTs < 0) {
+                    // For page containing fragmented row data timestamps stored in the row's head page are used.
+                    // Fragment page (other than the tail one) contains link to tail page. Tail page contains link to
+                    // head page. So head page is found no more than in two hops.
                     sampleTrackingIdx = -compactTs;
 
                     compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
