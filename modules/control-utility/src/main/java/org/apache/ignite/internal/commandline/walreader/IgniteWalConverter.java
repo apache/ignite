@@ -17,13 +17,23 @@
 
 package org.apache.ignite.internal.commandline.walreader;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.commandline.CommandHandler;
@@ -35,7 +45,6 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TimeStampRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -49,6 +58,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.CLIArgumentBuilder.argument;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.CLIArgumentBuilder.optionalArgument;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.checkpoint;
@@ -59,82 +69,147 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
  * Print WAL log data in human-readable form.
  */
 public class IgniteWalConverter implements AutoCloseable {
-    /** */
+    /**
+     *
+     */
     private static final String ROOT_DIR = "--root";
 
-    /** */
+    /**
+     *
+     */
     private static final String FOLDER_NAME = "--folder-name";
 
-    /** */
+    /**
+     *
+     */
     private static final String PAGE_SIZE = "--page-size";
 
-    /** */
+    /**
+     *
+     */
     private static final String KEEP_BINARY = "--keep-binary";
 
-    /** */
+    /**
+     *
+     */
     private static final String RECORD_TYPES = "--record-types";
 
-    /** */
+    /**
+     *
+     */
     private static final String WAL_TIME_FROM_MILLIS = "--wal-time-from-millis";
 
-    /** */
+    /**
+     *
+     */
     private static final String WAL_TIME_TO_MILLIS = "--wal-time-to-millis";
 
-    /** */
+    /**
+     *
+     */
     private static final String RECORD_CONTAINS_TEXT = "--record-contains-text";
 
-    /** */
+    /**
+     *
+     */
     private static final String PROCESS_SENSITIVE_DATA = "--process-sensitive-data";
 
-    /** */
+    /**
+     *
+     */
     private static final String PRINT_STAT = "--print-stat";
 
-    /** */
+    /**
+     *
+     */
     private static final String SKIP_CRC = "--skip-crc";
 
-    /** Argument "pages". */
+    /**
+     * Argument "pages".
+     */
     private static final String PAGES = "--pages";
 
-    /** Record pattern for {@link #PAGES}. */
+
+    /**
+     * Record pattern for {@link #PAGES}.
+     */
     private static final Pattern PAGE_ID_PATTERN = Pattern.compile("(-?\\d+):(-?\\d+)");
 
-    /** Node file tree. */
+    /**
+     * Node file tree.
+     */
     private final NodeFileTree ft;
 
-    /** Size of pages, which was selected for file store (1024, 2048, 4096, etc). */
+    /**
+     * Size of pages, which was selected for file store (1024, 2048, 4096, etc).
+     */
     private final int pageSize;
 
-    /** Keep binary flag. */
+    /**
+     * Keep binary flag.
+     */
     private final boolean keepBinary;
 
-    /** WAL record types (TX_RECORD, DATA_RECORD, etc). */
+    /**
+     * WAL record types (TX_RECORD, DATA_RECORD, etc).
+     */
     private final Set<WALRecord.RecordType> recordTypes;
 
-    /** The start time interval for the record time in milliseconds. */
+    /**
+     * The start time interval for the record time in milliseconds.
+     */
     private final Long fromTime;
 
-    /** The end time interval for the record time in milliseconds. */
+    /**
+     * The end time interval for the record time in milliseconds.
+     */
     private final Long toTime;
 
-    /** Filter by substring in the WAL record. */
+    /**
+     * Filter by substring in the WAL record.
+     */
     private final String recordContainsText;
 
-    /** Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5). */
+    /**
+     * Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5).
+     */
     private final ProcessSensitiveData procSensitiveData;
 
-    /** Write summary statistics for WAL */
+    /**
+     * Write summary statistics for WAL
+     */
     private final boolean printStat;
 
-    /** Skip CRC calculation/check flag */
+    /**
+     * Skip CRC calculation/check flag
+     */
     private final boolean skipCrc;
 
-    /** Pages for searching in format grpId:pageId. */
+    /**
+     * Pages for searching in format grpId:pageId.
+     */
     private final Collection<T2<Integer, Long>> pages;
 
-    /** Logger. */
+    /**
+     * Logger.
+     */
     private final IgniteLogger log;
 
 
+    /**
+     * @param ft               Node file tree.
+     * @param pageSize         Size of pages, which was selected for file store (1024, 2048, 4096, etc).
+     * @param keepBinary       Keep binary flag.
+     * @param recordTypes      WAL record types (TX_RECORD, DATA_RECORD, etc).
+     * @param fromTime         The start time interval for the record time in milliseconds.
+     * @param toTime           The end time interval for the record time in milliseconds.
+     * @param recordContainsText Filter by substring in the WAL record.
+     * @param procSensitiveData Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5).
+     * @param printStat        Write summary statistics for WAL.
+     * @param skipCrc          Skip CRC calculation/check flag.
+     * @param pages            Pages for searching in format grpId:pageId.
+     * @param log              Logger.
+     */
     public IgniteWalConverter(
             NodeFileTree ft,
             int pageSize,
@@ -149,25 +224,24 @@ public class IgniteWalConverter implements AutoCloseable {
             Collection<T2<Integer, Long>> pages,
             IgniteLogger log
     ) {
-		this.ft = ft;
-		this.pageSize = pageSize;
-		this.keepBinary = keepBinary;
-		this.recordTypes = recordTypes;
-		this.fromTime = fromTime;
-		this.toTime = toTime;
-		this.recordContainsText = recordContainsText;
-		this.procSensitiveData = procSensitiveData;
-		this.printStat = printStat;
-		this.skipCrc = skipCrc;
-		this.pages = pages;
-		this.log = log;
+        this.ft = ft;
+        this.pageSize = pageSize;
+        this.keepBinary = keepBinary;
+        this.recordTypes = new HashSet<>(recordTypes);
+        this.fromTime = fromTime;
+        this.toTime = toTime;
+        this.recordContainsText = recordContainsText;
+        this.procSensitiveData = procSensitiveData;
+        this.printStat = printStat;
+        this.skipCrc = skipCrc;
+        this.pages = new ArrayList<>(pages);
+        this.log = log;
     }
 
     /**
      * @param args Args.
-     * @throws Exception If failed.
      */
-    public static void main(String[] args) throws StorageException {
+    public static void main(String[] args) {
         CLIArgumentParser p = new CLIArgumentParser(
                 Collections.emptyList(),
                 asList(
@@ -177,22 +251,22 @@ public class IgniteWalConverter implements AutoCloseable {
                         argument(FOLDER_NAME, String.class)
                                 .withUsage("Node specific folderName.")
                                 .build(),
-                        optionalArgument(PAGE_SIZE, String.class)
+                        optionalArgument(PAGE_SIZE, Integer.class)
                                 .withUsage("Size of pages, which was selected for file store (1024, 2048, 4096, etc.).")
-                                .withDefault("4096")
+                                .withDefault(4096)
                                 .build(),
-                        optionalArgument(KEEP_BINARY, String.class)
+                        optionalArgument(KEEP_BINARY, Boolean.class)
                                 .withUsage("Keep binary flag")
-                                .withDefault("true")
+                                .withDefault(true)
                                 .build(),
                         optionalArgument(RECORD_TYPES, String.class)
                                 .withUsage("Comma-separated WAL record types (TX_RECORD, DATA_RECORD, etc.).")
                                 .withDefault("all")
                                 .build(),
-                        optionalArgument(WAL_TIME_FROM_MILLIS, String.class)
+                        optionalArgument(WAL_TIME_FROM_MILLIS, Long.class)
                                 .withUsage("The start time interval for the record time in milliseconds.")
                                 .build(),
-                        optionalArgument(WAL_TIME_TO_MILLIS, String.class)
+                        optionalArgument(WAL_TIME_TO_MILLIS, Long.class)
                                 .withUsage("The end time interval for the record time in milliseconds.")
                                 .build(),
                         optionalArgument(RECORD_CONTAINS_TEXT, String.class)
@@ -202,13 +276,13 @@ public class IgniteWalConverter implements AutoCloseable {
                                 .withUsage("Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5)")
                                 .withDefault("SHOW")
                                 .build(),
-                        optionalArgument(PRINT_STAT, String.class)
+                        optionalArgument(PRINT_STAT, Boolean.class)
                                 .withUsage("Write summary statistics for WAL")
-                                .withDefault("false")
+                                .withDefault(false)
                                 .build(),
-                        optionalArgument(SKIP_CRC, String.class)
+                        optionalArgument(SKIP_CRC, Boolean.class)
                                 .withUsage("Skip CRC calculation/check flag.")
-                                .withDefault("false")
+                                .withDefault(false)
                                 .build(),
                         optionalArgument(PAGES, String.class)
                                 .withUsage("Comma-separated pages or path to file with pages on each line in grpId:pageId format.")
@@ -229,6 +303,12 @@ public class IgniteWalConverter implements AutoCloseable {
 
         NodeFileTree ft = ensureNodeStorageExists(root, p.get(FOLDER_NAME));
 
+        String pagesStr = p.get(PAGES);
+
+        File pagesFile = new File(pagesStr);
+
+        Collection<T2<Integer, Long>> pages = pagesFile.exists() ? parsePageIds(pagesFile) : parsePageIds(pagesStr.split(","));
+
         try (IgniteWalConverter reader = new IgniteWalConverter(
                 ft,
                 p.get(PAGE_SIZE),
@@ -240,13 +320,17 @@ public class IgniteWalConverter implements AutoCloseable {
                 p.get(PROCESS_SENSITIVE_DATA),
                 p.get(PRINT_STAT),
                 p.get(SKIP_CRC),
-                p.get(PAGES),
+                pages,
                 CommandHandler.setupJavaLogger("wal-reader", IgniteWalConverter.class)
         )) {
             reader.convert();
         }
     }
 
+    /**
+     * @param root       Root.
+     * @param folderName Folder name.
+     */
     private static NodeFileTree ensureNodeStorageExists(@Nullable File root, @Nullable String folderName) {
         if (root == null || folderName == null)
             return null;
@@ -259,10 +343,92 @@ public class IgniteWalConverter implements AutoCloseable {
         return ft;
     }
 
+    /**
+     * Parsing and checking the string representation of the page in grpId:pageId format.
+     * Example: 123:456.
+     *
+     * @param s String value.
+     * @return Parsed value.
+     * @throws IllegalArgumentException If the string value is invalid.
+     */
+    private static T2<Integer, Long> parsePageId(@Nullable String s) throws IllegalArgumentException {
+        if (s == null)
+            throw new IllegalArgumentException("Null value.");
+        else if (s.isEmpty())
+            throw new IllegalArgumentException("Empty value.");
+
+        Matcher m = PAGE_ID_PATTERN.matcher(s);
+
+        if (!m.matches()) {
+            throw new IllegalArgumentException("Incorrect value " + s + ", valid format: grpId:pageId. " +
+                "Example: 123:456");
+        }
+
+        return new T2<>(Integer.parseInt(m.group(1)), Long.parseLong(m.group(2)));
+    }
+
+    /**
+     * Parsing a file in which each line is expected to be grpId:pageId format.
+     *
+     * @param f File.
+     * @return Parsed pages.
+     * @throws IllegalArgumentException If there is an error when working with a file or parsing lines.
+     * @see #parsePageId
+     */
+    private static Collection<T2<Integer, Long>> parsePageIds(File f) throws IllegalArgumentException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
+            int i = 0;
+            String s;
+
+            Collection<T2<Integer, Long>> res = new ArrayList<>();
+
+            while ((s = reader.readLine()) != null) {
+                try {
+                    res.add(parsePageId(s));
+                }
+                catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException(
+                        "Error parsing value \"" + s + "\" on " + i + " line of the file: " + f.getAbsolutePath(),
+                        e
+                    );
+                }
+
+                i++;
+            }
+
+            return res.isEmpty() ? emptyList() : res;
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException("Error when working with the file: " + f.getAbsolutePath(), e);
+        }
+    }
+
+    /**
+     * Parsing strings in which each element is expected to be in grpId:pageId format.
+     *
+     * @param strs String values.
+     * @return Parsed pages.
+     * @throws IllegalArgumentException If there is an error parsing the strs.
+     * @see #parsePageId
+     */
+    private static Collection<T2<Integer, Long>> parsePageIds(String... strs) throws IllegalArgumentException {
+        Collection<T2<Integer, Long>> res = new ArrayList<>();
+
+        for (int i = 0; i < strs.length; i++) {
+            try {
+                res.add(parsePageId(strs[i]));
+            }
+            catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Error parsing value \"" + strs[i] + "\" of " + i + " element", e);
+            }
+        }
+
+        return res.isEmpty() ? emptyList() : res;
+    }
+
 
     /**
      * Write to out WAL log data in human-readable form.
-     *
      */
     public void convert() {
         System.setProperty(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE,
@@ -316,7 +482,7 @@ public class IgniteWalConverter implements AutoCloseable {
                     boolean print = true;
 
                     if (record instanceof TimeStampRecord)
-                        print = withinTimeRange((TimeStampRecord)record, fromTime, toTime);
+                        print = withinTimeRange((TimeStampRecord) record, fromTime, toTime);
 
                     final String recordStr = toString(record, procSensitiveData);
 
@@ -324,13 +490,12 @@ public class IgniteWalConverter implements AutoCloseable {
                         log.info(recordStr);
                 }
             }
-        }
-        catch (IgniteCheckedException e) {
+        } catch (IgniteCheckedException e) {
             log.warning("Getting wal iterator failed [grpId:pageId =" + pages + ']');
         }
 
         if (stat != null)
-            log.info("Statistic collected:\n" + stat.toString());
+            log.info("Statistic collected:\n" + stat);
     }
 
     /**
@@ -369,9 +534,8 @@ public class IgniteWalConverter implements AutoCloseable {
 
             if (curIdx != null && walFileDescriptors != null && curIdx < walFileDescriptors.size())
                 res = walFileDescriptors.get(curIdx).getAbsolutePath();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            throw new IgniteException("Failed to read current WAL file path", e);
         }
 
         return res;
@@ -431,7 +595,8 @@ public class IgniteWalConverter implements AutoCloseable {
         return filter != null ? new FilteredWalIterator(walIter, filter) : walIter;
     }
 
-    @Override public void close() throws StorageException {
+    /** {@inheritDoc} */
+    @Override public void close() {
         // no-op
     }
 }
