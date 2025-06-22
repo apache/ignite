@@ -34,7 +34,9 @@ import org.junit.Test;
 
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.stream.Collectors.toList;
-import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverter.*;
+import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverter.collectPages;
+import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverter.parsePageId;
+import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverter.parsePageIds;
 import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverter.validateRecordTypes;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.corruptedPagesFile;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -64,7 +66,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommandHandlerAbstractT
     public void testIncorrectSeveralRecordTypes() throws Exception {
         assertThrows(log, () -> {
             validateRecordTypes("not_exist1,not_exist2");
-        }, IllegalArgumentException.class, "Unknown record types: [not_exist1, not_exist2].");
+        }, IgniteException.class, "Unknown record types: [not_exist1, not_exist2].");
     }
 
     /**
@@ -133,7 +135,8 @@ public class IgniteWalConverterArgumentsTest extends GridCommandHandlerAbstractT
                 F.asList(new T2<>(1, 1L), new T2<>(2, 2L), new T2<>(-1, 1L), new T2<>(1, -1L), new T2<>(-1, -1L)),
                 parsePageIds(f)
             );
-        } finally {
+        }
+        finally {
             assertTrue(U.delete(f));
         }
     }
@@ -166,7 +169,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommandHandlerAbstractT
         withFileTree(ft -> {
             assertTrue(ft.wal().exists());
 
-            assertThrows(log, () ->  collectPages("1"), IllegalArgumentException.class, null);
+            assertThrows(log, () -> collectPages("1"), IllegalArgumentException.class, null);
             assertThrows(log, () -> collectPages( ""), IllegalArgumentException.class, null);
 
             assertEqualsCollections(F.asList(new T2<>(1, 1L)), collectPages("1:1"));
@@ -174,15 +177,14 @@ public class IgniteWalConverterArgumentsTest extends GridCommandHandlerAbstractT
             File f = new File(System.getProperty("java.io.tmpdir"), "test");
 
             try {
-                Collection<T2<Integer, Long>> pages = collectPages(f.getAbsolutePath());
-
-                assertThrows(log, () -> pages, IllegalArgumentException.class, null);
+                assertThrows(log, () -> collectPages(f.getAbsolutePath()), IllegalArgumentException.class, null);
 
                 assertTrue(f.createNewFile());
 
                 U.writeStringToFile(f, "1:1", defaultCharset().toString(), false);
-                assertEqualsCollections(F.asList(new T2<>(1, 1L)), pages);
-            } finally {
+                assertEqualsCollections(F.asList(new T2<>(1, 1L)), collectPages(f.getAbsolutePath()));
+            }
+            finally {
                 assertTrue(U.delete(f));
             }
         });
@@ -227,7 +229,8 @@ public class IgniteWalConverterArgumentsTest extends GridCommandHandlerAbstractT
 
         try {
             check.accept(ft);
-        } finally {
+        }
+        finally {
             U.delete(ft.root());
         }
     }

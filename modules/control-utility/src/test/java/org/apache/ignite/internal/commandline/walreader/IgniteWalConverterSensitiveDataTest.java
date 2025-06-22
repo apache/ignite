@@ -71,14 +71,11 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
     /** Node file tree. */
     private static NodeFileTree ft;
 
-    /** Page size. */
-    private static int pageSize;
-
     /** System out. */
     private static PrintStream sysOut;
 
     /** Sensitive data values. */
-    private static List<String> sensitiveValues = new ArrayList<>();
+    private static final List<String> sensitiveValues = new ArrayList<>();
 
     /**
      * Test out - can be injected via {@link #injectTestSystemOut()} instead
@@ -131,7 +128,9 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = crd.configuration();
 
         ft = kernalCtx.pdsFolderResolver().fileTree();
-        pageSize = cfg.getDataStorageConfiguration().getPageSize();
+//        pageSize = cfg.getDataStorageConfiguration().getPageSize();
+
+        System.out.println("ATTENTION PAGE SIZE" + cfg.getDataStorageConfiguration().getPageSize());
 
         stopGrid(nodeId);
     }
@@ -223,14 +222,14 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
     /**
      * Executing {@link IgniteWalConverter} with checking the content of its output.
      *
-     * @param processSensitiveData Strategy for the processing of sensitive data.
+     * @param procSensitiveData Strategy for the processing of sensitive data.
      * @param containsData         Contains or not elements {@link #sensitiveValues} in utility output.
      * @param containsPrefix       Contains or not {@link #SENSITIVE_DATA_VALUE_PREFIX} in utility output.
      * @param converter            Converting elements {@link #sensitiveValues} for checking in utility output.
      * @throws Exception If failed.
      */
     private void exeWithCheck(
-        ProcessSensitiveData processSensitiveData,
+        ProcessSensitiveData procSensitiveData,
         boolean containsData,
         boolean containsPrefix,
         Function<String, String> converter
@@ -240,11 +239,16 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
         injectTestSystemOut();
 
         List<String> args = new ArrayList<>();
-        args.add("pageSize=" + pageSize);
-        args.add("root=" + ft.root());
-        args.add("folderName=" + ft.folderName());
-        if (processSensitiveData != null)
-            args.add("processSensitiveData=" + processSensitiveData.name());
+
+        args.add("--root");
+        args.add(String.valueOf(ft.root()));
+        args.add("--folder-name");
+        args.add(ft.folderName());
+
+        if (procSensitiveData != null){
+            args.add("--process-sensitive-data");
+            args.add(procSensitiveData.name());
+        }
 
         IgniteWalConverter.main(args.toArray(new String[args.size()]));
 
@@ -256,8 +260,10 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
             assertNotContains(log, testOutStr, SENSITIVE_DATA_VALUE_PREFIX);
 
         for (String sensitiveDataVal : sensitiveValues) {
+
+            String in = converter.apply(sensitiveDataVal);
             if (containsData)
-                assertContains(log, testOutStr, converter.apply(sensitiveDataVal));
+                assertContains(log, testOutStr, in);
             else
                 assertNotContains(log, testOutStr, converter.apply(sensitiveDataVal));
         }

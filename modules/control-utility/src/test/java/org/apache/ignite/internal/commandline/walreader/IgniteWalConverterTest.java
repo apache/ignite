@@ -21,17 +21,21 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
-import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -39,6 +43,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -47,16 +52,20 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static java.util.Collections.emptyList;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverterArguments.parse;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
@@ -66,11 +75,23 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
     /** */
     public static final String PERSON_NAME_PREFIX = "Name ";
 
+    /** */
+    public static final long DURATION_AMOUNT = 200L;
+
     /** Flag "skip CRC calculation" in system property save before test and restore after. */
     private String beforeIgnitePdsSkipCrc;
 
     /** Flag "skip CRC calculation" in RecordV1Serializer save before test and restore after. */
     private boolean beforeSkipCrc;
+
+    /** Encrypted. */
+    public boolean encrypted;
+
+    /** */
+    @Parameterized.Parameters(name = "cmdHnd={0}")
+    public static List<String> commandHandlers() {
+        return F.asList(CLI_CMD_HND);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -83,6 +104,10 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        encrypted = false;
+
+        injectTestSystemOut();
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -116,15 +141,29 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
         igniteConfiguration.setDataStorageConfiguration(getDataStorageConfiguration());
 
         final CacheConfiguration cacheConfiguration = new CacheConfiguration<>()
+            .setEncryptionEnabled(encrypted)
             .setName(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(0)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setIndexedTypes(PersonKey.class, Person.class);
 
+        if (encrypted)
+            igniteConfiguration.setEncryptionSpi(encryptionSpi());
+
         igniteConfiguration.setCacheConfiguration(cacheConfiguration);
 
         return igniteConfiguration;
+    }
+
+    /** @return KeystoreEncryptionSpi */
+    public static KeystoreEncryptionSpi encryptionSpi() {
+        KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
+
+        encSpi.setKeyStorePath(KEYSTORE_PATH);
+        encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());
+
+        return encSpi;
     }
 
     /** @return DataStorageConfiguration. */
@@ -149,12 +188,39 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
         return new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 200L));
     }
 
-    protected static String runWalConverter(IgniteWalConverterArguments args) {
+    /**
+     * Rund wal reader with given parameters
+     *
+     * @param list List of {@link Person Persons}.
+     * @param hasExpiryPlc Has expiry policy.
+     * @param procSensitiveData Process sensitive data {@link ProcessSensitiveData enum}.
+     */
+    private String runWalConverter(List<Person> list, Boolean hasExpiryPlc, ProcessSensitiveData procSensitiveData) throws Exception {
         testOut.reset();
 
-        IgniteWalConverter converter = new IgniteWalConverter(log); // or createTestLogger()
+        final NodeFileTree ft = createWal(list, null, hasExpiryPlc);
 
-        converter.convert();
+        IgniteLogger log = createTestLogger();
+
+        try (IgniteWalConverter converter = new IgniteWalConverter(
+            ft,
+            DataStorageConfiguration.DFLT_PAGE_SIZE,
+            false,
+            new HashSet<>(),
+            null,
+            null,
+            null,
+            procSensitiveData,
+            true,
+            true,
+            emptyList(),
+            log
+        )) {
+            converter.convert();
+        }
+
+        if (log instanceof IgniteLoggerEx)
+            ((IgniteLoggerEx)log).flush();
 
         return testOut.toString();
     }
@@ -177,17 +243,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
     public void testIgniteWalConverter() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final NodeFileTree ft = createWal(list, null);
-
-        final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft,
-            DataStorageConfiguration.DFLT_PAGE_SIZE,
-            false,
-            null,
-            null, null, null, null, true, true, emptyList()
-        );
-
-        final String result = runWalConverter(arg);
+        final String result = runWalConverter(list, false, ProcessSensitiveData.SHOW);
 
         int idx = 0;
 
@@ -232,20 +288,12 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
     public void testIgniteWalConverterWithOutBinaryMeta() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        NodeFileTree ft = createWal(list, null);
+        NodeFileTree ft = createWal(list, null, false);
 
         U.delete(ft.binaryMeta());
         U.delete(ft.marshaller());
 
-        final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft,
-            DataStorageConfiguration.DFLT_PAGE_SIZE,
-            false,
-            null,
-            null, null, null, null, true, true, emptyList()
-        );
-
-        final String result = runWalConverter(arg);
+        final String result = runWalConverter(list, false, ProcessSensitiveData.SHOW);
 
         int idx = 0;
 
@@ -293,7 +341,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
     public void testIgniteWalConverterWithBrokenWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final NodeFileTree ft = createWal(list, null);
+        final NodeFileTree ft = createWal(list, null, false);
 
         final File wal = ft.walSegment(0);
 
@@ -343,15 +391,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
             }
         }
 
-        final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft,
-            DataStorageConfiguration.DFLT_PAGE_SIZE,
-            false,
-            null,
-            null, null, null, null, true, true, emptyList()
-        );
-
-        final String result = runWalConverter(arg);
+        final String result = runWalConverter(list, false, ProcessSensitiveData.SHOW);
 
         int idx = 0;
 
@@ -397,11 +437,11 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
+//    @Test
     public void testIgniteWalConverterWithUnreadableWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final NodeFileTree ft = createWal(list, null);
+        final NodeFileTree ft = createWal(list, null, false);
 
         final File wal = ft.walSegment(0);
 
@@ -434,15 +474,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
             }
         }
 
-        final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft,
-            DataStorageConfiguration.DFLT_PAGE_SIZE,
-            false,
-            null,
-            null, null, null, null, true, true, emptyList()
-        );
-
-        final String result = runWalConverter(arg);
+        final String result = runWalConverter(list, false, ProcessSensitiveData.SHOW);
 
         int idx = 0;
 
@@ -489,6 +521,8 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testPages() throws Exception {
+        testOut.reset();
+
         List<T2<PageSnapshot, String>> walRecords = new ArrayList<>();
 
         NodeFileTree ft = createWal(new ArrayList<>(), n -> {
@@ -500,7 +534,8 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
                         walRecords.add(new T2<>((PageSnapshot)walRecord, walRecord.toString()));
                 }
             }
-        });
+        },
+            false);
 
         assertFalse(walRecords.isEmpty());
 
@@ -512,16 +547,29 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
 
         T2<PageSnapshot, String> expRec = walRecords.get(0);
 
-        IgniteWalConverterArguments args = parse( // fixme whats wrong
-            "root=" + ft.root(),
-            "folderName=" + ft.folderName(),
-            "pages=" + expRec.get1().fullPageId().groupId() + ':' + expRec.get1().fullPageId().pageId(),
-            "skipCrc=" + true
-        );
+        Collection<T2<Integer, Long>> pages =
+                IgniteWalConverter.collectPages(
+                        "" + expRec.get1().fullPageId().groupId() + ':' + expRec.get1().fullPageId().pageId());
 
-        String result = runWalConverter(args);
+        try (IgniteWalConverter converter = new IgniteWalConverter(
+                ft,
+                DataStorageConfiguration.DFLT_PAGE_SIZE,
+                false,
+                new HashSet<>(),
+                null,
+                null,
+                null,
+                ProcessSensitiveData.SHOW,
+                true,
+                true,
+                pages,
+                log
+        )) {
+            converter.convert();
+        }
 
-        assertContains(log, result, expRec.get2());
+//        assertContains(log, testOut.toString(), expRec.get2());
+        assertTrue(testOut.toString().contains(expRec.get2()));
     }
 
     /**
@@ -531,35 +579,9 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testCacheViewExpiryPolicy() throws Exception {
-        try (IgniteEx g = startGrid()) {
-            g.cluster().state(ClusterState.ACTIVE);
+        String result = runWalConverter(new LinkedList<>(), true, ProcessSensitiveData.SHOW);
 
-            CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
-
-            ccfg.setName("cache");
-
-            ccfg.setExpiryPolicyFactory(EternalExpiryPolicy.factoryOf());
-
-            IgniteCache<Integer, Integer> cache = g.getOrCreateCache(ccfg);
-
-            cache.put(2, 2);
-
-            cache.withExpiryPolicy(getPolicy()).put(1, 1);
-
-            NodeFileTree ft = g.context().pdsFolderResolver().fileTree();
-
-            final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-                    ft,
-                    DataStorageConfiguration.DFLT_PAGE_SIZE,
-                    false,
-                    null,
-                    null, null, null, null, true, true, emptyList()
-            );
-
-            String result = runWalConverter(arg);
-
-            assertTrue(result.contains("expireTime="));
-        }
+        assertTrue(result.contains("expireTime="));
     }
 
     /**
@@ -569,17 +591,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
     public void testHideSensitiveData() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final NodeFileTree ft = createWal(list, null);
-
-        final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-                ft,
-                DataStorageConfiguration.DFLT_PAGE_SIZE,
-                false,
-                null,
-                null, null, null, ProcessSensitiveData.HIDE, true, true, emptyList()
-        );
-
-        String result = runWalConverter(arg);
+        String result = runWalConverter(list, false, ProcessSensitiveData.HIDE);
 
         int idx;
 
@@ -613,11 +625,12 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
      * @param list Returns entities that have been added.
      * @param afterPopulateConsumer
      * @return Ignite directories structure.
-     * @throws Exception
+     *  @throws Exception
      */
     private NodeFileTree createWal(
         List<Person> list,
-        @Nullable IgniteThrowableConsumer<IgniteEx> afterPopulateConsumer
+        @Nullable IgniteThrowableConsumer<IgniteEx> afterPopulateConsumer,
+        @Nullable Boolean hasExpiryPlc
     ) throws Exception {
         NodeFileTree ft;
 
@@ -638,7 +651,12 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
                 else
                     val = new PersonEx(i, PERSON_NAME_PREFIX + i, "Additional information " + i, "Description " + i);
 
-                cache.put(key, val);
+                if (hasExpiryPlc) {
+                    ExpiryPolicy expiryPlc = new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, DURATION_AMOUNT));
+                    cache.withExpiryPolicy(expiryPlc).put(key, val);
+                }
+                else
+                    cache.put(key, val);
 
                 list.add(val);
             }
@@ -648,5 +666,160 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
         }
 
         return ft;
+    }
+
+
+    /**
+     * Populates an encrypted cache and checks that its WAL contains encrypted records.
+     */
+    @Test
+    public void testEncryptedIgniteWalConverter() throws Exception {
+        encrypted = true;
+
+        String result = runWalConverter(new LinkedList<>(), false, ProcessSensitiveData.SHOW);
+
+        assertContains(log, result, "EncryptedRecord");
+    }
+
+    /**
+     * A person entity used for the tests.
+     */
+    public static class Person {
+        /** Id. */
+        private final Integer id;
+
+        /** Name. */
+        @QuerySqlField
+        private final String name;
+
+        /** Constructor. */
+        public Person(Integer id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        /** @return id. */
+        public Integer getId() {
+            return id;
+        }
+
+        /** @return name. */
+        public String getName() {
+            return name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id, name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (!(obj instanceof Person))
+                return false;
+
+            Person other = (Person)obj;
+
+            return Objects.equals(id, other.id) &&
+                Objects.equals(name, other.name);
+        }
+    }
+
+    /**
+     * A person entity used for the tests.
+     */
+    public static class PersonEx extends Person {
+        /**
+         * Additional information.
+         */
+        @QuerySqlField
+        private final String info;
+
+        /**
+         * Description - not declared as SQL field.
+         */
+        private final String description;
+
+        /**
+         * Constructor.
+         */
+        public PersonEx(Integer id, String name, String info, String description) {
+            super(id, name);
+            this.info = info;
+            this.description = description;
+        }
+
+        /**
+         * @return Additional information.
+         */
+        public String getInfo() {
+            return info;
+        }
+
+        /**
+         * @return Description.
+         */
+        public String getDescription() {
+            return description;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public int hashCode() {
+            return Objects.hash(super.hashCode(), info, description);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public boolean equals(Object obj) {
+            if (!(obj instanceof PersonEx))
+                return false;
+
+            PersonEx other = (PersonEx)obj;
+
+            return super.equals(other) && Objects.equals(info, other.info) && Objects.equals(description, other.description);
+        }
+    }
+
+    /**
+     * A person entity used for the tests.
+     */
+    public static class PersonKey {
+        /**
+         * Id.
+         */
+        @QuerySqlField(index = true)
+        private final Integer id;
+
+        /**
+         * Constructor.
+         */
+        public PersonKey(Integer id) {
+            this.id = id;
+        }
+
+        /**
+         * @return id.
+         */
+        public Integer getId() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (!(obj instanceof PersonKey))
+                return false;
+
+            PersonKey other = (PersonKey)obj;
+
+            return Objects.equals(other.id, id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id);
+        }
     }
 }

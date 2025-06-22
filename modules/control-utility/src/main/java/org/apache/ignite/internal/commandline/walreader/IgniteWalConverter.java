@@ -133,7 +133,6 @@ public class IgniteWalConverter implements AutoCloseable {
      */
     private static final String PAGES = "--pages";
 
-
     /**
      * Record pattern for {@link #PAGES}.
      */
@@ -199,7 +198,6 @@ public class IgniteWalConverter implements AutoCloseable {
      */
     private final IgniteLogger log;
 
-
     /**
      * @param ft               Node file tree.
      * @param pageSize         Size of pages, which was selected for file store (1024, 2048, 4096, etc).
@@ -216,15 +214,15 @@ public class IgniteWalConverter implements AutoCloseable {
      */
     public IgniteWalConverter(
             NodeFileTree ft,
-            Integer pageSize,
-            Boolean keepBinary,
+            @Nullable Integer pageSize,
+            @Nullable Boolean keepBinary,
             Set<WALRecord.RecordType> recordTypes,
-            Long fromTime,
-            Long toTime,
-            String recordContainsText,
+            @Nullable Long fromTime,
+            @Nullable Long toTime,
+            @Nullable String recordContainsText,
             ProcessSensitiveData procSensitiveData,
-            Boolean printStat,
-            Boolean skipCrc,
+            @Nullable Boolean printStat,
+            @Nullable Boolean skipCrc,
             Collection<T2<Integer, Long>> pages,
             IgniteLogger log
     ) {
@@ -265,7 +263,6 @@ public class IgniteWalConverter implements AutoCloseable {
                     .build(),
                 optionalArgument(RECORD_TYPES, String.class)
                     .withUsage("Comma-separated WAL record types (TX_RECORD, DATA_RECORD, etc.).")
-                    .withDefault("all")
                     .build(),
                 optionalArgument(WAL_TIME_FROM_MILLIS, Long.class)
                     .withUsage("The start time interval for the record time in milliseconds.")
@@ -303,11 +300,11 @@ public class IgniteWalConverter implements AutoCloseable {
 
         p.parse(asList(args).listIterator());
 
-        File root = new File(String.valueOf(p.get(ROOT_DIR)));
+        File root = new File((String) p.get(ROOT_DIR));
 
         NodeFileTree ft = ensureNodeStorageExists(root, p.get(FOLDER_NAME));
 
-        Collection<T2<Integer, Long>> pages = collectPages( p.get(PAGES));
+        Collection<T2<Integer, Long>> pages = collectPages(p.get(PAGES));
 
         Set<WALRecord.RecordType> validRecordTypes = validateRecordTypes(p.get(RECORD_TYPES));
 
@@ -333,6 +330,9 @@ public class IgniteWalConverter implements AutoCloseable {
      * @param recordTypesStr Record types string.
      */
     static Set<WALRecord.RecordType> validateRecordTypes(String recordTypesStr) {
+        if (recordTypesStr == null || recordTypesStr.isEmpty())
+            return new HashSet<>();
+
         Set<WALRecord.RecordType> validRecordTypes = new HashSet<>();
 
         final String[] recordTypesStrArr = recordTypesStr.split(",");
@@ -375,6 +375,9 @@ public class IgniteWalConverter implements AutoCloseable {
      * @param pagesStr Pages string.
      */
     static Collection<T2<Integer, Long>> collectPages(String pagesStr) {
+        if (pagesStr == null || pagesStr.isEmpty())
+            return emptyList();
+
         File pagesFile = new File(pagesStr);
 
         if (pagesFile.exists())
@@ -466,7 +469,6 @@ public class IgniteWalConverter implements AutoCloseable {
         return res.isEmpty() ? emptyList() : res;
     }
 
-
     /**
      * Write to out WAL log data in human-readable form.
      */
@@ -522,7 +524,7 @@ public class IgniteWalConverter implements AutoCloseable {
                     boolean print = true;
 
                     if (record instanceof TimeStampRecord)
-                        print = withinTimeRange((TimeStampRecord) record, fromTime, toTime);
+                        print = withinTimeRange((TimeStampRecord)record, fromTime, toTime);
 
                     final String recordStr = toString(record, procSensitiveData);
 
@@ -530,7 +532,8 @@ public class IgniteWalConverter implements AutoCloseable {
                         log.info(recordStr);
                 }
             }
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             log.warning("Getting wal iterator failed [grpId:pageId =" + pages + ']');
         }
 
@@ -574,7 +577,8 @@ public class IgniteWalConverter implements AutoCloseable {
 
             if (curIdx != null && walFileDescriptors != null && curIdx < walFileDescriptors.size())
                 res = walFileDescriptors.get(curIdx).getAbsolutePath();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new IgniteException("Failed to read current WAL file path", e);
         }
 
