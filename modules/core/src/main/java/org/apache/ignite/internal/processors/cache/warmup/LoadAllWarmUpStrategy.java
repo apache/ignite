@@ -118,7 +118,7 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
                 .map(LoadPartition::pages)
                 .collect(averagingInt(i -> i)).intValue();
 
-            if (idxPart.pages() > avgPartPagesCnt) {
+            if (avgPartPagesCnt != 0 && idxPart.pages() > avgPartPagesCnt) {
                 List<LoadPartition> idxParts = new ArrayList<>(idxPart.pages() / avgPartPagesCnt + 1);
 
                 for (int i = 0; i < idxPart.pages(); i += avgPartPagesCnt)
