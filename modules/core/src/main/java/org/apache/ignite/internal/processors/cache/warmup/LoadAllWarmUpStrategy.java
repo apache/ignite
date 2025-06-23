@@ -22,11 +22,14 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.LoadAllWarmUpConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -34,9 +37,11 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
  * "Load all" warm-up strategy, which loads pages to persistent data region
@@ -99,7 +104,7 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
                 loadDataInfo.keySet().stream().map(CacheGroupContext::cacheOrGroupName).collect(toList()) + ']');
         }
 
-        long loadedPageCnt = 0;
+        AtomicLong loadedPageCnt = new AtomicLong();
 
         for (Map.Entry<CacheGroupContext, List<LoadPartition>> e : loadDataInfo.entrySet()) {
             CacheGroupContext grp = e.getKey();
@@ -113,31 +118,40 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
 
             PageMemoryEx pageMemEx = (PageMemoryEx)region.pageMemory();
 
-            for (LoadPartition part : parts) {
-                long pageId = pageMemEx.partitionMetaPageId(grp.groupId(), part.part());
+            GridKernalContext ctx = grp.shared().kernalContext();
 
-                for (int i = 0; i < part.pages(); i++, pageId++, loadedPageCnt++) {
-                    if (stop) {
-                        if (log.isInfoEnabled()) {
-                            log.info("Stop warm-up cache group with loaded statistics [name="
-                                + grp.cacheOrGroupName() + ", pageCnt=" + loadedPageCnt
-                                + ", remainingPageCnt=" + (availableLoadPageCnt - loadedPageCnt) + ']');
+            doInParallel(
+                U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2),
+                ctx.pools().getSystemExecutorService(),
+                parts,
+                part -> {
+                    long pageId = pageMemEx.partitionMetaPageId(grp.groupId(), part.part());
+
+                    for (int i = 0; i < part.pages(); i++, pageId++, loadedPageCnt.incrementAndGet()) {
+                        if (stop) {
+                            if (log.isInfoEnabled()) {
+                                log.info("Stop warm-up cache group with loaded statistics [name="
+                                    + grp.cacheOrGroupName() + ", pageCnt=" + loadedPageCnt.get()
+                                    + ", remainingPageCnt=" + (availableLoadPageCnt - loadedPageCnt.get()) + ']');
+                            }
+
+                            return null;
                         }
 
-                        return;
+                        long pagePtr = -1;
+
+                        try {
+                            pagePtr = pageMemEx.acquirePage(grp.groupId(), pageId);
+                        }
+                        finally {
+                            if (pagePtr != -1)
+                                pageMemEx.releasePage(grp.groupId(), pageId, pagePtr);
+                        }
                     }
 
-                    long pagePtr = -1;
-
-                    try {
-                        pagePtr = pageMemEx.acquirePage(grp.groupId(), pageId);
-                    }
-                    finally {
-                        if (pagePtr != -1)
-                            pageMemEx.releasePage(grp.groupId(), pageId, pagePtr);
-                    }
+                    return null;
                 }
-            }
+            );
         }
     }
 
