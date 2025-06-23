@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static java.util.stream.Collectors.averagingInt;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
@@ -110,6 +111,26 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
             CacheGroupContext grp = e.getKey();
             List<LoadPartition> parts = e.getValue();
 
+            LoadPartition idxPart = parts.get(0);
+
+            int avgPartPagesCnt = parts.stream()
+                .filter(p -> p.part() != INDEX_PARTITION)
+                .map(LoadPartition::pages)
+                .collect(averagingInt(i -> i)).intValue();
+
+            if (idxPart.pages() > avgPartPagesCnt) {
+                List<LoadPartition> idxParts = new ArrayList<>(idxPart.pages() / avgPartPagesCnt + 1);
+
+                for (int i = 0; i < idxPart.pages(); i += avgPartPagesCnt)
+                    idxParts.add(new LoadPartition(idxPart.part(), Math.min(idxPart.pages() - i, avgPartPagesCnt), i));
+
+                parts.remove(0);
+
+                idxParts.addAll(parts);
+
+                parts = idxParts;
+            }
+
             if (log.isInfoEnabled()) {
                 log.info("Start warm-up cache group, with estimated statistics [name=" + grp.cacheOrGroupName()
                     + ", partCnt=" + parts.size() + ", pageCnt="
@@ -126,6 +147,8 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
                 parts,
                 part -> {
                     long pageId = pageMemEx.partitionMetaPageId(grp.groupId(), part.part());
+
+                    pageId += part.startPageIdx();
 
                     for (int i = 0; i < part.pages(); i++, pageId++, loadedPageCnt.incrementAndGet()) {
                         if (stop) {
@@ -208,14 +231,14 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
             for (int j = -1; j < locParts.size() && availableLoadPageCnt > 0; j++) {
                 int p = j == -1 ? INDEX_PARTITION : locParts.get(j).id();
 
-                long partPageCnt = grp.shared().pageStore().pages(grp.groupId(), p);
+                int partPageCnt = grp.shared().pageStore().pages(grp.groupId(), p);
 
                 if (partPageCnt > 0) {
-                    long pageCnt = (availableLoadPageCnt - partPageCnt) >= 0 ? partPageCnt : availableLoadPageCnt;
+                    int pageCnt = (availableLoadPageCnt - partPageCnt) >= 0 ? partPageCnt : (int)availableLoadPageCnt;
 
                     availableLoadPageCnt -= pageCnt;
 
-                    loadableGrps.computeIfAbsent(grp, grpCtx -> new ArrayList<>()).add(new LoadPartition(p, pageCnt));
+                    loadableGrps.computeIfAbsent(grp, grpCtx -> new ArrayList<>()).add(new LoadPartition(p, pageCnt, 0));
                 }
             }
         }
@@ -231,7 +254,10 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
         private final int part;
 
         /** Number of pages to load. */
-        private final long pages;
+        private final int pages;
+
+        /** Index of first page to load. */
+        private final int startPageIdx;
 
         /**
          * Constructor.
@@ -239,12 +265,13 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
          * @param part Partition id.
          * @param pages Number of pages to load.
          */
-        public LoadPartition(int part, long pages) {
+        public LoadPartition(int part, int pages, int startPageIdx) {
             assert part >= 0 : "Partition id cannot be negative.";
             assert pages > 0 : "Number of pages to load must be greater than zero.";
 
             this.part = part;
             this.pages = pages;
+            this.startPageIdx = startPageIdx;
         }
 
         /**
@@ -261,8 +288,17 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
          *
          * @return Number of pages to load.
          */
-        public long pages() {
+        public int pages() {
             return pages;
+        }
+
+        /**
+         * Return index of first page to load.
+         *
+         * @return Index of first page to load.
+         */
+        public int startPageIdx() {
+            return startPageIdx;
         }
 
         /** {@inheritDoc} */
