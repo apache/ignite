@@ -56,6 +56,15 @@ public class JavaThinCompatibilityStoragePathTest extends AbstractClientCompatib
     }
 
     /** {@inheritDoc} */
+    @Override protected void processRemoteConfiguration(IgniteConfiguration cfg) {
+        super.processRemoteConfiguration(cfg);
+
+        cfg.setCacheConfiguration(new CacheConfiguration<>("nodeCache"))
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         U.delete(new File(U.defaultWorkDirectory()));
         super.afterTest();
