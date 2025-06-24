@@ -264,6 +264,7 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
          *
          * @param part Partition id.
          * @param pages Number of pages to load.
+         * @param startPageIdx Index of first page to load.
          */
         public LoadPartition(int part, int pages, int startPageIdx) {
             assert part >= 0 : "Partition id cannot be negative.";
