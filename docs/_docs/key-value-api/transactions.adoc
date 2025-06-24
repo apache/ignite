@@ -85,6 +85,11 @@ include::code-snippets/cpp/src/transactions.cpp[tag=transactions-execution,inden
 
 --
 
+[WARNING]
+====
+When using the `try-catch-finally` construct, make sure to call the `close()` method for correct transaction closure, or use the `try-with-resources` block as shown in the example above.
+====
+
 ////
 == Two-Phase-Commit
 
