@@ -125,6 +125,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private UUID nodeId;
 
+    /** Flag to disable metrics for some tests. */
+    private boolean metricsEnabled = true;
+
     /** */
     private static ThreadLocal<TcpDiscoverySpi> nodeSpi = new ThreadLocal<>();
 
@@ -185,7 +188,10 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeProperties();
 
-        cfg.setMetricsUpdateFrequency(1000);
+        if (!metricsEnabled) {
+            cfg.setMetricsUpdateFrequency(Long.MAX_VALUE);
+            cfg.setClientFailureDetectionTimeout(Long.MAX_VALUE);
+        }
 
         if (!igniteInstanceName.contains("LoopbackProblemTest"))
             cfg.setLocalHost("127.0.0.1");
@@ -1938,6 +1944,18 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Waits for pending messages collected by a given {@link TcpDiscoverySpi} to be discarded.
+     * @param spi {@link TcpDiscoverySpi} collecting pending messages.
+     * @return {@code true} If pending messages were discarded in a timeout period.
+     * @throws IgniteInterruptedCheckedException If wait was interrupted.
+     */
+    private boolean waitPendingMessagesDiscarded(TcpDiscoverySpi spi) throws IgniteInterruptedCheckedException {
+        Iterable<?> pendingMsgsIterable = GridTestUtils.getFieldValue(spi.impl, "msgWorker", "pendingMsgs");
+
+        return GridTestUtils.waitForCondition(() -> !pendingMsgsIterable.iterator().hasNext(), 1000);
+    }
+
+    /**
      * @param segPlc Segmentation policy.
      * @throws Exception If failed.
      */
@@ -2037,6 +2055,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     @Test
     public void testDiscoveryEventsDiscard() throws Exception {
         try {
+            // disable metrics to avoid sending metrics messages as they may mess with pending messages counting.
+            metricsEnabled = false;
+
             TestEventDiscardSpi spi = new TestEventDiscardSpi();
 
             nodeSpi.set(spi);
@@ -2048,6 +2069,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             ignite0.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)); // Send custom message.
 
             ignite0.destroyCache(DEFAULT_CACHE_NAME); // Send custom message.
+
+            // We need to wait for discartion of pending messages from asynchronous processes like removing cache
+            // metrics from DMS. Initially the test was correct as createCache/destroyCache methods are synchronous
+            // and block test-runner thread for long enough for pending messages to be discarded.
+            // But at some point aforementioned operations were added and implicit assumption the test relies on was broken.
+            boolean pendingMsgsDiscarded = waitPendingMessagesDiscarded(spi);
+            assertTrue(pendingMsgsDiscarded);
 
             stopGrid(1);
 
@@ -2063,6 +2091,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+
+            metricsEnabled = true;
         }
     }
 

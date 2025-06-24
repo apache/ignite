@@ -1230,7 +1230,6 @@ public class RexImpTable {
             //     return x == null || y == null ? null : x OP y
             //   ignore_null
             //     return x == null ? y : y == null ? x : x OP y
-
             // If one or both operands have ANY type, use the late-binding backup
             // method.
             if (anyAnyOperands(call))
