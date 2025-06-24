@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgniteTcBotIni
 import org.apache.ignite.internal.processors.cache.persistence.db.IndexingMultithreadedLoadContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.LongDestroyDurableBackgroundTaskTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.MultipleParallelCacheDeleteDeadlockTest;
+import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpStrategyWithIndexingTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingWalRestoreTest;
@@ -75,6 +76,7 @@ import org.junit.runners.Suite;
     DropIndexTest.class,
     MaintenanceRebuildIndexUtilsSelfTest.class,
     IndexWithSameNameH2Test.class,
+    LoadAllWarmUpStrategyWithIndexingTest.class
 })
 public class IgnitePdsWithIndexingTestSuite {
 }
