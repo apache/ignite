@@ -39,9 +39,9 @@ import static org.apache.ignite.internal.commandline.walreader.ProcessSensitiveD
  */
 class DataEntryWrapper extends DataEntry {
     /**
-     * Source DataEntry.
+     * Wrapped data entry.
      */
-    private final DataEntry source;
+    private final DataEntry entry;
 
     /** Strategy for the processing of sensitive data. */
     private final ProcessSensitiveData sensitiveData;
@@ -69,7 +69,7 @@ class DataEntryWrapper extends DataEntry {
             dataEntry.flags()
         );
 
-        this.source = dataEntry;
+        this.entry = dataEntry;
 
         this.sensitiveData = sensitiveData;
     }
@@ -78,28 +78,28 @@ class DataEntryWrapper extends DataEntry {
     @Override public String toString() {
         final String keyStr;
         final String valStr;
-        if (source instanceof UnwrapDataEntry) {
-            final UnwrapDataEntry unwrappedDataEntry = (UnwrapDataEntry)this.source;
+        if (entry instanceof UnwrapDataEntry) {
+            final UnwrapDataEntry unwrappedDataEntry = (UnwrapDataEntry)this.entry;
 
-            keyStr = toString(unwrappedDataEntry.unwrappedKey(), this.source.key());
+            keyStr = toString(unwrappedDataEntry.unwrappedKey(), this.entry.key());
 
-            valStr = toString(unwrappedDataEntry.unwrappedValue(), this.source.value());
+            valStr = toString(unwrappedDataEntry.unwrappedValue(), this.entry.value());
         }
-        else if (source instanceof RecordDataV1Serializer.EncryptedDataEntry) {
+        else if (entry instanceof RecordDataV1Serializer.EncryptedDataEntry) {
             keyStr = "<encrypted>";
 
             valStr = "<encrypted>";
         }
         else {
-            keyStr = toString(null, this.source.key());
+            keyStr = toString(null, this.entry.key());
 
-            valStr = toString(null, this.source.value());
+            valStr = toString(null, this.entry.value());
         }
 
-        return new SB(this.source.getClass().getSimpleName())
+        return new SB(this.entry.getClass().getSimpleName())
             .a("[k = ").a(keyStr)
             .a(", v = [").a(valStr).a("]")
-            .a(", super = [").a(S.toString(DataEntry.class, source)).a("]]")
+            .a(", super = [").a(S.toString(DataEntry.class, entry)).a("]]")
             .toString();
     }
 
@@ -137,7 +137,7 @@ class DataEntryWrapper extends DataEntry {
             try {
                 CacheObjectValueContext ctx = null;
                 try {
-                    ctx = IgniteUtils.field(source, "cacheObjValCtx");
+                    ctx = IgniteUtils.field(entry, "cacheObjValCtx");
                 }
                 catch (Exception e) {
                     throw new IgniteException(e);

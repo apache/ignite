@@ -51,6 +51,6 @@ class ProcessSensitiveDataUtils {
      * Private constructor.
      */
     private ProcessSensitiveDataUtils() {
-        throw new RuntimeException("Don't create.");
+        // No-op
     }
 }

@@ -244,6 +244,8 @@ public class IgniteWalReader implements AutoCloseable {
      * @param args Args.
      */
     public static void main(String[] args) {
+        IgniteLogger log = CommandHandler.setupJavaLogger("wal-reader", IgniteWalReader.class);
+
         CLIArgumentParser p = new CLIArgumentParser(
             Collections.emptyList(),
             asList(
@@ -293,7 +295,7 @@ public class IgniteWalReader implements AutoCloseable {
         );
 
         if (args.length == 0) {
-            System.out.println(p.usage());
+            log.info(p.usage());
 
             return;
         }
@@ -320,7 +322,7 @@ public class IgniteWalReader implements AutoCloseable {
                 p.get(PRINT_STAT),
                 p.get(SKIP_CRC),
                 pages,
-                CommandHandler.setupJavaLogger("wal-reader", IgniteWalReader.class)
+                log
         )) {
             reader.read();
         }
