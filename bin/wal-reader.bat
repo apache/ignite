@@ -162,7 +162,7 @@ if %ENABLE_ASSERTIONS% == 1 set CONTROL_JVM_OPTS=%CONTROL_JVM_OPTS% -ea
 :: Set main class to start service (grid node by default).
 ::
 
-if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.internal.commandline.walreader.IgniteWalConverter
+if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.internal.commandline.walreader.IgniteWalReader
 
 ::
 :: Final CONTROL_JVM_OPTS for Java 9+ compatibility

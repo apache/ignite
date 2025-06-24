@@ -62,9 +62,9 @@ import static org.apache.ignite.testframework.wal.record.RecordUtils.isIncludeIn
 
 /**
  * Class for testing sensitive data when reading {@link WALRecord} using
- * {@link IgniteWalConverter}.
+ * {@link IgniteWalReader}.
  */
-public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest {
+public class IgniteWalReaderSensitiveDataTest extends GridCommonAbstractTest {
     /** Sensitive data prefix. */
     private static final String SENSITIVE_DATA_VALUE_PREFIX = "must_hide_it_";
 
@@ -128,7 +128,6 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = crd.configuration();
 
         ft = kernalCtx.pdsFolderResolver().fileTree();
-//        pageSize = cfg.getDataStorageConfiguration().getPageSize();
 
         System.out.println("ATTENTION PAGE SIZE" + cfg.getDataStorageConfiguration().getPageSize());
 
@@ -220,7 +219,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Executing {@link IgniteWalConverter} with checking the content of its output.
+     * Executing {@link IgniteWalReader} with checking the content of its output.
      *
      * @param procSensitiveData Strategy for the processing of sensitive data.
      * @param containsData         Contains or not elements {@link #sensitiveValues} in utility output.
@@ -245,12 +244,12 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
         args.add("--folder-name");
         args.add(ft.folderName());
 
-        if (procSensitiveData != null){
+        if (procSensitiveData != null) {
             args.add("--process-sensitive-data");
             args.add(procSensitiveData.name());
         }
 
-        IgniteWalConverter.main(args.toArray(new String[args.size()]));
+        IgniteWalReader.main(args.toArray(new String[args.size()]));
 
         String testOutStr = testOut.toString();
 

@@ -105,7 +105,7 @@ fi
 # Set main class to start service (grid node by default).
 #
 if [ "${MAIN_CLASS:-}" = "" ]; then
-    MAIN_CLASS=org.apache.ignite.internal.commandline.walreader.IgniteWalConverter
+    MAIN_CLASS=org.apache.ignite.internal.commandline.walreader.IgniteWalReader
 fi
 
 #
