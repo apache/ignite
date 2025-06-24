@@ -119,16 +119,16 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
                 .collect(averagingInt(i -> i)).intValue();
 
             if (avgPartPagesCnt != 0 && idxPart.pages() > avgPartPagesCnt) {
-                List<LoadPartition> idxParts = new ArrayList<>(idxPart.pages() / avgPartPagesCnt + 1);
+                // Split index partition into chunks to balance threads load.  It's needed since
+                // index partition is usually much larger than the data one if indexing is enabled.
+                List<LoadPartition> newParts = new ArrayList<>(idxPart.pages() / avgPartPagesCnt + parts.size());
 
                 for (int i = 0; i < idxPart.pages(); i += avgPartPagesCnt)
-                    idxParts.add(new LoadPartition(idxPart.part(), Math.min(idxPart.pages() - i, avgPartPagesCnt), i));
+                    newParts.add(new LoadPartition(idxPart.part(), Math.min(idxPart.pages() - i, avgPartPagesCnt), i));
 
-                parts.remove(0);
+                newParts.addAll(parts.subList(1, parts.size()));
 
-                idxParts.addAll(parts);
-
-                parts = idxParts;
+                parts = newParts;
             }
 
             if (log.isInfoEnabled()) {
