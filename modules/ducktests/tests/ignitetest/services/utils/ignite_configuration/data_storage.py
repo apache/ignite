@@ -21,6 +21,7 @@ from typing import NamedTuple
 
 from ignitetest.utils.bean import Bean
 
+
 class DataRegionConfiguration(NamedTuple):
     """
     Ignite DataRegion Configuration
@@ -35,6 +36,7 @@ class DataRegionConfiguration(NamedTuple):
     metrics_rate_time_interval: int = None
     checkpoint_page_buffer_size: int = None
     warm_up_configuration: Bean = None
+
 
 class DataStorageConfiguration(NamedTuple):
     """
