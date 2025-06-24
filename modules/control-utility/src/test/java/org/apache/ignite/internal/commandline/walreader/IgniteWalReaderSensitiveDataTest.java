@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline.walreader;
 
 import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -46,12 +45,11 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.junit.Test;
 
 import static java.lang.String.valueOf;
-import static java.lang.System.setOut;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -62,32 +60,22 @@ import static org.apache.ignite.testframework.wal.record.RecordUtils.isIncludeIn
 
 /**
  * Class for testing sensitive data when reading {@link WALRecord} using
- * {@link IgniteWalConverter}.
+ * {@link IgniteWalReader}.
  */
-public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest {
+public class IgniteWalReaderSensitiveDataTest extends GridCommandHandlerAbstractTest {
     /** Sensitive data prefix. */
     private static final String SENSITIVE_DATA_VALUE_PREFIX = "must_hide_it_";
 
     /** Node file tree. */
     private static NodeFileTree ft;
 
-    /** System out. */
-    private static PrintStream sysOut;
-
     /** Sensitive data values. */
     private static final List<String> sensitiveValues = new ArrayList<>();
-
-    /**
-     * Test out - can be injected via {@link #injectTestSystemOut()} instead
-     * of System.out and analyzed in test.
-     */
-    private static ByteArrayOutputStream testOut;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        sysOut = System.out;
         testOut = new ByteArrayOutputStream(16 * 1024);
 
         int nodeId = 0;
@@ -125,12 +113,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
 
         wal.flush(null, true);
 
-        IgniteConfiguration cfg = crd.configuration();
-
         ft = kernalCtx.pdsFolderResolver().fileTree();
-//        pageSize = cfg.getDataStorageConfiguration().getPageSize();
-
-        System.out.println("ATTENTION PAGE SIZE" + cfg.getDataStorageConfiguration().getPageSize());
 
         stopGrid(nodeId);
     }
@@ -139,21 +122,11 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        injectTestSystemOut();
+
         clearGridToStringClassCache();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        log.info("Test output for " + getName());
-        log.info("----------------------------------------");
-
-        setOut(sysOut);
-
-        log.info(testOut.toString());
-        resetTestOut();
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -182,30 +155,27 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
     /**
      * Test checks that by default sensitive data is displayed.
      *
-     * @throws Exception If failed.
      */
     @Test
-    public void testShowSensitiveDataByDefault() throws Exception {
+    public void testShowSensitiveDataByDefault() {
         exeWithCheck(null, true, true, identity());
     }
 
     /**
      * Test verifies that sensitive data will be hidden.
      *
-     * @throws Exception If failed.
      */
     @Test
-    public void testHideSensitiveData() throws Exception {
+    public void testHideSensitiveData() {
         exeWithCheck(ProcessSensitiveData.HIDE, false, false, identity());
     }
 
     /**
      * Test verifies that sensitive data should be replaced with hash.
      *
-     * @throws Exception If failed.
      */
     @Test
-    public void testHashSensitiveData() throws Exception {
+    public void testHashSensitiveData() {
         exeWithCheck(ProcessSensitiveData.HASH, true, false, s -> valueOf(s.hashCode()));
     }
 
@@ -220,23 +190,20 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Executing {@link IgniteWalConverter} with checking the content of its output.
+     * Executing {@link IgniteWalReader} with checking the content of its output.
      *
      * @param procSensitiveData Strategy for the processing of sensitive data.
      * @param containsData         Contains or not elements {@link #sensitiveValues} in utility output.
      * @param containsPrefix       Contains or not {@link #SENSITIVE_DATA_VALUE_PREFIX} in utility output.
      * @param converter            Converting elements {@link #sensitiveValues} for checking in utility output.
-     * @throws Exception If failed.
      */
     private void exeWithCheck(
         ProcessSensitiveData procSensitiveData,
         boolean containsData,
         boolean containsPrefix,
         Function<String, String> converter
-    ) throws Exception {
+    ) {
         requireNonNull(converter);
-
-        injectTestSystemOut();
 
         List<String> args = new ArrayList<>();
 
@@ -245,12 +212,12 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
         args.add("--folder-name");
         args.add(ft.folderName());
 
-        if (procSensitiveData != null){
+        if (procSensitiveData != null) {
             args.add("--process-sensitive-data");
             args.add(procSensitiveData.name());
         }
 
-        IgniteWalConverter.main(args.toArray(new String[args.size()]));
+        IgniteWalReader.main(args.toArray(new String[args.size()]));
 
         String testOutStr = testOut.toString();
 
@@ -260,27 +227,13 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
             assertNotContains(log, testOutStr, SENSITIVE_DATA_VALUE_PREFIX);
 
         for (String sensitiveDataVal : sensitiveValues) {
-
             String in = converter.apply(sensitiveDataVal);
+
             if (containsData)
                 assertContains(log, testOutStr, in);
             else
-                assertNotContains(log, testOutStr, converter.apply(sensitiveDataVal));
+                assertNotContains(log, testOutStr, in);
         }
-    }
-
-    /**
-     * Inject {@link #testOut} to System.out for analyze in test.
-     */
-    private void injectTestSystemOut() {
-        setOut(new PrintStream(testOut));
-    }
-
-    /**
-     * Reset {@link #testOut}.
-     */
-    private void resetTestOut() {
-        testOut.reset();
     }
 
     /**

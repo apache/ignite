@@ -69,9 +69,9 @@ import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYST
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
- * Test for IgniteWalConverter
+ * Test for IgniteWalReader
  */
-public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
+public class IgniteWalReaderTest extends GridCommandHandlerAbstractTest {
     /** */
     public static final String PERSON_NAME_PREFIX = "Name ";
 
@@ -83,9 +83,6 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
 
     /** Flag "skip CRC calculation" in RecordV1Serializer save before test and restore after. */
     private boolean beforeSkipCrc;
-
-    /** Encrypted. */
-    public boolean encrypted;
 
     /** */
     @Parameterized.Parameters(name = "cmdHnd={0}")
@@ -105,7 +102,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        encrypted = false;
+        encryptionEnabled = false;
 
         injectTestSystemOut();
 
@@ -141,14 +138,14 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
         igniteConfiguration.setDataStorageConfiguration(getDataStorageConfiguration());
 
         final CacheConfiguration cacheConfiguration = new CacheConfiguration<>()
-            .setEncryptionEnabled(encrypted)
+            .setEncryptionEnabled(encryptionEnabled)
             .setName(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(0)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setIndexedTypes(PersonKey.class, Person.class);
 
-        if (encrypted)
+        if (encryptionEnabled)
             igniteConfiguration.setEncryptionSpi(encryptionSpi());
 
         igniteConfiguration.setCacheConfiguration(cacheConfiguration);
@@ -195,17 +192,19 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
      * @param hasExpiryPlc Has expiry policy.
      * @param procSensitiveData Process sensitive data {@link ProcessSensitiveData enum}.
      */
-    private String runWalConverter(List<Person> list, Boolean hasExpiryPlc, ProcessSensitiveData procSensitiveData) throws Exception {
+    private String runTestWalReader(
+            List<Person> list, Boolean hasExpiryPlc, ProcessSensitiveData procSensitiveData, Boolean keepBinary
+    ) throws Exception {
         testOut.reset();
 
         final NodeFileTree ft = createWal(list, null, hasExpiryPlc);
 
         IgniteLogger log = createTestLogger();
 
-        try (IgniteWalConverter converter = new IgniteWalConverter(
+        try (IgniteWalReader reader = new IgniteWalReader(
             ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            false,
+            keepBinary,
             new HashSet<>(),
             null,
             null,
@@ -216,7 +215,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
             emptyList(),
             log
         )) {
-            converter.convert();
+            reader.read();
         }
 
         if (log instanceof IgniteLoggerEx)
@@ -226,7 +225,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * Checking utility IgniteWalConverter
+     * Checking utility IgniteWalReader
      * <ul>
      *     <li>Start node</li>
      *     <li>Create cache with
@@ -240,10 +239,10 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testIgniteWalConverter() throws Exception {
+    public void testIgniteWalReader() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final String result = runWalConverter(list, false, ProcessSensitiveData.SHOW);
+        final String result = runTestWalReader(list, false, ProcessSensitiveData.SHOW, false);
 
         int idx = 0;
 
@@ -271,7 +270,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * Checking utility IgniteWalConverter without binary_meta
+     * Checking utility IgniteWalReader without binary_meta
      * <ul>
      *     <li>Start node</li>
      *     <li>Create cache with
@@ -285,7 +284,9 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testIgniteWalConverterWithOutBinaryMeta() throws Exception {
+    public void testIgniteWalReaderWithOutBinaryMeta() throws Exception {
+        testOut.reset();
+
         final List<Person> list = new LinkedList<>();
 
         NodeFileTree ft = createWal(list, null, false);
@@ -293,7 +294,26 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
         U.delete(ft.binaryMeta());
         U.delete(ft.marshaller());
 
-        final String result = runWalConverter(list, false, ProcessSensitiveData.SHOW);
+        IgniteLogger log = createTestLogger();
+
+        try (IgniteWalReader reader = new IgniteWalReader(
+                ft,
+                DataStorageConfiguration.DFLT_PAGE_SIZE,
+                false,
+                new HashSet<>(),
+                null,
+                null,
+                null,
+                ProcessSensitiveData.SHOW,
+                true,
+                true,
+                emptyList(),
+                log
+        )) {
+            reader.read();
+        }
+
+        String result = testOut.toString();
 
         int idx = 0;
 
@@ -320,10 +340,13 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
 
             assertTrue("DataRecord for Person(id=" + person.getId() + ") not found", find);
         }
+
+        if (log instanceof IgniteLoggerEx)
+            ((IgniteLoggerEx)log).flush();
     }
 
     /**
-     * Checking utility IgniteWalConverter on broken WAL
+     * Checking utility IgniteWalReader on broken WAL
      * <ul>
      *     <li>Start node</li>
      *     <li>Create cache with
@@ -338,7 +361,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testIgniteWalConverterWithBrokenWal() throws Exception {
+    public void testIgniteWalReaderWithBrokenWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
         final NodeFileTree ft = createWal(list, null, false);
@@ -391,7 +414,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
             }
         }
 
-        final String result = runWalConverter(list, false, ProcessSensitiveData.SHOW);
+        final String result = runTestWalReader(list, false, ProcessSensitiveData.SHOW, false);
 
         int idx = 0;
 
@@ -423,7 +446,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * Checking utility IgniteWalConverter on unreadable WAL
+     * Checking utility IgniteWalReader on unreadable WAL
      * <ul>
      *     <li>Start node</li>
      *     <li>Create cache with
@@ -438,7 +461,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
      * @throws Exception If failed.
      */
 //    @Test
-    public void testIgniteWalConverterWithUnreadableWal() throws Exception {
+    public void testIgniteWalReaderWithUnreadableWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
         final NodeFileTree ft = createWal(list, null, false);
@@ -474,7 +497,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
             }
         }
 
-        final String result = runWalConverter(list, false, ProcessSensitiveData.SHOW);
+        final String result = runTestWalReader(list, false, ProcessSensitiveData.SHOW, true);
 
         int idx = 0;
 
@@ -548,10 +571,12 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
         T2<PageSnapshot, String> expRec = walRecords.get(0);
 
         Collection<T2<Integer, Long>> pages =
-                IgniteWalConverter.collectPages(
+                IgniteWalReader.collectPages(
                         "" + expRec.get1().fullPageId().groupId() + ':' + expRec.get1().fullPageId().pageId());
 
-        try (IgniteWalConverter converter = new IgniteWalConverter(
+        IgniteLogger log = createTestLogger();
+
+        try (IgniteWalReader reader = new IgniteWalReader(
                 ft,
                 DataStorageConfiguration.DFLT_PAGE_SIZE,
                 false,
@@ -565,11 +590,13 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
                 pages,
                 log
         )) {
-            converter.convert();
+            reader.read();
         }
 
-//        assertContains(log, testOut.toString(), expRec.get2());
-        assertTrue(testOut.toString().contains(expRec.get2()));
+        if (log instanceof IgniteLoggerEx)
+            ((IgniteLoggerEx)log).flush();
+
+        assertContains(log, testOut.toString(), expRec.get2());
     }
 
     /**
@@ -579,7 +606,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testCacheViewExpiryPolicy() throws Exception {
-        String result = runWalConverter(new LinkedList<>(), true, ProcessSensitiveData.SHOW);
+        String result = runTestWalReader(new LinkedList<>(), true, ProcessSensitiveData.SHOW, true);
 
         assertTrue(result.contains("expireTime="));
     }
@@ -591,7 +618,7 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
     public void testHideSensitiveData() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        String result = runWalConverter(list, false, ProcessSensitiveData.HIDE);
+        String result = runTestWalReader(list, false, ProcessSensitiveData.HIDE, true);
 
         int idx;
 
@@ -673,10 +700,10 @@ public class IgniteWalConverterTest extends GridCommandHandlerAbstractTest {
      * Populates an encrypted cache and checks that its WAL contains encrypted records.
      */
     @Test
-    public void testEncryptedIgniteWalConverter() throws Exception {
-        encrypted = true;
+    public void testEncryptedIgniteWalReader() throws Exception {
+        encryptionEnabled = true;
 
-        String result = runWalConverter(new LinkedList<>(), false, ProcessSensitiveData.SHOW);
+        String result = runTestWalReader(new LinkedList<>(), false, ProcessSensitiveData.SHOW, true);
 
         assertContains(log, result, "EncryptedRecord");
     }

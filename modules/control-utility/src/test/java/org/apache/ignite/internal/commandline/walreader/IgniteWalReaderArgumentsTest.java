@@ -34,17 +34,17 @@ import org.junit.Test;
 
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.stream.Collectors.toList;
-import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverter.collectPages;
-import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverter.parsePageId;
-import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverter.parsePageIds;
-import static org.apache.ignite.internal.commandline.walreader.IgniteWalConverter.validateRecordTypes;
+import static org.apache.ignite.internal.commandline.walreader.IgniteWalReader.collectPages;
+import static org.apache.ignite.internal.commandline.walreader.IgniteWalReader.parsePageId;
+import static org.apache.ignite.internal.commandline.walreader.IgniteWalReader.parsePageIds;
+import static org.apache.ignite.internal.commandline.walreader.IgniteWalReader.validateRecordTypes;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.corruptedPagesFile;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
- * Test for IgniteWalConverterArguments
+ * Test for IgniteWalReaderArguments
  */
-public class IgniteWalConverterArgumentsTest extends GridCommandHandlerAbstractTest {
+public class IgniteWalReaderArgumentsTest extends GridCommandHandlerAbstractTest {
     /**
      * Checking whether field "recordTypes" are incorrect.
      *
@@ -70,7 +70,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommandHandlerAbstractT
     }
 
     /**
-     * Checking the correctness of the method {@link IgniteWalConverter#parsePageId}.
+     * Checking the correctness of the method {@link IgniteWalReader#parsePageId}.
      */
     @Test
     public void testParsePageId() {
@@ -100,7 +100,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommandHandlerAbstractT
     }
 
     /**
-     * Checking the correctness of the method {@link IgniteWalConverter#parsePageIds(File)}.
+     * Checking the correctness of the method {@link IgniteWalReader#parsePageIds(File)}.
      *
      * @throws Exception If failed.
      */
@@ -142,7 +142,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommandHandlerAbstractT
     }
 
     /**
-     * Checking the correctness of the method {@link IgniteWalConverter#parsePageIds(String...)}.
+     * Checking the correctness of the method {@link IgniteWalReader#parsePageIds(String...)}.
      */
     @Test
     public void testParsePageIdsStrings() {
@@ -170,7 +170,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommandHandlerAbstractT
             assertTrue(ft.wal().exists());
 
             assertThrows(log, () -> collectPages("1"), IllegalArgumentException.class, null);
-            assertThrows(log, () -> collectPages( ""), IllegalArgumentException.class, null);
+            assertThrows(log, () -> collectPages( " "), IllegalArgumentException.class, null);
 
             assertEqualsCollections(F.asList(new T2<>(1, 1L)), collectPages("1:1"));
 

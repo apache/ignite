@@ -72,7 +72,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
 /**
  * Print WAL log data in human-readable form.
  */
-public class IgniteWalConverter implements AutoCloseable {
+public class IgniteWalReader implements AutoCloseable {
     /**
      *
      */
@@ -212,7 +212,7 @@ public class IgniteWalConverter implements AutoCloseable {
      * @param pages            Pages for searching in format grpId:pageId.
      * @param log              Logger.
      */
-    public IgniteWalConverter(
+    public IgniteWalReader(
             NodeFileTree ft,
             @Nullable Integer pageSize,
             @Nullable Boolean keepBinary,
@@ -244,6 +244,8 @@ public class IgniteWalConverter implements AutoCloseable {
      * @param args Args.
      */
     public static void main(String[] args) {
+        IgniteLogger log = CommandHandler.setupJavaLogger("wal-reader", IgniteWalReader.class);
+
         CLIArgumentParser p = new CLIArgumentParser(
             Collections.emptyList(),
             asList(
@@ -293,14 +295,14 @@ public class IgniteWalConverter implements AutoCloseable {
         );
 
         if (args.length == 0) {
-            System.out.println(p.usage());
+            log.info(p.usage());
 
             return;
         }
 
         p.parse(asList(args).listIterator());
 
-        File root = new File((String) p.get(ROOT_DIR));
+        File root = new File((String)p.get(ROOT_DIR));
 
         NodeFileTree ft = ensureNodeStorageExists(root, p.get(FOLDER_NAME));
 
@@ -308,7 +310,7 @@ public class IgniteWalConverter implements AutoCloseable {
 
         Set<WALRecord.RecordType> validRecordTypes = validateRecordTypes(p.get(RECORD_TYPES));
 
-        try (IgniteWalConverter reader = new IgniteWalConverter(
+        try (IgniteWalReader reader = new IgniteWalReader(
                 ft,
                 p.get(PAGE_SIZE),
                 p.get(KEEP_BINARY),
@@ -320,9 +322,9 @@ public class IgniteWalConverter implements AutoCloseable {
                 p.get(PRINT_STAT),
                 p.get(SKIP_CRC),
                 pages,
-                CommandHandler.setupJavaLogger("wal-reader", IgniteWalConverter.class)
+                log
         )) {
-            reader.convert();
+            reader.read();
         }
     }
 
@@ -472,7 +474,7 @@ public class IgniteWalConverter implements AutoCloseable {
     /**
      * Write to out WAL log data in human-readable form.
      */
-    public void convert() {
+    public void read() {
         System.setProperty(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE,
             Boolean.toString(procSensitiveData == ProcessSensitiveData.HIDE));
 
