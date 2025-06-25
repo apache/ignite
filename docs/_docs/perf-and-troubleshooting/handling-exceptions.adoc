@@ -246,6 +246,11 @@ include::{javaFile}[tag=failure-types,indent=0]
 ----
 --
 
-=== Handling Exception When Executing ComputeTask Using ComputeTaskAdapter
+=== Handling Exception When Executing `ComputeTask` Using link:https://ignite.apache.org/docs/latest/distributed-computing/map-reduce#:~:text=and%20map(%E2%80%A6%E2%80%8B)%20methods.-,ComputeTaskAdapter,-%E2%80%94%20This%20class%20implements[`ComputeTaskAdapter`]
 
-When executing a `ComputeTask` using `ComputeTaskAdapter` on client, an exception may occur: “org.apache.ignite.IgniteException: Remote job threw user exception (override or implement ComputeTask.result(..) method if you would like to have automatic failover for this exception): Failed to execute job due to unexpected runtime exception...” when receiving the first error from node. To handle this exception automatically, it’s necessary to override the ComputeTask.result(..) method implementation for processing `IgniteException` related to failure in performing tasks on any node. Ensure proper completion of `ComputeTask` execution.
+When executing a `ComputeTask` using `ComputeTaskAdapter`, an `IgniteException` may be thrown on the client side.
+When the exception thrown, a log entry with the message 'Remote job threw user exception' will appear in the logs.
+[WARNING]
+====
+When this exception happens, ensure that all other jobs from this task have finished since `ComputeTaskAdapter` doesn't provide such guarantees.
+====
