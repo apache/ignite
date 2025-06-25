@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFun
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.SupplierX;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
@@ -666,6 +667,15 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             .returns((byte)5, (short)5, 5, 5L, BigDecimal.valueOf(5), 5f, 5d)
             .returns((byte)6, (short)6, 6, 6L, BigDecimal.valueOf(6), 6f, 6d)
             .returns((byte)7, (short)7, 7, 7L, BigDecimal.valueOf(7), 7f, 7d)
+            .check();
+    }
+
+    /** TODO https://issues.apache.org/jira/browse/IGNITE-25749 : unignore after the fix. */
+    @Ignore
+    @Test
+    public void testCalciteUnionCharLiteralsBug() {
+        assertQuery("SELECT * FROM (SELECT 'word' i UNION ALL SELECT 'w' i) t1 WHERE i='w'")
+            .returns("w")
             .check();
     }
 
