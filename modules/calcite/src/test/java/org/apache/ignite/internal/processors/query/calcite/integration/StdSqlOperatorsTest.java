@@ -117,46 +117,46 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
     /** TODO https://issues.apache.org/jira/browse/IGNITE-25765 : unignore after the fix. */
     @Ignore
     @Test
-    public void testArrayConcatAgg(){
+    public void testArrayConcatAgg() {
         assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrn from t union all select arrnn from t) T(a)")
             .returns(IntStream.range(1, 8).boxed().collect(Collectors.toList()))
             .check();
         assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrnn from t union all select arrn from t) T(a)")
-            .returns(F.asList(1,2,3,7,8,9,4,5,6))
+            .returns(F.asList(1, 2, 3, 7, 8, 9, 4, 5, 6))
             .check();
 
         assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrn from t union all select arrn2 from t) T(a)")
-            .returns(F.asList(10,11,12,4,5,6,7,8,9))
+            .returns(F.asList(10, 11, 12, 4, 5, 6, 7, 8, 9))
             .check();
         assertQuery("SELECT ARRAY_CONCAT_AGG(arrnn) from t")
-            .returns(F.asList(1,2,3,7,8,9))
+            .returns(F.asList(1, 2, 3, 7, 8, 9))
             .check();
         assertQuery("SELECT ARRAY_CONCAT_AGG(arrn) from t")
-            .returns(F.asList(4,5,6))
+            .returns(F.asList(4, 5, 6))
             .check();
 
         assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrn from t union all select NULL) T(a)")
-            .returns(F.asList(10,11,12,4,5,6,7,8,9))
+            .returns(F.asList(10, 11, 12, 4, 5, 6, 7, 8, 9))
             .check();
         assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrn from t union all select ARRAY[0,0,0]) T(a)")
-            .returns(F.asList(4,5,6,0,0,0))
+            .returns(F.asList(4, 5, 6, 0, 0, 0))
             .check();
         assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select ARRAY[0,0,0] union all select arrn from t) T(a)")
-            .returns(F.asList(4,5,6,0,0,0))
+            .returns(F.asList(4, 5, 6, 0, 0, 0))
             .check();
 
         assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select null union all select arrnn from t) T(a)")
-            .returns(F.asList(10,11,12,4,5,6,7,8,9))
+            .returns(F.asList(10, 11, 12, 4, 5, 6, 7, 8, 9))
             .returns((Object)null)
             .check();
         assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrnn from t union all select NULL) T(a)")
-            .returns(F.asList(10,11,12,4,5,6,7,8,9))
+            .returns(F.asList(10, 11, 12, 4, 5, 6, 7, 8, 9))
             .check();
         assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrnn from t union all select ARRAY[0,0,0]) T(a)")
-            .returns(F.asList(4,5,6,0,0,0))
+            .returns(F.asList(4, 5, 6, 0, 0, 0))
             .check();
         assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select ARRAY[0,0,0] union all select arrnn from t) T(a)")
-            .returns(F.asList(4,5,6,0,0,0))
+            .returns(F.asList(4, 5, 6, 0, 0, 0))
             .check();
     }
 

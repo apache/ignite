@@ -16,15 +16,12 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 
-import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.sql.fun.SqlBasicAggFunction;
 import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
-import org.apache.calcite.util.Litmus;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
