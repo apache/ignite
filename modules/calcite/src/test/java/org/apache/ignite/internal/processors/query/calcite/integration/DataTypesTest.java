@@ -903,6 +903,14 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
     /** */
     @Test
+    public void testCalciteUnionCharLiterals() {
+        assertQuery("SELECT * FROM (SELECT 'word' i UNION ALL SELECT 'w' i) t1 WHERE i='w'")
+            .returns("w")
+            .check();
+    }
+
+    /** */
+    @Test
     public void testArithmeticOverflow() {
         // BIGINT
         assertThrows("select CAST(9223372036854775807.5 + 1 AS BIGINT)", IgniteSQLException.class, "BIGINT overflow");
