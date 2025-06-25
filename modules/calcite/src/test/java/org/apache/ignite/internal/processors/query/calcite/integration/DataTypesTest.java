@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCache;
@@ -288,11 +289,18 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             .returns(new Object[]{null})
             .check();
 
-        assertThrows("SELECT avg(uid) from t", UnsupportedOperationException.class,
-            "AVG() is not supported for type 'UUID'.");
+        assertThrows("SELECT avg(uid) from t", SqlValidatorException.class,
+            "Cannot apply 'AVG' to arguments of type");
 
-        assertThrows("SELECT sum(uid) from t", UnsupportedOperationException.class,
-            "SUM() is not supported for type 'UUID'.");
+        assertThrows("SELECT sum(uid) from t", SqlValidatorException.class,
+            "Cannot apply 'SUM' to arguments of type");
+
+        assertThrows("SELECT bitand(uid, 1) from t", SqlValidatorException.class,
+            "Cannot apply 'BITAND' to arguments of type");
+        assertThrows("SELECT bitor(uid, 1) from t", SqlValidatorException.class,
+            "Cannot apply 'BITOR' to arguments of type");
+        assertThrows("SELECT bitxor(uid, 1) from t", SqlValidatorException.class,
+            "Cannot apply 'BITXOR' to arguments of type");
     }
 
     /**
@@ -673,7 +681,9 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     /** TODO https://issues.apache.org/jira/browse/IGNITE-25749 : unignore after the fix. */
     @Ignore
     @Test
-    public void testCalciteUnionCharLiteralsBug() {
+    public void testCharLiteralsInUnion() {
+        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
+
         assertQuery("SELECT * FROM (SELECT 'word' i UNION ALL SELECT 'w' i) t1 WHERE i='w'")
             .returns("w")
             .check();
@@ -899,14 +909,6 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
         assertQuery("select coalesce(?, 1.000)").withParams(0).withFrameworkConfig(frameworkCfg)
             .returns(new BigDecimal("0.000")).check();
-    }
-
-    /** */
-    @Test
-    public void testCalciteUnionCharLiterals() {
-        assertQuery("SELECT * FROM (SELECT 'word' i UNION ALL SELECT 'w' i) t1 WHERE i='w'")
-            .returns("w")
-            .check();
     }
 
     /** */

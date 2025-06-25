@@ -22,10 +22,12 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
@@ -1159,6 +1161,9 @@ public class RexImpTable {
 
     /** Implementor for binary operators. */
     private static class BinaryImplementor extends AbstractRexCallImplementor {
+        /** Types considered as {@link SqlTypeName#ANY}. */
+        private static final Collection<SqlTypeName> ANY_TYPES = Set.of(SqlTypeName.ANY, SqlTypeName.UUID);
+
         /**
          * Types that can be arguments to comparison operators such as {@code <}.
          */
@@ -1273,7 +1278,7 @@ public class RexImpTable {
         /** Returns whether any of a call's operands have ANY type. */
         private boolean anyAnyOperands(RexCall call) {
             for (RexNode operand : call.operands) {
-                if (operand.getType().getSqlTypeName() == SqlTypeName.ANY)
+                if (ANY_TYPES.contains(operand.getType().getSqlTypeName()))
                     return true;
             }
             return false;

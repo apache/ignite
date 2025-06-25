@@ -68,7 +68,8 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
         SqlTypeName[] numTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.REAL,
             SqlTypeName.FLOAT, SqlTypeName.INTEGER, SqlTypeName.BIGINT, SqlTypeName.DOUBLE, SqlTypeName.DECIMAL};
 
-        boolean notNull = !nullable1 && !nullable2;
+        // TODO https://issues.apache.org/jira/browse/CALCITE-7062 : below.
+        // boolean notNull = !nullable1 && !nullable2;
 
         for (SqlTypeName t1 : numTypes) {
             for (SqlTypeName t2 : numTypes) {

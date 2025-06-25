@@ -46,6 +46,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite type factory.
@@ -148,6 +149,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 case OTHER:
                 case NULL:
                     return Object.class;
+                case UUID:
+                    return UUID.class;
                 default:
                     break;
             }
@@ -234,6 +237,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     return Object.class;
                 case NULL:
                     return Void.class;
+                case UUID:
+                    return UUID.class;
                 default:
                     break;
             }
@@ -255,12 +260,48 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType leastRestrictive(List<RelDataType> types) {
+    @Override public @Nullable RelDataType leastRestrictive(List<RelDataType> types) {
         assert types != null;
         assert types.size() >= 1;
 
-        if (types.size() == 1 || allEquals(types))
+        if (types.size() == 1)
             return F.first(types);
+
+        boolean allEquals = true;
+        int uuidCnt = 0;
+        int nullCnt = 0;
+        boolean nullable = false;
+
+        for (int i = 0; i < types.size(); ++i) {
+            RelDataType type = types.get(i);
+
+            assert type != null;
+
+            if (i > 0 && allEquals && !type.equals(types.get(i - 1)))
+                allEquals = false;
+
+            if (!nullable && type.isNullable())
+                nullable = true;
+
+            if (type.getSqlTypeName() == SqlTypeName.UUID)
+                ++uuidCnt;
+            else if (type.getSqlTypeName() == SqlTypeName.NULL)
+                ++nullCnt;
+        }
+
+        if (allEquals)
+            return F.first(types);
+
+        // Least restrictive for UUID should be only NULL or UUID.
+        if (uuidCnt > 0) {
+            if (uuidCnt == types.size())
+                return createTypeWithNullability(createSqlType(SqlTypeName.NULL), nullable);
+
+            if (nullCnt > 0 && uuidCnt + nullCnt == types.size())
+                return createSqlType(SqlTypeName.NULL);
+
+            return null;
+        }
 
         RelDataType res = super.leastRestrictive(types);
 
@@ -296,6 +337,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 return createTypeWithNullability(createSqlType(SqlTypeName.DATE), true);
             else if (clazz == LocalTime.class)
                 return createTypeWithNullability(createSqlType(SqlTypeName.TIME), true);
+            else if (clazz == UUID.class)
+                return createTypeWithNullability(createSqlType(SqlTypeName.UUID), true);
             else {
                 RelDataType relType = createCustomType(clazz);
 
@@ -314,9 +357,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
     /** @return Nullable custom type by storage type. {@code Null} if custom type not found. */
     public RelDataType createCustomType(Type type, boolean nullable) {
-        if (UUID.class == type)
-            return canonize(new UuidType(nullable));
-        else if (Object.class == type || (type instanceof Class && BinaryObject.class.isAssignableFrom((Class<?>)type)))
+        if (Object.class == type || (type instanceof Class && BinaryObject.class.isAssignableFrom((Class<?>)type)))
             return canonize(new OtherType(nullable));
 
         return null;
@@ -341,6 +382,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         if (customType != null)
             return customType;
 
+        if (UUID.class == type)
+            return createSqlType(SqlTypeName.UUID);
+
         return super.createType(type);
     }
 
@@ -360,9 +404,6 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     /** {@inheritDoc} */
     @Override public RelDataType createSqlType(SqlTypeName typeName) {
         checkUnsupportedType(typeName);
-
-        if (typeName == SqlTypeName.UUID)
-            return createCustomType(UUID.class);
 
         return super.createSqlType(typeName);
     }
