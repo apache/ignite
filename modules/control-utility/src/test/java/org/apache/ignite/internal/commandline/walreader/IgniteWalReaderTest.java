@@ -84,9 +84,6 @@ public class IgniteWalReaderTest extends GridCommandHandlerAbstractTest {
     /** Flag "skip CRC calculation" in RecordV1Serializer save before test and restore after. */
     private boolean beforeSkipCrc;
 
-    /** Encrypted. */
-    public boolean encrypted;
-
     /** */
     @Parameterized.Parameters(name = "cmdHnd={0}")
     public static List<String> commandHandlers() {
@@ -105,7 +102,7 @@ public class IgniteWalReaderTest extends GridCommandHandlerAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        encrypted = false;
+        encryptionEnabled = false;
 
         injectTestSystemOut();
 
@@ -141,14 +138,14 @@ public class IgniteWalReaderTest extends GridCommandHandlerAbstractTest {
         igniteConfiguration.setDataStorageConfiguration(getDataStorageConfiguration());
 
         final CacheConfiguration cacheConfiguration = new CacheConfiguration<>()
-            .setEncryptionEnabled(encrypted)
+            .setEncryptionEnabled(encryptionEnabled)
             .setName(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(0)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setIndexedTypes(PersonKey.class, Person.class);
 
-        if (encrypted)
+        if (encryptionEnabled)
             igniteConfiguration.setEncryptionSpi(encryptionSpi());
 
         igniteConfiguration.setCacheConfiguration(cacheConfiguration);
@@ -704,7 +701,7 @@ public class IgniteWalReaderTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testEncryptedIgniteWalReader() throws Exception {
-        encrypted = true;
+        encryptionEnabled = true;
 
         String result = runTestWalReader(new LinkedList<>(), false, ProcessSensitiveData.SHOW, true);
 
