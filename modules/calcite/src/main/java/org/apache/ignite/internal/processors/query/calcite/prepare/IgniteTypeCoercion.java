@@ -111,7 +111,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             if (SqlTypeUtil.inCharFamily(fromType) || targetType instanceof OtherType) {
                 final RelDataType targetType0 = factory.createTypeWithNullability(targetType, fromType.isNullable());
 
-                SqlTypeNameSpec typeNameSpec = new SqlUserDefinedTypeNameSpec(targetType0.getSqlIdentifier(), SqlParserPos.ZERO) {
+                SqlTypeNameSpec typeNameSpec = new SqlUserDefinedTypeNameSpec(targetType0.toString(), SqlParserPos.ZERO) {
                     @Override public RelDataType deriveType(SqlValidator validator) {
                         if (targetType0.getSqlTypeName() == SqlTypeName.UUID)
                             return targetType0;
