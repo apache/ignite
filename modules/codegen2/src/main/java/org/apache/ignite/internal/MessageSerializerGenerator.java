@@ -47,48 +47,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 
 /**
- * Generates serializer class for given {@code Message} class. Example of generated code for class {@code XMessage}
- * that specifies single {@code int id} field.
- * <pre>
- * class TestMessageSerializer {
- *     public static boolean writeTo(XMessage msg, ByteBuffer buf, MessageWriter writer) {
- *         writer.setBuffer(buf);
- *
- *         if (!writer.isHeaderWritten()) {
- *             if (!writer.writeHeader(msg.directType()))
- *                 return false;
- *
- *             writer.onHeaderWritten();
- *         }
- *
- *         switch (writer.state()) {
- *             case 0:
- *                 if (!writer.writeInt(msg.id()))
- *                     return false;
- *
- *                 writer.incrementState();
- *         }
- *
- *         return true;
- *     }
- *
- *     public static boolean readFrom(XMessage msg, ByteBuffer buf, MessageReader reader) {
- *          reader.setBuffer(buf);
- *
- *          switch (reader.state()) {
- *              case 0:
- *                  msg.id(reader.readInt());
- *
- *                  if (!reader.isLastRead())
- *                      return false;
- *
- *                  reader.incrementState();
- *          }
- *
- *          return true;
- *     }
- * }
- * </pre>
+ * Generates serializer class for given {@code Message} class. The generated serializer follows the naming convention:
+ * {@code org.apache.ignite.internal.codegen.[MessageClassName]Serializer}.
  */
 class MessageSerializerGenerator {
     /** */
@@ -98,10 +58,13 @@ class MessageSerializerGenerator {
     private static final String TAB = "    ";
 
     /** */
+    private static final String PKG_NAME = "org.apache.ignite.internal.codegen";
+
+    /** */
     private static final String CLS_JAVADOC = "/** \n" +
         " * This class is generated automatically.\n" +
         " *\n" +
-        " * @see org.apache.ignite.internal.MessageSerializer\n" +
+        " * @see org.apache.ignite.internal.MessageSerializerGenerator\n" +
         " */";
 
     /** */
@@ -131,13 +94,14 @@ class MessageSerializerGenerator {
     void generate(TypeElement type, List<VariableElement> fields) throws Exception {
         generateMethods(type, fields);
 
-        String serClsName = type.getSimpleName() + "Serializer";
-        String pkgName = env.getElementUtils().getPackageOf(type).getQualifiedName().toString();
+        imports.add(type.getQualifiedName().toString());
 
-        JavaFileObject file = env.getFiler().createSourceFile(pkgName + "." + serClsName);
+        String serClsName = type.getSimpleName() + "Serializer";
+
+        JavaFileObject file = env.getFiler().createSourceFile(PKG_NAME + "." + serClsName);
 
         try (Writer writer = file.openWriter()) {
-            writeClassHeader(writer, pkgName, serClsName);
+            writeClassHeader(writer, PKG_NAME, serClsName);
 
             // Write #writeTo method.
             for (String w: write)
@@ -178,7 +142,9 @@ class MessageSerializerGenerator {
     /**
      * Generates start of write/read methods:
      * <pre>
-     *     public static boolean writeTo(XMessage msg, ByteBuffer buf, MessageWriter writer) {
+     *     public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
+     *         TestMessage msg = (TestMessage)m;
+     *
      *         writer.setBuffer(buf);
      *
      *         if (!writer.isHeaderWritten()) {
@@ -197,13 +163,14 @@ class MessageSerializerGenerator {
 
         code.add(line(METHOD_JAVADOC));
 
-        code.add(line("public static boolean %s(%s msg, ByteBuffer buf, %s) {",
+        code.add(line("@Override public boolean %s(Message m, ByteBuffer buf, %s) {",
             write ? "writeTo" : "readFrom",
-            type.getSimpleName().toString(),
             write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
 
+        code.add(line("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
+        code.add(EMPTY);
         code.add(line("%s.setBuffer(buf);", write ? "writer" : "reader"));
 
         code.add(EMPTY);
@@ -573,6 +540,8 @@ class MessageSerializerGenerator {
         writer.write("\n");
         writer.write("package " + pkgName + ";\n\n");
         writer.write("import java.nio.ByteBuffer;\n");
+        writer.write("import org.apache.ignite.plugin.extensions.communication.Message;\n");
+        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageSerializer;\n");
         writer.write("import org.apache.ignite.plugin.extensions.communication.MessageWriter;\n");
         writer.write("import org.apache.ignite.plugin.extensions.communication.MessageReader;\n");
 
@@ -582,7 +551,7 @@ class MessageSerializerGenerator {
         writer.write("\n");
         writer.write(CLS_JAVADOC);
         writer.write("\n");
-        writer.write("class " + serClsName + " {\n");
+        writer.write("public class " + serClsName + " implements MessageSerializer {\n");
     }
 
     /** */

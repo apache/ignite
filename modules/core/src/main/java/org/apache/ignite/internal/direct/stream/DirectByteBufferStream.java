@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.CommunicationMessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -761,7 +762,7 @@ public class DirectByteBufferStream {
                 try {
                     writer.beforeInnerMessageWrite();
 
-                    lastFinished = msg.writeTo(buf, writer);
+                    lastFinished = CommunicationMessageSerializer.writeTo(msg, buf, writer);
                 }
                 finally {
                     writer.afterInnerMessageWrite(lastFinished);
@@ -1336,7 +1337,7 @@ public class DirectByteBufferStream {
             try {
                 reader.beforeInnerMessageRead();
 
-                lastFinished = msg.readFrom(buf, reader);
+                lastFinished = CommunicationMessageSerializer.readFrom(msg, buf, reader);
             }
             finally {
                 reader.afterInnerMessageRead(lastFinished);

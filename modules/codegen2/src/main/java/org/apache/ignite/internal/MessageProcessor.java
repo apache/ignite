@@ -43,8 +43,7 @@ import javax.tools.Diagnostic;
  * This processor scans all {@code Message} classes and generates a corresponding serializer class that contains
  * {@code writeTo} and {@code readFrom} methods.
  * <p>
- * The generated serializer is placed in the same package as the target message class and
- * follows the naming convention: {@code [MessageClassName]Serializer}.
+ * The generated serializer follows the naming convention: {@code [MessageClassName]Serializer}.
  * <p>
  * Only fields annotated with {@link Order} and accessed through matching accessor methods
  * (i.e., {@code fieldName()} and {@code fieldName(value)}) are included in the serialization logic.
