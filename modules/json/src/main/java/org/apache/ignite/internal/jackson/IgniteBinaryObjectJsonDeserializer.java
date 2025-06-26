@@ -30,7 +30,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -113,10 +113,11 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
      * @return Mapping from field name to its binary type.
      */
     private Map<String, BinaryFieldMetadata> binaryFields(String type) {
-        BinaryTypeImpl binType = (BinaryTypeImpl)ctx.cacheObjects().binary().type(type);
+        int typeId = ctx.cacheObjects().typeId(type);
+        BinaryMetadata meta = ctx.cacheObjects().metadata0(typeId);
 
-        if (binType != null)
-            return binType.metadata().fieldsMap();
+        if (meta != null)
+            return meta.fieldsMap();
 
         return Collections.emptyMap();
     }
