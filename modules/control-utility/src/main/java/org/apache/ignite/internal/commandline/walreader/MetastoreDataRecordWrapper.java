@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.development.utils;
+package org.apache.ignite.internal.commandline.walreader;
 
 import java.util.Arrays;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.development.utils.ProcessSensitiveData.HASH;
-import static org.apache.ignite.development.utils.ProcessSensitiveData.HIDE;
-import static org.apache.ignite.development.utils.ProcessSensitiveData.MD5;
-import static org.apache.ignite.development.utils.ProcessSensitiveDataUtils.md5;
+import static org.apache.ignite.internal.commandline.walreader.ProcessSensitiveData.HASH;
+import static org.apache.ignite.internal.commandline.walreader.ProcessSensitiveData.HIDE;
+import static org.apache.ignite.internal.commandline.walreader.ProcessSensitiveData.MD5;
+import static org.apache.ignite.internal.commandline.walreader.ProcessSensitiveDataUtils.md5;
 
 /**
  * Wrapper {@link MetastoreDataRecord} for sensitive data output.

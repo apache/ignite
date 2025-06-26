@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.development.utils;
+package org.apache.ignite.internal.commandline.walreader;
 
 /**
  * Strategy for the processing of sensitive data.
