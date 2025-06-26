@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- * Calcite engine tests
+ * Calcite engine tests.
  */
 public class CalciteTestingApplication extends IgniteAwareApplication {
     /**
@@ -81,7 +81,7 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
     private void testQueries(Connection conn) throws SQLException {
         List<QueryTest> tests = new ArrayList<>();
 
-        // Comparison
+        // Comparison.
         tests.add(new QueryTest("SELECT 2 > 1 FROM t", true));
         tests.add(new QueryTest("SELECT 2 >= 1 FROM t", true));
         tests.add(new QueryTest("SELECT 2 < 1 FROM t", false));
@@ -91,7 +91,7 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT 2 BETWEEN 1 AND 3 FROM t", true));
         tests.add(new QueryTest("SELECT 2 NOT BETWEEN 1 AND 3 FROM t", false));
 
-        // Set operations
+        // Set operations.
         tests.add(new QueryTest("SELECT 1 UNION SELECT 2", 1, 2));
         tests.add(new QueryTest("SELECT 1 UNION ALL SELECT 1", 1, 1));
         tests.add(new QueryTest("SELECT 1 EXCEPT SELECT 2", 1));
@@ -99,7 +99,7 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT 1 INTERSECT SELECT 1", 1));
         tests.add(new QueryTest("SELECT 1 INTERSECT ALL SELECT 1", 1));
 
-        // Arithmetic
+        // Arithmetic.
         tests.add(new QueryTest("SELECT 1 + 2 FROM t", 3));
         tests.add(new QueryTest("SELECT 2 - 1 FROM t", 1));
         tests.add(new QueryTest("SELECT 2 * 3 FROM t", 6));
@@ -108,13 +108,13 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT +(1) FROM t", 1));
         tests.add(new QueryTest("SELECT 3 % 2 FROM t", 1));
 
-        // Like
+        // Like.
         tests.add(new QueryTest("SELECT 'a' LIKE 'a%' FROM t", true));
         tests.add(new QueryTest("SELECT 'a' NOT LIKE 'a%' FROM t", false));
         tests.add(new QueryTest("SELECT 'a' SIMILAR TO '(a|A)%' FROM t", true));
         tests.add(new QueryTest("SELECT 'A' NOT SIMILAR TO '(a|A)%' FROM t", false));
 
-        // String functions
+        // String functions.
         tests.add(new QueryTest("SELECT UPPER('aA') FROM t", "AA"));
         tests.add(new QueryTest("SELECT LOWER('aA') FROM t", "aa"));
         tests.add(new QueryTest("SELECT INITCAP('aA') FROM t", "Aa"));
@@ -145,7 +145,7 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT LTRIM(' a ') FROM t", "a "));
         tests.add(new QueryTest("SELECT RTRIM(' a ') FROM t", " a"));
 
-        // IS
+        // IS.
         tests.add(new QueryTest("SELECT 'a' IS NULL FROM t", false));
         tests.add(new QueryTest("SELECT 'a' IS NOT NULL FROM t", true));
         tests.add(new QueryTest("SELECT 1=1 IS TRUE FROM t", true));
@@ -155,12 +155,12 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT NULL IS DISTINCT FROM NULL FROM t", false));
         tests.add(new QueryTest("SELECT NULL IS NOT DISTINCT FROM NULL FROM t", true));
 
-        // Logical
+        // Logical.
         tests.add(new QueryTest("SELECT FALSE AND TRUE FROM t", false));
         tests.add(new QueryTest("SELECT FALSE OR TRUE FROM t", true));
         tests.add(new QueryTest("SELECT NOT FALSE FROM t", true));
 
-        // Aggregates
+        // Aggregates.
         tests.add(new QueryTest("SELECT COUNT(*) FROM t", 1L));
         tests.add(new QueryTest("SELECT SUM(val) FROM t", 1L));
         tests.add(new QueryTest("SELECT AVG(val) FROM t", 1));
@@ -173,14 +173,14 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT EVERY(val = 1) FROM t", true));
         tests.add(new QueryTest("SELECT SOME(val = 1) FROM t", true));
 
-        // Regex
+        // Regex.
         tests.add(new QueryTest("SELECT 'aA' ~ '.*aa.*' FROM t", false));
         tests.add(new QueryTest("SELECT 'aA' ~* '.*aa.*' FROM t", true));
         tests.add(new QueryTest("SELECT 'aA' !~ '.*aa.*' FROM t", true));
         tests.add(new QueryTest("SELECT 'aA' !~* '.*aa.*' FROM t", false));
         tests.add(new QueryTest("SELECT REGEXP_REPLACE('aA', '[Aa]+', 'X') FROM t", "X"));
 
-        // Other
+        // Other.
         tests.add(new QueryTest("SELECT * FROM (VALUES ROW('a', 1))", "a", 1));
         tests.add(new QueryTest("SELECT CAST('1' AS INT) FROM t", 1));
         tests.add(new QueryTest("SELECT '1'::INT FROM t", 1));
@@ -195,10 +195,10 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT OCTET_LENGTH(x'01') FROM t", 1));
         tests.add(new QueryTest("SELECT CAST(INTERVAL 1 SECONDS AS INT) FROM t", 1));
 
-        // Multiple columns
+        // Multiple columns.
         tests.add(new QueryTest("SELECT 1 as col1, 'text' as col2 FROM t", 1, "text"));
 
-        // Date and time
+        // Date and time.
         tests.add(new QueryTest("SELECT DATE '2021-01-01' + interval (1) days FROM t", Date.valueOf("2021-01-02")));
         tests.add(new QueryTest("SELECT (DATE '2021-03-01' - DATE '2021-01-01') months FROM t", Period.ofMonths(2)));
         tests.add(new QueryTest("SELECT EXTRACT(DAY FROM DATE '2021-01-15') FROM t", 15L));
@@ -235,7 +235,7 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT TO_TIMESTAMP('210101-01-10-30', 'YYMMDD-HH24-MI-SS') FROM t",
             Timestamp.valueOf("2021-01-01 01:10:30")));
 
-        // Math
+        // Math.
         tests.add(new QueryTest("SELECT MOD(3, 2) FROM t", 1));
         tests.add(new QueryTest("SELECT EXP(2) FROM t", Math.exp(2)));
         tests.add(new QueryTest("SELECT POWER(2, 2) FROM t", Math.pow(2, 2)));
@@ -272,15 +272,16 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT TRUNCATE(1.7) FROM t", BigDecimal.valueOf(1)));
         tests.add(new QueryTest("SELECT PI FROM t", Math.PI));
 
-        // Collections
+        // Collections.
         tests.add(new QueryTest("SELECT ARRAY(SELECT 1) FROM t", Collections.singletonList(1)));
         tests.add(new QueryTest("SELECT ARRAY[1, 2, 3] FROM t", Arrays.asList(1, 2, 3)));
         tests.add(new QueryTest("SELECT ARRAY[1, 2, 3][2] FROM t", 2));
         tests.add(new QueryTest("SELECT CARDINALITY(ARRAY[1, 2, 3]) FROM t", 3));
         tests.add(new QueryTest("SELECT ARRAY[1, 2, 3] IS EMPTY FROM t", false));
         tests.add(new QueryTest("SELECT ARRAY[1, 2, 3] IS NOT EMPTY FROM t", true));
+        tests.add(new QueryTest("SELECT * FROM UNNEST(ARRAY[1, 2]) WITH ORDINALITY", ((1, 1), (2, 2))));
 
-        // JSON
+        // JSON.
         tests.add(new QueryTest("SELECT '{\"a\":1}' FORMAT JSON FROM t"));
         tests.add(new QueryTest("SELECT JSON_VALUE('{\"a\":1}', '$.a') FROM t", "1"));
         tests.add(new QueryTest("SELECT JSON_VALUE('{\"a\":1}' FORMAT JSON, '$.a') FROM t", "1"));
@@ -306,7 +307,7 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT '[1, 2]' IS NOT JSON ARRAY FROM t", false));
         tests.add(new QueryTest("SELECT '1' IS NOT JSON SCALAR FROM t", false));
 
-        // XML
+        // XML.
         tests.add(new QueryTest("SELECT EXTRACTVALUE('<a>b</a>', '//a') FROM t", "b"));
         tests.add(new QueryTest(
             "SELECT XMLTRANSFORM('<a>b</a>','" +
@@ -329,7 +330,7 @@ public class CalciteTestingApplication extends IgniteAwareApplication {
         tests.add(new QueryTest("SELECT LOCALTIME FROM t"));
         tests.add(new QueryTest("SELECT LOCALTIMESTAMP FROM t"));
 
-        // Execute all tests
+        // Execute all tests.
         for (QueryTest test : tests) {
             try (PreparedStatement stmt = conn.prepareStatement(test.qry);
                  ResultSet rs = stmt.executeQuery()) {
