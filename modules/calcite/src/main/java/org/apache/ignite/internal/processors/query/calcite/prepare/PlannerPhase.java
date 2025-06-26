@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterR
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterSpoolMergeToHashIndexSpoolRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterSpoolMergeToSortedIndexSpoolRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.HashAggregateConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.HashJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.IndexCountRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.IndexMinMaxRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConverterRule;
@@ -261,6 +262,7 @@ public enum PlannerPhase {
                     CorrelatedNestedLoopJoinRule.INSTANCE,
                     CorrelateToNestedLoopRule.INSTANCE,
                     NestedLoopJoinConverterRule.INSTANCE,
+                    HashJoinConverterRule.INSTANCE,
 
                     ValuesConverterRule.INSTANCE,
                     LogicalScanConverterRule.INDEX_SCAN,
