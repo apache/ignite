@@ -174,14 +174,14 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** Simplest CDC test. */
     @Test
-    public void testReadAllKeysCommitAll() throws Exception {
+    public void testReadAllKeysCommitAll() throws Throwable {
         // Read all records from iterator.
         readAll(new UserCdcConsumer(), true);
     }
 
     /** Simplest CDC test but read one event at a time to check correct iterator work. */
     @Test
-    public void testReadAllKeysWithoutCommit() throws Exception {
+    public void testReadAllKeysWithoutCommit() throws Throwable {
         // Read one record per call.
         readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
@@ -195,7 +195,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** Simplest CDC test but commit every event to check correct state restore. */
     @Test
-    public void testReadAllKeysCommitEachEvent() throws Exception {
+    public void testReadAllKeysCommitEachEvent() throws Throwable {
         // Read one record per call and commit.
         readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
@@ -281,7 +281,7 @@ public class CdcSelfTest extends AbstractCdcTest {
     }
 
     /** */
-    private void readAll(UserCdcConsumer cnsmr, boolean offsetCommit) throws Exception {
+    private void readAll(UserCdcConsumer cnsmr, boolean offsetCommit) throws Throwable {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
         Ignite ign = startGrid(cfg);
@@ -586,7 +586,7 @@ public class CdcSelfTest extends AbstractCdcTest {
     /** */
     @Test
     @WithSystemProperty(key = IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, value = "true")
-    public void testMultiNodeConsumption() throws Exception {
+    public void testMultiNodeConsumption() throws Throwable {
         IgniteEx ign1 = startGrid(0);
 
         IgniteEx ign2 = startGrid(1);
@@ -632,12 +632,22 @@ public class CdcSelfTest extends AbstractCdcTest {
         IgniteInternalFuture<?> fut1 = runAsync(cdc1);
         IgniteInternalFuture<?> fut2 = runAsync(cdc2);
 
+        fut1.listen(latch::countDown);
+        fut2.listen(latch::countDown);
+
         addDataFut.get(getTestTimeout());
 
         runAsync(() -> addData(cache, KEYS_CNT, KEYS_CNT * 2)).get(getTestTimeout());
 
-        // Wait while predicate will become true and state saved on the disk for both cdc.
+        // Wait while predicate will become true and state saved on the disk for both cdc or
+        // while CdcMain futures completes when assertions fail in UserCdcConsumer methods.
         assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
+
+        if (fut1.error() != null)
+            throw fut1.error();
+
+        if (fut2.error() != null)
+            throw fut2.error();
 
         checkMetrics(cdc1, keysCnt[0]);
         checkMetrics(cdc2, keysCnt[1]);
