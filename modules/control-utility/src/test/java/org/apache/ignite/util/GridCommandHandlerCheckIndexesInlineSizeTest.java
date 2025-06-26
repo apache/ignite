@@ -41,7 +41,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 public class GridCommandHandlerCheckIndexesInlineSizeTest extends GridCommandHandlerAbstractTest {
     /** */
     private static final String INDEX_PROBLEM_FMT =
-        "Full index name: PUBLIC#TEST_TABLE#%s nodes: [%s] inline size: 1, nodes: [%s] inline size: 2";
+        "Full index name: PUBLIC#TEST_TABLE#%s nodes: [%s] inline size: 1, nodes: [%s] inline size:";
 
     /** Nodes count. */
     private static final int NODES_CNT = 2;
@@ -146,10 +146,11 @@ public class GridCommandHandlerCheckIndexesInlineSizeTest extends GridCommandHan
         assertContains(
             log,
             output,
-            "3 index(es) have different effective inline size on nodes. It can lead to performance degradation in SQL queries."
+            "4 index(es) have different effective inline size on nodes. It can lead to performance degradation in SQL queries."
         );
         assertContains(log, output, "Index(es):");
         assertContains(log, output, format(INDEX_PROBLEM_FMT, "L_IDX", localNodeId, remoteNodeId));
+        assertContains(log, output, format(INDEX_PROBLEM_FMT, "S0_IDX", localNodeId, remoteNodeId));
         assertContains(log, output, format(INDEX_PROBLEM_FMT, "S1_IDX", localNodeId, remoteNodeId));
         assertContains(log, output, format(INDEX_PROBLEM_FMT, "I_IDX", localNodeId, remoteNodeId));
         assertContains(log, output, "  Check that value of property IGNITE_MAX_INDEX_PAYLOAD_SIZE are the same on all nodes.");

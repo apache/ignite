@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
+import static org.apache.ignite.internal.util.IgniteUtils.MAX_INLINE_SIZE;
 
 /**
  * Write to a log recommendation for inline size.
@@ -87,7 +88,7 @@ public class InlineRecommender {
             newSize += keyType.inlineSize(row.key(i));
         }
 
-        if (newSize > currInlineSize) {
+        if (newSize > currInlineSize && newSize <= MAX_INLINE_SIZE) {
             int oldSize;
 
             while (true) {

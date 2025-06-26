@@ -1011,12 +1011,11 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
 
     /**
-     * System property to specify maximum payload size in bytes for {@code H2TreeIndex}.
-     * <p>
-     * Defaults to {@code 0}, meaning that inline index store is disabled.
+     * System property to specify maximum payload size in bytes for {@code H2TreeIndex}. {@code 0} means that inline
+     * index store is disabled.
      */
     @SystemProperty(value = "Maximum payload size in bytes for H2TreeIndex. " +
-        "0 means that inline index store is disabled", type = Integer.class, defaults = "64")
+        "0 means that inline index store is disabled", type = Integer.class, defaults = "" + IgniteUtils.MAX_INLINE_SIZE)
     public static final String IGNITE_MAX_INDEX_PAYLOAD_SIZE = "IGNITE_MAX_INDEX_PAYLOAD_SIZE";
 
     /**

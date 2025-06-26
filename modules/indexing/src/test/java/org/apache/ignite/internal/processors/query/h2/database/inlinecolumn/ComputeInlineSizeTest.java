@@ -47,6 +47,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.IgniteUtils.MAX_INLINE_SIZE;
+
 /** Tests for the computation inline size. */
 public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
     /** */
@@ -129,12 +131,12 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
 
         query(tbl.toString());
 
-        checkIndexInlineSize("VARCHAR", 1000);
+        checkIndexInlineSize("VARCHAR", MAX_INLINE_SIZE);
 
         for (IgniteBiTuple<String, InlineIndexKeyType> type0 : fixLenTypes) {
             checkIndexInlineSize(type0.get1(), type0.get2().inlineSize() + idIdxType.inlineSize());
 
-            checkIndexInlineSize(type0.get1() + ", _VARCHAR", 1000);
+            checkIndexInlineSize(type0.get1() + ", _VARCHAR", MAX_INLINE_SIZE);
 
             for (IgniteBiTuple<String, InlineIndexKeyType> type1 : fixLenTypes) {
                 if (type0 == type1)
@@ -149,8 +151,22 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    @Test
+    public void testMaxInlineSizeIsUsedWhenExceeded() {
+        query("create table T1 (id long primary key, str varchar) with \"cache_name=" + CACHE + "\";");
+        query("CREATE INDEX IDX1 ON T1(STR) INLINE_SIZE 1000");
+
+        InlineIndexImpl idx = (InlineIndexImpl)
+                ignite.context().indexProcessor().index(new IndexName(CACHE, "PUBLIC", "T1", "IDX1"));
+
+        assertEquals(MAX_INLINE_SIZE, idx.inlineSize());
+
+        query("DROP INDEX IDX1");
+    }
+
+    /** */
     private void checkIndexInlineSize(String cols, int expInlineSz) {
-        query(String.format("CREATE INDEX IDX1 ON T1(_%s) INLINE_SIZE 1000", cols));
+        query(String.format("CREATE INDEX IDX1 ON T1(_%s) INLINE_SIZE " + MAX_INLINE_SIZE, cols));
 
         InlineIndexImpl idx = (InlineIndexImpl)
             ignite.context().indexProcessor().index(new IndexName("SQL_PUBLIC_T1", "PUBLIC", "T1", "IDX1"));
@@ -170,7 +186,7 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
         expInlineSize.put("PERSON_STR_IDX",
             9 + InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE);
         expInlineSize.put("PERSON_STRPRECBIG_IDX",
-            InlineIndexTree.IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT);
+            MAX_INLINE_SIZE);
         // 3 is for storing info (type, length) of inlined key.
         expInlineSize.put("PERSON_STRPREC_IDX",
             9 + InlineIndexTree.IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE + 10 + 3);

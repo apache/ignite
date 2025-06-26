@@ -63,9 +63,11 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
+import static org.apache.ignite.internal.util.IgniteUtils.MAX_INLINE_SIZE;
 
 /**
  * A set of basic tests for caches with indexes.
@@ -547,7 +549,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         cache = client.cache(DEFAULT_CACHE_NAME);
 
-        LogListener lsnrIdx5 = LogListener.matches(msg1).andMatches("idx5").build();
+        LogListener lsnrIdx5 = LogListener.matches(msg1).andMatches("newIndexName=idx5").build();
 
         srvLog.registerListener(lsnrIdx5);
 
@@ -555,7 +557,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertTrue(lsnrIdx5.check());
 
-        LogListener lsnrIdx7 = LogListener.matches(msg1).andMatches("idx7").build();
+        LogListener lsnrIdx7 = LogListener.matches(msg1).andMatches("newIndexName=idx7").build();
 
         srvLog.registerListener(lsnrIdx7);
 
@@ -1611,6 +1613,49 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertEquals(pkInlineSize, ((H2TreeIndex)tbl.getIndex("_key_PK")).inlineSize());
         assertEquals(affInlineSize, ((H2TreeIndex)tbl.getIndex("AFFINITY_KEY")).inlineSize());
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_MAX_INDEX_PAYLOAD_SIZE, value = Integer.MAX_VALUE + "")
+    public void testMaxInlineSizeIsUsedWhenExceeded() throws Exception {
+        inlineSize = -1;
+
+        IgniteEx ign = startGrid();
+
+        int idxColSize = MAX_INLINE_SIZE + 1;
+
+        sql("CREATE TABLE TEST (ID VARCHAR(" + idxColSize + "), ID_AFF VARCHAR, PRIMARY KEY (ID))");
+
+        GridH2Table tbl = ((IgniteH2Indexing)ign.context().query().getIndexing()).schemaManager().dataTable("PUBLIC", "TEST");
+
+        // Inline size can't be bigger than this constant.
+        assertEquals(MAX_INLINE_SIZE, ((H2TreeIndex)tbl.getIndex("_key_PK")).inlineSize());
+    }
+
+    /** */
+    @Test
+    public void testWarnWhenConfiguredInlineSizeExceedsMax() throws Exception {
+        inlineSize = -1;
+        srvLog = new ListeningTestLogger(log);
+
+        startGrid();
+
+        int idxInlineSize = MAX_INLINE_SIZE + 1;
+
+        String warnMsg = "Explicit INLINE_SIZE exceeds maximum size. Ignoring " +
+                "[index=PUBLIC.TEST.SOME_IDX, explicitInlineSize=" + idxInlineSize + ", maxInlineSize=" + MAX_INLINE_SIZE + "]";
+
+        LogListener lsnr = LogListener.matches(warnMsg).build();
+
+        srvLog.registerListener(lsnr);
+
+        sql("CREATE TABLE TEST (ID VARCHAR, ID_AFF INT, VAL INT, PRIMARY KEY (ID, ID_AFF))");
+        sql("CREATE INDEX SOME_IDX ON TEST (VAL) inline_size " + idxInlineSize);
+
+        assertTrue(lsnr.check());
+
+        srvLog.unregisterListener(lsnr);
     }
 
     /** */
