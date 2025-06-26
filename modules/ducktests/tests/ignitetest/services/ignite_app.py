@@ -124,10 +124,13 @@ class IgniteCustomApplicationService(IgniteApplicationService):
     APP_FINISH_EVT_MSG = "IGNITE_APPLICATION_FINISHED"
     APP_BROKEN_EVT_MSG = "Exception in thread \"main\""
 
-    def __init__(self, context, main_java_class, config=CustomApplicationConfiguration(), java_class_name='', num_nodes=1, params="", startup_timeout_sec=60,
-                 shutdown_timeout_sec=60, modules=None, jvm_opts=None,merge_with_default=True):
-        super().__init__(context=context, config=config, modules=modules, main_java_class=main_java_class, startup_timeout_sec=startup_timeout_sec, shutdown_timeout_sec=shutdown_timeout_sec,
-                        jvm_opts=jvm_opts, merge_with_default=merge_with_default, num_nodes=num_nodes, java_class_name=java_class_name)
+    def __init__(self, context, main_java_class, config=CustomApplicationConfiguration(), java_class_name='',
+                 num_nodes=1, params="", startup_timeout_sec=60, shutdown_timeout_sec=60, modules=None,
+                 jvm_opts=None, merge_with_default=True):
+        super().__init__(context=context, config=config, modules=modules, main_java_class=main_java_class,
+                         startup_timeout_sec=startup_timeout_sec, shutdown_timeout_sec=shutdown_timeout_sec,
+                         jvm_opts=jvm_opts, merge_with_default=merge_with_default, num_nodes=num_nodes,
+                         java_class_name=java_class_name)
 
         self.java_class_name = java_class_name
         self.params = params

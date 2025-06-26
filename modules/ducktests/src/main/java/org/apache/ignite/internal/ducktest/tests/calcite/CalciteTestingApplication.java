@@ -25,12 +25,13 @@ import org.junit.runner.Result;
  */
 public class CalciteTestingApplication {
 
+    /** Run StdSqlOperatorsTest tests */
     public static void main(String[] args) throws Exception {
         Result junitResult = JUnitCore.runClasses(StdSqlOperatorsTest.class);
 
         if (!junitResult.wasSuccessful()) {
-            String errMessage = String.valueOf(junitResult.getFailures().get(0));
-            throw new RuntimeException(errMessage);
+            String msg = String.valueOf(junitResult.getFailures().get(0));
+            throw new RuntimeException(msg);
         }
 
         System.out.println("IGNITE_APPLICATION_FINISHED");

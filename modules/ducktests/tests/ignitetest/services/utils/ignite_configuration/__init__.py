@@ -199,6 +199,7 @@ class IgniteThinJdbcConfiguration(NamedTuple):
         """
         return IgniteServiceType.THIN_JDBC
 
+
 class CustomApplicationConfiguration(NamedTuple):
     version: IgniteVersion = DEV_BRANCH
 
