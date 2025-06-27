@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
@@ -88,7 +89,16 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
                 throw new UnsupportedOperationException();
             }
 
+            @Override public void register(short directType, Supplier<Message> supplier,
+                MessageSerializer serializer) throws IgniteException {
+                throw new UnsupportedOperationException();
+            }
+
             @Nullable @Override public Message create(short type) {
+                return null;
+            }
+
+            @Override public MessageSerializer serializer(short type) {
                 return null;
             }
         });
