@@ -82,10 +82,10 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         lst.add(F.asList("DECIMAL(5,4)", BigDecimal.valueOf(1.4999d), "DECIMAL(2,1)", BigDecimal.valueOf(1.5)));
         lst.add(F.asList("DECIMAL(5,4)", BigDecimal.valueOf(-1.4999d), "DECIMAL(2,1)", BigDecimal.valueOf(-1.5)));
 
-        lst.add(F.asList("DECIMAL", new BigDecimal("-9223372036854775808.4"), "BIGINT", -9223372036854775808L));
-        lst.add(F.asList("DECIMAL", new BigDecimal("-9223372036854775808.5"), "BIGINT", overflowErr));
-        lst.add(F.asList("DECIMAL", new BigDecimal("9223372036854775807.4"), "BIGINT", 9223372036854775807L));
-        lst.add(F.asList("DECIMAL", new BigDecimal("9223372036854775807.5"), "BIGINT", overflowErr));
+        lst.add(F.asList("DECIMAL(20,1)", new BigDecimal("-9223372036854775808.4"), "BIGINT", -9223372036854775808L));
+        lst.add(F.asList("DECIMAL(20,1)", new BigDecimal("-9223372036854775808.5"), "BIGINT", overflowErr));
+        lst.add(F.asList("DECIMAL(20,1)", new BigDecimal("9223372036854775807.4"), "BIGINT", 9223372036854775807L));
+        lst.add(F.asList("DECIMAL(20,1)", new BigDecimal("9223372036854775807.5"), "BIGINT", overflowErr));
 
         lst.add(F.asList("DOUBLE", -2147483648.4d, "INT", -2147483648));
         lst.add(F.asList("DOUBLE", -2147483648.5d, "INT", overflowErr));
@@ -527,9 +527,9 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
         assertQuery("SELECT * FROM t")
             .returns(0, new BigDecimal("0.000"), new BigDecimal("0"), new BigDecimal("0"))
-            .returns(1, new BigDecimal("1.100"), new BigDecimal("1"), new BigDecimal("1.1"))
-            .returns(2, new BigDecimal("2.123"), new BigDecimal("2"), new BigDecimal("2.123"))
-            .returns(3, new BigDecimal("3.123"), new BigDecimal("3"), new BigDecimal("3.123456"))
+            .returns(1, new BigDecimal("1.100"), new BigDecimal("1"), new BigDecimal("1"))
+            .returns(2, new BigDecimal("2.123"), new BigDecimal("2"), new BigDecimal("2"))
+            .returns(3, new BigDecimal("3.123"), new BigDecimal("3"), new BigDecimal("3"))
             .returns(4, new BigDecimal("4.000"), new BigDecimal("4"), new BigDecimal("4"))
             .returns(5, new BigDecimal("5.000"), new BigDecimal("5"), new BigDecimal("5"))
             .returns(6, new BigDecimal("6.000"), new BigDecimal("6"), new BigDecimal("6"))
