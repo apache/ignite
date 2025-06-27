@@ -85,6 +85,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategy;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -806,8 +807,17 @@ public class GridNioServerWrapper {
                         get().register(directType, supplier);
                     }
 
+                    @Override public void register(short directType, Supplier<Message> supplier,
+                        MessageSerializer serializer) throws IgniteException {
+                        get().register(directType, supplier, serializer);
+                    }
+
                     @Nullable @Override public Message create(short type) {
                         return get().create(type);
+                    }
+
+                    @Override public MessageSerializer serializer(short type) {
+                        return get().serializer(type);
                     }
 
                     private MessageFactory get() {

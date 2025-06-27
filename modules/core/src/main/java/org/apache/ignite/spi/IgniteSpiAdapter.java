@@ -51,6 +51,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -759,8 +760,17 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                         throw new IgniteException("Failed to register message, node is not started.");
                     }
 
+                    @Override public void register(short directType, Supplier<Message> supplier,
+                        MessageSerializer serializer) throws IgniteException {
+                        throw new IgniteException("Failed to register message, node is not started.");
+                    }
+
                     @Nullable @Override public Message create(short type) {
                         throw new IgniteException("Failed to read message, node is not started.");
+                    }
+
+                    @Override public MessageSerializer serializer(short type) {
+                        throw new IgniteException("Failed to register message, node is not started.");
                     }
                 };
             }

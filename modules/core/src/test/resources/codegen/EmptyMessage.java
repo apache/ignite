@@ -27,14 +27,6 @@ public class EmptyMessage implements Message {
         return 0;
     }
 
-    public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        return true;
-    }
-
-    public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        return true;
-    }
-
     public void onAckReceived() {
         // No-op.
     }

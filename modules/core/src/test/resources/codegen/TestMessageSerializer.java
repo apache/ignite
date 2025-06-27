@@ -15,22 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.codegen;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.TestMessage;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.codegen.MessageSerializer
  */
-class TestMessageSerializer {
+public class TestMessageSerializer implements MessageSerializer {
     /** */
-    public static boolean writeTo(TestMessage msg, ByteBuffer buf, MessageWriter writer) {
+    @Override public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
+        TestMessage msg = (TestMessage)m;
+
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
@@ -113,7 +118,9 @@ class TestMessageSerializer {
     }
 
     /** */
-    public static boolean readFrom(TestMessage msg, ByteBuffer buf, MessageReader reader) {
+    @Override public boolean readFrom(Message m, ByteBuffer buf, MessageReader reader) {
+        TestMessage msg = (TestMessage)m;
+
         reader.setBuffer(buf);
 
         switch (reader.state()) {

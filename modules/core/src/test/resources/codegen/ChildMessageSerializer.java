@@ -15,20 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.codegen;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.internal.ChildMessage;
 
 /**
  * This class is generated automatically.
  *
- * @see org.apache.ignite.codegen.MessageSerializer
+ * @see org.apache.ignite.codegen.MessageSerializerGenerator
  */
-class ChildMessageSerializer {
+public class ChildMessageSerializer implements MessageSerializer {
     /** */
-    public static boolean writeTo(ChildMessage msg, ByteBuffer buf, MessageWriter writer) {
+    @Override public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
+        ChildMessage msg = (ChildMessage)m;
+
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
@@ -57,7 +62,9 @@ class ChildMessageSerializer {
     }
 
     /** */
-    public static boolean readFrom(ChildMessage msg, ByteBuffer buf, MessageReader reader) {
+    @Override public boolean readFrom(Message m, ByteBuffer buf, MessageReader reader) {
+        ChildMessage msg = (ChildMessage)m;
+
         reader.setBuffer(buf);
 
         switch (reader.state()) {
