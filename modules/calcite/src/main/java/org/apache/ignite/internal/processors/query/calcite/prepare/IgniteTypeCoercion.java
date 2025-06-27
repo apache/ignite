@@ -199,6 +199,12 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
                 || ((JavaTypeFactory)factory).toSql(fromType).getSqlTypeName() == SqlTypeName.UUID)
                 return false;
         }
+        else if (SqlTypeUtil.isCollection(toType)) {
+            RelDataType fromType = validator.deriveType(scope, node);
+
+            if (fromType != null && fromType.getSqlTypeName() == SqlTypeName.NULL)
+                return false;
+        }
 
         return super.needToCast(scope, node, toType);
     }
