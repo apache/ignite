@@ -202,6 +202,11 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         else if (SqlTypeUtil.isCollection(toType)) {
             RelDataType fromType = validator.deriveType(scope, node);
 
+            /**
+             * {@link org.apache.calcite.rel.core.Aggregate#typeMatchesInferred(AggregateCall, Litmus)} may fail if
+             * nullability of collection type or collection's element type aren't equal.
+             * Query example: `SELECT ARRAY_CONCAT_AGG(a) FROM (SELECT ARRAY[1, 2, 3] UNION ALL SELECT NULL) T(a)`.
+             */
             if (fromType != null && fromType.getSqlTypeName() == SqlTypeName.NULL)
                 return false;
         }
