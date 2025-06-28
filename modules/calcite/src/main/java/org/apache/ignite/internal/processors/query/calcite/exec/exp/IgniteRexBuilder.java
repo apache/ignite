@@ -67,6 +67,8 @@ public class IgniteRexBuilder extends RexBuilder {
         return super.makeLiteral(o, type, typeName);
     }
 
+    // TODO fixed by https://issues.apache.org/jira/browse/CALCITE-6992
+    // Remove after update to Calcite 1.40.
     /** {@inheritDoc} */
     @Override public RexNode makeLiteral(@Nullable Object val, RelDataType type, boolean allowCast, boolean trim) {
         if (val instanceof UUID)

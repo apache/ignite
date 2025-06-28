@@ -24,6 +24,7 @@ import org.apache.calcite.rel.type.DynamicRecordType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
+import org.apache.calcite.sql.SqlBasicTypeNameSpec;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlCollation;
@@ -109,16 +110,9 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
                 return false;
 
             if (SqlTypeUtil.inCharFamily(fromType) || targetType instanceof OtherType) {
-                final RelDataType targetType0 = factory.createTypeWithNullability(targetType, fromType.isNullable());
-
-                SqlTypeNameSpec typeNameSpec = new SqlUserDefinedTypeNameSpec(targetType0.toString(), SqlParserPos.ZERO) {
-                    @Override public RelDataType deriveType(SqlValidator validator) {
-                        if (targetType0.getSqlTypeName() == SqlTypeName.UUID)
-                            return targetType0;
-
-                        return super.deriveType(validator);
-                    }
-                };
+                SqlTypeNameSpec typeNameSpec = targetType.getSqlTypeName() == SqlTypeName.UUID
+                    ? new SqlBasicTypeNameSpec(SqlTypeName.UUID, SqlParserPos.ZERO)
+                    : new SqlUserDefinedTypeNameSpec(targetType.toString(), SqlParserPos.ZERO);
 
                 SqlNode desired = SqlStdOperatorTable.CAST.createCall(
                     SqlParserPos.ZERO,
@@ -127,7 +121,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
                 );
 
                 call.setOperand(idx, desired);
-                updateInferredType(desired, targetType0);
+                updateInferredType(desired, targetType);
 
                 return true;
             }
@@ -202,6 +196,11 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         else if (SqlTypeUtil.isCollection(toType)) {
             RelDataType fromType = validator.deriveType(scope, node);
 
+            /**
+             * {@link org.apache.calcite.rel.core.Aggregate#typeMatchesInferred(AggregateCall, Litmus)} may fail if
+             * nullability of collection type or collection's element type aren't equal.
+             * Query example: `SELECT ARRAY_CONCAT_AGG(a) FROM (SELECT ARRAY[1, 2, 3] UNION ALL SELECT NULL) T(a)`.
+             */
             if (fromType != null && fromType.getSqlTypeName() == SqlTypeName.NULL)
                 return false;
         }
