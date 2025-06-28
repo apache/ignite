@@ -453,7 +453,13 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     protected Path workingDirectory(IgniteConfiguration cfg) {
         try {
-            return Paths.get(U.defaultWorkDirectory(), U.maskForFileName(cfg.getIgniteInstanceName()));
+            Path p = Paths.get(U.defaultWorkDirectory(), U.maskForFileName(cfg.getIgniteInstanceName()));
+
+            log.info("***********************************************************************************************");
+            log.info("Path: " + p);
+            log.info("***********************************************************************************************");
+
+            return p;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
