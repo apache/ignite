@@ -242,7 +242,7 @@ public enum PlannerPhase {
                     CoreRules.UNION_REMOVE,
                     CoreRules.MINUS_MERGE,
                     CoreRules.MINUS_REMOVE,
-                    CoreRules.INTERSECT_TO_EXISTS,
+                    //CoreRules.INTERSECT_TO_EXISTS,
                     CoreRules.INTERSECT_MERGE,
                     CoreRules.INTERSECT_REMOVE,
                     CoreRules.INTERSECT_REORDER,
