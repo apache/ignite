@@ -154,6 +154,9 @@ public class TypeUtils {
         if (SqlTypeUtil.equalSansNullability(factory, fromType, toType))
             return false;
 
+        if (fromType.getSqlTypeName() == SqlTypeName.UUID && toType.getSqlTypeName() == SqlTypeName.NULL)
+            return false;
+
         // Should keep sync with rules in SqlTypeCoercionRule.
         assert SqlTypeUtil.canCastFrom(toType, fromType, true);
 
@@ -521,12 +524,7 @@ public class TypeUtils {
      * @return RexNode
      */
     public static RexNode toRexLiteral(Object dfltVal, RelDataType type, DataContext ctx, RexBuilder rexBuilder) {
-        if (dfltVal instanceof UUID) {
-            // There is no internal UUID data type in Calcite, so convert UUID to VARCHAR literal and then cast to UUID.
-            dfltVal = dfltVal.toString();
-        }
-        else
-            dfltVal = toInternal(ctx, dfltVal);
+        dfltVal = toInternal(ctx, dfltVal);
 
         return rexBuilder.makeLiteral(dfltVal, type, true);
     }

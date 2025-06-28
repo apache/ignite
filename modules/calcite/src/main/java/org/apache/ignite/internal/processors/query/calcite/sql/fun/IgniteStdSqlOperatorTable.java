@@ -90,6 +90,7 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.LISTAGG);
         register(SqlLibraryOperators.ARRAY_AGG);
         register(SqlLibraryOperators.ARRAY_CONCAT_AGG);
+
         register(SqlStdOperatorTable.EVERY);
         register(SqlStdOperatorTable.SOME);
 

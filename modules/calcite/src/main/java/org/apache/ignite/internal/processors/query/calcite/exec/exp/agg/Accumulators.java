@@ -34,10 +34,10 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.type.UuidType;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.sql.type.SqlTypeName.ANY;
@@ -135,6 +135,7 @@ public class Accumulators {
     private static <Row> Supplier<Accumulator<Row>> avgFactory(AggregateCall call, RowHandler<Row> hnd) {
         switch (call.type.getSqlTypeName()) {
             case ANY:
+            case UUID:
                 throw new UnsupportedOperationException("AVG() is not supported for type '" + call.type + "'.");
             case BIGINT:
             case DECIMAL:
@@ -167,6 +168,7 @@ public class Accumulators {
     private static <Row> Supplier<Accumulator<Row>> sumFactory(AggregateCall call, RowHandler<Row> hnd) {
         switch (call.type.getSqlTypeName()) {
             case ANY:
+            case UUID:
                 throw new UnsupportedOperationException("SUM() is not supported for type '" + call.type + "'.");
 
             case BIGINT:
@@ -190,6 +192,7 @@ public class Accumulators {
     private static <Row> Supplier<Accumulator<Row>> sumEmptyIsZeroFactory(AggregateCall call, RowHandler<Row> hnd) {
         switch (call.type.getSqlTypeName()) {
             case ANY:
+            case UUID:
                 throw new UnsupportedOperationException("SUM() is not supported for type '" + call.type + "'.");
 
             case BIGINT:
@@ -227,11 +230,10 @@ public class Accumulators {
             case VARBINARY:
                 return () -> new ComparableMinMax<Row, ByteString>(call, hnd, true,
                     tf -> tf.createTypeWithNullability(tf.createSqlType(VARBINARY), true));
+            case UUID:
+                return () -> new ComparableMinMax<Row, UUID>(call, hnd, true,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.UUID), true));
             case ANY:
-                if (call.type instanceof UuidType) {
-                    return () -> new ComparableMinMax<Row, UUID>(call, hnd, true,
-                        tf -> tf.createTypeWithNullability(tf.createCustomType(UUID.class), true));
-                }
                 throw new UnsupportedOperationException("MIN() is not supported for type '" + call.type + "'.");
             case BIGINT:
             default:
@@ -257,11 +259,10 @@ public class Accumulators {
             case VARBINARY:
                 return () -> new ComparableMinMax<Row, ByteString>(call, hnd, false,
                     tf -> tf.createTypeWithNullability(tf.createSqlType(VARBINARY), true));
+            case UUID:
+                return () -> new ComparableMinMax<Row, UUID>(call, hnd, false,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.UUID), true));
             case ANY:
-                if (call.type instanceof UuidType) {
-                    return () -> new ComparableMinMax<Row, UUID>(call, hnd, false,
-                        tf -> tf.createTypeWithNullability(tf.createCustomType(UUID.class), true));
-                }
                 throw new UnsupportedOperationException("MAX() is not supported for type '" + call.type + "'.");
             case BIGINT:
             default:

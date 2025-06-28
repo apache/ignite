@@ -32,18 +32,18 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.sql.SqlUserDefinedTypeNameSpec;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeFamily;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteCustomType;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
-import org.apache.ignite.internal.processors.query.calcite.type.UuidType;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -100,7 +100,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         int idx,
         RelDataType targetType
     ) {
-        if (targetType instanceof IgniteCustomType) {
+        if (targetType instanceof OtherType || targetType.getSqlTypeName() == SqlTypeName.UUID) {
             SqlNode operand = call.getOperandList().get(idx);
 
             RelDataType fromType = validator.deriveType(scope, operand);
@@ -109,17 +109,25 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
                 return false;
 
             if (SqlTypeUtil.inCharFamily(fromType) || targetType instanceof OtherType) {
-                targetType = factory.createTypeWithNullability(targetType, fromType.isNullable());
+                final RelDataType targetType0 = factory.createTypeWithNullability(targetType, fromType.isNullable());
+
+                SqlTypeNameSpec typeNameSpec = new SqlUserDefinedTypeNameSpec(targetType0.toString(), SqlParserPos.ZERO) {
+                    @Override public RelDataType deriveType(SqlValidator validator) {
+                        if (targetType0.getSqlTypeName() == SqlTypeName.UUID)
+                            return targetType0;
+
+                        return super.deriveType(validator);
+                    }
+                };
 
                 SqlNode desired = SqlStdOperatorTable.CAST.createCall(
                     SqlParserPos.ZERO,
                     operand,
-                    new SqlDataTypeSpec(new SqlUserDefinedTypeNameSpec(targetType.toString(), SqlParserPos.ZERO),
-                        SqlParserPos.ZERO).withNullable(targetType.isNullable())
+                    new SqlDataTypeSpec(typeNameSpec, SqlParserPos.ZERO).withNullable(targetType.isNullable())
                 );
 
                 call.setOperand(idx, desired);
-                updateInferredType(desired, targetType);
+                updateInferredType(desired, targetType0);
 
                 return true;
             }
@@ -155,10 +163,10 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         if (type1 == null || type2 == null)
             return null;
 
-        if (type1 instanceof UuidType && SqlTypeUtil.isCharacter(type2))
+        if (type1.getSqlTypeName() == SqlTypeName.UUID && SqlTypeUtil.isCharacter(type2))
             return type1;
 
-        if (type2 instanceof UuidType && SqlTypeUtil.isCharacter(type1))
+        if (type2.getSqlTypeName() == SqlTypeName.UUID && SqlTypeUtil.isCharacter(type1))
             return type2;
 
         return super.commonTypeForBinaryComparison(type1, type2);
@@ -183,13 +191,30 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             if (SqlTypeUtil.isIntType(fromType) && fromType.getSqlTypeName() != toType.getSqlTypeName())
                 return true;
         }
+        else if (toType.getSqlTypeName() == SqlTypeName.UUID
+            || ((JavaTypeFactory)factory).toSql(toType).getSqlTypeName() == SqlTypeName.UUID) {
+            RelDataType fromType = validator.deriveType(scope, node);
+
+            if (fromType != null && fromType.getSqlTypeName() == SqlTypeName.UUID
+                || ((JavaTypeFactory)factory).toSql(fromType).getSqlTypeName() == SqlTypeName.UUID)
+                return false;
+        }
+        else if (SqlTypeUtil.isCollection(toType)) {
+            RelDataType fromType = validator.deriveType(scope, node);
+
+            /**
+             * {@link org.apache.calcite.rel.core.Aggregate#typeMatchesInferred(AggregateCall, Litmus)} may fail if
+             * nullability of collection type or collection's element type aren't equal.
+             * Query example: `SELECT ARRAY_CONCAT_AGG(a) FROM (SELECT ARRAY[1, 2, 3] UNION ALL SELECT NULL) T(a)`.
+             */
+            if (fromType != null && fromType.getSqlTypeName() == SqlTypeName.NULL)
+                return false;
+        }
 
         return super.needToCast(scope, node, toType);
     }
 
-
     // The method is fully copied from parent class with cutted operand check to SqlDynamicParam, which not supported.
-
     /** {@inheritDoc} */
     @Override protected boolean coerceColumnType(
         @Nullable SqlValidatorScope scope,

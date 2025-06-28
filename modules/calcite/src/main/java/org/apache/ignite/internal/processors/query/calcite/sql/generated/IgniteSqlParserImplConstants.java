@@ -692,132 +692,134 @@ public interface IgniteSqlParserImplConstants {
   int UTF8 = 686;
   int UTF16 = 687;
   int UTF32 = 688;
-  int VALUE = 689;
-  int VALUES = 690;
-  int VALUE_OF = 691;
-  int VAR_POP = 692;
-  int VAR_SAMP = 693;
-  int VARBINARY = 694;
-  int VARCHAR = 695;
-  int VARYING = 696;
-  int VERSION = 697;
-  int VERSIONING = 698;
-  int VIEW = 699;
-  int WEDNESDAY = 700;
-  int WEEK = 701;
-  int WEEKS = 702;
-  int WHEN = 703;
-  int WHENEVER = 704;
-  int WHERE = 705;
-  int WIDTH_BUCKET = 706;
-  int WINDOW = 707;
-  int WITH = 708;
-  int WITHIN = 709;
-  int WITHOUT = 710;
-  int WORK = 711;
-  int WRAPPER = 712;
-  int WRITE = 713;
-  int XML = 714;
-  int YEAR = 715;
-  int YEARS = 716;
-  int ZONE = 717;
-  int IF = 718;
-  int TEMPLATE = 719;
-  int BACKUPS = 720;
-  int AFFINITY_KEY = 721;
-  int ATOMICITY = 722;
-  int WRITE_SYNCHRONIZATION_MODE = 723;
-  int CACHE_GROUP = 724;
-  int CACHE_NAME = 725;
-  int DATA_REGION = 726;
-  int VALUE_TYPE = 727;
-  int ENCRYPTED = 728;
-  int INDEX = 729;
-  int PARALLEL = 730;
-  int INLINE_SIZE = 731;
-  int LOGGING = 732;
-  int NOLOGGING = 733;
-  int PASSWORD = 734;
-  int KILL = 735;
-  int SCAN = 736;
-  int CONTINUOUS = 737;
-  int SERVICE = 738;
-  int COMPUTE = 739;
-  int ASYNC = 740;
-  int QUERY = 741;
-  int STATISTICS = 742;
-  int REFRESH = 743;
-  int ANALYZE = 744;
-  int MAX_CHANGED_PARTITION_ROWS_PERCENT = 745;
-  int TOTAL = 746;
-  int UNSIGNED_INTEGER_LITERAL = 747;
-  int APPROX_NUMERIC_LITERAL = 748;
-  int DECIMAL_NUMERIC_LITERAL = 749;
-  int EXPONENT = 750;
-  int HEXDIGIT = 751;
-  int WHITESPACE = 752;
-  int BINARY_STRING_LITERAL = 753;
-  int QUOTED_STRING = 754;
-  int PREFIXED_STRING_LITERAL = 755;
-  int UNICODE_STRING_LITERAL = 756;
-  int C_STYLE_ESCAPED_STRING_LITERAL = 757;
-  int CHARSETNAME = 758;
-  int BIG_QUERY_DOUBLE_QUOTED_STRING = 759;
-  int BIG_QUERY_QUOTED_STRING = 760;
-  int UNICODE_QUOTED_ESCAPE_CHAR = 761;
-  int LPAREN = 762;
-  int RPAREN = 763;
-  int LBRACE_D = 764;
-  int LBRACE_T = 765;
-  int LBRACE_TS = 766;
-  int LBRACE_FN = 767;
-  int LBRACE = 768;
-  int RBRACE = 769;
-  int LBRACKET = 770;
-  int RBRACKET = 771;
-  int SEMICOLON = 772;
-  int DOT = 773;
-  int COMMA = 774;
-  int EQ = 775;
-  int GT = 776;
-  int LT = 777;
-  int HOOK = 778;
-  int COLON = 779;
-  int LE = 780;
-  int GE = 781;
-  int NE = 782;
-  int NE2 = 783;
-  int PLUS = 784;
-  int MINUS = 785;
-  int LAMBDA = 786;
-  int STAR = 787;
-  int SLASH = 788;
-  int PERCENT_REMAINDER = 789;
-  int CONCAT = 790;
-  int NAMED_ARGUMENT_ASSIGNMENT = 791;
-  int DOUBLE_PERIOD = 792;
-  int QUOTE = 793;
-  int DOUBLE_QUOTE = 794;
-  int VERTICAL_BAR = 795;
-  int CARET = 796;
-  int DOLLAR = 797;
-  int INFIX_CAST = 798;
-  int HINT_BEG = 804;
-  int COMMENT_END = 805;
-  int SINGLE_LINE_COMMENT = 808;
-  int FORMAL_COMMENT = 809;
-  int MULTI_LINE_COMMENT = 810;
-  int BRACKET_QUOTED_IDENTIFIER = 812;
-  int QUOTED_IDENTIFIER = 813;
-  int BACK_QUOTED_IDENTIFIER = 814;
-  int BIG_QUERY_BACK_QUOTED_IDENTIFIER = 815;
-  int HYPHENATED_IDENTIFIER = 816;
-  int IDENTIFIER = 817;
-  int COLLATION_ID = 818;
-  int UNICODE_QUOTED_IDENTIFIER = 819;
-  int LETTER = 820;
-  int DIGIT = 821;
-  int BEL = 822;
+  int UUID = 689;
+  int VALUE = 690;
+  int VALUES = 691;
+  int VALUE_OF = 692;
+  int VAR_POP = 693;
+  int VAR_SAMP = 694;
+  int VARBINARY = 695;
+  int VARCHAR = 696;
+  int VARIANT = 697;
+  int VARYING = 698;
+  int VERSION = 699;
+  int VERSIONING = 700;
+  int VIEW = 701;
+  int WEDNESDAY = 702;
+  int WEEK = 703;
+  int WEEKS = 704;
+  int WHEN = 705;
+  int WHENEVER = 706;
+  int WHERE = 707;
+  int WIDTH_BUCKET = 708;
+  int WINDOW = 709;
+  int WITH = 710;
+  int WITHIN = 711;
+  int WITHOUT = 712;
+  int WORK = 713;
+  int WRAPPER = 714;
+  int WRITE = 715;
+  int XML = 716;
+  int YEAR = 717;
+  int YEARS = 718;
+  int ZONE = 719;
+  int IF = 720;
+  int TEMPLATE = 721;
+  int BACKUPS = 722;
+  int AFFINITY_KEY = 723;
+  int ATOMICITY = 724;
+  int WRITE_SYNCHRONIZATION_MODE = 725;
+  int CACHE_GROUP = 726;
+  int CACHE_NAME = 727;
+  int DATA_REGION = 728;
+  int VALUE_TYPE = 729;
+  int ENCRYPTED = 730;
+  int INDEX = 731;
+  int PARALLEL = 732;
+  int INLINE_SIZE = 733;
+  int LOGGING = 734;
+  int NOLOGGING = 735;
+  int PASSWORD = 736;
+  int KILL = 737;
+  int SCAN = 738;
+  int CONTINUOUS = 739;
+  int SERVICE = 740;
+  int COMPUTE = 741;
+  int ASYNC = 742;
+  int QUERY = 743;
+  int STATISTICS = 744;
+  int REFRESH = 745;
+  int ANALYZE = 746;
+  int MAX_CHANGED_PARTITION_ROWS_PERCENT = 747;
+  int TOTAL = 748;
+  int UNSIGNED_INTEGER_LITERAL = 749;
+  int APPROX_NUMERIC_LITERAL = 750;
+  int DECIMAL_NUMERIC_LITERAL = 751;
+  int EXPONENT = 752;
+  int HEXDIGIT = 753;
+  int WHITESPACE = 754;
+  int BINARY_STRING_LITERAL = 755;
+  int QUOTED_STRING = 756;
+  int PREFIXED_STRING_LITERAL = 757;
+  int UNICODE_STRING_LITERAL = 758;
+  int C_STYLE_ESCAPED_STRING_LITERAL = 759;
+  int CHARSETNAME = 760;
+  int BIG_QUERY_DOUBLE_QUOTED_STRING = 761;
+  int BIG_QUERY_QUOTED_STRING = 762;
+  int UNICODE_QUOTED_ESCAPE_CHAR = 763;
+  int LPAREN = 764;
+  int RPAREN = 765;
+  int LBRACE_D = 766;
+  int LBRACE_T = 767;
+  int LBRACE_TS = 768;
+  int LBRACE_FN = 769;
+  int LBRACE = 770;
+  int RBRACE = 771;
+  int LBRACKET = 772;
+  int RBRACKET = 773;
+  int SEMICOLON = 774;
+  int DOT = 775;
+  int COMMA = 776;
+  int EQ = 777;
+  int GT = 778;
+  int LT = 779;
+  int HOOK = 780;
+  int COLON = 781;
+  int LE = 782;
+  int GE = 783;
+  int NE = 784;
+  int NE2 = 785;
+  int PLUS = 786;
+  int MINUS = 787;
+  int LAMBDA = 788;
+  int STAR = 789;
+  int SLASH = 790;
+  int PERCENT_REMAINDER = 791;
+  int CONCAT = 792;
+  int NAMED_ARGUMENT_ASSIGNMENT = 793;
+  int DOUBLE_PERIOD = 794;
+  int QUOTE = 795;
+  int DOUBLE_QUOTE = 796;
+  int VERTICAL_BAR = 797;
+  int CARET = 798;
+  int DOLLAR = 799;
+  int INFIX_CAST = 800;
+  int HINT_BEG = 806;
+  int COMMENT_END = 807;
+  int SINGLE_LINE_COMMENT = 810;
+  int FORMAL_COMMENT = 811;
+  int MULTI_LINE_COMMENT = 812;
+  int BRACKET_QUOTED_IDENTIFIER = 814;
+  int QUOTED_IDENTIFIER = 815;
+  int BACK_QUOTED_IDENTIFIER = 816;
+  int BIG_QUERY_BACK_QUOTED_IDENTIFIER = 817;
+  int HYPHENATED_IDENTIFIER = 818;
+  int IDENTIFIER = 819;
+  int COLLATION_ID = 820;
+  int UNICODE_QUOTED_IDENTIFIER = 821;
+  int LETTER = 822;
+  int DIGIT = 823;
+  int BEL = 824;
 
   int DEFAULT = 0;
   int DQID = 1;
@@ -1517,6 +1519,7 @@ public interface IgniteSqlParserImplConstants {
     "\"UTF8\"",
     "\"UTF16\"",
     "\"UTF32\"",
+    "\"UUID\"",
     "\"VALUE\"",
     "\"VALUES\"",
     "\"VALUE_OF\"",
@@ -1524,6 +1527,7 @@ public interface IgniteSqlParserImplConstants {
     "\"VAR_SAMP\"",
     "\"VARBINARY\"",
     "\"VARCHAR\"",
+    "\"VARIANT\"",
     "\"VARYING\"",
     "\"VERSION\"",
     "\"VERSIONING\"",
@@ -1634,12 +1638,12 @@ public interface IgniteSqlParserImplConstants {
     "\"\\f\"",
     "\"/*+\"",
     "\"*/\"",
-    "<token of kind 806>",
+    "<token of kind 808>",
     "\"/*\"",
     "<SINGLE_LINE_COMMENT>",
     "<FORMAL_COMMENT>",
     "<MULTI_LINE_COMMENT>",
-    "<token of kind 811>",
+    "<token of kind 813>",
     "<BRACKET_QUOTED_IDENTIFIER>",
     "<QUOTED_IDENTIFIER>",
     "<BACK_QUOTED_IDENTIFIER>",
