@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -29,6 +31,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -114,6 +117,57 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
         createAndPopulateIndexedTable(0, CacheMode.REPLICATED);
 
         assertQuery("select count(*) from person").returns(7L).check();
+    }
+
+    /** TODO https://issues.apache.org/jira/browse/IGNITE-25765 : unignore after the fix. */
+    @Ignore
+    @Test
+    public void testArrayConcatAgg() {
+        sql("CREATE TABLE tarr(val INT, arrn INTEGER ARRAY, arrnn INTEGER ARRAY NOT NULL, arrn2 INTEGER ARRAY) WITH "
+            + atomicity());
+
+        sql("INSERT INTO tarr VALUES (1, null, ARRAY[1,2,3], ARRAY[10,11,12]), (2, ARRAY[4,5,6], ARRAY[7,8,9], null)");
+
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrn from tarr union all select arrnn from tarr) T(a)")
+            .returns(IntStream.range(1, 8).boxed().collect(Collectors.toList()))
+            .check();
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrnn from tarr union all select arrn from tarr) T(a)")
+            .returns(F.asList(1, 2, 3, 7, 8, 9, 4, 5, 6))
+            .check();
+
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrn from tarr union all select arrn2 from tarr) T(a)")
+            .returns(F.asList(10, 11, 12, 4, 5, 6, 7, 8, 9))
+            .check();
+        assertQuery("SELECT ARRAY_CONCAT_AGG(arrnn) from tarr")
+            .returns(F.asList(1, 2, 3, 7, 8, 9))
+            .check();
+        assertQuery("SELECT ARRAY_CONCAT_AGG(arrn) from tarr")
+            .returns(F.asList(4, 5, 6))
+            .check();
+
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrn from tarr union all select NULL) T(a)")
+            .returns(F.asList(10, 11, 12, 4, 5, 6, 7, 8, 9))
+            .check();
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrn from tarr union all select ARRAY[0,0,0]) T(a)")
+            .returns(F.asList(4, 5, 6, 0, 0, 0))
+            .check();
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select ARRAY[0,0,0] union all select arrn from tarr) T(a)")
+            .returns(F.asList(4, 5, 6, 0, 0, 0))
+            .check();
+
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select null union all select arrnn from tarr) T(a)")
+            .returns(F.asList(10, 11, 12, 4, 5, 6, 7, 8, 9))
+            .returns((Object)null)
+            .check();
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrnn from tarr union all select NULL) T(a)")
+            .returns(F.asList(10, 11, 12, 4, 5, 6, 7, 8, 9))
+            .check();
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrnn from tarr union all select ARRAY[0,0,0]) T(a)")
+            .returns(F.asList(4, 5, 6, 0, 0, 0))
+            .check();
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select ARRAY[0,0,0] union all select arrnn from tarr) T(a)")
+            .returns(F.asList(4, 5, 6, 0, 0, 0))
+            .check();
     }
 
     /** */

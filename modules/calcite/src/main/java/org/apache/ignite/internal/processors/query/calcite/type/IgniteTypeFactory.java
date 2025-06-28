@@ -264,44 +264,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         assert types != null;
         assert types.size() >= 1;
 
-        if (types.size() == 1)
+        if (types.size() == 1 || allEquals(types))
             return F.first(types);
-
-        boolean allEquals = true;
-        int uuidCnt = 0;
-        int nullCnt = 0;
-        boolean nullable = false;
-
-        for (int i = 0; i < types.size(); ++i) {
-            RelDataType type = types.get(i);
-
-            assert type != null;
-
-            if (i > 0 && allEquals && !type.equals(types.get(i - 1)))
-                allEquals = false;
-
-            if (!nullable && type.isNullable())
-                nullable = true;
-
-            if (type.getSqlTypeName() == SqlTypeName.UUID)
-                ++uuidCnt;
-            else if (type.getSqlTypeName() == SqlTypeName.NULL)
-                ++nullCnt;
-        }
-
-        if (allEquals)
-            return F.first(types);
-
-        // Least restrictive for UUID should be only NULL or UUID.
-        if (uuidCnt > 0) {
-            if (uuidCnt == types.size())
-                return createTypeWithNullability(createSqlType(SqlTypeName.NULL), nullable);
-
-            if (nullCnt > 0 && uuidCnt + nullCnt == types.size())
-                return createSqlType(SqlTypeName.NULL);
-
-            return null;
-        }
 
         RelDataType res = super.leastRestrictive(types);
 

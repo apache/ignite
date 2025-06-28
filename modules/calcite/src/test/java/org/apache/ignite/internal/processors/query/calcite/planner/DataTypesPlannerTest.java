@@ -26,11 +26,13 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 /**
@@ -68,8 +70,10 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
         SqlTypeName[] numTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.REAL,
             SqlTypeName.FLOAT, SqlTypeName.INTEGER, SqlTypeName.BIGINT, SqlTypeName.DOUBLE, SqlTypeName.DECIMAL};
 
-        // TODO https://issues.apache.org/jira/browse/CALCITE-7062 : below.
-        // boolean notNull = !nullable1 && !nullable2;
+        // TODO https://issues.apache.org/jira/browse/CALCITE-7062 Change notNull1 and notNull2 to notNull after fix.
+        //String notNull = !nullable1 && !nullable2 ? " NOT NULL" : "";
+        String notNull1 = !nullable1 ? " NOT NULL" : "";
+        String notNull2 = !nullable2 ? " NOT NULL" : "";
 
         for (SqlTypeName t1 : numTypes) {
             for (SqlTypeName t2 : numTypes) {
@@ -93,26 +97,18 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
                     if (log.isInfoEnabled())
                         log.info("Test query: '" + sql + "', type1: " + t1 + ", t2: " + t2);
 
-                    if (t1 == t2 && (!nullable1 || !nullable2))
-                        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate());
+                    if (t1 == t2 && (!nullable1 || !nullable2)) {
+                        assertPlan(sql, schema,
+                            nodeOrAnyChild(isInstanceOf(IgniteTableScan.class).and(scan -> !F.isEmpty(scan.projects()))).negate());
+                    }
                     else {
                         RelDataType targetT = f.leastRestrictive(Arrays.asList(f.createSqlType(t1), f.createSqlType(t2)));
 
-                        // TODO https://issues.apache.org/jira/browse/CALCITE-7062 : Revert checks of NOT NULL casts after a fix.
-//                        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(SetOp.class)
-//                            .and(t1 == targetT.getSqlTypeName() ? input(0, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
-//                                : input(0, checkProject("TABLE1", "CAST($t0):" + targetT + (notNull ? " NOT NULL" : ""), "$t1")))
-//                            .and(t2 == targetT.getSqlTypeName() ? input(1, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
-//                                : input(1, checkProject("TABLE2", "CAST($t0):" + targetT + (notNull ? " NOT NULL" : ""), "$t1")))
-//                        ));
-                        String cast1 = "[CAST($t0):" + targetT + ", $t1]";
-                        String cast2 = "[CAST($t0):" + targetT + " NOT NULL, $t1]";
-
                         assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(SetOp.class)
                             .and(t1 == targetT.getSqlTypeName() ? input(0, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
-                                : input(0, checkProject("TABLE1", cast1, cast2)))
+                                : input(0, projectFromTable("TABLE1", "[CAST($t0):" + targetT + notNull1 + ", $t1]")))
                             .and(t2 == targetT.getSqlTypeName() ? input(1, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
-                                : input(1, checkProject("TABLE2", cast1, cast2)))
+                                : input(1, projectFromTable("TABLE2", "[CAST($t0):" + targetT + notNull2 + ", $t1]")))
                         ));
                     }
                 }
@@ -120,17 +116,10 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
         }
     }
 
-    /** Searches for any on the projects within a table scan. */
-    protected Predicate<? extends RelNode> checkProject(String tableName, String... projects) {
-        return nodeOrAnyChild(isTableScan(tableName).and(tblScan -> {
-            String actualProj = tblScan.projects().toString();
-
-            for (String toMatch : projects) {
-                if (actualProj.equals(toMatch))
-                    return true;
-            }
-
-            return false;
-        }));
+    /** */
+    protected Predicate<? extends RelNode> projectFromTable(String tableName, String expectedProj) {
+        return nodeOrAnyChild(isTableScan(tableName)
+            .and(tblScan -> tblScan.projects() != null && expectedProj.equals(tblScan.projects().toString()))
+        );
     }
 }
