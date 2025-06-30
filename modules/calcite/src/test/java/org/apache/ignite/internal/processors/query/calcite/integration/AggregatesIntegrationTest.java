@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -119,8 +117,8 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
         assertQuery("select count(*) from person").returns(7L).check();
     }
 
-    /** TODO https://issues.apache.org/jira/browse/IGNITE-25765 : unignore after the fix. */
-    @Ignore
+    /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-25765")
     @Test
     public void testArrayConcatAgg() {
         sql("CREATE TABLE tarr(val INT, arrn INTEGER ARRAY, arrnn INTEGER ARRAY NOT NULL, arrn2 INTEGER ARRAY) WITH "
@@ -129,7 +127,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
         sql("INSERT INTO tarr VALUES (1, null, ARRAY[1,2,3], ARRAY[10,11,12]), (2, ARRAY[4,5,6], ARRAY[7,8,9], null)");
 
         assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrn from tarr union all select arrnn from tarr) T(a)")
-            .returns(IntStream.range(1, 8).boxed().collect(Collectors.toList()))
+            .returns(F.asList(1, 2, 3, 4, 5, 6, 7))
             .check();
         assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrnn from tarr union all select arrn from tarr) T(a)")
             .returns(F.asList(1, 2, 3, 7, 8, 9, 4, 5, 6))
