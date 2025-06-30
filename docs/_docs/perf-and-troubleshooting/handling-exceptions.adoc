@@ -249,7 +249,7 @@ include::{javaFile}[tag=failure-types,indent=0]
 === Handling Exception When Executing `ComputeTask` Using link:https://ignite.apache.org/docs/latest/distributed-computing/map-reduce#:~:text=and%20map(%E2%80%A6%E2%80%8B)%20methods.-,ComputeTaskAdapter,-%E2%80%94%20This%20class%20implements[`ComputeTaskAdapter`]
 
 When executing a `ComputeTask` using `ComputeTaskAdapter`, an `IgniteException` may be thrown on the client side.
-When the exception thrown, a log entry with the message 'Remote job threw user exception' will appear in the logs.
+When the exception thrown, a log entry with the message `Remote job threw user exception` will appear in the logs.
 [WARNING]
 ====
 When this exception happens, ensure that all other jobs from this task have finished since `ComputeTaskAdapter` doesn't provide such guarantees.

@@ -87,7 +87,7 @@ include::code-snippets/cpp/src/transactions.cpp[tag=transactions-execution,inden
 
 [WARNING]
 ====
-It is critical that an Ignite Transaction be "closed," regardless of its commit state. This ensures that all resources are released and the transaction is no longer bound to the current thread. Consequently, using a try-with-resource block is highly recommended when working with transactions.
+It is critical that an Ignite Trusnsaction be `closed` regardless of its commit state. This ensures that all resources are released and the transaction is no longer bind to the current thread. Therefore, the `try-with-resource` block is highly recommended when working with transactions.
 ====
 
 ////
