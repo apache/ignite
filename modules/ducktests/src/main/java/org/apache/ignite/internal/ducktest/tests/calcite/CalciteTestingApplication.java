@@ -16,24 +16,39 @@
  */
 package org.apache.ignite.internal.ducktest.tests.calcite;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.processors.query.calcite.integration.StdSqlOperatorsTest;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 
 /**
- * Calcite engine tests
+ * Calcite engine tests.
  */
-public class CalciteTestingApplication {
+public class CalciteTestingApplication extends IgniteAwareApplication {
+    public static void main(String[] args) {
+        CalciteTestingApplication app = new CalciteTestingApplication();
 
-    /** Run StdSqlOperatorsTest tests */
-    public static void main(String[] args) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+
+        JsonNode emptyConfig = mapper.createObjectNode();
+
+        app.run(emptyConfig);
+
+    }
+
+    /** Run StdSqlOperatorsTest tests. */
+    @Override
+    public void run(JsonNode jsonNode) {
+        markInitialized();
+
         Result junitResult = JUnitCore.runClasses(StdSqlOperatorsTest.class);
 
         if (!junitResult.wasSuccessful()) {
             String msg = String.valueOf(junitResult.getFailures().get(0));
             throw new RuntimeException(msg);
         }
-
-        System.out.println("IGNITE_APPLICATION_FINISHED");
+        markFinished();
     }
 }

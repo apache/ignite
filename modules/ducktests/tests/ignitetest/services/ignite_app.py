@@ -117,11 +117,10 @@ class IgniteApplicationService(IgniteAwareService):
 
 class IgniteCustomApplicationService(IgniteApplicationService):
     """
-    The base class to build Ignite aware application written on java.
+    The base class to build Ignite application with custom main class
     """
 
     APP_INIT_EVT_MSG = "Topology snapshot"
-    APP_FINISH_EVT_MSG = "IGNITE_APPLICATION_FINISHED"
     APP_BROKEN_EVT_MSG = "Exception in thread \"main\""
 
     def __init__(self, context, main_java_class, config=CustomApplicationConfiguration(), java_class_name='',

@@ -20,7 +20,7 @@ from ignitetest.services.ignite_app import IgniteCustomApplicationService
 from ignitetest.services.utils.ignite_configuration import CustomApplicationConfiguration
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST
 
 
 class CalciteTest(IgniteTest):
