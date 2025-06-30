@@ -229,7 +229,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
         String sql = "SELECT /*+ CNL_JOIN */ i1, i3 FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i2";
 
         assertQuery(sql)
-            .matches(QueryChecker.containsTableScan("PUBLIC", "T2"))
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX"))
             .returns(1, 1)
             .returns(2, 2)
             .returns(null, 3)
@@ -239,7 +239,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
         sql = "SELECT /*+ CNL_JOIN */ i1, i3 FROM t1 JOIN t2 ON i1 = i2 OR (i1 IS NULL AND i2 IS NULL)";
 
         assertQuery(sql)
-            .matches(QueryChecker.containsTableScan("PUBLIC", "T2"))
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX"))
             .returns(1, 1)
             .returns(2, 2)
             .returns(null, 3)

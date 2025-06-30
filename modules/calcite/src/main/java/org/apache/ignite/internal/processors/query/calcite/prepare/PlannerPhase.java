@@ -109,7 +109,6 @@ public enum PlannerPhase {
                     CoreRules.FILTER_MERGE,
                     CoreRules.FILTER_AGGREGATE_TRANSPOSE,
                     CoreRules.FILTER_SET_OP_TRANSPOSE,
-                    CoreRules.JOIN_CONDITION_EXPAND_IS_NOT_DISTINCT_FROM,
                     CoreRules.JOIN_CONDITION_PUSH,
                     CoreRules.FILTER_INTO_JOIN,
                     CoreRules.FILTER_CORRELATE,
