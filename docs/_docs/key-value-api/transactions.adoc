@@ -87,7 +87,7 @@ include::code-snippets/cpp/src/transactions.cpp[tag=transactions-execution,inden
 
 [WARNING]
 ====
-Apache Ignite requires calling the `close()` method after completing any transaction. We strongly recommend using transactions within a `try-with-resources` block to automatically close them when exiting the scope. If, however, it's impossible or impractical to utilize `try-with-resources`, always explicitly invoke the `close()` method inside a `finally` block to ensure proper cleanup and avoid resource leaks.
+It is critical that an Ignite Transaction be "closed," regardless of its commit state. This ensures that all resources are released and the transaction is no longer bound to the current thread. Consequently, using a try-with-resource block is highly recommended when working with transactions.
 ====
 
 ////

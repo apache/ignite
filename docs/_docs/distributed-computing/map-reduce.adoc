@@ -89,21 +89,28 @@ include::{javaFile}[tags=failover,indent=0]
 == Compute Task Adapters
 There are several helper classes that provide most commonly used implementations of the `result(...)` and `map(...)` methods.
 
-*** `ComputeTaskAdapter` — This class implements the `result()` method as follows:
-** In case of successful job executions without errors, the task waits until results are gathered from all jobs, computes the final result, and completes successfully (see `WAIT` policy).
-** If AT LEAST ONE job fails:
-* The failed job will be automatically redeployed on another node (`FAILOVER` strategy), under these conditions:
-- The user-provided executor refuses to process the job (a `ComputeExecutionRejectedException` is caught).
-- Something happened to the node where the job was supposed to run — it left topology or crashed (caught `ClusterTopologyException`)
-- Job's user code explicitly throws an exception (caught `ComputeJobFailoverException`)
-* If any other error occurs while executing the job, then the entire task immediately completes with failure by throwing an `IgniteException`, containing message "Remote job threw user exception...". Other jobs whose results have not yet been retrieved will be asynchronously terminated.
+* `ComputeTaskAdapter` — This class implements the `result()` method.
++
+This implementation makes the best effort to wait for all Compute Jobs to complete successfully and process their results (see `WAIT` policy).
++
+--
+Comute Jobs will be automatically redeployed (see `FAILOVER` policy) in the following scenarious:
 
+- the user-provided executor refused to process the mapped Compute Job;
+- the node intended to run the Compute Job is no longer present in the cluster;
+- the user code of the Compute Job explicitly threw a dedicated exception - `ComputeJobFailoverException`.
+--
++
+If any of the mapped Compute Jobs threw a user exception, the entire Compute Task immediately fails and all remaining Compute Jobs are stopped asynchronously. In this case, there is no guarantee that all Compute Jobs complete execution by the end of Compute Task.
++
+Compute Job failures can be tracked in the Ignite log for the message "Remote job throws user exception...".
++
 [WARNING]
 ====
-Please note that Jobs interruption happens ASYNCHRONOUSLY — there’s no guarantee that at the moment when the task finishes, all jobs have completed their work. It is recommended to ensure that all jobs are properly terminated.
+Please note that Jobs interruption happens asynchronously — there’s no guarantee that at the moment when the task finishes, all jobs have completed their work.
 ====
 
-*** `ComputeTaskSplitAdapter` — This class extends `ComputeTaskAdapter` and implements the `map(...)` method to automatically assign jobs to nodes. It introduces a new `split(...)` method that implements the logic of producing jobs based on the input data.
+* `ComputeTaskSplitAdapter` — This class extends `ComputeTaskAdapter` and implements the `map(...)` method to automatically assign jobs to nodes. It introduces a new `split(...)` method that implements the logic of producing jobs based on the input data.
 
 See link:{githubUrl}/modules/core/src/main/java/org/apache/ignite/compute/ComputeTaskSplitAdapter.java[ComputeTaskSplitAdapter.java,window=_blank] and link:{githubUrl}/modules/core/src/main/java/org/apache/ignite/compute/ComputeTaskAdapter.java[ComputeTaskAdapter.java,window=_blank] for details.
 
