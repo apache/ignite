@@ -102,9 +102,7 @@ Comute Jobs will be automatically redeployed (see `FAILOVER` policy) in the foll
 - the user code of the Compute Job explicitly threw a dedicated exception - `ComputeJobFailoverException`.
 --
 +
-If any of the mapped Compute Jobs threw a user exception, the entire Compute Task immediately fails and all remaining Compute Jobs are stopped asynchronously. In this case, there is no guarantee that all Compute Jobs complete execution by the end of Compute Task.
-+
-Compute Job failures can be tracked in the Ignite log for the message `Remote job throws user exception...`.
+If any of the mapped Compute Jobs threw a user exception, the entire Compute Task immediately fails and all remaining Compute Jobs are stopped asynchronously.
 
 * `ComputeTaskSplitAdapter` — This class extends `ComputeTaskAdapter` and implements the `map(...)` method to automatically assign jobs to nodes. It introduces a new `split(...)` method that implements the logic of producing jobs based on the input data.
 
