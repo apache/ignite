@@ -746,12 +746,13 @@ final class ReliableChannel implements AutoCloseable {
 
                 reinitHolders.add(hld);
 
+                // Change dfltChannelIdx only due to adding hld into reinitHolders
+                if (hld == currDfltHolder)
+                    dfltChannelIdx = reinitHolders.size() - 1;
+
                 for (InetSocketAddress addr : addrs)
                     curAddrs.putIfAbsent(addr, hld);
             }
-
-            if (hld == currDfltHolder)
-                dfltChannelIdx = reinitHolders.size() - 1;
         }
 
         if (dfltChannelIdx == -1) {
