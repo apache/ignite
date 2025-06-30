@@ -101,6 +101,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         int idx,
         RelDataType targetType
     ) {
+        // TODO https://issues.apache.org/jira/browse/CALCITE-1466 : Recheck and remove after update to Calcite 1.41.
         if (targetType instanceof OtherType || targetType.getSqlTypeName() == SqlTypeName.UUID) {
             SqlNode operand = call.getOperandList().get(idx);
 

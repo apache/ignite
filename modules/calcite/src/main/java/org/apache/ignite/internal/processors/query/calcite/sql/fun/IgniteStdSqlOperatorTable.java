@@ -16,11 +16,9 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 
-import org.apache.calcite.sql.fun.SqlBasicAggFunction;
 import org.apache.calcite.sql.fun.SqlInternalOperators;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
@@ -91,24 +89,7 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlLibraryOperators.STRING_AGG);
         register(SqlStdOperatorTable.LISTAGG);
         register(SqlLibraryOperators.ARRAY_AGG);
-
-        /**
-         * Replaces type inference of {@link SqlLibraryOperators#ARRAY_CONCAT_AGG}.
-         * Standard {@link SqlLibraryOperators#ARRAY_CONCAT_AGG} uses {@link ReturnTypes#ARG0} which can pruduce a nullable array.
-         * But the aggregate is created basing on a node type. This may lead to nullable/not-nullable collision and fail in
-         * {@link org.apache.calcite.rel.core.Aggregate#typeMatchesInferred(AggregateCall, Litmus)}.
-         * Query example: `SELECT ARRAY_CONCAT_AGG(a) FROM (SELECT ARRAY[1, 2, 3] UNION ALL SELECT NULL) T(a)`.
-         * Since: Calcite v1.39.
-         * TODO https://issues.apache.org/jira/browse/IGNITE-25765 : recheck after the fix.
-         */
-        register(SqlBasicAggFunction.create(
-                    SqlLibraryOperators.ARRAY_CONCAT_AGG.kind,
-                    SqlLibraryOperators.ARRAY_CONCAT_AGG.getReturnTypeInference().andThen(SqlTypeTransforms.TO_NOT_NULLABLE),
-                    SqlLibraryOperators.ARRAY_CONCAT_AGG.getOperandTypeChecker()
-                ).withFunctionType(SqlLibraryOperators.ARRAY_CONCAT_AGG.getFunctionType())
-                .withSyntax(SqlLibraryOperators.ARRAY_CONCAT_AGG.getSyntax())
-        );
-
+        register(SqlLibraryOperators.ARRAY_CONCAT_AGG);
         register(SqlStdOperatorTable.EVERY);
         register(SqlStdOperatorTable.SOME);
 

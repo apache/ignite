@@ -63,15 +63,8 @@ public class IgniteRexBuilder extends RexBuilder {
     // Remove after update to Calcite 1.40.
     /** {@inheritDoc} */
     @Override public RexNode makeLiteral(@Nullable Object val, RelDataType type, boolean allowCast, boolean trim) {
-        if (val instanceof UUID)
-            val = val.toString();
-
-        if (type.getSqlTypeName() == SqlTypeName.UUID) {
-            if (val == null)
-                return makeNullLiteral(typeFactory.createSqlType(SqlTypeName.UUID));
-
-            return makeAbstractCast(type, makeLiteral(val, typeFactory.createSqlType(SqlTypeName.CHAR)), false);
-        }
+        if (type.getSqlTypeName() == SqlTypeName.UUID)
+            return makeUuidLiteral((UUID)val);
 
         return super.makeLiteral(val, type, allowCast, trim);
     }
