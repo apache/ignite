@@ -226,9 +226,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
 
         executeSql("CREATE INDEX t2_idx ON t2(i2)");
 
-        String hints = "/*+ CNL_JOIN, DISABLE_RULE('JoinConditionExpandIsNotDistinctFromRule') */";
-
-        String sql = "SELECT " + hints + " i1, i3 FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i2";
+        String sql = "SELECT /*+ CNL_JOIN */ i1, i3 FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i2";
 
         assertQuery(sql)
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX"))
@@ -238,7 +236,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTransacti
             .check();
 
         // Collapse expanded IS_NOT_DISTINCT_FROM.
-        sql = "SELECT " + hints + " i1, i3 FROM t1 JOIN t2 ON i1 = i2 OR (i1 IS NULL AND i2 IS NULL)";
+        sql = "SELECT /*+ CNL_JOIN */ i1, i3 FROM t1 JOIN t2 ON i1 = i2 OR (i1 IS NULL AND i2 IS NULL)";
 
         assertQuery(sql)
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX"))

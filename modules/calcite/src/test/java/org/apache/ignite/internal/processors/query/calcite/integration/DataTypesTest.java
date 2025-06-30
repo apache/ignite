@@ -678,8 +678,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             .check();
     }
 
-    /** TODO https://issues.apache.org/jira/browse/IGNITE-25749 : unignore after the fix. */
-    @Ignore
+    /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-25749")
     @Test
     public void testCharLiteralsInUnion() {
         assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
