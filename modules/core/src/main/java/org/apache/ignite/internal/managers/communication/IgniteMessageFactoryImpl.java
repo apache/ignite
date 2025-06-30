@@ -141,7 +141,7 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
         MessageSerializer serializer = msgSerializers[directTypeToIndex(directType)];
 
         if (serializer == null)
-            throw new IgniteException("Invalid message type: " + directType);
+            throw new IgniteException("Message serializer not found for a message type: " + directType);
 
         return serializer;
     }
