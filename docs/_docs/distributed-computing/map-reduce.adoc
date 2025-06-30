@@ -89,10 +89,7 @@ include::{javaFile}[tags=failover,indent=0]
 == Compute Task Adapters
 There are several helper classes that provide most commonly used implementations of the `result(...)` and `map(...)` methods.
 
-* `ComputeTaskAdapter` — This class provides implementation for the `result()` method.
-
-+
-This implementation makes the best effort to wait for all Compute Jobs to complete successfully and process their results (see `WAIT` policy).
+* `ComputeTaskAdapter` — This class provides implementation for the `result()` method, which makes the best effort to wait for all Compute Jobs to complete successfully and process their results (see `WAIT` policy).
 +
 --
 Comute Jobs will be automatically redeployed (see `FAILOVER` policy) in the following scenarious:

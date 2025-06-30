@@ -248,6 +248,6 @@ include::{javaFile}[tag=failure-types,indent=0]
 
 === Handling Compute Job Exceptions
 
-If Adapter is used as link:https://ignite.apache.org/docs/latest/distributed-computing/map-reduce#:~:text=and%20map(%E2%80%A6%E2%80%8B)%20methods.-,ComputeTaskAdapter,-%E2%80%94%20This%20class%20implements[Compute Task implementation] and any of mapped Compute Jobs thrown exception during execution, the entire Compute Task immediately fails with an `IgniteException`, and all remaining Compute Jobs are stopped asynchronously. Compute Job failures can be tracked in the Ignite log for the message `Remote job throws user exception…`.
+If link:https://ignite.apache.org/docs/latest/distributed-computing/map-reduce#:~:text=and%20map(%E2%80%A6%E2%80%8B)%20methods.-,ComputeTaskAdapter,-%E2%80%94%20This%20class%20implements[ComputeTaskAdapter] is used as Compute Task implementation and any of mapped Compute Jobs thrown exception during execution, the entire Compute Task immediately fails with an `IgniteException`, and all remaining Compute Jobs are stopped asynchronously. Compute Job failures can be tracked in the Ignite log for the message `Remote job throws user exception…`.
 
 NOTE: In this case, there is no guarantee that all Compute Jobs complete execution by the end of Compute Task.
