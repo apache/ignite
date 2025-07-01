@@ -75,7 +75,7 @@ import static org.apache.calcite.util.Util.last;
  * @see CoreRules#PROJECT_SUB_QUERY_TO_CORRELATE
  * @see CoreRules#JOIN_SUB_QUERY_TO_CORRELATE
  *
- * TODO Revise after https://issues.apache.org/jira/browse/IGNITE-25255
+ * TODO Revise after https://issues.apache.org/jira/browse/IGNITE-25801
  */
 @Value.Enclosing
 public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.Config> implements TransformationRule {
