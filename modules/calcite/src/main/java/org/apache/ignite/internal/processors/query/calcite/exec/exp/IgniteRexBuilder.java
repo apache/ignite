@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.UUID;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.sql.type.IntervalSqlType;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -51,17 +52,20 @@ public class IgniteRexBuilder extends RexBuilder {
                 }
             }
 
-            if (type instanceof IntervalSqlType) {
-                // TODO Workaround for https://issues.apache.org/jira/browse/CALCITE-6714
-                bd = bd.multiply(((IntervalSqlType)type).getIntervalQualifier().getUnit().multiplier);
-
-                return super.makeLiteral(bd, type, type.getSqlTypeName());
-            }
-
             if (TypeUtils.hasScale(type) && SqlTypeUtil.isNumeric(type))
                 return super.makeLiteral(bd.setScale(type.getScale(), RoundingMode.HALF_UP), type, typeName);
         }
 
         return super.makeLiteral(o, type, typeName);
+    }
+
+    // TODO fixed by https://issues.apache.org/jira/browse/CALCITE-6992
+    // Remove after update to Calcite 1.40.
+    /** {@inheritDoc} */
+    @Override public RexNode makeLiteral(@Nullable Object val, RelDataType type, boolean allowCast, boolean trim) {
+        if (type.getSqlTypeName() == SqlTypeName.UUID)
+            return makeUuidLiteral((UUID)val);
+
+        return super.makeLiteral(val, type, allowCast, trim);
     }
 }
