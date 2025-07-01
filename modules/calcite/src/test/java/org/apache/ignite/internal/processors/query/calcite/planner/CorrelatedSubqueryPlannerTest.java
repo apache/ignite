@@ -97,6 +97,20 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
+    public void testCorrelateWrongRequiredColumn() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("T1", IgniteDistributions.single(), "ID", Integer.class, "NAME", String.class, "REF", Integer.class),
+            createTable("T2", IgniteDistributions.single(), "ID", Integer.class, "REF", Integer.class),
+            createTable("T3", IgniteDistributions.single(), "ID", Integer.class, "REF", Integer.class)
+        );
+
+        assertPlan("SELECT * FROM T1 WHERE EXISTS (" +
+                "SELECT 1 FROM T2 WHERE T2.ID = T1.REF AND T2.REF = (SELECT 1 FROM T3 WHERE T3.ID = T1.REF))", schema,
+            nodeOrAnyChild(isTableScan("T1")));
+    }
+
+    /** */
+    @Test
     public void testCorrelatesInJoin() throws Exception {
         IgniteSchema schema = createSchema(
             createTable("T0", IgniteDistributions.single(), "ID", Integer.class, "PADDING_COL1", Integer.class,

@@ -32,6 +32,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Collect;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMdUtil;
@@ -75,12 +76,15 @@ import static org.apache.calcite.util.Util.last;
  * @see CoreRules#PROJECT_SUB_QUERY_TO_CORRELATE
  * @see CoreRules#JOIN_SUB_QUERY_TO_CORRELATE
  *
- * TODO Revise after https://issues.apache.org/jira/browse/IGNITE-25255
+ * TODO Revise after https://issues.apache.org/jira/browse/IGNITE-25801
  */
 @Value.Enclosing
 public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.Config> implements TransformationRule {
     /** */
-    public static final RelOptRule INSTANCE = Config.JOIN.toRule();
+    public static final RelOptRule JOIN = Config.JOIN.toRule();
+
+    /** */
+    public static final RelOptRule FILTER = Config.FILTER.toRule();
 
     /** Creates a SubQueryRemoveRule. */
     protected IgniteSubQueryRemoveRule(Config cfg) {
@@ -867,6 +871,52 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
     }
 
     /** */
+    private static void matchFilter(IgniteSubQueryRemoveRule rule, RelOptRuleCall call) {
+        Filter filter = call.rel(0);
+        Set<CorrelationId> filterVariablesSet = filter.getVariablesSet();
+        RelBuilder builder = call.builder();
+
+        builder.push(filter.getInput());
+
+        int cnt = 0;
+
+        RexNode c = filter.getCondition();
+
+        while (true) {
+            RexSubQuery e = RexUtil.SubQueryFinder.find(c);
+
+            if (e == null) {
+                assert cnt > 0;
+                break;
+            }
+
+            ++cnt;
+
+            RelOptUtil.Logic logic = LogicVisitor.find(RelOptUtil.Logic.TRUE, ImmutableList.of(c), e);
+            Set<CorrelationId> variablesSet = RelOptUtil.getVariablesUsed(e.rel);
+
+            // Filter without variables could be handled before this change, we do not want
+            // to break it yet for compatibility reason.
+            if (!filterVariablesSet.isEmpty()) {
+                // Only consider the correlated variables which originated from this sub-query level.
+                variablesSet.retainAll(filterVariablesSet);
+            }
+
+            RexNode target = rule.apply(e, variablesSet, logic, builder, 1, builder.peek().getRowType().getFieldCount(), cnt);
+            RexShuttle shuttle = new ReplaceSubQueryShuttle(e, target);
+
+            c = c.accept(shuttle);
+        }
+
+        builder.filter(c);
+        builder.project(fields(builder, filter.getRowType().getFieldCount()));
+
+        RelNode result = builder.build();
+
+        call.transformTo(result);
+    }
+
+    /** */
     private static void matchJoin(IgniteSubQueryRemoveRule rule, RelOptRuleCall call) {
         Join join = call.rel(0);
         RelBuilder builder = call.builder();
@@ -993,6 +1043,15 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
                     .predicate(RexUtil.SubQueryFinder::containsSubQuery)
                     .anyInputs())
             .withDescription("SubQueryRemoveRule:Join");
+
+        /** */
+        Config FILTER = ImmutableIgniteSubQueryRemoveRule.Config.builder()
+            .withMatchHandler(IgniteSubQueryRemoveRule::matchFilter)
+            .build()
+            .withOperandSupplier(b ->
+                b.operand(Filter.class)
+                    .predicate(RexUtil.SubQueryFinder::containsSubQuery).anyInputs())
+            .withDescription("SubQueryRemoveRule:Filter");
 
         /** {@inheritDoc} */
         @Override default IgniteSubQueryRemoveRule toRule() {
