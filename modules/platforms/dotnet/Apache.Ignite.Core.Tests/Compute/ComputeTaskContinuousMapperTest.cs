@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             /// <inheritdoc />
             public override string Reduce(IList<IComputeJobResult<string>> results) =>
-                string.Join(' ', results.Select(i => i.Data));
+                string.Join(" ", results.Select(i => i.Data));
 
             private void Send(IComputeJob<string> job)
             {
