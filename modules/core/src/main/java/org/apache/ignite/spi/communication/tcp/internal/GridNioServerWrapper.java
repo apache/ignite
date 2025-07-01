@@ -872,7 +872,7 @@ public class GridNioServerWrapper {
 
                         ConnectionKey key = ses.meta(CONN_IDX_META);
 
-                        return key != null ? formatter.writer(key.nodeId()) : null;
+                        return key != null ? formatter.writer(key.nodeId(), msgFactory) : null;
                     }
                 };
 
