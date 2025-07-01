@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Resource;
+    using static ComputeTaskUtils;
 
     /// <summary>
     /// Compute task holder interface used to avoid generics.
@@ -79,6 +80,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="taskHandle">Task handle.</param>
         /// <param name="stream">Stream with serialized exception.</param>
         void CompleteWithError(long taskHandle, PlatformMemoryStream stream);
+
+        /// <summary>
+        /// Continuously add more job handles to this task.
+        /// </summary>
+        /// <param name="jobHandles"></param>
+        void AddJobs(ICollection<long> jobHandles);
     }
 
     /// <summary>
@@ -156,8 +163,9 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             var ignite = (Ignite) prj.Ignite;
 
-            // 0. Inject session
+            // 0. Inject session and mapper
             _resDesc.InjectTaskSession(_task, taskSes);
+            _resDesc.InjectTaskMapper(_task, taskSes as IComputeTaskContinuousMapper);
 
             // 1. Unmarshal topology info if topology changed.
             var reader = prj.Marshaller.StartUnmarshal(stream);
@@ -260,57 +268,6 @@ namespace Apache.Ignite.Core.Impl.Compute
             {
                 prj.Marshaller.FinishMarshal(writer);
             }
-        }
-
-        /// <summary>
-        /// Writes job map.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="map">Map</param>
-        /// <returns>Job handle list.</returns>
-        private static List<long> WriteJobs(BinaryWriter writer, IDictionary<IComputeJob<T>, IClusterNode> map)
-        {
-            Debug.Assert(writer != null && map != null);
-
-            writer.WriteInt(map.Count); // Amount of mapped jobs.
-
-            var jobHandles = new List<long>(map.Count);
-            var ignite = writer.Marshaller.Ignite;
-
-            try
-            {
-                foreach (KeyValuePair<IComputeJob<T>, IClusterNode> mapEntry in map)
-                {
-                    var job = new ComputeJobHolder(ignite, mapEntry.Key.ToNonGeneric());
-
-                    IClusterNode node = mapEntry.Value;
-
-                    var jobHandle = ignite.HandleRegistry.Allocate(job);
-
-                    jobHandles.Add(jobHandle);
-
-                    writer.WriteLong(jobHandle);
-
-                    if (node.IsLocal)
-                        writer.WriteBoolean(false); // Job is not serialized.
-                    else
-                    {
-                        writer.WriteBoolean(true); // Job is serialized.
-                        writer.WriteObject(job);
-                    }
-
-                    writer.WriteGuid(node.Id);
-                }
-            }
-            catch (Exception)
-            {
-                foreach (var handle in jobHandles)
-                    ignite.HandleRegistry.Release(handle);
-
-                throw;
-            }
-
-            return jobHandles;
         }
 
         /** <inheritDoc /> */
@@ -419,6 +376,19 @@ namespace Apache.Ignite.Core.Impl.Compute
             CompleteWithError(taskHandle, err);
         }
 
+        /// <inheritdoc />
+        public void AddJobs(ICollection<long> jobHandles)
+        {
+            if (_jobHandles != null)
+            {
+                _jobHandles.AddRange(jobHandles);
+            }
+            else
+            {
+                _jobHandles = new List<long>(jobHandles);
+            }
+        }
+
         /// <summary>
         /// Task completion future.
         /// </summary>
@@ -519,6 +489,103 @@ namespace Apache.Ignite.Core.Impl.Compute
                     handleRegistry.Release(handle, true);
 
             handleRegistry.Release(taskHandle, true);
+        }
+    }
+
+    /// <summary>
+    /// Shared compute task utilities.
+    /// </summary>
+    internal static class ComputeTaskUtils
+    {
+        /// <summary>
+        /// Writes job map.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="map">Map</param>
+        /// <returns>Job handle list.</returns>
+        internal static List<long> WriteJobs<T>(BinaryWriter writer, IDictionary<IComputeJob<T>, IClusterNode> map)
+        {
+            Debug.Assert(writer != null && map != null);
+
+            writer.WriteInt(map.Count); // Amount of mapped jobs.
+
+            var jobHandles = new List<long>(map.Count);
+            var ignite = writer.Marshaller.Ignite;
+
+            try
+            {
+                foreach (KeyValuePair<IComputeJob<T>, IClusterNode> mapEntry in map)
+                {
+                    var job = new ComputeJobHolder(ignite, mapEntry.Key.ToNonGeneric());
+
+                    IClusterNode node = mapEntry.Value;
+
+                    var jobHandle = ignite.HandleRegistry.Allocate(job);
+
+                    jobHandles.Add(jobHandle);
+
+                    writer.WriteLong(jobHandle);
+
+                    if (node.IsLocal)
+                        writer.WriteBoolean(false); // Job is not serialized.
+                    else
+                    {
+                        writer.WriteBoolean(true); // Job is serialized.
+                        writer.WriteObject(job);
+                    }
+
+                    writer.WriteGuid(node.Id);
+                }
+            }
+            catch (Exception)
+            {
+                foreach (var handle in jobHandles)
+                    ignite.HandleRegistry.Release(handle);
+
+                throw;
+            }
+
+            return jobHandles;
+        }
+        
+        /// <summary>
+        /// Writes job collection.
+        /// </summary>
+        /// <returns>Job handle list</returns>
+        internal static List<long> WriteJobs<T>(BinaryWriter writer, ICollection<IComputeJob<T>> list)
+        {
+            Debug.Assert(writer != null && list != null);
+
+            writer.WriteInt(list.Count);
+
+            var jobHandles = new List<long>(list.Count);
+            var ignite = writer.Marshaller.Ignite;
+
+            try
+            {
+                foreach (var entry in list)
+                {
+                    var job = new ComputeJobHolder(ignite, entry.ToNonGeneric());
+
+                    var jobHandle = ignite.HandleRegistry.Allocate(job);
+
+                    jobHandles.Add(jobHandle);
+
+                    writer.WriteLong(jobHandle);
+                    writer.WriteObject(job);
+                }
+            }
+            catch (Exception)
+            {
+                foreach (var handle in jobHandles)
+                {
+                    ignite.HandleRegistry.Release(handle);
+                }
+
+                throw;
+            }
+
+            return jobHandles;
         }
     }
 }
