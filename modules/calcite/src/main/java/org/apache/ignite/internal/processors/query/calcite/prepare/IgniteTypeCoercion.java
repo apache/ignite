@@ -101,6 +101,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         int idx,
         RelDataType targetType
     ) {
+        // TODO https://issues.apache.org/jira/browse/CALCITE-1466 : Recheck and remove after update to Calcite 1.41.
         if (targetType instanceof OtherType || targetType.getSqlTypeName() == SqlTypeName.UUID) {
             SqlNode operand = call.getOperandList().get(idx);
 
@@ -191,17 +192,6 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
 
             if (fromType != null && fromType.getSqlTypeName() == SqlTypeName.UUID
                 || ((JavaTypeFactory)factory).toSql(fromType).getSqlTypeName() == SqlTypeName.UUID)
-                return false;
-        }
-        else if (SqlTypeUtil.isCollection(toType)) {
-            RelDataType fromType = validator.deriveType(scope, node);
-
-            /**
-             * {@link org.apache.calcite.rel.core.Aggregate#typeMatchesInferred(AggregateCall, Litmus)} may fail if
-             * nullability of collection type or collection's element type aren't equal.
-             * Query example: `SELECT ARRAY_CONCAT_AGG(a) FROM (SELECT ARRAY[1, 2, 3] UNION ALL SELECT NULL) T(a)`.
-             */
-            if (fromType != null && fromType.getSqlTypeName() == SqlTypeName.NULL)
                 return false;
         }
 
