@@ -761,7 +761,7 @@ final class ReliableChannel implements AutoCloseable {
             }
 
             if (hld == currDfltHolder)
-                dfltChannelIdx = reinitHolders.size() - 1;
+                dfltChannelIdx = reinitHolders.indexOf(hld);
         }
 
         if (dfltChannelIdx == -1) {
