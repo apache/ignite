@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.codegen;
 
+import java.io.File;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import javax.tools.JavaFileObject;
@@ -24,6 +26,9 @@ import com.google.testing.compile.Compilation;
 import com.google.testing.compile.Compiler;
 import com.google.testing.compile.JavaFileObjects;
 import org.apache.ignite.internal.MessageProcessor;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.junit.Test;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
@@ -134,7 +139,11 @@ public class MessageProcessorTest {
         for (String srcFile: srcFiles)
             input.add(javaFile(srcFile));
 
+        File igniteCoreJar = jarForClass(Message.class);
+        File igniteCodegenJar = jarForClass(Order.class);
+
         return Compiler.javac()
+            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar))
             .withProcessors(new MessageProcessor())
             .compile(input);
     }
@@ -142,5 +151,21 @@ public class MessageProcessorTest {
     /** */
     private JavaFileObject javaFile(String srcName) {
         return JavaFileObjects.forResource("codegen/" + srcName);
+    }
+
+    /** */
+    private File jarForClass(Class<?> clazz) {
+        try {
+            URI jar = clazz
+                .getProtectionDomain()
+                .getCodeSource()
+                .getLocation()
+                .toURI();
+
+            return new File(jar);
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Unable to locate JAR for: " + clazz.getName(), e);
+        }
     }
 }
