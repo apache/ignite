@@ -997,6 +997,8 @@ final class ReliableChannel implements AutoCloseable {
         if (ch != null && ch == hld.ch)
             hld.closeChannel();
 
+        chFailLsnrs.forEach(Runnable::run);
+
         rollCurrentChannel(hld);
 
         return hld.getOrCreateChannel();
