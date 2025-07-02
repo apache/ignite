@@ -69,7 +69,6 @@ import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterR
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ExposeIndexRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterScanMergeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteSubQueryRemoveRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectScanMergeRule;
 
@@ -88,8 +87,7 @@ public enum PlannerPhase {
                 RuleSets.ofList(
                     CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
                     CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
-                    // TODO Revise reverting to JOIN_SUB_QUERY_TO_CORRELATE after https://issues.apache.org/jira/browse/IGNITE-25801
-                    IgniteSubQueryRemoveRule.INSTANCE
+                    CoreRules.JOIN_SUB_QUERY_TO_CORRELATE
                 )
             );
         }
