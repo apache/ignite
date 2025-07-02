@@ -635,22 +635,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Predicate builder for "Any input satisfy predicate" condition.
-     */
-    protected <T extends RelNode> Predicate<RelNode> inputCommuted(Predicate<T> predicate) {
-        return node -> {
-            int matchedCnt = 0;
-
-            for (RelNode input : node.getInputs()) {
-                if (predicate.test((T)input))
-                    ++matchedCnt;
-            }
-
-            return matchedCnt == 1;
-        };
-    }
-
-    /**
      * Predicate builder for "First input satisfies predicate" condition.
      */
     protected <T extends RelNode> Predicate<RelNode> input(Predicate<T> predicate) {

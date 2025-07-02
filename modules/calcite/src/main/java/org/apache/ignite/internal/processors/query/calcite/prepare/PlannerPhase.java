@@ -108,12 +108,10 @@ public enum PlannerPhase {
                 RuleSets.ofList(
                     FilterScanMergeRule.TABLE_SCAN_SKIP_CORRELATED,
 
-                    CoreRules.FILTER_EXPAND_IS_NOT_DISTINCT_FROM,
                     CoreRules.FILTER_MERGE,
                     CoreRules.FILTER_AGGREGATE_TRANSPOSE,
                     CoreRules.FILTER_SET_OP_TRANSPOSE,
                     CoreRules.FILTER_SORT_TRANSPOSE,
-                    CoreRules.JOIN_CONDITION_EXPAND_IS_NOT_DISTINCT_FROM,
                     CoreRules.JOIN_CONDITION_PUSH,
                     CoreRules.FILTER_INTO_JOIN,
                     CoreRules.FILTER_CORRELATE,
@@ -187,7 +185,7 @@ public enum PlannerPhase {
                         .withOperandFor(LogicalJoin.class).toRule(),
 
                     ExpandDisjunctionForTableRule.Config.FILTER.withDescription("ExpandFilterDisjunctionGlobal").toRule(),
-                    ExpandDisjunctionForTableRule.Config.FILTER.withDescription("ExpandJoinDisjunctionGlobal").toRule(),
+                    ExpandDisjunctionForTableRule.Config.JOIN.withDescription("ExpandJoinDisjunctionGlobal").toRule(),
 
                     JoinConditionPushRule.JoinConditionPushRuleConfig.DEFAULT
                         .withOperandSupplier(b -> b.operand(LogicalJoin.class)
@@ -235,18 +233,15 @@ public enum PlannerPhase {
                             b.operand(LogicalSort.class)
                                 .anyInputs()).toRule(),
 
-                    SetOpToFilterRule.Config.UNION.withDescription("UnionFilterToFilter").toRule(),
                     SetOpToFilterRule.Config.INTERSECT.withDescription("IntersectFilterToFilter").toRule(),
-                    SetOpToFilterRule.Config.INTERSECT.withDescription("MinusFilterToFilter").toRule(),
+                    SetOpToFilterRule.Config.MINUS.withDescription("MinusFilterToFilter").toRule(),
                     CoreRules.UNION_MERGE,
                     CoreRules.UNION_REMOVE,
                     CoreRules.MINUS_MERGE,
                     CoreRules.MINUS_REMOVE,
-                    //CoreRules.INTERSECT_TO_EXISTS,
                     CoreRules.INTERSECT_MERGE,
                     CoreRules.INTERSECT_REMOVE,
                     CoreRules.INTERSECT_REORDER,
-                    //CoreRules.AGGREGATE_MIN_MAX_TO_LIMIT,
                     CoreRules.AGGREGATE_REMOVE,
 
                     CoreRules.JOIN_EXPAND_OR_TO_UNION_RULE,

@@ -305,8 +305,8 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
 
         assertPlan(sql, publicSchema, isInstanceOf(IgniteExchange.class)
                 .and(input(isInstanceOf(setOp.colocated)
-                    .and(inputCommuted(isTableScan("affinity_tbl2")))
-                    .and(inputCommuted(isInstanceOf(setOp.colocated)
+                    .and(hasChildThat(isTableScan("affinity_tbl2")))
+                    .and(hasChildThat(isInstanceOf(setOp.colocated)
                         .and(input(0, isTableScan("affinity_tbl1")))
                         .and(input(1, isTableScan("affinity_tbl2")))
                     ))
@@ -368,8 +368,8 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
             ")";
 
         assertPlan(sql, publicSchema, isInstanceOf(setOp.colocated)
-            .and(inputCommuted(isTableScan("broadcast_tbl1")))
-            .and(inputCommuted(isInstanceOf(setOp.reduce)
+            .and(hasChildThat(isTableScan("broadcast_tbl1")))
+            .and(hasChildThat(isInstanceOf(setOp.reduce)
                 .and(hasChildThat(isInstanceOf(setOp.map)
                     .and(input(0, isTableScan("random_tbl1")))
                     .and(input(1, isTableScan("random_tbl2")))
