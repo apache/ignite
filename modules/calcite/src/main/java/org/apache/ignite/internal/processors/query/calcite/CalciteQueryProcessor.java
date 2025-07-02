@@ -139,6 +139,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         // org.apache.calcite.config.CalciteSystemProperty is loaded.
         System.setProperty("calcite.volcano.dump.graphviz", "false");
         System.setProperty("calcite.volcano.dump.sets", "false");
+
+        // TODO Workaround for https://issues.apache.org/jira/browse/CALCITE-7009
+        // See Apache Calcite ticket for more information, assertion is incorrect.
+        // FRAMEWORK_CONFIG initialize SqlToRelConverter class. Assertions should be disabled before class initialization.
+        SqlToRelConverter.class.getClassLoader().setClassAssertionStatus(SqlToRelConverter.class.getName(), false);
     }
 
     /**

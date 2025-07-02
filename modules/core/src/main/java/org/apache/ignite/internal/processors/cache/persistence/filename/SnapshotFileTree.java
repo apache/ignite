@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -244,10 +243,10 @@ public class SnapshotFileTree extends NodeFileTree {
 
     /**
      * @param grpId Cache group id.
-     * @return Files that match cache or cache group pattern.
+     * @return Directories that match cache or cache group pattern.
      */
-    public File existingCacheDirectory(int grpId) {
-        return F.first(existingCacheDirs(true, f -> CU.cacheId(cacheName(f)) == grpId));
+    public List<File> existingCacheDirectories(int grpId) {
+        return existingCacheDirs(true, f -> CU.cacheId(cacheName(f)) == grpId);
     }
 
     /**
