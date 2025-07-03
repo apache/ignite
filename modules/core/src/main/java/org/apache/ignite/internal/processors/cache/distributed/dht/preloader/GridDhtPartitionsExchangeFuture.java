@@ -2150,19 +2150,39 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (log.isTraceEnabled())
             log.trace("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + msg + ']');
 
+        long sndStart = System.currentTimeMillis();
+        int retry = 0;
+
+        if (log.isInfoEnabled())
+            log.info("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", attempt=" + (retry + 1) + ']');
+
         while (true) {
             try {
                 cctx.io().send(node, msg, SYSTEM_POOL);
+
+                if (log.isInfoEnabled()) {
+                    long dur = System.currentTimeMillis() - sndStart;
+                    log.info("Local partitions sent [nodeId=" + node.id() + ", exchId=" + exchId +
+                        ", duration=" + dur + "ms, retries=" + retry + ']');
+                }
             }
             catch (ClusterTopologyCheckedException ignored) {
-                if (log.isDebugEnabled()) {
-                    log.debug(
-                        "Failed to send local partitions on exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']'
-                    );
-                }
+
+                long retryDelay = cctx.gridConfig().getNetworkSendRetryDelay();
+
+                log.warning(
+                    "Failed to send local partitions on exchange (node left) [nodeId=" + node.id() +
+                        ", exchId=" + exchId + ", retryDelay=" + retryDelay + "ms]"
+                );
 
                 if (cctx.discovery().alive(node.id())) {
-                    U.sleep(cctx.gridConfig().getNetworkSendRetryDelay());
+                    if (log.isInfoEnabled())
+                        log.info("Retry sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId +
+                                ", retry=" + (retry + 1) + ']');
+
+                    U.sleep(retryDelay);
+
+                    retry++;
 
                     continue;
                 }
@@ -2270,8 +2290,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.io().send(node, fullMsgToSend, SYSTEM_POOL);
                 }
                 catch (ClusterTopologyCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to send partitions, node failed: " + node);
+                    log.warning("Failed to send partitions [nodeId=" + node.id() +
+                        ", exchId=" + exchId + ']', e);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send partitions [node=" + node + ']', e);
@@ -2285,11 +2305,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void sendPartitions(ClusterNode oldestNode) {
         assert !exchCtx.exchangeFreeSwitch() : this;
 
+        if (log.isInfoEnabled())
+            log.info("Send partitions to coordinator [nodeId=" + oldestNode.id() + ", exchId=" + exchId + ']');
+
+        long start = System.currentTimeMillis();
+
         try {
             sendLocalPartitions(oldestNode);
+
+            if (log.isInfoEnabled())
+                log.info("Finished sending partitions [nodeId=" + oldestNode.id() + ", exchId=" + exchId +
+                    ", duration=" + (System.currentTimeMillis() - start) + "ms]");
         }
         catch (ClusterTopologyCheckedException ignore) {
-            if (log.isDebugEnabled())
+            if (log.isInfoEnabled())
+                log.info("Coordinator left during partition exchange, will retry [nodeId=" + oldestNode.id() +
+                    ", exchId=" + exchId + ']');
+            else if (log.isDebugEnabled())
                 log.debug("Coordinator left during partition exchange [nodeId=" + oldestNode.id() +
                     ", exchId=" + exchId + ']');
         }
@@ -4326,8 +4358,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
         catch (ClusterTopologyCheckedException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send partitions, node failed: " + node);
+            log.warning("Failed to send partitions [nodeId=" + node.id() + ", exchId=" + exchId + ']', e);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send partitions [node=" + node + ']', e);
