@@ -349,6 +349,14 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Ignite package. */
     public static final String IGNITE_PKG = "org.apache.ignite.";
 
+    /**
+     * To avoid tree corruption, at least two items should fit into one page of H2 index tree.
+     * So maximum payload size equals: P = (PS - H - 3L) / 2 - X , where P - Payload size, PS - page size, H - page
+     * header size, L - size of the child link, X - overhead per item. Calculated for pageSize = 1KB with
+     * KeystoreEncryptionSpi and MVCC enabled.
+     */
+    public static final int MAX_INLINE_SIZE = 427;
+
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 

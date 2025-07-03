@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -70,6 +71,7 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.N
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.mergeTasks;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.toMaintenanceTask;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.util.IgniteUtils.MAX_INLINE_SIZE;
 
 /**
  * BPlusTree where nodes stores inlined index keys.
@@ -175,6 +177,25 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
             if (!metaInfo.flagsSupported())
                 upgradeMetaPage(inlineObjSupported);
+
+            // Skip for destruction of indexes.
+            if (def != null && inlineSize > MAX_INLINE_SIZE) {
+                // Using default limits to compute the best inline size, not considering user configurations.
+                int recommendedInlineSize = computeInlineSize(
+                        def.idxName().fullName(),
+                        rowHnd.inlineIndexKeyTypes(),
+                        rowHnd.indexKeyDefinitions(),
+                        -1,
+                        MAX_INLINE_SIZE,
+                        log
+                );
+
+                U.warn(log, "Index inline size is too big. [cacheName=" + def.cacheInfo().name() +
+                        ", idxName=" + treeName +
+                        ", inlineSize=" + inlineSize +
+                        ", recommended=" + recommendedInlineSize + ']'
+                );
+            }
         }
         else {
             rowHnd = rowHndFactory.create(def, keyTypeSettings);
@@ -390,7 +411,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * @param keyTypes Index key types.
      * @param keyDefs Index key definitions.
      * @param cfgInlineSize Inline size from index config.
-     * @param maxInlineSize Max inline size from cache config.
+     * @param cfgMaxInlineSize Max inline size from cache config.
      * @param log Logger.
      * @return Inline size.
      */
@@ -399,7 +420,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         List<InlineIndexKeyType> keyTypes,
         List<IndexKeyDefinition> keyDefs,
         int cfgInlineSize,
-        int maxInlineSize,
+        int cfgMaxInlineSize,
         IgniteLogger log
     ) {
         if (cfgInlineSize == 0)
@@ -410,11 +431,12 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         boolean fixedSize = true;
 
-        int propSize = maxInlineSize == -1
-            ? IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE, IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT)
-            : maxInlineSize;
+        int maxInlineSize = maxInlineSize(cfgMaxInlineSize, name, log);
 
-        int size = 0;
+        if (maxInlineSize == 0)
+            return 0;
+
+        int computedInlineSize = 0;
 
         for (int i = 0; i < keyTypes.size(); i++) {
             InlineIndexKeyType keyType = keyTypes.get(i);
@@ -433,29 +455,56 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                     sizeInc = IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE;
             }
 
-            size += sizeInc;
+            computedInlineSize += sizeInc;
 
-            if (size > propSize) {
-                size = propSize;
-                break;
-            }
+            // We can't break here, because we need to check all columns for fixed size.
+            if (computedInlineSize > maxInlineSize)
+                computedInlineSize = maxInlineSize;
         }
 
         if (cfgInlineSize != -1) {
-            cfgInlineSize = Math.min(PageIO.MAX_PAYLOAD_SIZE, cfgInlineSize);
+            if (fixedSize && computedInlineSize < cfgInlineSize) {
+                U.warn(log, "Explicit INLINE_SIZE for fixed size index item is too big. " +
+                        "This will lead to wasting of space inside index pages. Ignoring " +
+                        "[index=" + name + ", explicitInlineSize=" + cfgInlineSize + ", realInlineSize=" + computedInlineSize + ']');
 
-            if (fixedSize && size < cfgInlineSize) {
-                log.warning("Explicit INLINE_SIZE for fixed size index item is too big. " +
-                    "This will lead to wasting of space inside index pages. Ignoring " +
-                    "[index=" + name + ", explicitInlineSize=" + cfgInlineSize + ", realInlineSize=" + size + ']');
-
-                return size;
+                return computedInlineSize;
             }
 
-            return cfgInlineSize;
+            if (cfgInlineSize > maxInlineSize)
+                U.warn(log, "Explicit INLINE_SIZE exceeds maximum size. Ignoring " +
+                        "[index=" + name + ", explicitInlineSize=" + cfgInlineSize + ", maxInlineSize=" + maxInlineSize + ']');
+
+            return Math.min(cfgInlineSize, maxInlineSize);
         }
 
-        return Math.min(PageIO.MAX_PAYLOAD_SIZE, size);
+        return computedInlineSize;
+    }
+
+    /** Returns maximum inline size based on cache configuration, system property and {@link IgniteUtils#MAX_INLINE_SIZE}. */
+    private static int maxInlineSize(int cfgMaxInlineSize, String name, IgniteLogger log) {
+        if (cfgMaxInlineSize != -1) {
+            if (cfgMaxInlineSize > MAX_INLINE_SIZE) {
+                U.warn(log, "Cache sqlIdxMaxInlineSize exceeds maximum allowed size. Ignoring" +
+                        "[index=" + name + ", maxInlineSize=" + cfgMaxInlineSize + ", maxAllowedInlineSize=" + MAX_INLINE_SIZE + ']');
+
+                return MAX_INLINE_SIZE;
+            }
+
+            return cfgMaxInlineSize;
+        }
+
+        int propSize = IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE,
+                MAX_INLINE_SIZE);
+
+        if (propSize > MAX_INLINE_SIZE) {
+            U.warn(log, "System property IGNITE_MAX_INDEX_PAYLOAD_SIZE exceeds maximum allowed size. Ignoring" +
+                    "[index=" + name + ", propertySize=" + propSize + ", maxAllowedInlineSize=" + MAX_INLINE_SIZE + ']');
+
+            return MAX_INLINE_SIZE;
+        }
+
+        return propSize;
     }
 
     /**
@@ -466,9 +515,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     public CacheGroupContext cacheGroupContext() {
         return grpCtx;
     }
-
-    /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
-    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 64;
 
     /**
      * @return Inline size.
