@@ -463,11 +463,16 @@ public class CdcMain implements Runnable {
     /** Waits and consumes new WAL segments until stopped. */
     public void consumeWalSegmentsUntilStopped() {
         try {
+            log.info(">>> consumeWalSegmentsUntilStopped");
             Set<Path> seen = new HashSet<>();
 
             AtomicLong lastSgmnt = new AtomicLong(-1);
 
+            log.info(">>> consumeWalSegmentsUntilStopped -> BEFORE WHILE");
+
             while (!stopped) {
+                log.info(">>> consumeWalSegmentsUntilStopped -> INSIDE WHILE, consumer.alive()=" + consumer.alive());
+
                 if (!consumer.alive()) {
                     log.warning("Consumer is not alive. Ignite Change Data Capture Application will be stopped.");
 
@@ -494,8 +499,12 @@ public class CdcMain implements Runnable {
                             lastSgmnt.set(nextSgmnt);
                         }).iterator();
 
+                    log.info(">>> consumeWalSegmentsUntilStopped -> SEGMENTS.hasNext: " + segments.hasNext());
+
                     while (segments.hasNext()) {
                         Path segment = segments.next();
+
+                        log.info(">>> Segment: " + segment.toAbsolutePath());
 
                         if (walState != null && removeProcessedOnFailover(segment))
                             continue;
@@ -519,6 +528,8 @@ public class CdcMain implements Runnable {
                         updateMetadata();
                 }
 
+                log.info(">>> consumeWalSegmentsUntilStopped -> stopped=" + stopped);
+
                 if (!stopped)
                     U.sleep(cdcCfg.getCheckFrequency());
             }
@@ -534,6 +545,8 @@ public class CdcMain implements Runnable {
      * @return {@code true} if mode switched.
      */
     private boolean consumeSegment(Path segment) {
+        log.info(">>> consumeSegment segment=" + segment.toAbsolutePath());
+
         updateMetadata();
 
         if (log.isInfoEnabled())
@@ -654,11 +667,25 @@ public class CdcMain implements Runnable {
     private void updateMetadata() {
         long start = System.currentTimeMillis();
 
+        log.info(">>> updateMetadata");
+
+        log.info(">>> BEFORE updateMappings");
+
         updateMappings();
+
+        log.info(">>> AFTER updateMappings");
+
+        log.info(">>> BEFORE updateTypes");
 
         updateTypes();
 
+        log.info(">>> AFTER updateTypes");
+
+        log.info(">>> BEFORE updateCaches");
+
         updateCaches();
+
+        log.info(">>> AFTER updateCaches");
 
         metaUpdate.value(System.currentTimeMillis() - start);
     }
@@ -666,10 +693,14 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link BinaryType} and notifies the consumer. */
     private void updateTypes() {
         try {
+            log.info(">>> updateTypes");
+
             File[] files = ft.binaryMeta().listFiles();
 
             if (files == null)
                 return;
+
+            log.info(">>> updateTypes -> files.length=" + files.length);
 
             Iterator<BinaryType> changedTypes = Arrays.stream(files)
                 .filter(NodeFileTree::binFile)
@@ -695,15 +726,27 @@ public class CdcMain implements Runnable {
                 .filter(Objects::nonNull)
                 .iterator();
 
+            log.info(">>> updateTypes -> changedTypes.hasNext()=" + changedTypes.hasNext());
+
             if (!changedTypes.hasNext())
                 return;
 
+            log.info(">>> updateTypes -> BEFORE consumer.onTypes(changedTypes)");
+
             consumer.onTypes(changedTypes);
+
+            log.info(">>> updateTypes -> AFTER consumer.onTypes(changedTypes)");
+
+            log.info(">>> updateTypes2 -> changedTypes.hasNext()=" + changedTypes.hasNext());
 
             if (changedTypes.hasNext())
                 throw new IllegalStateException("Consumer should handle all changed types");
 
+            log.info(">>> updateTypes -> BEFORE state.saveTypes(typesState)");
+
             state.saveTypes(typesState);
+
+            log.info(">>> updateTypes -> AFTER state.saveTypes(typesState)");
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -713,7 +756,11 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
     private void updateMappings() {
         try {
+            log.info(">>> updateMappings");
+
             File[] files = ft.marshaller().listFiles(NodeFileTree::notTmpFile);
+
+            log.info(">>> updateMappings -> files=" + Arrays.toString(files));
 
             if (files == null)
                 return;
@@ -723,15 +770,25 @@ public class CdcMain implements Runnable {
                 tm -> mappingsState.add(new T2<>(tm.typeId(), (byte)tm.platformType().ordinal()))
             );
 
+            log.info(">>> updateMappings -> changedMappings.hasNext=" + changedMappings.hasNext());
+
             if (!changedMappings.hasNext())
                 return;
 
+            log.info(">>> updateMappings -> BEFORE consumer.onMappings");
+
             consumer.onMappings(changedMappings);
+
+            log.info(">>> updateMappings -> AFTER consumer.onMappings");
 
             if (changedMappings.hasNext())
                 throw new IllegalStateException("Consumer should handle all changed mappings");
 
+            log.info(">>> updateMappings -> BEFORE state.saveMappings");
+
             state.saveMappings(mappingsState);
+
+            log.info(">>> updateMappings -> AFTER state.saveMappings");
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -741,6 +798,8 @@ public class CdcMain implements Runnable {
     /** Search for new or changed {@link CdcCacheEvent} and notifies the consumer. */
     private void updateCaches() {
         try {
+            log.info(">>> updateCaches");
+
             if (ft.allStorages().noneMatch(File::exists))
                 return;
 
@@ -770,7 +829,11 @@ public class CdcMain implements Runnable {
                 .filter(Objects::nonNull)
                 .iterator();
 
+            log.info(">>> updateMappings -> BEFORE consumer.onCacheEvents");
+
             consumer.onCacheEvents(cacheEvts);
+
+            log.info(">>> updateMappings -> AFTER consumer.onCacheEvents");
 
             if (cacheEvts.hasNext())
                 throw new IllegalStateException("Consumer should handle all cache change events");
@@ -778,13 +841,21 @@ public class CdcMain implements Runnable {
             if (!destroyed.isEmpty()) {
                 Iterator<Integer> destroyedIter = destroyed.iterator();
 
+                log.info(">>> updateMappings -> BEFORE consumer.onCacheDestroyEvents");
+
                 consumer.onCacheDestroyEvents(destroyedIter);
+
+                log.info(">>> updateMappings -> AFTER consumer.onCacheDestroyEvents");
 
                 if (destroyedIter.hasNext())
                     throw new IllegalStateException("Consumer should handle all cache destroy events");
             }
 
+            log.info(">>> updateMappings -> BEFORE state.saveCaches");
+
             state.saveCaches(cachesState);
+
+            log.info(">>> updateMappings -> AFTER state.saveCaches");
         }
         catch (IOException e) {
             throw new IgniteException(e);

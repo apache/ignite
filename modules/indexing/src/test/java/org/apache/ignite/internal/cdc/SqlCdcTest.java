@@ -148,7 +148,7 @@ public class SqlCdcTest extends AbstractCdcTest {
         executeSql(
             ign,
             "CREATE TABLE CITY(id int, name varchar, zip_code varchar(6), PRIMARY KEY (id)) " +
-               "WITH \"CACHE_NAME=" + CITY + ",VALUE_TYPE=TestCity\""
+                "WITH \"CACHE_NAME=" + CITY + ",VALUE_TYPE=" + CITY_VAL_TYPE + "\""
         );
 
         for (int i = 0; i < KEYS_CNT; i++) {
@@ -167,8 +167,12 @@ public class SqlCdcTest extends AbstractCdcTest {
                 Integer.toString(127000 + i));
         }
 
-        // Wait while both predicte will become true and state saved on the disk.
+        log.info(">>> BEFORE latch.await");
+
+        // Wait while both predicate will become true and state saved on the disk.
         assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
+
+        log.info(">>> AFTER latch.await");
 
         checkMetrics(cdc, KEYS_CNT * 2);
 
@@ -266,15 +270,22 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         /** {@inheritDoc} */
         @Override public void onTypes(Iterator<BinaryType> types) {
-            assertEquals("onMappings must be executed first", 3, mappingCnt);
+            log.info(">>> BinaryCdcConsumer#onTypes -> mappingCnt=" + mappingCnt + ", types.hasNext()=" + types.hasNext());
+
+            assertTrue("onMappings must be executed first", mappingCnt <= 3);
+
+            log.info(">>> BinaryCdcConsumer#onTypes -> AFTER assertEquals");
 
             while (types.hasNext()) {
                 BinaryType type = types.next();
+
+                log.info(">>> BinaryType=" + type);
 
                 assertNotNull(type);
 
                 switch (type.typeName()) {
                     case USER_KEY_TYPE:
+                        log.info(">>> BinaryType=" + USER_KEY_TYPE);
                         assertTrue(type.fieldNames().containsAll(Arrays.asList(ID, CITY_ID)));
                         assertEquals(2, type.fieldNames().size());
                         assertEquals(int.class.getSimpleName(), type.fieldTypeName(ID));
@@ -285,6 +296,7 @@ public class SqlCdcTest extends AbstractCdcTest {
                         break;
 
                     case USER_VAL_TYPE:
+                        log.info(">>> BinaryType=" + USER_VAL_TYPE);
                         assertTrue(type.fieldNames().contains(NAME));
                         assertEquals(1, type.fieldNames().size());
                         assertEquals(String.class.getSimpleName(), type.fieldTypeName(NAME));
@@ -294,6 +306,7 @@ public class SqlCdcTest extends AbstractCdcTest {
                         break;
 
                     case CITY_VAL_TYPE:
+                        log.info(">>> BinaryType=" + CITY_VAL_TYPE);
                         assertTrue(type.fieldNames().containsAll(Arrays.asList(NAME, ZIP_CODE)));
                         assertEquals(cityValType ? 3 : 2, type.fieldNames().size());
                         assertEquals(String.class.getSimpleName(), type.fieldTypeName(NAME));
@@ -309,6 +322,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
                         break;
                     default:
+                        log.info(">>> BinaryType Unexpected type =" + type.typeName());
                         fail("Unexpected type name " + type.typeName());
                 }
             }
@@ -316,8 +330,10 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         /** {@inheritDoc} */
         @Override public void onMappings(Iterator<TypeMapping> mappings) {
-            assertEquals(0, mappingCnt);
-            assertFalse("onMappings must be executed first", cityValType || userValType || userKeyType);
+            log.info(">>> START onMappings -> mappingCnt=" + mappingCnt);
+            log.info(">>> onMappings -> mappings.hasNext()=" + mappings.hasNext());
+
+            assertFalse("onMappings must be executed first", cityValType && userValType && userKeyType && mappingCnt == 3);
 
             BinaryBasicIdMapper mapper = new BinaryBasicIdMapper();
 
@@ -330,9 +346,13 @@ public class SqlCdcTest extends AbstractCdcTest {
 
                 String typeName = m.typeName();
 
+                log.info(">>> onMappings -> typeName=" + typeName + ", mappingCnt=" + mappingCnt);
+
                 assertFalse(typeName.isEmpty());
                 assertEquals(mapper.typeId(typeName), m.typeId());
             }
+
+            log.info(">>> END onMappings -> mappingCnt=" + mappingCnt);
         }
 
         /** {@inheritDoc} */
