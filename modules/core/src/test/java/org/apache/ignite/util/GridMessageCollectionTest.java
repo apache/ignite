@@ -42,8 +42,8 @@ public class GridMessageCollectionTest {
     /**
      * @return Writer.
      */
-    protected MessageWriter writer() {
-        return new DirectMessageWriter();
+    protected MessageWriter writer(MessageFactory msgFactory) {
+        return new DirectMessageWriter(msgFactory);
     }
 
     /**
@@ -104,7 +104,10 @@ public class GridMessageCollectionTest {
     private void doTestMarshal(Message m) {
         ByteBuffer buf = ByteBuffer.allocate(8 * 1024);
 
-        m.writeTo(buf, writer());
+        MessageFactory msgFactory =
+            new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
+
+        m.writeTo(buf, writer(msgFactory));
 
         buf.flip();
 
@@ -114,9 +117,6 @@ public class GridMessageCollectionTest {
         short type = (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
 
         assertEquals(m.directType(), type);
-
-        MessageFactory msgFactory =
-                new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
 
         Message mx = msgFactory.create(type);
 

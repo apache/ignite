@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnGlo
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnLocalDataView;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnPartitionDataView;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
 import org.apache.ignite.spi.systemview.view.BaselineNodeView;
 import org.apache.ignite.spi.systemview.view.BinaryMetadataView;
@@ -87,8 +88,6 @@ import org.apache.ignite.spi.systemview.view.sql.SqlTableView;
 import org.apache.ignite.spi.systemview.view.sql.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.sql.SqlViewView;
 
-import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
-
 /**
  * Application for code generation of {@link SystemViewRowAttributeWalker}.
  * Usage: simply run main method from Ignite source folder(using IDE or other way).
@@ -97,6 +96,9 @@ import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
  * @see SystemViewMBean
  */
 public class SystemViewRowAttributeWalkerGenerator {
+    /** */
+    private static final String DFLT_SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
+
     /** Methods that should be excluded from specific {@link SystemViewRowAttributeWalker}. */
     private static final Set<String> SYS_METHODS = new HashSet<>(Arrays.asList("equals", "hashCode", "toString",
         "getClass"));

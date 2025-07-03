@@ -32,6 +32,7 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,8 +45,12 @@ public class DirectMessageWriter implements MessageWriter {
     private final DirectMessageState<StateItem> state;
 
     /** */
-    public DirectMessageWriter() {
-        state = new DirectMessageState<>(StateItem.class, (IgniteOutClosure<StateItem>)StateItem::new);
+    public DirectMessageWriter(final MessageFactory msgFactory) {
+        state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
+            @Override public StateItem apply() {
+                return new StateItem(msgFactory);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -359,8 +364,8 @@ public class DirectMessageWriter implements MessageWriter {
         private boolean hdrWritten;
 
         /** */
-        public StateItem() {
-            stream = new DirectByteBufferStream(null);
+        public StateItem(MessageFactory msgFactory) {
+            stream = new DirectByteBufferStream(msgFactory);
         }
 
         /** {@inheritDoc} */

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
@@ -197,7 +198,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE, RecoveryLastReceivedMessage::new);
         factory.register(TcpCommunicationSpi.HANDSHAKE_MSG_TYPE, HandshakeMessage::new);
         factory.register(TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE, HandshakeWaitMessage::new);
-        factory.register((short)0, GridJobCancelRequest::new);
+        factory.register((short)0, GridJobCancelRequest::new, new GridJobCancelRequestSerializer());
         factory.register((short)1, GridJobExecuteRequest::new);
         factory.register((short)2, GridJobExecuteResponse::new);
         factory.register((short)3, GridJobSiblingsRequest::new);
