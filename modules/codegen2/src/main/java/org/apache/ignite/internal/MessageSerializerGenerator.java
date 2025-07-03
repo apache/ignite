@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -30,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
@@ -39,7 +42,10 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
+import javax.tools.Diagnostic;
+import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
+import javax.tools.StandardLocation;
 
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
@@ -58,13 +64,16 @@ class MessageSerializerGenerator {
     private static final String TAB = "    ";
 
     /** */
+    private static final String NL = System.lineSeparator();
+
+    /** */
     private static final String PKG_NAME = "org.apache.ignite.internal.codegen";
 
     /** */
-    private static final String CLS_JAVADOC = "/** \n" +
-        " * This class is generated automatically.\n" +
-        " *\n" +
-        " * @see org.apache.ignite.internal.MessageSerializerGenerator\n" +
+    private static final String CLS_JAVADOC = "/** " + NL +
+        " * This class is generated automatically." + NL +
+        " *" + NL +
+        " * @see org.apache.ignite.internal.MessageProcessor" + NL +
         " */";
 
     /** */
@@ -97,31 +106,57 @@ class MessageSerializerGenerator {
         imports.add(type.getQualifiedName().toString());
 
         String serClsName = type.getSimpleName() + "Serializer";
+        String serCode = generateSerializerCode(serClsName);
 
-        JavaFileObject file = env.getFiler().createSourceFile(PKG_NAME + "." + serClsName);
+        try {
+            JavaFileObject file = env.getFiler().createSourceFile(PKG_NAME + "." + serClsName);
 
-        try (Writer writer = file.openWriter()) {
+            try (Writer writer = file.openWriter()) {
+                writer.append(serCode);
+                writer.flush();
+            }
+        }
+        catch (FilerException e) {
+            // IntelliJ IDEA parses Ignite's pom.xml and configures itself to use this annotation processor on each Run.
+            // During a Run, it invokes the processor and may fail when attempting to generate sources that already exist.
+            // There is no setting to disable this invocation. The IntelliJ community suggests a workaround — delegating all
+            // Run commands to Maven. However, this significantly slows down test startup time.
+            // This hack checks whether the content of a generating file is identical to an already existed file, and skips
+            // handling this class if it is.
+            if (!identicalFileIsAlreadyGenerated(serCode, serClsName)) {
+                env.getMessager().printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "MessageSerializer " + serClsName + " is already generated. Try 'mvn clean install' to fix the issue.");
+
+                throw e;
+            }
+        }
+    }
+
+    /** Generates full code for a serializer class. */
+    private String generateSerializerCode(String serClsName) throws IOException {
+        try (Writer writer = new StringWriter()) {
             writeClassHeader(writer, PKG_NAME, serClsName);
 
             // Write #writeTo method.
             for (String w: write)
-                writer.write(w + "\n");
+                writer.write(w + NL);
 
-            writer.write(TAB + "}\n\n");
+            writer.write(TAB + "}" + NL + NL);
 
             // Write #readFrom method.
             for (String r: read)
-                writer.write(r + "\n");
+                writer.write(r + NL);
 
-            writer.write(TAB + "}\n");
+            writer.write(TAB + "}" + NL);
 
             writer.write("}");
+
+            return writer.toString();
         }
     }
 
-    /**
-     * Generates code for {@code writeTo} and {@code readFrom}.
-     */
+    /** Generates code for {@code writeTo} and {@code readFrom}. */
     private void generateMethods(TypeElement type, List<VariableElement> fields) throws Exception {
         start(type, write, true);
         start(type, read, false);
@@ -537,21 +572,21 @@ class MessageSerializerGenerator {
                 out.println(line);
         }
 
-        writer.write("\n");
-        writer.write("package " + pkgName + ";\n\n");
-        writer.write("import java.nio.ByteBuffer;\n");
-        writer.write("import org.apache.ignite.plugin.extensions.communication.Message;\n");
-        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageSerializer;\n");
-        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageWriter;\n");
-        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageReader;\n");
+        writer.write(NL);
+        writer.write("package " + pkgName + ";" + NL + NL);
+        writer.write("import java.nio.ByteBuffer;" + NL);
+        writer.write("import org.apache.ignite.plugin.extensions.communication.Message;" + NL);
+        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageSerializer;" + NL);
+        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageWriter;" + NL);
+        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageReader;" + NL);
 
         for (String i: imports)
-            writer.write("import " + i + ";\n");
+            writer.write("import " + i + ";" + NL);
 
-        writer.write("\n");
+        writer.write(NL);
         writer.write(CLS_JAVADOC);
-        writer.write("\n");
-        writer.write("public class " + serClsName + " implements MessageSerializer {\n");
+        writer.write(NL);
+        writer.write("public class " + serClsName + " implements MessageSerializer {" + NL);
     }
 
     /** */
@@ -581,5 +616,42 @@ class MessageSerializerGenerator {
     /** Converts string "BYTE" to string "Byte", with first capital latter. */
     private String capitalizeOnlyFirst(String input) {
         return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
+    }
+
+    /** @return {@code true} if trying to generate file with the same content. */
+    private boolean identicalFileIsAlreadyGenerated(String srcCode, String clsName) {
+        try {
+            String fileName = PKG_NAME.replace('.', '/') + '/' + clsName + ".java";
+            FileObject prevFile = env.getFiler().getResource(StandardLocation.SOURCE_OUTPUT, "", fileName);
+
+            String prevFileContent;
+            try (Reader r = prevFile.openReader(true)) {
+                prevFileContent = content(r);
+            }
+
+            // We are ok, for some reason the same file is already generated (Intellij IDEA might do it).
+            if (prevFileContent.contentEquals(srcCode))
+                return true;
+        }
+        catch (Exception ignoredAttemptToGetExistingFile) {
+            // We have some other problem, not an existing file.
+        }
+
+        return false;
+    }
+
+    /** */
+    private String content(Reader reader) throws IOException {
+        BufferedReader br = new BufferedReader(reader);
+        StringBuilder sb = new StringBuilder();
+        String line;
+
+        while ((line = br.readLine()) != null)
+            sb.append(line).append(NL);
+
+        // Delete last line separator.
+        sb.deleteCharAt(sb.length() - 1);
+
+        return sb.toString();
     }
 }
