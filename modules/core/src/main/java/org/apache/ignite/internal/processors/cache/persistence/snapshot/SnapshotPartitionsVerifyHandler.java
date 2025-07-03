@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
@@ -78,8 +77,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.cacheName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
 
@@ -172,12 +169,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         return meta.dump()
             ? checkDumpFiles(opCtx, partFiles)
-            : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
+            : checkSnapshotFiles(grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
     }
 
     /** */
     private Map<PartitionKey, PartitionHashRecord> checkSnapshotFiles(
-        SnapshotHandlerContext opCtx,
         Map<Integer, List<File>> grpDirs,
         SnapshotMetadata meta,
         Set<File> partFiles,
@@ -189,17 +185,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
 
-        GridKernalContext snpCtx = new StandaloneGridKernalContext(
-            log,
-            cctx.kernalContext().compress(),
-            new NodeFileTree(opCtx.snapshotFileTree().root(), meta.folderName())
-        );
-
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
         EncryptionCacheKeyProvider snpEncrKeyProvider = new SnapshotEncryptionKeyProvider(cctx.kernalContext(), grpDirs);
-
-        startAllComponents(snpCtx);
 
         try {
             U.doInParallel(
@@ -257,7 +245,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                         long pageAddr = GridUnsafe.bufferAddress(pageBuff);
 
                         if (PageIO.getCompressionType(pageBuff) != CompressionProcessor.UNCOMPRESSED_PAGE)
-                            snpCtx.compress().decompressPage(pageBuff, pageStore.getPageSize());
+                            cctx.kernalContext().compress().decompressPage(pageBuff, pageStore.getPageSize());
 
                         PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
                         GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageAddr));
@@ -288,14 +276,15 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                             false,
                             size,
                             skipHash() ? F.emptyIterator()
-                                : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore),
+                                : snpMgr.partitionRowIterator(
+                                    cctx.kernalContext(), grpName, partId, pageStore),
                             null
                         );
 
                         assert hash != null : "OWNING must have hash: " + key;
 
                         // We should skip size comparison if there are entries to expire exist.
-                        if (hasExpiringEntries(snpCtx, pageStore, pageBuff, io.getPendingTreeRoot(pageAddr)))
+                        if (hasExpiringEntries(cctx.kernalContext(), pageStore, pageBuff, io.getPendingTreeRoot(pageAddr)))
                             hash.hasExpiringEntries(true);
 
                         res.put(key, hash);
@@ -312,9 +301,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             log.error("Error executing handler: ", t);
 
             throw t;
-        }
-        finally {
-            closeAllComponents(snpCtx);
         }
 
         return res;
