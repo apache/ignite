@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.development.utils;
+package org.apache.ignite.internal.commandline.walreader;
 
 /**
  * Statistic for record size, used to accumulate information about several record and calculating average.
