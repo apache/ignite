@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.binary;
 
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -43,8 +43,8 @@ public class ClientBinaryTypeGetRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        BinaryTypeImpl type = (BinaryTypeImpl)ctx.kernalContext().cacheObjects().binary().type(typeId);
+        BinaryMetadata meta = ctx.kernalContext().cacheObjects().metadata0(typeId);
 
-        return new ClientBinaryTypeGetResponse(requestId(), type != null ? type.metadata() : null);
+        return new ClientBinaryTypeGetResponse(requestId(), meta);
     }
 }
