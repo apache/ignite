@@ -1088,6 +1088,24 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     }
 
     /** */
+    @Test
+    public void testCharToVarcharConversion() {
+        assumeNoTransactions();
+
+        assertQuery("SELECT 'aa' UNION ALL SELECT 'a'")
+            .returns("a").returns("aa")
+            .check();
+
+        assertQuery("SELECT i, TYPEOF(i) FROM (SELECT 'a' i UNION ALL SELECT 'aa' i) t1 WHERE i='a'")
+            .returns("a", "VARCHAR(2)")
+            .check();
+
+        assertQuery("SELECT COALESCE('a', 'aa')")
+            .returns("a")
+            .check();
+    }
+
+    /** */
     private void assumeNoTransactions() {
         assumeTrue("Test use queries that doesn't touch any data. Skip for tx modes", sqlTxMode == SqlTransactionMode.NONE);
     }

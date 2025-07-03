@@ -4,21 +4,21 @@
 
 
 query I
-SELECT DECODE(102, 101, 'IBM', 102, 'GRIDGAIN', 103, 'Hew','BALL')
+SELECT DECODE(102, 101, 'IBM', 102, 'GRIDGAIN', 103, 'Hewlett Packard','BALL')
 ----
 GRIDGAIN
 
 query T
-SELECT DECODE(108, 101, 'IBM', 102, 'GRI', 103, 'Hew','BALL')
+SELECT DECODE(108, 101, 'IBM', 102, 'GRIDGAIN', 103, 'Hewlett Packard','BALL')
 ----
 BALL
 
 query T
-SELECT DECODE(NULL, 101, 'IBM', 102, 'GRI', 103, 'Hew','BALL')
+SELECT DECODE(NULL, 101, 'IBM', 102, 'GRIDGAIN', 103, 'Hewlett Packard','BALL')
 ----
 BALL
 
 query T
-SELECT DECODE(108, 101, 'IBM', 102, 'GRI', 103, 'Hew')
+SELECT DECODE(108, 101, 'IBM', 102, 'GRIDGAIN', 103, 'Hewlett Packard')
 ----
 NULL
