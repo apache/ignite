@@ -60,7 +60,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
             .and(j -> j.getCondition().toString().contains("IS NOT DISTINCT FROM"))
             .and(hasChildThat(isIndexScan("T1", "IDX1")))
-            .and(hasChildThat(isIndexScan("T2", "IDX2"))))
+            .and(hasChildThat(isIndexScan("T2", "IDX2")))
+            .and(hasChildThat(isInstanceOf(IgniteSort.class))).negate())
         );
     }
 
@@ -79,7 +80,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
             .and(j -> j.getCondition().isA(SqlKind.IS_NOT_DISTINCT_FROM))
             .and(hasChildThat(isIndexScan("T1", "IDX1")))
-            .and(hasChildThat(isIndexScan("T2", "IDX2"))))
+            .and(hasChildThat(isIndexScan("T2", "IDX2")))
+            .and(hasChildThat(isInstanceOf(IgniteSort.class))).negate())
         );
     }
 
