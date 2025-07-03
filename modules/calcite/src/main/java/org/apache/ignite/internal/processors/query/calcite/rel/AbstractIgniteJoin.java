@@ -40,7 +40,6 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
@@ -72,10 +71,7 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
         super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
 
-        // TODO Should be revised after taking https://issues.apache.org/jira/browse/CALCITE-6927
-        joinInfo = condition.getKind() == SqlKind.IS_NOT_DISTINCT_FROM
-            ? JoinInfo.of(left, right, condition)
-            : super.joinInfo;
+        joinInfo = JoinInfo.of(left, right, condition);
     }
 
     /** */
