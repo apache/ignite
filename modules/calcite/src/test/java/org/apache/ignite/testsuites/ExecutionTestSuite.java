@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTes
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateSingleGroupExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashIndexSpoolExecutionTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashJoinExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.IntersectExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.LimitExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MergeJoinExecutionTest;
@@ -45,6 +46,7 @@ import org.junit.runners.Suite;
     ContinuousExecutionTest.class,
     MergeJoinExecutionTest.class,
     NestedLoopJoinExecutionTest.class,
+    HashJoinExecutionTest.class,
     TableSpoolExecutionTest.class,
     SortedIndexSpoolExecutionTest.class,
     HashIndexSpoolExecutionTest.class,
