@@ -70,8 +70,6 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
         SqlTypeName[] numTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.REAL,
             SqlTypeName.FLOAT, SqlTypeName.INTEGER, SqlTypeName.BIGINT, SqlTypeName.DOUBLE, SqlTypeName.DECIMAL};
 
-        // TODO https://issues.apache.org/jira/browse/CALCITE-7062 Change notNull1 and notNull2 to notNull after fix.
-        //String notNull = !nullable1 && !nullable2 ? " NOT NULL" : "";
         String notNull1 = !nullable1 ? " NOT NULL" : "";
         String notNull2 = !nullable2 ? " NOT NULL" : "";
 
@@ -121,5 +119,12 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
         return nodeOrAnyChild(isTableScan(tableName)
             .and(tblScan -> tblScan.projects() != null && expectedProj.equals(tblScan.projects().toString()))
         );
+    }
+
+    /** Tests common type for nullable date and not nullable timestamp. */
+    @Test
+    public void testSetOpNullableDateCast() throws Exception {
+        assertPlan("SELECT NULL::DATE UNION ALL SELECT TIMESTAMP '2025-07-04 10:00:00'", createSchema(),
+            rel -> rel.fieldIsNullable(0));
     }
 }
