@@ -489,21 +489,6 @@
                             <artifactId>ignite-tools</artifactId>
                             <version>${ignite.version}</version>
                         </dependency>
-                        <dependency>
-                            <groupId>${project.groupId}</groupId>
-                            <artifactId>ignite-commons</artifactId>
-                            <version>${ignite.version}</version>
-                        </dependency>
-                        <dependency>
-                            <groupId>${project.groupId}</groupId>
-                            <artifactId>ignite-binary-api</artifactId>
-                            <version>${ignite.version}</version>
-                        </dependency>
-                        <dependency>
-                            <groupId>${project.groupId}</groupId>
-                            <artifactId>ignite-grid-unsafe</artifactId>
-                            <version>${ignite.version}</version>
-                        </dependency>
                     </dependencies>
                 </plugin>
 
