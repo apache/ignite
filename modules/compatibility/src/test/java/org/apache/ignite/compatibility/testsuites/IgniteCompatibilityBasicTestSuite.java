@@ -17,6 +17,7 @@
 
 package org.apache.ignite.compatibility.testsuites;
 
+import org.apache.ignite.compatibility.clients.JavaThinCompatibilityStoragePathTest;
 import org.apache.ignite.compatibility.clients.JavaThinCompatibilityTest;
 import org.apache.ignite.compatibility.clients.JdbcThinCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.CompoundIndexCompatibilityTest;
@@ -46,6 +47,7 @@ import org.junit.runners.Suite;
     MoveBinaryMetadataCompatibility.class,
     JdbcThinCompatibilityTest.class,
     JavaThinCompatibilityTest.class,
+    JavaThinCompatibilityStoragePathTest.class,
     IgnitePKIndexesMigrationToUnwrapPkTest.class,
     CompoundIndexCompatibilityTest.class,
     SnapshotCompatibilityTest.class

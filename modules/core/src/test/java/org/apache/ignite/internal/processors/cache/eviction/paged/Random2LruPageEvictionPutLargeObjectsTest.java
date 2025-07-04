@@ -14,26 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.eviction.paged;
 
-package org.apache.ignite.internal.processors.query.calcite.type;
+import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
-import java.lang.reflect.Type;
-import java.util.UUID;
+import static org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionAbstractTest.setEvictionMode;
 
-/** UUID SQL type. */
-public class UuidType extends IgniteCustomType {
-    /** Ctor. */
-    public UuidType(boolean nullable) {
-        super(nullable);
-    }
-
+/** */
+public class Random2LruPageEvictionPutLargeObjectsTest extends PageEvictionPutLargeObjectsAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
-        sb.append("UUID");
-    }
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-    /** {@inheritDoc} */
-    @Override public Type storageType() {
-        return UUID.class;
+        return setEvictionMode(DataPageEvictionMode.RANDOM_2_LRU, cfg);
     }
 }
