@@ -225,27 +225,6 @@
             <resource>
                 <directory>src/main/resources</directory>
             </resource>
-
-            <resource>
-                <directory>../commons/target/classes</directory>
-                <includes>
-                    <include>**/*</include>
-                </includes>
-            </resource>
-
-            <resource>
-                <directory>../binary/api/target/classes</directory>
-                <includes>
-                    <include>**/*</include>
-                </includes>
-            </resource>
-
-            <resource>
-                <directory>../unsafe/target/classes</directory>
-                <includes>
-                    <include>**/*</include>
-                </includes>
-            </resource>
         </resources>
 
         <testResources>
