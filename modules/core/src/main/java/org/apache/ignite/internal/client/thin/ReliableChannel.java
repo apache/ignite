@@ -68,8 +68,12 @@ final class ReliableChannel implements AutoCloseable {
     /** Client channel holders for each configured address. */
     private volatile List<ClientChannelHolder> channels;
 
-    /** Limit of channels to execute each {@link #service}. */
-    private volatile int srvcChannelsLimit;
+    /**
+     * Limit of attempts to execute each {@link #service}.
+     * Each channel is tried twice, and both attempts count as a single value
+     * toward this limit.
+     */
+    private volatile int attemptsLimit;
 
     /** Index of the current channel. */
     private volatile int curChIdx = -1;
@@ -253,8 +257,9 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /**
-     * Retries an async operation on the same channel if it fails with a connection exception
-     * then falls back to other channels if retry fails. Aggregates failures and completes the original future.
+     * Performs the operation asynchronously, retrying on the same channel first
+     * if a ClientConnectionException occurs, then falls back to other channels
+     * if that retry fails. Aggregates failures and completes the original future.
      */
     private <T> void applyOnClientChannelAsync(
         final CompletableFuture<T> fut,
@@ -290,19 +295,19 @@ final class ReliableChannel implements AutoCloseable {
                 }
 
                 // Retry use same channel in case of connection exception.
-                UUID nodeId = ch.serverNodeId();
-
-                ClientChannel retryCh = null;
-
-                ClientChannelHolder hld;
+                ClientChannel retryCh;
 
                 try {
-                    hld = (nodeId != null) ? nodeChannels.get(nodeId) : null;
+                    UUID nodeId = ch.serverNodeId();
+
+                    ClientChannelHolder hld = (nodeId != null) ? nodeChannels.get(nodeId) : null;
 
                     if (hld == null)
                         throw connEx;
 
-                    retryCh = getRetryChannel(hld, ch);
+                    handleFailureActions(hld, ch);
+
+                    retryCh = hld.getOrCreateChannel();
                 }
                 catch (ClientConnectionException reconnectEx) {
                     failures.add(reconnectEx);
@@ -348,7 +353,7 @@ final class ReliableChannel implements AutoCloseable {
         List<ClientConnectionException> failures,
         ClientConnectionException err
     ) {
-        if (failures.size() < srvcChannelsLimit && shouldRetry(op, failures.size() - 1, err))
+        if (failures.size() < attemptsLimit && shouldRetry(op, failures.size() - 1, err))
             handleServiceAsync(fut, op, payloadWriter, payloadReader, failures);
         else
             fut.completeExceptionally(composeException(failures));
@@ -566,16 +571,6 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /**
-     * On current channel failure.
-     */
-    private void onChannelFailure(ClientChannel ch, Throwable t, @Nullable List<ClientConnectionException> failures) {
-        // There is nothing wrong if curChIdx was concurrently changed, since channel was closed by another thread
-        // when current index was changed and no other wrong channel will be closed by current thread because
-        // onChannelFailure checks channel binded to the holder before closing it.
-        onChannelFailure(channels.get(curChIdx), ch, t, failures);
-    }
-
-    /**
      * On channel of the specified holder failure.
      */
     private void onChannelFailure(
@@ -586,15 +581,9 @@ final class ReliableChannel implements AutoCloseable {
     ) {
         log.warning("Channel failure [channel=" + ch + ", err=" + t.getMessage() + ']', t);
 
-        if (ch != null && ch == hld.ch)
-            hld.closeChannel();
+        handleFailureActions(hld, ch);
 
-        chFailLsnrs.forEach(Runnable::run);
-
-        // Roll current channel even if a topology changes. To help find working channel faster.
-        rollCurrentChannel(hld);
-
-        if (channelsCnt.get() == 0 && F.size(failures) == srvcChannelsLimit) {
+        if (channelsCnt.get() == 0 && F.size(failures) == attemptsLimit) {
             // All channels have failed.
             discoveryCtx.reset();
             channelsInit(failures);
@@ -772,7 +761,7 @@ final class ReliableChannel implements AutoCloseable {
         try {
             channels = reinitHolders;
 
-            srvcChannelsLimit = getRetryLimit();
+            attemptsLimit = getRetryLimit();
 
             curChIdx = dfltChannelIdx;
         }
@@ -801,7 +790,7 @@ final class ReliableChannel implements AutoCloseable {
 
         initChannelHolders();
 
-        if (failures == null || failures.size() < srvcChannelsLimit) {
+        if (failures == null || failures.size() < attemptsLimit) {
             // Establish default channel connection.
             applyOnDefaultChannel(channel -> null, null, failures);
 
@@ -862,7 +851,7 @@ final class ReliableChannel implements AutoCloseable {
         ClientOperation op,
         @Nullable List<ClientConnectionException> failures
     ) {
-        int fixedAttemptsLimit = srvcChannelsLimit;
+        int fixedAttemptsLimit = attemptsLimit;
 
         // An additional attempt is needed because N+1 channels might be used for sending a message - first a random
         // one, then each one from #channels in sequence.
@@ -910,7 +899,9 @@ final class ReliableChannel implements AutoCloseable {
                 catch (ClientConnectionException e) {
                     if (c0 == c && shouldRetry(op, F.size(failures), e)) {
                         // In case of stale channel try to reconnect to the same channel and repeat the operation.
-                        c = getRetryChannel(hld, c);
+                        handleFailureActions(hld, c);
+
+                        c = hld.getOrCreateChannel();
 
                         return function.apply(c);
                     }
@@ -968,7 +959,9 @@ final class ReliableChannel implements AutoCloseable {
                     throw e;
 
                 try {
-                    channel = getRetryChannel(hld, channel);
+                    handleFailureActions(hld, channel);
+
+                    channel = hld.getOrCreateChannel();
 
                     return function.apply(channel);
                 }
@@ -980,7 +973,7 @@ final class ReliableChannel implements AutoCloseable {
 
                     onChannelFailure(hld, channel, err, failures);
 
-                    if (srvcChannelsLimit == 1 || !shouldRetry(op, 1, e))
+                    if (attemptsLimit == 1 || !shouldRetry(op, 1, e))
                         throw err;
                 }
             }
@@ -989,19 +982,15 @@ final class ReliableChannel implements AutoCloseable {
         return applyOnDefaultChannel(function, op, failures);
     }
 
-    /**
-     * Returns the client channel that should be used to retry sending the request.
-     * Unlike onChannelFailure, invoked only for a reconnection attempt on the same channel without channels initialization.
-     */
-    private ClientChannel getRetryChannel(ClientChannelHolder hld, ClientChannel ch) {
+    /** Handles common failure actions for a channel holder. */
+    private void handleFailureActions(ClientChannelHolder hld, ClientChannel ch) {
         if (ch != null && ch == hld.ch)
             hld.closeChannel();
 
         chFailLsnrs.forEach(Runnable::run);
 
+        // Roll current channel even if a topology changes. To help find working channel faster.
         rollCurrentChannel(hld);
-
-        return hld.getOrCreateChannel();
     }
 
     /** Get retry limit. */
