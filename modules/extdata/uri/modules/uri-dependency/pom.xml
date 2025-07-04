@@ -34,11 +34,5 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-commons</artifactId>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 </project>
