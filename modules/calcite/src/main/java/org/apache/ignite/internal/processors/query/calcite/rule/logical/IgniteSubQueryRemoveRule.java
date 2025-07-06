@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelHomogeneousShuttle;
@@ -880,20 +882,22 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
 
         int cnt = 0;
 
-        RexNode c = filter.getCondition();
+        RexNode condition = filter.getCondition();
 
         while (true) {
-            RexSubQuery e = RexUtil.SubQueryFinder.find(c);
+            final RexSubQuery subQry = RexUtil.SubQueryFinder.find(condition);
 
-            if (e == null) {
+            if (subQry == null) {
                 assert cnt > 0;
                 break;
             }
 
             ++cnt;
 
-            RelOptUtil.Logic logic = LogicVisitor.find(RelOptUtil.Logic.TRUE, ImmutableList.of(c), e);
-            Set<CorrelationId> variablesSet = RelOptUtil.getVariablesUsed(e.rel);
+            RelOptUtil.Logic logic = LogicVisitor.find(RelOptUtil.Logic.TRUE, ImmutableList.of(condition), subQry);
+            Set<CorrelationId> variablesSet = RelOptUtil.getVariablesUsed(subQry.rel);
+
+            RexSubQuery subQryReplaced = subQry;
 
             // Filter without variables could be handled before this change, we do not want
             // to break it yet for compatibility reason.
@@ -902,13 +906,42 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
                 variablesSet.retainAll(filterVariablesSet);
             }
 
-            RexNode target = rule.apply(e, variablesSet, logic, builder, 1, builder.peek().getRowType().getFieldCount(), cnt);
-            RexShuttle shuttle = new ReplaceSubQueryShuttle(e, target);
+            if (!variablesSet.isEmpty()) {
+                CorrelationId id = Iterables.getOnlyElement(variablesSet);
 
-            c = c.accept(shuttle);
+                Collection<RelOptTable> tbls = RelOptUtil.findTables(subQry.rel);
+
+                assert tbls.size() == 1;
+
+                subQryReplaced = subQry.clone(subQryReplaced.rel.accept(new RelHomogeneousShuttle() {
+                    private final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
+
+                    private final RexShuttle rexShuttle = new RexShuttle() {
+                        @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
+                            if (!(fieldAccess.getReferenceExpr() instanceof RexCorrelVariable)
+                                || !((RexCorrelVariable)fieldAccess.getReferenceExpr()).id.equals(id))
+                                return super.visitFieldAccess(fieldAccess);
+
+                            RexNode newCorr = rexBuilder.makeCorrel(subQry.rel.getRowType(), id);
+                            int offset = subQry.rel.getRowType().getFieldCount() - filter.getRowType().getFieldCount();
+
+                            return rexBuilder.makeFieldAccess(newCorr, fieldAccess.getField().getIndex() + offset);
+                        }
+                    };
+
+                    @Override public RelNode visit(RelNode other) {
+                        return super.visit(other).accept(rexShuttle);
+                    }
+                }));
+            }
+
+            RexNode target = rule.apply(subQryReplaced, variablesSet, logic, builder, 1, builder.peek().getRowType().getFieldCount(), cnt);
+            RexShuttle shuttle = new ReplaceSubQueryShuttle(subQry, target);
+
+            condition = condition.accept(shuttle);
         }
 
-        builder.filter(c);
+        builder.filter(condition);
         builder.project(fields(builder, filter.getRowType().getFieldCount()));
 
         RelNode result = builder.build();

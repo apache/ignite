@@ -105,7 +105,7 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
         );
 
         assertPlan("SELECT * FROM T1 WHERE EXISTS (" +
-                "SELECT 1 FROM T2 WHERE T2.ID = T1.REF AND T2.REF = (SELECT 1 FROM T3 WHERE T3.ID = T1.REF))", schema,
+                "SELECT 1 FROM T2 WHERE T2.ID = T1.REF AND T2.REF IN (SELECT T3.REF FROM T3 WHERE T3.ID = T1.REF))", schema,
             nodeOrAnyChild(isTableScan("T1")));
     }
 
