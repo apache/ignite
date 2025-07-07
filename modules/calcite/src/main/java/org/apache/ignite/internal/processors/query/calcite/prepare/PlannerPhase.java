@@ -30,6 +30,7 @@ import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
 import org.apache.calcite.rel.rules.AggregateMergeRule;
 import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.ExpandDisjunctionForTableRule;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule;
 import org.apache.calcite.rel.rules.FilterJoinRule.JoinConditionPushRule;
 import org.apache.calcite.rel.rules.FilterMergeRule;
@@ -40,6 +41,7 @@ import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
 import org.apache.calcite.rel.rules.ProjectMergeRule;
 import org.apache.calcite.rel.rules.ProjectRemoveRule;
 import org.apache.calcite.rel.rules.PruneEmptyRules;
+import org.apache.calcite.rel.rules.SetOpToFilterRule;
 import org.apache.calcite.rel.rules.SortRemoveRule;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
@@ -114,6 +116,7 @@ public enum PlannerPhase {
                     CoreRules.FILTER_MERGE,
                     CoreRules.FILTER_AGGREGATE_TRANSPOSE,
                     CoreRules.FILTER_SET_OP_TRANSPOSE,
+                    CoreRules.FILTER_SORT_TRANSPOSE,
                     CoreRules.JOIN_CONDITION_PUSH,
                     CoreRules.FILTER_INTO_JOIN,
                     CoreRules.FILTER_CORRELATE,
@@ -186,6 +189,9 @@ public enum PlannerPhase {
                     JoinPushExpressionsRule.Config.DEFAULT
                         .withOperandFor(LogicalJoin.class).toRule(),
 
+                    ExpandDisjunctionForTableRule.Config.FILTER.withDescription("ExpandFilterDisjunctionGlobal").toRule(),
+                    ExpandDisjunctionForTableRule.Config.JOIN.withDescription("ExpandJoinDisjunctionGlobal").toRule(),
+
                     JoinConditionPushRule.JoinConditionPushRuleConfig.DEFAULT
                         .withOperandSupplier(b -> b.operand(LogicalJoin.class)
                             .anyInputs()).toRule(),
@@ -232,11 +238,18 @@ public enum PlannerPhase {
                             b.operand(LogicalSort.class)
                                 .anyInputs()).toRule(),
 
+                    SetOpToFilterRule.Config.INTERSECT.withDescription("IntersectFilterToFilter").toRule(),
+                    SetOpToFilterRule.Config.MINUS.withDescription("MinusFilterToFilter").toRule(),
                     CoreRules.UNION_MERGE,
-                    CoreRules.MINUS_MERGE,
-                    CoreRules.INTERSECT_MERGE,
                     CoreRules.UNION_REMOVE,
+                    CoreRules.MINUS_MERGE,
+                    CoreRules.MINUS_REMOVE,
+                    CoreRules.INTERSECT_MERGE,
+                    CoreRules.INTERSECT_REMOVE,
+                    CoreRules.INTERSECT_REORDER,
                     CoreRules.AGGREGATE_REMOVE,
+
+                    CoreRules.JOIN_EXPAND_OR_TO_UNION_RULE,
                     // Works also as CoreRules#JOIN_COMMUTE and overrides it if defined after.
                     CoreRules.JOIN_COMMUTE_OUTER,
 

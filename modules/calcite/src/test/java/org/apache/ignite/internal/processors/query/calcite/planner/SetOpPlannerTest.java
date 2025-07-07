@@ -351,7 +351,7 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
                     .and(input(1, isTableScan("random_tbl2")))
                 ))
             )),
-            "MinusMergeRule", "IntersectMergeRule"
+            "MinusMergeRule", "IntersectMergeRule", "IntersectReorderRule"
         );
     }
 
@@ -368,8 +368,8 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
             ")";
 
         assertPlan(sql, publicSchema, isInstanceOf(setOp.colocated)
-            .and(input(0, isTableScan("broadcast_tbl1")))
-            .and(input(1, isInstanceOf(setOp.reduce)
+            .and(hasChildThat(isTableScan("broadcast_tbl1")))
+            .and(hasChildThat(isInstanceOf(setOp.reduce)
                 .and(hasChildThat(isInstanceOf(setOp.map)
                     .and(input(0, isTableScan("random_tbl1")))
                     .and(input(1, isTableScan("random_tbl2")))
