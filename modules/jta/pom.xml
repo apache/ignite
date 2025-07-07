@@ -41,6 +41,12 @@
         </dependency>
 
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-commons</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>javax.transaction</groupId>
             <artifactId>jta</artifactId>
             <version>1.1</version>

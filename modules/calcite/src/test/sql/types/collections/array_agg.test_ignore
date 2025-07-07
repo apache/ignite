@@ -1,6 +1,7 @@
 # name: test/sql/types/collections/array_agg.test
 # description: Test ARRAY_AGG and ARRAY_CONCAT_AGG function
 # group: [collections]
+# Ignored: https://issues.apache.org/jira/browse/CALCITE-7062
 
 # scalar ARRAY_AGG
 query II
@@ -19,6 +20,12 @@ query I
 SELECT ARRAY_AGG(i) FROM TABLE(SYSTEM_RANGE(1, 0)) TBL(i)
 ----
 NULL
+
+# ARRAY_CONCAT_AGG with NULL
+query I
+SELECT ARRAY_CONCAT_AGG(a) FROM (SELECT ARRAY[1, 2, 3] UNION ALL SELECT NULL) T(a)
+----
+[1, 2, 3]
 
 # ARRAY_CONCAT_AGG with ARRAY[NULL]
 query I
