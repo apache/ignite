@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +27,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.hep.HepRelVertex;
+import org.apache.calcite.rel.BiRel;
 import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
@@ -41,6 +40,7 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalCorrelate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.metadata.RelMdUtil;
@@ -65,6 +65,7 @@ import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Util;
 import org.immutables.value.Value;
 
 import static java.util.Objects.requireNonNull;
@@ -917,10 +918,6 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
             if (!variablesSet.isEmpty()) {
                 CorrelationId id = Iterables.getOnlyElement(variablesSet);
 
-                Collection<RelOptTable> tbls = RelOptUtil.findTables(subQry.rel);
-
-                assert tbls.size() == 1;
-
                 subQryReplaced = subQry.clone(subQryReplaced.rel.accept(new RelHomogeneousShuttle() {
                     private final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
 
@@ -936,6 +933,11 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
                             assert corrFldCnt.get(id.getId()) != null;
 
                             int offset = subQry.rel.getRowType().getFieldCount() - corrFldCnt.get(id.getId());
+
+                            assert offset <= 0;
+
+                            if (offset == 0)
+                                return super.visitFieldAccess(fieldAccess);
 
                             RexNode newCorr = rexBuilder.makeCorrel(subQry.rel.getRowType(), id);
 
@@ -967,15 +969,25 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
     private static void rebuildCorrFldCntMap(Map<Integer, Integer> outMap, RelNode rootRel, boolean single) {
         rootRel.accept(new RelShuttleImpl() {
             @Override public RelNode visit(RelNode other) {
-                if (other instanceof HepRelVertex)
-                    return visitChild(other, 0, ((HepRelVertex)other).getCurrentRel());
+                if (other instanceof HepRelVertex) {
+                    other = ((HepRelVertex)other).getCurrentRel();
+
+                    if (other instanceof LogicalFilter)
+                        visit((LogicalFilter)other);
+                    else if (other instanceof LogicalCorrelate)
+                        visit((LogicalCorrelate)other);
+
+                    return super.visit(other);
+                }
 
                 return super.visit(other);
             }
 
             @Override public RelNode visit(LogicalFilter filter) {
+                RelNode input = findLeftInput(filter);
+
                 for (CorrelationId corrId : filter.getVariablesSet())
-                    addCorrelate(corrId, filter.getRowType().getFieldCount());
+                    addCorrelate(corrId, input.getRowType().getFieldCount());
 
                 if (single)
                     return null;
@@ -984,7 +996,9 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
             }
 
             @Override public RelNode visit(LogicalCorrelate correlate) {
-                addCorrelate(correlate.getCorrelationId(), correlate.getLeft().getRowType().getFieldCount());
+                RelNode input = findLeftInput(correlate);
+
+                addCorrelate(correlate.getCorrelationId(), input.getRowType().getFieldCount());
 
                 return super.visit(correlate);
             }
@@ -992,9 +1006,21 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
             private void addCorrelate(CorrelationId corrId, int srcFldsCnt) {
                 assert outMap.get(corrId.getId()) == null || outMap.get(corrId.getId()) == srcFldsCnt;
 
-                outMap.put(corrId.getId(), srcFldsCnt);
+                outMap.putIfAbsent(corrId.getId(), srcFldsCnt);
             }
         });
+    }
+
+    /** */
+    private static RelNode findLeftInput(RelNode node) {
+        try {
+            node.accept(new FindFilteredLeftInput());
+        }
+        catch (Util.FoundOne found) {
+            return (RelNode)found.getNode();
+        }
+
+        throw new IllegalStateException("Appropreate node input not found.");
     }
 
     /** */
@@ -1109,6 +1135,25 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
         /** {@inheritDoc} */
         @Override public RexNode visitSubQuery(RexSubQuery subQry) {
             return subQry.equals(this.subQry) ? replacement : subQry;
+        }
+    }
+
+    /** */
+    private static class FindFilteredLeftInput extends RelShuttleImpl {
+        /** {@inheritDoc} */
+        @Override public RelNode visit(RelNode other) {
+            if (other instanceof HepRelVertex) {
+                other = ((HepRelVertex)other).getCurrentRel();
+
+                if (other instanceof TableScan)
+                    throw new Util.FoundOne(other);
+                else if (other instanceof Join)
+                    throw new Util.FoundOne(((BiRel)other).getLeft());
+
+                return super.visit(other);
+            }
+
+            return super.visit(other);
         }
     }
 
