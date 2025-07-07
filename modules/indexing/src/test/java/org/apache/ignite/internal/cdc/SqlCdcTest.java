@@ -121,7 +121,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
     /** Simplest CDC test. */
     @Test
-    public void testReadAllSQLRows() throws Throwable {
+    public void testReadAllSQLRows() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
         IgniteEx ign = startGrid(cfg);
@@ -137,9 +137,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         CdcMain cdc = createCdc(cnsmr, cfg, latch, userPredicate, cityPredicate);
 
-        IgniteInternalFuture<?> fut = runAsync(cdc);
-
-        fut.listen(latch::countDown);
+        IgniteInternalFuture<?> fut = runCdcAsync(cdc, latch);
 
         executeSql(
             ign,
@@ -172,9 +170,6 @@ public class SqlCdcTest extends AbstractCdcTest {
         // Wait while both predicate will become true and state saved on the disk or
         // while CdcMain future completes when assertions fail in BinaryCdcConsumer methods.
         assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
-
-        if (fut.error() != null)
-            throw fut.error();
 
         checkMetrics(cdc, KEYS_CNT * 2);
 

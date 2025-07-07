@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -149,7 +150,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         int from,
         int to,
         boolean waitForCommit
-    ) throws Throwable {
+    ) throws Exception {
         GridAbsPredicate cachePredicate = sizePredicate(to - from, cache.getName(), UPDATE, cnsmr);
         GridAbsPredicate txPredicate = txCache == null
             ? null
@@ -167,21 +168,15 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         else
             cdc = createCdc(cnsmr, cfg);
 
-        IgniteInternalFuture<?> fut = runAsync(cdc);
-
-        fut.listen(latch::countDown);
+        IgniteInternalFuture<?> fut = runCdcAsync(cdc, latch);
 
         addData.apply(cache, from, to);
 
         if (txCache != null)
             addData.apply(txCache, from, to);
 
-        if (waitForCommit) {
+        if (waitForCommit)
             latch.await(getTestTimeout(), MILLISECONDS);
-
-            if (fut.error() != null)
-                throw fut.error();
-        }
         else {
             assertTrue(waitForCondition(cachePredicate, getTestTimeout()));
 
@@ -283,6 +278,23 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     /** */
     protected MetricExporterSpi[] metricExporters() {
         return null;
+    }
+
+    /** */
+    protected IgniteInternalFuture<?> runCdcAsync(CdcMain cdc, CountDownLatch latch) {
+        IgniteInternalFuture<?> fut = runAsync(cdc);
+
+        fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+            @Override
+            public void apply(IgniteInternalFuture<?> initFut) {
+                if (initFut.error() != null)
+                    log.error("The CDC main process has failed", initFut.error());
+
+                latch.countDown();
+            }
+        });
+
+        return fut;
     }
 
     /** */
