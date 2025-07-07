@@ -285,8 +285,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-            @Override
-            public void apply(IgniteInternalFuture<?> initFut) {
+            @Override public void apply(IgniteInternalFuture<?> initFut) {
                 if (initFut.error() != null)
                     log.error("The CDC main process has failed", initFut.error());
 
