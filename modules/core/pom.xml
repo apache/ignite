@@ -325,7 +325,8 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
                             <artifactSet>
                                 <includes>
                                     <include>org.apache.ignite:ignite-commons</include>
@@ -333,7 +334,6 @@
                                     <include>org.apache.ignite:ignite-grid-unsafe</include>
                                 </includes>
                             </artifactSet>
-                            <shadedArtifactAttached>false</shadedArtifactAttached>
                         </configuration>
                     </execution>
                 </executions>
