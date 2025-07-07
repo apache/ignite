@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
@@ -29,14 +31,18 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.Collect;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.logical.LogicalCorrelate;
+import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rules.CoreRules;
@@ -875,8 +881,8 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
     /** */
     private static void matchFilter(IgniteSubQueryRemoveRule rule, RelOptRuleCall call) {
         Filter filter = call.rel(0);
-        Set<CorrelationId> filterVariablesSet = filter.getVariablesSet();
         RelBuilder builder = call.builder();
+        Map<Integer, Integer> corrFldCnt = new HashMap<>();
 
         builder.push(filter.getInput());
 
@@ -901,9 +907,11 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
 
             // Filter without variables could be handled before this change, we do not want
             // to break it yet for compatibility reason.
-            if (!filterVariablesSet.isEmpty()) {
+            if (!filter.getVariablesSet().isEmpty()) {
                 // Only consider the correlated variables which originated from this sub-query level.
-                variablesSet.retainAll(filterVariablesSet);
+                variablesSet.retainAll(filter.getVariablesSet());
+
+                rebuildCorrFldCntMap(corrFldCnt, filter, true);
             }
 
             if (!variablesSet.isEmpty()) {
@@ -922,8 +930,14 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
                                 || !((RexCorrelVariable)fieldAccess.getReferenceExpr()).id.equals(id))
                                 return super.visitFieldAccess(fieldAccess);
 
+                            if (corrFldCnt.isEmpty())
+                                rebuildCorrFldCntMap(corrFldCnt, call.getPlanner().getRoot(), false);
+
+                            assert corrFldCnt.get(id.getId()) != null;
+
+                            int offset = subQry.rel.getRowType().getFieldCount() - corrFldCnt.get(id.getId());
+
                             RexNode newCorr = rexBuilder.makeCorrel(subQry.rel.getRowType(), id);
-                            int offset = subQry.rel.getRowType().getFieldCount() - filter.getRowType().getFieldCount();
 
                             return rexBuilder.makeFieldAccess(newCorr, fieldAccess.getField().getIndex() + offset);
                         }
@@ -947,6 +961,40 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
         RelNode result = builder.build();
 
         call.transformTo(result);
+    }
+
+    /** */
+    private static void rebuildCorrFldCntMap(Map<Integer, Integer> outMap, RelNode rootRel, boolean single) {
+        rootRel.accept(new RelShuttleImpl() {
+            @Override public RelNode visit(RelNode other) {
+                if (other instanceof HepRelVertex)
+                    return visitChild(other, 0, ((HepRelVertex)other).getCurrentRel());
+
+                return super.visit(other);
+            }
+
+            @Override public RelNode visit(LogicalFilter filter) {
+                for (CorrelationId corrId : filter.getVariablesSet())
+                    addCorrelate(corrId, filter.getRowType().getFieldCount());
+
+                if (single)
+                    return null;
+
+                return super.visit(filter);
+            }
+
+            @Override public RelNode visit(LogicalCorrelate correlate) {
+                addCorrelate(correlate.getCorrelationId(), correlate.getLeft().getRowType().getFieldCount());
+
+                return super.visit(correlate);
+            }
+
+            private void addCorrelate(CorrelationId corrId, int srcFldsCnt) {
+                assert outMap.get(corrId.getId()) == null || outMap.get(corrId.getId()) == srcFldsCnt;
+
+                outMap.put(corrId.getId(), srcFldsCnt);
+            }
+        });
     }
 
     /** */

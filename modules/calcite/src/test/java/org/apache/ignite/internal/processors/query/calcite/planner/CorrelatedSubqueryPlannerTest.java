@@ -104,7 +104,7 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
             createTable("T3", IgniteDistributions.single(), "ID", Integer.class, "REF", Integer.class)
         );
 
-        assertPlan("SELECT * FROM T1 WHERE EXISTS (" +
+        assertPlan("SELECT ID FROM T1 WHERE EXISTS (" +
                 "SELECT 1 FROM T2 WHERE T2.ID = T1.REF AND T2.REF IN (SELECT T3.REF FROM T3 WHERE T3.ID = T1.REF))", schema,
             nodeOrAnyChild(isTableScan("T1")));
     }
