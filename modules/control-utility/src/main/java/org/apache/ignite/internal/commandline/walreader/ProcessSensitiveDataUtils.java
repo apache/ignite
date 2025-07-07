@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.development.utils;
+package org.apache.ignite.internal.commandline.walreader;
 
 import java.security.MessageDigest;
 import java.util.Base64;
@@ -51,6 +51,6 @@ class ProcessSensitiveDataUtils {
      * Private constructor.
      */
     private ProcessSensitiveDataUtils() {
-        throw new RuntimeException("Don't create.");
+        // No-op
     }
 }

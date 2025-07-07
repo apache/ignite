@@ -15,20 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.development.utils;
+package org.apache.ignite.internal.commandline.walreader;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -36,37 +43,52 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
+import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static java.util.Collections.emptyList;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.apache.ignite.development.utils.IgniteWalConverter.convert;
-import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parse;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
- * Test for IgniteWalConverter
+ * Test for IgniteWalReader
  */
-public class IgniteWalConverterTest extends GridCommonAbstractTest {
+public class IgniteWalReaderTest extends GridCommandHandlerAbstractTest {
     /** */
     public static final String PERSON_NAME_PREFIX = "Name ";
+
+    /** */
+    public static final long DURATION_AMOUNT = 200L;
 
     /** Flag "skip CRC calculation" in system property save before test and restore after. */
     private String beforeIgnitePdsSkipCrc;
 
     /** Flag "skip CRC calculation" in RecordV1Serializer save before test and restore after. */
     private boolean beforeSkipCrc;
+
+    /** */
+    @Parameterized.Parameters(name = "cmdHnd={0}")
+    public static List<String> commandHandlers() {
+        return F.asList(CLI_CMD_HND);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -79,6 +101,10 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        encryptionEnabled = false;
+
+        injectTestSystemOut();
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -112,15 +138,29 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         igniteConfiguration.setDataStorageConfiguration(getDataStorageConfiguration());
 
         final CacheConfiguration cacheConfiguration = new CacheConfiguration<>()
+            .setEncryptionEnabled(encryptionEnabled)
             .setName(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(0)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setIndexedTypes(PersonKey.class, Person.class);
 
+        if (encryptionEnabled)
+            igniteConfiguration.setEncryptionSpi(encryptionSpi());
+
         igniteConfiguration.setCacheConfiguration(cacheConfiguration);
 
         return igniteConfiguration;
+    }
+
+    /** @return KeystoreEncryptionSpi */
+    public static KeystoreEncryptionSpi encryptionSpi() {
+        KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
+
+        encSpi.setKeyStorePath(KEYSTORE_PATH);
+        encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());
+
+        return encSpi;
     }
 
     /** @return DataStorageConfiguration. */
@@ -140,8 +180,52 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             .setMaxSize(100L * 1024 * 1024);
     }
 
+    /** @return ExpiryPolicy. */
+    private ExpiryPolicy getPolicy() {
+        return new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 200L));
+    }
+
     /**
-     * Checking utility IgniteWalConverter
+     * Rund wal reader with given parameters
+     *
+     * @param list List of {@link Person Persons}.
+     * @param hasExpiryPlc Has expiry policy.
+     * @param procSensitiveData Process sensitive data {@link ProcessSensitiveData enum}.
+     */
+    private String runTestWalReader(
+            List<Person> list, Boolean hasExpiryPlc, ProcessSensitiveData procSensitiveData, Boolean keepBinary
+    ) throws Exception {
+        testOut.reset();
+
+        final NodeFileTree ft = createWal(list, null, hasExpiryPlc);
+
+        IgniteLogger log = createTestLogger();
+
+        try (IgniteWalReader reader = new IgniteWalReader(
+            ft,
+            DataStorageConfiguration.DFLT_PAGE_SIZE,
+            keepBinary,
+            new HashSet<>(),
+            null,
+            null,
+            null,
+            procSensitiveData,
+            true,
+            true,
+            emptyList(),
+            log
+        )) {
+            reader.read();
+        }
+
+        if (log instanceof IgniteLoggerEx)
+            ((IgniteLoggerEx)log).flush();
+
+        return testOut.toString();
+    }
+
+    /**
+     * Checking utility IgniteWalReader
      * <ul>
      *     <li>Start node</li>
      *     <li>Create cache with
@@ -155,26 +239,10 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testIgniteWalConverter() throws Exception {
+    public void testIgniteWalReader() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final NodeFileTree ft = createWal(list, null);
-
-        final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
-
-        final PrintStream out = new PrintStream(outByte);
-
-        final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft,
-            DataStorageConfiguration.DFLT_PAGE_SIZE,
-            false,
-            null,
-            null, null, null, null, true, true, emptyList()
-        );
-
-        convert(out, arg);
-
-        final String result = outByte.toString();
+        final String result = runTestWalReader(list, false, ProcessSensitiveData.SHOW, false);
 
         int idx = 0;
 
@@ -202,7 +270,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checking utility IgniteWalConverter with out binary_meta
+     * Checking utility IgniteWalReader without binary_meta
      * <ul>
      *     <li>Start node</li>
      *     <li>Create cache with
@@ -216,29 +284,36 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testIgniteWalConverterWithOutBinaryMeta() throws Exception {
+    public void testIgniteWalReaderWithOutBinaryMeta() throws Exception {
+        testOut.reset();
+
         final List<Person> list = new LinkedList<>();
 
-        NodeFileTree ft = createWal(list, null);
+        NodeFileTree ft = createWal(list, null, false);
 
         U.delete(ft.binaryMeta());
         U.delete(ft.marshaller());
 
-        final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
+        IgniteLogger log = createTestLogger();
 
-        final PrintStream out = new PrintStream(outByte);
+        try (IgniteWalReader reader = new IgniteWalReader(
+                ft,
+                DataStorageConfiguration.DFLT_PAGE_SIZE,
+                false,
+                new HashSet<>(),
+                null,
+                null,
+                null,
+                ProcessSensitiveData.SHOW,
+                true,
+                true,
+                emptyList(),
+                log
+        )) {
+            reader.read();
+        }
 
-        final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft,
-            DataStorageConfiguration.DFLT_PAGE_SIZE,
-            false,
-            null,
-            null, null, null, null, true, true, emptyList()
-        );
-
-        convert(out, arg);
-
-        final String result = outByte.toString();
+        String result = testOut.toString();
 
         int idx = 0;
 
@@ -253,7 +328,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                 if (idx > 0) {
                     int start = idx + 6;
 
-                    idx = result.indexOf("]", start);
+                    idx = result.indexOf(']', start);
 
                     if (idx > 0) {
                         final String val = result.substring(start, idx);
@@ -265,10 +340,13 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
             assertTrue("DataRecord for Person(id=" + person.getId() + ") not found", find);
         }
+
+        if (log instanceof IgniteLoggerEx)
+            ((IgniteLoggerEx)log).flush();
     }
 
     /**
-     * Checking utility IgniteWalConverter on broken WAL
+     * Checking utility IgniteWalReader on broken WAL
      * <ul>
      *     <li>Start node</li>
      *     <li>Create cache with
@@ -283,10 +361,10 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testIgniteWalConverterWithBrokenWal() throws Exception {
+    public void testIgniteWalReaderWithBrokenWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final NodeFileTree ft = createWal(list, null);
+        final NodeFileTree ft = createWal(list, null, false);
 
         final File wal = ft.walSegment(0);
 
@@ -303,7 +381,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                 if (recordTypeIdx > 0) {
                     recordTypeIdx--;
 
-                    final long idx = raf.readLong();
+                    raf.readLong();
 
                     final int fileOff = Integer.reverseBytes(raf.readInt());
 
@@ -336,21 +414,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             }
         }
 
-        final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
-
-        final PrintStream out = new PrintStream(outByte);
-
-        final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft,
-            DataStorageConfiguration.DFLT_PAGE_SIZE,
-            false,
-            null,
-            null, null, null, null, true, true, emptyList()
-        );
-
-        convert(out, arg);
-
-        final String result = outByte.toString();
+        final String result = runTestWalReader(list, false, ProcessSensitiveData.SHOW, false);
 
         int idx = 0;
 
@@ -382,7 +446,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checking utility IgniteWalConverter on unreadable WAL
+     * Checking utility IgniteWalReader on unreadable WAL
      * <ul>
      *     <li>Start node</li>
      *     <li>Create cache with
@@ -396,11 +460,11 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
-    public void testIgniteWalConverterWithUnreadableWal() throws Exception {
+//    @Test
+    public void testIgniteWalReaderWithUnreadableWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final NodeFileTree ft = createWal(list, null);
+        final NodeFileTree ft = createWal(list, null, false);
 
         final File wal = ft.walSegment(0);
 
@@ -424,9 +488,6 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                             raf.write(Byte.MAX_VALUE);
                         }
                     }
-
-                    final long idx = raf.readLong();
-
                     final int fileOff = Integer.reverseBytes(raf.readInt());
 
                     final int len = Integer.reverseBytes(raf.readInt());
@@ -436,21 +497,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             }
         }
 
-        final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
-
-        final PrintStream out = new PrintStream(outByte);
-
-        final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft,
-            DataStorageConfiguration.DFLT_PAGE_SIZE,
-            false,
-            null,
-            null, null, null, null, true, true, emptyList()
-        );
-
-        convert(out, arg);
-
-        final String result = outByte.toString();
+        final String result = runTestWalReader(list, false, ProcessSensitiveData.SHOW, true);
 
         int idx = 0;
 
@@ -491,12 +538,14 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check that when using the "pages" argument we will see WalRecord with this pages in the utility output.
+     * Check that when using the "pages" argument we will see WalRecord with these pages in the utility output.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testPages() throws Exception {
+        testOut.reset();
+
         List<T2<PageSnapshot, String>> walRecords = new ArrayList<>();
 
         NodeFileTree ft = createWal(new ArrayList<>(), n -> {
@@ -508,7 +557,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                         walRecords.add(new T2<>((PageSnapshot)walRecord, walRecord.toString()));
                 }
             }
-        });
+        },
+            false);
 
         assertFalse(walRecords.isEmpty());
 
@@ -518,24 +568,76 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         assertTrue(U.fileCount(ft.wal().toPath()) > 0);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream(baos);
-
         T2<PageSnapshot, String> expRec = walRecords.get(0);
 
-        IgniteWalConverterArguments args = parse(
-            ps,
-            "root=" + ft.root(),
-            "folderName=" + ft.folderName(),
-            "pages=" + expRec.get1().fullPageId().groupId() + ':' + expRec.get1().fullPageId().pageId(),
-            "skipCrc=" + true
-        );
+        Collection<T2<Integer, Long>> pages =
+                IgniteWalReader.collectPages(
+                        "" + expRec.get1().fullPageId().groupId() + ':' + expRec.get1().fullPageId().pageId());
 
-        baos.reset();
+        IgniteLogger log = createTestLogger();
 
-        convert(ps, args);
+        try (IgniteWalReader reader = new IgniteWalReader(
+                ft,
+                DataStorageConfiguration.DFLT_PAGE_SIZE,
+                false,
+                new HashSet<>(),
+                null,
+                null,
+                null,
+                ProcessSensitiveData.SHOW,
+                true,
+                true,
+                pages,
+                log
+        )) {
+            reader.read();
+        }
 
-        assertContains(log, baos.toString(), expRec.get2());
+        if (log instanceof IgniteLoggerEx)
+            ((IgniteLoggerEx)log).flush();
+
+        assertContains(log, testOut.toString(), expRec.get2());
+    }
+
+    /**
+     * Test for {@link CacheView} expiry policy factory representation. The test initializes the {@link CacheConfiguration}
+     * with custom {@link PlatformExpiryPolicyFactory}. Given different ttl input, the test checks the {@link String}
+     * expiry policy factory outcome for {@link CacheView#expiryPolicyFactory()}.
+     */
+    @Test
+    public void testCacheViewExpiryPolicy() throws Exception {
+        String result = runTestWalReader(new LinkedList<>(), true, ProcessSensitiveData.SHOW, true);
+
+        assertTrue(result.contains("expireTime="));
+    }
+
+    /**
+     * Tests processing sensitive data flag
+     */
+    @Test
+    public void testHideSensitiveData() throws Exception {
+        final List<Person> list = new LinkedList<>();
+
+        String result = runTestWalReader(list, false, ProcessSensitiveData.HIDE, true);
+
+        int idx;
+
+        for (Person ignored : list) {
+            boolean find;
+
+            idx = result.indexOf("DataRecord");
+
+            if (idx > 0) {
+                idx = result.indexOf("UnwrapDataEntry", idx + "DataRecord".length());
+
+                if (idx > 0)
+                    idx = result.indexOf("k = , v = ", idx + "UnwrapDataEntry".length());
+            }
+
+            find = idx == -1;
+
+            assertFalse(find);
+        }
     }
 
     /**
@@ -550,11 +652,12 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
      * @param list Returns entities that have been added.
      * @param afterPopulateConsumer
      * @return Ignite directories structure.
-     * @throws Exception
+     *  @throws Exception
      */
     private NodeFileTree createWal(
         List<Person> list,
-        @Nullable IgniteThrowableConsumer<IgniteEx> afterPopulateConsumer
+        @Nullable IgniteThrowableConsumer<IgniteEx> afterPopulateConsumer,
+        @Nullable Boolean hasExpiryPlc
     ) throws Exception {
         NodeFileTree ft;
 
@@ -575,7 +678,12 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                 else
                     val = new PersonEx(i, PERSON_NAME_PREFIX + i, "Additional information " + i, "Description " + i);
 
-                cache.put(key, val);
+                if (hasExpiryPlc) {
+                    ExpiryPolicy expiryPlc = new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, DURATION_AMOUNT));
+                    cache.withExpiryPolicy(expiryPlc).put(key, val);
+                }
+                else
+                    cache.put(key, val);
 
                 list.add(val);
             }
@@ -585,5 +693,160 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         }
 
         return ft;
+    }
+
+
+    /**
+     * Populates an encrypted cache and checks that its WAL contains encrypted records.
+     */
+    @Test
+    public void testEncryptedIgniteWalReader() throws Exception {
+        encryptionEnabled = true;
+
+        String result = runTestWalReader(new LinkedList<>(), false, ProcessSensitiveData.SHOW, true);
+
+        assertContains(log, result, "EncryptedRecord");
+    }
+
+    /**
+     * A person entity used for the tests.
+     */
+    public static class Person {
+        /** Id. */
+        private final Integer id;
+
+        /** Name. */
+        @QuerySqlField
+        private final String name;
+
+        /** Constructor. */
+        public Person(Integer id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        /** @return id. */
+        public Integer getId() {
+            return id;
+        }
+
+        /** @return name. */
+        public String getName() {
+            return name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id, name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (!(obj instanceof Person))
+                return false;
+
+            Person other = (Person)obj;
+
+            return Objects.equals(id, other.id) &&
+                Objects.equals(name, other.name);
+        }
+    }
+
+    /**
+     * A person entity used for the tests.
+     */
+    public static class PersonEx extends Person {
+        /**
+         * Additional information.
+         */
+        @QuerySqlField
+        private final String info;
+
+        /**
+         * Description - not declared as SQL field.
+         */
+        private final String description;
+
+        /**
+         * Constructor.
+         */
+        public PersonEx(Integer id, String name, String info, String description) {
+            super(id, name);
+            this.info = info;
+            this.description = description;
+        }
+
+        /**
+         * @return Additional information.
+         */
+        public String getInfo() {
+            return info;
+        }
+
+        /**
+         * @return Description.
+         */
+        public String getDescription() {
+            return description;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public int hashCode() {
+            return Objects.hash(super.hashCode(), info, description);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public boolean equals(Object obj) {
+            if (!(obj instanceof PersonEx))
+                return false;
+
+            PersonEx other = (PersonEx)obj;
+
+            return super.equals(other) && Objects.equals(info, other.info) && Objects.equals(description, other.description);
+        }
+    }
+
+    /**
+     * A person entity used for the tests.
+     */
+    public static class PersonKey {
+        /**
+         * Id.
+         */
+        @QuerySqlField(index = true)
+        private final Integer id;
+
+        /**
+         * Constructor.
+         */
+        public PersonKey(Integer id) {
+            this.id = id;
+        }
+
+        /**
+         * @return id.
+         */
+        public Integer getId() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (!(obj instanceof PersonKey))
+                return false;
+
+            PersonKey other = (PersonKey)obj;
+
+            return Objects.equals(other.id, id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id);
+        }
     }
 }

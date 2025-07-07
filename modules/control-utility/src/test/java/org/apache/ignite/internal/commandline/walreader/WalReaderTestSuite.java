@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.development.utils;
+package org.apache.ignite.internal.commandline.walreader;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for dev utils.
+ * Test suite for wal-reader.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    IgniteWalConverterTest.class,
-    IgniteEncryptedWalConverterTest.class,
-    IgniteWalConverterArgumentsTest.class,
-    IgniteWalConverterSensitiveDataTest.class
+    IgniteWalReaderTest.class,
+    IgniteWalReaderArgumentsTest.class,
+    IgniteWalReaderSensitiveDataTest.class
 })
-public class DevUtilsTestSuite {
+public class WalReaderTestSuite {
 }

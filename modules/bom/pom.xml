@@ -68,11 +68,6 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>ignite-dev-utils</artifactId>
-                <version>${revision}</version>
-            </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-direct-io</artifactId>
                 <version>${revision}</version>
             </dependency>

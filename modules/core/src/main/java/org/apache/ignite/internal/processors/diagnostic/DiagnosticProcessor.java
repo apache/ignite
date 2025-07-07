@@ -128,8 +128,8 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
 
                     log.warning(corruptedDataStructureEx.getClass().getSimpleName() + " has occurred. " +
                         "To diagnose it, make a backup of the following directories: " + walDirsStr + ". " +
-                        "Then, run the following command: java -cp <classpath> " +
-                        "org.apache.ignite.development.utils.IgniteWalConverter " + args);
+                        "Then, run the wal-reader.sh control utility script " +
+                        "with parameter --pages " + args);
                 }
                 catch (Throwable t) {
                     String pages = LongStream.of(corruptedDataStructureEx.pageIds())

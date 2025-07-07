@@ -474,6 +474,8 @@
       url: tools/pentaho
     - title: Index Reader
       url: tools/index-reader
+    - title: WAL Reader
+      url: tools/wal-reader
 - title: Security
   url: security
   items:

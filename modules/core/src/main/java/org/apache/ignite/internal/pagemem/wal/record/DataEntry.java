@@ -64,6 +64,7 @@ public class DataEntry {
     protected GridCacheVersion writeVer;
 
     /** Expire time. */
+    @GridToStringInclude
     protected long expireTime;
 
     /** Partition ID. */
