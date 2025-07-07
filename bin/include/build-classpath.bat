@@ -25,7 +25,7 @@
 
 @echo off
 
-for /D %%F in (modules\*) do if not %%F == "modules" call :includeToClassPath %%F
+if not %cd% == %IGNITE_HOME% for /D %%F in (%cd%\modules\*) do if not %%F == "%cd%\modules" call :includeToClassPath %%F
 
 for /F %%F in ('dir /A:D /b "%IGNITE_HOME%\modules\*" /b') do call :includeToClassPath "%IGNITE_HOME%\modules\%%F"
 goto :eof
