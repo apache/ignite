@@ -89,12 +89,18 @@ public class CdcCommandLineStartup {
 
             Thread appThread = new Thread(cdc.get());
 
-            appThread.start();
+            try {
+                appThread.start();
 
-            appThread.join();
-        }
-        catch (InterruptedException ignore) {
-            X.error("CDC was interrupted.");
+                appThread.join();
+            }
+            catch (InterruptedException ignore) {
+                X.error("CDC was interrupted.");
+
+                appThread.interrupt();
+
+                Thread.currentThread().interrupt();
+            }
         }
         catch (Throwable e) {
             e.printStackTrace();
