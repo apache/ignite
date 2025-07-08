@@ -30,7 +30,6 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.hep.HepRelVertex;
-import org.apache.calcite.rel.BiRel;
 import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
@@ -40,7 +39,6 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalCorrelate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.metadata.RelMdUtil;
@@ -85,7 +83,7 @@ import static org.apache.calcite.util.Util.last;
  * @see CoreRules#PROJECT_SUB_QUERY_TO_CORRELATE
  * @see CoreRules#JOIN_SUB_QUERY_TO_CORRELATE
  *
- * TODO Revise after https://issues.apache.org/jira/browse/IGNITE-25801
+ * TODO Revise after https://issues.apache.org/jira/browse/CALCITE-7034
  */
 @Value.Enclosing
 public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.Config> implements TransformationRule {
@@ -94,6 +92,9 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
 
     /** */
     public static final RelOptRule FILTER = Config.FILTER.toRule();
+
+    /** Searches for true input node. Skips projects, etc. */
+    private static final OriginalInputShuttle ORIGINAL_INPUT_SHUTTLE = new OriginalInputShuttle();
 
     /** Creates a SubQueryRemoveRule. */
     protected IgniteSubQueryRemoveRule(Config cfg) {
@@ -883,7 +884,8 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
     private static void matchFilter(IgniteSubQueryRemoveRule rule, RelOptRuleCall call) {
         Filter filter = call.rel(0);
         RelBuilder builder = call.builder();
-        Map<Integer, Integer> corrFldCnt = new HashMap<>();
+        // Keeps original field numbers of correlate's row type.
+        Map<Integer, Integer> corrFldCntMapping = new HashMap<>();
 
         builder.push(filter.getInput());
 
@@ -912,36 +914,41 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
                 // Only consider the correlated variables which originated from this sub-query level.
                 variablesSet.retainAll(filter.getVariablesSet());
 
-                rebuildCorrFldCntMap(corrFldCnt, filter, true);
+                rebuildCorrFldCntMap(corrFldCntMapping, filter, true);
             }
 
-            if (!variablesSet.isEmpty()) {
+            if (!variablesSet.isEmpty() && (subQry.getKind() == SqlKind.IN || subQry.getKind() == SqlKind.EXISTS
+                || subQry.getKind() == SqlKind.SOME)
+            ) {
                 CorrelationId id = Iterables.getOnlyElement(variablesSet);
+                RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
+                RelNode filterInput = originalInput(filter.getInput());
 
                 subQryReplaced = subQry.clone(subQryReplaced.rel.accept(new RelHomogeneousShuttle() {
-                    private final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-
                     private final RexShuttle rexShuttle = new RexShuttle() {
                         @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
                             if (!(fieldAccess.getReferenceExpr() instanceof RexCorrelVariable)
                                 || !((RexCorrelVariable)fieldAccess.getReferenceExpr()).id.equals(id))
                                 return super.visitFieldAccess(fieldAccess);
 
-                            if (corrFldCnt.isEmpty())
-                                rebuildCorrFldCntMap(corrFldCnt, call.getPlanner().getRoot(), false);
+                            if (corrFldCntMapping.isEmpty())
+                                rebuildCorrFldCntMap(corrFldCntMapping, call.getPlanner().getRoot(), false);
 
-                            assert corrFldCnt.get(id.getId()) != null;
+                            assert corrFldCntMapping.get(id.getId()) != null;
 
-                            int offset = subQry.rel.getRowType().getFieldCount() - corrFldCnt.get(id.getId());
-
-                            assert offset <= 0;
+                            // Filter's input is put to the left join shoulder at the rewritting.
+                            int offset = corrFldCntMapping.get(id.getId()) - filterInput.getRowType().getFieldCount();
 
                             if (offset == 0)
                                 return super.visitFieldAccess(fieldAccess);
 
                             RexNode newCorr = rexBuilder.makeCorrel(subQry.rel.getRowType(), id);
 
-                            return rexBuilder.makeFieldAccess(newCorr, fieldAccess.getField().getIndex() + offset);
+                            int oldIdx = fieldAccess.getField().getIndex();
+
+                            assert oldIdx >= offset;
+
+                            return rexBuilder.makeFieldAccess(newCorr, oldIdx - offset);
                         }
                     };
 
@@ -984,7 +991,7 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
             }
 
             @Override public RelNode visit(LogicalFilter filter) {
-                RelNode input = findLeftInput(filter);
+                RelNode input = originalInput(filter);
 
                 for (CorrelationId corrId : filter.getVariablesSet())
                     addCorrelate(corrId, input.getRowType().getFieldCount());
@@ -996,7 +1003,7 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
             }
 
             @Override public RelNode visit(LogicalCorrelate correlate) {
-                RelNode input = findLeftInput(correlate);
+                RelNode input = originalInput(correlate);
 
                 addCorrelate(correlate.getCorrelationId(), input.getRowType().getFieldCount());
 
@@ -1012,15 +1019,15 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
     }
 
     /** */
-    private static RelNode findLeftInput(RelNode node) {
+    private static RelNode originalInput(RelNode node) {
         try {
-            node.accept(new FindFilteredLeftInput());
+            node.accept(ORIGINAL_INPUT_SHUTTLE);
         }
         catch (Util.FoundOne found) {
             return (RelNode)found.getNode();
         }
 
-        throw new IllegalStateException("Appropreate node input not found.");
+        throw new IllegalStateException("No input node found for " + node);
     }
 
     /** */
@@ -1139,19 +1146,14 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
     }
 
     /** */
-    private static class FindFilteredLeftInput extends RelShuttleImpl {
+    private static class OriginalInputShuttle extends RelHomogeneousShuttle {
         /** {@inheritDoc} */
         @Override public RelNode visit(RelNode other) {
-            if (other instanceof HepRelVertex) {
+            if (other instanceof HepRelVertex)
                 other = ((HepRelVertex)other).getCurrentRel();
 
-                if (other instanceof TableScan)
-                    throw new Util.FoundOne(other);
-                else if (other instanceof Join)
-                    throw new Util.FoundOne(((BiRel)other).getLeft());
-
-                return super.visit(other);
-            }
+            if (other.getInputs().isEmpty() || other.getInputs().size() > 1)
+                throw new Util.FoundOne(other);
 
             return super.visit(other);
         }

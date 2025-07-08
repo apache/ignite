@@ -90,7 +90,7 @@ public enum PlannerPhase {
                 RuleSets.ofList(
                     IgniteSubQueryRemoveRule.FILTER,
                     // TODO Revise reverting to FILTER_SUB_QUERY_TO_CORRELATE and JOIN_SUB_QUERY_TO_CORRELATE
-                    // after https://issues.apache.org/jira/browse/IGNITE-25801
+                    // after https://issues.apache.org/jira/browse/CALCITE-7034
                     // CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
                     CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
                     IgniteSubQueryRemoveRule.JOIN

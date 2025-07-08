@@ -97,15 +97,44 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
-    public void testCorrelateWrongRequiredColumn() throws Exception {
+    public void testCorrelateInSecondFilterSubquery() throws Exception {
         IgniteSchema schema = createSchema(
             createTable("T1", IgniteDistributions.single(), "ID", Integer.class, "NAME", String.class, "REF", Integer.class),
             createTable("T2", IgniteDistributions.single(), "ID", Integer.class, "REF", Integer.class),
             createTable("T3", IgniteDistributions.single(), "ID", Integer.class, "REF", Integer.class)
         );
 
+        // IN
         assertPlan("SELECT ID FROM T1 WHERE EXISTS (" +
-                "SELECT 1 FROM T2 WHERE T2.ID = T1.REF AND T2.REF IN (SELECT T3.REF FROM T3 WHERE T3.ID = T1.REF))", schema,
+                "SELECT ID FROM T2 WHERE T2.REF IN (SELECT T3.REF FROM T3 WHERE T3.ID = T1.REF))", schema,
+            nodeOrAnyChild(isTableScan("T1")));
+        assertPlan("SELECT ID FROM T1 WHERE REF = (" +
+                "SELECT ID FROM T2 WHERE T2.REF IN (SELECT T3.REF FROM T3 WHERE T3.ID = T1.REF))", schema,
+            nodeOrAnyChild(isTableScan("T1")));
+        assertPlan("SELECT ID FROM T1 WHERE REF > (" +
+                "SELECT ID FROM T2 WHERE T2.REF IN (SELECT T3.REF FROM T3 WHERE T3.ID = T1.REF))", schema,
+            nodeOrAnyChild(isTableScan("T1")));
+
+        // EXISTS
+        assertPlan("SELECT ID FROM T1 WHERE ID IN (" +
+                "SELECT ID FROM T2 WHERE EXISTS (SELECT T3.REF FROM T3 WHERE T3.ID = T1.REF))", schema,
+            nodeOrAnyChild(isTableScan("T1")));
+        assertPlan("SELECT ID FROM T1 WHERE ID = (" +
+                "SELECT ID FROM T2 WHERE EXISTS (SELECT T3.REF FROM T3 WHERE T3.ID = T1.REF))", schema,
+            nodeOrAnyChild(isTableScan("T1")));
+        assertPlan("SELECT ID FROM T1 WHERE ID < (" +
+                "SELECT ID FROM T2 WHERE EXISTS (SELECT T3.REF FROM T3 WHERE T3.ID = T1.REF))", schema,
+            nodeOrAnyChild(isTableScan("T1")));
+
+        // SOME
+        assertPlan("SELECT ID FROM T1 WHERE ID IN (" +
+                "SELECT ID FROM T2 WHERE T2.REF < ANY (SELECT T3.REF FROM T3 WHERE T3.ID = T1.REF))", schema,
+            nodeOrAnyChild(isTableScan("T1")));
+        assertPlan("SELECT ID FROM T1 WHERE ID = (" +
+                "SELECT ID FROM T2 WHERE T2.REF < ANY (SELECT T3.REF FROM T3 WHERE T3.ID = T1.REF))", schema,
+            nodeOrAnyChild(isTableScan("T1")));
+        assertPlan("SELECT ID FROM T1 WHERE ID < (" +
+                "SELECT ID FROM T2 WHERE T2.REF < ANY (SELECT T3.REF FROM T3 WHERE T3.ID = T1.REF))", schema,
             nodeOrAnyChild(isTableScan("T1")));
     }
 
