@@ -29,35 +29,32 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.plan.hep.HepRelVertex;
-import org.apache.calcite.rel.BiRel;
 import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.Collect;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.logical.LogicalCorrelate;
-import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.TransformationRule;
 import org.apache.calcite.rex.LogicVisitor;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlQuantifyOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -65,7 +62,7 @@ import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Util;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import static java.util.Objects.requireNonNull;
@@ -85,7 +82,7 @@ import static org.apache.calcite.util.Util.last;
  * @see CoreRules#PROJECT_SUB_QUERY_TO_CORRELATE
  * @see CoreRules#JOIN_SUB_QUERY_TO_CORRELATE
  *
- * TODO Revise after https://issues.apache.org/jira/browse/IGNITE-25801
+ * TODO Revise after https://issues.apache.org/jira/browse/CALCITE-7034
  */
 @Value.Enclosing
 public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.Config> implements TransformationRule {
@@ -883,7 +880,6 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
     private static void matchFilter(IgniteSubQueryRemoveRule rule, RelOptRuleCall call) {
         Filter filter = call.rel(0);
         RelBuilder builder = call.builder();
-        Map<Integer, Integer> corrFldCnt = new HashMap<>();
 
         builder.push(filter.getInput());
 
@@ -906,42 +902,55 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
 
             RexSubQuery subQryReplaced = subQry;
 
-            // Filter without variables could be handled before this change, we do not want
-            // to break it yet for compatibility reason.
-            if (!filter.getVariablesSet().isEmpty()) {
-                // Only consider the correlated variables which originated from this sub-query level.
-                variablesSet.retainAll(filter.getVariablesSet());
-
-                rebuildCorrFldCntMap(corrFldCnt, filter, true);
-            }
-
-            if (!variablesSet.isEmpty()) {
+            if (!variablesSet.isEmpty() && (subQry.getKind() == SqlKind.IN //|| subQry.getKind() == SqlKind.EXISTS
+                || subQry.getKind() == SqlKind.SOME)
+            ) {
                 CorrelationId id = Iterables.getOnlyElement(variablesSet);
+                RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
 
                 subQryReplaced = subQry.clone(subQryReplaced.rel.accept(new RelHomogeneousShuttle() {
-                    private final RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
-
                     private final RexShuttle rexShuttle = new RexShuttle() {
+                        private final Map<RexFieldAccess, Integer> corrToInputRefMap = new HashMap<>();
+
+                        @Override public RexNode visitCall(RexCall call) {
+                            if (call.getOperator() instanceof SqlBinaryOperator) {
+                                List<RexNode> operands = call.getOperands();
+                                RexNode op0 = operands.get(0);
+                                RexNode op1 = operands.get(1);
+
+                                if (op0 instanceof RexInputRef && op1 instanceof RexFieldAccess
+                                    && ((RexFieldAccess)op1).getReferenceExpr() instanceof RexCorrelVariable)
+                                    corrToInputRefMap.put((RexFieldAccess)op1, ((RexSlot)op0).getIndex());
+                                else if (op1 instanceof RexInputRef && op0 instanceof RexFieldAccess
+                                    && ((RexFieldAccess)op0).getReferenceExpr() instanceof RexCorrelVariable)
+                                    corrToInputRefMap.put((RexFieldAccess)op1, ((RexSlot)op1).getIndex());
+                            }
+
+                            return super.visitCall(call);
+                        }
+
                         @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
                             if (!(fieldAccess.getReferenceExpr() instanceof RexCorrelVariable)
                                 || !((RexCorrelVariable)fieldAccess.getReferenceExpr()).id.equals(id))
                                 return super.visitFieldAccess(fieldAccess);
 
-                            if (corrFldCnt.isEmpty())
-                                rebuildCorrFldCntMap(corrFldCnt, call.getPlanner().getRoot(), false);
+                            assert (subQry.getKind() == SqlKind.EXISTS && subQry.operands.isEmpty()) || subQry.operands.size() == 1;
+                            assert subQry.operands.isEmpty() || subQry.operands.get(0) instanceof RexInputRef;
+                            assert subQry.getKind() != SqlKind.EXISTS || corrToInputRefMap.get(fieldAccess) != null;
 
-                            assert corrFldCnt.get(id.getId()) != null;
+                            int oldIdx = fieldAccess.getField().getIndex();
 
-                            int offset = subQry.rel.getRowType().getFieldCount() - corrFldCnt.get(id.getId());
+                            int newIdx = subQry.getKind() == SqlKind.EXISTS
+                                ? corrToInputRefMap.get(fieldAccess)
+                                : ((RexSlot)subQry.getOperands().get(0)).getIndex();
 
-                            assert offset <= 0;
-
-                            if (offset == 0)
+                            if (oldIdx == newIdx)
                                 return super.visitFieldAccess(fieldAccess);
 
-                            RexNode newCorr = rexBuilder.makeCorrel(subQry.rel.getRowType(), id);
+                            // Filter's input is put to the left join shoulder at the rewritting.
+                            RexNode newCorr = rexBuilder.makeCorrel(filter.getRowType(), id);
 
-                            return rexBuilder.makeFieldAccess(newCorr, fieldAccess.getField().getIndex() + offset);
+                            return rexBuilder.makeFieldAccess(newCorr, newIdx);
                         }
                     };
 
@@ -949,6 +958,13 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
                         return super.visit(other).accept(rexShuttle);
                     }
                 }));
+            }
+
+            // Filter without variables could be handled before this change, we do not want
+            // to break it yet for compatibility reason.
+            if (!filter.getVariablesSet().isEmpty()) {
+                // Only consider the correlated variables which originated from this sub-query level.
+                variablesSet.retainAll(filter.getVariablesSet());
             }
 
             RexNode target = rule.apply(subQryReplaced, variablesSet, logic, builder, 1, builder.peek().getRowType().getFieldCount(), cnt);
@@ -963,64 +979,6 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
         RelNode result = builder.build();
 
         call.transformTo(result);
-    }
-
-    /** */
-    private static void rebuildCorrFldCntMap(Map<Integer, Integer> outMap, RelNode rootRel, boolean single) {
-        rootRel.accept(new RelShuttleImpl() {
-            @Override public RelNode visit(RelNode other) {
-                if (other instanceof HepRelVertex) {
-                    other = ((HepRelVertex)other).getCurrentRel();
-
-                    if (other instanceof LogicalFilter)
-                        visit((LogicalFilter)other);
-                    else if (other instanceof LogicalCorrelate)
-                        visit((LogicalCorrelate)other);
-
-                    return super.visit(other);
-                }
-
-                return super.visit(other);
-            }
-
-            @Override public RelNode visit(LogicalFilter filter) {
-                RelNode input = findLeftInput(filter);
-
-                for (CorrelationId corrId : filter.getVariablesSet())
-                    addCorrelate(corrId, input.getRowType().getFieldCount());
-
-                if (single)
-                    return null;
-
-                return super.visit(filter);
-            }
-
-            @Override public RelNode visit(LogicalCorrelate correlate) {
-                RelNode input = findLeftInput(correlate);
-
-                addCorrelate(correlate.getCorrelationId(), input.getRowType().getFieldCount());
-
-                return super.visit(correlate);
-            }
-
-            private void addCorrelate(CorrelationId corrId, int srcFldsCnt) {
-                assert outMap.get(corrId.getId()) == null || outMap.get(corrId.getId()) == srcFldsCnt;
-
-                outMap.putIfAbsent(corrId.getId(), srcFldsCnt);
-            }
-        });
-    }
-
-    /** */
-    private static RelNode findLeftInput(RelNode node) {
-        try {
-            node.accept(new FindFilteredLeftInput());
-        }
-        catch (Util.FoundOne found) {
-            return (RelNode)found.getNode();
-        }
-
-        throw new IllegalStateException("Appropreate node input not found.");
     }
 
     /** */
@@ -1135,25 +1093,6 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
         /** {@inheritDoc} */
         @Override public RexNode visitSubQuery(RexSubQuery subQry) {
             return subQry.equals(this.subQry) ? replacement : subQry;
-        }
-    }
-
-    /** */
-    private static class FindFilteredLeftInput extends RelShuttleImpl {
-        /** {@inheritDoc} */
-        @Override public RelNode visit(RelNode other) {
-            if (other instanceof HepRelVertex) {
-                other = ((HepRelVertex)other).getCurrentRel();
-
-                if (other instanceof TableScan)
-                    throw new Util.FoundOne(other);
-                else if (other instanceof Join)
-                    throw new Util.FoundOne(((BiRel)other).getLeft());
-
-                return super.visit(other);
-            }
-
-            return super.visit(other);
         }
     }
 
