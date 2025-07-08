@@ -96,5 +96,3 @@ modules/ducktests/tests/ignitetest.egg-info/**
 modules/ducktests/tests/build/**
 modules/ducktests/tests/dist/**
 
-#Shaded pom.xml
-modules/core/dependency-reduced-pom.xml
