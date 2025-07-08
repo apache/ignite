@@ -139,6 +139,7 @@ public class InlineRecommender {
         }
     }
 
+    /** Returns a recommendation how to fix the inline size issue. */
     private String getRecommendation() {
         if (def.primary() || def.affinity()) {
             return "set system property "
