@@ -495,6 +495,8 @@
       url: security/sandbox
 - title: Extensions and Integrations
   items:
+    - title: Apache Ignite Azure Module
+      url: extensions-and-integrations/azure/Azure
     - title: Spring
       items:
         - title: Spring Boot
@@ -505,6 +507,8 @@
           url: extensions-and-integrations/spring/spring-caching
         - title: Spring Transactions
           url: extensions-and-integrations/spring/spring-tx
+        - title: Spring Sessions
+          url: extensions-and-integrations/spring/spring-sessions
     - title: Ignite for Spark
       items:
         - title: Overview
@@ -559,6 +563,10 @@
       url: extensions-and-integrations/performance-statistics
     - title: Change Data Capture
       url: extensions-and-integrations/change-data-capture-extensions
+    - title: Apache Ignite GCE Module
+      url: extensions-and-integrations/gce/gce
+    - title: Apache Ignite Pub/Sub Module
+      url: extensions-and-integrations/pub-sub/pub-sub
     - title: ZooKeeper IP Finder
       url: extensions-and-integrations/zookeeper-ip-finder-ext
 - title: Plugins
