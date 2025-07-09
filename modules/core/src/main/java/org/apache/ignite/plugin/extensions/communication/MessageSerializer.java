@@ -17,51 +17,29 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 
 /**
- * Base class for all communication messages.
+ * Interface for message serialization logic.
  */
-public interface Message extends Serializable {
-    /** Direct type size in bytes. */
-    public int DIRECT_TYPE_SIZE = 2;
-
+public interface MessageSerializer {
     /**
      * Writes this message to provided byte buffer.
      *
+     * @param msg Message instance.
      * @param buf Byte buffer.
      * @param writer Writer.
      * @return Whether message was fully written.
-     * @deprecated Use the code-generated {@code MessageSerializer} instead.
      */
-    @Deprecated
-    public default boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        throw new UnsupportedOperationException();
-    }
+    public boolean writeTo(Message msg, ByteBuffer buf, MessageWriter writer);
 
     /**
      * Reads this message from provided byte buffer.
      *
+     * @param msg Message instance.
      * @param buf Byte buffer.
      * @param reader Reader.
      * @return Whether message was fully read.
-     * @deprecated Use the code-generated {@code MessageSerializer} instead.
      */
-    @Deprecated
-    public default boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Gets message type.
-     *
-     * @return Message type.
-     */
-    public short directType();
-
-    /**
-     * Method called when ack message received.
-     */
-    public void onAckReceived();
+    public boolean readFrom(Message msg, ByteBuffer buf, MessageReader reader);
 }
