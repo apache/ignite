@@ -60,6 +60,7 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.immutables.value.Value;
@@ -81,7 +82,7 @@ import static org.apache.calcite.util.Util.last;
  * @see CoreRules#PROJECT_SUB_QUERY_TO_CORRELATE
  * @see CoreRules#JOIN_SUB_QUERY_TO_CORRELATE
  *
- * TODO Revise after https://issues.apache.org/jira/browse/CALCITE-7034
+ * TODO Revise fixing or removing of this rule after https://issues.apache.org/jira/browse/CALCITE-7034
  */
 @Value.Enclosing
 public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.Config> implements TransformationRule {
@@ -491,10 +492,10 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
     /**
      * Rewrites an EXISTS RexSubQuery into a {@link Join}.
      *
-     * @param e            EXISTS sub-query to rewrite
+     * @param e EXISTS sub-query to rewrite
      * @param variablesSet A set of variables used by a relational expression of the specified RexSubQuery
-     * @param logic        Logic for evaluating
-     * @param builder      Builder
+     * @param logic Logic for evaluating
+     * @param builder Builder
      * @return Expression that may be used to replace the RexSubQuery
      */
     private static RexNode rewriteExists(
@@ -875,7 +876,13 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
         return projects;
     }
 
-    /** */
+    /**
+     * Also may temporarily replace index of a correlated column.
+     *
+     * @see #rewriteExists(RexSubQuery, Set, RelOptUtil.Logic, RelBuilder)
+     * @see #rewriteIn(RexSubQuery, Set, RelOptUtil.Logic, RelBuilder, int, int)
+     * @see Correlate#isValid(Litmus, RelNode.Context)
+     */
     private static void matchFilter(IgniteSubQueryRemoveRule rule, RelOptRuleCall call) {
         Filter filter = call.rel(0);
         RelBuilder builder = call.builder();
@@ -908,6 +915,8 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
                 CorrelationId id = Iterables.getOnlyElement(variablesSet);
                 RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
 
+                // Tries to replace correlated colums index taking in account current row type to pass
+                // the required field check when replacing to a join.
                 subQryReplaced = subQry.clone(subQryReplaced.rel.accept(new RelHomogeneousShuttle() {
                     private final RexShuttle rexShuttle = new RexShuttle() {
                         @Override public RexNode visitFieldAccess(RexFieldAccess field) {
@@ -921,9 +930,12 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
                                 || (subQry.getKind() == SqlKind.EXISTS && subQry.getOperands().isEmpty());
                             assert subQry.getKind() == SqlKind.EXISTS || subQry.getOperands().get(0) instanceof RexInputRef;
 
-                            int newIdx = subQry.getKind() == SqlKind.EXISTS ? 0 : ((RexSlot)subQry.operands.get(0)).getIndex();
-                            // TODO: check with 0 only
-//                            newIdx = 0;
+                            //This is not correct sometimes. A correlated column might refer to other preceding inputs.
+                            // And may have a bigger index than current left shoulder row size of  the join being created.
+                            //We fix this index temporarily to pass the conversion.
+                            int newIdx = subQry.getKind() == SqlKind.EXISTS
+                                ? (oldIdx >= filter.getRowType().getFieldCount() ? 0 : oldIdx)
+                                : ((RexSlot)subQry.operands.get(0)).getIndex();
 
                             if (oldIdx == newIdx)
                                 return super.visitFieldAccess(field);
@@ -931,6 +943,8 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
                             RexNode newCorr = rexBuilder.makeCorrel(filter.getRowType(), id);
 
                             RexNode fix = rexBuilder.makeFieldAccess(newCorr, newIdx);
+
+                            assert replacedInputRefs.stream().noneMatch(tpl -> tpl.get2() == fix);
 
                             replacedInputRefs.add(new IgniteBiTuple<>(fix, field));
 
@@ -962,7 +976,7 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
 
         RelNode result = builder.build();
 
-        // Restore original filed refs.
+        // Restore original field refs.
         if (!replacedInputRefs.isEmpty()) {
             result = result.accept(new RelHomogeneousShuttle() {
                 private final RexShuttle rexShuttle = new RexShuttle() {

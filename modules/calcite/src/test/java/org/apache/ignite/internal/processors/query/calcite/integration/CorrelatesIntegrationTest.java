@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.sql.Date;
+import java.time.Instant;
+import java.util.UUID;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.junit.Test;
 
@@ -126,11 +129,11 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
     /** */
     @Test
     public void testTwoTablesCorrelatedSubquery() {
-        sql("CREATE TABLE T1(ID INT, REF INT) WITH " + atomicity());
+        sql("CREATE TABLE T1(ID INT, PADDING1 VARCHAR, PADDING2 DATE, PADDING3 UUID, REF INT) WITH " + atomicity());
         sql("CREATE TABLE T2(ID INT, REF INT) WITH " + atomicity());
         sql("CREATE TABLE T3(ID1 INT, ID2 INT) WITH " + atomicity());
 
-        sql("INSERT INTO T1 VALUES(1, 1)");
+        sql("INSERT INTO T1 VALUES(1, 'str', ?, ?, 1)", Date.from(Instant.now()), UUID.randomUUID());
         sql("INSERT INTO T2 VALUES(1, 1)");
         sql("INSERT INTO T3 VALUES(1, 1)");
 
@@ -138,47 +141,40 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
             "WHERE EXISTS (SELECT 1 FROM T3 WHERE T3.ID1 = T1.REF AND T3.ID2 = T2.REF)").returns(1, 1).check();
     }
 
-    /** TODO */
+    /** */
     @Test
-    public void testCorrelateInSecondFilterSubquery() {
-        sql("CREATE TABLE T1(ID1 INT, REF11 INT, REF12 INT) WITH " + atomicity());
-        sql("CREATE TABLE T2(ID2 INT, REF21 INT) WITH " + atomicity());
-        sql("CREATE TABLE T3(ID3 INT, REF31 INT) WITH " + atomicity());
+    public void testPaddedCorrelateInSecondFilterSubquery() {
+        // The padding columns keeps row size bigger than other operators and field access indexes so that the correlated
+        // column must be remapped correctly.
+        sql("CREATE TABLE T1(ID1 INT, PADDING1 VARCHAR, PADDING2 DATE, PADDING3 UUID, REF1 INT) WITH " + atomicity());
+        sql("CREATE TABLE T2(ID2 INT, REF2 INT) WITH " + atomicity());
+        sql("CREATE TABLE T3(ID3 INT, REF3 INT) WITH " + atomicity());
 
-        sql("INSERT INTO T1 VALUES(1, 1, 1)");
-        sql("INSERT INTO T1 VALUES(2, 2, 2)");
-        sql("INSERT INTO T1 VALUES(2, 2, 1)");
-        sql("INSERT INTO T1 VALUES(2, 1, 1)");
-        sql("INSERT INTO T1 VALUES(3, 3, 3)");
-        sql("INSERT INTO T1 VALUES(3, 3, 2)");
-        sql("INSERT INTO T1 VALUES(3, 2, 2)");
-        sql("INSERT INTO T1 VALUES(3, 2, 1)");
-        sql("INSERT INTO T1 VALUES(3, 1, 1)");
+        for (int i = 1; i <= 10; ++i)
+            sql("INSERT INTO T1 VALUES(?, ?, ?, ?, ?)", i, "str_" + i, Date.from(Instant.now()), UUID.randomUUID(), i * 10);
 
-        sql("INSERT INTO T2 VALUES(1, 1)");
-        sql("INSERT INTO T2 VALUES(1, 2)");
-        sql("INSERT INTO T2 VALUES(2, 1)");
-        sql("INSERT INTO T2 VALUES(2, 2)");
+        for (int i = 1; i <= 7; ++i)
+            sql("INSERT INTO T2 VALUES(?, ?)", i * 100, i * 10);
 
-        sql("INSERT INTO T3 VALUES(2, 1)");
-        sql("INSERT INTO T3 VALUES(2, 2)");
-        sql("INSERT INTO T3 VALUES(3, 3)");
-        sql("INSERT INTO T3 VALUES(3, 2)");
-        sql("INSERT INTO T3 VALUES(3, 1)");
+        for (int i = 3; i <= 10; ++i)
+            sql("INSERT INTO T3 VALUES(?, ?)", i * 1000, i * 10);
 
         // IN
-        assertQuery("SELECT ID1 FROM T1 WHERE REF11 IN " +
-            "(SELECT ID2 FROM T2 WHERE REF21 IN (SELECT REF31 FROM T3 WHERE ID3 = T1.REF12))")
-            .returns(2).returns(3).check();
+        assertQuery("SELECT ID1 FROM T1 WHERE REF1 IN " +
+            "(SELECT REF2 FROM T2 WHERE REF2 IN (SELECT REF3 FROM T3 WHERE REF3 = T1.REF1))")
+            .returns(3).returns(4).returns(5).returns(6).returns(7)
+            .check();
 
         // ANY
-        assertQuery("SELECT ID1 FROM T1 WHERE REF11 IN " +
-            "(SELECT ID2 FROM T2 WHERE REF21 > ANY (SELECT REF31 FROM T3 WHERE ID3 = T1.REF12))")
-            .returns(2).returns(3).check();
+        assertQuery("SELECT ID1 FROM T1 WHERE REF1 IN " +
+            "(SELECT REF2 FROM T2 WHERE REF2 < ANY (SELECT REF3 FROM T3 WHERE REF3 != T1.REF1))")
+            .returns(1).returns(2).returns(3).returns(4).returns(5).returns(6).returns(7)
+            .check();
 
         // EXISTS
-        assertQuery("SELECT ID1 FROM T1 WHERE REF11 IN " +
-            "(SELECT ID2 FROM T2 WHERE EXISTS (SELECT REF31 FROM T3 WHERE ID3 = T1.REF12))")
-            .returns(2).returns(3).check();
+        assertQuery("SELECT ID1 FROM T1 WHERE REF1 IN " +
+            "(SELECT REF2 FROM T2 WHERE NOT EXISTS (SELECT REF3 FROM T3 WHERE REF3 = T1.REF1))")
+            .returns(1).returns(2)
+            .check();
     }
 }
