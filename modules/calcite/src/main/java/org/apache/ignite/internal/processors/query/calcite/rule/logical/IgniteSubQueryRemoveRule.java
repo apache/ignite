@@ -50,7 +50,6 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
-import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -926,23 +925,15 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
 
                             int oldIdx = field.getField().getIndex();
 
-                            assert subQry.getOperands().size() == 1
-                                || (subQry.getKind() == SqlKind.EXISTS && subQry.getOperands().isEmpty());
-                            assert subQry.getKind() == SqlKind.EXISTS || subQry.getOperands().get(0) instanceof RexInputRef;
-
-                            //This is not correct sometimes. A correlated column might refer to other preceding inputs.
-                            // And may have a bigger index than current left shoulder row size of  the join being created.
-                            //We fix this index temporarily to pass the conversion.
-                            int newIdx = subQry.getKind() == SqlKind.EXISTS
-                                ? (oldIdx >= filter.getRowType().getFieldCount() ? 0 : oldIdx)
-                                : ((RexSlot)subQry.operands.get(0)).getIndex();
-
-                            if (oldIdx == newIdx)
+                            // This is not correct sometimes. A correlated column might refer to other preceding inputs.
+                            // And may have a bigger index than current left shoulder row size of the join being created.
+                            // We fix this index temporarily to pass the conversion.
+                            if (oldIdx < filter.getRowType().getFieldCount())
                                 return super.visitFieldAccess(field);
 
                             RexNode newCorr = rexBuilder.makeCorrel(filter.getRowType(), id);
 
-                            RexNode fix = rexBuilder.makeFieldAccess(newCorr, newIdx);
+                            RexNode fix = rexBuilder.makeFieldAccess(newCorr, 0);
 
                             assert replacedInputRefs.stream().noneMatch(tpl -> tpl.get2() == fix);
 
