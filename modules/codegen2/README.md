@@ -16,8 +16,6 @@ The `MessageProcessor` performs the following tasks:
 
 1. **Prepare your Message class**
 
-Content of the methods `writeTo` and `readFrom` can be generated with `MessageCodeGenerator` in `ignite-codegen` module.
-
 ```java
 public class MyMessage implements Message {
     @Order(0)
@@ -26,23 +24,15 @@ public class MyMessage implements Message {
     public int id() { return id; }
 
     public void id(int id) { this.id = id; }
-  
-    public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        return MyMessageSerializer.writeTo(this, buf, writer);
-    }
-
-    public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        return MyMessageSerializer.readFrom(this, buf, reader);
-    }
 }
 ```
 
 2. **Generated Output**
 
-At compile time, a class `MyMessageSerializer` within same package will be generated with methods:
+At compile time, a class `MyMessageSerializer` implemented `MessageSerializer` will be generated with methods:
 
-- boolean writeTo(MyMessage msg, ByteBuffer buf, MessageWriter writer)
-- boolean readFrom(MyMessage msg, ByteBuffer buf, MessageReader reader)
+- boolean writeTo(Message msg, ByteBuffer buf, MessageWriter writer)
+- boolean readFrom(Message msg, ByteBuffer buf, MessageReader reader)
 
 3. **Validation**
 
