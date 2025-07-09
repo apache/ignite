@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcConsumer;
-import org.apache.ignite.cdc.CdcConsumerEx;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
