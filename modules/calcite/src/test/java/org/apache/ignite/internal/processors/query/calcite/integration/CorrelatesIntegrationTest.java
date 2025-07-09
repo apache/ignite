@@ -138,7 +138,7 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
             "WHERE EXISTS (SELECT 1 FROM T3 WHERE T3.ID1 = T1.REF AND T3.ID2 = T2.REF)").returns(1, 1).check();
     }
 
-    /** */
+    /** TODO */
     @Test
     public void testCorrelateInSecondFilterSubquery() {
         sql("CREATE TABLE T1(ID1 INT, REF11 INT, REF12 INT) WITH " + atomicity());
@@ -166,8 +166,19 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
         sql("INSERT INTO T3 VALUES(3, 2)");
         sql("INSERT INTO T3 VALUES(3, 1)");
 
+        // IN
         assertQuery("SELECT ID1 FROM T1 WHERE REF11 IN " +
-            "(SELECT ID2 FROM T2 WHERE REF21 IN (SELECT REF31 FROM T3 WHERE ID3 = T1.ID1))")
+            "(SELECT ID2 FROM T2 WHERE REF21 IN (SELECT REF31 FROM T3 WHERE ID3 = T1.REF12))")
+            .returns(2).returns(3).check();
+
+        // ANY
+        assertQuery("SELECT ID1 FROM T1 WHERE REF11 IN " +
+            "(SELECT ID2 FROM T2 WHERE REF21 > ANY (SELECT REF31 FROM T3 WHERE ID3 = T1.REF12))")
+            .returns(2).returns(3).check();
+
+        // EXISTS
+        assertQuery("SELECT ID1 FROM T1 WHERE REF11 IN " +
+            "(SELECT ID2 FROM T2 WHERE EXISTS (SELECT REF31 FROM T3 WHERE ID3 = T1.REF12))")
             .returns(2).returns(3).check();
     }
 }

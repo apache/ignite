@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,6 +37,7 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rules.CoreRules;
@@ -58,6 +61,7 @@ import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.immutables.value.Value;
 
 import static java.util.Objects.requireNonNull;
@@ -882,6 +886,8 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
 
         RexNode condition = filter.getCondition();
 
+        Collection<IgniteBiTuple<RexNode, RexFieldAccess>> replacedInputRefs = new ArrayList<>();
+
         while (true) {
             final RexSubQuery subQry = RexUtil.SubQueryFinder.find(condition);
 
@@ -897,30 +903,38 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
 
             RexSubQuery subQryReplaced = subQry;
 
-            if (!variablesSet.isEmpty() && (subQry.getKind() == SqlKind.IN || subQry.getKind() == SqlKind.SOME)) {
+            if (!variablesSet.isEmpty()
+                && (subQry.getKind() == SqlKind.IN || subQry.getKind() == SqlKind.SOME || subQry.getKind() == SqlKind.EXISTS)) {
                 CorrelationId id = Iterables.getOnlyElement(variablesSet);
                 RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
 
                 subQryReplaced = subQry.clone(subQryReplaced.rel.accept(new RelHomogeneousShuttle() {
                     private final RexShuttle rexShuttle = new RexShuttle() {
-                        @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
-                            if (!(fieldAccess.getReferenceExpr() instanceof RexCorrelVariable)
-                                || !((RexCorrelVariable)fieldAccess.getReferenceExpr()).id.equals(id))
-                                return super.visitFieldAccess(fieldAccess);
+                        @Override public RexNode visitFieldAccess(RexFieldAccess field) {
+                            if (!(field.getReferenceExpr() instanceof RexCorrelVariable)
+                                || !((RexCorrelVariable)field.getReferenceExpr()).id.equals(id))
+                                return super.visitFieldAccess(field);
 
-                            int oldIdx = fieldAccess.getField().getIndex();
+                            int oldIdx = field.getField().getIndex();
 
-                            assert subQry.getOperands().size() == 1;
-                            assert subQry.getOperands().get(0) instanceof RexInputRef;
+                            assert subQry.getOperands().size() == 1
+                                || (subQry.getKind() == SqlKind.EXISTS && subQry.getOperands().isEmpty());
+                            assert subQry.getKind() == SqlKind.EXISTS || subQry.getOperands().get(0) instanceof RexInputRef;
 
-                            int newIdx = ((RexSlot)subQry.operands.get(0)).getIndex();
+                            int newIdx = subQry.getKind() == SqlKind.EXISTS ? 0 : ((RexSlot)subQry.operands.get(0)).getIndex();
+                            // TODO: check with 0 only
+//                            newIdx = 0;
 
                             if (oldIdx == newIdx)
-                                return super.visitFieldAccess(fieldAccess);
+                                return super.visitFieldAccess(field);
 
                             RexNode newCorr = rexBuilder.makeCorrel(filter.getRowType(), id);
 
-                            return rexBuilder.makeFieldAccess(newCorr, newIdx);
+                            RexNode fix = rexBuilder.makeFieldAccess(newCorr, newIdx);
+
+                            replacedInputRefs.add(new IgniteBiTuple<>(fix, field));
+
+                            return fix;
                         }
                     };
 
@@ -947,6 +961,40 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
         builder.project(fields(builder, filter.getRowType().getFieldCount()));
 
         RelNode result = builder.build();
+
+        // Restore original filed refs.
+        if (!replacedInputRefs.isEmpty()) {
+            result = result.accept(new RelHomogeneousShuttle() {
+                private final RexShuttle rexShuttle = new RexShuttle() {
+                    @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
+                        Iterator<IgniteBiTuple<RexNode, RexFieldAccess>> it = replacedInputRefs.iterator();
+
+                        while (it.hasNext()) {
+                            IgniteBiTuple<RexNode, RexFieldAccess> rw = it.next();
+
+                            if (rw.get1() == fieldAccess) {
+                                it.remove();
+
+                                return super.visitFieldAccess(rw.get2());
+                            }
+                        }
+
+                        return super.visitFieldAccess(fieldAccess);
+                    }
+                };
+
+                @Override public RelNode visit(LogicalFilter filter) {
+                    RexNode newC = rexShuttle.apply(filter.getCondition());
+
+                    if (newC != filter.getCondition())
+                        return call.builder().push(visit(filter.getInput())).filter(newC).build();
+
+                    return super.visit(filter);
+                }
+            });
+        }
+
+        assert replacedInputRefs.isEmpty();
 
         call.transformTo(result);
     }
