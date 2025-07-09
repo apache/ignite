@@ -119,9 +119,9 @@ class MessageSerializerGenerator {
         catch (FilerException e) {
             // IntelliJ IDEA parses Ignite's pom.xml and configures itself to use this annotation processor on each Run.
             // During a Run, it invokes the processor and may fail when attempting to generate sources that already exist.
-            // There is no setting to disable this invocation. The IntelliJ community suggests a workaround — delegating all
-            // Run commands to Maven. However, this significantly slows down test startup time.
-            // This hack checks whether the content of a generating file is identical to an already existed file, and skips
+            // There is no a setting to disable this invocation. The IntelliJ community suggests a workaround — delegating
+            // all Run commands to Maven. However, this significantly slows down test startup time.
+            // This hack checks whether the content of a generating file is identical to already existed file, and skips
             // handling this class if it is.
             if (!identicalFileIsAlreadyGenerated(serCode, serClsName)) {
                 env.getMessager().printMessage(
