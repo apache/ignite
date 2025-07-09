@@ -891,6 +891,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 state(UNKNOWN);
 
                 try {
+                    clearCacheStoreBackedEntries();
+
                     uncommit();
                 }
                 catch (Throwable e) {
