@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc;
+package org.apache.ignite.internal.cdc;
 
 import java.nio.file.Path;
+
+import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.metric.MetricRegistry;
 
 /**
