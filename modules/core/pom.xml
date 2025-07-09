@@ -59,13 +59,13 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-commons</artifactId>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-binary-api</artifactId>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -78,7 +78,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-grid-unsafe</artifactId>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -240,27 +240,6 @@
             <resource>
                 <directory>src/main/resources</directory>
             </resource>
-
-            <resource>
-                <directory>../commons/target/classes</directory>
-                <includes>
-                    <include>**/*</include>
-                </includes>
-            </resource>
-
-            <resource>
-                <directory>../binary/api/target/classes</directory>
-                <includes>
-                    <include>**/*</include>
-                </includes>
-            </resource>
-
-            <resource>
-                <directory>../unsafe/target/classes</directory>
-                <includes>
-                    <include>**/*</include>
-                </includes>
-            </resource>
         </resources>
 
         <testResources>
@@ -348,6 +327,31 @@
                 <configuration>
                     <skip>false</skip>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <artifactSet>
+                                <includes>
+                                    <include>org.apache.ignite:ignite-commons</include>
+                                    <include>org.apache.ignite:ignite-binary-api</include>
+                                    <include>org.apache.ignite:ignite-grid-unsafe</include>
+                                </includes>
+                            </artifactSet>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
