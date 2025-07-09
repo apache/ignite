@@ -89,17 +89,17 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
 
         // Collision by correlate variables in the left hand.
         assertQuery("SELECT * FROM test1 WHERE " +
-            "EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a)" +
-            "")
+            "EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a AND test1.b<>test2.c) " +
+            "AND NOT EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a AND test1.b<test2.c)")
             .returns(12, 2)
             .check();
 
-//        // Collision by correlate variables in both, left and right hands.
-//        assertQuery("SELECT * FROM test1 WHERE " +
-//            "EXISTS(SELECT * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<>test2.c) " +
-//            "AND NOT EXISTS(SELECT * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<test2.c)")
-//            .returns(12, 2)
-//            .check();
+        // Collision by correlate variables in both, left and right hands.
+        assertQuery("SELECT * FROM test1 WHERE " +
+            "EXISTS(SELECT * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<>test2.c) " +
+            "AND NOT EXISTS(SELECT * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<test2.c)")
+            .returns(12, 2)
+            .check();
     }
 
     /**
@@ -136,5 +136,38 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
 
         assertQuery("SELECT T1.ID, T2.ID FROM T1 JOIN T2 ON (T1.ID = T2.ID) " +
             "WHERE EXISTS (SELECT 1 FROM T3 WHERE T3.ID1 = T1.REF AND T3.ID2 = T2.REF)").returns(1, 1).check();
+    }
+
+    /** */
+    @Test
+    public void testCorrelateInSecondFilterSubquery() {
+        sql("CREATE TABLE T1(ID1 INT, REF11 INT, REF12 INT) WITH " + atomicity());
+        sql("CREATE TABLE T2(ID2 INT, REF21 INT) WITH " + atomicity());
+        sql("CREATE TABLE T3(ID3 INT, REF31 INT) WITH " + atomicity());
+
+        sql("INSERT INTO T1 VALUES(1, 1, 1)");
+        sql("INSERT INTO T1 VALUES(2, 2, 2)");
+        sql("INSERT INTO T1 VALUES(2, 2, 1)");
+        sql("INSERT INTO T1 VALUES(2, 1, 1)");
+        sql("INSERT INTO T1 VALUES(3, 3, 3)");
+        sql("INSERT INTO T1 VALUES(3, 3, 2)");
+        sql("INSERT INTO T1 VALUES(3, 2, 2)");
+        sql("INSERT INTO T1 VALUES(3, 2, 1)");
+        sql("INSERT INTO T1 VALUES(3, 1, 1)");
+
+        sql("INSERT INTO T2 VALUES(1, 1)");
+        sql("INSERT INTO T2 VALUES(1, 2)");
+        sql("INSERT INTO T2 VALUES(2, 1)");
+        sql("INSERT INTO T2 VALUES(2, 2)");
+
+        sql("INSERT INTO T3 VALUES(2, 1)");
+        sql("INSERT INTO T3 VALUES(2, 2)");
+        sql("INSERT INTO T3 VALUES(3, 3)");
+        sql("INSERT INTO T3 VALUES(3, 2)");
+        sql("INSERT INTO T3 VALUES(3, 1)");
+
+        assertQuery("SELECT ID1 FROM T1 WHERE REF11 IN " +
+            "(SELECT ID2 FROM T2 WHERE REF21 IN (SELECT REF31 FROM T3 WHERE ID3 = T1.ID1))")
+            .returns(2).returns(3).check();
     }
 }

@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
@@ -43,7 +41,6 @@ import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.TransformationRule;
 import org.apache.calcite.rex.LogicVisitor;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexInputRef;
@@ -54,7 +51,6 @@ import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlAggFunction;
-import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlQuantifyOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -62,7 +58,6 @@ import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import static java.util.Objects.requireNonNull;
@@ -902,52 +897,27 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
 
             RexSubQuery subQryReplaced = subQry;
 
-            if (!variablesSet.isEmpty() && (subQry.getKind() == SqlKind.IN //|| subQry.getKind() == SqlKind.EXISTS
-                || subQry.getKind() == SqlKind.SOME)
-            ) {
+            if (!variablesSet.isEmpty() && (subQry.getKind() == SqlKind.IN || subQry.getKind() == SqlKind.SOME)) {
                 CorrelationId id = Iterables.getOnlyElement(variablesSet);
                 RexBuilder rexBuilder = filter.getCluster().getRexBuilder();
 
                 subQryReplaced = subQry.clone(subQryReplaced.rel.accept(new RelHomogeneousShuttle() {
                     private final RexShuttle rexShuttle = new RexShuttle() {
-                        private final Map<RexFieldAccess, Integer> corrToInputRefMap = new HashMap<>();
-
-                        @Override public RexNode visitCall(RexCall call) {
-                            if (call.getOperator() instanceof SqlBinaryOperator) {
-                                List<RexNode> operands = call.getOperands();
-                                RexNode op0 = operands.get(0);
-                                RexNode op1 = operands.get(1);
-
-                                if (op0 instanceof RexInputRef && op1 instanceof RexFieldAccess
-                                    && ((RexFieldAccess)op1).getReferenceExpr() instanceof RexCorrelVariable)
-                                    corrToInputRefMap.put((RexFieldAccess)op1, ((RexSlot)op0).getIndex());
-                                else if (op1 instanceof RexInputRef && op0 instanceof RexFieldAccess
-                                    && ((RexFieldAccess)op0).getReferenceExpr() instanceof RexCorrelVariable)
-                                    corrToInputRefMap.put((RexFieldAccess)op1, ((RexSlot)op1).getIndex());
-                            }
-
-                            return super.visitCall(call);
-                        }
-
                         @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
                             if (!(fieldAccess.getReferenceExpr() instanceof RexCorrelVariable)
                                 || !((RexCorrelVariable)fieldAccess.getReferenceExpr()).id.equals(id))
                                 return super.visitFieldAccess(fieldAccess);
 
-                            assert (subQry.getKind() == SqlKind.EXISTS && subQry.operands.isEmpty()) || subQry.operands.size() == 1;
-                            assert subQry.operands.isEmpty() || subQry.operands.get(0) instanceof RexInputRef;
-                            assert subQry.getKind() != SqlKind.EXISTS || corrToInputRefMap.get(fieldAccess) != null;
-
                             int oldIdx = fieldAccess.getField().getIndex();
 
-                            int newIdx = subQry.getKind() == SqlKind.EXISTS
-                                ? corrToInputRefMap.get(fieldAccess)
-                                : ((RexSlot)subQry.getOperands().get(0)).getIndex();
+                            assert subQry.getOperands().size() == 1;
+                            assert subQry.getOperands().get(0) instanceof RexInputRef;
+
+                            int newIdx = ((RexSlot)subQry.operands.get(0)).getIndex();
 
                             if (oldIdx == newIdx)
                                 return super.visitFieldAccess(fieldAccess);
 
-                            // Filter's input is put to the left join shoulder at the rewritting.
                             RexNode newCorr = rexBuilder.makeCorrel(filter.getRowType(), id);
 
                             return rexBuilder.makeFieldAccess(newCorr, newIdx);
