@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
@@ -505,6 +506,43 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
+     *
+     */
+    protected void clearCacheStoreBackedEntries() {
+        if (txState().cacheIds() == null)
+            return;
+
+        GridIntIterator iter = txState().cacheIds().iterator();
+        while (iter.hasNext()) {
+            int cacheId = iter.next();
+
+            if (cctx.cacheContext(cacheId) == null)
+                return;
+
+            if (!cctx.cacheContext(cacheId).config().isReadThrough())
+                return;
+        }
+
+        for (IgniteTxEntry e : writeMap().values()) {
+            try {
+                GridCacheEntryEx entry = e.cached();
+
+                if (e.op() != NOOP) {
+                    entry.clear(xidVer, true);
+                }
+            }
+            catch (Throwable t) {
+                U.error(log, "Failed to clear transaction entries while reverting a commit.", t);
+
+                if (t instanceof Error)
+                    throw (Error)t;
+
+                break;
+            }
+        }
+    }
+
+    /**
      * Uncommits transaction by invalidating all of its entries. Courtesy to minimize inconsistency.
      */
     protected void uncommit() {
@@ -512,8 +550,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             try {
                 GridCacheEntryEx entry = e.cached();
 
-                if (e.op() != NOOP)
+                if (e.op() != NOOP) {
                     entry.invalidate(xidVer);
+                }
             }
             catch (Throwable t) {
                 U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
