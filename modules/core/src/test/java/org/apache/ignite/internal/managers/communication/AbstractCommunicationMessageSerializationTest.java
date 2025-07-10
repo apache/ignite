@@ -96,13 +96,13 @@ public abstract class AbstractCommunicationMessageSerializationTest {
 
         initializeMessage(msg);
 
-        while (!msg.writeTo(TEST_BYTE_BUFFER, writer)) {
+        while (!msgFactory.serializer(msgType).writeTo(msg, TEST_BYTE_BUFFER, writer)) {
             // No-op.
         }
 
         msg = msgFactory.create(msgType);
 
-        while (!msg.readFrom(TEST_BYTE_BUFFER, reader)) {
+        while (!msgFactory.serializer(msgType).readFrom(msg, TEST_BYTE_BUFFER, reader)) {
             // No-op.
         }
 
