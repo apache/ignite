@@ -89,11 +89,10 @@ public enum PlannerPhase {
             return ctx.rules(
                 RuleSets.ofList(
                     IgniteSubQueryRemoveRule.FILTER,
-                    // TODO Revise reverting to the original rules after https://issues.apache.org/jira/browse/CALCITE-7034
+                    // TODO Revise reverting to the original rule after https://issues.apache.org/jira/browse/CALCITE-7034
                     // CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
                     CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
-                    IgniteSubQueryRemoveRule.JOIN
-                    // CoreRules.JOIN_SUB_QUERY_TO_CORRELATE,
+                    CoreRules.JOIN_SUB_QUERY_TO_CORRELATE
                 )
             );
         }

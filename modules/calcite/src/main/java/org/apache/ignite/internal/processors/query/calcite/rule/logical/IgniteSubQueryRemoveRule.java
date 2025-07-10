@@ -86,9 +86,6 @@ import static org.apache.calcite.util.Util.last;
 @Value.Enclosing
 public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.Config> implements TransformationRule {
     /** */
-    public static final RelOptRule JOIN = Config.JOIN.toRule();
-
-    /** */
     public static final RelOptRule FILTER = Config.FILTER.toRule();
 
     /** Creates a SubQueryRemoveRule. */
@@ -1004,101 +1001,6 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
         call.transformTo(result);
     }
 
-    /** */
-    private static void matchJoin(IgniteSubQueryRemoveRule rule, RelOptRuleCall call) {
-        Join join = call.rel(0);
-        RelBuilder builder = call.builder();
-
-        RexSubQuery e = requireNonNull(RexUtil.SubQueryFinder.find(join.getCondition()));
-        RelOptUtil.Logic logic = LogicVisitor.find(RelOptUtil.Logic.TRUE, ImmutableList.of(join.getCondition()), e);
-
-        ImmutableBitSet inputSet = RelOptUtil.InputFinder.bits(e.getOperands(), null);
-        int nFieldsLeft = join.getLeft().getRowType().getFieldCount();
-        int nFieldsRight = join.getRight().getRowType().getFieldCount();
-        Set<CorrelationId> variablesSet = RelOptUtil.getVariablesUsed(e.rel);
-
-        if (!variablesSet.isEmpty()) {
-            CorrelationId id = Iterables.getOnlyElement(variablesSet);
-            inputSet = ImmutableBitSet.union(List.of(RelOptUtil.correlationColumns(id, e.rel), inputSet));
-        }
-
-        boolean inputIntersectsRightSide = inputSet.intersects(ImmutableBitSet.range(nFieldsLeft, nFieldsLeft + nFieldsRight));
-        boolean inputIntersectsLeftSide = inputSet.intersects(ImmutableBitSet.range(0, nFieldsLeft));
-
-        if (inputIntersectsLeftSide && inputIntersectsRightSide) {
-            // The current existential rewrite needs to make join with one side of the origin join and
-            // generate a new condition to replace the on clause. But for RexNode whose operands are
-            // on either side of the join, we can't push them into join. So this rewriting is not
-            // supported.
-            return;
-        }
-
-        builder.push(join.getLeft());
-
-        if (inputIntersectsLeftSide) {
-            RexNode target = rule.apply(e, variablesSet, logic, builder, 1, nFieldsLeft, 0);
-            RexShuttle shuttle = new ReplaceSubQueryShuttle(e, target);
-            RexNode newCond = shuttle.apply(RexUtil.shift(join.getCondition(), nFieldsLeft, builder.fields().size() - nFieldsLeft));
-
-            builder.push(join.getRight());
-            builder.join(join.getJoinType(), newCond);
-
-            int nFields = builder.fields().size();
-
-            ImmutableList<RexNode> fields = builder.fields(ImmutableBitSet.range(0, nFieldsLeft)
-                .union(ImmutableBitSet.range(nFields - nFieldsRight, nFields)));
-
-            builder.project(fields);
-        }
-        else {
-            builder.push(join.getRight());
-
-            RexSubQuery subQry = e;
-
-            if (!variablesSet.isEmpty()) {
-                // Original correlates reference joint row type, but we are about to create
-                // new join of original right side and correlated sub-query. Therefore we have
-                // to adjust correlated variables int following way:
-                //      1) new correlation variable must reference row type of right side only
-                //      2) field index must be shifted on the size of the left side
-                CorrelationId id = Iterables.getOnlyElement(variablesSet);
-
-                subQry = e.clone(e.rel.accept(new RelHomogeneousShuttle() {
-                    private final int offset = join.getLeft().getRowType().getFieldCount();
-
-                    private final RexBuilder rexBuilder = join.getRight().getCluster().getRexBuilder();
-
-                    private final RexShuttle rexShuttle = new RexShuttle() {
-                        @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
-                            if (!(fieldAccess.getReferenceExpr() instanceof RexCorrelVariable)
-                                || !((RexCorrelVariable)fieldAccess.getReferenceExpr()).id.equals(id))
-                                return super.visitFieldAccess(fieldAccess);
-
-                            RexNode updatedCorrelation = rexBuilder.makeCorrel(join.getRight().getRowType(), id);
-
-                            int oldIdx = fieldAccess.getField().getIndex();
-                            return rexBuilder.makeFieldAccess(updatedCorrelation, oldIdx - offset);
-                        }
-                    };
-
-                    @Override public RelNode visit(RelNode other) {
-                        RelNode next = super.visit(other);
-                        return next.accept(rexShuttle);
-                    }
-                }));
-            }
-
-            int nFields = join.getRowType().getFieldCount();
-            RexNode target = rule.apply(subQry, variablesSet, logic, builder, 2, nFields, 0);
-            RexShuttle shuttle = new ReplaceSubQueryShuttle(e, target);
-
-            builder.join(join.getJoinType(), shuttle.apply(join.getCondition()));
-            builder.project(fields(builder, nFields));
-        }
-
-        call.transformTo(builder.build());
-    }
-
     /** Shuttle that replaces occurrences of a given {@link org.apache.calcite.rex.RexSubQuery} with a replacement expression. */
     private static class ReplaceSubQueryShuttle extends RexShuttle {
         /** */
@@ -1122,16 +1024,6 @@ public class IgniteSubQueryRemoveRule extends RelRule<IgniteSubQueryRemoveRule.C
     /** Rule configuration. */
     @Value.Immutable(singleton = false)
     public interface Config extends RelRule.Config {
-        /** */
-        Config JOIN = ImmutableIgniteSubQueryRemoveRule.Config.builder()
-            .withMatchHandler(IgniteSubQueryRemoveRule::matchJoin)
-            .build()
-            .withOperandSupplier(b ->
-                b.operand(Join.class)
-                    .predicate(RexUtil.SubQueryFinder::containsSubQuery)
-                    .anyInputs())
-            .withDescription("SubQueryRemoveRule:Join");
-
         /** */
         Config FILTER = ImmutableIgniteSubQueryRemoveRule.Config.builder()
             .withMatchHandler(IgniteSubQueryRemoveRule::matchFilter)
