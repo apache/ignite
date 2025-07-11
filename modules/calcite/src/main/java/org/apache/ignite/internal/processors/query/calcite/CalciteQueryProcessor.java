@@ -33,6 +33,7 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDdl;
@@ -144,6 +145,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         // See Apache Calcite ticket for more information, assertion is incorrect.
         // FRAMEWORK_CONFIG initialize SqlToRelConverter class. Assertions should be disabled before class initialization.
         SqlToRelConverter.class.getClassLoader().setClassAssertionStatus(SqlToRelConverter.class.getName(), false);
+        // TODO Workaround for https://issues.apache.org/jira/browse/CALCITE-5421 and https://issues.apache.org/jira/browse/CALCITE-7034
+        Correlate.class.getClassLoader().setClassAssertionStatus(Correlate.class.getName(), false);
     }
 
     /**

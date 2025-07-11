@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.sql.Date;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
@@ -47,6 +49,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocat
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 /** Tests to verify correlated subquery planning. */
@@ -93,6 +96,37 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
             fieldAccess.getReferenceExpr().getType(),
             join.getLeft().getRowType()
         );
+    }
+
+    /** */
+    @Test
+    public void testPaddedCorrelateInSecondFilterSubquery() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("T1", IgniteDistributions.single(), "ID1", Integer.class, "PADDING1", String.class,
+                "PADDING2", Date.class, "PADDING3", UUID.class, "REF1", Integer.class),
+            createTable("T2", IgniteDistributions.single(), "ID2", Integer.class, "REF2", Integer.class),
+            createTable("T3", IgniteDistributions.single(), "ID3", Integer.class, "REF3", Integer.class)
+        );
+
+        String qTpl = "SELECT ID1 FROM T1 WHERE REF1 IN (SELECT REF2 FROM T2 WHERE %s" +
+            "   (SELECT REF3 FROM T3 WHERE REF3 = T1.REF1))";
+
+        for (String tbl2Filter : F.asList("REF2 IN", "REF2 < ANY", "EXISTS")) {
+            String q = String.format(qTpl, tbl2Filter);
+
+            if (log.isInfoEnabled())
+                log.info(String.format("Test query:\n   '%s'", q));
+
+            assertPlan(q, schema,
+                nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                    .and(cnl -> cnl.getVariablesSet().size() == 1 && "$cor0".equals(F.first(cnl.getVariablesSet()).getName()))
+                    .and(input(0, nodeOrAnyChild(isTableScan("T1"))))
+                    .and(input(1, nodeOrAnyChild(isTableScan("T3")
+                        .and(ts -> "=($t0, $cor0.REF1)".equals(ts.condition().toString())))))
+                    .and(input(1, nodeOrAnyChild(isTableScan("T2").and(ts -> ts.condition() == null))))
+                )
+            );
+        }
     }
 
     /** */
