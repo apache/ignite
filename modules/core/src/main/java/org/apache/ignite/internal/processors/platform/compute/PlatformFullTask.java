@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeTaskContinuousMapper;
 import org.apache.ignite.compute.ComputeTaskNoResultCache;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManager;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -66,6 +68,10 @@ public final class PlatformFullTask extends PlatformAbstractTask {
     /** The task session. */
     @TaskSessionResource
     private ComputeTaskSession ses;
+
+    /** The task mapper. */
+    @TaskContinuousMapperResource
+    private ComputeTaskContinuousMapper mapper;
 
     /**
      * Constructor.
@@ -106,7 +112,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
 
             PlatformMemoryManager memMgr = ctx.memory();
 
-            final PlatformTarget platformSes = new PlatformComputeTaskSession(ctx, ses);
+            final PlatformTarget platformSes = new PlatformComputeTaskSession(ctx, ses, this, taskName, mapper);
             final PlatformTargetProxy platformSesProxy = new PlatformTargetProxyImpl(platformSes, ctx);
 
             try (PlatformMemory mem = memMgr.allocate()) {
