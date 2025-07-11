@@ -75,6 +75,7 @@ public class CdcCommandLineStartup {
             exit("Invalid arguments: " + args[0], true, -1);
 
         AtomicReference<CdcMain> cdc = new AtomicReference<>();
+        Thread appThread = null;
 
         try {
             cdc.set(CdcLoader.loadCdc(args[0]));
@@ -87,25 +88,24 @@ public class CdcCommandLineStartup {
                 });
             }
 
-            Thread appThread = new Thread(cdc.get());
+            appThread = new Thread(cdc.get());
 
-            try {
-                appThread.start();
+            appThread.start();
 
-                appThread.join();
-            }
-            catch (InterruptedException ignore) {
-                X.error("CDC was interrupted.");
+            appThread.join();
+        }
+        catch (InterruptedException ignore) {
+            X.error("CDC was interrupted.");
 
-                appThread.interrupt();
+            if (appThread != null) {
+                appThread.interrupt(); // Interrupting a thread does NOT trigger the JVM shutdown hook
 
                 try {
                     appThread.join();
-                } catch (InterruptedException ie) {
-                    // No-op.
                 }
-
-                Thread.currentThread().interrupt();
+                catch (InterruptedException e) {
+                    // No-op 
+                }
             }
         }
         catch (Throwable e) {
