@@ -33,7 +33,6 @@
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 <property name="defaultDataRegionConfiguration">
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
-                        <property name="persistenceEnabled" value="true" />
                         <property name="cdcEnabled" value="true" />
                     </bean>
                 </property>
