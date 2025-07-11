@@ -28,9 +28,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridJobCancelRequest implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @Order(0)
     private IgniteUuid sessionId;
 

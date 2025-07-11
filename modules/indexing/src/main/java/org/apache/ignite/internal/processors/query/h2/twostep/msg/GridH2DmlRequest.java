@@ -42,9 +42,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuer
  * Request for DML operation on remote node.
  */
 public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Request id. */
     @GridToStringInclude
     private long reqId;

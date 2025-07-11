@@ -54,9 +54,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  */
 public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00;
 
     /** */

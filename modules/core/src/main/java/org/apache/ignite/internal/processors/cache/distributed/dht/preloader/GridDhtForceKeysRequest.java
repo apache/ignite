@@ -41,9 +41,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * next batch of transmitting entries.
  */
 public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
     private IgniteUuid futId;
 

@@ -46,9 +46,6 @@ import org.jetbrains.annotations.Nullable;
  * DHT atomic cache near update response.
  */
 public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Cache message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 

@@ -46,9 +46,6 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
  */
 public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private IgniteUuid sesId;
 
     /** */

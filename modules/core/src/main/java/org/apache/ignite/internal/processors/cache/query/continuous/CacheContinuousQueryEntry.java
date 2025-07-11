@@ -41,9 +41,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private static final byte BACKUP_ENTRY = 0b0001;
 
     /** */

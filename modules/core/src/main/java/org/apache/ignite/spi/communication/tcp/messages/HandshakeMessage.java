@@ -32,9 +32,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
  */
 @IgniteCodeGeneratingFail
 public class HandshakeMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message body size in bytes. */
     private static final int MESSAGE_SIZE = 36;
 

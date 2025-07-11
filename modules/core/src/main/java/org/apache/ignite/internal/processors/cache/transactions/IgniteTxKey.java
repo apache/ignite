@@ -33,9 +33,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * for multiple caches.
  */
 public class IgniteTxKey implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Key. */
     @GridToStringInclude(sensitive = true)
     private KeyCacheObject key;

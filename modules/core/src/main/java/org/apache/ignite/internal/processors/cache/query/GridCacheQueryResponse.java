@@ -49,9 +49,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private boolean finished;
 
     /** */

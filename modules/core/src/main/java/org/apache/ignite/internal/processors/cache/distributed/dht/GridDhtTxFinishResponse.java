@@ -36,9 +36,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT transaction finish response.
  */
 public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Flag indicating if this is a check-committed response. */
     private static final int CHECK_COMMITTED_FLAG_MASK = 0x01;
 

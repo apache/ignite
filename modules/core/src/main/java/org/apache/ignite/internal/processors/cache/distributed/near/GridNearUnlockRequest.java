@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Near cache unlock request.
  */
 public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */

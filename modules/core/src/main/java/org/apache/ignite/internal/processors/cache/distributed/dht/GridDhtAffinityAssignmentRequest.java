@@ -29,9 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private static final int SND_PART_STATE_MASK = 0x01;
 
     /** */

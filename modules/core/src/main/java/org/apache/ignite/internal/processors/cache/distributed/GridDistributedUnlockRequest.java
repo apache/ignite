@@ -36,9 +36,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Lock request message.
  */
 public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Keys. */
     @GridToStringInclude
     @GridDirectCollection(KeyCacheObject.class)

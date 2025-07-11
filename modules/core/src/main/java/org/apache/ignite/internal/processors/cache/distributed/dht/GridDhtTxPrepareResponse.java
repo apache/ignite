@@ -46,9 +46,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT transaction prepare response.
  */
 public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Evicted readers. */
     @GridToStringInclude
     @GridDirectCollection(IgniteTxKey.class)

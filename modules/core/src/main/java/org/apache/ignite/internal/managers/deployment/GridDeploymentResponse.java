@@ -29,9 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Grid deployment response containing requested resource bytes.
  */
 public class GridDeploymentResponse implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Result state. */
     private boolean success;
 

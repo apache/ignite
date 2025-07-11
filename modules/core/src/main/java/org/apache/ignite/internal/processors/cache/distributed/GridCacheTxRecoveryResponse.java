@@ -34,9 +34,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Transactions recovery check response.
  */
 public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
     private IgniteUuid futId;
 

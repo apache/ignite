@@ -52,9 +52,6 @@ import org.jetbrains.annotations.Nullable;
 public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable,
     GridCacheVersionable {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private static final int READ_THROUGH_FLAG_MASK = 0x01;
 
     /** */

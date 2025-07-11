@@ -38,9 +38,6 @@ public class GridIoMessage implements Message, SpanTransport {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Policy. */
     private byte plc;
 

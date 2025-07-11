@@ -37,9 +37,6 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     /** */
     private static final byte RESTORE_STATE_FLAG_MASK = 0x02;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Exchange ID. */
     private GridDhtPartitionExchangeId exchId;
 

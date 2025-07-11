@@ -31,9 +31,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridCheckpointRequest implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private IgniteUuid sesId;
 
     /** */

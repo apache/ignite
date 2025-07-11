@@ -36,9 +36,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridJobExecuteResponse implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private UUID nodeId;
 
     /** */

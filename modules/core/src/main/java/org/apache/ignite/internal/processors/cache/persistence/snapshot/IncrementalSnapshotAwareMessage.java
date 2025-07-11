@@ -31,9 +31,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public static final short TYPE_CODE = 400;
 
     /** Original transaction message. */

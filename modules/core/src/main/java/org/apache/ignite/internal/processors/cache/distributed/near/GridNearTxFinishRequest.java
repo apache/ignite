@@ -35,9 +35,6 @@ import org.jetbrains.annotations.NotNull;
  * Near transaction finish request.
  */
 public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Mini future ID. */
     private int miniId;
 

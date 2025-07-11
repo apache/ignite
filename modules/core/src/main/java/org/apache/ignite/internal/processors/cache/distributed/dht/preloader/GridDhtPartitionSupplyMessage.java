@@ -48,9 +48,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 @IgniteCodeGeneratingFail
 public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** An unique (per demander) rebalance id. */
     private long rebalanceId;
 

@@ -39,9 +39,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT atomic cache backup update response.
  */
 public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 

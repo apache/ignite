@@ -34,9 +34,6 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
  * Contains count of deployed service instances on single node and deployment errors if exist.
  */
 public class ServiceSingleNodeDeploymentResult implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Count of service's instances. */
     private int cnt;
 

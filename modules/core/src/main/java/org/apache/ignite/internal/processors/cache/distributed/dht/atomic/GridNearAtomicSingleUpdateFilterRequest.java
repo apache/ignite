@@ -39,9 +39,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingleUpdateRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Filter. */
     private CacheEntryPredicate[] filter;
 

@@ -62,9 +62,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** */
     private static final byte REBALANCED_FLAG_MASK = 0x01;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** grpId -> FullMap */
     @GridToStringInclude
     @GridDirectTransient

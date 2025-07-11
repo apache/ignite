@@ -35,9 +35,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT cache unlock request.
  */
 public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Near keys. */
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> nearKeys;

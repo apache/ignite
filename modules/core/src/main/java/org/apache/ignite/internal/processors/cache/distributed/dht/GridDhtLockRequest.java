@@ -45,9 +45,6 @@ import org.jetbrains.annotations.Nullable;
  * DHT lock request.
  */
 public class GridDhtLockRequest extends GridDistributedLockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Invalidate reader flags. */
     private BitSet invalidateEntries;
 

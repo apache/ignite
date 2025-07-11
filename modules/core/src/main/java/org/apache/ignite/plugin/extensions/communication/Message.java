@@ -17,13 +17,12 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 
 /**
  * Base class for all communication messages.
  */
-public interface Message extends Serializable {
+public interface Message {
     /** Direct type size in bytes. */
     public int DIRECT_TYPE_SIZE = 2;
 

@@ -29,9 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Task result request.
  */
 public class GridTaskResultRequest implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Task ID. */
     private IgniteUuid taskId;
 

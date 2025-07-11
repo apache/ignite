@@ -29,9 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Server nodes send this message to coordinator when the user operation is finished.
  */
 public class UserManagementOperationFinishedMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Operation Id. */
     private IgniteUuid opId;
 

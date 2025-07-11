@@ -32,9 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Message sent to check that transactions related to transaction were prepared on remote node.
  */
 public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
     private IgniteUuid futId;
 

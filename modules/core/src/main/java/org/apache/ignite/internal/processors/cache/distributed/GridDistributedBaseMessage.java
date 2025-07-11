@@ -39,9 +39,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public abstract class GridDistributedBaseMessage extends GridCacheIdMessage implements GridCacheDeployable,
     GridCacheVersionable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Lock or transaction version. */
     @GridToStringInclude
     protected GridCacheVersion ver;

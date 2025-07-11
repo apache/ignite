@@ -30,9 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Task session request.
  */
 public class GridTaskSessionRequest implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Task session ID. */
     private IgniteUuid sesId;
 

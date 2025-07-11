@@ -42,9 +42,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     protected static final int WAIT_REMOTE_TX_FLAG_MASK = 0x01;
 
     /** */

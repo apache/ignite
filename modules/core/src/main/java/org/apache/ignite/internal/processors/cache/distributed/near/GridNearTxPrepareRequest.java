@@ -43,9 +43,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private static final int NEAR_FLAG_MASK = 0x01;
 
     /** */

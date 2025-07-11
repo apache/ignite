@@ -35,9 +35,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridJobSiblingsResponse implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridDirectTransient
     private Collection<ComputeJobSibling> siblings;
 

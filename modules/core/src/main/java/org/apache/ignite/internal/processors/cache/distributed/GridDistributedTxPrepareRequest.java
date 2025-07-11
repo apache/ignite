@@ -58,9 +58,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private static final int NEED_RETURN_VALUE_FLAG_MASK = 0x01;
 
     /** */

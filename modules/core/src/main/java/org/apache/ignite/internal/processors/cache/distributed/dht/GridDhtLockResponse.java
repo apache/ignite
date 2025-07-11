@@ -42,9 +42,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT cache lock response.
  */
 public class GridDhtLockResponse extends GridDistributedLockResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Mini ID. */
     private IgniteUuid miniId;
 

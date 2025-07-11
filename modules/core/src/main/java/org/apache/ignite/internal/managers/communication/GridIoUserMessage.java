@@ -39,9 +39,6 @@ import org.jetbrains.annotations.Nullable;
  * User message wrapper.
  */
 public class GridIoUserMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message body. */
     @GridDirectTransient
     private Object body;

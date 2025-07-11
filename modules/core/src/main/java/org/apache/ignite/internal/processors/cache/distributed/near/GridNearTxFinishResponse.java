@@ -35,9 +35,6 @@ import org.jetbrains.annotations.Nullable;
  * Reply for synchronous phase 2.
  */
 public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Heuristic error. */
     @GridDirectTransient
     private Throwable err;

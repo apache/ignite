@@ -38,9 +38,6 @@ import org.jetbrains.annotations.Nullable;
  * Near cache lock response.
  */
 public class GridNearLockResponse extends GridDistributedLockResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Collection of versions that are pending and less than lock version. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)

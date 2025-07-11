@@ -35,9 +35,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Deployment request.
  */
 public class GridDeploymentRequest implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Response topic. Response should be sent back to this topic. */
     @GridDirectTransient
     private Object resTopic;

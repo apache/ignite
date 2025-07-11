@@ -32,9 +32,6 @@ import org.jetbrains.annotations.Nullable;
  * Service deployment process' identifier.
  */
 public class ServiceDeploymentProcessId implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Topology version. */
     @Nullable private AffinityTopologyVersion topVer;
 

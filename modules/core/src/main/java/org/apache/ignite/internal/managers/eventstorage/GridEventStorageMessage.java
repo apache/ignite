@@ -40,9 +40,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridEventStorageMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridDirectTransient
     private Object resTopic;
 

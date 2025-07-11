@@ -42,9 +42,6 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     /** Snapshot request message type (value is {@code 178}). */
     public static final short TYPE_CODE = 178;
 
-    /** Serialization version. */
-    private static final long serialVersionUID = 0L;
-
     /** Snapshot operation request ID. */
     private UUID reqId;
 

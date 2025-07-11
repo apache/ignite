@@ -30,9 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class CacheEvictionEntry implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridToStringInclude
     private KeyCacheObject key;
 

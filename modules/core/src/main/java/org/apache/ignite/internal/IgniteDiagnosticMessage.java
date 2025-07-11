@@ -56,9 +56,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteDiagnosticMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private static final int REQUEST_FLAG_MASK = 0x01;
 
     /** */

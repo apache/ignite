@@ -32,9 +32,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @IgniteCodeGeneratingFail
 public class WalStateAckMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Operation ID. */
     private UUID opId;
 

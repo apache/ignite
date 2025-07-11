@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Job stealing request.
  */
 public class JobStealingRequest implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Delta. */
     private int delta;
 

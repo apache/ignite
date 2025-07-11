@@ -36,9 +36,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 @IgniteCodeGeneratingFail
 public class GridQueryNextPageResponse implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private long qryReqId;
 
     /** */

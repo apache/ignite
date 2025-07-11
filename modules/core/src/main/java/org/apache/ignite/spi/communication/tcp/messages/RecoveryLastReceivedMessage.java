@@ -31,9 +31,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 @IgniteCodeGeneratingFail
 public class RecoveryLastReceivedMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public static final long ALREADY_CONNECTED = -1;
 
     /** */

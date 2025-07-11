@@ -31,9 +31,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /** Wraps transaction prepare request with application attributes. */
 public class TransactionAttributesAwareRequest extends GridCacheMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public static final short TYPE_CODE = 181;
 
     /** Original transaction prepare message. */

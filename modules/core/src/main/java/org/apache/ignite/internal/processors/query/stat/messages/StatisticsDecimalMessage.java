@@ -30,9 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class StatisticsDecimalMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public static final short TYPE_CODE = 184;
 
     /** */
