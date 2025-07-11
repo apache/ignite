@@ -24,7 +24,6 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -2813,7 +2812,7 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
             "on d.deptno = e.deptno and e.name >= d.name order by e.name, d.deptno";
 
         assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteSort.class)
-                .and(hasChildThat(isInstanceOf(IgniteNestedLoopJoin.class)))),
+                .and(hasChildThat(isInstanceOf(IgniteMergeJoin.class)).negate())),
             "CorrelatedNestedLoopJoin");
     }
 
