@@ -133,8 +133,8 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) = ?";
 
         // First table is replicated and planned with TrimExchange to colocate data, but set of nodes for partitioned
-        // table is differ, so exchange is required for colocation. Another exchange is required to send data to
-        // initiator node.
+        // table is differ, so exchange is added after fragments split for colocation. Another exchange is added after
+        // fragments split to send data to initiator node.
         assertPlan(sql, schema, hasFragmentsCount(3).and(hasChildThat(isInstanceOf(IgniteTrimExchange.class))));
     }
 
@@ -160,8 +160,8 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) = ?";
 
         // First table is replicated and planned with TrimExchange to colocate data, but set of nodes for partitioned
-        // table is differ, so exchange is required for colocation. Another exchange is required to send data to
-        // initiator node.
+        // table is differ, so exchange is added after fragments split for colocation. Another exchange is added after
+        // fragments split to send data to initiator node.
         assertPlan(sql, schema, hasFragmentsCount(3).and(hasChildThat(isInstanceOf(IgniteTrimExchange.class))));
     }
 
@@ -187,8 +187,8 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) = ?";
 
         // First table is replicated and planned with TrimExchange to colocate data, but set of nodes for partitioned
-        // table is differ, so exchange is required for colocation. Another exchange is required to send data to
-        // initiator node.
+        // table is differ, so exchange is added after fragments split for colocation. Another exchange is added after
+        // fragments split to send data to initiator node.
         assertPlan(sql, schema, hasFragmentsCount(3).and(hasChildThat(isInstanceOf(IgniteTrimExchange.class))));
     }
 
@@ -209,8 +209,8 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             "ON d.projectId = p.ver0 " +
             "WHERE (d.projectId + 1) = ?";
 
-        // Originally planned without exchanges, there is no data for table 1 on initiator node, so one exchange
-        // is required.
+        // Originally planned without exchanges. But there is no data for table 1 on initiator node, so one exchange
+        // is added after fragments split.
         assertPlan(sql, schema, hasFragmentsCount(2).and(nodeOrAnyChild(isInstanceOf(Exchange.class)).negate()));
     }
 
@@ -231,7 +231,8 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             "ON d.projectId = p.ver0 " +
             "WHERE (d.projectId + 1) = ?";
 
-        // Originally planned without exchanges, data can't be joined on any single node, so two exchanges is required.
+        // Originally planned without exchanges. But data can't be joined on any single node, so two exchanges is
+        // added after fragments split.
         assertPlan(sql, schema, hasFragmentsCount(3).and(nodeOrAnyChild(isInstanceOf(Exchange.class)).negate()));
     }
 
@@ -252,8 +253,8 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             "ON d.projectId = p.ver0 " +
             "WHERE (d.projectId + 1) = ?";
 
-        // Originally planned without exchanges, there is no data on initiator node, but data can be joined on one
-        // remote node, one exchange is required.
+        // Originally planned without exchanges. There is no data on initiator node, but data can be joined on one
+        // remote node, so one exchange is added after fragments split.
         assertPlan(sql, schema, hasFragmentsCount(2).and(nodeOrAnyChild(isInstanceOf(Exchange.class)).negate()));
     }
 
