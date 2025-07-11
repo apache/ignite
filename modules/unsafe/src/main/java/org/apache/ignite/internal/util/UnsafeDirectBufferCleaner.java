@@ -22,11 +22,9 @@ import java.nio.ByteBuffer;
 import sun.misc.Unsafe;
 
 /**
- * {@link DirectBufferCleaner} implementation based on {@code Unsafe.invokeCleaner} method.
- *
- * Note: This implementation will work only for Java 9+.
+ * Cleaner for {@code java.nio.ByteBuffer} based on {@code Unsafe.invokeCleaner} method.
  */
-public class UnsafeDirectBufferCleaner implements DirectBufferCleaner {
+class UnsafeDirectBufferCleaner {
     /** Cleaner method. */
     private final Method cleanerMtd;
 
@@ -40,8 +38,12 @@ public class UnsafeDirectBufferCleaner implements DirectBufferCleaner {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void clean(ByteBuffer buf) {
+    /**
+     * Cleans direct buffer.
+     *
+     * @param buf direct buffer.
+     */
+    public void clean(ByteBuffer buf) {
         GridUnsafe.invoke(cleanerMtd, buf);
     }
 }

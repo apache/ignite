@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util;
  * Class extracted for fields from GridUnsafe to be absolutely independent with current and future static block
  * initialization effects.
  */
-public class FeatureChecker {
+class FeatureChecker {
     /** Required Options to Run on Java 11. */
     public static final String JAVA_11_OPTIONS = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
         "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED\n" +
