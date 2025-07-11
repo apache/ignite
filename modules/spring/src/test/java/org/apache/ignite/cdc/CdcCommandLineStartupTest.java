@@ -48,7 +48,7 @@ public class CdcCommandLineStartupTest extends GridCommonAbstractTest {
         cfg.setPeerClassLoadingEnabled(false);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setCdcEnabled(true).setPersistenceEnabled(true)));
+            new DataRegionConfiguration().setCdcEnabled(true)));
 
         return cfg;
     }
@@ -59,21 +59,19 @@ public class CdcCommandLineStartupTest extends GridCommonAbstractTest {
         try (IgniteEx ign = startGrid(IGNITE_INSTANCE_NAME)) {
             ign.cluster().state(ACTIVE);
 
-            IgniteInternalFuture<?> fut = startCdcCommandLineConsumer();
+            IgniteInternalFuture<?> fut = runAsync(() ->
+                CdcCommandLineStartup.main(new String[] {"modules/spring/src/test/config/cdc/cdc-command-line-consumer.xml"}),
+                "cmdline-consumer"
+            );
 
             assertTrue(waitForCondition(() -> ign.cluster().nodes().size() == 2, getTestTimeout()));
 
             fut.cancel();
 
+            assertTrue(fut.isDone());
+
             assertTrue(waitForCondition(() -> ign.cluster().nodes().size() == 1, getTestTimeout()));
         }
-    }
-
-    /** */
-    private IgniteInternalFuture<?> startCdcCommandLineConsumer() {
-        String cfgPath = "modules/spring/src/test/config/cdc/cdc-command-line-consumer.xml";
-
-        return runAsync(() -> CdcCommandLineStartup.main(new String[] {cfgPath}), "cmdline-consumer");
     }
 
     /** */
