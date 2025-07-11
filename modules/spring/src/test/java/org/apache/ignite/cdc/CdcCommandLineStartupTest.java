@@ -70,7 +70,7 @@ public class CdcCommandLineStartupTest extends GridCommonAbstractTest {
 
             assertTrue(fut.isDone());
 
-            assertTrue(waitForCondition(() -> ign.cluster().nodes().size() == 1, getTestTimeout()));
+            assertTrue(ign.cluster().nodes().size() == 1);
         }
     }
 

@@ -99,6 +99,12 @@ public class CdcCommandLineStartup {
 
                 appThread.interrupt();
 
+                try {
+                    appThread.join();
+                } catch (InterruptedException ie) {
+                    // No-op.
+                }
+
                 Thread.currentThread().interrupt();
             }
         }
