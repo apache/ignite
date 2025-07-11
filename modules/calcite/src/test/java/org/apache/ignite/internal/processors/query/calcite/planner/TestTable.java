@@ -84,6 +84,9 @@ public class TestTable implements IgniteCacheTable {
     private IgniteDistribution distribution;
 
     /** */
+    private ColocationGroup colocationGrp;
+
+    /** */
     private IgniteStatisticsImpl statistics;
 
     /** */
@@ -119,6 +122,18 @@ public class TestTable implements IgniteCacheTable {
      */
     public TestTable setDistribution(IgniteDistribution distribution) {
         this.distribution = distribution;
+
+        return this;
+    }
+
+    /**
+     * Set colocation group.
+     *
+     * @param colocationGrp Colocation group to set.
+     * @return TestTable for chaining.
+     */
+    public TestTable setColocationGroup(ColocationGroup colocationGrp) {
+        this.colocationGrp = colocationGrp;
 
         return this;
     }
@@ -197,6 +212,9 @@ public class TestTable implements IgniteCacheTable {
 
     /** {@inheritDoc} */
     @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
+        if (colocationGrp != null)
+            return colocationGrp;
+
         throw new AssertionError();
     }
 

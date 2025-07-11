@@ -247,6 +247,18 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
     }
 
     /** */
+    @Test
+    public void testFilterFilterMerge() throws Exception {
+        String sql = "SELECT * FROM (SELECT a FROM tbl WHERE a = 1) WHERE a = 1";
+
+        assertPlan(sql, publicSchema, isInstanceOf(IgniteTableScan.class)
+            .and(scan -> scan.projects() == null)
+            .and(scan -> scan.condition() != null)
+            .and(scan -> "=($t0, 1)".equals(scan.condition().toString()))
+            .and(scan -> ImmutableBitSet.of(0).equals(scan.requiredColumns())));
+    }
+
+    /** */
     private static List<RexNode> searchBoundsCondition(List<SearchBounds> searchBounds) {
         return searchBounds.stream().filter(Objects::nonNull).map(SearchBounds::condition).collect(Collectors.toList());
     }

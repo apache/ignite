@@ -34,6 +34,8 @@ import org.junit.Test;
 
 import static org.apache.calcite.rel.RelFieldCollation.Direction.ASCENDING;
 import static org.apache.calcite.rel.RelFieldCollation.Direction.DESCENDING;
+import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
+import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
 
 /** MergeJoin planner test. */
 public class MergeJoinPlannerTest extends AbstractPlannerTest {
@@ -2792,6 +2794,26 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
             sortOnTopOfScan(rel, "LEFT_T").collation()
         );
         assertNull(sortOnTopOfScan(rel, "RIGHT_T"));
+    }
+
+    /** */
+    @Test
+    public void testMergeJoinIsNotAppliedForNonEquiJoin() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("EMP", 1000, IgniteDistributions.broadcast(),
+                "ID", INTEGER, "NAME", VARCHAR, "DEPTNO", INTEGER)
+                .addIndex("emp_idx", 1, 2),
+            createTable("DEPT", 100, IgniteDistributions.broadcast(),
+                "DEPTNO", INTEGER, "NAME", VARCHAR)
+                .addIndex("dep_idx", 1, 0)
+        );
+
+        String sql = "select d.deptno, d.name, e.id, e.name from dept d join emp e " +
+            "on d.deptno = e.deptno and e.name >= d.name order by e.name, d.deptno";
+
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteSort.class)
+                .and(hasChildThat(isInstanceOf(IgniteMergeJoin.class)).negate())),
+            "CorrelatedNestedLoopJoin");
     }
 
     /**
