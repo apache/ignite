@@ -182,7 +182,7 @@ public class SecurityContextInternalFuturePropagationTest extends GridCommonAbst
             }
             catch (Exception e) {
                 assertTrue(X.hasCause(e, "Authorization failed", ClientException.class)
-                    || X.hasCause(e, "User is not authorized to perform this operation", ClientAuthorizationException.class));
+                    || X.hasCause(e, "Client is not authorized to perform this operation", ClientAuthorizationException.class));
             }
 
             op3Fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);

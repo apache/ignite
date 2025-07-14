@@ -15,25 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.type;
+package org.apache.ignite.internal;
 
-import java.lang.reflect.Type;
-import java.util.UUID;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** UUID SQL type. */
-public class UuidType extends IgniteCustomType {
-    /** Ctor. */
-    public UuidType(boolean nullable) {
-        super(nullable);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
-        sb.append("UUID");
-    }
-
-    /** {@inheritDoc} */
-    @Override public Type storageType() {
-        return UUID.class;
-    }
+public class WrongClassUseOrder implements Message {
+    @Order(0)
+    private int id;
 }

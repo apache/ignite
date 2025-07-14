@@ -95,6 +95,21 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
         );
     }
 
+    /** */
+    @Test
+    public void testCorrelatesInJoin() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("T0", IgniteDistributions.single(), "ID", Integer.class, "PADDING_COL1", Integer.class,
+                "PADDING_COL2", Integer.class, "VAL", Integer.class),
+            createTable("T1", IgniteDistributions.single(), "ID", Integer.class, "VAL", Integer.class)
+        );
+
+        String sql = "SELECT T1.ID FROM T0 JOIN T1 ON T1.ID = (SELECT inner_t1.ID FROM T1 AS inner_t1 WHERE inner_t1.VAL = t0.VAL)";
+
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(hasChildThat(isTableScan("T0"))).and(hasChildThat(isTableScan("T1")))));
+    }
+
     /**
      * Test verifies resolving of collisions in the left hand of correlates.
      */

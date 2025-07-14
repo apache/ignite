@@ -18,12 +18,9 @@
 package org.apache.ignite.internal;
 
 import java.io.Externalizable;
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,13 +31,16 @@ public class GridJobCancelRequest implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private IgniteUuid sesId;
+    @Order(0)
+    private IgniteUuid sessionId;
 
     /** */
+    @Order(1)
     private IgniteUuid jobId;
 
     /** */
-    private boolean sys;
+    @Order(2)
+    private boolean system;
 
     /**
      * No-op constructor to support {@link Externalizable} interface.
@@ -51,36 +51,36 @@ public class GridJobCancelRequest implements Message {
     }
 
     /**
-     * @param sesId Task session ID.
+     * @param sessionId Task session ID.
      */
-    public GridJobCancelRequest(IgniteUuid sesId) {
-        assert sesId != null;
+    public GridJobCancelRequest(IgniteUuid sessionId) {
+        assert sessionId != null;
 
-        this.sesId = sesId;
+        this.sessionId = sessionId;
     }
 
     /**
-     * @param sesId Task session ID.
+     * @param sessionId Task session ID.
      * @param jobId Job ID.
      */
-    public GridJobCancelRequest(@Nullable IgniteUuid sesId, @Nullable IgniteUuid jobId) {
-        assert sesId != null || jobId != null;
+    public GridJobCancelRequest(@Nullable IgniteUuid sessionId, @Nullable IgniteUuid jobId) {
+        assert sessionId != null || jobId != null;
 
-        this.sesId = sesId;
+        this.sessionId = sessionId;
         this.jobId = jobId;
     }
 
     /**
-     * @param sesId Session ID.
+     * @param sessionId Session ID.
      * @param jobId Job ID.
-     * @param sys System flag.
+     * @param system System flag.
      */
-    public GridJobCancelRequest(@Nullable IgniteUuid sesId, @Nullable IgniteUuid jobId, boolean sys) {
-        assert sesId != null || jobId != null;
+    public GridJobCancelRequest(@Nullable IgniteUuid sessionId, @Nullable IgniteUuid jobId, boolean system) {
+        assert sessionId != null || jobId != null;
 
-        this.sesId = sesId;
+        this.sessionId = sessionId;
         this.jobId = jobId;
-        this.sys = sys;
+        this.system = system;
     }
 
     /**
@@ -89,7 +89,7 @@ public class GridJobCancelRequest implements Message {
      * @return Execution ID of task to be cancelled.
      */
     @Nullable public IgniteUuid sessionId() {
-        return sesId;
+        return sessionId;
     }
 
     /**
@@ -107,81 +107,33 @@ public class GridJobCancelRequest implements Message {
      *       has already been reduced and further results are no longer interesting.
      */
     public boolean system() {
-        return sys;
+        return system;
+    }
+
+    /**
+     * Gets execution ID of task to be cancelled.
+     */
+    public void sessionId(IgniteUuid sesId) {
+        this.sessionId = sesId;
+    }
+
+    /**
+     * Gets session ID of job to be cancelled. If {@code null}, then
+     * all jobs for the specified task execution ID will be cancelled.
+     */
+    public void jobId(IgniteUuid jobId) {
+        this.jobId = jobId;
+    }
+
+    /**
+     */
+    public void system(boolean system) {
+        this.system = system;
     }
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIgniteUuid(jobId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeIgniteUuid(sesId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeBoolean(sys))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                jobId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                sesId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                sys = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
