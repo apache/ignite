@@ -46,12 +46,18 @@ public class PlanSplitterTest extends AbstractPlannerTest {
         IgniteDistribution distribution1,
         ColocationGroup colocationGrp1,
         IgniteDistribution distribution2,
-        ColocationGroup colocationGrp2
+        ColocationGroup colocationGrp2,
+        int... sizes
     ) {
+        assert sizes.length < 3;
+
+        int sz1 = sizes.length > 0 ? sizes[0] : DEFAULT_TBL_SIZE;
+        int sz2 = sizes.length > 1 ? sizes[1] : DEFAULT_TBL_SIZE;
+
         return createSchema(
-            createTable("DEVELOPER", distribution1, "ID", INTEGER, "NAME", VARCHAR, "PROJECTID", INTEGER)
+            createTable("DEVELOPER", sz1, distribution1, "ID", INTEGER, "NAME", VARCHAR, "PROJECTID", INTEGER)
                 .setColocationGroup(colocationGrp1),
-            createTable("PROJECT", distribution2, "ID", INTEGER, "NAME", VARCHAR, "VER", INTEGER)
+            createTable("PROJECT", sz2, distribution2, "ID", INTEGER, "NAME", VARCHAR, "VER", INTEGER)
                 .setColocationGroup(colocationGrp2)
         );
     }
@@ -75,13 +81,12 @@ public class PlanSplitterTest extends AbstractPlannerTest {
                 select(nodes, 2, 0),
                 select(nodes, 0, 1),
                 select(nodes, 1, 2)
-            ))
+            )),
+            5
         );
 
-        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 FROM PUBLIC.Developer d " +
+            "JOIN (SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp) p " +
             "ON d.id = p.id0";
 
         // Data is partitioned and colocated, can be joined on remote nodes, one exchange is required to transfer to
@@ -99,10 +104,8 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             ColocationGroup.forNodes(select(nodes, 0, 1, 2, 3))
         );
 
-        String sql = "SELECT d.id, (d.id + 1) as id2, d.name, d.projectId, p.id0, p.ver0 " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
+        String sql = "SELECT d.id, (d.id + 1) as id2, d.name, d.projectId, p.id0, p.ver0 FROM PUBLIC.Developer d " +
+            "JOIN (SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp) p " +
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) = ?";
 
@@ -122,13 +125,12 @@ public class PlanSplitterTest extends AbstractPlannerTest {
                 select(nodes, 2, 3),
                 select(nodes, 3, 0),
                 select(nodes, 0, 1)
-            ))
+            )),
+            15
         );
 
-        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 FROM PUBLIC.Developer d " +
+            "JOIN (SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp) p " +
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) = ?";
 
@@ -149,13 +151,12 @@ public class PlanSplitterTest extends AbstractPlannerTest {
                 select(nodes, 0),
                 select(nodes, 1),
                 select(nodes, 2)
-            ))
+            )),
+            10
         );
 
-        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 FROM PUBLIC.Developer d " +
+            "JOIN (SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp) p " +
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) = ?";
 
@@ -176,13 +177,12 @@ public class PlanSplitterTest extends AbstractPlannerTest {
                 select(nodes, 1),
                 select(nodes, 2),
                 select(nodes, 3)
-            ))
+            )),
+            15
         );
 
-        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 FROM PUBLIC.Developer d " +
+            "JOIN (SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp) p " +
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) = ?";
 
@@ -202,10 +202,8 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             ColocationGroup.forNodes(select(nodes, 0, 1))
         );
 
-        String sql = "SELECT p.id0, d.id " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
+        String sql = "SELECT p.id0, d.id FROM PUBLIC.Developer d " +
+            "JOIN (SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp) p " +
             "ON d.projectId = p.ver0 " +
             "WHERE (d.projectId + 1) = ?";
 
@@ -224,10 +222,8 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             ColocationGroup.forNodes(select(nodes, 1))
         );
 
-        String sql = "SELECT p.id0, d.id " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
+        String sql = "SELECT p.id0, d.id FROM PUBLIC.Developer d " +
+            "JOIN (SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp) p " +
             "ON d.projectId = p.ver0 " +
             "WHERE (d.projectId + 1) = ?";
 
@@ -246,10 +242,8 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             ColocationGroup.forNodes(select(nodes, 1, 3))
         );
 
-        String sql = "SELECT p.id0, d.id " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
+        String sql = "SELECT p.id0, d.id FROM PUBLIC.Developer d " +
+            "JOIN (SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp) p " +
             "ON d.projectId = p.ver0 " +
             "WHERE (d.projectId + 1) = ?";
 

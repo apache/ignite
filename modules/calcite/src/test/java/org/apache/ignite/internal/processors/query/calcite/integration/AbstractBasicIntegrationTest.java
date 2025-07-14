@@ -247,7 +247,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();
-        } finally {
+        }
+        finally {
             time = U.nanosToMillis(System.nanoTime() - time);
 
             System.err.println("TEST | time: " + time);
