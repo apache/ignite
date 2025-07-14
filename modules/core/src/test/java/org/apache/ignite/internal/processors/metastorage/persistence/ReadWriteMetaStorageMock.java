@@ -33,7 +33,7 @@ public class ReadWriteMetaStorageMock implements ReadWriteMetastorage {
     public final Map<String, byte[]> cache = new ConcurrentSkipListMap<>();
 
     /** {@inheritDoc} */
-    @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
+    @Override public void write(@NotNull String key, @NotNull Object val) throws IgniteCheckedException {
         assertLockIsHeldByWorkerThread();
 
         cache.put(key, TEST_JDK_MARSHALLER.marshal(val));

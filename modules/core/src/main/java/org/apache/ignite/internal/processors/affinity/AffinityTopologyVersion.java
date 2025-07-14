@@ -32,6 +32,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersion>, Externalizable, Message {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     public static final AffinityTopologyVersion NONE = new AffinityTopologyVersion(-1, 0);
 
     /** */

@@ -630,7 +630,7 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
      * @param obj Object to write.
      * @throws IgniteCheckedException Throws in case of errors.
      */
-    private void writeMeta(String key, Serializable obj) throws IgniteCheckedException {
+    private void writeMeta(String key, Object obj) throws IgniteCheckedException {
         assert obj != null;
 
         if (!checkMetastore("Unable to save metadata to %s", key))

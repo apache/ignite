@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
-import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.NotNull;
 
@@ -25,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface ReadWriteMetastorage extends ReadOnlyMetastorage {
     /** */
-    public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException;
+    public void write(@NotNull String key, @NotNull Object val) throws IgniteCheckedException;
 
     /** */
     public void writeRaw(String key, byte[] data) throws IgniteCheckedException;

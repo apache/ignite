@@ -1307,7 +1307,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         ctx.cache().context().database().checkpointReadLock();
 
         try {
-            metaStorage.write(ENCRYPTION_KEYS_PREFIX + grpId, (Serializable)keys);
+            metaStorage.write(ENCRYPTION_KEYS_PREFIX + grpId, keys);
         }
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
@@ -1326,7 +1326,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         ctx.cache().context().database().checkpointReadLock();
 
         try {
-            metaStorage.write(REENCRYPTED_WAL_SEGMENTS, (Serializable)grpKeys.trackedWalSegments());
+            metaStorage.write(REENCRYPTED_WAL_SEGMENTS, grpKeys.trackedWalSegments());
         }
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
