@@ -99,7 +99,7 @@ public final class GridMessageCollection<M extends Message> implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("msgs", msgs, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(msgs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -113,12 +113,9 @@ public final class GridMessageCollection<M extends Message> implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                msgs = reader.readCollection("msgs", MessageCollectionItemType.MSG);
+                msgs = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -127,7 +124,7 @@ public final class GridMessageCollection<M extends Message> implements Message {
 
         }
 
-        return reader.afterMessageRead(GridMessageCollection.class);
+        return true;
     }
 
     /** {@inheritDoc} */

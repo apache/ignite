@@ -187,7 +187,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         NodeFileTree ft = grid(2).context().pdsFolderResolver().fileTree();
 
-        File grpDir = ft.cacheStorage(grid(2).cachex(getCacheName(0)).configuration());
+        File[] grpDirs = ft.cacheStorages(grid(2).cachex(getCacheName(0)).configuration());
 
         stopGrid(2, true);
 
@@ -208,7 +208,8 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
                     contains("Joining node has caches with data which are not presented on cluster")));
         }
 
-        U.delete(grpDir);
+        for (File grpDir : grpDirs)
+            U.delete(grpDir);
 
         IgniteEx node2 = startGrid(2);
 

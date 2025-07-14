@@ -229,19 +229,19 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
         switch (writer.state()) {
             case 21:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeUuid("nearNodeId", nearNodeId))
+                if (!writer.writeUuid(nearNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -255,15 +255,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 21:
-                miniId = reader.readInt("miniId");
+                miniId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -271,7 +268,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 22:
-                nearNodeId = reader.readUuid("nearNodeId");
+                nearNodeId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -279,7 +276,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 23:
-                updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
+                updCntrs = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -288,7 +285,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
         }
 
-        return reader.afterMessageRead(GridDhtTxFinishRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -418,7 +418,7 @@ public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
 
         assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 > SUBSTRING(?::VARCHAR, 1, 2) || '3'",
             exact(1),
-            range("||(SUBSTRING(?0, 1, 2), _UTF-8'3')", null, false, true)
+            range("||(SUBSTRING(CAST(?0):VARCHAR CHARACTER SET \"UTF-8\", 1, 2), _UTF-8'3')", null, false, true)
         );
 
         assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 > SUBSTRING(C3::VARCHAR, 1, 2) || '3'",

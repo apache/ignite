@@ -373,9 +373,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Name of the JDK. */
     private static String jdkName;
 
-    /** Version of the JDK. */
-    private static String jdkVer;
-
     /** Name of the JVM implementation. */
     private static String jvmImplName;
 
@@ -588,7 +585,6 @@ public abstract class IgniteUtils extends CommonUtils {
         String javaRtName = System.getProperty("java.runtime.name");
         String javaRtVer = System.getProperty("java.runtime.version");
         String jdkName = System.getProperty("java.specification.name");
-        String jdkVer = System.getProperty("java.specification.version");
         String osVer = System.getProperty("os.version");
         String jvmImplVer = System.getProperty("java.vm.version");
         String jvmImplVendor = System.getProperty("java.vm.vendor");
@@ -604,7 +600,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
         // Copy auto variables to static ones.
         IgniteUtils.jdkName = jdkName;
-        IgniteUtils.jdkVer = jdkVer;
         IgniteUtils.jdkStr = jdkStr;
         IgniteUtils.jvmImplName = jvmImplName;
 
@@ -4811,6 +4806,28 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
+     * @param in Input.
+     * @return Deserialized set.
+     * @throws IOException If deserialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @Nullable public static <E> LinkedHashSet<E> readLinkedSet(ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            return null;
+
+        LinkedHashSet<E> set = new LinkedHashSet<>(size);
+
+        for (int i = 0; i < size; i++)
+            set.add((E)in.readObject());
+
+        return set;
+    }
+
+    /**
      * Writes string to output stream accounting for {@code null} values.
      * <p>
      * Limitation for max string lenght of <code>65535</code> bytes is caused by {@link DataOutput#writeUTF}
@@ -5710,15 +5727,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Gets JDK version.
-     *
-     * @return JDK version.
-     */
-    public static String jdkVersion() {
-        return jdkVer;
-    }
-
-    /**
      * Indicates whether current OS is Mac OS.
      *
      * @return {@code true} if current OS is Mac OS - {@code false} otherwise.
@@ -5777,33 +5785,6 @@ public abstract class IgniteUtils extends CommonUtils {
             verStr += '-' + buildDate;
 
         return IgniteProductVersion.fromString(verStr);
-    }
-
-    /**
-     * Get major Java version from string.
-     *
-     * @param verStr Version string.
-     * @return Major version or zero if failed to resolve.
-     */
-    public static int majorJavaVersion(String verStr) {
-        if (F.isEmpty(verStr))
-            return 0;
-
-        try {
-            String[] parts = verStr.split("\\.");
-
-            int major = Integer.parseInt(parts[0]);
-
-            if (parts.length == 1)
-                return major;
-
-            int minor = Integer.parseInt(parts[1]);
-
-            return major == 1 ? minor : major;
-        }
-        catch (Exception e) {
-            return 0;
-        }
     }
 
     /**
@@ -8269,9 +8250,6 @@ public abstract class IgniteUtils extends CommonUtils {
         assert buf != null;
         assert buf.hasArray();
 
-        if (writer != null)
-            writer.setCurrentWriteClass(msg.getClass());
-
         boolean finished = false;
         int cnt = 0;
 
@@ -8816,28 +8794,6 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         return cnt;
-    }
-
-    /**
-     * @param x X.
-     * @param less Less.
-     */
-    public static int nearestPow2(int x, boolean less) {
-        assert x > 0 : "can not calculate for less zero";
-
-        long y = 1;
-
-        while (y < x) {
-            if (y * 2 > Integer.MAX_VALUE)
-                return (int)y;
-
-            y *= 2;
-        }
-
-        if (less)
-            y /= 2;
-
-        return (int)y;
     }
 
     /**

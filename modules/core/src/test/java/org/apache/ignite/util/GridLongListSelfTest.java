@@ -193,7 +193,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationDefaultConstructor() {
-        MessageWriter writer = new DirectMessageWriter();
+        MessageWriter writer = new DirectMessageWriter(null);
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
@@ -268,7 +268,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationConstructorWithSize() {
-        MessageWriter writer = new DirectMessageWriter();
+        MessageWriter writer = new DirectMessageWriter(null);
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
@@ -343,7 +343,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationConstructorWithZeroSize() {
-        MessageWriter writer = new DirectMessageWriter();
+        MessageWriter writer = new DirectMessageWriter(null);
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
@@ -418,7 +418,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationCopyConstructor() {
-        MessageWriter writer = new DirectMessageWriter();
+        MessageWriter writer = new DirectMessageWriter(null);
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
@@ -480,7 +480,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationInsufficientBuffer() {
-        MessageWriter writer = new DirectMessageWriter();
+        MessageWriter writer = new DirectMessageWriter(null);
 
         ByteBuffer buf = ByteBuffer.allocate(10);
 

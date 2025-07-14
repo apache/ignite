@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.File;
 import java.io.Serializable;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
@@ -1201,14 +1202,19 @@ public class ClusterCachesInfo {
         if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
             return false;
 
-        String cacheDir = ctx.pdsFolderResolver().fileTree().cacheStorage(ccfg).getName();
+        for (File cacheStorage : ctx.pdsFolderResolver().fileTree().cacheStorages(ccfg)) {
+            String cacheDir = cacheStorage.getName();
 
-        try {
-            return !cacheDir.endsWith(CU.cacheOrGroupName(ccfg));
+            try {
+                if (!cacheDir.endsWith(CU.cacheOrGroupName(ccfg)))
+                    return true;
+            }
+            catch (InvalidPathException ignored) {
+                return true;
+            }
         }
-        catch (InvalidPathException ignored) {
-            return true;
-        }
+
+        return false;
     }
 
     /**
@@ -2594,7 +2600,11 @@ public class ClusterCachesInfo {
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
             "storagePath", "Storage path",
-            cfg.getStoragePath(), startCfg.getStoragePath(), true);
+            cfg.getStoragePaths(), startCfg.getStoragePaths(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
+            "indexPath", "Index path",
+            cfg.getIndexPath(), startCfg.getIndexPath(), true);
     }
 
     /**

@@ -154,31 +154,31 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
+                if (!writer.writeIgniteUuid(clsLdrId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
+                if (!writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeBoolean("locDepOwner", locDepOwner))
+                if (!writer.writeBoolean(locDepOwner))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeMap("participants", participants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
+                if (!writer.writeMap(participants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeString("userVer", userVer))
+                if (!writer.writeString(userVer))
                     return false;
 
                 writer.incrementState();
@@ -192,12 +192,9 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                clsLdrId = reader.readIgniteUuid("clsLdrId");
+                clsLdrId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -207,7 +204,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
             case 1:
                 byte depModeOrd;
 
-                depModeOrd = reader.readByte("depMode");
+                depModeOrd = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -217,7 +214,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
                 reader.incrementState();
 
             case 2:
-                locDepOwner = reader.readBoolean("locDepOwner");
+                locDepOwner = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -225,7 +222,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
                 reader.incrementState();
 
             case 3:
-                participants = reader.readMap("participants", MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
+                participants = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -233,7 +230,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
                 reader.incrementState();
 
             case 4:
-                userVer = reader.readString("userVer");
+                userVer = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -242,7 +239,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
 
         }
 
-        return reader.afterMessageRead(GridDeploymentInfoBean.class);
+        return true;
     }
 
     /** {@inheritDoc} */

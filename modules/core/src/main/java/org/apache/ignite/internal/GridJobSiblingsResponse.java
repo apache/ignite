@@ -96,7 +96,7 @@ public class GridJobSiblingsResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("siblingsBytes", siblingsBytes))
+                if (!writer.writeByteArray(siblingsBytes))
                     return false;
 
                 writer.incrementState();
@@ -110,12 +110,9 @@ public class GridJobSiblingsResponse implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                siblingsBytes = reader.readByteArray("siblingsBytes");
+                siblingsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -124,7 +121,7 @@ public class GridJobSiblingsResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(GridJobSiblingsResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */

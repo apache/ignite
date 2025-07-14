@@ -281,6 +281,10 @@ namespace ignite
                 std::string modulesPath = home + "/modules";
                 std::string modulesCp = ClasspathExploded(modulesPath, true);
                 res.append(modulesCp);
+
+                std::string binaryPath = home + "/modules/binary";
+                std::string binaryCp = ClasspathExploded(binaryPath, true);
+                res.append(binaryCp);
             }
 
             // 2. Add regular jars from "libs" folder excluding "optional".

@@ -62,7 +62,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
     private <T extends Message> T doMarshalUnmarshal(T srcMsg) {
         ByteBuffer buf = ByteBuffer.allocate(8 * 1024);
 
-        boolean fullyWritten = loopBuffer(buf, 0, buf0 -> srcMsg.writeTo(buf0, new DirectMessageWriter()));
+        boolean fullyWritten = loopBuffer(buf, 0, buf0 -> srcMsg.writeTo(buf0, new DirectMessageWriter(msgFactory)));
         assertTrue("The message was not written completely.", fullyWritten);
 
         buf.flip();

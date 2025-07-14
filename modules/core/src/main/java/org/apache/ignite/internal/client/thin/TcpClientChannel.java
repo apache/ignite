@@ -93,6 +93,7 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_7_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.AUTHORIZATION;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.BITMAP_FEATURES;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.PARTITION_AWARENESS;
+import static org.apache.ignite.internal.processors.platform.client.ClientStatus.SECURITY_VIOLATION;
 
 /**
  * Implements {@link ClientChannel} over TCP.
@@ -570,14 +571,13 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             err = null;
             res = msgSize > hdrSize ? buf : null;
         }
-        else if (status == ClientStatus.SECURITY_VIOLATION) {
-            err = new ClientAuthorizationException();
-            res = null;
-        }
         else {
             String errMsg = ClientUtils.createBinaryReader(null, dataInput).readString();
 
-            err = new ClientServerError(errMsg, status, resId);
+            err = status == SECURITY_VIOLATION
+                ? new ClientAuthorizationException(errMsg)
+                : new ClientServerError(errMsg, status, resId);
+
             res = null;
         }
 

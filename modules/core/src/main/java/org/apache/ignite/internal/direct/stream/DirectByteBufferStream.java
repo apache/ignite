@@ -761,9 +761,7 @@ public class DirectByteBufferStream {
                 try {
                     writer.beforeInnerMessageWrite();
 
-                    writer.setCurrentWriteClass(msg.getClass());
-
-                    lastFinished = msg.writeTo(buf, writer);
+                    lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, buf, writer);
                 }
                 finally {
                     writer.afterInnerMessageWrite(lastFinished);
@@ -1338,9 +1336,7 @@ public class DirectByteBufferStream {
             try {
                 reader.beforeInnerMessageRead();
 
-                reader.setCurrentReadClass(msg.getClass());
-
-                lastFinished = msg.readFrom(buf, reader);
+                lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, buf, reader);
             }
             finally {
                 reader.afterInnerMessageRead(lastFinished);

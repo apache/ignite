@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -97,15 +96,13 @@ public abstract class AbstractCommunicationMessageSerializationTest {
 
         initializeMessage(msg);
 
-        while (!msg.writeTo(TEST_BYTE_BUFFER, writer)) {
+        while (!msgFactory.serializer(msgType).writeTo(msg, TEST_BYTE_BUFFER, writer)) {
             // No-op.
         }
 
         msg = msgFactory.create(msgType);
 
-        reader.setCurrentReadClass(msg.getClass());
-
-        while (!msg.readFrom(TEST_BYTE_BUFFER, reader)) {
+        while (!msgFactory.serializer(msgType).readFrom(msg, TEST_BYTE_BUFFER, reader)) {
             // No-op.
         }
 
@@ -121,7 +118,7 @@ public abstract class AbstractCommunicationMessageSerializationTest {
     /** */
     protected abstract static class AbstractTestMessageWriter implements MessageWriter {
         /** */
-        private final Collection<T2<String, Class<?>>> writtenFields = new ArrayList<>();
+        private final Collection<Class<?>> writtenFields = new ArrayList<>();
 
         /** */
         private int state;
@@ -138,9 +135,9 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** */
-        private boolean writeField(String name, Class<?> type) {
+        private boolean writeField(Class<?> type) {
             if (position < capacity) {
-                writtenFields.add(new T2<>(name, type));
+                writtenFields.add(type);
 
                 position++;
 
@@ -152,16 +149,8 @@ public abstract class AbstractCommunicationMessageSerializationTest {
             return false;
         }
 
-        /** */
-        public Collection<T2<String, Class<?>>> writtenFields() {
-            return writtenFields;
-        }
-
         /** {@inheritDoc} */
         @Override public void setBuffer(ByteBuffer buf) {}
-
-        /** {@inheritDoc} */
-        @Override public void setCurrentWriteClass(Class<? extends Message> msgCls) {}
 
         /** {@inheritDoc} */
         @Override public boolean writeHeader(short type) {
@@ -169,139 +158,139 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeByte(String name, byte val) {
-            return writeField(name, byte.class);
+        @Override public boolean writeByte(byte val) {
+            return writeField(byte.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeShort(String name, short val) {
-            return writeField(name, short.class);
+        @Override public boolean writeShort(short val) {
+            return writeField(short.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeInt(String name, int val) {
-            return writeField(name, int.class);
+        @Override public boolean writeInt(int val) {
+            return writeField(int.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeLong(String name, long val) {
-            return writeField(name, long.class);
+        @Override public boolean writeLong(long val) {
+            return writeField(long.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeFloat(String name, float val) {
-            return writeField(name, float.class);
+        @Override public boolean writeFloat(float val) {
+            return writeField(float.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeDouble(String name, double val) {
-            return writeField(name, double.class);
+        @Override public boolean writeDouble(double val) {
+            return writeField(double.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeChar(String name, char val) {
-            return writeField(name, char.class);
+        @Override public boolean writeChar(char val) {
+            return writeField(char.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeBoolean(String name, boolean val) {
-            return writeField(name, boolean.class);
+        @Override public boolean writeBoolean(boolean val) {
+            return writeField(boolean.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeByteArray(String name, byte[] val) {
-            return writeField(name, byte[].class);
+        @Override public boolean writeByteArray(byte[] val) {
+            return writeField(byte[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeByteArray(String name, byte[] val, long off, int len) {
-            return writeField(name, byte[].class);
+        @Override public boolean writeByteArray(byte[] val, long off, int len) {
+            return writeField(byte[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeShortArray(String name, short[] val) {
-            return writeField(name, short[].class);
+        @Override public boolean writeShortArray(short[] val) {
+            return writeField(short[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeIntArray(String name, int[] val) {
-            return writeField(name, int[].class);
+        @Override public boolean writeIntArray(int[] val) {
+            return writeField(int[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeLongArray(String name, long[] val) {
-            return writeField(name, long[].class);
+        @Override public boolean writeLongArray(long[] val) {
+            return writeField(long[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeLongArray(String name, long[] val, int len) {
-            return writeField(name, long[].class);
+        @Override public boolean writeLongArray(long[] val, int len) {
+            return writeField(long[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeFloatArray(String name, float[] val) {
-            return writeField(name, float[].class);
+        @Override public boolean writeFloatArray(float[] val) {
+            return writeField(float[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeDoubleArray(String name, double[] val) {
-            return writeField(name, double[].class);
+        @Override public boolean writeDoubleArray(double[] val) {
+            return writeField(double[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeCharArray(String name, char[] val) {
-            return writeField(name, char[].class);
+        @Override public boolean writeCharArray(char[] val) {
+            return writeField(char[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeBooleanArray(String name, boolean[] val) {
-            return writeField(name, boolean[].class);
+        @Override public boolean writeBooleanArray(boolean[] val) {
+            return writeField(boolean[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeString(String name, String val) {
-            return writeField(name, String.class);
+        @Override public boolean writeString(String val) {
+            return writeField(String.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeBitSet(String name, BitSet val) {
-            return writeField(name, BitSet.class);
+        @Override public boolean writeBitSet(BitSet val) {
+            return writeField(BitSet.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeUuid(String name, UUID val) {
-            return writeField(name, UUID.class);
+        @Override public boolean writeUuid(UUID val) {
+            return writeField(UUID.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeIgniteUuid(String name, IgniteUuid val) {
-            return writeField(name, IgniteUuid.class);
+        @Override public boolean writeIgniteUuid(IgniteUuid val) {
+            return writeField(IgniteUuid.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeAffinityTopologyVersion(String name, AffinityTopologyVersion val) {
-            return writeField(name, AffinityTopologyVersion.class);
+        @Override public boolean writeAffinityTopologyVersion(AffinityTopologyVersion val) {
+            return writeField(AffinityTopologyVersion.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeMessage(String name, Message val) {
-            return writeField(name, Message.class);
+        @Override public boolean writeMessage(Message val) {
+            return writeField(Message.class);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeObjectArray(String name, T[] arr, MessageCollectionItemType itemType) {
-            return writeField(name, Object[].class);
+        @Override public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType) {
+            return writeField(Object[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType) {
-            return writeField(name, Collection.class);
+        @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionItemType itemType) {
+            return writeField(Collection.class);
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> boolean writeMap(String name, Map<K, V> map, MessageCollectionItemType keyType,
+        @Override public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
             MessageCollectionItemType valType) {
-            return writeField(name, Map.class);
+            return writeField(Map.class);
         }
 
         /** {@inheritDoc} */
@@ -341,7 +330,7 @@ public abstract class AbstractCommunicationMessageSerializationTest {
     /** */
     protected abstract static class AbstractTestMessageReader implements MessageReader {
         /** */
-        private final Collection<T2<String, Class<?>>> readFields = new ArrayList<>();
+        private final Collection<Class<?>> readFields = new ArrayList<>();
 
         /** */
         private int state;
@@ -358,14 +347,9 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** */
-        public Collection<T2<String, Class<?>>> readFields() {
-            return readFields;
-        }
-
-        /** */
-        private void readField(String name, Class<?> type) {
+        private void readField(Class<?> type) {
             if (position++ < capacity)
-                readFields.add(new T2<>(name, type));
+                readFields.add(type);
         }
 
         /** {@inheritDoc} */
@@ -374,197 +358,177 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void setCurrentReadClass(Class<? extends Message> msgCls) {}
-
-        /** {@inheritDoc} */
-        @Override public boolean beforeMessageRead() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean afterMessageRead(Class<? extends Message> msgCls) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte readByte(String name) {
-            readField(name, byte.class);
+        @Override public byte readByte() {
+            readField(byte.class);
 
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public short readShort(String name) {
-            readField(name, short.class);
+        @Override public short readShort() {
+            readField(short.class);
 
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public int readInt(String name) {
-            readField(name, int.class);
+        @Override public int readInt() {
+            readField(int.class);
 
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public int readInt(String name, int dflt) {
-            readField(name, int.class);
+        @Override public long readLong() {
+            readField(long.class);
 
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public long readLong(String name) {
-            readField(name, long.class);
+        @Override public float readFloat() {
+            readField(float.class);
 
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public float readFloat(String name) {
-            readField(name, float.class);
+        @Override public double readDouble() {
+            readField(double.class);
 
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public double readDouble(String name) {
-            readField(name, double.class);
+        @Override public char readChar() {
+            readField(char.class);
 
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public char readChar(String name) {
-            readField(name, char.class);
-
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readBoolean(String name) {
-            readField(name, boolean.class);
+        @Override public boolean readBoolean() {
+            readField(boolean.class);
 
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] readByteArray(String name) {
-            readField(name, byte[].class);
+        @Override public byte[] readByteArray() {
+            readField(byte[].class);
 
             return new byte[0];
         }
 
         /** {@inheritDoc} */
-        @Override public short[] readShortArray(String name) {
-            readField(name, short[].class);
+        @Override public short[] readShortArray() {
+            readField(short[].class);
 
             return new short[0];
         }
 
         /** {@inheritDoc} */
-        @Override public int[] readIntArray(String name) {
-            readField(name, int[].class);
+        @Override public int[] readIntArray() {
+            readField(int[].class);
 
             return new int[0];
         }
 
         /** {@inheritDoc} */
-        @Override public long[] readLongArray(String name) {
-            readField(name, long[].class);
+        @Override public long[] readLongArray() {
+            readField(long[].class);
 
             return new long[0];
         }
 
         /** {@inheritDoc} */
-        @Override public float[] readFloatArray(String name) {
-            readField(name, float[].class);
+        @Override public float[] readFloatArray() {
+            readField(float[].class);
 
             return new float[0];
         }
 
         /** {@inheritDoc} */
-        @Override public double[] readDoubleArray(String name) {
-            readField(name, double[].class);
+        @Override public double[] readDoubleArray() {
+            readField(double[].class);
 
             return new double[0];
         }
 
         /** {@inheritDoc} */
-        @Override public char[] readCharArray(String name) {
-            readField(name, char[].class);
+        @Override public char[] readCharArray() {
+            readField(char[].class);
 
             return new char[0];
         }
 
         /** {@inheritDoc} */
-        @Override public boolean[] readBooleanArray(String name) {
-            readField(name, boolean[].class);
+        @Override public boolean[] readBooleanArray() {
+            readField(boolean[].class);
 
             return new boolean[0];
         }
 
         /** {@inheritDoc} */
-        @Override public String readString(String name) {
-            readField(name, String.class);
+        @Override public String readString() {
+            readField(String.class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public BitSet readBitSet(String name) {
-            readField(name, BitSet.class);
+        @Override public BitSet readBitSet() {
+            readField(BitSet.class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public UUID readUuid(String name) {
-            readField(name, UUID.class);
+        @Override public UUID readUuid() {
+            readField(UUID.class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteUuid readIgniteUuid(String name) {
-            readField(name, IgniteUuid.class);
+        @Override public IgniteUuid readIgniteUuid() {
+            readField(IgniteUuid.class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public AffinityTopologyVersion readAffinityTopologyVersion(String name) {
-            readField(name, AffinityTopologyVersion.class);
+        @Override public AffinityTopologyVersion readAffinityTopologyVersion() {
+            readField(AffinityTopologyVersion.class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends Message> T readMessage(String name) {
-            readField(name, Message.class);
+        @Override public <T extends Message> T readMessage() {
+            readField(Message.class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T[] readObjectArray(String name, MessageCollectionItemType itemType, Class<T> itemCls) {
-            readField(name, Object[].class);
+        @Override public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls) {
+            readField(Object[].class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <C extends Collection<?>> C readCollection(String name, MessageCollectionItemType itemType) {
-            readField(name, Collection.class);
+        @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType) {
+            readField(Collection.class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <M extends Map<?, ?>> M readMap(String name, MessageCollectionItemType keyType,
+        @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
             MessageCollectionItemType valType, boolean linked) {
-            readField(name, Map.class);
+            readField(Map.class);
 
             return null;
         }

@@ -115,11 +115,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
             return handle0(req);
         }
         catch (SecurityException ex) {
-            throw new IgniteClientException(
-                ClientStatus.SECURITY_VIOLATION,
-                "Client is not authorized to perform this operation",
-                ex
-            );
+            throw IgniteClientException.wrapAuthorizationExeption(ex);
         }
     }
 

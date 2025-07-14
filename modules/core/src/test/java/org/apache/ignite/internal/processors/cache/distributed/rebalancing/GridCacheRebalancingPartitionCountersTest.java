@@ -131,7 +131,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
         boolean primaryRemoved = false;
 
         for (int i = 0; i < PARTITIONS_CNT; i++) {
-            Path dirPath = ft.cacheStorage(ccfg).toPath();
+            Path dirPath = ft.defaultCacheStorage(ccfg).toPath();
 
             info("Path: " + dirPath.toString());
 
