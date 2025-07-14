@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelVisitor;
-import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.SchemaPlus;
@@ -62,7 +61,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -545,11 +543,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         IgniteRel phys = physicalPlan(sql, publicSchema);
 
-        List<Fragment> fragments = splitPlan(phys).fragments();
-
-        assertEquals(2, fragments.size());
-        assertEquals(1, fragments.stream().filter(fr -> fr.root() instanceof Join).count());
-        assertEquals(1, fragments.stream().filter(fr -> fr.root() instanceof IgniteSender).count());
+        assertEquals(3, splitPlan(phys).fragments().size());
     }
 
     /**
@@ -665,11 +659,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         IgniteRel phys = physicalPlan(sql, publicSchema);
 
-        List<Fragment> fragments = splitPlan(phys).fragments();
-
-        assertEquals(2, fragments.size());
-        assertEquals(1, fragments.stream().filter(fr -> fr.root() instanceof Join).count());
-        assertEquals(1, fragments.stream().filter(fr -> fr.root() instanceof IgniteSender).count());
+        assertEquals(3, splitPlan(phys).fragments().size());
     }
 
     /**

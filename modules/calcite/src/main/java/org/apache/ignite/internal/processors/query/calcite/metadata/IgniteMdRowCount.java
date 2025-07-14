@@ -39,6 +39,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.IntPair;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
@@ -67,36 +68,78 @@ public class IgniteMdRowCount extends RelMdRowCount {
         return rel.estimateRowCount(mq);
     }
 
-    /** Estimates rows number of a join product. If can't, falls back to Calcite's default implementation. */
-    public static @Nullable Double joinRowCount(RelMetadataQuery mq, Join join) {
-        if (join.getJoinType() != JoinRelType.INNER)
-            return RelMdUtil.getJoinRowCount(mq, join, join.getCondition());
+    /**
+     * Estimates the number of rows produced by a join operation.
+     *
+     * <p>This method calculates an estimated row count for a join by analyzing the join type,
+     * join keys, and the cardinality of the left and right inputs. It provides specialized
+     * handling for primary key and foreign key relationships (see {@link JoiningRelationType for details}).
+     * When certain metadata is unavailable or when specific conditions are not met, it falls back to
+     * Calcite's default implementation for estimating the row count.
+     *
+     * <p>Implementation details:</p>
+     * <ul>
+     *   <li>If the join type is not {@link JoinRelType#INNER}, Calcite's default implementation is used.</li>
+     *   <li>If the join is non-equi join, Calcite's default implementation is used.</li>
+     *   <li>The row counts of the left and right inputs are retrieved using
+     *   {@link RelMetadataQuery#getRowCount}. If either value is unavailable, the result is {@code null}.</li>
+     *   <li>If the row counts are very small (≤ 1.0), the method uses the maximum row count as a fallback.</li>
+     *   <li>Join key origins are resolved for the left and right inputs, and relationships between tables
+     *   (e.g., primary key or foreign key associations) are identified and grouped into join contexts.</li>
+     *   <li>If no valid join context is found, the method falls back to Calcite's implementation.</li>
+     *   <li>The base row count is determined by the type of join relationship:
+     *       <ul>
+     *           <li>For primary key-to-primary key joins, the row count is based on the smaller table,
+     *           adjusted by a percentage of the larger table's rows.</li>
+     *           <li>For foreign key joins, the base table is determined based on which table is
+     *           joined using non-primary key columns.</li>
+     *       </ul>
+     *   </li>
+     *   <li>An additional adjustment factor is applied for post-filtration conditions, such as extra join keys
+     *   or non-equi conditions.</li>
+     *   <li>If metadata for the percentage of original rows is unavailable, the adjustment defaults to 1.0.</li>
+     * </ul>
+     *
+     * <p>If none of the above criteria are satisfied, the method defaults to
+     * {@link RelMdUtil#getJoinRowCount} for the estimation.</p>
+     *
+     * @param mq The {@link RelMetadataQuery} used to retrieve metadata about relational expressions.
+     * @param rel The {@link Join} relational expression representing the join operation.
+     * @return The estimated number of rows resulting from the join, or {@code null} if the estimation cannot be determined.
+     *
+     * @see RelMetadataQuery#getRowCount
+     * @see RelMdUtil#getJoinRowCount
+     * @see JoiningRelationType
+     */
+    public static @Nullable Double joinRowCount(RelMetadataQuery mq, Join rel) {
+        if (rel.getJoinType() != JoinRelType.INNER)
+            return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
 
-        JoinInfo joinInfo = join.analyzeCondition();
+        JoinInfo joinInfo = rel.analyzeCondition();
 
         if (joinInfo.pairs().isEmpty())
-            return RelMdUtil.getJoinRowCount(mq, join, join.getCondition());
+            return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
 
-        Double leftRowCnt = mq.getRowCount(join.getLeft());
+        Double leftRowCnt = mq.getRowCount(rel.getLeft());
 
         if (leftRowCnt == null)
             return null;
 
-        Double rightRowCnt = mq.getRowCount(join.getRight());
+        Double rightRowCnt = mq.getRowCount(rel.getRight());
 
         if (rightRowCnt == null)
             return null;
 
         // Zero row count is considered as 1. If product is very small, we use maximal row count.
         if (leftRowCnt <= 1.0 || rightRowCnt <= 1.0) {
-            Double max = mq.getMaxRowCount(join);
+            Double max = mq.getMaxRowCount(rel);
 
             if (max != null && max <= 1.0)
                 return max;
         }
 
-        IntMap<KeyColumnOrigin> leftColumns = findOrigins(mq, join.getLeft(), joinInfo.leftKeys);
-        IntMap<KeyColumnOrigin> rightColumns = findOrigins(mq, join.getRight(), joinInfo.rightKeys);
+        IntMap<KeyColumnOrigin> leftColumns = findOrigins(mq, rel.getLeft(), joinInfo.leftKeys);
+        IntMap<KeyColumnOrigin> rightColumns = findOrigins(mq, rel.getRight(), joinInfo.rightKeys);
 
         Map<TablesPair, JoinCtx> ctxs = new HashMap<>();
 
@@ -124,7 +167,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
         }
 
         if (ctxs.isEmpty())
-            return RelMdUtil.getJoinRowCount(mq, join, join.getCondition());
+            return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
 
         Iterator<JoinCtx> it = ctxs.values().iterator();
         JoinCtx ctx = it.next();
@@ -140,7 +183,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
         }
 
         if (ctx.joinType() == JoiningRelationType.UNKNOWN)
-            return RelMdUtil.getJoinRowCount(mq, join, join.getCondition());
+            return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
 
         double rowCnt;
         Double percentage;
@@ -154,12 +197,12 @@ public class IgniteMdRowCount extends RelMdRowCount {
             if (leftRowCnt > rightRowCnt) {
                 rowCnt = rightRowCnt;
 
-                percentage = mq.getPercentageOriginalRows(join.getLeft());
+                percentage = mq.getPercentageOriginalRows(rel.getLeft());
             }
             else {
                 rowCnt = leftRowCnt;
 
-                percentage = mq.getPercentageOriginalRows(join.getRight());
+                percentage = mq.getPercentageOriginalRows(rel.getRight());
             }
         }
         else {
@@ -167,14 +210,14 @@ public class IgniteMdRowCount extends RelMdRowCount {
             if (ctx.joinType() == JoiningRelationType.FK_ON_PK) {
                 rowCnt = leftRowCnt;
 
-                percentage = mq.getPercentageOriginalRows(join.getRight());
+                percentage = mq.getPercentageOriginalRows(rel.getRight());
             }
             else {
                 assert ctx.joinType() == JoiningRelationType.PK_ON_FK : ctx.joinType();
 
                 rowCnt = rightRowCnt;
 
-                percentage = mq.getPercentageOriginalRows(join.getLeft());
+                percentage = mq.getPercentageOriginalRows(rel.getLeft());
             }
         }
 
@@ -254,7 +297,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
         if (F.isEmpty(indexes))
             return ImmutableIntList.of();
 
-        IgniteIndex idx = indexes.get("_key_PK");
+        IgniteIndex idx = indexes.get(QueryUtils.PRIMARY_KEY_INDEX);
 
         return idx == null ? ImmutableIntList.of() : idx.collation().getKeys();
     }

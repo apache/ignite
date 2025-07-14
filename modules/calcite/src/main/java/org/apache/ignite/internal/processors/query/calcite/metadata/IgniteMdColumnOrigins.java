@@ -23,14 +23,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Calc;
+import org.apache.calcite.rel.core.Exchange;
+import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.SetOp;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableFunctionScan;
+import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
@@ -88,10 +92,33 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         return set;
     }
 
-    /** Provides column origin for Subset relation. */
-    public @Nullable Set<RelColumnOrigin> getColumnOrigins(RelSubset rel,
-        RelMetadataQuery mq, int outputColumn) {
-        return mq.getColumnOrigins(rel.stripped(), outputColumn);
+    /** */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(Join rel, RelMetadataQuery mq,
+        int iOutputColumn) {
+        int nLeftColumns = rel.getLeft().getRowType().getFieldList().size();
+        Set<RelColumnOrigin> set;
+        boolean derived = false;
+
+        if (iOutputColumn < nLeftColumns) {
+            set = mq.getColumnOrigins(rel.getLeft(), iOutputColumn);
+
+            if (rel.getJoinType().generatesNullsOnLeft())
+                derived = true;
+
+        }
+        else {
+            set = mq.getColumnOrigins(rel.getRight(), iOutputColumn - nLeftColumns);
+
+            if (rel.getJoinType().generatesNullsOnRight())
+                derived = true;
+        }
+
+        if (derived) {
+            // nulls are generated due to outer join; that counts
+            // as derivation
+            set = createDerivedColumnOrigins(set);
+        }
+        return set;
     }
 
     /** */
@@ -154,6 +181,26 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         final Set<RelColumnOrigin> set = getMultipleColumns(rexNode, input, mq);
 
         return createDerivedColumnOrigins(set);
+    }
+
+    /** */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(Filter rel, RelMetadataQuery mq, int iOutputColumn) {
+        return mq.getColumnOrigins(rel.getInput(), iOutputColumn);
+    }
+
+    /** */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(Sort rel, RelMetadataQuery mq, int iOutputColumn) {
+        return mq.getColumnOrigins(rel.getInput(), iOutputColumn);
+    }
+
+    /** */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(TableModify rel, RelMetadataQuery mq, int iOutputColumn) {
+        return mq.getColumnOrigins(rel.getInput(), iOutputColumn);
+    }
+
+    /** */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(Exchange rel, RelMetadataQuery mq, int iOutputColumn) {
+        return mq.getColumnOrigins(rel.getInput(), iOutputColumn);
     }
 
     /** */
