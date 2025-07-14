@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -42,7 +42,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     private List<KeyCacheObject> keys;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridDistributedUnlockRequest() {
         /* No-op. */

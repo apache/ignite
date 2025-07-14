@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -38,7 +39,7 @@ public final class GridMessageCollection<M extends Message> implements Message {
     private Collection<M> msgs;
 
     /**
-     *
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridMessageCollection() {
         // No-op.

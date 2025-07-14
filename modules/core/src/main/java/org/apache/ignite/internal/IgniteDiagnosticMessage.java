@@ -68,7 +68,7 @@ public class IgniteDiagnosticMessage implements Message {
     private byte[] bytes;
 
     /**
-     * Required by {@link GridIoMessageFactory}.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public IgniteDiagnosticMessage() {
         // No-op.

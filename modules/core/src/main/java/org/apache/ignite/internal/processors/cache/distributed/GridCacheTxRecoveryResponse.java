@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
@@ -48,7 +48,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
     private IgniteTxState txState;
 
     /**
-     * Empty constructor required by {@link Externalizable}
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridCacheTxRecoveryResponse() {
         // No-op.

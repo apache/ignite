@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.encryption;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -41,7 +42,9 @@ public class GenerateEncryptionKeyResponse implements Message {
     /** Master key digest that encrypted group encryption keys. */
     private byte[] masterKeyDigest;
 
-    /** */
+    /**
+     * Empty constructor required by {@link GridIoMessageFactory}.
+     */
     public GenerateEncryptionKeyResponse() {
     }
 

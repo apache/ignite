@@ -22,6 +22,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -54,7 +55,7 @@ public class CacheInvokeDirectResult implements Message {
     private byte[] errBytes;
 
     /**
-     * Required for {@link Message}.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public CacheInvokeDirectResult() {
         // No-op.

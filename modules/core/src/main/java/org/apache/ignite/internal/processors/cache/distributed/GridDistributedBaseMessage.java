@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,9 +61,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
     @GridDirectTransient
     private int cnt;
 
-    /**
-     * Empty constructor required by {@link Externalizable}
-     */
+    /** */
     protected GridDistributedBaseMessage() {
         /* No-op. */
     }

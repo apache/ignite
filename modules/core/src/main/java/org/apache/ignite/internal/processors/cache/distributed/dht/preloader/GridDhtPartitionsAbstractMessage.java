@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -46,9 +45,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     /** */
     protected byte flags;
 
-    /**
-     * Required by {@link Externalizable}.
-     */
+    /** */
     protected GridDhtPartitionsAbstractMessage() {
         // No-op.
     }

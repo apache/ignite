@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.stat.messages;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -57,7 +58,7 @@ public class StatisticsColumnData implements Message {
     private long createdAt;
 
     /**
-     * Default constructor.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public StatisticsColumnData() {
         // No-op.

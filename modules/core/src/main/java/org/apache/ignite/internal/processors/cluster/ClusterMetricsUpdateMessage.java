@@ -43,7 +43,7 @@ public class ClusterMetricsUpdateMessage implements Message {
     private Map<UUID, byte[]> allNodesMetrics;
 
     /**
-     * Required by {@link GridIoMessageFactory}.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public ClusterMetricsUpdateMessage() {
         // No-op.

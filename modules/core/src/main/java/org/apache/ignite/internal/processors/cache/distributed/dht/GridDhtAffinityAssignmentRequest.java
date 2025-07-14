@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,7 +42,7 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
     private AffinityTopologyVersion topVer;
 
     /**
-     * Empty constructor.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridDhtAffinityAssignmentRequest() {
         // No-op.

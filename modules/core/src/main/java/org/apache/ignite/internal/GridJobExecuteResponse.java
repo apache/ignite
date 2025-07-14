@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -77,8 +77,7 @@ public class GridJobExecuteResponse implements Message {
     private AffinityTopologyVersion retry;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface. This
-     * constructor is not meant to be used for other purposes.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridJobExecuteResponse() {
         // No-op.

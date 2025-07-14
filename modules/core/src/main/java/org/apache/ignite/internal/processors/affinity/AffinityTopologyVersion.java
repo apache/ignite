@@ -70,7 +70,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /**
-     * @return {@code True} if this is real topology version (neither {@link #NONE} nor {@link #ZERO}.
+     * @return {@code True} if this is real topology version (neither {@link #NONE} nor {@link #ZERO}).
      */
     public boolean initialized() {
         return topVer > 0;

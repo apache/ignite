@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -35,8 +34,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
     private UUID secSubjId;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridIoSecurityAwareMessage() {
         // No-op.

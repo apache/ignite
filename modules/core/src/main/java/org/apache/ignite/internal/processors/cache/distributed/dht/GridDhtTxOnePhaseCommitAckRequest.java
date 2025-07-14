@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -38,7 +39,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
     protected Collection<GridCacheVersion> vers;
 
     /**
-     * Default constructor.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridDhtTxOnePhaseCommitAckRequest() {
         // No-op.

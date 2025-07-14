@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -52,7 +53,7 @@ public class RecoveryLastReceivedMessage implements Message {
     private long rcvCnt;
 
     /**
-     * Default constructor required by {@link Message}.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public RecoveryLastReceivedMessage() {
         // No-op.

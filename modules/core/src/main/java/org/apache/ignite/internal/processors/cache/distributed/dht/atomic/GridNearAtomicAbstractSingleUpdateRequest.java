@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -35,9 +34,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /** */
     private static final CacheEntryPredicate[] NO_FILTER = new CacheEntryPredicate[0];
 
-    /**
-     * Empty constructor required by {@link Externalizable}.
-     */
+    /** */
     protected GridNearAtomicAbstractSingleUpdateRequest() {
         // No-op.
     }

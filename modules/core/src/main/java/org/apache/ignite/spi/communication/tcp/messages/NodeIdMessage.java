@@ -20,6 +20,7 @@ package org.apache.ignite.spi.communication.tcp.messages;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -41,7 +42,9 @@ public class NodeIdMessage implements Message {
     /** */
     private byte[] nodeIdBytes;
 
-    /** */
+    /**
+     * Empty constructor required by {@link GridIoMessageFactory}.
+     */
     public NodeIdMessage() {
         // No-op.
     }

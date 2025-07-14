@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -31,14 +32,14 @@ public class UserAuthenticateRequestMessage implements Message {
     /** User name. */
     private String name;
 
-    /** User password.. */
+    /** User password. */
     private String passwd;
 
     /** Request ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
     /**
-     *
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public UserAuthenticateRequestMessage() {
         // No-op.

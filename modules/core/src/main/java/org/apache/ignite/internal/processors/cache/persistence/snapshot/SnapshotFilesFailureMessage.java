@@ -18,8 +18,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -35,7 +35,7 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
     private String errMsg;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public SnapshotFilesFailureMessage() {
         // No-op.

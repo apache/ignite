@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -37,7 +38,7 @@ public class MetadataRequestMessage implements Message {
     private int typeId;
 
     /**
-     * Default constructor.
+     * Default constructor required by {@link GridIoMessageFactory}.
      */
     public MetadataRequestMessage() {
         //No-op.

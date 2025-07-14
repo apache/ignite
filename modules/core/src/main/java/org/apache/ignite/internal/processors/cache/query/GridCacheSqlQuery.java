@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -82,7 +83,7 @@ public class GridCacheSqlQuery implements Message {
     private transient boolean treatPartitionedAsReplicated;
 
     /**
-     * For {@link Message}.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridCacheSqlQuery() {
         // No-op.

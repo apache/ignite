@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -68,8 +67,7 @@ public class GridIoMessage implements Message, SpanTransport {
     private byte[] span;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridIoMessage() {
         // No-op.

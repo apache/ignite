@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -41,7 +42,9 @@ public class CacheVersionedValue implements Message {
     @GridToStringInclude
     private GridCacheVersion ver;
 
-    /** */
+    /**
+     * Empty constructor required by {@link GridIoMessageFactory}.
+     */
     public CacheVersionedValue() {
         // No-op.
     }

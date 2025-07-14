@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
@@ -75,7 +76,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
     private byte[] affAssignmentErrBytes;
 
     /**
-     * Empty constructor.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridDhtAffinityAssignmentResponse() {
         // No-op.

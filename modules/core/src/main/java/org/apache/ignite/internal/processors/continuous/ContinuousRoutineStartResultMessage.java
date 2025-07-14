@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.continuous;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -46,7 +47,7 @@ public class ContinuousRoutineStartResultMessage implements Message {
     private int flags;
 
     /**
-     *
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public ContinuousRoutineStartResultMessage() {
         // No-op.

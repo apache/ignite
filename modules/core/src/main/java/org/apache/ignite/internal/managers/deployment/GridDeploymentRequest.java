@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -57,8 +57,7 @@ public class GridDeploymentRequest implements Message {
     private Collection<UUID> nodeIds;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridDeploymentRequest() {
         // No-op.

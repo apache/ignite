@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Map;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -50,7 +51,9 @@ public class PartitionUpdateCountersMessage implements Message {
     @GridDirectTransient
     private Map<Integer, Long> counters;
 
-    /** */
+    /**
+     * Empty constructor required by {@link GridIoMessageFactory}.
+     */
     public PartitionUpdateCountersMessage() {
         // No-op.
     }

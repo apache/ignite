@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -39,7 +40,7 @@ public class StatisticsDecimalMessage implements Message {
     private byte[] b;
 
     /**
-     *
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public StatisticsDecimalMessage() {
         // No-op.

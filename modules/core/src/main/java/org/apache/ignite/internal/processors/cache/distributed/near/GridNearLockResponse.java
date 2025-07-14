@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
@@ -64,7 +64,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     private boolean compatibleRemapVer;
 
     /**
-     * Empty constructor (required by {@link Externalizable}).
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridNearLockResponse() {
         // No-op.

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -42,7 +43,7 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     private long futId;
 
     /**
-     *
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridNearAtomicCheckUpdateRequest() {
         // No-op.

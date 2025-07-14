@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
@@ -107,7 +106,7 @@ public class GridIoUserMessage implements Message {
     }
 
     /**
-     * Default constructor, required for {@link Externalizable}.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridIoUserMessage() {
         // No-op.

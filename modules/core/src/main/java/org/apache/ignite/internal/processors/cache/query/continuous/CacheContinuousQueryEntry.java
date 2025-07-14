@@ -22,6 +22,7 @@ import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridCodegenConverter;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -108,7 +109,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     private long filteredCnt;
 
     /**
-     * Required by {@link Message}.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public CacheContinuousQueryEntry() {
         // No-op.

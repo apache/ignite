@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -38,7 +39,7 @@ public class TxLockList implements Message {
     private List<TxLock> txLocks = new ArrayList<>();
 
     /**
-     * Default constructor.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public TxLockList() {
         // No-op.

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.stat.messages;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.query.stat.StatisticsType;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -121,7 +122,7 @@ public class StatisticsObjectData implements Message {
     }
 
     /**
-     * Default constructor.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public StatisticsObjectData() {
         // No-op.

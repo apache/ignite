@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -41,7 +42,7 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
     protected CacheObject val;
 
     /**
-     *
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public DataStreamerEntry() {
         // No-op.

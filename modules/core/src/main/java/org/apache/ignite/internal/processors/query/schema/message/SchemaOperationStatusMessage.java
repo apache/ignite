@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -46,7 +47,7 @@ public class SchemaOperationStatusMessage implements Message {
     private boolean nop;
 
     /**
-     * Default constructor.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public SchemaOperationStatusMessage() {
         // No-op.

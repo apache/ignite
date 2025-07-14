@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
@@ -156,7 +155,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     private boolean explicitTimeout;
 
     /**
-     * Required by {@link Externalizable}
+     * Empty constructor required by {@link GridH2ValueMessageFactory}.
      */
     public GridH2QueryRequest() {
         // No-op.

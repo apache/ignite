@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -64,7 +65,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     private AffinityTopologyVersion topVer;
 
     /**
-     * Required empty constructor.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridCacheTtlUpdateRequest() {
         // No-op.
