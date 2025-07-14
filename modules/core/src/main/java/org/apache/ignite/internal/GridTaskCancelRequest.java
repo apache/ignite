@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -33,7 +32,7 @@ public class GridTaskCancelRequest implements Message {
     private IgniteUuid sesId;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Default constructor.
      */
     public GridTaskCancelRequest() {
         // No-op.

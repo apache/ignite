@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -48,7 +47,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
     private GridTimeoutObject timeoutSnd;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor.
      */
     public GridDhtAtomicDeferredUpdateResponse() {
         // No-op.

@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -43,7 +42,7 @@ public class MissingMappingRequestMessage implements Message {
     private int typeId;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Default constructor.
      */
     public MissingMappingRequestMessage() {
         //No-op.

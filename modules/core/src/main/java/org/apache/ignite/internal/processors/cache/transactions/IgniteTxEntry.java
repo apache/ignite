@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
@@ -226,7 +225,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private transient @Nullable GridAbsClosureX cqNotifyC;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor.
      */
     public IgniteTxEntry() {
         /* No-op. */

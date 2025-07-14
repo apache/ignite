@@ -22,7 +22,6 @@ import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -157,7 +156,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private byte flags;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor.
      */
     public GridCacheQueryRequest() {
         // No-op.

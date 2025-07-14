@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.service;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -46,7 +45,7 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
     private Map<IgniteUuid, ServiceSingleNodeDeploymentResult> results;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor for marshalling purposes.
      */
     public ServiceSingleNodeDeploymentResultBatch() {
     }

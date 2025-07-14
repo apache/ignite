@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,7 +41,7 @@ public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
     private Map<Integer, Long> updateCntrs;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Default constructor.
      */
     public CacheContinuousQueryBatchAck() {
         // No-op.

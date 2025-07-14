@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -53,7 +52,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     private GridCacheReturn retVal;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor.
      */
     public GridDhtTxFinishResponse() {
         // No-op.

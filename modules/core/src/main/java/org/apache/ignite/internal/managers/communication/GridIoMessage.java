@@ -67,7 +67,7 @@ public class GridIoMessage implements Message, SpanTransport {
     private byte[] span;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Default constructor.
      */
     public GridIoMessage() {
         // No-op.

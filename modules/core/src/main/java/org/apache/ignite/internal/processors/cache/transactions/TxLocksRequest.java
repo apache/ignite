@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -51,7 +50,7 @@ public class TxLocksRequest extends GridCacheMessage {
     private IgniteTxKey[] txKeysArr;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Default constructor.
      */
     public TxLocksRequest() {
         // No-op.

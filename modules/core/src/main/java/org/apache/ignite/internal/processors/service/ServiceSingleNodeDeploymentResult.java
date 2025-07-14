@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.service;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -42,7 +41,7 @@ public class ServiceSingleNodeDeploymentResult implements Message {
     private Collection<byte[]> errors;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor for marshalling purposes.
      */
     public ServiceSingleNodeDeploymentResult() {
     }

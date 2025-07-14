@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -40,9 +39,7 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
     @GridDirectMap(keyType = String.class, valueType = String.class)
     private Map<String, String> appAttrs;
 
-    /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
-     */
+    /** */
     public AtomicApplicationAttributesAwareRequest() {
     }
 

@@ -32,7 +32,9 @@ abstract class AbstractSnapshotMessage implements Message {
     /** Unique message ID. */
     private String id;
 
-    /** */
+    /**
+     * Empty constructor.
+     */
     protected AbstractSnapshotMessage() {
         // No-op.
     }

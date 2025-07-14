@@ -57,7 +57,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     private byte[] errKeysBytes;
 
     /**
-     * Empty constructor required by {@link GridH2ValueMessageFactory}.
+     * Default constructor.
      */
     public GridH2DmlResponse() {
         // No-op.

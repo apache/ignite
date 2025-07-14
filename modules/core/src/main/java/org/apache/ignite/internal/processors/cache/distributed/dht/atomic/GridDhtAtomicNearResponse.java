@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -59,7 +58,7 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     private UpdateErrors errs;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     *
      */
     public GridDhtAtomicNearResponse() {
         // No-op.

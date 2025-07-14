@@ -88,7 +88,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     private boolean explicitTimeout;
 
     /**
-     * Empty constructor required by {@link GridH2ValueMessageFactory}.
+     * Empty constructor.
      */
     public GridH2DmlRequest() {
         // No-op.

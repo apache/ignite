@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.checkpoint;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -41,7 +40,7 @@ public class GridCheckpointRequest implements Message {
     private String cpSpi;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor.
      */
     public GridCheckpointRequest() {
         // No-op.

@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -34,9 +33,7 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
     /** */
     private int connIdx;
 
-    /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
-     */
+    /** */
     public TcpInverseConnectionResponseMessage() {
     }
 

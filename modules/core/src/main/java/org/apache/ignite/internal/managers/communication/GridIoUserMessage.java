@@ -106,7 +106,7 @@ public class GridIoUserMessage implements Message {
     }
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Default constructor.
      */
     public GridIoUserMessage() {
         // No-op.

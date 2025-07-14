@@ -61,7 +61,9 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
     @GridDirectTransient
     private int cnt;
 
-    /** */
+    /**
+     * Empty constructor.
+     */
     protected GridDistributedBaseMessage() {
         /* No-op. */
     }

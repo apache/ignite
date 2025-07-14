@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -44,7 +43,7 @@ public class GridTaskSessionRequest implements Message {
     private Map<?, ?> attrs;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor.
      */
     public GridTaskSessionRequest() {
         // No-op.

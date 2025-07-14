@@ -34,7 +34,9 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /** */
     private static final CacheEntryPredicate[] NO_FILTER = new CacheEntryPredicate[0];
 
-    /** */
+    /**
+     * Empty constructor.
+     */
     protected GridNearAtomicAbstractSingleUpdateRequest() {
         // No-op.
     }

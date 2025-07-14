@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.service;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -40,7 +39,7 @@ public class ServiceDeploymentProcessId implements Message {
     @Nullable private IgniteUuid reqId;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor for marshalling purposes.
      */
     public ServiceDeploymentProcessId() {
     }

@@ -84,7 +84,7 @@ public class IgniteIoTestMessage implements Message {
     private UUID sndNodeId;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     *
      */
     public IgniteIoTestMessage() {
         // No-op.

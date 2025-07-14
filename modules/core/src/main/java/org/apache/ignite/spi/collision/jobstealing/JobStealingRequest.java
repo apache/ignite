@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.collision.jobstealing;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -32,7 +31,7 @@ public class JobStealingRequest implements Message {
     private int delta;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor.
      */
     public JobStealingRequest() {
         // No-op.

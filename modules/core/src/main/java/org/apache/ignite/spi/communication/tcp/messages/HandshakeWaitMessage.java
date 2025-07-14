@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -35,7 +34,7 @@ public class HandshakeWaitMessage implements Message {
     public static final int MESSAGE_FULL_SIZE = DIRECT_TYPE_SIZE;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Default constructor.
      */
     public HandshakeWaitMessage() {
         // No-op.

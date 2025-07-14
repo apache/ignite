@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -36,7 +35,7 @@ public class QueryTable implements Message {
     private String tbl;
 
     /**
-     * Empty constructor required by {@link GridH2ValueMessageFactory}.
+     * Default constructor.
      */
     public QueryTable() {
         // No-op.

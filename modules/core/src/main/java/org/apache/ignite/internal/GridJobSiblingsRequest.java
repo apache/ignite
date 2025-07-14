@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -40,7 +39,7 @@ public class GridJobSiblingsRequest implements Message {
     private byte[] topicBytes;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor.
      */
     public GridJobSiblingsRequest() {
         // No-op.

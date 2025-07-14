@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -35,9 +34,7 @@ public class GenerateEncryptionKeyRequest implements Message {
     /** */
     private int keyCnt;
 
-    /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
-     */
+    /** */
     public GenerateEncryptionKeyRequest() {
     }
 

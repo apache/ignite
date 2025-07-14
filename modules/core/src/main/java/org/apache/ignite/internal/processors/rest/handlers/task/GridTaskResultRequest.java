@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest.handlers.task;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -40,7 +39,7 @@ public class GridTaskResultRequest implements Message {
     private byte[] topicBytes;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor.
      */
     public GridTaskResultRequest() {
         // No-op.

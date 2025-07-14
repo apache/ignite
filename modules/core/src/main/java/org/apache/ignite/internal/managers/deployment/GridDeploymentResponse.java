@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.deployment;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -39,7 +38,7 @@ public class GridDeploymentResponse implements Message {
     private GridByteArrayList byteSrc;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Default constructor.
      */
     @SuppressWarnings({"RedundantNoArgConstructor"})
     public GridDeploymentResponse() {

@@ -100,7 +100,9 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /** Additional flags. */
     protected byte flags;
 
-    /** */
+    /**
+     * Empty constructor.
+     */
     protected GridDhtAtomicAbstractUpdateRequest() {
         // No-op.
     }

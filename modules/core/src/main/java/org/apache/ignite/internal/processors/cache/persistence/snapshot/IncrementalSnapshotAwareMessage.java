@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -46,9 +45,7 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     /** Incremental snapshot topology version. */
     private long topVer;
 
-    /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
-     */
+    /** */
     public IncrementalSnapshotAwareMessage() {
     }
 

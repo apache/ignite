@@ -45,7 +45,9 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     /** */
     protected byte flags;
 
-    /** */
+    /**
+     * Empty constructor.
+     */
     protected GridDhtPartitionsAbstractMessage() {
         // No-op.
     }

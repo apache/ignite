@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.stat.StatisticsType;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -54,7 +53,7 @@ public class StatisticsRequest implements Message {
     private AffinityTopologyVersion topVer;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Constructor.
      */
     public StatisticsRequest() {
     }

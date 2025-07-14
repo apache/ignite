@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -81,9 +80,7 @@ public class GridEventStorageMessage implements Message {
     @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
     private Map<UUID, IgniteUuid> ldrParties;
 
-    /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
-     */
+    /** */
     public GridEventStorageMessage() {
         // No-op.
     }

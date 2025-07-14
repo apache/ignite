@@ -37,7 +37,7 @@ class SessionChannelMessage implements Message {
     private IgniteUuid sesId;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Default constructor.
      */
     public SessionChannelMessage() {
         // No-op.

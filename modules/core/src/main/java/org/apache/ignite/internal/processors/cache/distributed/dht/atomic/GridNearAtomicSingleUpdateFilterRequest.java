@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -43,7 +42,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
     private CacheEntryPredicate[] filter;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor.
      */
     public GridNearAtomicSingleUpdateFilterRequest() {
         // No-op.

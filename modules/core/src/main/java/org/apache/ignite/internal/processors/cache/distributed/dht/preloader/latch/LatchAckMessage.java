@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -50,7 +49,7 @@ public class LatchAckMessage implements Message {
     }
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor for marshalling purposes.
      */
     public LatchAckMessage() {
     }

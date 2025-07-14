@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -40,7 +39,7 @@ public class UUIDCollectionMessage implements Message {
     private Collection<UUID> uuids;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor required for direct marshalling.
      */
     public UUIDCollectionMessage() {
         // No-op.

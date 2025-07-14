@@ -34,7 +34,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
     private UUID secSubjId;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Default constructor.
      */
     public GridIoSecurityAwareMessage() {
         // No-op.
