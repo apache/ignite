@@ -74,22 +74,22 @@ public class SnapshotMetadataVerificationTask {
         private final SnapshotFileTree sft;
 
         /** */
-        private final int incrementIndex;
+        private final int incrementIdx;
 
         /** */
         private final Collection<Integer> grpIds;
 
         /** */
-        public MetadataVerificationJob(
+        private MetadataVerificationJob(
             IgniteEx ignite,
             IgniteLogger log,
             SnapshotFileTree sft,
-            int incrementIndex,
+            int incrementIdx,
             Collection<Integer> grpIds
         ) {
             this.ignite = ignite;
             this.sft = sft;
-            this.incrementIndex = incrementIndex;
+            this.incrementIdx = incrementIdx;
             this.grpIds = grpIds;
             this.log = log;
         }
@@ -103,7 +103,7 @@ public class SnapshotMetadataVerificationTask {
             for (SnapshotMetadata meta : snpMeta)
                 checkMeta(meta);
 
-            if (incrementIndex > 0) {
+            if (incrementIdx > 0) {
                 List<SnapshotMetadata> metas = snpMeta.stream()
                     .filter(m -> m.consistentId().equals(sft.consistentId()))
                     .collect(Collectors.toList());
@@ -115,7 +115,7 @@ public class SnapshotMetadataVerificationTask {
                         "per node because they don't support restoring on a different topology.");
                 }
 
-                checkIncrementalSnapshots(metas.get(0), sft, incrementIndex);
+                checkIncrementalSnapshots(metas.get(0), sft, incrementIdx);
             }
 
             return snpMeta;

@@ -71,7 +71,8 @@ public class SnapshotChecker {
 
         return CompletableFuture.supplyAsync(
             () -> new IncrementalSnapshotVerificationTask(kctx.grid(), log, sft, incIdx).execute(),
-            executor);
+            executor
+        );
     }
 
     /** */

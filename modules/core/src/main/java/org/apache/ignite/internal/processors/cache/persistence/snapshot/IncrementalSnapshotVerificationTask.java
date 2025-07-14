@@ -115,7 +115,7 @@ public class IncrementalSnapshotVerificationTask {
          * @param sft Snapshot file tree
          * @param incIdx Incremental snapshot index.
          */
-        public VerifyIncrementalSnapshotJob(
+        private VerifyIncrementalSnapshotJob(
             IgniteEx ignite,
             IgniteLogger log,
             SnapshotFileTree sft,
