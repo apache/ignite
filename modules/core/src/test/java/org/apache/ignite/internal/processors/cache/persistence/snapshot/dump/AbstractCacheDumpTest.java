@@ -193,42 +193,49 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration[] ccfgs = {
+            new CacheConfiguration<>()
+                .setName(DEFAULT_CACHE_NAME)
+                .setBackups(backups)
+                .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
+                .setAtomicityMode(mode)
+                .setWriteSynchronizationMode(FULL_SYNC)
+                .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
+            new CacheConfiguration<>()
+                .setGroupName(GRP)
+                .setName(CACHE_0)
+                .setBackups(backups)
+                .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
+                .setAtomicityMode(mode)
+                .setWriteSynchronizationMode(FULL_SYNC)
+                .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
+            new CacheConfiguration<>()
+                .setGroupName(GRP)
+                .setName(CACHE_1)
+                .setBackups(backups)
+                .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
+                .setAtomicityMode(mode)
+                .setWriteSynchronizationMode(FULL_SYNC)
+                .setAffinity(new RendezvousAffinityFunction().setPartitions(20))};
+
+        String storagePath = backups > 0 ? CUSTOM_STORAGE : (nodes > 1 ? DFLT_STORAGE : null);
+
+        if (storagePath != null) {
+            for (CacheConfiguration ccfg : ccfgs)
+                ccfg.setStoragePaths(storagePath);
+        }
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setSnapshotThreadPoolSize(snpPoolSz)
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setStoragePath(DFLT_STORAGE)
-                .setExtraStoragePathes(CUSTOM_STORAGE)
+                .setExtraStoragePaths(CUSTOM_STORAGE)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(persistence))
                 .setDataRegionConfigurations(new DataRegionConfiguration()
                     .setName(CUSTOM_STORAGE)))
             .setCacheConfiguration(
-                new CacheConfiguration<>()
-                    .setName(DEFAULT_CACHE_NAME)
-                    .setBackups(backups)
-                    .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
-                    .setStoragePath(backups > 0 ? CUSTOM_STORAGE : (nodes > 1 ? DFLT_STORAGE : null))
-                    .setAtomicityMode(mode)
-                    .setWriteSynchronizationMode(FULL_SYNC)
-                    .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
-                new CacheConfiguration<>()
-                    .setGroupName(GRP)
-                    .setName(CACHE_0)
-                    .setBackups(backups)
-                    .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
-                    .setStoragePath(backups > 0 ? CUSTOM_STORAGE : (nodes > 1 ? DFLT_STORAGE : null))
-                    .setAtomicityMode(mode)
-                    .setWriteSynchronizationMode(FULL_SYNC)
-                    .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
-                new CacheConfiguration<>()
-                    .setGroupName(GRP)
-                    .setName(CACHE_1)
-                    .setBackups(backups)
-                    .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
-                    .setStoragePath(backups > 0 ? CUSTOM_STORAGE : (nodes > 1 ? DFLT_STORAGE : null))
-                    .setAtomicityMode(mode)
-                    .setWriteSynchronizationMode(FULL_SYNC)
-                    .setAffinity(new RendezvousAffinityFunction().setPartitions(20))
+                ccfgs
             );
 
         if (encrypted)
@@ -384,6 +391,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 false,
                 false,
                 cacheGrpNames,
+                null,
                 skipCopies,
                 null
             ),

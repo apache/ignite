@@ -30,12 +30,13 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.resolveStorage;
 
 /**
  * {@link NodeFileTree} extension with the methods required to work with snapshot file tree.
@@ -179,7 +180,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * @return Cache partition delta file.
      */
     public File partDeltaFile(CacheConfiguration<?, ?> ccfg, int part) {
-        return new File(tmpFt.cacheStorage(ccfg), partitionFileName(part, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
+        return new File(resolveStorage(tmpFt.cacheStorages(ccfg), part), partitionFileName(part, INDEX_DELTA_NAME, PART_DELTA_TEMPLATE));
     }
 
     /**
@@ -237,15 +238,15 @@ public class SnapshotFileTree extends NodeFileTree {
      * @return Path to the dump partition file;
      */
     public File dumpPartition(CacheConfiguration<?, ?> ccfg, int part, boolean compress) {
-        return new File(cacheStorage(ccfg), dumpPartFileName(part, compress));
+        return new File(resolveStorage(cacheStorages(ccfg), part), dumpPartFileName(part, compress));
     }
 
     /**
      * @param grpId Cache group id.
-     * @return Files that match cache or cache group pattern.
+     * @return Directories that match cache or cache group pattern.
      */
-    public File existingCacheDirectory(int grpId) {
-        return F.first(existingCacheDirs(true, f -> CU.cacheId(cacheName(f)) == grpId));
+    public List<File> existingCacheDirectories(int grpId) {
+        return existingCacheDirs(true, f -> CU.cacheId(cacheName(f)) == grpId);
     }
 
     /**
@@ -278,7 +279,6 @@ public class SnapshotFileTree extends NodeFileTree {
      */
     private static String partExtension(boolean dump, boolean compressed) {
         return (dump ? DUMP_FILE_EXT : FILE_SUFFIX) + (compressed ? ZIP_SUFFIX : "");
-
     }
 
     /**
@@ -376,7 +376,7 @@ public class SnapshotFileTree extends NodeFileTree {
      * Modifies {@link #extraStorages} for this tree to reflect snapshot options.
      * In case {@link IgniteConfiguration#getSnapshotPath()} points to absolute directory or {@link #path} for snapshot provided
      * then all snapshot files must be stored inside one folder.
-     * Otherwise, we use configured by {@link DataStorageConfiguration#getExtraStoragePathes()} structure to save snapshot.
+     * Otherwise, we use configured by {@link DataStorageConfiguration#getExtraStoragePaths()} structure to save snapshot.
      * This will distribute workload to all physical device on host.
      *
      * @param ft Node file tree.
@@ -391,7 +391,7 @@ public class SnapshotFileTree extends NodeFileTree {
         Map<String, File> snpExtraStorages = new HashMap<>();
 
         ft.extraStorages().forEach((cfgStoragePath, storagePath) -> {
-            // In case we want to make snapshot in several folders the pathes will be the following:
+            // In case we want to make snapshot in several folders the paths will be the following:
             // {storage_path}/db/{folder_name} - node cache storage.
             // {storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
             snpExtraStorages.put(

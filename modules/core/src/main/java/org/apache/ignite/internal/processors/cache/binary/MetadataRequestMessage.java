@@ -58,7 +58,7 @@ public class MetadataRequestMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -66,7 +66,7 @@ public class MetadataRequestMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("typeId", typeId))
+                if (!writer.writeInt(typeId))
                     return false;
 
                 writer.incrementState();
@@ -80,12 +80,9 @@ public class MetadataRequestMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                typeId = reader.readInt("typeId");
+                typeId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -94,17 +91,12 @@ public class MetadataRequestMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(MetadataRequestMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 80;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

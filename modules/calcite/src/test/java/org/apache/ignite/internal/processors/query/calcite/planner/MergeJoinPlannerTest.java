@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.List;
-
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -43,6 +44,46 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         "FilterSpoolMergeRule",
         "JoinCommuteRule"
     };
+
+    /** */
+    @Test
+    public void testIsNotDistinctWithFilter() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("T1", IgniteDistributions.single(), "I11", Integer.class, "I12", Integer.class)
+                .addIndex("IDX1", 0, 1),
+            createTable("T2", IgniteDistributions.single(), "I21", Integer.class, "I22", Integer.class)
+                .addIndex("IDX2", 0, 1)
+        );
+
+        String sql = "SELECT I11, I12 FROM T1 JOIN T2 ON I11 IS NOT DISTINCT FROM I21 AND I12 = I22";
+
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+            .and(j -> j.getCondition().toString().contains("IS NOT DISTINCT FROM"))
+            .and(hasChildThat(isIndexScan("T1", "IDX1")))
+            .and(hasChildThat(isIndexScan("T2", "IDX2")))
+            .and(hasChildThat(isInstanceOf(IgniteSort.class))).negate())
+        );
+    }
+
+    /** */
+    @Test
+    public void testIsNotDistinct() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("T1", IgniteDistributions.single(), "I11", Integer.class, "I12", Integer.class)
+                .addIndex("IDX1", 0, 1),
+            createTable("T2", IgniteDistributions.single(), "I21", Integer.class, "I22", Integer.class)
+                .addIndex("IDX2", 0, 1)
+        );
+
+        String sql = "SELECT I11, I12 FROM T1 JOIN T2 ON I11 IS NOT DISTINCT FROM I21";
+
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class)
+            .and(j -> j.getCondition().isA(SqlKind.IS_NOT_DISTINCT_FROM))
+            .and(hasChildThat(isIndexScan("T1", "IDX1")))
+            .and(hasChildThat(isIndexScan("T2", "IDX2")))
+            .and(hasChildThat(isInstanceOf(IgniteSort.class))).negate())
+        );
+    }
 
     /**
      * Test verifies the collation propagation from a parent node.

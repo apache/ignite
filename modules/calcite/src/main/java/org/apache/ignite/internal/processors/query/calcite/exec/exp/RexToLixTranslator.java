@@ -732,6 +732,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             case VARCHAR:
                 value2 = literal.getValueAs(String.class);
                 break;
+            case UUID:
+                return Expressions.call(null, BuiltInMethod.UUID_FROM_STRING.method,
+                    Expressions.constant(literal.getValueAs(String.class)));
             case BINARY:
             case VARBINARY:
                 return Expressions.new_(

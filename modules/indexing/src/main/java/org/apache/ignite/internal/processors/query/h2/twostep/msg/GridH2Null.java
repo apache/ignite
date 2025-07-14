@@ -51,7 +51,7 @@ public class GridH2Null extends GridH2ValueMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -65,23 +65,15 @@ public class GridH2Null extends GridH2ValueMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
-        return reader.afterMessageRead(GridH2Null.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -4;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 0;
     }
 
     /** {@inheritDoc} */

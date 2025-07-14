@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFile
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -49,7 +48,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /**
  * Command line tests of --persistence commands.
  */
-@RunWith(Parameterized.class)
 public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** Use explicit cache storage for each group. */
     @Parameterized.Parameter(1)
@@ -74,7 +72,8 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
 
         if (separateStorage) {
             U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "0")));
-            U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "1")));
+            U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "1_0")));
+            U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "1_1")));
             U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "2")));
             U.delete(new File(U.defaultWorkDirectory(), storagePath(DEFAULT_CACHE_NAME + "3")));
         }
@@ -85,9 +84,10 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (separateStorage) {
-            cfg.getDataStorageConfiguration().setExtraStoragePathes(
+            cfg.getDataStorageConfiguration().setExtraStoragePaths(
                 storagePath(DEFAULT_CACHE_NAME + "0"),
-                storagePath(DEFAULT_CACHE_NAME + "1"),
+                storagePath(DEFAULT_CACHE_NAME + "1_0"),
+                storagePath(DEFAULT_CACHE_NAME + "1_1"),
                 storagePath(DEFAULT_CACHE_NAME + "2"),
                 storagePath(DEFAULT_CACHE_NAME + "3")
             );
@@ -135,7 +135,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
 
         boolean cleanedEmpty = ft.existingCacheDirs().stream()
             .filter(f -> f.getName().contains(cacheName0) || f.getName().contains(cacheName1))
-            .map(f -> f.listFiles().length == 1)
+            .map(f -> f.listFiles().length <= 1)
             .reduce(true, (t, u) -> t && u);
 
         assertTrue(cleanedEmpty);
@@ -200,7 +200,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
                 || f.getName().contains(cacheName1)
                 || f.getName().contains(cacheName2)
             )
-            .map(f -> f.listFiles().length == 1)
+            .map(f -> f.listFiles().length <= 1)
             .reduce(true, (t, u) -> t && u);
 
         assertTrue(cleanedEmpty);
@@ -237,7 +237,7 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         boolean allEmpty = ft.existingCacheDirs().stream()
             .filter(File::isDirectory)
             .filter(NodeFileTree::cacheDir)
-            .map(f -> f.listFiles().length == 1)
+            .map(f -> f.listFiles().length <= 1)
             .reduce(true, (t, u) -> t && u);
 
         assertTrue(allEmpty);
@@ -361,8 +361,10 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
         long backedUpCachesCnt = ft.allStorages()
             .flatMap(root -> Arrays.stream(root.listFiles()))
             .filter(File::isDirectory)
-            .filter(f -> f.getName().startsWith("backup_"))
-            .count();
+            .map(File::getName)
+            .filter(name -> name.startsWith("backup_"))
+            .collect(Collectors.toSet())
+            .size();
 
         assertEquals(2, backedUpCachesCnt);
 
@@ -372,10 +374,16 @@ public class GridPersistenceCommandsTest extends GridCommandHandlerClusterPerMet
     /** */
     private CacheConfiguration cacheConfiguration(String cacheName) {
         CacheConfiguration ccfg = new CacheConfiguration(cacheName)
-            .setStoragePath(separateStorage ? storagePath(cacheName) : null)
             .setAtomicityMode(TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setBackups(1);
+
+        if (separateStorage) {
+            if (cacheName.equals(DEFAULT_CACHE_NAME + "1"))
+                ccfg.setStoragePaths(storagePath(cacheName) + "_0", storagePath(cacheName) + "_1");
+            else
+                ccfg.setStoragePaths(storagePath(cacheName));
+        }
 
         return ccfg;
     }

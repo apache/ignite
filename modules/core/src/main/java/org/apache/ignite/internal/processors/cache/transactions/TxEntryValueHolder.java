@@ -171,7 +171,7 @@ public class TxEntryValueHolder implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -179,19 +179,19 @@ public class TxEntryValueHolder implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeBoolean("hasWriteVal", hasWriteVal))
+                if (!writer.writeBoolean(hasWriteVal))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
+                if (!writer.writeByte(op != null ? (byte)op.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("val", hasWriteVal ? val : null))
+                if (!writer.writeMessage(hasWriteVal ? val : null))
                     return false;
 
                 writer.incrementState();
@@ -205,12 +205,9 @@ public class TxEntryValueHolder implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                hasWriteVal = reader.readBoolean("hasWriteVal");
+                hasWriteVal = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -220,7 +217,7 @@ public class TxEntryValueHolder implements Message {
             case 1:
                 byte opOrd;
 
-                opOrd = reader.readByte("op");
+                opOrd = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -230,7 +227,7 @@ public class TxEntryValueHolder implements Message {
                 reader.incrementState();
 
             case 2:
-                val = reader.readMessage("val");
+                val = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -239,16 +236,11 @@ public class TxEntryValueHolder implements Message {
 
         }
 
-        return reader.afterMessageRead(TxEntryValueHolder.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 101;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 }

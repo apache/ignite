@@ -21,12 +21,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -143,24 +145,33 @@ public class Dump implements AutoCloseable {
     }
 
     /**
-     * @param node Node directory name.
-     * @param grp Group id.
+     * @param node     Node directory name.
+     * @param grp      Group id.
+     * @param cacheIds Cache ids to read.
      * @return List of cache configs saved in dump for group.
      */
-    public List<StoredCacheData> configs(String node, int grp) {
+    public List<StoredCacheData> configs(String node, int grp, @Nullable Set<Integer> cacheIds) {
         JdkMarshaller marsh = cctx.marshallerContext().jdkMarshaller();
+
+        List<StoredCacheData> res = new ArrayList<>();
 
         // Searching for ALL config files regardless directory name.
         // Initial version of Cache dump contains a bug:
         // For a group with one cache cache-xxx directory created, but cacheGroup-xxx expected.
-        return NodeFileTree.allExisingConfigFiles(sft(node).existingCacheDirectory(grp)).stream().map(f -> {
-            try {
-                return readCacheData(f, marsh, cctx.config());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }).collect(Collectors.toList());
+        for (File cacheDir : sft(node).existingCacheDirectories(grp)) {
+            res.addAll(NodeFileTree.allExisingConfigFiles(cacheDir).stream().map(f -> {
+                try {
+                    return readCacheData(f, marsh, cctx.config());
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+                // Keep only caches from filter.
+            }).filter(scd -> cacheIds == null || cacheIds.contains(scd.cacheId()))
+                .collect(Collectors.toList()));
+        }
+
+        return res;
     }
 
     /**
@@ -169,10 +180,10 @@ public class Dump implements AutoCloseable {
      * @return Dump iterator.
      */
     public List<Integer> partitions(String node, int grp) {
-        List<File> parts = sft(node).existingCachePartitionFiles(sft(node).existingCacheDirectory(grp), true, comprParts);
+        List<File> parts = new ArrayList<>();
 
-        if (parts == null)
-            return Collections.emptyList();
+        for (File cacheDir : sft(node).existingCacheDirectories(grp))
+            parts.addAll(sft(node).existingCachePartitionFiles(cacheDir, true, comprParts));
 
         return parts.stream()
             .map(NodeFileTree::partId)
@@ -182,9 +193,10 @@ public class Dump implements AutoCloseable {
     /**
      * @param node Node directory name.
      * @param grp Group id.
+     * @param cacheIds Cache ids.
      * @return Dump iterator.
      */
-    public DumpedPartitionIterator iterator(String node, int grp, int part) {
+    public DumpedPartitionIterator iterator(String node, int grp, int part, @Nullable Set<Integer> cacheIds) {
         FileIOFactory ioFactory = comprParts
             ? (file, modes) -> new ReadOnlyUnzipFileIO(file)
             : (file, modes) -> new ReadOnlyBufferedFileIO(file);
@@ -192,7 +204,7 @@ public class Dump implements AutoCloseable {
         FileIO dumpFile;
 
         try {
-            dumpFile = ioFactory.create(new File(sft(node).existingCacheDirectory(grp), dumpPartFileName(part, comprParts)));
+            dumpFile = ioFactory.create(dumpFile(node, grp, part));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -249,7 +261,11 @@ public class Dump implements AutoCloseable {
                     return;
 
                 try {
-                    next = serializer.read(dumpFile, grp, part);
+                    do {
+                        next = serializer.read(dumpFile, part);
+                    }
+                    // Skip all but cacheIds.
+                    while (next != null && cacheIds != null && !cacheIds.contains(next.cacheId()));
                 }
                 catch (IOException | IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -261,6 +277,18 @@ public class Dump implements AutoCloseable {
                 U.closeQuiet(dumpFile);
             }
         };
+    }
+
+    /** */
+    private File dumpFile(String node, int grp, int part) {
+        for (File cacheDir : sft(node).existingCacheDirectories(grp)) {
+            File partFile = new File(cacheDir, dumpPartFileName(part, comprParts));
+
+            if (partFile.exists())
+                return partFile;
+        }
+
+        throw new IllegalStateException("Part file not found[node=" + node + ", grp=" + grp + ", part=" + part + ']');
     }
 
     /** @return Dump directories. */

@@ -97,6 +97,7 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 AppendTestClasses(Path.Combine(ggHome, "examples"), cpStr);
                 AppendTestClasses(Path.Combine(ggHome, "modules"), cpStr);
+                AppendTestClasses(Path.Combine(ggHome, "modules", "binary"), cpStr);
                 AppendTestClasses(Path.Combine(ggHome, "modules", "extdata", "platform"), cpStr);
             }
 

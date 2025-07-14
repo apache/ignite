@@ -138,7 +138,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -146,25 +146,25 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeInt("part", part))
+                if (!writer.writeInt(part))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("txId", txId))
+                if (!writer.writeMessage(txId))
                     return false;
 
                 writer.incrementState();
@@ -178,15 +178,12 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 3:
-                flags = reader.readByte("flags");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -194,7 +191,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -202,7 +199,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
                 reader.incrementState();
 
             case 5:
-                part = reader.readInt("part");
+                part = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -210,7 +207,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
                 reader.incrementState();
 
             case 6:
-                txId = reader.readMessage("txId");
+                txId = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -219,17 +216,12 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead(GridDistributedTxFinishResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 24;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 7;
     }
 
     /** {@inheritDoc} */

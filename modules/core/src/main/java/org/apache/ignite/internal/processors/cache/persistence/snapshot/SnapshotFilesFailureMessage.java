@@ -79,14 +79,14 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
         }
 
         if (writer.state() == 1) {
-            if (!writer.writeString("errMsg", errMsg))
+            if (!writer.writeString(errMsg))
                 return false;
 
             writer.incrementState();
@@ -99,14 +99,11 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         if (reader.state() == 1) {
-            errMsg = reader.readString("errMsg");
+            errMsg = reader.readString();
 
             if (!reader.isLastRead())
                 return false;
@@ -114,12 +111,7 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
             reader.incrementState();
         }
 
-        return reader.afterMessageRead(SnapshotFilesFailureMessage.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
+        return true;
     }
 
     /** {@inheritDoc} */

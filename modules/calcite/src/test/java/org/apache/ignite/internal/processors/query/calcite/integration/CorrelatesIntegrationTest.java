@@ -122,4 +122,19 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
             .returns(2, 2L)
             .check();
     }
+
+    /** */
+    @Test
+    public void testTwoTablesCorrelatedSubquery() {
+        sql("CREATE TABLE T1(ID INT, REF INT) WITH " + atomicity());
+        sql("CREATE TABLE T2(ID INT, REF INT) WITH " + atomicity());
+        sql("CREATE TABLE T3(ID1 INT, ID2 INT) WITH " + atomicity());
+
+        sql("INSERT INTO T1 VALUES(1, 1)");
+        sql("INSERT INTO T2 VALUES(1, 1)");
+        sql("INSERT INTO T3 VALUES(1, 1)");
+
+        assertQuery("SELECT T1.ID, T2.ID FROM T1 JOIN T2 ON (T1.ID = T2.ID) " +
+            "WHERE EXISTS (SELECT 1 FROM T3 WHERE T3.ID1 = T1.REF AND T3.ID2 = T2.REF)").returns(1, 1).check();
+    }
 }

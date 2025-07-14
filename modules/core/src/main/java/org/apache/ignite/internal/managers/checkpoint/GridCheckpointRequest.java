@@ -96,7 +96,7 @@ public class GridCheckpointRequest implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -104,19 +104,19 @@ public class GridCheckpointRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("cpSpi", cpSpi))
+                if (!writer.writeString(cpSpi))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString("key", key))
+                if (!writer.writeString(key))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeIgniteUuid("sesId", sesId))
+                if (!writer.writeIgniteUuid(sesId))
                     return false;
 
                 writer.incrementState();
@@ -130,12 +130,9 @@ public class GridCheckpointRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                cpSpi = reader.readString("cpSpi");
+                cpSpi = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -143,7 +140,7 @@ public class GridCheckpointRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                key = reader.readString("key");
+                key = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -151,7 +148,7 @@ public class GridCheckpointRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                sesId = reader.readIgniteUuid("sesId");
+                sesId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -160,17 +157,12 @@ public class GridCheckpointRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GridCheckpointRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 7;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

@@ -84,7 +84,7 @@ public class StatisticsResponse implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -92,13 +92,13 @@ public class StatisticsResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("data", data))
+                if (!writer.writeMessage(data))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeUuid("reqId", reqId))
+                if (!writer.writeUuid(reqId))
                     return false;
 
                 writer.incrementState();
@@ -112,12 +112,9 @@ public class StatisticsResponse implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                data = reader.readMessage("data");
+                data = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -125,7 +122,7 @@ public class StatisticsResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                reqId = reader.readUuid("reqId");
+                reqId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -134,17 +131,12 @@ public class StatisticsResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(StatisticsResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

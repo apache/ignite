@@ -27,11 +27,13 @@ import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.logical.LogicalCorrelate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
@@ -91,6 +93,21 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
             fieldAccess.getReferenceExpr().getType(),
             join.getLeft().getRowType()
         );
+    }
+
+    /** */
+    @Test
+    public void testCorrelatesInJoin() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("T0", IgniteDistributions.single(), "ID", Integer.class, "PADDING_COL1", Integer.class,
+                "PADDING_COL2", Integer.class, "VAL", Integer.class),
+            createTable("T1", IgniteDistributions.single(), "ID", Integer.class, "VAL", Integer.class)
+        );
+
+        String sql = "SELECT T1.ID FROM T0 JOIN T1 ON T1.ID = (SELECT inner_t1.ID FROM T1 AS inner_t1 WHERE inner_t1.VAL = t0.VAL)";
+
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(hasChildThat(isTableScan("T0"))).and(hasChildThat(isTableScan("T1")))));
     }
 
     /**
@@ -319,6 +336,34 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
             "   SELECT a FROM th3 WHERE th3.a = th1.a AND th3.c = th1.b" +
             ")) FROM th1";
         assertPlan(sql, schema, colocatedPredicate.negate());
+    }
+
+    /** */
+    @Test
+    public void testFunctionsRewriteWithCorrelatedSubquery() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("T1", IgniteDistributions.single(), "ID", Integer.class),
+            createTable("T2", IgniteDistributions.single(), "ID", Integer.class)
+        );
+
+        // Also check result type inference.
+        Predicate<RelDataType> rowTypeCheckerChar = t -> t.getFieldCount() == 1
+            && t.getFieldList().get(0).getType().getSqlTypeName() == SqlTypeName.CHAR;
+
+        Predicate<RelDataType> rowTypeCheckerNotNull = t -> rowTypeCheckerChar.test(t)
+            && !t.getFieldList().get(0).getType().isNullable();
+
+        Predicate<RelDataType> rowTypeCheckerNullable = t -> rowTypeCheckerChar.test(t)
+            && t.getFieldList().get(0).getType().isNullable();
+
+        assertPlan("SELECT COALESCE((SELECT MAX('0') FROM T1 WHERE T1.ID = T2.ID), '1') FROM T2", schema,
+            n -> rowTypeCheckerNotNull.test(n.getRowType()));
+
+        assertPlan("SELECT NVL((SELECT MAX('0') FROM T1 WHERE T1.ID = T2.ID), '1') FROM T2", schema,
+            n -> rowTypeCheckerNotNull.test(n.getRowType()));
+
+        assertPlan("SELECT NULLIF((SELECT MAX('0') FROM T1 WHERE T1.ID = T2.ID), '1') FROM T2", schema,
+            n -> rowTypeCheckerNullable.test(n.getRowType()));
     }
 
     /** */

@@ -90,7 +90,7 @@ public class GridDhtPartitionSupplyErrorMessage extends GridDhtPartitionSupplyMe
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -98,7 +98,7 @@ public class GridDhtPartitionSupplyErrorMessage extends GridDhtPartitionSupplyMe
 
         switch (writer.state()) {
             case 13:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
@@ -112,15 +112,12 @@ public class GridDhtPartitionSupplyErrorMessage extends GridDhtPartitionSupplyMe
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 13:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -129,7 +126,7 @@ public class GridDhtPartitionSupplyErrorMessage extends GridDhtPartitionSupplyMe
 
         }
 
-        return reader.afterMessageRead(GridDhtPartitionSupplyErrorMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -140,10 +137,5 @@ public class GridDhtPartitionSupplyErrorMessage extends GridDhtPartitionSupplyMe
     /** {@inheritDoc} */
     @Override public short directType() {
         return 158;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 14;
     }
 }

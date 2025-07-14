@@ -198,7 +198,7 @@ public class FragmentMapping implements MarshalableMessage {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -206,7 +206,7 @@ public class FragmentMapping implements MarshalableMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("colocationGroups", colocationGroups, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(colocationGroups, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -220,12 +220,9 @@ public class FragmentMapping implements MarshalableMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                colocationGroups = reader.readCollection("colocationGroups", MessageCollectionItemType.MSG);
+                colocationGroups = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -234,11 +231,6 @@ public class FragmentMapping implements MarshalableMessage {
 
         }
 
-        return reader.afterMessageRead(FragmentMapping.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
+        return true;
     }
 }
