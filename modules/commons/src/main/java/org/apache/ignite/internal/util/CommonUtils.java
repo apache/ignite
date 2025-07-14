@@ -20,6 +20,9 @@ package org.apache.ignite.internal.util;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
@@ -317,5 +320,18 @@ public abstract class CommonUtils {
             return 1;
 
         return 1 << (32 - Integer.numberOfLeadingZeros(v - 1));
+    }
+
+    /**
+     * @param svcCls Service class to load.
+     * @param <S> Type of loaded interfaces.
+     * @return Lazy iterable structure over loaded class implementations.
+     */
+    public static <S> Iterable<S> loadService(Class<S> svcCls) {
+        return AccessController.doPrivileged(new PrivilegedAction<Iterable<S>>() {
+            @Override public Iterable<S> run() {
+                return ServiceLoader.load(svcCls);
+            }
+        });
     }
 }

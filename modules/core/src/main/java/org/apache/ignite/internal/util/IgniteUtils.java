@@ -869,19 +869,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * @param svcCls Service class to load.
-     * @param <S> Type of loaded interfaces.
-     * @return Lazy iterable structure over loaded class implementations.
-     */
-    public static <S> Iterable<S> loadService(Class<S> svcCls) {
-        return AccessController.doPrivileged(new PrivilegedAction<Iterable<S>>() {
-            @Override public Iterable<S> run() {
-                return ServiceLoader.load(svcCls);
-            }
-        });
-    }
-
-    /**
      * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
      * does not wrap passed in exception if none suitable converter found.
      *
