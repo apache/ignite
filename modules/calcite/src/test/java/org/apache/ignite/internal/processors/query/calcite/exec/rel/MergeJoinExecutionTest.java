@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Consumer;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -43,7 +41,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 
 /** */
 @SuppressWarnings("TypeMayBeWeakened")
-public class MergeJoinExecutionTest extends AbstractJoinExecutionTest {
+public class MergeJoinExecutionTest extends AbstractExecutionTest {
     /** */
     public static final Object[][] EMPTY = new Object[0][];
 
@@ -54,21 +52,6 @@ public class MergeJoinExecutionTest extends AbstractJoinExecutionTest {
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected JoinCreator joinCreator() {
-        return (ctx, outType, leftType, rightType, joinType, cond) ->
-            MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, Comparator.comparingInt(r -> (Integer)r[0]), true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Consumer<AbstractNode<?>> joinFinalChecker() {
-        return node -> {
-            assertTrue(((MergeJoinNode<?>)node).leftInBuf.size() <= IN_BUFFER_SIZE);
-
-            assertTrue(((MergeJoinNode<?>)node).rightInBuf.size() <= IN_BUFFER_SIZE);
-        };
     }
 
     /** */

@@ -23,14 +23,12 @@ import java.util.BitSet;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.BiPredicate;
-import java.util.function.Supplier;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /** */
 public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
@@ -165,8 +163,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
         leftInBuf.add(row);
 
-        if (waitingLeft <= 0)
-            join();
+        join();
     }
 
     /** */
@@ -301,7 +298,10 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            tryGetMoreOrEnd();
+            if (checkJoinFinished())
+                return;
+
+            tryToRequestInputs();
         }
     }
 
@@ -382,7 +382,10 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            tryGetMoreOrEnd();
+            if (checkJoinFinished())
+                return;
+
+            tryToRequestInputs();
         }
     }
 
@@ -490,7 +493,10 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            tryGetMoreOrEnd(() -> rightNotMatchedIndexes.isEmpty());
+            if ((rightNotMatchedIndexes == null || rightNotMatchedIndexes.isEmpty()) && checkJoinFinished())
+                return;
+
+            tryToRequestInputs();
         }
     }
 
@@ -622,7 +628,10 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            tryGetMoreOrEnd(() -> rightNotMatchedIndexes.isEmpty());
+            if ((rightNotMatchedIndexes == null || rightNotMatchedIndexes.isEmpty()) && checkJoinFinished())
+                return;
+
+            tryToRequestInputs();
         }
     }
 
@@ -664,7 +673,10 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            tryGetMoreOrEnd();
+            if (checkJoinFinished())
+                return;
+
+            tryToRequestInputs();
         }
     }
 
@@ -710,41 +722,33 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 }
             }
 
-            tryGetMoreOrEnd();
+            if (checkJoinFinished())
+                return;
+
+            tryToRequestInputs();
         }
     }
 
     /** */
-    protected void tryGetMoreOrEnd(@Nullable Supplier<Boolean> extCheck) throws Exception {
-        if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()
-            && (extCheck == null || extCheck.get())
-        ) {
+    protected boolean checkJoinFinished() throws Exception {
+        if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && left == null && leftInBuf.isEmpty()) {
             requested = 0;
             rightMaterialized.clear();
 
             downstream().end();
 
-            return;
+            return true;
         }
 
-        if (waitingLeft == 0 && requested > 0 && leftInBuf.size() <= HALF_BUF_SIZE)
-            leftSource().request(waitingLeft = IN_BUFFER_SIZE - leftInBuf.size());
-
-        if (waitingRight == 0 && requested > 0 && rightMaterialized.size() <= HALF_BUF_SIZE)
-            rightSource().request(waitingRight = IN_BUFFER_SIZE - rightMaterialized.size());
-    }
-
-    /** */
-    protected void tryGetMoreOrEnd() throws Exception {
-        tryGetMoreOrEnd(null);
+        return false;
     }
 
     /** */
     protected void tryToRequestInputs() throws Exception {
-        if (waitingLeft == 0 && requested > 0 && leftInBuf.size() <= HALF_BUF_SIZE)
+        if (waitingLeft == 0 && leftInBuf.size() <= HALF_BUF_SIZE)
             leftSource().request(waitingLeft = IN_BUFFER_SIZE - leftInBuf.size());
 
-        if (waitingRight == 0 && requested > 0 && rightMaterialized.size() <= HALF_BUF_SIZE)
-            rightSource().request(waitingRight = IN_BUFFER_SIZE - rightMaterialized.size());
+        if (waitingRight == 0 && requested > 0)
+            rightSource().request(waitingRight = IN_BUFFER_SIZE);
     }
 }
