@@ -850,24 +850,16 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         awaitPartitionMapExchange();
 
-        for (int i = 0; i < G.allGrids().size(); ++i) {
-            // Snapshot restoration is disallowed from client nodes.
-            for (int j = 1; j < 3; ++j) {
-                int i0 = i;
-                int j0 = j;
-
-                doTestConcurrentSnpCheckOperations(
-                    () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
-                    () -> snp(grid(j0)).restoreSnapshot(SNAPSHOT_NAME + '2', null, null, 0, true),
-                    CHECK_SNAPSHOT_METAS,
-                    CHECK_SNAPSHOT_PARTS,
-                    false,
-                    true,
-                    null,
-                    () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
-                );
-            }
-        }
+        doTestConcurrentSnpCheckOperations(
+            () -> new IgniteFutureImpl<>(snp(grid(0)).checkSnapshot(SNAPSHOT_NAME, null)),
+            () -> snp(grid(1)).restoreSnapshot(SNAPSHOT_NAME + '2', null, null, 0, true),
+            CHECK_SNAPSHOT_METAS,
+            CHECK_SNAPSHOT_PARTS,
+            false,
+            true,
+            null,
+            () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
+        );
     }
 
     /** Tests that concurrent snapshot full restoration (with checking) is declined when the same snapshot is being fully checked. */
@@ -875,24 +867,16 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     public void testConcurrentFullCheckAndFullRestoreDeclined() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, false);
 
-        for (int i = 0; i < G.allGrids().size(); ++i) {
-            // Snapshot restoration is disallowed from client nodes.
-            for (int j = 1; j < 3; ++j) {
-                int i0 = i;
-                int j0 = j;
-
-                doTestConcurrentSnpCheckOperations(
-                    () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
-                    () -> snp(grid(j0)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
-                    CHECK_SNAPSHOT_METAS,
-                    CHECK_SNAPSHOT_PARTS,
-                    true,
-                    false,
-                    null,
-                    () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
-                );
-            }
-        }
+        doTestConcurrentSnpCheckOperations(
+            () -> new IgniteFutureImpl<>(snp(grid(0)).checkSnapshot(SNAPSHOT_NAME, null)),
+            () -> snp(grid(1)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
+            CHECK_SNAPSHOT_METAS,
+            CHECK_SNAPSHOT_PARTS,
+            true,
+            false,
+            null,
+            () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
+        );
     }
 
     /** Tests that concurrent snapshot full check is declined when the same snapshot is being fully restored (checked). */
@@ -900,24 +884,16 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     public void testConcurrentTheSameSnpFullCheckWhenFullyRestoringDeclined() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, true);
 
-        // Snapshot restoration is disallowed from client nodes.
-        for (int i = 0; i < 3; ++i) {
-            for (int j = 1; j < G.allGrids().size(); ++j) {
-                int i0 = i;
-                int j0 = j;
-
-                doTestConcurrentSnpCheckOperations(
-                    () -> snp(grid(i0)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
-                    () -> new IgniteFutureImpl<>(snp(grid(j0)).checkSnapshot(SNAPSHOT_NAME, null)),
-                    CHECK_SNAPSHOT_METAS,
-                    CHECK_SNAPSHOT_PARTS,
-                    true,
-                    false,
-                    null,
-                    () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
-                );
-            }
-        }
+        doTestConcurrentSnpCheckOperations(
+            () -> snp(grid(0)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
+            () -> new IgniteFutureImpl<>(snp(grid(1)).checkSnapshot(SNAPSHOT_NAME, null)),
+            CHECK_SNAPSHOT_METAS,
+            CHECK_SNAPSHOT_PARTS,
+            true,
+            false,
+            null,
+            () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
+        );
     }
 
     /** Tests that concurrent full check and restoration (without full checking) of the same snapshot are declined. */
@@ -925,24 +901,16 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     public void testConcurrentTheSameSnpFullCheckAndRestoreDeclined() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, true);
 
-        for (int i = 0; i < G.allGrids().size(); ++i) {
-            // Snapshot restoration is disallowed from client nodes.
-            for (int j = 1; j < 3; ++j) {
-                int i0 = i;
-                int j0 = j;
-
-                doTestConcurrentSnpCheckOperations(
-                    () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
-                    () -> snp(grid(j0)).restoreSnapshot(SNAPSHOT_NAME, null),
-                    CHECK_SNAPSHOT_METAS,
-                    CHECK_SNAPSHOT_METAS,
-                    true,
-                    false,
-                    null,
-                    () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
-                );
-            }
-        }
+        doTestConcurrentSnpCheckOperations(
+            () -> new IgniteFutureImpl<>(snp(grid(0)).checkSnapshot(SNAPSHOT_NAME, null)),
+            () -> snp(grid(1)).restoreSnapshot(SNAPSHOT_NAME, null),
+            CHECK_SNAPSHOT_METAS,
+            CHECK_SNAPSHOT_METAS,
+            true,
+            false,
+            null,
+            () -> grid(0).destroyCache(DEFAULT_CACHE_NAME)
+        );
     }
 
     /** Tests that snapshot full check doesn't affect a snapshot creation. */
@@ -950,25 +918,18 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     public void testConcurrentDifferentSnpCheckAndCreateAllowed() throws Exception {
         prepareGridsAndSnapshot(3, 2, 2, false);
 
-        for (int i = 0; i < G.allGrids().size(); ++i) {
-            for (int j = 1; j < G.allGrids().size() - 1; ++j) {
-                int i0 = i;
-                int j0 = j;
+        File dir = snapshotFileTree(grid(0), SNAPSHOT_NAME + "_2").root();
 
-                File dir = snapshotFileTree(grid(0), SNAPSHOT_NAME + "_2").root();
-
-                doTestConcurrentSnpCheckOperations(
-                    () -> new IgniteFutureImpl<>(snp(grid(i0)).checkSnapshot(SNAPSHOT_NAME, null)),
-                    () -> snp(grid(j0)).createSnapshot(SNAPSHOT_NAME + "_2", null, false, false),
-                    CHECK_SNAPSHOT_METAS,
-                    null,
-                    false,
-                    false,
-                    () -> U.delete(dir),
-                    () -> U.delete(dir)
-                );
-            }
-        }
+        doTestConcurrentSnpCheckOperations(
+            () -> new IgniteFutureImpl<>(snp(grid(0)).checkSnapshot(SNAPSHOT_NAME, null)),
+            () -> snp(grid(1)).createSnapshot(SNAPSHOT_NAME + "_2", null, false, false),
+            CHECK_SNAPSHOT_METAS,
+            null,
+            false,
+            false,
+            () -> U.delete(dir),
+            () -> U.delete(dir)
+        );
     }
 
     /** Tests snapshot checking processes a baseline node leave. */

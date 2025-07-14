@@ -631,7 +631,7 @@ public class SnapshotCheckProcess {
             requiredNodes,
             snpName,
             snpPath,
-            grpNames,
+            grpNames == null ? null : new HashSet<>(grpNames),
             fullCheck,
             incIdx,
             allRestoreHandlers
