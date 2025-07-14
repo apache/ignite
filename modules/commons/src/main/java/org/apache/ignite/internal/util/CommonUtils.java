@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.Externalizable;
@@ -28,10 +30,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.UTFDataFormatException;
 import java.lang.annotation.Annotation;
@@ -45,12 +50,16 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.DatagramSocket;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileLock;
+import java.nio.channels.SocketChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,11 +75,15 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -84,6 +97,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
+import java.util.zip.Deflater;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -98,7 +115,8 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
+
+import static java.util.Objects.isNull;
 
 /**
  * Collection of utility methods used in 'ignite-commons' and throughout the system.
@@ -203,9 +221,6 @@ public abstract class CommonUtils {
     /** Name of the JDK. */
     private static String jdkName;
 
-    /** Version of the JDK. */
-    private static String jdkVer;
-
     /** Name of the JVM implementation. */
     private static String jvmImplName;
 
@@ -239,6 +254,18 @@ public abstract class CommonUtils {
     /** */
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
         new ConcurrentHashMap<>();
+
+    /** Object.hashCode() */
+    private static Method hashCodeMtd;
+
+    /** Object.equals(...) */
+    private static Method equalsMtd;
+
+    /** Object.toString() */
+    private static Method toStringMtd;
+
+    /** Byte count prefixes. */
+    private static final String BYTE_CNT_PREFIXES = " KMGTPE";
 
     static {
         boolean assertionsEnabled0 = true;
@@ -351,6 +378,24 @@ public abstract class CommonUtils {
         boxedClsMap.put(char.class, Character.class);
         boxedClsMap.put(boolean.class, Boolean.class);
         boxedClsMap.put(void.class, Void.class);
+
+        for (Method mtd : Object.class.getMethods()) {
+            if ("hashCode".equals(mtd.getName()))
+                hashCodeMtd = mtd;
+            else if ("equals".equals(mtd.getName()))
+                equalsMtd = mtd;
+            else if ("toString".equals(mtd.getName()))
+                toStringMtd = mtd;
+        }
+
+        try {
+            clsURLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
+            mthdURLClassPathGetUrls = clsURLClassPath.getMethod("getURLs");
+        }
+        catch (ReflectiveOperationException e) {
+            clsURLClassPath = null;
+            mthdURLClassPathGetUrls = null;
+        }
     }
 
     /**
@@ -925,7 +970,6 @@ public abstract class CommonUtils {
         return gridClassLoader;
     }
 
-
     /**
      * @param parent Parent to find.
      * @param ldr Loader to check.
@@ -996,28 +1040,6 @@ public abstract class CommonUtils {
         byte[] res = new byte[len];
 
         in.readFully(res);
-
-        return res;
-    }
-
-    /**
-     * Join byte arrays into single one.
-     *
-     * @param bufs list of byte arrays to concatenate.
-     * @return Concatenated byte's array.
-     */
-    public static byte[] join(byte[]... bufs) {
-        int size = 0;
-        for (byte[] buf : bufs) {
-            size += buf.length;
-        }
-
-        byte[] res = new byte[size];
-        int position = 0;
-        for (byte[] buf : bufs) {
-            arrayCopy(buf, 0, res, position, buf.length);
-            position += buf.length;
-        }
 
         return res;
     }
@@ -1790,7 +1812,7 @@ public abstract class CommonUtils {
      * @param sb String builder.
      * @param b Byte to add in hexadecimal format.
      */
-    private static void addByteAsHex(StringBuilder sb, byte b) {
+    static void addByteAsHex(StringBuilder sb, byte b) {
         sb.append(Integer.toHexString(MASK & b >>> 4)).append(Integer.toHexString(MASK & b));
     }
 
@@ -2589,6 +2611,28 @@ public abstract class CommonUtils {
     }
 
     /**
+     * @param in Input.
+     * @return Deserialized set.
+     * @throws IOException If deserialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @Nullable public static <E> LinkedHashSet<E> readLinkedSet(ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            return null;
+
+        LinkedHashSet<E> set = new LinkedHashSet<>(size);
+
+        for (int i = 0; i < size; i++)
+            set.add((E)in.readObject());
+
+        return set;
+    }
+
+    /**
      * Gets resource path for the class.
      *
      * @param clsName Class name.
@@ -2765,15 +2809,6 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Gets JDK version.
-     *
-     * @return JDK version.
-     */
-    public static String jdkVersion() {
-        return jdkVer;
-    }
-
-    /**
      * Indicates whether current OS is Mac OS.
      *
      * @return {@code true} if current OS is Mac OS - {@code false} otherwise.
@@ -2816,33 +2851,6 @@ public abstract class CommonUtils {
      */
     public static boolean jvm32Bit() {
         return jvm32Bit;
-    }
-
-    /**
-     * Get major Java version from string.
-     *
-     * @param verStr Version string.
-     * @return Major version or zero if failed to resolve.
-     */
-    public static int majorJavaVersion(String verStr) {
-        if (F.isEmpty(verStr))
-            return 0;
-
-        try {
-            String[] parts = verStr.split("\\.");
-
-            int major = Integer.parseInt(parts[0]);
-
-            if (parts.length == 1)
-                return major;
-
-            int minor = Integer.parseInt(parts[1]);
-
-            return major == 1 ? minor : major;
-        }
-        catch (Exception e) {
-            return 0;
-        }
     }
 
     /**
@@ -3728,34 +3736,6 @@ public abstract class CommonUtils {
      *
      * @param clsName Class name.
      * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class not found.
-     */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
-        return forName(clsName, ldr, null, GridBinaryMarshaller.USE_CACHE.get());
-    }
-
-    /**
-     * Gets class for provided name. Accepts primitive types names.
-     *
-     * @param clsName Class name.
-     * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class not found.
-     */
-    public static Class<?> forName(
-        String clsName,
-        @Nullable ClassLoader ldr,
-        IgnitePredicate<String> clsFilter
-    ) throws ClassNotFoundException {
-        return forName(clsName, ldr, clsFilter, GridBinaryMarshaller.USE_CACHE.get());
-    }
-
-    /**
-     * Gets class for provided name. Accepts primitive types names.
-     *
-     * @param clsName Class name.
-     * @param ldr Class loader.
      * @param useCache If true class loader and result should be cached internally, false otherwise.
      * @return Class.
      * @throws ClassNotFoundException If class not found.
@@ -3926,5 +3906,1085 @@ public abstract class CommonUtils {
      */
     public static List<String> jvmArgs() {
         return ManagementFactory.getRuntimeMXBean().getInputArguments();
+    }
+
+    /**
+     * Masks name for a valid directory path.
+     *
+     * @param name Name.
+     * @return Masked name.
+     */
+    public static String maskForFileName(CharSequence name) {
+        StringBuilder b = new StringBuilder(name.length());
+
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+
+            if (Character.isLetterOrDigit(c))
+                b.append(c);
+            else
+                b.append('_');
+        }
+
+        return b.toString();
+    }
+
+    /**
+     * Checks if error is MAC invalid argument error which ususally requires special handling.
+     *
+     * @param e Exception.
+     * @return {@code True} if error is invalid argument error on MAC.
+     */
+    public static boolean isMacInvalidArgumentError(Exception e) {
+        return isMacOs() && e instanceof SocketException && e.getMessage() != null &&
+            e.getMessage().toLowerCase().contains("invalid argument");
+    }
+
+    /**
+     * Returns a first non-null value in a given array, if such is present.
+     *
+     * @param vals Input array.
+     * @return First non-null value, or {@code null}, if array is empty or contains
+     *      only nulls.
+     */
+    @Nullable public static <T> T firstNotNull(@Nullable T... vals) {
+        if (vals == null)
+            return null;
+
+        for (T val : vals) {
+            if (val != null)
+                return val;
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates {@code IgniteCheckedException} with the collection of suppressed exceptions.
+     *
+     * @param msg Message.
+     * @param suppressed The collections of suppressed exceptions.
+     * @return {@code IgniteCheckedException}.
+     */
+    public static IgniteCheckedException exceptionWithSuppressed(String msg, @Nullable Collection<Throwable> suppressed) {
+        IgniteCheckedException e = new IgniteCheckedException(msg);
+
+        if (suppressed != null) {
+            for (Throwable th : suppressed)
+                e.addSuppressed(th);
+        }
+
+        return e;
+    }
+
+    /**
+     * Extracts full name of enclosing class from JDK8 lambda class name.
+     *
+     * @param clsName JDK8 lambda class name.
+     * @return Full name of enclosing class for JDK8 lambda class name or
+     *      {@code null} if passed in name is not related to lambda.
+     */
+    @Nullable public static String lambdaEnclosingClassName(String clsName) {
+        int idx0 = clsName.indexOf("$$Lambda$"); // Java 8+
+        int idx1 = clsName.indexOf("$$Lambda/"); // Java 21+
+
+        if (idx0 == idx1)
+            return null;
+
+        return clsName.substring(0, idx0 >= 0 ? idx0 : idx1);
+    }
+
+    /**
+     * Converts a hexadecimal character to an integer.
+     *
+     * @param ch A character to convert to an integer digit
+     * @param idx The index of the character in the source
+     * @return An integer
+     * @throws IgniteCheckedException Thrown if ch is an illegal hex character
+     */
+    public static int toDigit(char ch, int idx) throws IgniteCheckedException {
+        int digit = Character.digit(ch, 16);
+
+        if (digit == -1)
+            throw new IgniteCheckedException("Illegal hexadecimal character " + ch + " at index " + idx);
+
+        return digit;
+    }
+
+    /**
+     * Creates new {@link HashMap} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <K> Type of map keys.
+     * @param <V> Type of map values.
+     * @return New map.
+     */
+    public static <K, V> HashMap<K, V> newHashMap(int expSize) {
+        return new HashMap<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link LinkedHashMap} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <K> Type of map keys.
+     * @param <V> Type of map values.
+     * @return New map.
+     */
+    public static <K, V> LinkedHashMap<K, V> newLinkedHashMap(int expSize) {
+        return new LinkedHashMap<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link HashSet} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <T> Type of elements.
+     * @return New set.
+     */
+    public static <T> HashSet<T> newHashSet(int expSize) {
+        return new HashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link LinkedHashSet} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <T> Type of elements.
+     * @return New set.
+     */
+    public static <T> LinkedHashSet<T> newLinkedHashSet(int expSize) {
+        return new LinkedHashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new map that limited by size.
+     *
+     * @param limit Limit for size.
+     */
+    public static <K, V> Map<K, V> limitedMap(int limit) {
+        if (limit == 0)
+            return Collections.emptyMap();
+
+        if (limit < 5)
+            return new GridLeanMap<>(limit);
+
+        return new HashMap<>(capacity(limit), 0.75f);
+    }
+
+    /**
+     * @param col non-null collection with one element
+     * @return a SingletonList containing the element in the original collection
+     */
+    public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
+        if (col.size() != 1)
+            throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
+
+        return Collections.singletonList(col.iterator().next());
+    }
+
+    /**
+     * Finds a method in the class and it parents.
+     *
+     * Method.getMethod() does not return non-public method,
+     * Method.getDeclaratedMethod() does not look at parent classes.
+     *
+     * @param cls The class to search,
+     * @param name Name of the method.
+     * @param paramTypes Method parameters.
+     * @return Method or {@code null}.
+     */
+    @Nullable public static Method findNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+        while (cls != null) {
+            Method mtd = getNonPublicMethod(cls, name, paramTypes);
+
+            if (mtd != null)
+                return mtd;
+
+            cls = cls.getSuperclass();
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets a method from the class.
+     *
+     * Method.getMethod() does not return non-public method.
+     *
+     * @param cls Target class.
+     * @param name Name of the method.
+     * @param paramTypes Method parameters.
+     * @return Method or {@code null}.
+     */
+    @Nullable public static Method getNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+        try {
+            Method mtd = cls.getDeclaredMethod(name, paramTypes);
+
+            mtd.setAccessible(true);
+
+            return mtd;
+        }
+        catch (NoSuchMethodException ignored) {
+            // No-op.
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds a non-static and non-abstract method from the class it parents.
+     *
+     * Method.getMethod() does not return non-public method.
+     *
+     * @param cls Target class.
+     * @param name Name of the method.
+     * @param paramTypes Method parameters.
+     * @return Method or {@code null}.
+     */
+    @Nullable public static Method findInheritableMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+        Method mtd = null;
+
+        Class<?> cls0 = cls;
+
+        while (cls0 != null) {
+            try {
+                mtd = cls0.getDeclaredMethod(name, paramTypes);
+
+                break;
+            }
+            catch (NoSuchMethodException e) {
+                cls0 = cls0.getSuperclass();
+            }
+        }
+
+        if (mtd == null)
+            return null;
+
+        mtd.setAccessible(true);
+
+        int mods = mtd.getModifiers();
+
+        if ((mods & (Modifier.STATIC | Modifier.ABSTRACT)) != 0)
+            return null;
+        else if ((mods & (Modifier.PUBLIC | Modifier.PROTECTED)) != 0)
+            return mtd;
+        else if ((mods & Modifier.PRIVATE) != 0)
+            return cls == cls0 ? mtd : null;
+        else {
+            ClassLoader clsLdr = cls.getClassLoader();
+
+            ClassLoader clsLdr0 = cls0.getClassLoader();
+
+            return clsLdr == clsLdr0 && packageName(cls).equals(packageName(cls0)) ? mtd : null;
+        }
+    }
+
+    /**
+     * @param cls Class.
+     * @return Package name.
+     */
+    public static String packageName(Class<?> cls) {
+        Package pkg = cls.getPackage();
+
+        return pkg == null ? "" : pkg.getName();
+    }
+
+    /**
+     * @param cls The class to search.
+     * @param name Name of a field to get.
+     * @return Field or {@code null}.
+     */
+    @Nullable public static Field findField(Class<?> cls, String name) {
+        while (cls != null) {
+            try {
+                Field fld = cls.getDeclaredField(name);
+
+                if (!fld.isAccessible())
+                    fld.setAccessible(true);
+
+                return fld;
+            }
+            catch (NoSuchFieldException ignored) {
+                // No-op.
+            }
+
+            cls = cls.getSuperclass();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param c Collection.
+     * @param p Optional filters.
+     * @return Resulting array list.
+     */
+    public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
+        assert c != null;
+
+        return arrayList(c.iterator(), c.size(), p);
+    }
+
+    /**
+     * @param c Collection.
+     * @return Resulting array list.
+     */
+    public static <T extends R, R> List<R> arrayList(Collection<T> c) {
+        assert c != null;
+
+        return new ArrayList<R>(c);
+    }
+
+    /**
+     * @param c Collection.
+     * @param cap Initial capacity.
+     * @param p Optional filters.
+     * @return Resulting array list.
+     */
+    public static <T extends R, R> List<R> arrayList(Iterator<T> c, int cap,
+        @Nullable IgnitePredicate<? super T>... p) {
+        assert c != null;
+        assert cap >= 0;
+
+        List<R> list = new ArrayList<>(cap);
+
+        while (c.hasNext()) {
+            T t = c.next();
+
+            if (F.isAll(t, p))
+                list.add(t);
+        }
+
+        return list;
+    }
+
+    /**
+     * Throws exception with uniform error message if given parameter's assertion condition
+     * is {@code false}.
+     *
+     * @param cond Assertion condition to check.
+     * @param condDesc Description of failed condition.
+     */
+    public static void assertParameter(boolean cond, String condDesc) throws IgniteException {
+        if (!cond)
+            throw new IgniteException("Parameter failed condition check: " + condDesc);
+    }
+
+    /**
+     * @return Whether provided method is {@code Object.hashCode()}.
+     */
+    public static boolean isHashCodeMethod(Method mtd) {
+        return hashCodeMtd.equals(mtd);
+    }
+
+    /**
+     * @return Whether provided method is {@code Object.equals(...)}.
+     */
+    public static boolean isEqualsMethod(Method mtd) {
+        return equalsMtd.equals(mtd);
+    }
+
+    /**
+     * @return Whether provided method is {@code Object.toString()}.
+     */
+    public static boolean isToStringMethod(Method mtd) {
+        return toStringMtd.equals(mtd);
+    }
+
+    /**
+     * @param threadId Thread ID.
+     * @return Thread name if found.
+     */
+    public static String threadName(long threadId) {
+        Thread[] threads = new Thread[Thread.activeCount()];
+
+        int cnt = Thread.enumerate(threads);
+
+        for (int i = 0; i < cnt; i++)
+            if (threads[i].getId() == threadId)
+                return threads[i].getName();
+
+        return "<failed to find active thread " + threadId + '>';
+    }
+
+    /**
+     * @param t0 Comparable object.
+     * @param t1 Comparable object.
+     * @param <T> Comparable type.
+     * @return Maximal object o t0 and t1.
+     */
+    public static <T extends Comparable<? super T>> T max(T t0, T t1) {
+        return t0.compareTo(t1) > 0 ? t0 : t1;
+    }
+
+    /**
+     * Zip binary payload using default compression.
+     *
+     * @param bytes Byte array to compress.
+     * @return Compressed bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static byte[] zip(@Nullable byte[] bytes) throws IgniteCheckedException {
+        return zip(bytes, Deflater.DEFAULT_COMPRESSION);
+    }
+
+    /**
+     * @param bytes Byte array to compress.
+     * @param compressionLevel Level of compression to encode.
+     * @return Compressed bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static byte[] zip(@Nullable byte[] bytes, int compressionLevel) throws IgniteCheckedException {
+        try {
+            if (bytes == null)
+                return null;
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+            try (ZipOutputStream zos = new ZipOutputStream(bos)) {
+                zos.setLevel(compressionLevel);
+
+                ZipEntry entry = new ZipEntry("");
+
+                try {
+                    entry.setSize(bytes.length);
+
+                    zos.putNextEntry(entry);
+
+                    zos.write(bytes);
+                }
+                finally {
+                    zos.closeEntry();
+                }
+            }
+
+            return bos.toByteArray();
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Serialize object to byte array.
+     *
+     * @param obj Object.
+     * @return Serialized object.
+     */
+    public static byte[] toBytes(Serializable obj) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+
+            oos.writeObject(obj);
+            oos.flush();
+
+            return bos.toByteArray();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Deserialize object from byte array.
+     *
+     * @param data Serialized object.
+     * @return Object.
+     */
+    public static <T> T fromBytes(byte[] data) {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
+             ObjectInputStream ois = new ObjectInputStream(bis)) {
+
+            return (T)ois.readObject();
+        }
+        catch (IOException | ClassNotFoundException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Return count of regular file in the directory (including in sub-directories)
+     *
+     * @param dir path to directory
+     * @return count of regular file
+     * @throws IOException sometimes
+     */
+    public static int fileCount(Path dir) throws IOException {
+        int cnt = 0;
+
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
+            for (Path d : ds) {
+                if (Files.isDirectory(d))
+                    cnt += fileCount(d);
+
+                else if (Files.isRegularFile(d))
+                    cnt++;
+            }
+        }
+
+        return cnt;
+    }
+
+    /**
+     * Puts additional text to thread name.
+     * Calls {@code enhanceThreadName(Thread.currentThread(), text)}.
+     * For details see {@link #enhanceThreadName(Thread, String)}.
+     *
+     * @param text Text to be set in thread name in square [] braces. Does nothing if cannot find suitable braces.
+     */
+    public static void enhanceThreadName(String text) {
+        enhanceThreadName(Thread.currentThread(), text);
+    }
+
+    /**
+     * Puts additional text to thread name. It finds first square braces in thread name and
+     * sets required text in them. For example, thread has name "my-thread-[]-%gridname%". After
+     * calling {@code enhanceThreadName(thread, "myText")}, the name of the thread will
+     * be "my-thread-[myText]-%gridname%".<br>
+     * This allows to set additional mutable info to thread, like remote host IP address or so.
+     *
+     * @param thread Thread to be renamed, it must contain square braces in name []. Does nothing if {@code null}.
+     * @param text Text to be set in thread name in square [] braces. Does nothing if cannot find suitable braces.
+     */
+    public static void enhanceThreadName(@Nullable Thread thread, String text) {
+        if (thread == null)
+            return;
+
+        String threadName = thread.getName();
+
+        int idxStart = threadName.indexOf('[');
+        int idxEnd = threadName.indexOf(']');
+
+        if (idxStart < 0 || idxEnd < 0 || idxStart >= idxEnd)
+            return;
+
+        StringBuilder sb = new StringBuilder(threadName.length());
+
+        sb.append(threadName, 0, idxStart + 1);
+        sb.append(text);
+        sb.append(threadName, idxEnd, threadName.length());
+
+        thread.setName(sb.toString());
+    }
+
+    /**
+     * @param buf which content should be converted to string
+     *
+     * @return hex representation of memory region
+     */
+    public static String toHexString(ByteBuffer buf) {
+        StringBuilder sb = new StringBuilder(buf.capacity() * 2);
+
+        for (int i = 0; i < buf.capacity(); i++)
+            addByteAsHex(sb, buf.get(i)); // Can not use getLong because on little-endian it produces bs.
+
+        return sb.toString();
+    }
+
+    /**
+     * Utility method to add the given throwable error to the given throwable root error. If the given
+     * suppressed throwable is an {@code Error}, but the root error is not, will change the root to the {@code Error}.
+     *
+     * @param root Root error to add suppressed error to.
+     * @param err Error to add.
+     * @return New root error.
+     */
+    public static <T extends Throwable> T addSuppressed(T root, T err) {
+        assert err != null;
+
+        if (root == null)
+            return err;
+
+        if (err instanceof Error && !(root instanceof Error)) {
+            err.addSuppressed(root);
+
+            root = err;
+        }
+        else
+            root.addSuppressed(err);
+
+        return root;
+    }
+
+    /**
+     *  Safely write buffer fully to blocking socket channel.
+     *  Will throw assert if non blocking channel passed.
+     *
+     * @param sockCh WritableByteChannel.
+     * @param buf Buffer.
+     * @throws IOException IOException.
+     */
+    public static void writeFully(SocketChannel sockCh, ByteBuffer buf) throws IOException {
+        int totalWritten = 0;
+
+        assert sockCh.isBlocking() : "SocketChannel should be in blocking mode " + sockCh;
+
+        while (buf.hasRemaining()) {
+            int written = sockCh.write(buf);
+
+            if (written < 0)
+                throw new IOException("Error writing buffer to channel " +
+                    "[written = " + written + ", buf " + buf + ", totalWritten = " + totalWritten + "]");
+
+            totalWritten += written;
+        }
+    }
+
+    /**
+     * @return New identity hash set.
+     */
+    public static <X> Set<X> newIdentityHashSet() {
+        return Collections.newSetFromMap(new IdentityHashMap<>());
+    }
+
+    /**
+     * Writes string to output stream accounting for {@code null} values. <br/>
+     *
+     * This method can write string of any length, limit of <code>65535</code> is not applied.
+     *
+     * @param out Output stream to write to.
+     * @param s String to write, possibly {@code null}.
+     * @throws IOException If write failed.
+     */
+    public static void writeLongString(DataOutput out, @Nullable String s) throws IOException {
+        // Write null flag.
+        out.writeBoolean(isNull(s));
+
+        if (isNull(s))
+            return;
+
+        int sLen = s.length();
+
+        // Write string length.
+        out.writeInt(sLen);
+
+        // Write byte array.
+        for (int i = 0; i < sLen; i++) {
+            char c = s.charAt(i);
+            int utfBytes = utfBytes(c);
+
+            if (utfBytes == 1)
+                out.writeByte((byte)c);
+            else if (utfBytes == 3) {
+                out.writeByte((byte)(0xE0 | (c >> 12) & 0x0F));
+                out.writeByte((byte)(0x80 | (c >> 6) & 0x3F));
+                out.writeByte((byte)(0x80 | (c & 0x3F)));
+            }
+            else {
+                out.writeByte((byte)(0xC0 | ((c >> 6) & 0x1F)));
+                out.writeByte((byte)(0x80 | (c & 0x3F)));
+            }
+        }
+    }
+
+    /**
+     * Reads string from input stream accounting for {@code null} values. <br/>
+     *
+     * This method can read string of any length, limit of <code>65535</code> is not applied.
+     *
+     * @param in Stream to read from.
+     * @return Read string, possibly {@code null}.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static String readLongString(DataInput in) throws IOException {
+        // Check null value.
+        if (in.readBoolean())
+            return null;
+
+        // Read string length.
+        int sLen = in.readInt();
+
+        StringBuilder strBuilder = new StringBuilder(sLen);
+
+        // Read byte array.
+        for (int i = 0, b0, b1, b2; i < sLen; i++) {
+            b0 = in.readByte() & 0xff;
+
+            switch (b0 >> 4) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                case 7:   // 1 byte format: 0xxxxxxx
+                    strBuilder.append((char)b0);
+                    break;
+
+                case 12:
+                case 13:  // 2 byte format: 110xxxxx 10xxxxxx
+                    b1 = in.readByte();
+
+                    if ((b1 & 0xC0) != 0x80)
+                        throw new UTFDataFormatException();
+
+                    strBuilder.append((char)(((b0 & 0x1F) << 6) | (b1 & 0x3F)));
+                    break;
+
+                case 14:  // 3 byte format: 1110xxxx 10xxxxxx 10xxxxxx
+                    b1 = in.readByte();
+                    b2 = in.readByte();
+
+                    if ((b1 & 0xC0) != 0x80 || (b2 & 0xC0) != 0x80)
+                        throw new UTFDataFormatException();
+
+                    strBuilder.append((char)(((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F)));
+                    break;
+
+                default:  // 10xx xxxx, 1111 xxxx
+                    throw new UTFDataFormatException();
+            }
+        }
+
+        return strBuilder.toString();
+    }
+
+    /**
+     * Get number of bytes for {@link DataOutput#writeUTF},
+     * depending on character: <br/>
+     *
+     * One byte - If a character <code>c</code> is in the range
+     * <code>&#92;u0001</code> through <code>&#92;u007f</code>.<br/>
+     *
+     * Two bytes - If a character <code>c</code> is <code>&#92;u0000</code> or
+     * is in the range <code>&#92;u0080</code> through <code>&#92;u07ff</code>.
+     * <br/>
+     *
+     * Three bytes - If a character <code>c</code> is in the range
+     * <code>&#92;u0800</code> through <code>uffff</code>.
+     *
+     * @param c Character.
+     * @return Number of bytes.
+     */
+    public static int utfBytes(char c) {
+        return (c >= 0x0001 && c <= 0x007F) ? 1 : (c > 0x07FF) ? 3 : 2;
+    }
+
+    /**
+     * Reads string-to-string map written by {@link #writeStringMap(DataOutput, Map)}.
+     *
+     * @param in Data input.
+     * @throws IOException If write failed.
+     * @return Read result.
+     */
+    public static Map<String, String> readStringMap(DataInput in) throws IOException {
+        int size = in.readInt();
+
+        if (size == -1)
+            return null;
+        else {
+            Map<String, String> map = newHashMap(size);
+
+            for (int i = 0; i < size; i++)
+                map.put(readUTF(in), readUTF(in));
+
+            return map;
+        }
+    }
+
+    /**
+     * Writes string-to-string map to given data output.
+     *
+     * @param out Data output.
+     * @param map Map.
+     * @throws IOException If write failed.
+     */
+    public static void writeStringMap(DataOutput out, @Nullable Map<String, String> map) throws IOException {
+        if (map != null) {
+            out.writeInt(map.size());
+
+            for (Map.Entry<String, String> e : map.entrySet()) {
+                writeUTF(out, e.getKey());
+                writeUTF(out, e.getValue());
+            }
+        }
+        else
+            out.writeInt(-1);
+    }
+
+    /** Maximum string length to be written at once. */
+    private static final int MAX_STR_LEN = 0xFFFF / 4;
+
+    /**
+     * Write UTF string which can be {@code null}.
+     *
+     * @param out Output stream.
+     * @param val Value.
+     * @throws IOException If failed.
+     */
+    public static void writeUTF(DataOutput out, @Nullable String val) throws IOException {
+        if (val == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(val.length());
+
+            if (val.length() <= MAX_STR_LEN)
+                out.writeUTF(val); // Optimized write in 1 chunk.
+            else {
+                int written = 0;
+
+                while (written < val.length()) {
+                    int partLen = Math.min(val.length() - written, MAX_STR_LEN);
+
+                    String part = val.substring(written, written + partLen);
+
+                    out.writeUTF(part);
+
+                    written += partLen;
+                }
+            }
+        }
+    }
+
+    /**
+     * Read UTF string which can be {@code null}.
+     *
+     * @param in Input stream.
+     * @return Value.
+     * @throws IOException If failed.
+     */
+    public static String readUTF(DataInput in) throws IOException {
+        int len = in.readInt(); // May be zero.
+
+        if (len < 0)
+            return null;
+        else {
+            if (len <= MAX_STR_LEN)
+                return in.readUTF();
+
+            StringBuilder sb = new StringBuilder(len);
+
+            do {
+                sb.append(in.readUTF());
+            }
+            while (sb.length() < len);
+
+            assert sb.length() == len;
+
+            return sb.toString();
+        }
+    }
+
+    /**
+     * Converts count of bytes to a human-readable format.
+     * Examples: 10 -> 10.0 B, 2048 -> 2.0 KB, etc.
+     *
+     * @param bytes Byte count.
+     * @return Human readable format for count of bytes.
+     */
+    public static String humanReadableByteCount(long bytes) {
+        long base = 1024L;
+
+        int exponent = max((int)(Math.log(bytes) / Math.log(base)), 0);
+        String unit = String.valueOf(BYTE_CNT_PREFIXES.charAt(exponent)).trim();
+
+        return String.format((Locale)null, "%.1f %sB", (bytes / Math.pow(base, exponent)), unit);
+    }
+
+    /**
+     * Converts duration to a human-readable format.
+     * Examples: 10 -> 10ms, 6_0000 -> 6s, 65_000 -> 1m5s, (65 * 60_000 + 32_000) -> 1h5m32s, etc.
+     *
+     * @param millis Duration in milliseconds.
+     * @return Human readable format for duration.
+     */
+    public static String humanReadableDuration(long millis) {
+        StringBuilder sb = new StringBuilder();
+
+        if (millis < 0) {
+            sb.append('-');
+
+            millis = -millis;
+        }
+
+        if (millis < 1_000)
+            sb.append(millis).append("ms");
+        else {
+            long days = TimeUnit.MILLISECONDS.toDays(millis);
+
+            if (days > 0) {
+                sb.append(days).append('d');
+
+                millis -= TimeUnit.DAYS.toMillis(days);
+            }
+
+            long hours = TimeUnit.MILLISECONDS.toHours(millis);
+
+            if (hours > 0) {
+                sb.append(hours).append('h');
+
+                millis -= TimeUnit.HOURS.toMillis(hours);
+            }
+
+            long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+
+            if (minutes > 0) {
+                sb.append(minutes).append('m');
+
+                millis -= TimeUnit.MINUTES.toMillis(minutes);
+            }
+
+            long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
+
+            if (seconds > 0)
+                sb.append(seconds).append('s');
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Getting the total size of uncompressed data in zip.
+     *
+     * @param zip Zip file.
+     * @return Total uncompressed size.
+     * @throws IOException If failed.
+     */
+    public static long uncompressedSize(File zip) throws IOException {
+        try (ZipFile zipFile = new ZipFile(zip)) {
+            long size = 0;
+
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+
+            while (entries.hasMoreElements())
+                size += entries.nextElement().getSize();
+
+            return size;
+        }
+    }
+
+    /**
+     * Maps object hash to some index between 0 and specified size via modulo operation.
+     *
+     * @param hash Object hash.
+     * @param size Size greater than 0.
+     * @return Calculated index in range [0..size).
+     */
+    public static int hashToIndex(int hash, int size) {
+        return safeAbs(hash % size);
+    }
+
+    /**
+     * Invokes {@link ServerSocket#accept()} method on the passed server socked, working around the
+     * https://bugs.openjdk.java.net/browse/JDK-8247750 in the process.
+     *
+     * @param srvrSock Server socket.
+     * @return New socket.
+     * @throws IOException If an I/O error occurs when waiting for a connection.
+     * @see ServerSocket#accept()
+     */
+    public static Socket acceptServerSocket(ServerSocket srvrSock) throws IOException {
+        while (true) {
+            try {
+                return srvrSock.accept();
+            }
+            catch (SocketTimeoutException e) {
+                if (srvrSock.getSoTimeout() > 0)
+                    throw e;
+            }
+        }
+    }
+
+    /**
+     * @return Language runtime.
+     */
+    public static String language(ClassLoader ldr) {
+        boolean scala = false;
+        boolean groovy = false;
+        boolean clojure = false;
+
+        for (StackTraceElement elem : Thread.currentThread().getStackTrace()) {
+            String s = elem.getClassName().toLowerCase();
+
+            if (s.contains("scala")) {
+                scala = true;
+
+                break;
+            }
+            else if (s.contains("groovy")) {
+                groovy = true;
+
+                break;
+            }
+            else if (s.contains("clojure")) {
+                clojure = true;
+
+                break;
+            }
+        }
+
+        if (scala) {
+            try (InputStream in = ldr.getResourceAsStream("/library.properties")) {
+                Properties props = new Properties();
+
+                if (in != null)
+                    props.load(in);
+
+                return "Scala ver. " + props.getProperty("version.number", "<unknown>");
+            }
+            catch (Exception ignore) {
+                return "Scala ver. <unknown>";
+            }
+        }
+
+        // How to get Groovy and Clojure version at runtime?!?
+        return groovy ? "Groovy" : clojure ? "Clojure" : jdkName + " ver. " + jdkVersion();
+    }
+
+    /**
+     * Returns {@code true} if class is a lambda.
+     *
+     * @param objectClass Class.
+     * @return {@code true} if class is a lambda, {@code false} otherwise.
+     */
+    public static boolean isLambda(Class<?> objectClass) {
+        return !objectClass.isPrimitive() && !objectClass.isArray()
+            // Order is crucial here, isAnonymousClass and isLocalClass may fail if
+            // class' outer class was loaded with different classloader.
+            && objectClass.isSynthetic()
+            && !objectClass.isAnonymousClass() && !objectClass.isLocalClass()
+            && classCannotBeLoadedByName(objectClass);
+    }
+
+    /**
+     * Returns {@code true} if class can not be loaded by name.
+     *
+     * @param objectClass Class.
+     * @return {@code true} if class can not be loaded by name, {@code false} otherwise.
+     */
+    public static boolean classCannotBeLoadedByName(Class<?> objectClass) {
+        try {
+            Class.forName(objectClass.getName());
+            return false;
+        }
+        catch (ClassNotFoundException e) {
+            return true;
+        }
+    }
+
+    /**
+     * Appends spaces to end of input string for extending to needed length.
+     *
+     * @param s Input string.
+     * @param targetLen Needed length.
+     * @return String with appended spaces on the end.
+     */
+    public static String extendToLen(String s, int targetLen) {
+        assert targetLen >= 0;
+        assert s.length() <= targetLen;
+
+        if (s.length() == targetLen)
+            return s;
+
+        SB sb = new SB(targetLen);
+
+        sb.a(s);
+
+        for (int i = 0; i < targetLen - s.length(); i++)
+            sb.a(" ");
+
+        return sb.toString();
     }
 }
