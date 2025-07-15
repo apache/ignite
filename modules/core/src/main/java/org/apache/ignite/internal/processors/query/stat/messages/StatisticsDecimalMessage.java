@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.stat.messages;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -28,7 +29,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * H2 Decimal.
  */
-public class StatisticsDecimalMessage implements Message {
+public class StatisticsDecimalMessage implements Message, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     public static final short TYPE_CODE = 184;
 

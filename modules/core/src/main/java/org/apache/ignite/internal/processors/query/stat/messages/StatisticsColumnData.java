@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.stat.messages;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -25,7 +26,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Statistics by column (or by set of columns, if they collected together)
  */
-public class StatisticsColumnData implements Message {
+public class StatisticsColumnData implements Message, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     public static final short TYPE_CODE = 186;
 

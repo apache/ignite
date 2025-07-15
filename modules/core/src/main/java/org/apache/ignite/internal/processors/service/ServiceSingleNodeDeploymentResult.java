@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,7 +34,10 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
  * <p/>
  * Contains count of deployed service instances on single node and deployment errors if exist.
  */
-public class ServiceSingleNodeDeploymentResult implements Message {
+public class ServiceSingleNodeDeploymentResult implements Message, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Count of service's instances. */
     private int cnt;
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.stat.messages;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
@@ -30,7 +31,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Key, describing the object of statistics. For example: table with some columns.
  */
-public class StatisticsKeyMessage implements Message {
+public class StatisticsKeyMessage implements Message, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     public static final short TYPE_CODE = 183;
 
