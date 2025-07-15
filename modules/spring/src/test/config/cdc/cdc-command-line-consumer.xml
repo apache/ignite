@@ -27,8 +27,6 @@
             http://www.springframework.org/schema/util/spring-util.xsd">
 
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="igniteInstanceName" value="ignite-name" />
-        <property name="consistentId" value="ignite-name" />
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 <property name="defaultDataRegionConfiguration">
@@ -42,25 +40,7 @@
 
     <bean id="cdc.cfg" class="org.apache.ignite.cdc.CdcConfiguration">
         <property name="consumer">
-            <bean class="org.apache.ignite.cdc.CdcCommandLineStartupTest$CdcCommandLineConsumer">
-                <property name="destinationIgniteConfiguration">
-                    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
-                        <property name="clientMode" value="true"/>
-                        <property name="localHost" value="127.0.0.1"/>
-                        <property name="discoverySpi" ref="destination.TcpDiscoverySpi"/>
-                    </bean>
-                </property>
-            </bean>
-        </property>
-    </bean>
-
-
-    <!--Destination TcpDiscoverySpi-->
-    <bean id="destination.TcpDiscoverySpi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-        <property name="ipFinder">
-            <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
-                <property name="addresses" value="127.0.0.1:47500..47509"/>
-            </bean>
+            <bean class="org.apache.ignite.cdc.CdcCommandLineStartupTest$CdcCommandLineConsumer"/>
         </property>
     </bean>
 </beans>

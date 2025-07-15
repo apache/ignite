@@ -98,7 +98,9 @@ public class CdcCommandLineStartup {
             X.error("CDC was interrupted.");
 
             if (appThread != null) {
-                appThread.interrupt(); // Interrupting a thread does NOT trigger the JVM shutdown hook
+                // In unit tests, CDC is started and stopped within the same JVM. Since JVM shutdown hooks are not
+                // triggered in this scenario, we explicitly interrupt the thread to ensure the CDC shuts down cleanly.
+                appThread.interrupt();
 
                 try {
                     appThread.join();

@@ -18,76 +18,81 @@
 package org.apache.ignite.cdc;
 
 import java.util.Iterator;
-import org.apache.ignite.Ignition;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class CdcCommandLineStartupTest extends GridCommonAbstractTest {
-    /** */
-    private static final String IGNITE_INSTANCE_NAME = "ignite-name";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setConsistentId(igniteInstanceName);
-        cfg.setPeerClassLoadingEnabled(false);
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setCdcEnabled(true)));
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setCdcEnabled(true)));
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
     }
 
     /** */
     @Test
     public void testCdcCommandLineStartup() throws Exception {
-        try (IgniteEx ign = startGrid(IGNITE_INSTANCE_NAME)) {
-            ign.cluster().state(ACTIVE);
-
+        try (IgniteEx ign = startGrid(0)) {
             IgniteInternalFuture<?> fut = runAsync(() ->
                 CdcCommandLineStartup.main(new String[] {"modules/spring/src/test/config/cdc/cdc-command-line-consumer.xml"}),
                 "cmdline-consumer"
             );
 
-            assertTrue(waitForCondition(() -> ign.cluster().nodes().size() == 2, getTestTimeout()));
+            assertTrue(waitForCondition(CdcCommandLineConsumer::started, getTestTimeout()));
 
             fut.cancel();
 
             assertTrue(fut.isDone());
 
-            assertTrue(ign.cluster().nodes().size() == 1);
+            assertTrue(CdcCommandLineConsumer.interrupted());
         }
     }
 
     /** */
     public static class CdcCommandLineConsumer implements CdcConsumer {
-        /** Destination cluster client configuration. */
-        private IgniteConfiguration destIgniteCfg;
+        /** */
+        private static final AtomicBoolean started = new AtomicBoolean(false);
 
-        /** Destination Ignite cluster client */
-        private IgniteEx dest;
-
+        /** */
+        private static final AtomicBoolean interrupted = new AtomicBoolean(false);
 
         /** {@inheritDoc} */
         @Override public void start(MetricRegistry mreg) {
-            A.notNull(destIgniteCfg, "Destination Ignite configuration.");
+            try {
+                started.compareAndSet(false, true);
 
-            dest = (IgniteEx)Ignition.start(destIgniteCfg);
+                while (true)
+                    Thread.sleep(100);
+            }
+            catch (InterruptedException e) {
+                interrupted.compareAndSet(false, true);
+
+                Thread.currentThread().interrupt();
+            }
         }
 
         /** {@inheritDoc} */
@@ -129,18 +134,17 @@ public class CdcCommandLineStartupTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void stop() {
-            dest.close();
+            started.compareAndSet(true, false);
         }
 
-        /**
-         * Sets Ignite client node configuration that will connect to destination cluster.
-         * @param destIgniteCfg Ignite client node configuration that will connect to destination cluster.
-         * @return {@code this} for chaining.
-         */
-        public CdcCommandLineConsumer setDestinationIgniteConfiguration(IgniteConfiguration destIgniteCfg) {
-            this.destIgniteCfg = destIgniteCfg;
+        /** */
+        public static boolean started() {
+            return started.get();
+        }
 
-            return this;
+        /** */
+        public static boolean interrupted() {
+            return interrupted.get();
         }
     }
 }
