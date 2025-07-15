@@ -2151,7 +2151,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         int retry = 0;
 
         if (log.isInfoEnabled())
-            log.info("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", attempt=" + (retry + 1) + ']');
+            log.info("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ']');
 
         while (true) {
             try {
@@ -2160,7 +2160,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (log.isInfoEnabled()) {
                     long dur = System.currentTimeMillis() - sndStart;
                     log.info("Local partitions sent [nodeId=" + node.id() + ", exchId=" + exchId +
-                        ", duration=" + dur + "ms, retries=" + retry + ']');
+                        ", duration=" + dur + "ms");
                 }
             }
             catch (ClusterTopologyCheckedException ignored) {
@@ -2317,9 +2317,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         catch (ClusterTopologyCheckedException ignore) {
             if (log.isInfoEnabled())
                 log.info("Coordinator left during partition exchange, will retry [nodeId=" + oldestNode.id() +
-                    ", exchId=" + exchId + ']');
-            else if (log.isDebugEnabled())
-                log.debug("Coordinator left during partition exchange [nodeId=" + oldestNode.id() +
                     ", exchId=" + exchId + ']');
         }
         catch (IgniteCheckedException e) {
