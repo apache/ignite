@@ -257,6 +257,19 @@ public abstract class CommonUtils {
     }
 
     /**
+     * @param svcCls Service class to load.
+     * @param <S> Type of loaded interfaces.
+     * @return Lazy iterable structure over loaded class implementations.
+     */
+    public static <S> Iterable<S> loadService(Class<S> svcCls) {
+        return AccessController.doPrivileged(new PrivilegedAction<Iterable<S>>() {
+            @Override public Iterable<S> run() {
+                return ServiceLoader.load(svcCls);
+            }
+        });
+    }
+
+    /**
      * Convert milliseconds time interval to nanoseconds.
      *
      * @param millis Original time interval.
@@ -320,18 +333,5 @@ public abstract class CommonUtils {
             return 1;
 
         return 1 << (32 - Integer.numberOfLeadingZeros(v - 1));
-    }
-
-    /**
-     * @param svcCls Service class to load.
-     * @param <S> Type of loaded interfaces.
-     * @return Lazy iterable structure over loaded class implementations.
-     */
-    public static <S> Iterable<S> loadService(Class<S> svcCls) {
-        return AccessController.doPrivileged(new PrivilegedAction<Iterable<S>>() {
-            @Override public Iterable<S> run() {
-                return ServiceLoader.load(svcCls);
-            }
-        });
     }
 }

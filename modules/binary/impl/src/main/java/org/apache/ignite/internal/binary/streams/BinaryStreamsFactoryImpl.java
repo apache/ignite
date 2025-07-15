@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.binary.streams;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.CommonUtils;
 
 /**
- * Utility class to provide static methods to create {@link BinaryInputStream} or {@link BinaryOutputStream} in different modes.
+ * Binary streams factory implementation.
+ * @see CommonUtils#loadService(Class)
  */
 public class BinaryStreamsFactoryImpl implements BinaryStreamsFactory {
     /** {@inheritDoc} */
