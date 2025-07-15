@@ -358,23 +358,6 @@ public final class GridTestUtils {
         (sent ? val.get1() : val.get2()).add(msg);
     }
 
-    /**
-     * Dumps all messages tracked with {@link #addMessage(UUID, UUID, Message, boolean)} to std out.
-     */
-    public static void dumpMessages() {
-        for (Map.Entry<IgnitePair<UUID>, IgnitePair<Queue<Message>>> entry : msgMap.entrySet()) {
-            U.debug("\n" + entry.getKey().get1() + " [sent to] " + entry.getKey().get2());
-
-            for (Message msg : entry.getValue().get1())
-                U.debug("\t" + msg);
-
-            U.debug(entry.getKey().get2() + " [received from] " + entry.getKey().get1());
-
-            for (Message msg : entry.getValue().get2())
-                U.debug("\t" + msg);
-        }
-    }
-
 //    static {
 //        new Thread(new Runnable() {
 //            @Override public void run() {
