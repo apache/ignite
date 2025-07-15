@@ -106,10 +106,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var platformCacheCfg = configuration.PlatformCacheConfiguration;
             
-            if (platformCacheCfg != null)
+            if (platformCacheCfg != null && (HasPlatformCache = CheckNodeFilter(platformCacheCfg.NodeFilter)))
             {
-                HasPlatformCache = UsePlatformCache(platformCacheCfg);
-                
                 _platformCache = _ignite.PlatformCacheManager.GetOrCreatePlatformCache(configuration);
             }
         }
@@ -117,10 +115,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Invokes .NET or Java node filter, if any.
         /// </summary>
-        private bool UsePlatformCache(PlatformCacheConfiguration platformCacheCfg)
+        private bool CheckNodeFilter(IClusterNodeFilter nodeFilter)
         {
-            var nodeFilter = platformCacheCfg.NodeFilter;
-
             if (nodeFilter is null)
                 return true;
             
