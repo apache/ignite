@@ -2147,9 +2147,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         msg.exchangeStartTime(startTime);
 
-        if (log.isTraceEnabled())
-            log.trace("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + msg + ']');
-
         long sndStart = System.currentTimeMillis();
         int retry = 0;
 
@@ -2306,7 +2303,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert !exchCtx.exchangeFreeSwitch() : this;
 
         if (log.isInfoEnabled())
-            log.info("Send partitions to coordinator [nodeId=" + oldestNode.id() + ", exchId=" + exchId + ']');
+            log.info("Sending partitions to coordinator [nodeId=" + oldestNode.id() + ", exchId=" + exchId + ']');
 
         long start = System.currentTimeMillis();
 
