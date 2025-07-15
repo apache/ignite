@@ -36,7 +36,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.lang.Math.max;
@@ -476,7 +475,6 @@ public class ExecutionTest extends AbstractExecutionTest {
      *
      */
     @Test
-    @Ignore
     public void testCorrelatedNestedLoopJoin() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
         IgniteTypeFactory tf = ctx.getTypeFactory();

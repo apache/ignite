@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -66,7 +65,6 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
 
     /** Tests NL with input bigger that the buffer size. */
     @Test
-    @Ignore
     public void testNLJoinBuffers() throws Exception {
         JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType, cond) ->
             NestedLoopJoinNode.create(ctx, outType, leftType, rightType, joinType, (r1, r2) -> r1[0].equals(r2[0]));
