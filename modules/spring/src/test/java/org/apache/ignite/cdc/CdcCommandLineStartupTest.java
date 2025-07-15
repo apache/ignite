@@ -89,6 +89,13 @@ public class CdcCommandLineStartupTest extends GridCommonAbstractTest {
                     Thread.sleep(100);
             }
             catch (InterruptedException e) {
+                try {
+                    Thread.sleep(100);
+                }
+                catch (InterruptedException ex) {
+                    // No-op.
+                }
+
                 interrupted.compareAndSet(false, true);
 
                 Thread.currentThread().interrupt();
