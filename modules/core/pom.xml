@@ -71,8 +71,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-codegen2</artifactId>
-            <version>${revision}</version>
-            <scope>compile</scope>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
