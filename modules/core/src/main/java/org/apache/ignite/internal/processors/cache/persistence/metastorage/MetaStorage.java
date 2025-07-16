@@ -409,7 +409,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(@NotNull String key, @NotNull Object val) throws IgniteCheckedException {
+    @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
         assert val != null;
 
         if (!readOnly)

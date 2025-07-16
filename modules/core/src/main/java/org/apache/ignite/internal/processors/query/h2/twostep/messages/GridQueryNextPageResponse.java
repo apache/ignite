@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -33,7 +34,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Next page response.
  */
 @IgniteCodeGeneratingFail
-public class GridQueryNextPageResponse implements Message {
+public class GridQueryNextPageResponse implements Message, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     private long qryReqId;
 

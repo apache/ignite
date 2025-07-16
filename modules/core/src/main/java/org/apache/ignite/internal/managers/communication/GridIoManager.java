@@ -235,7 +235,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * @see IgniteMessaging
  * @see TransmissionHandler
  */
-public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Message>> {
+public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> {
     /** Io communication metrics registry name. */
     public static final String COMM_METRICS = metricName("io", "communication");
 
@@ -331,7 +331,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Message>>
     private final ConcurrentMap<UUID, Deque<DelayedMessage>> waitMap = new ConcurrentHashMap<>();
 
     /** Communication message listener. */
-    private CommunicationListenerEx<Message> commLsnr;
+    private CommunicationListenerEx<Object> commLsnr;
 
     /** Grid marshaller. */
     private final Marshaller marsh;
@@ -466,7 +466,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Message>>
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
 
-        CommunicationSpi<Message> spi = getSpi();
+        CommunicationSpi<Object> spi = getSpi();
 
         if ((CommunicationSpi<?>)spi instanceof TcpCommunicationSpi)
             getTcpCommunicationSpi().setConnectionRequestor(invConnHandler);
@@ -487,8 +487,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Message>>
 
         ioMetric.register(RCVD_BYTES_CNT, spi::getReceivedBytesCount, "Received bytes count.");
 
-        getSpi().setListener(commLsnr = new CommunicationListenerEx<Message>() {
-            @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
+        getSpi().setListener(commLsnr = new CommunicationListenerEx<Object>() {
+            @Override public void onMessage(UUID nodeId, Object msg, IgniteRunnable msgC) {
                 try {
                     onMessage0(nodeId, (GridIoMessage)msg, msgC);
                 }
@@ -504,7 +504,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Message>>
                     lsnr.onNodeDisconnected(nodeId);
             }
 
-            @Override public void onChannelOpened(UUID rmtNodeId, Message initMsg, Channel channel) {
+            @Override public void onChannelOpened(UUID rmtNodeId, Object initMsg, Channel channel) {
                 try {
                     onChannelOpened0(rmtNodeId, (GridIoMessage)initMsg, channel);
                 }
