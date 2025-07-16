@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
@@ -38,15 +37,20 @@ public class ClientCachePutAllRequest extends ClientCacheDataRequest implements 
      *
      * @param reader Reader.
      */
-    public ClientCachePutAllRequest(BinaryRawReaderEx reader) {
+    public ClientCachePutAllRequest(BinaryReaderEx reader) {
         super(reader);
 
         int cnt = reader.readInt();
 
-        map = new LinkedHashMap<>(cnt);
+        Object[] keys = new Object[cnt];
+        Object[] vals = new Object[cnt];
 
-        for (int i = 0; i < cnt; i++)
-            map.put(reader.readObjectDetached(), reader.readObjectDetached());
+        for (int i = 0; i < cnt; i++) {
+            keys[i] = reader.readObjectDetached();
+            vals[i] = reader.readObjectDetached();
+        }
+
+        map = new ImmutableArrayMap<>(keys, vals);
     }
 
     /** {@inheritDoc} */

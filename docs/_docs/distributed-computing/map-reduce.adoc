@@ -89,7 +89,17 @@ include::{javaFile}[tags=failover,indent=0]
 == Compute Task Adapters
 There are several helper classes that provide most commonly used implementations of the `result(...)` and `map(...)` methods.
 
-* `ComputeTaskAdapter` — This class implements the `result()` method to return the `FAILOVER` policy if a job throws an exception and the `WAIT` policy otherwise. It means that this implementation will wait for all jobs to finish with a result.
+* `ComputeTaskAdapter` — This class provides implementation for the `result()` method, which makes the best effort to wait for all Compute Jobs to complete successfully and process their results (see `WAIT` policy).
++
+--
+Compute Jobs will be automatically redeployed (see `FAILOVER` policy) in the following scenarios:
+
+- the user-provided executor refused to process the mapped Compute Job;
+- the node intended to run the Compute Job is no longer present in the cluster;
+- the user code of the Compute Job explicitly threw a dedicated exception — `ComputeJobFailoverException`.
+--
++
+If any of the mapped Compute Jobs throws a user exception, the entire Compute Task immediately fails and all remaining Compute Jobs are stopped asynchronously.
 
 * `ComputeTaskSplitAdapter` — This class extends `ComputeTaskAdapter` and implements the `map(...)` method to automatically assign jobs to nodes. It introduces a new `split(...)` method that implements the logic of producing jobs based on the input data.
 

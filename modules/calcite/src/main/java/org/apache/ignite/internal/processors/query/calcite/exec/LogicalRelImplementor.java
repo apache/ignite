@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanStorageN
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortAggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.UncollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -95,6 +96,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUncollect;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
@@ -365,7 +367,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             Iterable<Row> rowsIter = idx.scan(ctx, grp, ranges, requiredColumns);
 
-            return new ScanStorageNode<>(idx.name(), ctx, rowType, rowsIter, filters, prj);
+            return new ScanStorageNode<>(tbl.name() + '.' + idx.name(), ctx, rowType, rowsIter, filters, prj);
         }
         else {
             // Index was invalidated after planning, workaround through table-scan -> sort -> index spool.
@@ -456,7 +458,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            return new ScanStorageNode<>(idx.name() + "_COUNT", ctx, rel.getRowType(),
+            return new ScanStorageNode<>(tbl.name() + '.' + idx.name() + "_COUNT", ctx, rel.getRowType(),
                 idx.count(ctx, ctx.group(rel.sourceId()), rel.notNull()));
         }
         else {
@@ -487,7 +489,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            return new ScanStorageNode<>(idx.name() + "_BOUND", ctx, rowType,
+            return new ScanStorageNode<>(tbl.name() + '.' + idx.name() + "_BOUND", ctx, rowType,
                 idx.firstOrLast(idxBndRel.first(), ctx, grp, requiredColumns));
         }
         else {
@@ -543,7 +545,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             Iterable<Row> rowsIter = idx.scan(ctx, grp, null, requiredColumns);
 
-            return new ScanStorageNode<>(idx.name(), ctx, rowType, rowsIter, filters, prj);
+            return new ScanStorageNode<>(tbl.name() + '.' + idx.name(), ctx, rowType, rowsIter, filters, prj);
         }
         else {
             Iterable<Row> rowsIter = tbl.scan(ctx, grp, requiredColumns);
@@ -889,6 +891,20 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Node<Row> input = visit(rel.getInput());
 
         node.register(input);
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteUncollect rel) {
+        UncollectNode<Row> node = new UncollectNode<>(
+            ctx,
+            rel.getInput().getRowType(),
+            rel.getRowType(),
+            rel.withOrdinality
+        );
+
+        node.register(visit(rel.getInput()));
 
         return node;
     }

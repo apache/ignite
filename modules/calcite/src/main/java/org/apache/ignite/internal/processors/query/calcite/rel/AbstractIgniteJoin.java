@@ -35,6 +35,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
@@ -63,9 +64,19 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
 /** */
 public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgniteRel {
     /** */
+    protected final JoinInfo joinInfo;
+
+    /** */
     protected AbstractIgniteJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,
         RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
         super(cluster, traitSet, ImmutableList.of(), left, right, condition, variablesSet, joinType);
+
+        joinInfo = JoinInfo.of(left, right, condition);
+    }
+
+    /** */
+    @Override public JoinInfo analyzeCondition() {
+        return joinInfo;
     }
 
     /** {@inheritDoc} */
@@ -174,7 +185,7 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         }
 
         if (rightDistr.getType() == HASH_DISTRIBUTED && right2leftProjectedDistr != random()) {
-            outTraits = nodeTraits.replace(rightDistr);
+            outTraits = nodeTraits.replace(right2leftProjectedDistr);
             leftTraits = left.replace(right2leftProjectedDistr);
             rightTraits = right.replace(rightDistr);
 

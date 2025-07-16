@@ -498,7 +498,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
 
     /** */
     @Test
-    public void testDefaultNullValue() {
+    public void testInsertDefaultNullValue() {
         checkDefaultValue("TINYINT", null, null);
         checkDefaultValue("SMALLINT", null, null);
         checkDefaultValue("INTEGER", null, null);
@@ -543,8 +543,11 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
         checkDefaultValue("INTERVAL YEARS TO MONTHS", "INTERVAL '10' MONTHS", Period.ofMonths(10));
         checkDefaultValue("INTERVAL MONTHS", "INTERVAL '10' YEARS", Period.ofYears(10));
         checkDefaultValue("DATE", "DATE '2021-01-01'", Date.valueOf("2021-01-01"));
+        checkDefaultValue("DATE", "'2021-01-01'", Date.valueOf("2021-01-01"));
         checkDefaultValue("TIME", "TIME '01:01:01'", Time.valueOf("01:01:01"));
+        checkDefaultValue("TIME", "'01:01:01'", Time.valueOf("01:01:01"));
         checkDefaultValue("TIMESTAMP", "TIMESTAMP '2021-01-01 01:01:01'", Timestamp.valueOf("2021-01-01 01:01:01"));
+        checkDefaultValue("TIMESTAMP", "'2021-01-01 01:01:01'", Timestamp.valueOf("2021-01-01 01:01:01"));
         checkDefaultValue("BINARY(3)", "x'010203'", new byte[] {1, 2, 3});
         checkDefaultValue("VARBINARY", "x'010203'", new byte[] {1, 2, 3});
 

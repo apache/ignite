@@ -33,8 +33,12 @@ public interface Message extends Serializable {
      * @param buf Byte buffer.
      * @param writer Writer.
      * @return Whether message was fully written.
+     * @deprecated Use the code-generated {@code MessageSerializer} instead.
      */
-    public boolean writeTo(ByteBuffer buf, MessageWriter writer);
+    @Deprecated
+    public default boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Reads this message from provided byte buffer.
@@ -42,8 +46,12 @@ public interface Message extends Serializable {
      * @param buf Byte buffer.
      * @param reader Reader.
      * @return Whether message was fully read.
+     * @deprecated Use the code-generated {@code MessageSerializer} instead.
      */
-    public boolean readFrom(ByteBuffer buf, MessageReader reader);
+    @Deprecated
+    public default boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Gets message type.
@@ -51,13 +59,6 @@ public interface Message extends Serializable {
      * @return Message type.
      */
     public short directType();
-
-    /**
-     * Gets fields count.
-     *
-     * @return Fields count.
-     */
-    public byte fieldsCount();
 
     /**
      * Method called when ack message received.

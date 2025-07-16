@@ -36,10 +36,11 @@ public interface MessageFormatter extends Extension {
      * Creates new message writer instance.
      *
      * @param rmtNodeId Remote node ID.
+     * @param msgFactory Message factory.
      * @return Message writer.
      * @throws IgniteCheckedException In case of error.
      */
-    public MessageWriter writer(UUID rmtNodeId) throws IgniteCheckedException;
+    public MessageWriter writer(UUID rmtNodeId, MessageFactory msgFactory) throws IgniteCheckedException;
 
     /**
      * Creates new message reader instance.

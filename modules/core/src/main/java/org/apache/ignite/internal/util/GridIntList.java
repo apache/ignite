@@ -338,7 +338,7 @@ public class GridIntList implements Message, Externalizable {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -346,13 +346,13 @@ public class GridIntList implements Message, Externalizable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIntArray("arr", arr))
+                if (!writer.writeIntArray(arr))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("idx", idx))
+                if (!writer.writeInt(idx))
                     return false;
 
                 writer.incrementState();
@@ -366,12 +366,9 @@ public class GridIntList implements Message, Externalizable {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                arr = reader.readIntArray("arr");
+                arr = reader.readIntArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -379,7 +376,7 @@ public class GridIntList implements Message, Externalizable {
                 reader.incrementState();
 
             case 1:
-                idx = reader.readInt("idx");
+                idx = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -388,17 +385,12 @@ public class GridIntList implements Message, Externalizable {
 
         }
 
-        return reader.afterMessageRead(GridIntList.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -52;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /**

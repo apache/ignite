@@ -632,7 +632,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -640,79 +640,79 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         switch (writer.state()) {
             case 6:
-                if (!writer.writeMap("dupPartsData", dupPartsData, MessageCollectionItemType.INT, MessageCollectionItemType.INT))
+                if (!writer.writeMap(dupPartsData, MessageCollectionItemType.INT, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeByteArray("errsBytes", errsBytes))
+                if (!writer.writeByteArray(errsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMap("idealAffDiff", idealAffDiff, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
+                if (!writer.writeMap(idealAffDiff, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeMap("joinedNodeAff", joinedNodeAff, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
+                if (!writer.writeMap(joinedNodeAff, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMap("lostParts", lostParts, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
+                if (!writer.writeMap(lostParts, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
+                if (!writer.writeByteArray(partCntrsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeByteArray("partHistSuppliersBytes", partHistSuppliersBytes))
+                if (!writer.writeByteArray(partHistSuppliersBytes))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeByteArray("partsBytes", partsBytes))
+                if (!writer.writeByteArray(partsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeByteArray("partsSizesBytes", partsSizesBytes))
+                if (!writer.writeByteArray(partsSizesBytes))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeByteArray("partsToReloadBytes", partsToReloadBytes))
+                if (!writer.writeByteArray(partsToReloadBytes))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeAffinityTopologyVersion("resTopVer", resTopVer))
+                if (!writer.writeAffinityTopologyVersion(resTopVer))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
@@ -726,15 +726,12 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 6:
-                dupPartsData = reader.readMap("dupPartsData", MessageCollectionItemType.INT, MessageCollectionItemType.INT, false);
+                dupPartsData = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -742,7 +739,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 7:
-                errsBytes = reader.readByteArray("errsBytes");
+                errsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -750,7 +747,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 8:
-                flags = reader.readByte("flags");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -758,7 +755,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 9:
-                idealAffDiff = reader.readMap("idealAffDiff", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+                idealAffDiff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -766,7 +763,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 10:
-                joinedNodeAff = reader.readMap("joinedNodeAff", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+                joinedNodeAff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -774,7 +771,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 11:
-                lostParts = reader.readMap("lostParts", MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
+                lostParts = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -782,7 +779,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 12:
-                partCntrsBytes = reader.readByteArray("partCntrsBytes");
+                partCntrsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -790,7 +787,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 13:
-                partHistSuppliersBytes = reader.readByteArray("partHistSuppliersBytes");
+                partHistSuppliersBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -798,7 +795,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 14:
-                partsBytes = reader.readByteArray("partsBytes");
+                partsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -806,7 +803,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 15:
-                partsSizesBytes = reader.readByteArray("partsSizesBytes");
+                partsSizesBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -814,7 +811,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 16:
-                partsToReloadBytes = reader.readByteArray("partsToReloadBytes");
+                partsToReloadBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -822,7 +819,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 17:
-                resTopVer = reader.readAffinityTopologyVersion("resTopVer");
+                resTopVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -830,7 +827,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 18:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -839,17 +836,12 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         }
 
-        return reader.afterMessageRead(GridDhtPartitionsFullMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 46;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 19;
     }
 
     /** {@inheritDoc} */

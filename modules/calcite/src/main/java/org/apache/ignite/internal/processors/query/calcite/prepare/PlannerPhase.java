@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.hep.HepMatchOrder;
+import org.apache.calcite.plan.hep.HepProgram;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
@@ -27,6 +30,7 @@ import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
 import org.apache.calcite.rel.rules.AggregateMergeRule;
 import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.ExpandDisjunctionForTableRule;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule;
 import org.apache.calcite.rel.rules.FilterJoinRule.JoinConditionPushRule;
 import org.apache.calcite.rel.rules.FilterMergeRule;
@@ -37,12 +41,13 @@ import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
 import org.apache.calcite.rel.rules.ProjectMergeRule;
 import org.apache.calcite.rel.rules.ProjectRemoveRule;
 import org.apache.calcite.rel.rules.PruneEmptyRules;
+import org.apache.calcite.rel.rules.SetOpToFilterRule;
 import org.apache.calcite.rel.rules.SortRemoveRule;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.util.Optionality;
-import org.apache.ignite.internal.processors.query.calcite.rule.CollectRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.CollectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelateToNestedLoopRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
@@ -61,10 +66,12 @@ import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateCon
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.UncollectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ExposeIndexRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.FilterScanMergeRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectScanMergeRule;
 
@@ -105,6 +112,7 @@ public enum PlannerPhase {
                     CoreRules.FILTER_MERGE,
                     CoreRules.FILTER_AGGREGATE_TRANSPOSE,
                     CoreRules.FILTER_SET_OP_TRANSPOSE,
+                    CoreRules.FILTER_SORT_TRANSPOSE,
                     CoreRules.JOIN_CONDITION_PUSH,
                     CoreRules.FILTER_INTO_JOIN,
                     CoreRules.FILTER_CORRELATE,
@@ -142,6 +150,24 @@ public enum PlannerPhase {
     },
 
     /** */
+    HEP_OPTIMIZE_JOIN_ORDER("Heuristic phase to optimize joins order") {
+        /** {@inheritDoc} */
+        @Override public RuleSet getRules(PlanningContext ctx) {
+            return ctx.rules(RuleSets.ofList(IgniteMultiJoinOptimizeRule.INSTANCE));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Program getProgram(PlanningContext ctx) {
+            HepProgram sub = new HepProgramBuilder()
+                .addMatchOrder(HepMatchOrder.BOTTOM_UP)
+                .addRuleInstance(CoreRules.JOIN_TO_MULTI_JOIN)
+                .build();
+
+            return hep(getRules(ctx), sub);
+        }
+    },
+
+    /** */
     OPTIMIZATION("Main optimization phase") {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
@@ -158,6 +184,9 @@ public enum PlannerPhase {
 
                     JoinPushExpressionsRule.Config.DEFAULT
                         .withOperandFor(LogicalJoin.class).toRule(),
+
+                    ExpandDisjunctionForTableRule.Config.FILTER.withDescription("ExpandFilterDisjunctionGlobal").toRule(),
+                    ExpandDisjunctionForTableRule.Config.JOIN.withDescription("ExpandJoinDisjunctionGlobal").toRule(),
 
                     JoinConditionPushRule.JoinConditionPushRuleConfig.DEFAULT
                         .withOperandSupplier(b -> b.operand(LogicalJoin.class)
@@ -205,11 +234,18 @@ public enum PlannerPhase {
                             b.operand(LogicalSort.class)
                                 .anyInputs()).toRule(),
 
+                    SetOpToFilterRule.Config.INTERSECT.withDescription("IntersectFilterToFilter").toRule(),
+                    SetOpToFilterRule.Config.MINUS.withDescription("MinusFilterToFilter").toRule(),
                     CoreRules.UNION_MERGE,
-                    CoreRules.MINUS_MERGE,
-                    CoreRules.INTERSECT_MERGE,
                     CoreRules.UNION_REMOVE,
+                    CoreRules.MINUS_MERGE,
+                    CoreRules.MINUS_REMOVE,
+                    CoreRules.INTERSECT_MERGE,
+                    CoreRules.INTERSECT_REMOVE,
+                    CoreRules.INTERSECT_REORDER,
                     CoreRules.AGGREGATE_REMOVE,
+
+                    CoreRules.JOIN_EXPAND_OR_TO_UNION_RULE,
                     // Works also as CoreRules#JOIN_COMMUTE and overrides it if defined after.
                     CoreRules.JOIN_COMMUTE_OUTER,
 
@@ -246,7 +282,8 @@ public enum PlannerPhase {
                     LogicalScanConverterRule.TABLE_SCAN,
                     IndexCountRule.INSTANCE,
                     IndexMinMaxRule.INSTANCE,
-                    CollectRule.INSTANCE,
+                    CollectConverterRule.INSTANCE,
+                    UncollectConverterRule.INSTANCE,
                     HashAggregateConverterRule.COLOCATED,
                     HashAggregateConverterRule.MAP_REDUCE,
                     SortAggregateConverterRule.COLOCATED,

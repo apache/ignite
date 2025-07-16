@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary.streams;
 /**
  * Binary stream.
  */
-public interface BinaryStream {
+interface BinaryStream {
     /**
      * @return Position.
      */

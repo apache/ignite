@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheDistributedJoinQue
 import org.apache.ignite.internal.processors.cache.IgniteCacheDistributedJoinTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFieldsQueryNoDataSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFullTextQueryNodeJoiningSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheNoClassQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingQueryErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCheckClusterStateBeforeExecuteQueryTest;
 import org.apache.ignite.internal.processors.cache.IndexingCachePartitionLossPolicySelfTest;
@@ -95,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.index.H2TransactionAwareQueri
 import org.apache.ignite.internal.processors.cache.index.IgniteDecimalSelfTest;
 import org.apache.ignite.internal.processors.cache.index.IndexColumnTypeMismatchTest;
 import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
-import org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.PojoIndexLocalQueryTest;
 import org.apache.ignite.internal.processors.cache.index.SqlPartitionEvictionTest;
 import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
@@ -221,7 +219,6 @@ import org.junit.runners.Suite;
 
     // Unmarshalling query test.
     IgniteCacheP2pUnmarshallingQueryErrorTest.class,
-    IgniteCacheNoClassQuerySelfTest.class,
 
     // Cancellation.
     IgniteCacheDistributedQueryCancelSelfTest.class,
@@ -259,7 +256,6 @@ import org.junit.runners.Suite;
     H2ConnectionLeaksSelfTest.class,
     H2ConnectionSettingsTest.class,
     IgniteCheckClusterStateBeforeExecuteQueryTest.class,
-    OptimizedMarshallerIndexNameTest.class,
     SqlSystemViewsSelfTest.class,
     ScanQueryConcurrentUpdatesTest.class,
     ScanQueryConcurrentSqlUpdatesTest.class,

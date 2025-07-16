@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -106,8 +107,12 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         // after node stop.
         stopGrid(ig.name());
 
-        final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(ft.cacheStorage(dfltCacheCfg));
-        final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(sft.cacheStorage(dfltCacheCfg));
+        assertFalse(ft.binaryMeta().equals(sft.binaryMeta()));
+        assertFalse(ft.marshaller().equals(sft.marshaller()));
+        assertFalse(ft.defaultCacheStorage(dfltCacheCfg).equals(sft.defaultCacheStorage(dfltCacheCfg)));
+
+        final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(ft.cacheStorages(dfltCacheCfg));
+        final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(sft.cacheStorages(dfltCacheCfg));
 
         assertEquals("Partitions must have the same CRC after file copying and merging partition delta files",
             origPartCRCs, snpPartCRCs);
@@ -116,7 +121,13 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         assertEquals("Marshaller meta mast be the same for local node and created snapshot",
             calculateCRC32Partitions(ft.marshaller()), calculateCRC32Partitions(sft.marshaller()));
 
-        assertEquals("Snapshot working directory must be cleaned after usage", 0, ft.snapshotTempRoot().listFiles().length);
+        for (File tmpRoot : ft.snapshotsTempRoots()) {
+            assertEquals(
+                "Snapshot working directory must be cleaned after usage: " + tmpRoot.getAbsolutePath(),
+                0,
+                tmpRoot.listFiles().length
+            );
+        }
     }
 
     /** @throws Exception If fails. */

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -543,8 +544,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
     @Override public MessageFormatter messageFormatter() {
         if (formatter == null) {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer(UUID rmtNodeId) {
-                    return new DirectMessageWriter();
+                @Override public MessageWriter writer(UUID rmtNodeId, MessageFactory msgFactory) {
+                    return new DirectMessageWriter(msgFactory);
                 }
 
                 @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
@@ -711,7 +712,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
             GridLocalMessageListener l = (GridLocalMessageListener)o;
 
-            return F.eq(predLsnr, l.predLsnr) && F.eq(topic, l.topic);
+            return Objects.equals(predLsnr, l.predLsnr) && Objects.equals(topic, l.topic);
         }
 
         /** {@inheritDoc} */

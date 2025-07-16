@@ -71,7 +71,7 @@ public class GridTaskCancelRequest implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -79,7 +79,7 @@ public class GridTaskCancelRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("sesId", sesId))
+                if (!writer.writeIgniteUuid(sesId))
                     return false;
 
                 writer.incrementState();
@@ -93,12 +93,9 @@ public class GridTaskCancelRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                sesId = reader.readIgniteUuid("sesId");
+                sesId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -107,17 +104,12 @@ public class GridTaskCancelRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GridTaskCancelRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 5;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

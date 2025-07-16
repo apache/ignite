@@ -54,7 +54,7 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         value = U.readString(in);
         uuid = U.readIgniteUuid(in);
         gridCacheVersion = (GridCacheVersion)in.readObject();

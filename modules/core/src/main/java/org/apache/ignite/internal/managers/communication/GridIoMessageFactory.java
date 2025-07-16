@@ -25,8 +25,8 @@ import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
@@ -167,7 +167,6 @@ import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
-import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
@@ -188,7 +187,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-49, UpdateErrors::new);
         factory.register((short)-48, GridDhtAtomicNearResponse::new);
         factory.register((short)-45, GridChangeGlobalStateMessageResponse::new);
-        factory.register((short)-44, HandshakeMessage2::new);
         factory.register((short)-43, IgniteIoTestMessage::new);
         factory.register((short)-36, GridDhtAtomicSingleUpdateRequest::new);
         factory.register((short)-27, GridDhtTxOnePhaseCommitAckRequest::new);
@@ -200,7 +198,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE, RecoveryLastReceivedMessage::new);
         factory.register(TcpCommunicationSpi.HANDSHAKE_MSG_TYPE, HandshakeMessage::new);
         factory.register(TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE, HandshakeWaitMessage::new);
-        factory.register((short)0, GridJobCancelRequest::new);
+        factory.register((short)0, GridJobCancelRequest::new, new GridJobCancelRequestSerializer());
         factory.register((short)1, GridJobExecuteRequest::new);
         factory.register((short)2, GridJobExecuteResponse::new);
         factory.register((short)3, GridJobSiblingsRequest::new);
@@ -293,13 +291,14 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)109, GridQueryNextPageResponse::new);
         factory.register((short)111, AffinityTopologyVersion::new);
         factory.register((short)112, GridCacheSqlQuery::new);
-        factory.register((short)113, BinaryObjectImpl::new);
+        // 113 - BinaryObjectImpl
         factory.register((short)114, GridDhtPartitionSupplyMessage::new);
         factory.register((short)115, UUIDCollectionMessage::new);
         factory.register((short)116, GridNearSingleGetRequest::new);
         factory.register((short)117, GridNearSingleGetResponse::new);
         factory.register((short)118, CacheContinuousQueryBatchAck::new);
-        factory.register((short)119, BinaryEnumObjectImpl::new);
+        // 119 - BinaryEnumObjectImpl
+        BinaryUtils.registerMessages(factory::register);
 
         // [120..123] - DR
         factory.register((short)124, GridMessageCollection::new);

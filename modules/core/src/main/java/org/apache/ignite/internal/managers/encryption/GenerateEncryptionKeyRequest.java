@@ -67,7 +67,7 @@ public class GenerateEncryptionKeyRequest implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -75,13 +75,13 @@ public class GenerateEncryptionKeyRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("id", id))
+                if (!writer.writeIgniteUuid(id))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("keyCnt", keyCnt))
+                if (!writer.writeInt(keyCnt))
                     return false;
 
                 writer.incrementState();
@@ -95,12 +95,9 @@ public class GenerateEncryptionKeyRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                id = reader.readIgniteUuid("id");
+                id = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -108,7 +105,7 @@ public class GenerateEncryptionKeyRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                keyCnt = reader.readInt("keyCnt");
+                keyCnt = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -117,17 +114,12 @@ public class GenerateEncryptionKeyRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GenerateEncryptionKeyRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 162;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

@@ -307,7 +307,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -315,43 +315,43 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeCollection("dataBytes", dataBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection(dataBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeBoolean("fields", fields))
+                if (!writer.writeBoolean(fields))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeBoolean("finished", finished))
+                if (!writer.writeBoolean(finished))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeCollection("metaDataBytes", metaDataBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection(metaDataBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeLong("reqId", reqId))
+                if (!writer.writeLong(reqId))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeByteArray("idxQryMetadataBytes", idxQryMetadataBytes))
+                if (!writer.writeByteArray(idxQryMetadataBytes))
                     return false;
 
                 writer.incrementState();
@@ -364,15 +364,12 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                dataBytes = reader.readCollection("dataBytes", MessageCollectionItemType.BYTE_ARR);
+                dataBytes = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -380,7 +377,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
                 reader.incrementState();
 
             case 5:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -388,7 +385,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
                 reader.incrementState();
 
             case 6:
-                fields = reader.readBoolean("fields");
+                fields = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -396,7 +393,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
                 reader.incrementState();
 
             case 7:
-                finished = reader.readBoolean("finished");
+                finished = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -404,7 +401,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
                 reader.incrementState();
 
             case 8:
-                metaDataBytes = reader.readCollection("metaDataBytes", MessageCollectionItemType.BYTE_ARR);
+                metaDataBytes = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -412,7 +409,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
                 reader.incrementState();
 
             case 9:
-                reqId = reader.readLong("reqId");
+                reqId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -420,7 +417,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
                 reader.incrementState();
 
             case 10:
-                idxQryMetadataBytes = reader.readByteArray("idxQryMetadataBytes");
+                idxQryMetadataBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -428,17 +425,12 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(GridCacheQueryResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 59;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 11;
     }
 
     /** {@inheritDoc} */

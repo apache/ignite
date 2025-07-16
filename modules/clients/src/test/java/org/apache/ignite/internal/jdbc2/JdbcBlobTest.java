@@ -25,7 +25,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
+import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;

@@ -93,7 +93,7 @@ public class DataStreamerResponse implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -101,19 +101,19 @@ public class DataStreamerResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("forceLocDep", forceLocDep))
+                if (!writer.writeBoolean(forceLocDep))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("reqId", reqId))
+                if (!writer.writeLong(reqId))
                     return false;
 
                 writer.incrementState();
@@ -127,12 +127,9 @@ public class DataStreamerResponse implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -140,7 +137,7 @@ public class DataStreamerResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                forceLocDep = reader.readBoolean("forceLocDep");
+                forceLocDep = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -148,7 +145,7 @@ public class DataStreamerResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                reqId = reader.readLong("reqId");
+                reqId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -157,16 +154,11 @@ public class DataStreamerResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(DataStreamerResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 63;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 }

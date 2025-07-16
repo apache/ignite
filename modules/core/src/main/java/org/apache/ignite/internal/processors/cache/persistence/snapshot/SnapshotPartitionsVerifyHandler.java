@@ -21,13 +21,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -48,12 +51,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Dump;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
@@ -107,31 +112,34 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         SnapshotMetadata meta = opCtx.metadata();
 
-        Set<Integer> grps = F.isEmpty(opCtx.groups())
-            ? new HashSet<>(meta.partitions().keySet())
-            : opCtx.groups().stream().map(CU::cacheId).collect(Collectors.toSet());
+        Map<Integer, Set<Integer>> grps = F.isEmpty(opCtx.groups())
+            ? new HashMap<>(meta.partitions())
+            : opCtx.groups().stream().map(CU::cacheId)
+                .collect(Collectors.toMap(Function.identity(), grpId -> meta.partitions().getOrDefault(grpId, Collections.emptySet())));
 
         if (type() == SnapshotHandlerType.CREATE) {
-            grps = grps.stream().filter(grp -> grp == MetaStorage.METASTORAGE_CACHE_ID ||
-                CU.affinityNode(
-                    cctx.localNode(),
-                    cctx.kernalContext().cache().cacheGroupDescriptor(grp).config().getNodeFilter()
-                )
-            ).collect(Collectors.toSet());
+            grps.entrySet().removeIf(e -> {
+                int grp = e.getKey();
+
+                return grp != MetaStorage.METASTORAGE_CACHE_ID &&
+                    !CU.affinityNode(
+                        cctx.localNode(),
+                        cctx.kernalContext().cache().cacheGroupDescriptor(grp).config().getNodeFilter()
+                    );
+            });
         }
 
         Set<File> partFiles = new HashSet<>();
 
-        Map<Integer, File> grpDirs = new HashMap<>();
+        Map<Integer, List<File>> grpDirs = new HashMap<>();
 
         for (File dir : opCtx.snapshotFileTree().existingCacheDirs()) {
             int grpId = CU.cacheId(cacheName(dir));
 
-            if (!grps.remove(grpId))
-                continue;
+            Set<Integer> parts = grps.get(grpId);
 
-            Set<Integer> parts = meta.partitions().get(grpId) == null ? Collections.emptySet() :
-                new HashSet<>(meta.partitions().get(grpId));
+            if (parts == null)
+                continue;
 
             for (File part : opCtx.snapshotFileTree().existingCachePartitionFiles(dir, meta.dump(), meta.compressPartitions())) {
                 int partId = partId(part);
@@ -142,19 +150,18 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 partFiles.add(part);
             }
 
-            if (!parts.isEmpty()) {
-                throw new IgniteException("Snapshot data doesn't contain required cache group partition " +
-                    "[grpId=" + grpId + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
-                    ", missed=" + parts + ", meta=" + meta + ']');
-            }
+            if (parts.isEmpty())
+                grps.remove(grpId);
 
-            grpDirs.put(grpId, dir);
+            grpDirs.compute(grpId, (k, v) -> v == null ? new ArrayList<>() : v).add(dir);
         }
 
         if (!grps.isEmpty()) {
-            throw new IgniteException("Snapshot data doesn't contain required cache groups " +
-                "[grps=" + grps + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
-                ", meta=" + meta + ']');
+            Map.Entry<Integer, Set<Integer>> missGrp = grps.entrySet().iterator().next();
+
+            throw new IgniteException("Snapshot data doesn't contain required cache group partition " +
+                "[grpId=" + missGrp.getKey() + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
+                ", missed=" + missGrp.getValue() + ", meta=" + meta + ']');
         }
 
         if (!opCtx.check()) {
@@ -171,7 +178,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** */
     private Map<PartitionKey, PartitionHashRecord> checkSnapshotFiles(
         SnapshotHandlerContext opCtx,
-        Map<Integer, File> grpDirs,
+        Map<Integer, List<File>> grpDirs,
         SnapshotMetadata meta,
         Set<File> partFiles,
         boolean punchHoleEnabled
@@ -182,7 +189,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
 
-        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(opCtx.snapshotFileTree(), meta.folderName());
+        GridKernalContext snpCtx = new StandaloneGridKernalContext(
+            log,
+            cctx.kernalContext().compress(),
+            new NodeFileTree(opCtx.snapshotFileTree().root(), meta.folderName())
+        );
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
@@ -350,7 +361,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     ) {
         EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
 
-        try (Dump dump = new Dump(opCtx.snapshotFileTree().root(), opCtx.snapshotFileTree().consistentId(), true, true, encSpi, log)) {
+        List<SnapshotFileTree> sft = Collections.singletonList(opCtx.snapshotFileTree());
+        List<SnapshotMetadata> metadata = Collections.singletonList(opCtx.metadata());
+
+        try (Dump dump = new Dump(cctx.kernalContext(), sft, metadata, true, true, encSpi, log)) {
             Collection<PartitionHashRecord> partitionHashRecords = U.doInParallel(
                 cctx.snapshotMgr().snapshotExecutorService(),
                 partFiles,
@@ -362,7 +376,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         catch (Throwable t) {
             log.error("Error executing handler: ", t);
 
-            throw new IgniteException("Node: " + opCtx.snapshotFileTree().consistentId(), t);
+            throw new IgniteException("Node: " + sft.get(0).consistentId(), t);
         }
     }
 
@@ -383,7 +397,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         try {
             String node = cctx.kernalContext().pdsFolderResolver().fileTree().folderName();
 
-            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part)) {
+            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part, null)) {
                 long size = 0;
 
                 VerifyPartitionContext ctx = new VerifyPartitionContext();
@@ -481,7 +495,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         private final GridKernalContext ctx;
 
         /** Data dirs of snapshot's caches by group id. */
-        private final Map<Integer, File> grpDirs;
+        private final Map<Integer, List<File>> grpDirs;
 
         /** Encryption keys loaded from snapshot. */
         private final ConcurrentHashMap<Integer, GroupKey> decryptedKeys = new ConcurrentHashMap<>();
@@ -492,7 +506,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
          * @param ctx     Kernal context.
          * @param grpDirs Data dirictories of cache groups by id.
          */
-        private SnapshotEncryptionKeyProvider(GridKernalContext ctx, Map<Integer, File> grpDirs) {
+        private SnapshotEncryptionKeyProvider(GridKernalContext ctx, Map<Integer, List<File>> grpDirs) {
             this.ctx = ctx;
             this.grpDirs = grpDirs;
         }
@@ -503,19 +517,27 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 GroupKey grpKey = null;
 
                 try {
-                    for (File cfg : NodeFileTree.existingCacheConfigFiles(grpDirs.get(grpId))) {
-                        StoredCacheData cacheData = ctx.cache().configManager().readCacheData(cfg);
+                    List<File> grpDirs0 = grpDirs.get(grpId);
 
-                        GroupKeyEncrypted grpKeyEncrypted = cacheData.groupKeyEncrypted();
+                    for (File grpDir : grpDirs0) {
+                        for (File cfg : NodeFileTree.existingCacheConfigFiles(grpDir)) {
+                            StoredCacheData cacheData = ctx.cache().configManager().readCacheData(cfg);
 
-                        if (grpKeyEncrypted == null)
-                            return null;
+                            GroupKeyEncrypted grpKeyEncrypted = cacheData.groupKeyEncrypted();
 
-                        if (grpKey == null)
-                            grpKey = new GroupKey(grpKeyEncrypted.id(), ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key()));
-                        else {
-                            assert grpKey.equals(new GroupKey(grpKeyEncrypted.id(),
-                                ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key())));
+                            if (grpKeyEncrypted == null)
+                                return null;
+
+                            if (grpKey == null) {
+                                grpKey = new GroupKey(
+                                    grpKeyEncrypted.id(),
+                                    ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key())
+                                );
+                            }
+                            else {
+                                assert grpKey.equals(new GroupKey(grpKeyEncrypted.id(),
+                                    ctx.config().getEncryptionSpi().decryptKey(grpKeyEncrypted.key())));
+                            }
                         }
                     }
 

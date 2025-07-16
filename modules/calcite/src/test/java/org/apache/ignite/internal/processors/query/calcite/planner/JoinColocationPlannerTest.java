@@ -20,12 +20,15 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.List;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -209,5 +212,27 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
 
             assertThat(invalidPlanMsg, exchange, nullValue());
         }
+    }
+
+    /**
+     * Re-hashing aggregate with broadcast input.
+     */
+    @Test
+    public void joinBroadcastAggregateRehash() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("AFF_TBL", IgniteDistributions.affinity(0, "default", "hash"),
+                "ID", Integer.class, "VAL", String.class),
+            createTable("BROADCAST_TBL", IgniteDistributions.broadcast(), "ID", Integer.class)
+        );
+
+        assertPlan("SELECT * FROM aff_tbl WHERE id IN (SELECT id FROM broadcast_tbl)", schema,
+            nodeOrAnyChild(isInstanceOf(Join.class))
+                .and(hasChildThat(isTableScan("AFF_TBL")))
+                .and(hasChildThat(isInstanceOf(IgniteTrimExchange.class))
+                    .and(hasChildThat(isInstanceOf(IgniteColocatedAggregateBase.class))
+                        .and(hasChildThat(isTableScan("BROADCAST_TBL")))
+                    )
+                )
+        );
     }
 }

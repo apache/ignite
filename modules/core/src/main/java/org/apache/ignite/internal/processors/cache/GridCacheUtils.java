@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -938,7 +939,7 @@ public class GridCacheUtils {
         assert attrName != null;
         assert attrMsg != null;
 
-        if (!F.eq(locVal, rmtVal))
+        if (!Objects.equals(locVal, rmtVal))
             throwIgniteCheckedException(log, fail,
                 attrMsg + " mismatch [" +
                     "cacheName=" + cfgName + ", " +
@@ -965,24 +966,31 @@ public class GridCacheUtils {
         Object val1,
         Object val2,
         boolean fail) throws IgniteCheckedException {
-        if (F.eq(val1, val2))
+        if (F.isArray(val1) || F.isArray(val2)) {
+            if (F.compareArrays(val1, val2) == 0)
+                return;
+        }
+        else if (Objects.equals(val1, val2))
             return;
+
+        Object val1Str = F.isArray(val1) ? S.arrayToString(val1) : val1;
+        Object val2Str = F.isArray(val2) ? S.arrayToString(val2) : val2;
 
         if (fail) {
             throw new IgniteCheckedException(attrMsg + " mismatch for caches related to the same group " +
                 "[groupName=" + cfg1.getGroupName() +
                 ", existingCache=" + cfg1.getName() +
-                ", existing" + capitalize(attrName) + "=" + val1 +
+                ", existing" + capitalize(attrName) + "=" + val1Str +
                 ", startingCache=" + cfg2.getName() +
-                ", starting" + capitalize(attrName) + "=" + val2 + ']');
+                ", starting" + capitalize(attrName) + "=" + val2Str + ']');
         }
         else {
             U.warn(log, attrMsg + " mismatch for caches related to the same group " +
                 "[groupName=" + cfg1.getGroupName() +
                 ", existingCache=" + cfg1.getName() +
-                ", existing" + capitalize(attrName) + "=" + val1 +
+                ", existing" + capitalize(attrName) + "=" + val1Str +
                 ", startingCache=" + cfg2.getName() +
-                ", starting" + capitalize(attrName) + "=" + val2 + ']');
+                ", starting" + capitalize(attrName) + "=" + val2Str + ']');
         }
     }
 

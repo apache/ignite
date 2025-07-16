@@ -32,7 +32,7 @@ import org.apache.ignite.binary.Binarylizable;
 /**
  * Binary {@link TreeMap} wrapper.
  */
-public class BinaryTreeMap implements Binarylizable, Serializable {
+class BinaryTreeMap implements Binarylizable, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

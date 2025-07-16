@@ -122,6 +122,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.extract
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsistentIds;
 
 /**
  *
@@ -638,7 +639,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             TransitionOnJoinWaitFuture joinFut = this.joinFut;
 
             if (joinFut != null)
-                joinFut.onDone(false);
+                joinFut.onDone(globalState.state().active());
 
             GridFutureAdapter<Void> transitionFut = transitionFuts.get(discoClusterState.transitionRequestId());
 
@@ -1853,7 +1854,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         Collection<ClusterNode> srvNodes = ctx.discovery().aliveServerNodes();
 
-        Set<Object> aliveNodeIds = new HashSet<>(F.nodeConsistentIds(srvNodes));
+        Set<Object> aliveNodeIds = new HashSet<>(nodeConsistentIds(srvNodes));
 
         for (Object consistentId : consistentIds)
             rows.add(new BaselineNodeView(consistentId, aliveNodeIds.contains(consistentId)));

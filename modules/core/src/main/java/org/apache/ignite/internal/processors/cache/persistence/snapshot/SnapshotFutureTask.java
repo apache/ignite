@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -205,16 +206,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
         snpSndr.close(err);
 
-        U.delete(sft.tempFileTree().nodeStorage());
-
-        // Delete snapshot directory if no other files exists.
-        try {
-            if (U.fileCount(sft.tempFileTree().root().toPath()) == 0 || err != null)
-                U.delete(sft.tempFileTree().root().toPath());
-        }
-        catch (IOException e) {
-            log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + sft.tempFileTree().root() + ']');
-        }
+        FileTreeUtils.removeTmpSnapshotFiles(sft, err != null, log);
 
         if (err != null)
             startedFut.onDone(err);
@@ -242,7 +234,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
             if (!started.compareAndSet(false, true))
                 return false;
 
-            U.mkdirs(sft.tempFileTree().nodeStorage());
+            FileTreeUtils.createCacheStorages(sft.tempFileTree(), log);
 
             for (Integer grpId : parts.keySet()) {
                 CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
@@ -253,10 +245,10 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
                     throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshot: " + grpId);
 
-                // Create cache group snapshot directory on start in a single thread.
-                U.ensureDirectory(sft.tempFileTree().cacheStorage(gctx.config()),
-                    "directory for snapshotting cache group",
-                    log);
+                for (File cs : sft.tempFileTree().cacheStorages(gctx.config())) {
+                    // Create cache group snapshot directory on start in a single thread.
+                    U.ensureDirectory(cs, "directory for snapshotting cache group", log);
+                }
             }
 
             if (withMetaStorage) {
@@ -400,6 +392,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 snpSndr.sendPart(
                     partitionFile(ft, pair),
                     partitionFile(sft, pair),
+                    storagePath(pair),
                     pair,
                     partLen);
 
@@ -431,7 +424,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
                 boolean deleted = delta.delete();
 
-                assert deleted;
+                assert deleted : delta.getAbsolutePath();
 
                 File deltaIdx = partDeltaIndexFile(delta);
 
@@ -534,6 +527,19 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         return ft.partitionFile(gctx.config(), grpAndPart.getPartitionId());
     }
 
+    /** @return Storage path. */
+    private String storagePath(GroupPartitionId grpAndPart) throws IgniteCheckedException {
+        if (grpAndPart.getGroupId() == MetaStorage.METASTORAGE_CACHE_ID)
+            return null;
+
+        CacheGroupContext gctx = cctx.cache().cacheGroup(grpAndPart.getGroupId());
+
+        if (gctx == null)
+            throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
+
+        return FileTreeUtils.partitionStorage(gctx.config(), grpAndPart.getPartitionId());
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -623,12 +629,12 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 if (sent || fromTemp)
                     return;
 
-                File cacheWorkDir = sft.tempFileTree().cacheStorage(ccfg);
+                File cfgTmpRoot = sft.tempFileTree().cacheConfigurationFile(ccfg).getParentFile();
 
-                if (!U.mkdirs(cacheWorkDir))
-                    throw new IOException("Unable to create temp directory to copy original configuration file: " + cacheWorkDir);
+                if (!U.mkdirs(cfgTmpRoot))
+                    throw new IOException("Unable to create temp directory to copy original configuration file: " + cfgTmpRoot);
 
-                File newCcfgFile = new File(cacheWorkDir, ccfgFile.getName());
+                File newCcfgFile = new File(cfgTmpRoot, ccfgFile.getName());
                 newCcfgFile.createNewFile();
 
                 copy(ioFactory, ccfgFile, newCcfgFile, ccfgFile.length());

@@ -115,6 +115,8 @@
             <excludes>
                 <exclude>${project.groupId}:ignite-bom</exclude>
                 <exclude>${project.groupId}:ignite-core</exclude>
+                <exclude>${project.groupId}:ignite-commons</exclude>
+                <exclude>${project.groupId}:ignite-binary-api</exclude>
                 <exclude>${project.groupId}:ignite-clients</exclude>
                 <exclude>${project.groupId}:ignite-spring</exclude>
                 <exclude>${project.groupId}:ignite-tools</exclude>
@@ -134,6 +136,8 @@
                 <exclude>${project.groupId}:ignite-compatibility</exclude>
                 <exclude>${project.groupId}:ignite-sqlline</exclude>
                 <exclude>${project.groupId}:ignite-control-utility</exclude>
+                <exclude>${project.groupId}:ignite-checkstyle</exclude>
+                <exclude>${project.groupId}:ignite-grid-unsafe</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

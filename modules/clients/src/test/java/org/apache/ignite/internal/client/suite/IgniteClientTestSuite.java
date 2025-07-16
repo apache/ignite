@@ -56,7 +56,6 @@ import org.apache.ignite.internal.client.router.RouterFactorySelfTest;
 import org.apache.ignite.internal.client.router.TcpRouterMultiNodeSelfTest;
 import org.apache.ignite.internal.client.router.TcpRouterSelfTest;
 import org.apache.ignite.internal.client.router.TcpSslRouterSelfTest;
-import org.apache.ignite.internal.client.util.ClientByteUtilsTest;
 import org.apache.ignite.internal.client.util.ClientConsistentHashSelfTest;
 import org.apache.ignite.internal.client.util.ClientJavaHasherSelfTest;
 import org.apache.ignite.internal.processors.rest.ChangeStateCommandHandlerTest;
@@ -173,8 +172,6 @@ import org.junit.runners.Suite;
     ClientPropertiesConfigurationSelfTest.class,
     ClientConsistentHashSelfTest.class,
     ClientJavaHasherSelfTest.class,
-
-    ClientByteUtilsTest.class,
 
     // Router tests.
     TcpRouterSelfTest.class,

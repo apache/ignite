@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
@@ -30,5 +30,5 @@ public interface PlatformReaderBiClosure<T1, T2> {
      * @param reader Reader.
      * @return Object.
      */
-    IgniteBiTuple<T1, T2> read(BinaryRawReaderEx reader);
+    IgniteBiTuple<T1, T2> read(BinaryReaderEx reader);
 }

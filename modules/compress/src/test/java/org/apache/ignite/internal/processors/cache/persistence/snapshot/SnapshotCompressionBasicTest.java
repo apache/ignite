@@ -273,7 +273,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     }
 
     /** */
-    @Override protected void cleanPersistenceDir(boolean saveSnap) throws Exception {
+    @Override protected void cleanPersistenceDir(boolean saveSnap) {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
         String mask = U.maskForFileName(getTestIgniteInstanceName());

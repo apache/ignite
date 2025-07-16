@@ -435,7 +435,7 @@ public class SchemaManager {
             cacheName2schema.remove(cacheName);
 
             for (TableDescriptor tbl : schema.tables()) {
-                if (F.eq(tbl.cacheInfo().name(), cacheName)) {
+                if (Objects.equals(tbl.cacheInfo().name(), cacheName)) {
                     Collection<IndexDescriptor> idxs = new ArrayList<>(tbl.indexes().values());
 
                     for (IndexDescriptor idx : idxs) {
@@ -476,7 +476,7 @@ public class SchemaManager {
         assert lock.isWriteLockedByCurrentThread();
 
         if (!predefined)
-            predefined = F.eq(QueryUtils.DFLT_SCHEMA, schemaName);
+            predefined = Objects.equals(QueryUtils.DFLT_SCHEMA, schemaName);
 
         SchemaDescriptor schema = new SchemaDescriptor(schemaName, predefined);
 
@@ -593,7 +593,7 @@ public class SchemaManager {
                 if (idxDesc.type() != QueryIndexType.SORTED)
                     continue;
 
-                affIdxFound |= F.eq(tbl.affinityKey(), F.first(idxDesc.fields()));
+                affIdxFound |= Objects.equals(tbl.affinityKey(), F.first(idxDesc.fields()));
             }
 
             // Add explicit affinity key index if nothing alike was found.
@@ -654,16 +654,16 @@ public class SchemaManager {
             String newFieldName = oldFieldName;
 
             // Replace _KEY/_VAL field with aliases and vice versa.
-            if (F.eq(oldFieldName, QueryUtils.KEY_FIELD_NAME) && !F.isEmpty(keyAlias))
+            if (Objects.equals(oldFieldName, KEY_FIELD_NAME) && !F.isEmpty(keyAlias))
                 newFieldName = keyAlias;
-            else if (F.eq(oldFieldName, QueryUtils.VAL_FIELD_NAME) && !F.isEmpty(valAlias))
+            else if (Objects.equals(oldFieldName, VAL_FIELD_NAME) && !F.isEmpty(valAlias))
                 newFieldName = valAlias;
-            else if (F.eq(oldFieldName, keyAlias))
-                newFieldName = QueryUtils.KEY_FIELD_NAME;
-            else if (F.eq(oldFieldName, valAlias))
-                newFieldName = QueryUtils.VAL_FIELD_NAME;
+            else if (Objects.equals(oldFieldName, keyAlias))
+                newFieldName = KEY_FIELD_NAME;
+            else if (Objects.equals(oldFieldName, valAlias))
+                newFieldName = VAL_FIELD_NAME;
 
-            modified |= !F.eq(oldFieldName, newFieldName);
+            modified |= !Objects.equals(oldFieldName, newFieldName);
 
             proxyKeyDefs.put(newFieldName, keyDef.getValue());
         }
@@ -1080,7 +1080,7 @@ public class SchemaManager {
             List<TableDescriptor> tbls = new ArrayList<>();
 
             for (TableDescriptor tbl : schema.tables()) {
-                if (F.eq(tbl.cacheInfo().name(), cacheName))
+                if (Objects.equals(tbl.cacheInfo().name(), cacheName))
                     tbls.add(tbl);
             }
 
@@ -1104,7 +1104,7 @@ public class SchemaManager {
                 return null;
 
             for (TableDescriptor tbl : schema.tables()) {
-                if (F.eq(tbl.cacheInfo().name(), cacheName))
+                if (Objects.equals(tbl.cacheInfo().name(), cacheName))
                     return tbl.cacheInfo();
             }
 

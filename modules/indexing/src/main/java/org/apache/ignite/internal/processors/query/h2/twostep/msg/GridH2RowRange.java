@@ -92,7 +92,7 @@ public class GridH2RowRange implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -100,19 +100,19 @@ public class GridH2RowRange implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("rangeId", rangeId))
+                if (!writer.writeInt(rangeId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection("rows", rows, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(rows, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -126,12 +126,9 @@ public class GridH2RowRange implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                flags = reader.readByte("flags");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -139,7 +136,7 @@ public class GridH2RowRange implements Message {
                 reader.incrementState();
 
             case 1:
-                rangeId = reader.readInt("rangeId");
+                rangeId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -147,7 +144,7 @@ public class GridH2RowRange implements Message {
                 reader.incrementState();
 
             case 2:
-                rows = reader.readCollection("rows", MessageCollectionItemType.MSG);
+                rows = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -156,17 +153,12 @@ public class GridH2RowRange implements Message {
 
         }
 
-        return reader.afterMessageRead(GridH2RowRange.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -34;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

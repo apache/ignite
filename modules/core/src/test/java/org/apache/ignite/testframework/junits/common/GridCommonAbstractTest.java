@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -137,6 +138,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -159,6 +163,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -758,8 +763,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                             ", p=" + p +
                                             ", affNodesCnt=" + affNodesCnt +
                                             ", ownersCnt=" + ownerNodesCnt +
-                                            ", affNodes=" + F.nodeIds(affNodes) +
-                                            ", owners=" + F.nodeIds(owners) +
+                                            ", affNodes=" + nodeIds(affNodes) +
+                                            ", owners=" + nodeIds(owners) +
                                             ", topFut=" + topFut +
                                             ", locNode=" + g.cluster().localNode() + ']');
                                 }
@@ -987,7 +992,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             for (int p = 0; p < parts; p++) {
                 AffinityTopologyVersion readyVer = dht.context().shared().exchange().readyAffinityVersion();
 
-                Collection<UUID> affNodes = F.nodeIds(dht.context()
+                Collection<UUID> affNodes = nodeIds(dht.context()
                     .affinity()
                     .assignment(readyVer)
                     .idealAssignment()
@@ -1012,7 +1017,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     .append(affNodes.contains(g0.localNode().id()))
                     .append("\n");
 
-                for (UUID nodeId : F.nodeIds(g0.context().discovery().allNodes())) {
+                for (UUID nodeId : nodeIds(g0.context().discovery().allNodes())) {
                     if (!nodeId.equals(g0.localNode().id())) {
                         top.readLock();
 
@@ -1724,7 +1729,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected CacheConfiguration cacheConfiguration(IgniteConfiguration cfg, String cacheName) {
         for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
-            if (F.eq(cacheName, ccfg.getName()))
+            if (Objects.equals(cacheName, ccfg.getName()))
                 return ccfg;
         }
 
@@ -1869,7 +1874,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             Object item1 = it1.next();
             Object item2 = it2.next();
 
-            if (!F.eq(item1, item2))
+            if (!Objects.equals(item1, item2))
                 fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
 
             idx++;
@@ -1903,7 +1908,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         for (Map.Entry<K, V> e : exp.entrySet()) {
             if (!act.containsKey(e.getKey()))
                 fail("Maps are not equal (missing key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
-            else if (!F.eq(e.getValue(), act.get(e.getKey())))
+            else if (!Objects.equals(e.getValue(), act.get(e.getKey())))
                 fail("Maps are not equal (key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
         }
     }
@@ -1968,7 +1973,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param saveSnp Do not clean snapshot directory if {@code true}.
      */
-    protected void cleanPersistenceDir(boolean saveSnp) throws Exception {
+    protected void cleanPersistenceDir(boolean saveSnp) throws IgniteCheckedException {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
         SharedFileTree sft = sharedFileTree();
@@ -2829,5 +2834,27 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         assertThat(timeoutProp, notNullValue());
 
         return timeoutProp;
+    }
+
+    /**
+     * Adds test {@link MarshallerContext} to {@code marsh} instance and returns it.
+     * @param marsh Marshaller.
+     * @return Marshaller from input.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected <M extends Marshaller> M initTestMarshallerContext(M marsh) throws IgniteCheckedException {
+        MarshallerContextTestImpl ctx = new MarshallerContextTestImpl();
+
+        ctx.setMarshallerMappingFileStoreDir(new SharedFileTree(U.defaultWorkDirectory()).marshaller());
+        ctx.onMarshallerProcessorStarted(newContext(), null);
+
+        marsh.setContext(ctx);
+
+        return marsh;
+    }
+
+    /** @return Marshaller. */
+    protected static Marshaller marshaller(Ignite ign) {
+        return ((IgniteEx)ign).context().marshaller();
     }
 }
