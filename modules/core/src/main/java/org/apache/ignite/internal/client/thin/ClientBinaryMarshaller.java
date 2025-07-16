@@ -24,6 +24,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 
@@ -113,7 +114,7 @@ class ClientBinaryMarshaller {
 
         marsh.setContext(marshCtx);
 
-        ctx.configure(marsh, binCfg);
+        ctx.configure(marsh, binCfg, CU.affinityFields(igniteCfg));
 
         ctx.registerUserTypesSchema();
 

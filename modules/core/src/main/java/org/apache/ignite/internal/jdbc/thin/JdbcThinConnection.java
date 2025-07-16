@@ -120,6 +120,7 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -326,7 +327,7 @@ public class JdbcThinConnection implements Connection {
 
         BinaryContext ctx = new BinaryContext(metaHnd, null, new NullLogger());
 
-        ctx.configure(marsh, binCfg);
+        ctx.configure(marsh, binCfg, CU.affinityFields(null));
 
         ctx.registerUserTypesSchema();
 

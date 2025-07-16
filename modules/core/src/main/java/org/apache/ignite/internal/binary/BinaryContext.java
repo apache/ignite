@@ -60,7 +60,6 @@ import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -79,8 +78,8 @@ import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetS
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -172,7 +171,6 @@ public class BinaryContext {
 
     /** TODO: remove me */
     BinaryConfiguration bcfg = igniteCfg.getBinaryConfiguration();
-
 
     /** Logger. */
     private IgniteLogger log;
@@ -338,15 +336,16 @@ public class BinaryContext {
      * @throws BinaryObjectException In case of error.
      */
     public void configure(BinaryMarshaller marsh) throws BinaryObjectException {
-        configure(marsh, null);
+        configure(marsh, null, CU.affinityFields(igniteCfg));
     }
 
     /**
      * @param marsh Binary marshaller.
      * @param binaryCfg Binary configuration.
+     * @param affFlds Type name to affinity key field name mapping.
      * @throws BinaryObjectException In case of error.
      */
-    public void configure(BinaryMarshaller marsh, BinaryConfiguration binaryCfg) throws BinaryObjectException {
+    public void configure(BinaryMarshaller marsh, BinaryConfiguration binaryCfg, Map<String, String> affFlds) throws BinaryObjectException {
         if (marsh == null)
             return;
 
@@ -361,28 +360,23 @@ public class BinaryContext {
 
         optmMarsh.setContext(marshCtx);
 
-        Map<String, String> affFields = new HashMap<>();
-
-        if (!F.isEmpty(igniteCfg.getCacheKeyConfiguration())) {
-            for (CacheKeyConfiguration keyCfg : igniteCfg.getCacheKeyConfiguration())
-                affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
-        }
-
         configure(
             binaryCfg.getNameMapper(),
             binaryCfg.getIdMapper(),
             binaryCfg.getSerializer(),
             binaryCfg.getTypeConfigurations(),
-            affFields
+            affFlds
         );
 
         compactFooter = binaryCfg.isCompactFooter();
     }
 
     /**
+     * @param globalNameMapper Name mapper.
      * @param globalIdMapper ID mapper.
      * @param globalSerializer Serializer.
      * @param typeCfgs Type configurations.
+     * @param affFields Type to affinity fields mapping.
      * @throws BinaryObjectException In case of error.
      */
     private void configure(
