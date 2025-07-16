@@ -506,7 +506,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
-     *
+     * Clears tx entries if they could be re-read from a read-through {@link CacheStore}.
+     * <p>
+     * This method takes effect only if all Ignite caches involved into transaction configured with CacheStores in
+     * read-through mode.
      */
     protected void clearCacheStoreBackedEntries() {
         if (txState().cacheIds() == null)
@@ -550,9 +553,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             try {
                 GridCacheEntryEx entry = e.cached();
 
-                if (e.op() != NOOP) {
+                if (e.op() != NOOP)
                     entry.invalidate(xidVer);
-                }
             }
             catch (Throwable t) {
                 U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);

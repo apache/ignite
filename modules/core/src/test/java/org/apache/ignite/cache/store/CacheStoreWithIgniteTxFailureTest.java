@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Tests to check scenarios with system failures during transaction commit. Internal system failures are modelled with
+ * Tests to check scenarios with system failures during transaction commit. Internal system failures are simulated by
  * {@link CacheInterceptor} custom implementation throwing an exception during final commit phase.
  */
 @RunWith(Parameterized.class)
@@ -59,7 +59,9 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
     /** */
     private static final IntFunction<Integer> KEY_UPDATE_FUNCTION = key -> key + KEYS_NUMBER * 3;
 
-    /** */
+    /**
+     * Type of node for keys involved into transaction: primary or backup.
+     */
     private enum FaultyNodeType {
         /** */
         PRIMARY,
@@ -67,7 +69,9 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
         BACKUP
     }
 
-    /** */
+    /**
+     * Role of faulty node in transaction management: tx coordinator or regular node.
+     */
     private enum FaultyNodeRole {
         /** */
         REGULAR,
@@ -88,22 +92,33 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
     public boolean withFaulireHandler;
 
     /** */
-    private volatile FailureHandler failureHandler;
+    @Parameterized.Parameter(3)
+    public boolean withNearCacheConfiguration;
 
     /** */
-    @Parameterized.Parameters(name = "faultyNodeType={0}, faultyNodeRole={1}, withFaulireHandler={2}")
+    @Parameterized.Parameters(name = "faultyNodeType={0}, faultyNodeRole={1}, withFaulireHandler={2}, withNearCacheConfiguration={3}")
     public static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, true});
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, false});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, true});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, false});
+        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, true, false});
+        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, false, false});
+        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, true, false});
+        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, false, false});
 
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, false});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, false});
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, true});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, true});
+        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, false, false});
+        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, false, false});
+        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, true, false});
+        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, true, false});
+
+        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, true, true});
+        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, false, true});
+        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, true, true});
+        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, false, true});
+
+        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, false, true});
+        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, false, true});
+        // params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, true, true}); TODO https://issues.apache.org/jira/browse/IGNITE-25924
+        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, true, true});
 
         return params;
     }
@@ -123,12 +138,6 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
         stopAllGrids();
 
         storeStgy.resetStore();
-        failureHandler = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return failureHandler != null ? failureHandler : super.getFailureHandler(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -142,8 +151,13 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
     }
 
     /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return withFaulireHandler ? new StopNodeFailureHandler() : super.getFailureHandler(igniteInstanceName);
+    }
+
+    /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+        return withNearCacheConfiguration ? super.nearConfiguration() : null;
     }
 
     /** {@inheritDoc} */
@@ -160,15 +174,6 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
      */
     @Test
     public void testSystemExceptionAfterCacheStoreCommit() throws Exception {
-        failureHandler = withFaulireHandler ? new StopNodeFailureHandler() : null;
-
-        doTest();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void doTest() throws Exception {
         IgniteEx ig = startGrids(gridCount());
         IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
 
@@ -193,7 +198,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
                     waitForTopology(3); // three servers - tx coordinator hosting primary partition doesn't fail
 
                     // check on affected node should pass as the node is alive and cache entries are cleaned up from the cache
-                    checkKeysOnAffectedNode(keysOnFaultyNode);
+                    checkKeysOnFaultyNode(keysOnFaultyNode);
                 }
             }
             else {
@@ -209,10 +214,10 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
 
         }
         else {
-            checkKeysOnAffectedNode(keysOnFaultyNode);
+            checkKeysOnFaultyNode(keysOnFaultyNode);
         }
 
-        checkKeysOnUnaffectedNodes(keysOnFaultyNode);
+        checkKeysOnHealthyNodes(keysOnFaultyNode);
     }
 
     /** */
@@ -223,7 +228,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
     }
 
     /** */
-    private void checkKeysOnAffectedNode(List<Integer> keysToCheck) {
+    private void checkKeysOnFaultyNode(List<Integer> keysToCheck) {
         IgniteCache<Object, Object> cache = grid(FAULTY_NODE_IDX).cache(DEFAULT_CACHE_NAME);
 
         for (Integer key : keysToCheck) {
@@ -232,7 +237,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
     }
 
     /** */
-    private void checkKeysOnUnaffectedNodes(List<Integer> keysToCheck) {
+    private void checkKeysOnHealthyNodes(List<Integer> keysToCheck) {
         for (int i = 0; i < gridCount(); i++) {
             if (i != FAULTY_NODE_IDX) {
                 IgniteEx ig = grid(i);
@@ -240,8 +245,9 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
                 IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
 
                 for (Integer key : keysToCheck) {
-                    Object val = cache.get(key);
-                    assertEquals("Wrong key observed on node " + i + "; nodeName " + ig.name(), storeStgy.getFromStore(key), val);
+                    assertEquals("Key inconsistent with CacheStore found on node " + i + "; nodeName " + ig.name(),
+                        storeStgy.getFromStore(key),
+                        cache.get(key));
                 }
             }
         }
