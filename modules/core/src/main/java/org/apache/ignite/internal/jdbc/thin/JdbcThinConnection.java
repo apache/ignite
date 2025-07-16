@@ -75,7 +75,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -325,7 +324,7 @@ public class JdbcThinConnection implements Connection {
 
         BinaryConfiguration binCfg = new BinaryConfiguration().setCompactFooter(true);
 
-        BinaryContext ctx = new BinaryContext(metaHnd, new IgniteConfiguration(), new NullLogger());
+        BinaryContext ctx = new BinaryContext(metaHnd, null, new NullLogger());
 
         ctx.configure(marsh, binCfg);
 

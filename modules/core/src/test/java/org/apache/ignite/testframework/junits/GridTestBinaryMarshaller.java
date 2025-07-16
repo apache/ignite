@@ -75,7 +75,7 @@ public class GridTestBinaryMarshaller {
                 }
             });
 
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), iCfg, new NullLogger());
+        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), iCfg.getIgniteInstanceName(), new NullLogger());
 
         MarshallerContextTestImpl marshCtx = new MarshallerContextTestImpl();
 

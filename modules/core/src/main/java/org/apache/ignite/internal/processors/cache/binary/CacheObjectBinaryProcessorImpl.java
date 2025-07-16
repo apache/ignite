@@ -50,7 +50,6 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -279,8 +278,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         };
 
         binaryCtx = useTestBinaryCtx ?
-            new TestBinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class)) :
-            new BinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class));
+            new TestBinaryContext(metaHnd, ctx.config().getIgniteInstanceName(), ctx.log(BinaryContext.class)) :
+            new BinaryContext(metaHnd, ctx.config().getIgniteInstanceName(), ctx.log(BinaryContext.class));
 
         transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, binaryCtx, ctx, log);
 
@@ -1633,12 +1632,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         /**
          * @param metaHnd Meta handler.
-         * @param igniteCfg Ignite config.
+         * @param nodeName Ignite instance name.
          * @param log Logger.
          */
-        public TestBinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg,
+        public TestBinaryContext(BinaryMetadataHandler metaHnd, @Nullable String nodeName,
             IgniteLogger log) {
-            super(metaHnd, igniteCfg, log);
+            super(metaHnd, nodeName, log);
         }
 
         /** {@inheritDoc} */

@@ -442,7 +442,7 @@ public class IgniteMock implements IgniteEx {
 
         if (ctx == null) {
             /** {@inheritDoc} */
-            ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), configuration(), new NullLogger()) {
+            ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), configuration().getIgniteInstanceName(), new NullLogger()) {
                 @Override public int typeId(String typeName) {
                     return typeName.hashCode();
                 }

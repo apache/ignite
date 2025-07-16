@@ -107,7 +107,7 @@ class ClientBinaryMarshaller {
 
         igniteCfg.setBinaryConfiguration(binCfg);
 
-        BinaryContext ctx = new BinaryContext(metaHnd, igniteCfg, NullLogger.INSTANCE);
+        BinaryContext ctx = new BinaryContext(metaHnd, null, NullLogger.INSTANCE);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

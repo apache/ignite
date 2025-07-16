@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -30,7 +29,7 @@ public class BinaryContextPredefinedTypesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDefaultConstructor() {
-        BinaryContext binCtx = new BinaryContext(new IgniteConfiguration(), log);
+        BinaryContext binCtx = new BinaryContext(null, log);
 
         for (BinaryClassDescriptor desc : binCtx.predefinedTypes()) {
             if (!desc.isBinary())
