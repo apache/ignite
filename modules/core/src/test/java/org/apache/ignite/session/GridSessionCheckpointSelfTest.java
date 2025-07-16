@@ -100,7 +100,12 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), cfg.getIgniteInstanceName(), new NullLogger());
+        BinaryContext ctx = new BinaryContext(
+            BinaryUtils.cachingMetadataHandler(),
+            cfg.getIgniteInstanceName(),
+            cfg.getBinaryConfiguration(),
+            new NullLogger()
+        );
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 

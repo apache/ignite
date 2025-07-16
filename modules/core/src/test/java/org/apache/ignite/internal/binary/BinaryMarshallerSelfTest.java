@@ -4166,7 +4166,12 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         });
         iCfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
 
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), iCfg.getIgniteInstanceName(), new NullLogger());
+        BinaryContext ctx = new BinaryContext(
+            BinaryUtils.cachingMetadataHandler(),
+            iCfg.getIgniteInstanceName(),
+            iCfg.getBinaryConfiguration(),
+            new NullLogger()
+        );
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
@@ -4227,7 +4232,12 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         });
         iCfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
 
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), iCfg.getIgniteInstanceName(), new NullLogger());
+        BinaryContext ctx = new BinaryContext(
+            BinaryUtils.cachingMetadataHandler(),
+            iCfg.getIgniteInstanceName(),
+            iCfg.getBinaryConfiguration(),
+            new NullLogger()
+        );
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

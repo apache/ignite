@@ -674,7 +674,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         iCfg.setBinaryConfiguration(bCfg);
 
-        BinaryContext ctx = new BinaryContext(iCfg.getIgniteInstanceName(), new NullLogger());
+        BinaryContext ctx = new BinaryContext(iCfg.getIgniteInstanceName(), bCfg, new NullLogger());
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

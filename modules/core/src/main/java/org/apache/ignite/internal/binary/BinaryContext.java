@@ -169,8 +169,8 @@ public class BinaryContext {
     /** */
     private final IgniteConfiguration igniteCfg = null;
 
-    /** TODO: remove me */
-    BinaryConfiguration bcfg = igniteCfg.getBinaryConfiguration();
+    /** Binary configuration. */
+    private final BinaryConfiguration bcfg;
 
     /** Logger. */
     private IgniteLogger log;
@@ -186,23 +186,26 @@ public class BinaryContext {
 
     /**
      * @param nodeName Ignite instance name.
+     * @param bcfg Binary configuration.
      * @param log Logger.
      */
-    public BinaryContext(@Nullable String nodeName, IgniteLogger log) {
-        this(BinaryNoopMetadataHandler.instance(), nodeName, log);
+    public BinaryContext(@Nullable String nodeName, @Nullable BinaryConfiguration bcfg, IgniteLogger log) {
+        this(BinaryNoopMetadataHandler.instance(), nodeName, bcfg, log);
     }
 
     /**
      * @param metaHnd Meta data handler.
      * @param nodeName Ignite instance name.
+     * @param bcfg Binary configuration.
      * @param log Logger.
      */
-    public BinaryContext(BinaryMetadataHandler metaHnd, @Nullable String nodeName, IgniteLogger log) {
+    public BinaryContext(BinaryMetadataHandler metaHnd, @Nullable String nodeName, @Nullable BinaryConfiguration bcfg, IgniteLogger log) {
         assert metaHnd != null;
 
         MarshallerUtils.setNodeName(optmMarsh, nodeName);
 
         this.metaHnd = metaHnd;
+        this.bcfg = bcfg;
         this.log = log;
 
         colTypes.put(ArrayList.class, GridBinaryMarshaller.ARR_LIST);
