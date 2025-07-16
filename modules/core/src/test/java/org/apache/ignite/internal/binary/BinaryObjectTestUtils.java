@@ -33,7 +33,7 @@ public class BinaryObjectTestUtils {
 
     /**
      * @param obj
-     * @return Value of {@link BinaryAbstractIdentityResolver#hashCode(BinaryObject)}
+     * @return Value of {@link BinaryIdentityResolver#hashCode(BinaryObject)}
      */
     public static int binaryArrayIdentityResolverHashCode(BinaryObject obj) {
         return BinaryArrayIdentityResolver.instance().hashCode(obj);
