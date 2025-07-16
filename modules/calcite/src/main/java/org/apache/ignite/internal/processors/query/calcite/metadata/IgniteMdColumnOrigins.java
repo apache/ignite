@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.calcite.plan.volcano.RelSubset;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
+import org.apache.calcite.rel.metadata.RelMdColumnOrigins;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexCall;
@@ -80,7 +82,7 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
 
             for (RexSlot slot : sources) {
                 if (slot instanceof RexLocalRef) {
-                    RelColumnOrigin slotOrigin = rel.tableColOffset(slot.getIndex());
+                    RelColumnOrigin slotOrigin = rel.columnOriginsByRelLocalRef(slot.getIndex());
 
                     res.add(new RelColumnOrigin(slotOrigin.getOriginTable(), slotOrigin.getOriginColumnOrdinal(),
                         derived));
@@ -90,7 +92,16 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
             return res;
         }
 
-        return Collections.singleton(rel.tableColOffset(iOutputColumn));
+        return Set.of(rel.columnOriginsByRelLocalRef(iOutputColumn));
+    }
+
+    /**
+     * {@link RelMdColumnOrigins} has no method for a {@link Spool}. It takes
+     * {@link RelMdColumnOrigins#getColumnOrigins(RelNode, RelMetadataQuery, int)} instead and returns {@code null}
+     * because sees an input for current node.
+     */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(Spool rel, RelMetadataQuery mq, int outputColumn) {
+        return mq.getColumnOrigins(rel.getInput(), outputColumn);
     }
 
     /**

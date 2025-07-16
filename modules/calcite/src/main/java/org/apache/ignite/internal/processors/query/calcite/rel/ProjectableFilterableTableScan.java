@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -192,15 +191,6 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
      */
     public RelColumnOrigin columnOriginsByRelLocalRef(int colIdx) {
         int originColIdx = (requiredColumns() == null) ? colIdx : requiredColumns().toArray()[colIdx];
-
-        return new RelColumnOrigin(getTable(), originColIdx, false);
-    }
-
-    /** Returns original index of a table column related to the projected index. */
-    public RelColumnOrigin tableColOffset(int projectColIdx) {
-        int originColIdx = (requiredColumns == null)
-            ? projectColIdx
-            : Commons.mapping(requiredColumns, getTable().getRowType().getFieldCount()).getTarget(requiredColumns.nth(projectColIdx));
 
         return new RelColumnOrigin(getTable(), originColIdx, false);
     }

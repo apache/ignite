@@ -36,6 +36,7 @@ import org.apache.calcite.rel.metadata.RelMdRowCount;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.IntPair;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.apache.ignite.internal.util.typedef.F;
@@ -140,6 +142,10 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
         IntMap<KeyColumnOrigin> leftColumns = findOrigins(mq, rel.getLeft(), joinInfo.leftKeys);
         IntMap<KeyColumnOrigin> rightColumns = findOrigins(mq, rel.getRight(), joinInfo.rightKeys);
+
+        /** Check {@link IgniteMdColumnOrigins} and/or {@link RelMdColumnOrigins} if no origin is found. */
+        if (leftColumns.isEmpty() || rightColumns.isEmpty())
+            return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
 
         Map<TablesPair, JoinCtx> ctxs = new HashMap<>();
 
@@ -268,11 +274,11 @@ public class IgniteMdRowCount extends RelMdRowCount {
     private static IntMap<KeyColumnOrigin> findOrigins(RelMetadataQuery mq, RelNode joinInput, ImmutableIntList keys) {
         IntMap<KeyColumnOrigin> res = new IntRWHashMap<>();
 
-        for (int i : keys) {
-            if (res.containsKey(i))
+        for (int keyColIdx : keys) {
+            if (res.containsKey(keyColIdx))
                 continue;
 
-            RelColumnOrigin origin = mq.getColumnOrigin(joinInput, i);
+            RelColumnOrigin origin = mq.getColumnOrigin(joinInput, keyColIdx);
 
             if (origin == null)
                 continue;
@@ -282,9 +288,21 @@ public class IgniteMdRowCount extends RelMdRowCount {
             if (table == null)
                 continue;
 
-            int keyPos = keyColumns(table).indexOf(origin.getOriginColumnOrdinal());
+            int srcKeyColIdx = origin.getOriginColumnOrdinal();
 
-            res.put(i, new KeyColumnOrigin(origin, keyPos));
+            RelDataType insertRowType = table.descriptor().insertRowType(Commons.typeFactory(joinInput));
+            RelDataType curRowType = origin.getOriginTable().getRowType();
+
+            assert curRowType.getFieldCount() >= insertRowType.getFieldCount();
+
+            if (curRowType.getFieldCount() > insertRowType.getFieldCount()) {
+                /** Current row type probably contains {@link QueryUtils#KEY_FIELD_NAME} and {@link QueryUtils#VAL_FIELD_NAME}. */
+                srcKeyColIdx -= curRowType.getFieldCount() - insertRowType.getFieldCount();
+            }
+
+            int keyPos = keyColumns(table).indexOf(srcKeyColIdx);
+
+            res.put(keyColIdx, new KeyColumnOrigin(origin, keyPos));
         }
 
         return res;
