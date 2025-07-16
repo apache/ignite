@@ -26,7 +26,6 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.util.CancelFlag;
@@ -93,14 +92,6 @@ public final class PlanningContext implements Context {
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     @Nullable public Object[] parameters() {
         return parameters;
-    }
-
-    // Helper methods
-    /**
-     * @return Sql conformance.
-     */
-    public SqlConformance conformance() {
-        return config().getParserConfig().conformance();
     }
 
     /**

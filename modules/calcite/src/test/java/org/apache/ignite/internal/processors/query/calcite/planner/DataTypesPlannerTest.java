@@ -26,11 +26,13 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 /**
@@ -68,7 +70,8 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
         SqlTypeName[] numTypes = new SqlTypeName[] {SqlTypeName.TINYINT, SqlTypeName.SMALLINT, SqlTypeName.REAL,
             SqlTypeName.FLOAT, SqlTypeName.INTEGER, SqlTypeName.BIGINT, SqlTypeName.DOUBLE, SqlTypeName.DECIMAL};
 
-        boolean notNull = !nullable1 && !nullable2;
+        String notNull1 = !nullable1 ? " NOT NULL" : "";
+        String notNull2 = !nullable2 ? " NOT NULL" : "";
 
         for (SqlTypeName t1 : numTypes) {
             for (SqlTypeName t2 : numTypes) {
@@ -89,16 +92,21 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
                 for (String op : Arrays.asList("UNION", "INTERSECT", "EXCEPT")) {
                     String sql = "SELECT * FROM table1 " + op + " SELECT * FROM table2";
 
-                    if (t1 == t2 && (!nullable1 || !nullable2))
-                        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate());
+                    if (log.isInfoEnabled())
+                        log.info("Test query: '" + sql + "', type1: " + t1 + ", t2: " + t2);
+
+                    if (t1 == t2 && (!nullable1 || !nullable2)) {
+                        assertPlan(sql, schema,
+                            nodeOrAnyChild(isInstanceOf(IgniteTableScan.class).and(scan -> !F.isEmpty(scan.projects()))).negate());
+                    }
                     else {
                         RelDataType targetT = f.leastRestrictive(Arrays.asList(f.createSqlType(t1), f.createSqlType(t2)));
 
                         assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(SetOp.class)
                             .and(t1 == targetT.getSqlTypeName() ? input(0, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
-                                : input(0, projectFromTable("TABLE1", "CAST($0):" + targetT + (notNull ? " NOT NULL" : ""), "$1")))
+                                : input(0, projectFromTable("TABLE1", "[CAST($t0):" + targetT + notNull1 + ", $t1]")))
                             .and(t2 == targetT.getSqlTypeName() ? input(1, nodeOrAnyChild(isInstanceOf(IgniteProject.class)).negate())
-                                : input(1, projectFromTable("TABLE2", "CAST($0):" + targetT + (notNull ? " NOT NULL" : ""), "$1")))
+                                : input(1, projectFromTable("TABLE2", "[CAST($t0):" + targetT + notNull2 + ", $t1]")))
                         ));
                     }
                 }
@@ -107,17 +115,16 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    protected Predicate<? extends RelNode> projectFromTable(String tableName, String... exprs) {
-        return nodeOrAnyChild(
-            isInstanceOf(IgniteProject.class)
-                .and(projection -> {
-                    String actualProj = projection.getProjects().toString();
-
-                    String expectedProj = Arrays.asList(exprs).toString();
-
-                    return actualProj.equals(expectedProj);
-                })
-                .and(input(nodeOrAnyChild(isTableScan(tableName))))
+    protected Predicate<? extends RelNode> projectFromTable(String tableName, String expectedProj) {
+        return nodeOrAnyChild(isTableScan(tableName)
+            .and(tblScan -> tblScan.projects() != null && expectedProj.equals(tblScan.projects().toString()))
         );
+    }
+
+    /** Tests common type for nullable date and not nullable timestamp. */
+    @Test
+    public void testSetOpNullableDateCast() throws Exception {
+        assertPlan("SELECT NULL::DATE UNION ALL SELECT TIMESTAMP '2025-07-04 10:00:00'", createSchema(),
+            rel -> rel.fieldIsNullable(0));
     }
 }

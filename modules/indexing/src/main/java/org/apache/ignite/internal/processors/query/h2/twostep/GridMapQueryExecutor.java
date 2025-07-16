@@ -985,9 +985,6 @@ public class GridMapQueryExecutor {
             if (last) {
                 qr.closeResult(qry);
 
-                if (res.qryInfo() != null)
-                    h2.heavyQueriesTracker().stopTracking(res.qryInfo(), null);
-
                 if (qr.isAllClosed()) {
                     nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
