@@ -32,6 +32,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /** Hash join implementor. */
@@ -52,7 +54,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     protected final RowHandler<Row> outRowHnd;
 
     /** */
-    protected final Map<Key, TouchedCollection<Row>> hashStore = new HashMap<>(INITIAL_CAPACITY);
+    protected final Map<Key, TouchedCollection<Row>> hashStore = U.newHashMap(INITIAL_CAPACITY);
 
     /** */
     protected Iterator<Row> rightIt = Collections.emptyIterator();
@@ -156,39 +158,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
     /** */
     private static <RowT> Iterator<RowT> untouched(Map<Key, TouchedCollection<RowT>> entries) {
-        return new Iterator<RowT>() {
-            private final Iterator<TouchedCollection<RowT>> it = entries.values().iterator();
-
-            private Iterator<RowT> innerIt = Collections.emptyIterator();
-
-            @Override public boolean hasNext() {
-                if (innerIt.hasNext())
-                    return true;
-
-                advance();
-
-                return innerIt.hasNext();
-            }
-
-            @Override public RowT next() {
-                if (!hasNext())
-                    throw new NoSuchElementException();
-
-                return innerIt.next();
-            }
-
-            private void advance() {
-                while (it.hasNext()) {
-                    TouchedCollection<RowT> coll = it.next();
-
-                    if (!coll.touched && !coll.items().isEmpty()) {
-                        innerIt = coll.items().iterator();
-
-                        break;
-                    }
-                }
-            }
-        };
+        return F.flat(F.iterator(entries.values(), TouchedCollection::items, true, v -> !v.touched));
     }
 
     /** {@inheritDoc} */

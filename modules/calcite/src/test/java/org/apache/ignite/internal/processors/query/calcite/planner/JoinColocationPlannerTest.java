@@ -70,16 +70,11 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "join TEST_TBL t2 on t1.id = t2.id";
 
         for (String disabledRule : DISABLED_RULES) {
-            RelNode phys = physicalPlan(sql, schema, "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin", disabledRule);
-
-            AbstractIgniteJoin join = findFirstNode(phys, byClass(AbstractIgniteJoin.class));
-
-            String invalidPlanMsg = "Invalid plan:\n" + RelOptUtil.toString(phys);
-
-            assertThat(invalidPlanMsg, join, notNullValue());
-            assertThat(invalidPlanMsg, join.distribution().function().affinity(), is(true));
-            assertThat(invalidPlanMsg, join.getLeft(), instanceOf(IgniteIndexScan.class));
-            assertThat(invalidPlanMsg, join.getRight(), instanceOf(IgniteIndexScan.class));
+            assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class)
+                .and(join -> join.distribution().function().affinity())
+                .and(input(0, isInstanceOf(IgniteIndexScan.class)))
+                .and(input(1, isInstanceOf(IgniteIndexScan.class)))
+            ), "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin", disabledRule);
         }
     }
 

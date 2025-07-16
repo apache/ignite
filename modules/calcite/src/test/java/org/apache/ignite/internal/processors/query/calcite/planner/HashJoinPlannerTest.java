@@ -61,15 +61,12 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
         IgniteSchema schema = createSchema(tbl1, tbl2);
 
         String sql = "select t1.ID, t2.ID1 "
-                + "from TEST_TBL_CMPLX t2 "
-                + "join TEST_TBL t1 on t1.id = t2.id1 "
-                + "order by t2.ID1 NULLS LAST, t2.ID2 NULLS LAST";
+            + "from TEST_TBL_CMPLX t2 "
+            + "join TEST_TBL t1 on t1.id = t2.id1 "
+            + "order by t2.ID1 NULLS LAST, t2.ID2 NULLS LAST";
 
-        RelNode plan = physicalPlan(sql, schema, DISABLED_RULES);
-
-        assertEquals(0, findNodes(plan, byClass(IgniteSort.class)).size());
-        assertEquals(1, findNodes(plan, byClass(IgniteHashJoin.class)).size());
-        assertNotNull(findFirstNode(plan, byClass(IgniteHashJoin.class)));
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class))
+            .and(nodeOrAnyChild(isInstanceOf(IgniteSort.class)).negate()), DISABLED_RULES);
     }
 
     /** */
@@ -85,10 +82,8 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
                 + "join TEST_TBL_CMPLX t2 on t1.id = t2.id1 "
                 + "order by t2.ID1 NULLS LAST, t2.ID2 NULLS LAST";
 
-        IgniteRel plan = physicalPlan(sql, schema, DISABLED_RULES);
-
-        assertNotNull(findFirstNode(plan, byClass(IgniteHashJoin.class)));
-        assertNotNull(sortOnTopOfJoin(plan));
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteSort.class)
+            .and(input(isInstanceOf(IgniteHashJoin.class)))), DISABLED_RULES);
     }
 
     /** */

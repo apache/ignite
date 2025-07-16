@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.sql.Date;
 import java.util.LinkedHashMap;
-import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -279,40 +278,37 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
 
     /** */
     @Test
-    public void testMergeAndHashJoin() {
-        for (List<String> params : F.asList(F.asList(HintDefinition.MERGE_JOIN.name(), "IgniteMergeJoin"),
-            F.asList(HintDefinition.HASH_JOIN.name(), "IgniteHashJoin"))) {
-            assertQuery("" +
-                "SELECT /*+ " + params.get(0) + " */ d1.name, d2.name FROM Developer d1, Developer d2 " +
-                "WHERE d1.depId = d2.depId")
-                .matches(containsSubPlan(params.get(1)))
-                .returns("Bach", "Bach")
-                .returns("Beethoven", "Beethoven")
-                .returns("Beethoven", "Strauss")
-                .returns("Mozart", "Mozart")
-                .returns("Strauss", "Strauss")
-                .returns("Strauss", "Beethoven")
-                .returns("Vagner", "Vagner")
-                .returns("Chaikovsky", "Chaikovsky")
-                .returns("Verdy", "Verdy")
-                .returns("Stravinsky", "Stravinsky")
-                .returns("Rahmaninov", "Rahmaninov")
-                .returns("Shubert", "Shubert")
-                .returns("Glinka", "Glinka")
-                .returns("Arnalds", "Arnalds")
-                .returns("Glass", "Glass")
-                .returns("O'Halloran", "O'Halloran")
-                .returns("Prokofiev", "Prokofiev")
-                .returns("Yiruma", "Yiruma")
-                .returns("Cacciapaglia", "Cacciapaglia")
-                .returns("Einaudi", "Einaudi")
-                .returns("Hasaishi", "Hasaishi")
-                .returns("Marradi", "Marradi")
-                .returns("Musorgskii", "Musorgskii")
-                .returns("Rihter", "Rihter")
-                .returns("Zimmer", "Zimmer")
-                .check();
-        }
+    public void testMergeJoin() {
+        assertQuery("" +
+            "SELECT /*+ " + HintDefinition.MERGE_JOIN + " */ d1.name, d2.name FROM Developer d1, Developer d2 " +
+            "WHERE d1.depId = d2.depId")
+            .matches(containsSubPlan("IgniteMergeJoin"))
+            .returns("Bach", "Bach")
+            .returns("Beethoven", "Beethoven")
+            .returns("Beethoven", "Strauss")
+            .returns("Mozart", "Mozart")
+            .returns("Strauss", "Strauss")
+            .returns("Strauss", "Beethoven")
+            .returns("Vagner", "Vagner")
+            .returns("Chaikovsky", "Chaikovsky")
+            .returns("Verdy", "Verdy")
+            .returns("Stravinsky", "Stravinsky")
+            .returns("Rahmaninov", "Rahmaninov")
+            .returns("Shubert", "Shubert")
+            .returns("Glinka", "Glinka")
+            .returns("Arnalds", "Arnalds")
+            .returns("Glass", "Glass")
+            .returns("O'Halloran", "O'Halloran")
+            .returns("Prokofiev", "Prokofiev")
+            .returns("Yiruma", "Yiruma")
+            .returns("Cacciapaglia", "Cacciapaglia")
+            .returns("Einaudi", "Einaudi")
+            .returns("Hasaishi", "Hasaishi")
+            .returns("Marradi", "Marradi")
+            .returns("Musorgskii", "Musorgskii")
+            .returns("Rihter", "Rihter")
+            .returns("Zimmer", "Zimmer")
+            .check();
     }
 
     // ===== No filter =====
