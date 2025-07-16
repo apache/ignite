@@ -40,7 +40,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
-        <revision>18.0.0-SNAPSHOT</revision>
+        <revision>17.6.0-beta2</revision>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
     </properties>
 
