@@ -341,7 +341,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
         // no commute
         assertEquals(JoinRelType.INNER, join.getJoinType());
 
-        ctx = plannerCtx(sql, publicSchema, planLsnr "MergeJoinConverter", "CorrelatedNestedLoopJoin", "HashJoinConverter",
+        ctx = plannerCtx(sql, publicSchema, planLsnr, "MergeJoinConverter", "CorrelatedNestedLoopJoin", "HashJoinConverter",
             "JoinCommuteRule");
 
         pl = ctx.cluster().getPlanner();
