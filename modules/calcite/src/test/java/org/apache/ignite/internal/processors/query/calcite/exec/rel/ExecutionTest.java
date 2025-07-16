@@ -566,7 +566,7 @@ public class ExecutionTest extends AbstractExecutionTest {
             rowType = TypeUtils.createRowType(tf, int.class, String.class, String.class);
 
             HashJoinNode<Object[]> join = HashJoinNode.create(ctx, outType, leftType, rightType, joinType,
-                JoinInfo.of(ImmutableIntList.of(0), ImmutableIntList.of(2)));
+                JoinInfo.of(ImmutableIntList.of(0), ImmutableIntList.of(2)), null);
 
             join.register(F.asList(leftDeps, rightEmps));
 

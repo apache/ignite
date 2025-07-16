@@ -35,7 +35,13 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.calcite.rel.RelFieldCollation.Direction.ASCENDING;
+import static org.apache.calcite.sql.ddl.SqlDdlNodes.createSchema;
+import static org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest.byClass;
+import static org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest.createTable;
+import static org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest.findFirstNode;
+import static org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest.findNodes;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.Assert.assertNotNull;
 
 /** */
 public class HashJoinPlannerTest extends AbstractPlannerTest {
@@ -130,19 +136,34 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testHashJoinApplied() throws Exception {
-        for (List<Object> paramSet : testJoinIsAppliedParameters()) {
-            assert paramSet != null && paramSet.size() == 2;
+        List<List<Object>> testParams = F.asList(
+            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = t2.c1", true, false),
+            F.asList("select t1.c1 from t1 %s join t1 t2 using(c1)", true, false),
+            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = 1", false, false),
+            F.asList("select t1.c1 from t1 %s join t1 t2 ON t1.id is not distinct from t2.c1", false, false),
+            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = ?", false, false),
+            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = OCTET_LENGTH('TEST')", false, false),
+            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = LOG10(t1.c1)", false, false),
+            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = t2.c1 and t1.ID > t2.ID", true, true),
+            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = 1 and t2.c1 = 1", false, false)
+        );
+
+        for (List<Object> paramSet : testParams) {
+            assert paramSet != null && paramSet.size() == 3;
 
             String sql = (String)paramSet.get(0);
-
             boolean canBePlanned = (Boolean)paramSet.get(1);
+            boolean onlyInnerOrSemi = (Boolean)paramSet.get(2);
 
             TestTable tbl = createTable("T1", IgniteDistributions.single(), "ID", Integer.class, "C1", Integer.class);
 
             IgniteSchema schema = createSchema(tbl);
 
-            for (String type : JOIN_TYPES) {
-                String sql0 = String.format(sql, type);
+            for (String joinType : JOIN_TYPES) {
+                if (onlyInnerOrSemi && !joinType.equals("INNER") && !joinType.equals("SEMI"))
+                    continue;
+
+                String sql0 = String.format(sql, joinType);
 
                 if (canBePlanned)
                     assertPlan(sql0, schema, nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class)), DISABLED_RULES);
@@ -152,21 +173,6 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
                 }
             }
         }
-    }
-
-    /** */
-    private static List<List<Object>> testJoinIsAppliedParameters() {
-        return F.asList(
-            F.asList("select t1.c1 from t1 %s join t1 t2 using(c1)", true),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = t2.c1", true),
-            F.asList("select t1.c1 from t1 %s join t1 t2 ON t1.id is not distinct from t2.c1", false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = OCTET_LENGTH('TEST')", false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = LOG10(t1.c1)", false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = t2.c1 and t1.ID > t2.ID", false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = 1 and t2.c1 = 1", false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = 1", false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = ?", false)
-        );
     }
 
     /** */
