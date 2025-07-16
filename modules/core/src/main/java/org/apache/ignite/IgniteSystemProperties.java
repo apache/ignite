@@ -59,8 +59,6 @@ import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DFLT_JVM_PAUSE_DETECTOR_PRECISION;
 import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_IGNITE_USE_BINARY_ARRAYS;
-import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
-import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.DFLT_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DFLT_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.affinity.AffinityAssignment.DFLT_AFFINITY_BACKUPS_THRESHOLD;
@@ -500,21 +498,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "Preload resend timeout for evicted partitions in milliseconds", type = Long.class,
         defaults = "" + DFLT_PRELOAD_RESEND_TIMEOUT)
     public static final String IGNITE_PRELOAD_RESEND_TIMEOUT = "IGNITE_PRELOAD_RESEND_TIMEOUT";
-
-    /**
-     * System property to specify how often in milliseconds marshal buffers
-     * should be rechecked and potentially trimmed. Default value is {@code 10,000ms}.
-     */
-    @SystemProperty(value = "How often in milliseconds marshal buffers should be rechecked and potentially trimmed",
-        type = Long.class, defaults = "" + DFLT_MARSHAL_BUFFERS_RECHECK)
-    public static final String IGNITE_MARSHAL_BUFFERS_RECHECK = "IGNITE_MARSHAL_BUFFERS_RECHECK";
-
-    /**
-     * System property to specify per thread binary allocator chunk pool size. Default value is {@code 32}.
-     */
-    @SystemProperty(value = "Per thread binary allocator chunk pool size",
-        type = Integer.class, defaults = "" + DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE)
-    public static final String IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = "IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE";
 
     /**
      * System property to disable {@link HostnameVerifier} for SSL connections.

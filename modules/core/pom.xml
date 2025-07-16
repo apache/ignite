@@ -70,6 +70,12 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-binary-impl</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-codegen2</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -345,6 +351,7 @@
                                 <includes>
                                     <include>org.apache.ignite:ignite-commons</include>
                                     <include>org.apache.ignite:ignite-binary-api</include>
+                                    <include>org.apache.ignite:ignite-binary-impl</include>
                                     <include>org.apache.ignite:ignite-grid-unsafe</include>
                                 </includes>
                             </artifactSet>

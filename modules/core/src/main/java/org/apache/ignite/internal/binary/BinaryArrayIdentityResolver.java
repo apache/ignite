@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * <p>
  * Hash code is calculated in the same way as {@link Arrays#hashCode(byte[])} does.
  */
-class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
+class BinaryArrayIdentityResolver implements BinaryIdentityResolver {
     /** Singleton instance */
     private static final BinaryArrayIdentityResolver INSTANCE = new BinaryArrayIdentityResolver();
 
@@ -49,7 +49,25 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
     }
 
     /** {@inheritDoc} */
-    @Override protected int hashCode0(BinaryObject obj) {
+    @Override public int hashCode(BinaryObject obj) {
+        if (obj == null)
+            throw new BinaryObjectException("Cannot calculate hash code because binary object is null.");
+
+        return hashCode0(obj);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(BinaryObject o1, BinaryObject o2) {
+        return o1 == o2 || (o1 != null && o2 != null && equals0(o1, o2));
+    }
+
+    /**
+     * Internal hash code routine.
+     *
+     * @param obj Object.
+     * @return Result.
+     */
+    protected int hashCode0(BinaryObject obj) {
         if (obj instanceof BinaryObjectExImpl) {
             BinaryObjectExImpl ex = (BinaryObjectExImpl)obj;
 
@@ -98,8 +116,14 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
         return hash;
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean equals0(BinaryObject o1, BinaryObject o2) {
+    /**
+     * Internal equals routine.
+     *
+     * @param o1 First object.
+     * @param o2 Second object.
+     * @return Result.
+     */
+    protected boolean equals0(BinaryObject o1, BinaryObject o2) {
         if (o1 instanceof BinaryObjectEx && o2 instanceof BinaryObjectEx) {
             BinaryObjectEx ex1 = (BinaryObjectEx)o1;
             BinaryObjectEx ex2 = (BinaryObjectEx)o2;
