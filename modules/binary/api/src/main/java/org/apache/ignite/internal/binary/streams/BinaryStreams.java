@@ -32,7 +32,10 @@ public class BinaryStreams {
     static {
         Iterator<BinaryStreamsFactory> factories = CommonUtils.loadService(BinaryStreamsFactory.class).iterator();
 
-        A.ensure(factories.hasNext(), "BinaryStreamsFactory implementation not found. Please, add ignite-binary-impl to classpath");
+        A.ensure(
+            factories.hasNext(),
+            "Implementation for BinaryStreamsFactory service not found. Please add ignite-binary-impl to classpath"
+        );
 
         factory = factories.next();
     }
