@@ -32,9 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * List of transaction locks for particular key.
  */
 public class TxLockList implements Message {
-    /** Serial version UID. */
-    private static final long serialVersionUID = 0L;
-
     /** Tx locks. */
     @GridToStringInclude
     @GridDirectCollection(value = TxLock.class)

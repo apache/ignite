@@ -33,9 +33,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Cache object and version.
  */
 public class CacheVersionedValue implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Value. */
     @GridToStringInclude
     private CacheObject val;

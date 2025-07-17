@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -34,15 +33,11 @@ class SessionChannelMessage implements Message {
     /** Initial channel message type (value is {@code 175}). */
     public static final short TYPE_CODE = 175;
 
-    /** Serialization version. */
-    private static final long serialVersionUID = 0L;
-
     /** Channel session unique identifier. */
     private IgniteUuid sesId;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Default constructor.
      */
     public SessionChannelMessage() {
         // No-op.

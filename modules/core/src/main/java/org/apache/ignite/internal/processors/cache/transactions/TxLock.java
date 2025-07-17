@@ -32,9 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * to remote node from near node that isn't primary node for key.
  */
 public class TxLock implements Message {
-    /** Serial version UID. */
-    private static final long serialVersionUID = 0L;
-
     /** Ownership owner. */
     static final byte OWNERSHIP_OWNER = 1;
 

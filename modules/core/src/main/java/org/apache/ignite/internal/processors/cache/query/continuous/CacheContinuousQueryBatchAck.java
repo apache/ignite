@@ -32,9 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Batch acknowledgement.
  */
 public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Routine ID. */
     private UUID routineId;
 

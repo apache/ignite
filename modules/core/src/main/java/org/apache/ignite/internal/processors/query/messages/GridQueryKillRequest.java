@@ -31,9 +31,6 @@ public class GridQueryKillRequest implements Message {
     /** */
     public static final short TYPE_CODE = 172;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Request id. */
     private long reqId;
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
@@ -38,9 +37,6 @@ import org.jetbrains.annotations.Nullable;
  * Near cache lock response.
  */
 public class GridNearLockResponse extends GridDistributedLockResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Collection of versions that are pending and less than lock version. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)
@@ -67,7 +63,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     private boolean compatibleRemapVer;
 
     /**
-     * Empty constructor (required by {@link Externalizable}).
+     * Empty constructor.
      */
     public GridNearLockResponse() {
         // No-op.

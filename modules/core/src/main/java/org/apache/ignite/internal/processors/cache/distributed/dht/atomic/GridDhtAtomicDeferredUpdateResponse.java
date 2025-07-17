@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -36,9 +35,6 @@ import org.jetbrains.annotations.Nullable;
  * Deferred dht atomic update response.
  */
 public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -51,7 +47,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
     private GridTimeoutObject timeoutSnd;
 
     /**
-     * Empty constructor required by {@link Externalizable}
+     * Empty constructor.
      */
     public GridDhtAtomicDeferredUpdateResponse() {
         // No-op.

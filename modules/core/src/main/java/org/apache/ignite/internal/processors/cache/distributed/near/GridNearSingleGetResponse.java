@@ -39,9 +39,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public static final int INVALID_PART_FLAG_MASK = 0x1;
 
     /** */
@@ -67,7 +64,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     private byte flags;
 
     /**
-     * Empty constructor required for {@link Message}.
+     * Empty constructor.
      */
     public GridNearSingleGetResponse() {
         // No-op.

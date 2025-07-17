@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
@@ -102,10 +101,10 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     protected byte flags;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     protected GridDhtAtomicAbstractUpdateRequest() {
-        // N-op.
+        // No-op.
     }
 
     /**

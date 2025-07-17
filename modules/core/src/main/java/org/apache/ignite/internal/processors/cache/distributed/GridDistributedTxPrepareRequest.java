@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,9 +56,6 @@ import org.jetbrains.annotations.Nullable;
  * transactions.
  */
 public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private static final int NEED_RETURN_VALUE_FLAG_MASK = 0x01;
 
@@ -155,7 +151,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private @Nullable Map<String, String> appAttrs;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDistributedTxPrepareRequest() {
         /* No-op. */

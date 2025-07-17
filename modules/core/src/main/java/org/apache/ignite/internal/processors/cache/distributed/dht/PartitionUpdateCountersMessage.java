@@ -37,9 +37,6 @@ public class PartitionUpdateCountersMessage implements Message {
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;
 
     /** */
-    private static final long serialVersionUID = 193442457510062844L;
-
-    /** */
     private byte data[];
 
     /** */

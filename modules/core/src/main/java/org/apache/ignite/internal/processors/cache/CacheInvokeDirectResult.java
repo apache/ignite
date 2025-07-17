@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
@@ -33,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class CacheInvokeDirectResult implements Message {
+public class CacheInvokeDirectResult implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,7 +58,7 @@ public class CacheInvokeDirectResult implements Message {
     private byte[] errBytes;
 
     /**
-     * Required for {@link Message}.
+     * Default constructor.
      */
     public CacheInvokeDirectResult() {
         // No-op.

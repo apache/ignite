@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -27,9 +26,6 @@ import org.jetbrains.annotations.Nullable;
  * Job cancellation request.
  */
 public class GridJobCancelRequest implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     @Order(0)
     private IgniteUuid sessionId;
@@ -43,8 +39,7 @@ public class GridJobCancelRequest implements Message {
     private boolean system;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Default constructor.
      */
     public GridJobCancelRequest() {
         // No-op.

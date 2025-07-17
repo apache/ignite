@@ -31,9 +31,6 @@ public class GridQueryKillResponse implements Message {
     /** */
     public static final short TYPE_CODE = 173;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Error text. */
     private String errMsg;
 

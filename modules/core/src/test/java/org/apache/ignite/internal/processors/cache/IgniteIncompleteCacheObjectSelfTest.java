@@ -90,9 +90,6 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
      */
     private static class TestCacheObject implements CacheObject {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final byte type;
 
         /**

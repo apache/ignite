@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -38,9 +37,6 @@ import org.jetbrains.annotations.Nullable;
  * Near cache lock request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
 public class GridNearLockRequest extends GridDistributedLockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private static final int NEED_RETURN_VALUE_FLAG_MASK = 0x01;
 
@@ -79,7 +75,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     private String txLbl;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearLockRequest() {
         // No-op.

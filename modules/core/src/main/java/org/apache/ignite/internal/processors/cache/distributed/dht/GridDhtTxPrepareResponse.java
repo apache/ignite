@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,9 +45,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT transaction prepare response.
  */
 public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Evicted readers. */
     @GridToStringInclude
     @GridDirectCollection(IgniteTxKey.class)
@@ -69,7 +65,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     private List<GridCacheEntryInfo> preloadEntries;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtTxPrepareResponse() {
         // No-op.

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
@@ -38,9 +37,6 @@ import org.jetbrains.annotations.NotNull;
  * Near transaction finish request.
  */
 public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Near node ID. */
     private UUID nearNodeId;
 
@@ -52,7 +48,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     private Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtTxFinishRequest() {
         // No-op.

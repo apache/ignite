@@ -28,13 +28,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Message is sent from client to coordinator node when a user needs to authorize on client node.
  */
 public class UserAuthenticateRequestMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** User name. */
     private String name;
 
-    /** User password.. */
+    /** User password. */
     private String passwd;
 
     /** Request ID. */

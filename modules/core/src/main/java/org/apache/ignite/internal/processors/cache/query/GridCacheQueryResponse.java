@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,9 +47,6 @@ import org.jetbrains.annotations.Nullable;
  * Page of cache query response.
  */
 public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private boolean finished;
 
@@ -92,7 +88,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     private Collection<Object> data;
 
     /**
-     * Empty constructor for {@link Externalizable}
+     * Empty constructor.
      */
     public GridCacheQueryResponse() {
         //No-op.

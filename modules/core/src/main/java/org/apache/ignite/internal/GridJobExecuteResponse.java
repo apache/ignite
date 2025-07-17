@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
@@ -35,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  * Job execution response.
  */
 public class GridJobExecuteResponse implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private UUID nodeId;
 
@@ -80,8 +76,7 @@ public class GridJobExecuteResponse implements Message {
     private AffinityTopologyVersion retry;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface. This
-     * constructor is not meant to be used for other purposes.
+     * Default constructor.
      */
     public GridJobExecuteResponse() {
         // No-op.

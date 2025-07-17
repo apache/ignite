@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -28,14 +27,11 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Job stealing request.
  */
 public class JobStealingRequest implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Delta. */
     private int delta;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor.
      */
     public JobStealingRequest() {
         // No-op.
