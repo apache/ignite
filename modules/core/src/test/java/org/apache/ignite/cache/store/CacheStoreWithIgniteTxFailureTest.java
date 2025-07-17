@@ -117,7 +117,8 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
 
         params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, false, true});
         params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, false, true});
-        // params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, true, true}); TODO https://issues.apache.org/jira/browse/IGNITE-25924
+        // TODO https://issues.apache.org/jira/browse/IGNITE-25924
+        // params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, true, true});
         params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, true, true});
 
         return params;
