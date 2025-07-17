@@ -446,6 +446,7 @@ public class IgniteMock implements IgniteEx {
             ctx = new BinaryContext(
                 BinaryUtils.cachingMetadataHandler(),
                 configuration().getIgniteInstanceName(),
+                configuration().getClassLoader(),
                 configuration().getBinaryConfiguration(),
                 new NullLogger()
             ) {

@@ -2027,6 +2027,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         BinaryContext ctx = new BinaryContext(
             BinaryUtils.cachingMetadataHandler(),
             cfg.getIgniteInstanceName(),
+            cfg.getClassLoader(),
             cfg.getBinaryConfiguration(),
             new NullLogger()
         );

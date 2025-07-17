@@ -283,6 +283,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             : new BinaryContext(
                 metaHnd,
                 ctx.config().getIgniteInstanceName(),
+                ctx.config().getClassLoader(),
                 ctx.config().getBinaryConfiguration(),
                 ctx.log(BinaryContext.class)
             );
@@ -1643,7 +1644,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
          */
         public TestBinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration cfg,
             IgniteLogger log) {
-            super(metaHnd, cfg.getIgniteInstanceName(), cfg.getBinaryConfiguration(), log);
+            super(metaHnd, cfg.getIgniteInstanceName(), cfg.getClassLoader(), cfg.getBinaryConfiguration(), log);
         }
 
         /** {@inheritDoc} */

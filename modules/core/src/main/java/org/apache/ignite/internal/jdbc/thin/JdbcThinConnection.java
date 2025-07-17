@@ -296,7 +296,7 @@ public class JdbcThinConnection implements Connection {
         netTimeout = connProps.getConnectionTimeout();
         qryTimeout = connProps.getQueryTimeout();
         maintenanceExecutor = Executors.newScheduledThreadPool(2,
-            new IgniteThreadFactory(ctx.configuration().getIgniteInstanceName(), "jdbc-maintenance"));
+            new IgniteThreadFactory(ctx.igniteInstanceName(), "jdbc-maintenance"));
 
         schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 
@@ -325,7 +325,7 @@ public class JdbcThinConnection implements Connection {
 
         BinaryConfiguration binCfg = new BinaryConfiguration().setCompactFooter(true);
 
-        BinaryContext ctx = new BinaryContext(metaHnd, null, null, new NullLogger());
+        BinaryContext ctx = new BinaryContext(metaHnd, null, null, null, new NullLogger());
 
         ctx.configure(marsh, binCfg, CU.affinityFields(null));
 

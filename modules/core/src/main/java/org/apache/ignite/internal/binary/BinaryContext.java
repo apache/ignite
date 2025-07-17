@@ -63,7 +63,6 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
@@ -79,7 +78,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -160,14 +158,17 @@ public class BinaryContext {
     /** */
     private BinaryMetadataHandler metaHnd;
 
+    /** Node name. */
+    private final String igniteInstanceName;
+
+    /** Class loader. */
+    private final ClassLoader clsLdr = null;
+
     /** Actual marshaller. */
     private BinaryMarshaller marsh;
 
     /** */
     private MarshallerContext marshCtx;
-
-    /** */
-    private final IgniteConfiguration igniteCfg = null;
 
     /** Binary configuration. */
     private final BinaryConfiguration bcfg;
@@ -185,26 +186,34 @@ public class BinaryContext {
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
 
     /**
-     * @param nodeName Ignite instance name.
+     * @param igniteInstanceName Ignite instance name.
      * @param bcfg Binary configuration.
      * @param log Logger.
      */
-    public BinaryContext(@Nullable String nodeName, @Nullable BinaryConfiguration bcfg, IgniteLogger log) {
-        this(BinaryNoopMetadataHandler.instance(), nodeName, bcfg, log);
+    public BinaryContext(@Nullable String igniteInstanceName, @Nullable BinaryConfiguration bcfg, IgniteLogger log) {
+        this(BinaryNoopMetadataHandler.instance(), igniteInstanceName, null, bcfg, log);
     }
 
     /**
      * @param metaHnd Meta data handler.
-     * @param nodeName Ignite instance name.
+     * @param igniteInstanceName Ignite instance name.
+     * @param clsLdr Class loader.
      * @param bcfg Binary configuration.
      * @param log Logger.
      */
-    public BinaryContext(BinaryMetadataHandler metaHnd, @Nullable String nodeName, @Nullable BinaryConfiguration bcfg, IgniteLogger log) {
+    public BinaryContext(
+        BinaryMetadataHandler metaHnd,
+        @Nullable String igniteInstanceName,
+        @Nullable ClassLoader clsLdr,
+        @Nullable BinaryConfiguration bcfg,
+        IgniteLogger log
+    ) {
         assert metaHnd != null;
 
-        MarshallerUtils.setNodeName(optmMarsh, nodeName);
+        MarshallerUtils.setNodeName(optmMarsh, igniteInstanceName);
 
         this.metaHnd = metaHnd;
+        this.igniteInstanceName = igniteInstanceName;
         this.bcfg = bcfg;
         this.log = log;
 
@@ -328,10 +337,17 @@ public class BinaryContext {
     }
 
     /**
-     * @return Ignite configuration.
+     * @return Ignite instance name.
      */
-    public IgniteConfiguration configuration() {
-        return igniteCfg;
+    public String igniteInstanceName() {
+        return igniteInstanceName;
+    }
+
+    /**
+     * @return Class loader.
+     */
+    public ClassLoader classLoader() {
+        return clsLdr;
     }
 
     /**
@@ -339,7 +355,7 @@ public class BinaryContext {
      * @throws BinaryObjectException In case of error.
      */
     public void configure(BinaryMarshaller marsh) throws BinaryObjectException {
-        configure(marsh, null, CU.affinityFields(igniteCfg));
+        configure(marsh, null, new HashMap<>());
     }
 
     /**
@@ -1166,7 +1182,7 @@ public class BinaryContext {
         Class<?> cls = null;
 
         try {
-            cls = U.resolveClassLoader(configuration()).loadClass(clsName);
+            cls = U.resolveClassLoader(null, classLoader()).loadClass(clsName);
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
             // No-op.

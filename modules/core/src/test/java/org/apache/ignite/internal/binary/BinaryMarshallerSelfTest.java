@@ -4169,6 +4169,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         BinaryContext ctx = new BinaryContext(
             BinaryUtils.cachingMetadataHandler(),
             iCfg.getIgniteInstanceName(),
+            iCfg.getClassLoader(),
             iCfg.getBinaryConfiguration(),
             new NullLogger()
         );
@@ -4235,6 +4236,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         BinaryContext ctx = new BinaryContext(
             BinaryUtils.cachingMetadataHandler(),
             iCfg.getIgniteInstanceName(),
+            iCfg.getClassLoader(),
             iCfg.getBinaryConfiguration(),
             new NullLogger()
         );

@@ -78,6 +78,7 @@ public class GridTestBinaryMarshaller {
         BinaryContext ctx = new BinaryContext(
             BinaryUtils.cachingMetadataHandler(),
             iCfg.getIgniteInstanceName(),
+            iCfg.getClassLoader(),
             iCfg.getBinaryConfiguration(),
             new NullLogger()
         );

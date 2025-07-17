@@ -47,7 +47,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), null, null, new NullLogger());
+        ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), null, null, null, new NullLogger());
 
         marsh = new BinaryMarshaller();
 

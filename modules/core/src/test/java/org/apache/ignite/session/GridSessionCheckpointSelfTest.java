@@ -103,6 +103,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
         BinaryContext ctx = new BinaryContext(
             BinaryUtils.cachingMetadataHandler(),
             cfg.getIgniteInstanceName(),
+            cfg.getClassLoader(),
             cfg.getBinaryConfiguration(),
             new NullLogger()
         );
