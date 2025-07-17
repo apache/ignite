@@ -392,7 +392,7 @@ public class SnapshotCheckProcess {
 
         for (SnapshotMetadata meta : ctx.metas) {
             CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> metaFut = snpChecker.invokeCustomHandlers(meta,
-                ctx.locFileTree.get(meta.consistentId()), ctx.req.groups(), true);
+                ctx.locFileTree.get(meta.consistentId()), ctx.req.groups(), ctx.req.fullCheck());
 
             metaFut.whenComplete((res, err) -> {
                 if (err != null)

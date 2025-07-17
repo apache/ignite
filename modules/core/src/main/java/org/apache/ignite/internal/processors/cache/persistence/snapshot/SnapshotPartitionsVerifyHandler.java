@@ -275,8 +275,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                             GridDhtPartitionState.OWNING,
                             false,
                             size,
-                            skipHash()
-                                ? F.emptyIterator()
+                            skipHash() ? F.emptyIterator()
                                 : snpMgr.partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore),
                             null
                         );
