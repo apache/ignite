@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
@@ -181,7 +182,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // -46 ... -51 - snapshot messages.
         factory.register((short)-61, IgniteDiagnosticMessage::new);
         factory.register((short)-53, SchemaOperationStatusMessage::new);
-        factory.register((short)-52, GridIntList::new);
+        factory.register((short)-52, GridIntList::new, new GridIntListSerializer());
         factory.register((short)-51, NearCacheUpdates::new);
         factory.register((short)-50, GridNearAtomicCheckUpdateRequest::new);
         factory.register((short)-49, UpdateErrors::new);
