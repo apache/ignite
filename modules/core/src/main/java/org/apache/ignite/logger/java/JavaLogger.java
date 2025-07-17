@@ -355,6 +355,8 @@ public class JavaLogger implements IgniteLoggerEx {
         if (gridFileHnd != null)
             return gridFileHnd.fileName();
 
+        System.err.println("Could not find JavaLoggerFileHandler for logging.");
+
         FileHandler fileHnd = findHandler(impl, FileHandler.class);
 
         return fileName(fileHnd);
