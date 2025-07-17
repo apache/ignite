@@ -167,7 +167,7 @@ public class IncrementalSnapshotVerificationTask {
                     }
                 };
 
-                short locNodeId = blt.consistentIdMapping().get(sft.consistentId());
+                short locNodeId = cstIdsMap.get(sft.consistentId());
 
                 Set<GridCacheVersion> activeDhtTxs = new HashSet<>();
                 Map<GridCacheVersion, Set<Short>> txPrimParticipatingNodes = new HashMap<>();
