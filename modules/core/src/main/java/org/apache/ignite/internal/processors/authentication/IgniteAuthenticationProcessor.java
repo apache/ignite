@@ -756,7 +756,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private void onAuthenticateRequestMessage(UUID nodeId, UserAuthenticateRequestMessage msg) {
         UserAuthenticateResponseMessage respMsg;
         try {
-            authenticateOnServer(msg.name(), msg.password());
+            authenticateOnServer(msg.name(), msg.passwd());
 
             respMsg = new UserAuthenticateResponseMessage(msg.id(), null);
         }
