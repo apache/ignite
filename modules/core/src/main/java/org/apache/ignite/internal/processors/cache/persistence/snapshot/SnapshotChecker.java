@@ -117,8 +117,7 @@ public class SnapshotChecker {
         SnapshotFileTree sft,
         @Nullable Collection<String> groups,
         boolean forCreation,
-        boolean checkParts,
-        boolean skipPartsHashes
+        boolean checkParts
     ) {
         // Await in the default executor to avoid blocking the snapshot executor if it has just one thread.
         return CompletableFuture.supplyAsync(() -> {

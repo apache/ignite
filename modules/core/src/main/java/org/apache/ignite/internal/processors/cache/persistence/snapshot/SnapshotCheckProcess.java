@@ -360,8 +360,7 @@ public class SnapshotCheckProcess {
                 ctx.locFileTree.get(meta.consistentId()),
                 ctx.req.groups(),
                 false,
-                ctx.req.fullCheck(),
-                false
+                ctx.req.fullCheck()
             );
 
             metaFut.whenComplete((res, err) -> {
