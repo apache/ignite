@@ -84,6 +84,9 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
      */
     protected final boolean distributed;
 
+    /** Flag indicating that join is in finishing stage (one of the inputs are ended, no more rows will be produced). */
+    protected boolean finishing;
+
     /**
      * @param ctx Execution context.
      * @param comp Join expression.
@@ -182,7 +185,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         waitingLeft--;
 
-        leftInBuf.add(row);
+        if (!finishing)
+            leftInBuf.add(row);
 
         join();
     }
@@ -196,7 +200,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
         waitingRight--;
 
-        rightInBuf.add(row);
+        if (!finishing)
+            rightInBuf.add(row);
 
         join();
     }
@@ -250,20 +255,24 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     protected abstract void join() throws Exception;
 
     /** */
-    protected void finish() throws Exception {
-        assert requested > 0;
-
-        requested = 0;
-
-        if (distributed) {
+    protected boolean checkJoinFinished() throws Exception {
+        if (!finishing) {
+            finishing = true;
             leftInBuf.clear();
             rightInBuf.clear();
             rightMaterialization = null;
-            drainMaterialization = false;
             rightIdx = 0;
+            drainMaterialization = false;
         }
-        
-        downstream().end();
+
+        if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
+            requested = 0;
+            downstream().end();
+
+            return true;
+        }
+
+        return false;
     }
 
     /** */
@@ -411,13 +420,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            if (requested > 0 && (leftFinished() || rightFinished(true))
-                && (!distributed || waitingLeft == NOT_WAITING || waitingRight == NOT_WAITING)
-            ) {
-                finish();
-
+            if (requested > 0 && (leftFinished() || rightFinished(true)) && checkJoinFinished())
                 return;
-            }
 
             tryToRequestInputs();
         }
@@ -569,11 +573,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            if (requested > 0 && leftFinished() && (!distributed || waitingLeft == NOT_WAITING)) {
-                finish();
-                
+            if (requested > 0 && leftFinished() && checkJoinFinished())
                 return;
-            }
 
             tryToRequestInputs();
         }
@@ -737,11 +738,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            if (requested > 0 && rightFinished(true) && (!distributed || waitingRight == NOT_WAITING)) {
-                finish();
-
+            if (requested > 0 && rightFinished(true) && checkJoinFinished())
                 return;
-            }
 
             tryToRequestInputs();
         }
@@ -944,13 +942,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            if (requested > 0 && leftFinished() && rightFinished(true)
-                && (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING))
-            ) {
-                finish();
-
+            if (requested > 0 && leftFinished() && rightFinished(true) && checkJoinFinished())
                 return;
-            }
 
             tryToRequestInputs();
         }
@@ -1013,13 +1006,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            if (requested > 0 && (leftFinished() || rightFinished(false))
-                && (!distributed || waitingLeft == NOT_WAITING || waitingRight == NOT_WAITING)
-            ) {
-                finish();
-
+            if (requested > 0 && (leftFinished() || rightFinished(false)) && checkJoinFinished())
                 return;
-            }
 
             tryToRequestInputs();
         }
@@ -1076,11 +1064,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
                 inLoop = false;
             }
 
-            if (requested > 0 && leftFinished() && (!distributed || waitingLeft == NOT_WAITING)) {
-                finish();
-                
+            if (requested > 0 && leftFinished() && checkJoinFinished())
                 return;
-            }
 
             tryToRequestInputs();
         }
