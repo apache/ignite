@@ -20,17 +20,17 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeHashIndex;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -55,6 +55,9 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
     /** */
     protected final Map<Key, TouchedCollection<Row>> hashStore = U.newHashMap(INITIAL_CAPACITY);
+
+    /** */
+    protected final RuntimeHashIndex<TouchedList> runtimeHashIdx;
 
     /** */
     protected Iterator<Row> rightIt = Collections.emptyIterator();
@@ -88,6 +91,8 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         this.outRowHnd = outRowHnd;
 
         this.nonEqCond = nonEqCond;
+
+        runtimeHashIdx = new RuntimeHashIndex<>(ctx, ImmutableBitSet.of(info.rightKeys), keepRowsWithNull());
     }
 
     /** {@inheritDoc} */
@@ -97,6 +102,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         rightIt = Collections.emptyIterator();
 
         hashStore.clear();
+        runtimeHashIdx.close();
     }
 
     /** Creates certain join node. */
@@ -139,21 +145,28 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
     /** */
     protected Collection<Row> lookup(Row row) {
-        Key row0 = extractKey(row, leftKeys);
+        Collection<Row> res = runtimeHashIdx.scan(() -> row, leftKeys).get();
 
-        // Key with null field can't be compared with other keys.
-        if (row0 == NULL_KEY)
+        if (res == null)
             return Collections.emptyList();
 
-        TouchedCollection<Row> found = hashStore.get(row0);
+        return res;
 
-        if (found != null) {
-            found.touched = true;
-
-            return found.items();
-        }
-
-        return Collections.emptyList();
+//        Key row0 = extractKey(row, leftKeys);
+//
+//        // Key with null field can't be compared with other keys.
+//        if (row0 == NULL_KEY)
+//            return Collections.emptyList();
+//
+//        TouchedCollection<Row> found = hashStore.get(row0);
+//
+//        if (found != null) {
+//            found.touched = true;
+//
+//            return found.items();
+//        }
+//
+//        return Collections.emptyList();
     }
 
     /** */
@@ -179,6 +192,8 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             TouchedCollection<Row> raw = hashStore.computeIfAbsent(key, k -> new TouchedCollection<>());
 
             raw.add(row);
+
+            runtimeHashIdx.push(row);
         }
 
         if (waitingRight == 0)
@@ -210,6 +225,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             requested = 0;
 
             hashStore.clear();
+            runtimeHashIdx.close();
 
             downstream().end();
         }
@@ -801,6 +817,12 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
             return true;
         }
+    }
+
+    /** */
+    private static final class TouchedList<Row> extends ArrayList<Row> {
+        /** */
+        private boolean touched;
     }
 
     /** */

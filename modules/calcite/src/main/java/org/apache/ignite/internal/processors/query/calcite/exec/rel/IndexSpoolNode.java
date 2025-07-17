@@ -196,7 +196,7 @@ public class IndexSpoolNode<Row> extends MemoryTrackingNode<Row> implements Sing
         ScanNode<Row> scan = new ScanNode<>(
             ctx,
             rowType,
-            idx.scan(searchRow),
+            idx.scan(searchRow, null),
             filter,
             null
         );

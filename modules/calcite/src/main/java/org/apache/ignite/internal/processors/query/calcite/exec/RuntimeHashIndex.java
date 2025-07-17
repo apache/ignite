@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Runtime hash index based on on-heap hash map.
@@ -45,10 +47,13 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     private final ImmutableBitSet keys;
 
     /** Rows. */
-    private final HashMap<GroupKey, List<Row>> rows;
+    private final HashMap<GroupKey, ? extends Collection<Row>> rows;
 
     /** Allow NULL values. */
     private final boolean allowNulls;
+
+    /** */
+    private final Supplier<Collection<Row>> groupCollectionFactory;
 
     /**
      *
@@ -69,7 +74,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
 
     /** {@inheritDoc} */
     @Override public void push(Row r) {
-        GroupKey key = key(r);
+        GroupKey key = key(r, keys);
 
         if (key == NULL_KEY)
             return;
@@ -85,12 +90,12 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     }
 
     /** */
-    public Iterable<Row> scan(Supplier<Row> searchRow) {
-        return new IndexScan(searchRow);
+    public IndexScan scan(Supplier<Row> searchRow, @NotNull int[] keysToUse) {
+        return new IndexScan(searchRow, keysToUse);
     }
 
     /** */
-    private GroupKey key(Row r) {
+    private GroupKey key(Row r, ImmutableBitSet keys) {
         GroupKey.Builder b = GroupKey.builder(keys.cardinality());
 
         for (Integer field : keys) {
@@ -108,27 +113,37 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     /**
      *
      */
-    private class IndexScan implements Iterable<Row> {
+    public class IndexScan implements Iterable<Row> {
         /** Search row. */
         private final Supplier<Row> searchRow;
 
+        /** */
+        private final ImmutableBitSet keysToUse;
+
         /**
          * @param searchRow Search row.
+         * @param remappedKeys Actual keys to use. If {@code null}, default {@code keys} are used..
          */
-        IndexScan(Supplier<Row> searchRow) {
+        private IndexScan(Supplier<Row> searchRow, @Nullable int[] remappedKeys) {
             this.searchRow = searchRow;
+            this.keysToUse = remappedKeys == null ? keys : ImmutableBitSet.of(remappedKeys);
+        }
+
+        /**  */
+        public @Nullable Collection<Row> get() {
+            GroupKey key = key(searchRow.get(), keysToUse);
+
+            if (key == NULL_KEY)
+                return null;
+
+            return rows.get(key);
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator<Row> iterator() {
-            GroupKey key = key(searchRow.get());
+        @Override public Iterator<Row> iterator() {
+            Collection<Row> res = get();
 
-            if (key == NULL_KEY)
-                return Collections.emptyIterator();
-
-            List<Row> eqRows = rows.get(key);
-
-            return eqRows == null ? Collections.emptyIterator() : eqRows.iterator();
+            return res == null ? Collections.emptyIterator() : res.iterator();
         }
     }
 }
