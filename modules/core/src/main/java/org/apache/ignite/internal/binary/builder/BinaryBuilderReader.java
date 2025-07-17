@@ -938,7 +938,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
 
         /** {@inheritDoc} */
         @Override public Object value() {
-            return BinaryUtils.unwrapLazy(wrappedCollection());
+            return BinaryObjectBuilders.unwrapLazy(wrappedCollection());
         }
     }
 }

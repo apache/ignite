@@ -521,7 +521,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         else
             return null;
 
-        return (T)BinaryUtils.unwrapLazy(val);
+        return (T)BinaryObjectBuilders.unwrapLazy(val);
     }
 
     /** {@inheritDoc} */
