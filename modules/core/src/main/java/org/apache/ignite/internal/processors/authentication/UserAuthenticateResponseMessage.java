@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Is sent from coordinator node to client to deliver the results of the user authentication.
  */
 public class UserAuthenticateResponseMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Request ID. */
     private IgniteUuid id;
 

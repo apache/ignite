@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Query.
  */
-public class GridCacheSqlQuery implements Message {
+public class GridCacheSqlQuery implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -85,7 +86,7 @@ public class GridCacheSqlQuery implements Message {
     private transient boolean treatPartitionedAsReplicated;
 
     /**
-     * For {@link Message}.
+     * Empty constructor.
      */
     public GridCacheSqlQuery() {
         // No-op.

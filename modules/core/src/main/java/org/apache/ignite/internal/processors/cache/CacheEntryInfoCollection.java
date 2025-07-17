@@ -31,9 +31,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class CacheEntryInfoCollection implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridDirectCollection(GridCacheEntryInfo.class)
     private List<GridCacheEntryInfo> infos;
 

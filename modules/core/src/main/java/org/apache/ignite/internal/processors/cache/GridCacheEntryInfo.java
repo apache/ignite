@@ -35,9 +35,6 @@ public class GridCacheEntryInfo implements Message {
     /** */
     private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Cache key. */
     @GridToStringInclude
     private KeyCacheObject key;

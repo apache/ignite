@@ -31,9 +31,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ContinuousRoutineStartResultMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private static final int ERROR_FLAG = 0x01;
 
     /** */

@@ -37,9 +37,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.atomic
  * Message sent from DHT nodes to near node in FULL_SYNC mode.
  */
 public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 

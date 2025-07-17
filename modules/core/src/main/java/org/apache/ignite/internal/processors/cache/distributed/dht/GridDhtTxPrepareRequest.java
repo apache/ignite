@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -51,9 +50,6 @@ import org.jetbrains.annotations.Nullable;
  * DHT prepare request.
  */
 public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Max order. */
     private UUID nearNodeId;
 
@@ -112,7 +108,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @Nullable private String txLbl;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtTxPrepareRequest() {
         // No-op.

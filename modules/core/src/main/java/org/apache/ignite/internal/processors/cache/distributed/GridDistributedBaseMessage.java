@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,9 +38,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public abstract class GridDistributedBaseMessage extends GridCacheIdMessage implements GridCacheDeployable,
     GridCacheVersionable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Lock or transaction version. */
     @GridToStringInclude
     protected GridCacheVersion ver;
@@ -66,7 +62,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
     private int cnt;
 
     /**
-     * Empty constructor required by {@link Externalizable}
+     * Empty constructor.
      */
     protected GridDistributedBaseMessage() {
         /* No-op. */

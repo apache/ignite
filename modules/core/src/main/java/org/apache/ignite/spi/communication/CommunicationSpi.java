@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.communication;
 
-import java.io.Serializable;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.IgniteSpi;
@@ -49,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
  * methods. Note again that calling methods from this interface on the obtained instance can lead
  * to undefined behavior and explicitly not supported.
  */
-public interface CommunicationSpi<T extends Serializable> extends IgniteSpi {
+public interface CommunicationSpi<T> extends IgniteSpi {
     /**
      * Sends given message to destination node. Note that characteristics of the
      * exchange such as durability, guaranteed delivery or error notification is

@@ -30,9 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /** Wraps atomic updates with application attributes. */
 public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public static final short TYPE_CODE = 180;
 
     /** Original update message. */

@@ -36,9 +36,6 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
  * Contains collection of {@link ServiceSingleNodeDeploymentResult} mapped services ids.
  */
 public class ServiceSingleNodeDeploymentResultBatch implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Deployment process id. */
     @GridToStringInclude
     private ServiceDeploymentProcessId depId;

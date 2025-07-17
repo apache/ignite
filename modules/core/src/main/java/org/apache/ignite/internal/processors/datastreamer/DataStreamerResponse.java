@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class DataStreamerResponse implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private long reqId;
 
     /** */
@@ -51,7 +48,7 @@ public class DataStreamerResponse implements Message {
     }
 
     /**
-     * {@code Externalizable} support.
+     * Empty constructor.
      */
     public DataStreamerResponse() {
         // No-op.

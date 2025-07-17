@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
-import java.io.Serializable;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -42,7 +41,7 @@ public class StandaloneNoopCommunicationSpi extends IgniteSpiAdapter implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void sendMessage(ClusterNode destNode, Serializable msg) throws IgniteSpiException {
+    @Override public void sendMessage(ClusterNode destNode, Object msg) throws IgniteSpiException {
 
     }
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -902,7 +901,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(ClusterNode node, Serializable msg, String topic) {
+        @Override public void send(ClusterNode node, Object msg, String topic) {
             /* No-op. */
         }
 

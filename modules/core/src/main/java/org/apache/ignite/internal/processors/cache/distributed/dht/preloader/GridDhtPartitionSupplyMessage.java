@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,9 +47,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 @IgniteCodeGeneratingFail
 public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** An unique (per demander) rebalance id. */
     private long rebalanceId;
 
@@ -104,7 +100,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtPartitionSupplyMessage() {
         // No-op.

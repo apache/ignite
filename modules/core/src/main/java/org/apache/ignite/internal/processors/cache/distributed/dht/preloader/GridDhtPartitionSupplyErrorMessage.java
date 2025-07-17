@@ -31,9 +31,6 @@ import org.jetbrains.annotations.Nullable;
  * Supply message with supplier error transfer support.
  */
 public class GridDhtPartitionSupplyErrorMessage extends GridDhtPartitionSupplyMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Supplying process error. */
     @GridDirectTransient
     private Throwable err;

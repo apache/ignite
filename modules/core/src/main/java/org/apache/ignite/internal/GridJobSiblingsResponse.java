@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridJobSiblingsResponse implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridDirectTransient
     private Collection<ComputeJobSibling> siblings;
 
@@ -45,7 +41,7 @@ public class GridJobSiblingsResponse implements Message {
     private byte[] siblingsBytes;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridJobSiblingsResponse() {
         // No-op.

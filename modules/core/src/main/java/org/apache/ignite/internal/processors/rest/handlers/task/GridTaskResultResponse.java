@@ -28,9 +28,6 @@ import org.jetbrains.annotations.Nullable;
  * Task result response.
  */
 public class GridTaskResultResponse implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Result. */
     @GridDirectTransient
     private Object res;
