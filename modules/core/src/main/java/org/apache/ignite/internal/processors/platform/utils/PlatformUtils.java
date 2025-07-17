@@ -882,8 +882,7 @@ public class PlatformUtils {
      * @return Marshaller.
      */
     public static GridBinaryMarshaller marshaller() {
-        BinaryContext ctx =
-            new BinaryContext(null, null, NullLogger.INSTANCE);
+        BinaryContext ctx = new BinaryContext(NullLogger.INSTANCE);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

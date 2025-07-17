@@ -66,7 +66,7 @@ public class GridBinaryCacheEntryMemorySizeSelfTest extends GridCacheEntryMemory
 
         marsh.setContext(marshCtx);
 
-        BinaryContext pCtx = new BinaryContext(iCfg.getIgniteInstanceName(), iCfg.getBinaryConfiguration(), NullLogger.INSTANCE);
+        BinaryContext pCtx = new BinaryContext(NullLogger.INSTANCE);
 
         marsh.setBinaryContext(pCtx, iCfg);
 

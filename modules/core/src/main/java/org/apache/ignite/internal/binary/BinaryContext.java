@@ -159,10 +159,10 @@ public class BinaryContext {
     private BinaryMetadataHandler metaHnd;
 
     /** Node name. */
-    private final String igniteInstanceName;
+    private final @Nullable String igniteInstanceName;
 
     /** Class loader. */
-    private final ClassLoader clsLdr = null;
+    private final @Nullable ClassLoader clsLdr;
 
     /** Actual marshaller. */
     private BinaryMarshaller marsh;
@@ -171,7 +171,7 @@ public class BinaryContext {
     private MarshallerContext marshCtx;
 
     /** Binary configuration. */
-    private final BinaryConfiguration bcfg;
+    private final @Nullable BinaryConfiguration bcfg;
 
     /** Logger. */
     private IgniteLogger log;
@@ -186,12 +186,10 @@ public class BinaryContext {
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
 
     /**
-     * @param igniteInstanceName Ignite instance name.
-     * @param bcfg Binary configuration.
-     * @param log Logger.
+     * @param log Logger
      */
-    public BinaryContext(@Nullable String igniteInstanceName, @Nullable BinaryConfiguration bcfg, IgniteLogger log) {
-        this(BinaryNoopMetadataHandler.instance(), igniteInstanceName, null, bcfg, log);
+    public BinaryContext(IgniteLogger log) {
+        this(BinaryNoopMetadataHandler.instance(), null, null, null, log);
     }
 
     /**
@@ -214,6 +212,7 @@ public class BinaryContext {
 
         this.metaHnd = metaHnd;
         this.igniteInstanceName = igniteInstanceName;
+        this.clsLdr = clsLdr;
         this.bcfg = bcfg;
         this.log = log;
 
