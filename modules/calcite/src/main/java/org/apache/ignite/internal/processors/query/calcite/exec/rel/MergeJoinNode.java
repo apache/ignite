@@ -99,6 +99,9 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         handler = ctx.rowHandler();
     }
 
+    /** */
+    protected abstract void join() throws Exception;
+
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 2;
@@ -252,9 +255,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
-    protected abstract void join() throws Exception;
-
-    /** */
     protected boolean checkJoinFinished() throws Exception {
         if (!finishing) {
             finishing = true;
@@ -273,6 +273,15 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         }
 
         return false;
+    }
+
+    /** */
+    protected void tryToRequestInputs() throws Exception {
+        if (waitingLeft == 0 && leftInBuf.size() <= HALF_BUF_SIZE)
+            leftSource().request(waitingLeft = IN_BUFFER_SIZE - leftInBuf.size());
+
+        if (waitingRight == 0 && rightInBuf.size() <= HALF_BUF_SIZE)
+            rightSource().request(waitingRight = IN_BUFFER_SIZE - rightInBuf.size());
     }
 
     /** */
@@ -947,15 +956,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
             tryToRequestInputs();
         }
-    }
-
-    /** */
-    protected void tryToRequestInputs() throws Exception {
-        if (waitingLeft == 0 && leftInBuf.size() <= HALF_BUF_SIZE)
-            leftSource().request(waitingLeft = IN_BUFFER_SIZE - leftInBuf.size());
-
-        if (waitingRight == 0 && rightInBuf.size() <= HALF_BUF_SIZE)
-            rightSource().request(waitingRight = IN_BUFFER_SIZE - rightInBuf.size());
     }
 
     /** */
