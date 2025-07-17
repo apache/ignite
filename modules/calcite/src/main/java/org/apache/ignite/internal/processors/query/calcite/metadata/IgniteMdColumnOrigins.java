@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
@@ -36,6 +37,7 @@ import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.ReflectUtil;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.jetbrains.annotations.Nullable;
 
@@ -95,13 +97,32 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         return Set.of(rel.columnOriginsByRelLocalRef(iOutputColumn));
     }
 
-    /**
-     * {@link RelMdColumnOrigins} has no method for a {@link Spool}. It takes
-     * {@link RelMdColumnOrigins#getColumnOrigins(RelNode, RelMetadataQuery, int)} instead and returns {@code null}
-     * because sees an input for current node.
-     */
-    public @Nullable Set<RelColumnOrigin> getColumnOrigins(Spool rel, RelMetadataQuery mq, int outputColumn) {
-        return mq.getColumnOrigins(rel.getInput(), outputColumn);
+    /**  */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(RelNode rel, RelMetadataQuery mq, int outputColumn) {
+        /**
+         * {@link RelMdColumnOrigins} may miss methods for some rels like {@link Spool}. In this case it takes
+         * {@link RelMdColumnOrigins#getColumnOrigins(RelNode, RelMetadataQuery, int)} instead and returns {@code null}
+         * because sees an input for current node.
+         */
+        if (rel.getInputs().size() == 1)
+            return mq.getColumnOrigins(rel.getInput(0), outputColumn);
+
+        Method method = ReflectUtil.lookupVisitMethod(
+            RelMdColumnOrigins.SOURCE.getClass(),
+            rel.getClass(),
+            "getColumnOrigins",
+            List.of(RelMetadataQuery.class, int.class)
+        );
+
+        if (method == null)
+            return null;
+
+        try {
+            return (Set<RelColumnOrigin>)method.invoke(RelMdColumnOrigins.SOURCE, rel, mq, outputColumn);
+        }
+        catch (IllegalAccessException | InvocationTargetException e) {
+            throw new IllegalStateException("Failed to get RelNode's column origins.", e);
+        }
     }
 
     /**
