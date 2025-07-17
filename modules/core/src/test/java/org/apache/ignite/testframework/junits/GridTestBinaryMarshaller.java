@@ -80,7 +80,7 @@ public class GridTestBinaryMarshaller {
             iCfg.getIgniteInstanceName(),
             iCfg.getClassLoader(),
             iCfg.getBinaryConfiguration(),
-            new NullLogger()
+            NullLogger.INSTANCE
         );
 
         MarshallerContextTestImpl marshCtx = new MarshallerContextTestImpl();

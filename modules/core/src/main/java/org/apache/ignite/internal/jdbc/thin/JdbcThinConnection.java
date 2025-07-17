@@ -325,7 +325,7 @@ public class JdbcThinConnection implements Connection {
 
         BinaryConfiguration binCfg = new BinaryConfiguration().setCompactFooter(true);
 
-        BinaryContext ctx = new BinaryContext(metaHnd, null, null, null, new NullLogger());
+        BinaryContext ctx = new BinaryContext(metaHnd, null, null, null, NullLogger.INSTANCE);
 
         ctx.configure(marsh, binCfg, CU.affinityFields(null));
 

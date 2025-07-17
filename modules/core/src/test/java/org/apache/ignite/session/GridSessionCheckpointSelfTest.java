@@ -105,7 +105,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
             cfg.getIgniteInstanceName(),
             cfg.getClassLoader(),
             cfg.getBinaryConfiguration(),
-            new NullLogger()
+            NullLogger.INSTANCE
         );
 
         marsh.setContext(new MarshallerContextTestImpl(null));

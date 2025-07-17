@@ -4171,7 +4171,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             iCfg.getIgniteInstanceName(),
             iCfg.getClassLoader(),
             iCfg.getBinaryConfiguration(),
-            new NullLogger()
+            NullLogger.INSTANCE
         );
 
         BinaryMarshaller marsh = new BinaryMarshaller();
@@ -4238,7 +4238,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             iCfg.getIgniteInstanceName(),
             iCfg.getClassLoader(),
             iCfg.getBinaryConfiguration(),
-            new NullLogger()
+            NullLogger.INSTANCE
         );
 
         BinaryMarshaller marsh = new BinaryMarshaller();

@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
@@ -356,7 +357,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @param msg Message bytes.
      */
     private void onHandshake(GridNioSession ses, ClientMessage msg) {
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), null, null, null, null);
+        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), null, null, null, NullLogger.INSTANCE);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

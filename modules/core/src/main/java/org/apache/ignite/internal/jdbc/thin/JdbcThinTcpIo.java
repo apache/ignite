@@ -65,6 +65,7 @@ import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static java.lang.Math.abs;
@@ -268,7 +269,7 @@ public class JdbcThinTcpIo {
      * @throws SQLException On connection reject.
      */
     private HandshakeResult handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), null, null, null, null);
+        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), null, null, null, NullLogger.INSTANCE);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

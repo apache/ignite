@@ -49,7 +49,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      */
     protected BinaryMarshaller createMarshaller() throws Exception {
         BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), null, null, null,
-            new NullLogger());
+            NullLogger.INSTANCE);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
