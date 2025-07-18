@@ -42,8 +42,8 @@ public class GridCacheEntryInfo implements Message {
     private int cacheId;
 
     /** Cache value. */
-    @Order(2)
-    private CacheObject value;
+    @Order(value = 2, method = "value")
+    private CacheObject val;
 
     /** Time to live. */
     @Order(3)
@@ -54,8 +54,8 @@ public class GridCacheEntryInfo implements Message {
     private long expireTime;
 
     /** Entry version. */
-    @Order(5)
-    private GridCacheVersion version;
+    @Order(value = 5, method = "version")
+    private GridCacheVersion ver;
 
     /** New flag. */
     private boolean isNew;
@@ -95,14 +95,14 @@ public class GridCacheEntryInfo implements Message {
      * @return Entry value.
      */
     public CacheObject value() {
-        return value;
+        return val;
     }
 
     /**
      * @param value Entry value.
      */
     public void value(CacheObject value) {
-        this.value = value;
+        this.val = value;
     }
 
     /**
@@ -137,14 +137,14 @@ public class GridCacheEntryInfo implements Message {
      * @return Version.
      */
     public GridCacheVersion version() {
-        return version;
+        return ver;
     }
 
     /**
      * @param version Version.
      */
     public void version(GridCacheVersion version) {
-        this.version = version;
+        this.ver = version;
     }
 
     /**
@@ -191,8 +191,8 @@ public class GridCacheEntryInfo implements Message {
      * @throws IgniteCheckedException If failed.
      */
     public void unmarshalValue(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (value != null)
-            value.finishUnmarshal(ctx.cacheObjectContext(), ldr);
+        if (val != null)
+            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /**
@@ -203,8 +203,8 @@ public class GridCacheEntryInfo implements Message {
     public int marshalledSize(CacheObjectContext ctx) throws IgniteCheckedException {
         int size = 0;
 
-        if (value != null)
-            size += value.valueBytes(ctx).length;
+        if (val != null)
+            size += val.valueBytes(ctx).length;
 
         size += key.valueBytes(ctx).length;
 
@@ -228,8 +228,8 @@ public class GridCacheEntryInfo implements Message {
 
         key.prepareMarshal(ctx);
 
-        if (value != null)
-            value.prepareMarshal(ctx);
+        if (val != null)
+            val.prepareMarshal(ctx);
 
         if (expireTime == 0)
             expireTime = -1;
@@ -262,8 +262,8 @@ public class GridCacheEntryInfo implements Message {
     public void unmarshal(CacheObjectContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
         key.finishUnmarshal(ctx, clsLdr);
 
-        if (value != null)
-            value.finishUnmarshal(ctx, clsLdr);
+        if (val != null)
+            val.finishUnmarshal(ctx, clsLdr);
 
         long remaining = expireTime;
 

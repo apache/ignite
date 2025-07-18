@@ -62,6 +62,9 @@ public class TestMessage implements Message {
     @Order(10)
     private BitSet bitSet;
 
+    @Order(value = 11, method = "overridenFieldMethod")
+    private String field;
+
     public int id() {
         return id;
     }
@@ -148,6 +151,14 @@ public class TestMessage implements Message {
 
     public void bitSet(BitSet bitSet) {
         this.bitSet = bitSet;
+    }
+
+    public String overridenFieldMethod() {
+        return field;
+    }
+
+    public void overridenFieldMethod(String field) {
+        this.field = field;
     }
 
     public short directType() {
