@@ -298,6 +298,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
     public void testNullRetryPolicyDisablesFailover() {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setClusterDiscoveryEnabled(false)
                  .setRetryPolicy(null)
                  .setAddresses(
                      cluster.clientAddresses().iterator().next(),
@@ -312,7 +313,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
             // Reuse second address without fail.
-            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
+            GridTestUtils.assertThrows(null, () -> cache.size(), IgniteException.class,
                     "Channel is closed");
         }
     }
@@ -325,6 +326,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
     public void testRetryNonePolicyDisablesFailover() {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setClusterDiscoveryEnabled(false)
                  .setRetryPolicy(new ClientRetryNonePolicy())
                  .setAddresses(
                      cluster.clientAddresses().iterator().next(),
@@ -339,7 +341,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
             // Reuse second address without fail.
-            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
+            GridTestUtils.assertThrows(null, () -> cache.size(), ClientConnectionException.class,
                     "Channel is closed");
         }
     }
