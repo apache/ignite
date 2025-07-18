@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
@@ -52,9 +51,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuer
  */
 @IgniteCodeGeneratingFail
 public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
      * Map query will not destroy context until explicit query cancel request will be received because distributed join
      * requests can be received.
@@ -159,7 +155,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     private boolean explicitTimeout;
 
     /**
-     * Required by {@link Externalizable}
+     * Empty constructor.
      */
     public GridH2QueryRequest() {
         // No-op.

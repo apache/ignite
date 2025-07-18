@@ -39,9 +39,6 @@ public class GridQueryFailResponse implements Message {
     public static final byte RETRY_QUERY = 2;
 
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private long qryReqId;
 
     /** */

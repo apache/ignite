@@ -43,7 +43,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -73,7 +72,6 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
@@ -100,12 +98,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.align;
  * Binary utils.
  */
 public class BinaryUtils {
-    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_RECHECK */
-    public static final int DFLT_MARSHAL_BUFFERS_RECHECK = 10000;
-
-    /** @see IgniteSystemProperties#IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE */
-    public static final int DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = 32;
-
     /**
      * Actual file name "{type_id}.classname{platform_id}".
      * Where {@code type_id} is integer type id and {@code platform_id} is byte from {@link PlatformType}
@@ -560,42 +552,11 @@ public class BinaryUtils {
      * @param obj Value to unwrap.
      * @return Unwrapped value.
      */
-    public static Object unwrapLazy(@Nullable Object obj) {
-        if (obj instanceof BinaryLazyValue)
-            return ((BinaryLazyValue)obj).value();
-
-        return obj;
-    }
-
-    /**
-     * @param obj Value to unwrap.
-     * @return Unwrapped value.
-     */
     public static Object unwrapTemporary(Object obj) {
         if (obj instanceof BinaryObjectOffheapImpl)
             return ((BinaryObjectOffheapImpl)obj).heapCopy();
 
         return obj;
-    }
-
-    /**
-     * @param delegate Iterator to delegate.
-     * @return New iterator.
-     */
-    public static Iterator<Object> unwrapLazyIterator(final Iterator<Object> delegate) {
-        return new Iterator<Object>() {
-            @Override public boolean hasNext() {
-                return delegate.hasNext();
-            }
-
-            @Override public Object next() {
-                return unwrapLazy(delegate.next());
-            }
-
-            @Override public void remove() {
-                delegate.remove();
-            }
-        };
     }
 
     /**

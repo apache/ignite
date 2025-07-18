@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,9 +45,6 @@ import org.jetbrains.annotations.NotNull;
  * Get response.
  */
 public class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
     private IgniteUuid futId;
 
@@ -79,7 +75,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
     private byte[] errBytes;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearGetResponse() {
         // No-op.

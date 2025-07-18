@@ -45,9 +45,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheGroupAffinityMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridDirectCollection(GridLongList.class)
     private List<GridLongList> assigns;
 

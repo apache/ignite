@@ -34,9 +34,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public final class GridMessageCollection<M extends Message> implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridDirectCollection(Message.class)
     private Collection<M> msgs;
 

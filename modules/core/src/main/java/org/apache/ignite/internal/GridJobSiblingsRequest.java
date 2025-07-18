@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -30,9 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridJobSiblingsRequest implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private IgniteUuid sesId;
 
     /** */
@@ -43,7 +39,7 @@ public class GridJobSiblingsRequest implements Message {
     private byte[] topicBytes;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridJobSiblingsRequest() {
         // No-op.

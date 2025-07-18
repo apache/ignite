@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,9 +41,6 @@ import org.jetbrains.annotations.Nullable;
  * Lock response message.
  */
 public class GridDistributedLockResponse extends GridDistributedBaseMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
     private IgniteUuid futId;
 
@@ -61,7 +57,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     private List<CacheObject> vals;
 
     /**
-     * Empty constructor (required by {@link Externalizable}).
+     * Empty constructor.
      */
     public GridDistributedLockResponse() {
         /* No-op. */

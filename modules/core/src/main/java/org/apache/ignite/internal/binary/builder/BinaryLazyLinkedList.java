@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 
@@ -74,7 +73,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
     @Override public Object get(int idx) {
         ensureDelegateInit();
 
-        return BinaryUtils.unwrapLazy(delegate.get(idx));
+        return BinaryObjectBuilders.unwrapLazy(delegate.get(idx));
     }
 
     /** {@inheritDoc} */
@@ -95,14 +94,14 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
     @Override public Object set(int idx, Object element) {
         ensureDelegateInit();
 
-        return BinaryUtils.unwrapLazy(delegate.set(idx, element));
+        return BinaryObjectBuilders.unwrapLazy(delegate.set(idx, element));
     }
 
     /** {@inheritDoc} */
     @Override public Object remove(int idx) {
         ensureDelegateInit();
 
-        return BinaryUtils.unwrapLazy(delegate.remove(idx));
+        return BinaryObjectBuilders.unwrapLazy(delegate.remove(idx));
     }
 
     /** {@inheritDoc} */
@@ -148,7 +147,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
             }
 
             @Override public Object next() {
-                return BinaryUtils.unwrapLazy(delegate.next());
+                return BinaryObjectBuilders.unwrapLazy(delegate.next());
             }
 
             @Override public boolean hasPrevious() {
@@ -156,7 +155,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
             }
 
             @Override public Object previous() {
-                return BinaryUtils.unwrapLazy(delegate.previous());
+                return BinaryObjectBuilders.unwrapLazy(delegate.previous());
             }
 
             @Override public int nextIndex() {
@@ -185,7 +184,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
     @Override public Iterator<Object> iterator() {
         ensureDelegateInit();
 
-        return BinaryUtils.unwrapLazyIterator(super.iterator());
+        return BinaryObjectBuilders.unwrapLazyIterator(super.iterator());
     }
 
     /** {@inheritDoc} */

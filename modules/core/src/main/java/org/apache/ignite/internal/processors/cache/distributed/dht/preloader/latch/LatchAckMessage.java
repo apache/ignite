@@ -26,9 +26,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Message is used to send acks for {@link Latch} instances management.
  */
 public class LatchAckMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Latch id. */
     private String latchId;
 

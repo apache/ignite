@@ -38,9 +38,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Transactions lock list response.
  */
 public class TxLocksResponse extends GridCacheMessage {
-    /** Serial version UID. */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
     private long futId;
 

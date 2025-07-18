@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -31,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Service deployment process' identifier.
  */
-public class ServiceDeploymentProcessId implements Message {
+public class ServiceDeploymentProcessId implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,7 +33,7 @@ abstract class AbstractSnapshotMessage implements Message {
     private String id;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     protected AbstractSnapshotMessage() {
         // No-op.

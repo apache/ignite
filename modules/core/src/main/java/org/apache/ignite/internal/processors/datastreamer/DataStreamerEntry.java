@@ -33,9 +33,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>, Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridToStringInclude
     protected KeyCacheObject key;
 

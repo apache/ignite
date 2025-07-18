@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -30,9 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Task session request.
  */
 public class GridTaskSessionRequest implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Task session ID. */
     private IgniteUuid sesId;
 
@@ -47,7 +43,7 @@ public class GridTaskSessionRequest implements Message {
     private Map<?, ?> attrs;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridTaskSessionRequest() {
         // No-op.

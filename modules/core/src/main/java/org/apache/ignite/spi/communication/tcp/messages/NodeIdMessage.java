@@ -32,9 +32,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
  */
 @IgniteCodeGeneratingFail
 public class NodeIdMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message body size (with message type) in bytes. */
     static final int MESSAGE_SIZE = 16;
 

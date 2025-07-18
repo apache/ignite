@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,9 +41,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT cache lock response.
  */
 public class GridDhtLockResponse extends GridDistributedLockResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Mini ID. */
     private IgniteUuid miniId;
 
@@ -58,7 +54,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     private List<GridCacheEntryInfo> preloadEntries;
 
     /**
-     * Empty constructor (required by {@link Externalizable}).
+     * Empty constructor.
      */
     public GridDhtLockResponse() {
         // No-op.

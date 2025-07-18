@@ -36,9 +36,6 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
  */
 public class ClusterMetricsUpdateMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private byte[] nodeMetrics;
 
     /** */
