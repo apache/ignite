@@ -99,10 +99,10 @@ public class GridCacheEntryInfo implements Message {
     }
 
     /**
-     * @param value Entry value.
+     * @param val Entry value.
      */
-    public void value(CacheObject value) {
-        this.val = value;
+    public void value(CacheObject val) {
+        this.val = val;
     }
 
     /**
@@ -141,10 +141,10 @@ public class GridCacheEntryInfo implements Message {
     }
 
     /**
-     * @param version Version.
+     * @param ver Version.
      */
-    public void version(GridCacheVersion version) {
-        this.ver = version;
+    public void version(GridCacheVersion ver) {
+        this.ver = ver;
     }
 
     /**
