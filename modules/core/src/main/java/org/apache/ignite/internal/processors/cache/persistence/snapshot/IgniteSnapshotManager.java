@@ -1403,6 +1403,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @return {@code True} if checking snapshot with specified name is in progress.
+     */
+    public boolean isSnapshotChecking(String snpName) {
+        return checkSnpProc.snapshotIsChecking(snpName);
+    }
+
+    /**
      * Sets the streamer warning flag to current snapshot process if it is active.
      */
     public void streamerWarning() {

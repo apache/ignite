@@ -652,6 +652,11 @@ public class SnapshotCheckProcess {
         return clusterOpFut;
     }
 
+    /** @return {@code True} if snapshot with specified name is checking. */
+    boolean snapshotIsChecking(String snpName) {
+        return contexts.get(snpName) != null;
+    }
+
     /** @return {@code True} if node with the provided id is in the cluster and is a baseline node. {@code False} otherwise. */
     private boolean baseline(UUID nodeId) {
         ClusterNode node = kctx.cluster().get().node(nodeId);
