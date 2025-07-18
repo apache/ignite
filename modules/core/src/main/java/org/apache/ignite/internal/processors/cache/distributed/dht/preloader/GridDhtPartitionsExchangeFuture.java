@@ -4352,7 +4352,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
         catch (ClusterTopologyCheckedException e) {
-            log.warning("Failed to send partitions [nodeId=" + node.id() + ", exchId=" + exchId + ']', e);
+            if (log.isDebugEnabled())
+                log.debug("Failed to send partitions, node failed: " + node);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send partitions [node=" + node + ']', e);
