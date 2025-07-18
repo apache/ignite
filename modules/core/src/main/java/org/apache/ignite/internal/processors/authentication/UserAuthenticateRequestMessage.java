@@ -35,7 +35,7 @@ public class UserAuthenticateRequestMessage implements Message {
     private String name;
 
     /** User password. */
-    @Order(2)
+    @Order(value = 2, method = "password")
     private String passwd;
 
     /**
@@ -71,14 +71,14 @@ public class UserAuthenticateRequestMessage implements Message {
     /**
      * @return User password.
      */
-    public String passwd() {
+    public String password() {
         return passwd;
     }
 
     /**
      * @param passwd New user password.
      */
-    public void passwd(String passwd) {
+    public void password(String passwd) {
         this.passwd = passwd;
     }
 
