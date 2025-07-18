@@ -24,13 +24,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.MappingRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
@@ -241,52 +241,36 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
         private final ImmutableBitSet grpFields;
 
         /** */
-        private final Map<GroupKey, List<AccumulatorWrapper<Row>>> groups = new HashMap<>();
+        private final Map<GroupKey<Row>, List<AccumulatorWrapper<Row>>> groups = new HashMap<>();
 
         /** */
-        private final RowHandler<Row> handler;
+        private final RowHandler<Row> hnd;
 
         /** */
-        private GroupKey.Builder grpKeyBld;
+        private final RowHandler<Row> keyGrpRowHnd;
 
         /** */
-        private final BiFunction<GroupKey, List<AccumulatorWrapper<Row>>, List<AccumulatorWrapper<Row>>> getOrCreateGroup;
-
-        /** */
-        private final Function<GroupKey, List<AccumulatorWrapper<Row>>> createGroup;
+        private final Function<GroupKey<Row>, List<AccumulatorWrapper<Row>>> createGrp;
 
         /** */
         private Grouping(byte grpId, ImmutableBitSet grpFields) {
             this.grpId = grpId;
             this.grpFields = grpFields;
 
-            grpKeyBld = GroupKey.builder(grpFields.cardinality());
-            handler = context().rowHandler();
+            hnd = context().rowHandler();
+            keyGrpRowHnd = new MappingRowHandler<>(hnd, grpFields);
 
-            createGroup = (k) -> create();
-
-            getOrCreateGroup = (k, v) -> {
-                if (v == null) {
-                    grpKeyBld = GroupKey.builder(grpFields.cardinality());
-
-                    return create();
-                }
-                else {
-                    grpKeyBld.clear();
-
-                    return v;
-                }
-            };
+            createGrp = k -> create();
 
             init();
         }
 
         /** */
         private void init() {
-            // Initializes aggregates for case when no any rows will be added into the aggregate to have 0 as result.
-            // Doesn't do it for MAP type due to we don't want send from MAP node zero results because it looks redundant.
+            // Initializes aggregates so they return 0 even if no rows are added. However, this initialization
+            // doesn't apply to MAP types since sending zero results from MAP nodes looks redundant
             if (grpFields.isEmpty() && (type == AggregateType.REDUCE || type == AggregateType.SINGLE))
-                groups.put(GroupKey.EMPTY_GRP_KEY, create());
+                groups.put(key(rowFactory.create()), create());
         }
 
         /** */
@@ -319,11 +303,13 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
         }
 
         /** */
-        private void addOnMapper(Row row) {
-            for (Integer field : grpFields)
-                grpKeyBld.add(handler.get(field, row));
+        private GroupKey<Row> key(Row row) {
+            return new GroupKey<>(row, keyGrpRowHnd);
+        }
 
-            List<AccumulatorWrapper<Row>> wrappers = groups.compute(grpKeyBld.build(), getOrCreateGroup);
+        /** */
+        private void addOnMapper(Row row) {
+            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(key(row), createGrp);
 
             for (AccumulatorWrapper<Row> wrapper : wrappers)
                 wrapper.add(row);
@@ -331,15 +317,15 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
         /** */
         private void addOnReducer(Row row) {
-            byte targetGrpId = (byte)handler.get(0, row);
+            byte targetGrpId = (byte)hnd.get(0, row);
 
             if (targetGrpId != grpId)
                 return;
 
-            GroupKey grpKey = (GroupKey)handler.get(1, row);
+            GroupKey<Row> grpKey = (GroupKey<Row>)hnd.get(1, row);
 
-            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, createGroup);
-            Accumulator<Row>[] accums = hasAccumulators() ? (Accumulator<Row>[])handler.get(2, row) : null;
+            List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, createGrp);
+            Accumulator<Row>[] accums = hasAccumulators() ? (Accumulator<Row>[])hnd.get(2, row) : null;
 
             for (int i = 0; i < wrappers.size(); i++) {
                 AccumulatorWrapper<Row> wrapper = wrappers.get(i);
@@ -351,15 +337,15 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
         /** */
         private List<Row> getOnMapper(int cnt) {
-            Iterator<Map.Entry<GroupKey, List<AccumulatorWrapper<Row>>>> it = groups.entrySet().iterator();
+            Iterator<Map.Entry<GroupKey<Row>, List<AccumulatorWrapper<Row>>>> it = groups.entrySet().iterator();
 
             int amount = Math.min(cnt, groups.size());
             List<Row> res = new ArrayList<>(amount);
 
             for (int i = 0; i < amount; i++) {
-                Map.Entry<GroupKey, List<AccumulatorWrapper<Row>>> entry = it.next();
+                Map.Entry<GroupKey<Row>, List<AccumulatorWrapper<Row>>> entry = it.next();
 
-                GroupKey grpKey = entry.getKey();
+                GroupKey<Row> grpKey = entry.getKey();
                 if (hasAccumulators()) {
                     List<AccumulatorWrapper<Row>> wrappers = entry.getValue();
                     Accumulator<Row>[] accums = new Accumulator[wrappers.size()];
@@ -380,25 +366,23 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
         /** */
         private List<Row> getOnReducer(int cnt) {
-            Iterator<Map.Entry<GroupKey, List<AccumulatorWrapper<Row>>>> it = groups.entrySet().iterator();
+            Iterator<Map.Entry<GroupKey<Row>, List<AccumulatorWrapper<Row>>>> it = groups.entrySet().iterator();
 
             int amount = Math.min(cnt, groups.size());
             List<Row> res = new ArrayList<>(amount);
 
             for (int i = 0; i < amount; i++) {
-                Map.Entry<GroupKey, List<AccumulatorWrapper<Row>>> entry = it.next();
+                Map.Entry<GroupKey<Row>, List<AccumulatorWrapper<Row>>> entry = it.next();
 
-                GroupKey grpKey = entry.getKey();
+                GroupKey<Row> grpKey = entry.getKey();
                 List<AccumulatorWrapper<Row>> wrappers = entry.getValue();
 
                 Object[] fields = new Object[grpSet.cardinality() + wrappers.size()];
 
                 int j = 0, k = 0;
 
-                Object[] keyFields = grpKey.fields();
-
-                for (Integer field : grpSet)
-                    fields[j++] = grpFields.get(field) ? keyFields[k++] : null;
+                for (int field = grpSet.nextSetBit(0); field >= 0; field = grpSet.nextSetBit(field + 1))
+                    fields[j++] = grpFields.get(field) ? grpKey.rowHandler().get(k++, grpKey.row()) : null;
 
                 for (AccumulatorWrapper<Row> wrapper : wrappers)
                     fields[j++] = wrapper.end();

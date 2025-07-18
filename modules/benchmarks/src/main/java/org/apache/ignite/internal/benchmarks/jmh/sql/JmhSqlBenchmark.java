@@ -251,6 +251,57 @@ public class JmhSqlBenchmark {
             throw new AssertionError("Unexpected result: " + res.get(0));
     }
 
+    /**
+     * Query with EXCEPT set op.
+     */
+    @Benchmark
+    public void queryExcept() {
+        int key = ThreadLocalRandom.current().nextInt(KEYS_CNT);
+
+        List<?> res = executeSql(
+            "SELECT fld, fldIdx, fldBatch, fldIdxBatch FROM Item WHERE fldIdxBatch=? " +
+                "EXCEPT " +
+                "SELECT fld + ?, fldIdx + ?, fldBatch, fldIdxBatch FROM Item WHERE fldIdxBatch=?",
+            key / BATCH_SIZE, BATCH_SIZE / 2, BATCH_SIZE / 2, key / BATCH_SIZE);
+
+        if (res.size() != BATCH_SIZE / 2)
+            throw new AssertionError("Unexpected result size: " + res.size());
+    }
+
+    /**
+     * Query with INTERSECT set op.
+     */
+    @Benchmark
+    public void queryIntersect() {
+        int key = ThreadLocalRandom.current().nextInt(KEYS_CNT);
+
+        List<?> res = executeSql(
+            "SELECT fld, fldIdx, fldBatch, fldIdxBatch FROM Item WHERE fldIdxBatch=? " +
+                "INTERSECT " +
+                "SELECT fld + ?, fldIdx + ?, fldBatch, fldIdxBatch FROM Item WHERE fldIdxBatch=?",
+            key / BATCH_SIZE, BATCH_SIZE / 2, BATCH_SIZE / 2, key / BATCH_SIZE);
+
+        if (res.size() != BATCH_SIZE / 2)
+            throw new AssertionError("Unexpected result size: " + res.size());
+    }
+
+    /**
+     * Query with correlated subquery.
+     */
+    @Benchmark
+    public void queryCorrelated() {
+        int key = ThreadLocalRandom.current().nextInt(KEYS_CNT);
+
+        List<?> res = executeSql(
+            "SELECT fld FROM Item i0 WHERE fldIdxBatch=? AND EXISTS " +
+                "(SELECT 1 FROM Item i1 WHERE i0.fld = i1.fld + ? AND i0.fldBatch = i1.fldBatch)",
+            key / BATCH_SIZE, BATCH_SIZE / 2);
+
+        // Skip result check for H2 engine, because query can't be executed correctly on H2.
+        if (!"H2".equals(engine) && res.size() != BATCH_SIZE / 2)
+            throw new AssertionError("Unexpected result size: " + res.size());
+    }
+
     /** */
     private List<List<?>> executeSql(String sql, Object... args) {
         return cache.query(new SqlFieldsQuery(sql).setArgs(args)).getAll();

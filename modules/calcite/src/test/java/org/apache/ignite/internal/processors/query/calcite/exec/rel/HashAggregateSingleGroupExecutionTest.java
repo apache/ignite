@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHash
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Before;
 import org.junit.Test;
@@ -518,7 +519,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
 
             /** */
             @Override public Object[] create() {
-                throw new AssertionError();
+                return X.EMPTY_OBJECT_ARRAY;
             }
 
             /** */
