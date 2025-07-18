@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
 import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
@@ -271,7 +272,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)88, GridCacheReturn::new);
         factory.register((short)89, CacheObjectImpl::new);
         factory.register((short)90, KeyCacheObjectImpl::new);
-        factory.register((short)91, GridCacheEntryInfo::new);
+        factory.register((short)91, GridCacheEntryInfo::new, new GridCacheEntryInfoSerializer());
         factory.register((short)92, CacheEntryInfoCollection::new);
         factory.register((short)93, CacheInvokeDirectResult::new);
         factory.register((short)94, IgniteTxKey::new);
