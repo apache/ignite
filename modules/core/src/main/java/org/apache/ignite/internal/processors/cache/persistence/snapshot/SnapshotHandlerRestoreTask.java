@@ -64,7 +64,7 @@ public class SnapshotHandlerRestoreTask {
 
     /** */
     public void reduce(
-        String snpName,
+        String snapshotName,
         Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> results
     ) {
         Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
@@ -91,10 +91,10 @@ public class SnapshotHandlerRestoreTask {
 
         try {
             ignite.context().cache().context().snapshotMgr().handlers().completeAll(
-                SnapshotHandlerType.RESTORE, snpName, clusterResults, execNodes, wrns -> {});
+                SnapshotHandlerType.RESTORE, snapshotName, clusterResults, execNodes, wrns -> {});
         }
         catch (Exception e) {
-            log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" + snpName + "].", e);
+            log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" + snapshotName + "].", e);
 
             throw new IgniteException(e);
         }

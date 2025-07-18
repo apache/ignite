@@ -63,8 +63,8 @@ public class IncrementalSnapshotVerificationTask {
     private final IgniteLogger log;
 
     /** */
-    public IncrementalSnapshotVerificationTask(IgniteEx ignite, IgniteLogger log, SnapshotFileTree sft, int incrementalIndex) {
-        job = new VerifyIncrementalSnapshotJob(ignite, log, sft, incrementalIndex);
+    public IncrementalSnapshotVerificationTask(IgniteEx ignite, IgniteLogger log, SnapshotFileTree sft, int incrementalIdx) {
+        job = new VerifyIncrementalSnapshotJob(ignite, log, sft, incrementalIdx);
         this.log = log;
     }
 
