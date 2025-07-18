@@ -47,6 +47,7 @@ import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
@@ -299,7 +300,10 @@ class MessageSerializerGenerator {
      * @param field Field to generate write code.
      */
     private void returnFalseIfWriteFailed(VariableElement field) throws Exception {
-        String getExpr = field.getSimpleName().toString() + "()";
+        String methodName = field.getAnnotation(Order.class).method();
+
+        String getExpr = (F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName) + "()";
+
         TypeMirror type = field.asType();
 
         if (type.getKind().isPrimitive()) {
@@ -384,7 +388,10 @@ class MessageSerializerGenerator {
      */
     private void returnFalseIfReadFailed(VariableElement field) throws Exception {
         TypeMirror type = field.asType();
-        String name = field.getSimpleName().toString();
+
+        String methodName = field.getAnnotation(Order.class).method();
+
+        String name = F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName;
 
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
