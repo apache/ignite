@@ -42,7 +42,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
@@ -883,8 +882,7 @@ public class PlatformUtils {
      * @return Marshaller.
      */
     public static GridBinaryMarshaller marshaller() {
-        BinaryContext ctx =
-            new BinaryContext(new IgniteConfiguration(), new NullLogger());
+        BinaryContext ctx = new BinaryContext(NullLogger.INSTANCE);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

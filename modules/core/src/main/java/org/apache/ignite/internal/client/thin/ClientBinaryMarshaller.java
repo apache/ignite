@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.HashMap;
 import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
@@ -97,23 +97,19 @@ class ClientBinaryMarshaller {
 
     /** Create new marshaller implementation. */
     private GridBinaryMarshaller createImpl(BinaryConfiguration binCfg) {
-        IgniteConfiguration igniteCfg = new IgniteConfiguration();
-
         if (binCfg == null) {
             binCfg = new BinaryConfiguration();
 
             binCfg.setCompactFooter(false);
         }
 
-        igniteCfg.setBinaryConfiguration(binCfg);
-
-        BinaryContext ctx = new BinaryContext(metaHnd, igniteCfg, NullLogger.INSTANCE);
+        BinaryContext ctx = new BinaryContext(metaHnd, null, null, binCfg, NullLogger.INSTANCE);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(marshCtx);
 
-        ctx.configure(marsh, binCfg);
+        ctx.configure(marsh, binCfg, new HashMap<>());
 
         ctx.registerUserTypesSchema();
 

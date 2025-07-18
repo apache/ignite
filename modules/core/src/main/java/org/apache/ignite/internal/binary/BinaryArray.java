@@ -103,7 +103,7 @@ class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryAr
 
     /** {@inheritDoc} */
     @Override public <T> T deserialize(ClassLoader ldr) throws BinaryObjectException {
-        ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
+        ClassLoader resolveLdr = ldr == null ? ctx.classLoader() : ldr;
 
         if (ldr != null)
             GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);

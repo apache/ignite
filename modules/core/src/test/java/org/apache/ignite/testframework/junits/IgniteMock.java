@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Standa
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -442,13 +443,19 @@ public class IgniteMock implements IgniteEx {
 
         if (ctx == null) {
             /** {@inheritDoc} */
-            ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), configuration(), new NullLogger()) {
+            ctx = new BinaryContext(
+                BinaryUtils.cachingMetadataHandler(),
+                configuration().getIgniteInstanceName(),
+                configuration().getClassLoader(),
+                configuration().getBinaryConfiguration(),
+                new NullLogger()
+            ) {
                 @Override public int typeId(String typeName) {
                     return typeName.hashCode();
                 }
             };
 
-            ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration());
+            ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration(), CU.affinityFields(configuration()));
         }
 
         binaryMock = new NoOpBinary() {

@@ -251,7 +251,7 @@ public class IgniteTestResources {
 
         marsh.setContext(new MarshallerContextTestImpl());
         marsh.setBinaryContext(
-            new BinaryContext(BinaryUtils.cachingMetadataHandler(), new IgniteConfiguration(), new NullLogger()),
+            new BinaryContext(BinaryUtils.cachingMetadataHandler(), null, null, null, NullLogger.INSTANCE),
             new IgniteConfiguration()
         );
 
