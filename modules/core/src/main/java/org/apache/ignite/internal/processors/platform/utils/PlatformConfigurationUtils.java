@@ -55,6 +55,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -85,6 +86,7 @@ import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
+import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterNodeFilterImpl;
 import org.apache.ignite.internal.processors.platform.events.PlatformLocalEventListener;
 import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -352,10 +354,30 @@ public class PlatformConfigurationUtils {
      * @return PlatformCacheConfiguration.
      */
     public static PlatformCacheConfiguration readPlatformCacheConfiguration(BinaryReaderEx in) {
-        return new PlatformCacheConfiguration()
-                .setKeyTypeName(in.readString())
-                .setValueTypeName(in.readString())
-                .setKeepBinary(in.readBoolean());
+        PlatformCacheConfiguration platformCfg = new PlatformCacheConfiguration()
+            .setKeyTypeName(in.readString())
+            .setValueTypeName(in.readString())
+            .setKeepBinary(in.readBoolean());
+
+        if (in.readBoolean()) {
+            // AttributeNodeFilter has its own deserialization.
+            AttributeNodeFilter attrFilter = readAttributeNodeFilter(in);
+
+            if (attrFilter != null) {
+                platformCfg.setNodeFilter(attrFilter);
+            }
+            else {
+                // Node filter implemented in .NET. Will be null in case of custom filter from Java.
+                Object dotnetFilter = in.readObjectDetached();
+
+                if (dotnetFilter != null) {
+                    // Platform context will be set during resource injection.
+                    platformCfg.setNodeFilter(new PlatformClusterNodeFilterImpl(dotnetFilter, null));
+                }
+            }
+        }
+
+        return platformCfg;
     }
 
     /**
@@ -381,11 +403,14 @@ public class PlatformConfigurationUtils {
      * Writes the node filter.
      * @param out Stream.
      * @param nodeFilter IgnitePredicate.
+     *
+     * @return <code>true</code> if attribute node filter was succesfully written.
      */
-    private static void writeAttributeNodeFilter(BinaryRawWriter out, IgnitePredicate nodeFilter) {
+    private static boolean writeAttributeNodeFilter(BinaryRawWriter out, IgnitePredicate nodeFilter) {
         if (!(nodeFilter instanceof AttributeNodeFilter)) {
             out.writeBoolean(false);
-            return;
+
+            return false;
         }
 
         out.writeBoolean(true);
@@ -398,6 +423,8 @@ public class PlatformConfigurationUtils {
             out.writeString(entry.getKey());
             out.writeObject(entry.getValue());
         }
+
+        return true;
     }
 
     /**
@@ -1092,7 +1119,7 @@ public class PlatformConfigurationUtils {
      * @param writer Writer.
      * @param ccfg Configuration.
      */
-    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg) {
+    public static void writeCacheConfiguration(BinaryWriterEx writer, CacheConfiguration ccfg) {
         assert writer != null;
         assert ccfg != null;
 
@@ -1194,6 +1221,26 @@ public class PlatformConfigurationUtils {
             writer.writeString(platCfg.getKeyTypeName());
             writer.writeString(platCfg.getValueTypeName());
             writer.writeBoolean(platCfg.isKeepBinary());
+
+            IgnitePredicate<ClusterNode> filter = platCfg.getNodeFilter();
+
+            boolean hasFilter = filter != null;
+
+            writer.writeBoolean(hasFilter);
+
+            if (hasFilter) {
+                // AttributeNodeFilter has its own deserialization.
+                boolean filterWritten = writeAttributeNodeFilter(writer, filter);
+
+                if (!filterWritten) {
+                    // Node filter implemented in .NET. Will be null in case of custom filter from Java.
+                    Object dotnetFilter = filter instanceof PlatformClusterNodeFilterImpl ?
+                            ((PlatformClusterNodeFilterImpl)filter).getInternalPredicate() :
+                            null;
+
+                    writer.writeObjectDetached(dotnetFilter);
+                }
+            }
         }
         else {
             writer.writeBoolean(false);
@@ -1320,7 +1367,7 @@ public class PlatformConfigurationUtils {
      * @param cfg Configuration.
      */
     @SuppressWarnings("deprecation")
-    public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg) {
+    public static void writeIgniteConfiguration(BinaryWriterEx w, IgniteConfiguration cfg) {
         assert w != null;
         assert cfg != null;
 

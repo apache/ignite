@@ -39,6 +39,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.PlatformCacheConfiguration;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
@@ -5436,14 +5438,25 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * Gets a value indicating whether platform cache exists for current cache.
+     * Gets a value indicating whether platform cache exists for current cache. If node filter is set for platfrom
+     * cache, then local node will be checked whether it satifies node filter or not.
      *
-     * @return True when platform cache exists for this cache; false otherwise.
+     * @return True when platform cache exists for this cache and local satisfies platform cache node filter;
+     * false otherwise.
      */
     @SuppressWarnings("rawtypes")
     private boolean hasPlatformCache() {
         GridCacheAdapter cache = cctx.cache();
+        PlatformCacheConfiguration platformCfg;
 
-        return cache != null && cache.cacheCfg.getPlatformCacheConfiguration() != null;
+        if (cache == null || (platformCfg = cache.cacheCfg.getPlatformCacheConfiguration()) == null)
+            return false;
+
+        IgnitePredicate<ClusterNode> nodeFilter = platformCfg.getNodeFilter();
+
+        if (nodeFilter == null)
+            return true;
+
+        return nodeFilter.apply(cctx.localNode());
     }
 }
