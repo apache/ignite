@@ -26,17 +26,17 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Message is sent from client to coordinator node when a user needs to authorize on client node.
  */
 public class UserAuthenticateRequestMessage implements Message {
-    /** Request ID. */
-    @Order(0)
-    private IgniteUuid id = IgniteUuid.randomUuid();
-
     /** User name. */
-    @Order(1)
+    @Order(0)
     private String name;
 
     /** User password. */
-    @Order(value = 2, method = "password")
+    @Order(value = 1, method = "password")
     private String passwd;
+
+    /** Request ID. */
+    @Order(2)
+    private IgniteUuid id = IgniteUuid.randomUuid();
 
     /**
      *
