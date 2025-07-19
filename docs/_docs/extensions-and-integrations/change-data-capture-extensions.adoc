@@ -375,6 +375,24 @@ Spring XML configuration example (`ignite-to-postgres.xml`):
 </bean>
 ----
 
+=== Configuration Options
+
+The following settings can be used to configure the behavior of `IgniteToPostgreSqlCdcConsumer`:
+
+[cols="1,2,1", options="header"]
+|===
+| Setting | Description | Default
+| `dataSource` | JDBC `DataSource` used to connect to the target PostgreSQL database. Must be provided by the user. | _Required_
+| `caches` | Set of Ignite cache names to replicate. Must be provided by the user. | _Required_
+| `onlyPrimary` | If `true`, replicates only events originating from the primary node. Useful to avoid duplicate updates in replicated clusters. | `true`
+| `maxBatchSize` | Maximum number of statements per batch submitted to PostgreSQL. Affects transaction commit size. | `1024`
+| `autoCommit` | If `true`, each batch is committed immediately after submission. If false, batches accumulate and are committed by the connector after finishing the last WAL segment | `false`
+| `createTables`| If `true`, missing target tables in PostgreSQL will be created automatically during startup.| `false`
+|===
+
+ If `autoCommit` is disabled (`false`), batches are accumulated and committed either manually or by the connector after processing a group of batches.
+
+
 [WARNING]
 ====
 Choosing the `dataSource` is the user's responsibility. Consider:
