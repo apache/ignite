@@ -306,10 +306,8 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             }
             catch (ClusterTopologyCheckedException e) {
                 // The coordinator has failed. The single message will be sent when a new coordinator initialized.
-                if (log.isDebugEnabled()) {
-                    log.debug("Failed to send a single message to coordinator: [crdId=" + crdId +
-                        ", processId=" + p.id + ", error=" + e.getMessage() + ']');
-                }
+                log.warning("Failed to send a single message to coordinator: [crdId=" + crdId +
+                    ", processId=" + p.id + ", error=" + e.getMessage() + ']');
             }
             catch (IgniteCheckedException e) {
                 log.error("Unable to send message to coordinator.", e);

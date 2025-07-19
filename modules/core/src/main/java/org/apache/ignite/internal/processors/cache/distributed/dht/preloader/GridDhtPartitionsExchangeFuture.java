@@ -2147,21 +2147,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         msg.exchangeStartTime(startTime);
 
-        long sndStart = System.currentTimeMillis();
-        int retry = 0;
-
-        if (log.isInfoEnabled())
-            log.info("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ']');
+        if (log.isTraceEnabled())
+            log.trace("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + msg + ']');
 
         while (true) {
             try {
                 cctx.io().send(node, msg, SYSTEM_POOL);
-
-                if (log.isInfoEnabled()) {
-                    long dur = System.currentTimeMillis() - sndStart;
-                    log.info("Local partitions sent [nodeId=" + node.id() + ", exchId=" + exchId +
-                        ", duration=" + dur + "ms");
-                }
             }
             catch (ClusterTopologyCheckedException ignored) {
 
@@ -2173,13 +2164,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 );
 
                 if (cctx.discovery().alive(node.id())) {
-                    if (log.isInfoEnabled())
-                        log.info("Retry sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId +
-                                ", retry=" + (retry + 1) + ']');
-
                     U.sleep(retryDelay);
-
-                    retry++;
 
                     continue;
                 }
@@ -2302,21 +2287,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void sendPartitions(ClusterNode oldestNode) {
         assert !exchCtx.exchangeFreeSwitch() : this;
 
-        if (log.isInfoEnabled())
-            log.info("Sending partitions to coordinator [nodeId=" + oldestNode.id() + ", exchId=" + exchId + ']');
-
-        long start = System.currentTimeMillis();
-
         try {
             sendLocalPartitions(oldestNode);
-
-            if (log.isInfoEnabled())
-                log.info("Finished sending partitions [nodeId=" + oldestNode.id() + ", exchId=" + exchId +
-                    ", duration=" + (System.currentTimeMillis() - start) + "ms]");
         }
         catch (ClusterTopologyCheckedException ignore) {
-            if (log.isInfoEnabled())
-                log.info("Coordinator left during partition exchange, will retry [nodeId=" + oldestNode.id() +
+            log.warning("Coordinator left during partition exchange, will retry [nodeId=" + oldestNode.id() +
                     ", exchId=" + exchId + ']');
         }
         catch (IgniteCheckedException e) {

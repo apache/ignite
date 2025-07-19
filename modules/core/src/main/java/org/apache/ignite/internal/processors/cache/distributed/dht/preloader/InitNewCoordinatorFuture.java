@@ -178,9 +178,6 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
                     if (log.isDebugEnabled())
                         log.debug("Failed to send partitions request, node failed: " + node);
 
-                    log.warning("Failed to send partitions request (node left) [nodeId=" + node.id() +
-                        ", exchId=" + exchFut.exchangeId() + ']');
-
                     onNodeLeft(node.id());
                 }
             }
