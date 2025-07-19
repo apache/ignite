@@ -2155,14 +2155,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.io().send(node, msg, SYSTEM_POOL);
             }
             catch (ClusterTopologyCheckedException ignored) {
-                if (log.isDebugEnabled()) {
-                    log.debug(
-                        "Failed to send local partitions on exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']'
-                    );
-                }
+
+                long retryDelay = cctx.gridConfig().getNetworkSendRetryDelay();
+
+                log.warning(
+                    "Failed to send local partitions on exchange (node left) [nodeId=" + node.id() +
+                        ", exchId=" + exchId + ", retryDelay=" + retryDelay + "ms]"
+                );
 
                 if (cctx.discovery().alive(node.id())) {
-                    U.sleep(cctx.gridConfig().getNetworkSendRetryDelay());
+                    U.sleep(retryDelay);
 
                     continue;
                 }
@@ -2270,8 +2272,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.io().send(node, fullMsgToSend, SYSTEM_POOL);
                 }
                 catch (ClusterTopologyCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to send partitions, node failed: " + node);
+                    log.warning("Failed to send partitions [nodeId=" + node.id() +
+                        ", exchId=" + exchId + ']', e);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send partitions [node=" + node + ']', e);
@@ -2289,8 +2291,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             sendLocalPartitions(oldestNode);
         }
         catch (ClusterTopologyCheckedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Coordinator left during partition exchange [nodeId=" + oldestNode.id() +
+            log.warning("Coordinator left during partition exchange, will retry [nodeId=" + oldestNode.id() +
                     ", exchId=" + exchId + ']');
         }
         catch (IgniteCheckedException e) {
