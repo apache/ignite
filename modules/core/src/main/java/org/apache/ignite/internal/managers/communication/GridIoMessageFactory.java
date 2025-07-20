@@ -40,6 +40,7 @@ import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer
 import org.apache.ignite.internal.codegen.MissingMappingResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.SessionChannelMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpInverseConnectionResponseMessageSerializer;
+import org.apache.ignite.internal.codegen.TxLockSerializer;
 import org.apache.ignite.internal.codegen.UserAuthenticateRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.UserAuthenticateResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.UserManagementOperationFinishedMessageSerializer;
@@ -208,7 +209,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-36, GridDhtAtomicSingleUpdateRequest::new);
         factory.register((short)-27, GridDhtTxOnePhaseCommitAckRequest::new);
         factory.register((short)-26, TxLockList::new);
-        factory.register((short)-25, TxLock::new);
+        factory.register((short)-25, TxLock::new, new TxLockSerializer());
         factory.register((short)-24, TxLocksRequest::new);
         factory.register((short)-23, TxLocksResponse::new);
         factory.register(TcpCommunicationSpi.NODE_ID_MSG_TYPE, NodeIdMessage::new);
