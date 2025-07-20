@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -25,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
@@ -38,8 +37,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -59,30 +56,29 @@ public abstract class GridCacheMessage implements Message {
     private static final long NULL_MSG_ID = -1;
 
     /** ID of this message. */
+    @Order(value = 0, method = "messageId")
     private long msgId = NULL_MSG_ID;
 
     /** */
     @GridToStringInclude
+    @Order(value = 1, method = "deployInfo")
     private GridDeploymentInfoBean depInfo;
 
     /** */
     @GridToStringInclude
+    @Order(value = 2, method = "lastAffinityChangedTopologyVersion")
     private @Nullable AffinityTopologyVersion lastAffChangedTopVer;
 
     /** */
-    @GridDirectTransient
     protected boolean addDepInfo;
 
     /** Force addition of deployment info regardless of {@code addDepInfo} flag value.*/
-    @GridDirectTransient
     protected boolean forceAddDepInfo;
 
     /** */
-    @GridDirectTransient
     private IgniteCheckedException err;
 
     /** */
-    @GridDirectTransient
     private boolean skipPrepare;
 
     /**
@@ -172,7 +168,7 @@ public abstract class GridCacheMessage implements Message {
      *
      * @param msgId New message ID.
      */
-    void messageId(long msgId) {
+    public void messageId(long msgId) {
         this.msgId = msgId;
     }
 
@@ -272,8 +268,16 @@ public abstract class GridCacheMessage implements Message {
      * @return Preset deployment info.
      * @see GridCacheDeployable#deployInfo()
      */
-    public GridDeploymentInfo deployInfo() {
+    public GridDeploymentInfoBean deployInfo() {
         return depInfo;
+    }
+
+    /**
+     * @param depInfo Preset deployment info.
+     * @see GridCacheDeployable#deployInfo()
+     */
+    public void deployInfo(GridDeploymentInfoBean depInfo) {
+        this.depInfo = depInfo;
     }
 
     /**
@@ -655,75 +659,6 @@ public abstract class GridCacheMessage implements Message {
      */
     public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.messageLogger();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMessage(depInfo))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeAffinityTopologyVersion(lastAffChangedTopVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong(msgId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                depInfo = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                lastAffChangedTopVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                msgId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /**
