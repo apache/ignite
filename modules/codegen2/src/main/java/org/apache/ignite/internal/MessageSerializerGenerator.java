@@ -29,7 +29,9 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.processing.FilerException;
@@ -351,6 +353,18 @@ class MessageSerializerGenerator {
             else if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 returnFalseIfWriteFailed(write, "writer.writeAffinityTopologyVersion", getExpr);
 
+            else if (assignableFrom(erasedType(type), erasedType(Map.class.getName()))) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+                assert typeArgs.size() == 2;
+
+                imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
+
+                returnFalseIfWriteFailed(write, "writer.writeMap", getExpr,
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
+            }
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
 
@@ -464,6 +478,21 @@ class MessageSerializerGenerator {
             else if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 returnFalseIfReadFailed(name, "reader.readAffinityTopologyVersion");
 
+            else if (assignableFrom(erasedType(type), erasedType(Map.class.getName()))) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+                assert typeArgs.size() == 2;
+
+                boolean linked = sameType(type, LinkedHashMap.class);
+
+                imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
+
+                returnFalseIfReadFailed(name, "reader.readMap",
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)),
+                    linked ? "true" : "false");
+            }
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfReadFailed(name, "reader.readMessage");
 
@@ -509,6 +538,9 @@ class MessageSerializerGenerator {
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
+            if (sameType(type, Long.class))
+                return "LONG";
+
             if (sameType(type, String.class))
                 return "STRING";
 
@@ -660,6 +692,11 @@ class MessageSerializerGenerator {
         TypeElement typeElement = elementUtils.getTypeElement(clazz);
 
         return typeElement != null ? typeElement.asType() : null;
+    }
+
+    /** */
+    private TypeMirror erasedType(String clazz) {
+        return env.getTypeUtils().erasure(type(clazz));
     }
 
     /** */
