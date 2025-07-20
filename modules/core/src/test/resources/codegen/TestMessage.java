@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.lang.String;
+import java.util.List;
 import java.util.UUID;
 import java.util.BitSet;
 import java.nio.ByteBuffer;
@@ -64,6 +65,12 @@ public class TestMessage implements Message {
 
     @Order(value = 11, method = "overridenFieldMethod")
     private String field;
+
+    @Order(12)
+    private List<GridCacheVersion> versions;
+
+    @Order(13)
+    private List<Integer> boxedIntValues;
 
     public int id() {
         return id;
@@ -159,6 +166,22 @@ public class TestMessage implements Message {
 
     public void overridenFieldMethod(String field) {
         this.field = field;
+    }
+
+    public List<GridCacheVersion> versions() {
+        return versions;
+    }
+
+    public void versions(List<GridCacheVersion> versions) {
+        this.versions = versions;
+    }
+
+    public List<Integer> boxedIntValues() {
+        return boxedIntValues;
+    }
+
+    public void boxedIntValues(List<Integer> boxedIntValues) {
+        this.boxedIntValues = boxedIntValues;
     }
 
     public short directType() {
