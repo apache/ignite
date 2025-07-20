@@ -17,19 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,32 +33,70 @@ import org.jetbrains.annotations.Nullable;
  */
 public class NearCacheUpdates implements Message {
     /** Indexes of keys for which values were generated on primary node (used if originating node has near cache). */
-    @GridDirectCollection(int.class)
+    @Order(value = 0, method = "nearValuesIndexes")
     private List<Integer> nearValsIdxs;
 
     /** Indexes of keys for which update was skipped (used if originating node has near cache). */
-    @GridDirectCollection(int.class)
+    @Order(value = 1, method = "skippedIndexes")
     private List<Integer> nearSkipIdxs;
 
     /** Values generated on primary node which should be put to originating node's near cache. */
     @GridToStringInclude
-    @GridDirectCollection(CacheObject.class)
+    @Order(value = 2, method = "nearValues")
     private List<CacheObject> nearVals;
 
     /** Version generated on primary node to be used for originating node's near cache update. */
+    @Order(value = 3, method = "nearVersion")
     private GridCacheVersion nearVer;
 
     /** Near TTLs. */
+    @Order(4)
     private GridLongList nearTtls;
 
     /** Near expire times. */
+    @Order(5)
     private GridLongList nearExpireTimes;
 
     /**
      * @return Values.
      */
-    List<CacheObject> nearValues() {
+    public List<CacheObject> nearValues() {
         return nearVals;
+    }
+
+    /**
+     * @param nearVals values.
+     */
+    public void nearValues(List<CacheObject> nearVals) {
+        this.nearVals = nearVals;
+    }
+
+    /**
+     * @return Near TTLs.
+     */
+    public GridLongList nearTtls() {
+        return nearTtls;
+    }
+
+    /**
+     * @param nearTtls Near TTLs.
+     */
+    public void nearTtls(GridLongList nearTtls) {
+        this.nearTtls = nearTtls;
+    }
+
+    /**
+     * @return Near expire times.
+     */
+    public GridLongList nearExpireTimes() {
+        return nearExpireTimes;
+    }
+
+    /**
+     * @param nearExpireTimes Near expire times.
+     */
+    public void nearExpireTimes(GridLongList nearExpireTimes) {
+        this.nearExpireTimes = nearExpireTimes;
     }
 
     /**
@@ -150,14 +184,14 @@ public class NearCacheUpdates implements Message {
     /**
      * @param nearVer Version generated on primary node to be used for originating node's near cache update.
      */
-    void nearVersion(GridCacheVersion nearVer) {
+    public void nearVersion(GridCacheVersion nearVer) {
         this.nearVer = nearVer;
     }
 
     /**
      * @return Version generated on primary node to be used for originating node's near cache update.
      */
-    GridCacheVersion nearVersion() {
+    public GridCacheVersion nearVersion() {
         return nearVer;
     }
 
@@ -176,15 +210,29 @@ public class NearCacheUpdates implements Message {
     /**
      * @return Indexes of keys for which update was skipped
      */
-    @Nullable List<Integer> skippedIndexes() {
+    public @Nullable List<Integer> skippedIndexes() {
         return nearSkipIdxs;
+    }
+
+    /**
+     * @param nearSkipIdxs Indexes of keys for which update was skipped
+     */
+    public void skippedIndexes(List<Integer> nearSkipIdxs) {
+        this.nearSkipIdxs = nearSkipIdxs;
     }
 
     /**
      * @return Indexes of keys for which values were generated on primary node.
      */
-    @Nullable List<Integer> nearValuesIndexes() {
+    public @Nullable List<Integer> nearValuesIndexes() {
         return nearValsIdxs;
+    }
+
+    /**
+     * @param nearValsIdxs Indexes of keys for which values were generated on primary node.
+     */
+    public void nearValuesIndexes(List<Integer> nearValsIdxs) {
+        this.nearValsIdxs = nearValsIdxs;
     }
 
     /**
@@ -193,117 +241,6 @@ public class NearCacheUpdates implements Message {
      */
     @Nullable CacheObject nearValue(int idx) {
         return nearVals.get(idx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMessage(nearExpireTimes))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeCollection(nearSkipIdxs, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeMessage(nearTtls))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeCollection(nearVals, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeCollection(nearValsIdxs, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeMessage(nearVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                nearExpireTimes = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                nearSkipIdxs = reader.readCollection(MessageCollectionItemType.INT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                nearTtls = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                nearVals = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                nearValsIdxs = reader.readCollection(MessageCollectionItemType.INT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                nearVer = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
