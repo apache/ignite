@@ -353,6 +353,18 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
 
+            else if (assignableFrom(erasedType(type), erasedType(Collection.class.getName())) &&
+                !assignableFrom(erasedType(type), erasedType(Set.class.getName()))) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+                assert typeArgs.size() == 1;
+
+                imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
+
+                returnFalseIfWriteFailed(write, "writer.writeCollection", getExpr,
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+            }
+
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
 
@@ -455,6 +467,18 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfReadFailed(name, "reader.readMessage");
 
+            else if (assignableFrom(erasedType(type), erasedType(Collection.class.getName())) &&
+                !assignableFrom(erasedType(type), erasedType(Set.class.getName()))) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+                assert typeArgs.size() == 1;
+
+                imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
+
+                returnFalseIfReadFailed(name, "reader.readCollection",
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+            }
+
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
 
@@ -488,6 +512,9 @@ class MessageSerializerGenerator {
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
+            if (sameType(type, Integer.class))
+                return "INT";
+
             if (sameType(type, String.class))
                 return "STRING";
 
@@ -618,6 +645,16 @@ class MessageSerializerGenerator {
         TypeElement typeElement = elementUtils.getTypeElement(clazz);
 
         return typeElement != null ? typeElement.asType() : null;
+    }
+
+    /** */
+    private TypeMirror erasedType(String clazz) {
+        return env.getTypeUtils().erasure(type(clazz));
+    }
+
+    /** */
+    private TypeMirror erasedType(TypeMirror type) {
+        return env.getTypeUtils().erasure(type);
     }
 
     /** Converts string "BYTE" to string "Byte", with first capital latter. */
