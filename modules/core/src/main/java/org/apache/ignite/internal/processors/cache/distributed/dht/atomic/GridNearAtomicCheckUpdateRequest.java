@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -32,13 +32,14 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** */
-    @GridDirectTransient
     private GridNearAtomicAbstractUpdateRequest updateReq;
 
     /** */
+    @Order(value = 0, method = "partition")
     private int partId;
 
     /** */
+    @Order(value = 1, method = "futureId")
     private long futId;
 
     /**
@@ -70,6 +71,14 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
+     * @param futId Future ID on near node.
+     */
+    public void futureId(long futId) {
+        this.futId = futId;
+    }
+
+
+    /**
      * @return Related update request.
      */
     GridNearAtomicAbstractUpdateRequest updateRequest() {
@@ -79,6 +88,13 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     /** {@inheritDoc} */
     @Override public int partition() {
         return partId;
+    }
+
+    /**
+     * @param partId Partition ID this message is targeted to or {@code -1} if it cannot be determined.
+     */
+    public void partition(int partId) {
+        this.partId = partId;
     }
 
     /** {@inheritDoc} */
