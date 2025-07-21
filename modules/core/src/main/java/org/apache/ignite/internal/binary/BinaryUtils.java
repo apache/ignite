@@ -1516,7 +1516,7 @@ public class BinaryUtils {
      * @return Class object specified at the input stream if {@code deserialize == true}. Otherwise returns {@code null}
      * @throws BinaryObjectException If failed.
      */
-    static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, boolean deserialize)
+    private static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, boolean deserialize)
         throws BinaryObjectException {
         int typeId = in.readInt();
 
@@ -2562,7 +2562,7 @@ public class BinaryUtils {
      * @param newValues New enum value mapping.
      * @throws BinaryObjectException in case of name or value conflict.
      */
-    static Map<String, Integer> mergeEnumValues(String typeName,
+    private static Map<String, Integer> mergeEnumValues(String typeName,
             @Nullable Map<String, Integer> oldValues,
             Map<String, Integer> newValues)
             throws BinaryObjectException {
