@@ -6746,6 +6746,7 @@ public abstract class IgniteUtils extends CommonUtils {
             }
         }
         catch (Exception e) {
+            System.err.println("HERE!!! Field: " + fieldName + " Object: " + obj);
             throw new IgniteException("Failed to get field value [fieldName=" + fieldName + ", obj=" + obj + ']', e);
         }
 
