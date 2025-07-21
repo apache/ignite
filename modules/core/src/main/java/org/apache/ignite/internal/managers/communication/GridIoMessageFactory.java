@@ -31,6 +31,7 @@ import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.SessionChannelMessageSerializer;
 import org.apache.ignite.internal.codegen.UserAuthenticateRequestMessageSerializer;
+import org.apache.ignite.internal.codegen.UserAuthenticateResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.WalStateAckMessageSerializer;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
@@ -314,7 +315,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)129, WalStateAckMessage::new, new WalStateAckMessageSerializer());
         factory.register((short)130, UserManagementOperationFinishedMessage::new);
         factory.register((short)131, UserAuthenticateRequestMessage::new, new UserAuthenticateRequestMessageSerializer());
-        factory.register((short)132, UserAuthenticateResponseMessage::new);
+        factory.register((short)132, UserAuthenticateResponseMessage::new, new UserAuthenticateResponseMessageSerializer());
         factory.register((short)133, ClusterMetricsUpdateMessage::new);
         factory.register((short)134, ContinuousRoutineStartResultMessage::new);
         factory.register((short)135, LatchAckMessage::new);
