@@ -22,7 +22,7 @@ import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -47,7 +47,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), null, null, null, NullLogger.INSTANCE);
+        ctx = U.emptyBinaryContext();
 
         marsh = new BinaryMarshaller();
 

@@ -269,7 +269,7 @@ public class JdbcThinTcpIo {
      * @throws SQLException On connection reject.
      */
     private HandshakeResult handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), null, null, null, NullLogger.INSTANCE);
+        BinaryContext ctx = U.emptyBinaryContext();
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

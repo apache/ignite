@@ -357,7 +357,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @param msg Message bytes.
      */
     private void onHandshake(GridNioSession ses, ClientMessage msg) {
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), null, null, null, NullLogger.INSTANCE);
+        BinaryContext ctx = U.emptyBinaryContext();
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.util.HashMap;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 
@@ -109,7 +109,7 @@ class ClientBinaryMarshaller {
 
         marsh.setContext(marshCtx);
 
-        ctx.configure(marsh, binCfg, new HashMap<>());
+        ctx.configure(marsh, binCfg, CU.affinityFields(null));
 
         ctx.registerUserTypesSchema();
 

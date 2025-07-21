@@ -175,6 +175,8 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -219,6 +221,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
@@ -9817,6 +9820,11 @@ public abstract class IgniteUtils extends CommonUtils {
     /** */
     public static boolean isTxAwareQueriesEnabled(GridKernalContext kctx) {
         return kctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled();
+    }
+
+    /** @return Empty binary context instance. */
+    public static BinaryContext emptyBinaryContext() {
+        return new BinaryContext(BinaryUtils.cachingMetadataHandler(), NullLogger.INSTANCE);
     }
 
     /**
