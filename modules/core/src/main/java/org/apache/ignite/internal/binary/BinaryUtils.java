@@ -68,14 +68,11 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -84,7 +81,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -122,7 +118,7 @@ public class BinaryUtils {
         IgniteSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
 
     /** Map from class to associated write replacer. */
-    public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = Map.of(
+    private static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = Map.of(
         TreeMap.class, new BinaryTreeMapWriteReplacer(),
         TreeSet.class, new BinaryTreeSetWriteReplacer()
     );
@@ -134,22 +130,22 @@ public class BinaryUtils {
     private static final Collection<Class<?>> BINARY_CLS;
 
     /** Class for SingletonList obtained at runtime. */
-    public static final Class<? extends Collection> SINGLETON_LIST_CLS = Collections.singletonList(null).getClass();
+    static final Class<? extends Collection> SINGLETON_LIST_CLS = Collections.singletonList(null).getClass();
 
     /** Flag: user type. */
-    public static final short FLAG_USR_TYP = 0x0001;
+    static final short FLAG_USR_TYP = 0x0001;
 
     /** Flag: only raw data exists. */
-    public static final short FLAG_HAS_SCHEMA = 0x0002;
+    static final short FLAG_HAS_SCHEMA = 0x0002;
 
     /** Flag indicating that object has raw data. */
-    public static final short FLAG_HAS_RAW = 0x0004;
+    static final short FLAG_HAS_RAW = 0x0004;
 
     /** Flag: offsets take 1 byte. */
-    public static final short FLAG_OFFSET_ONE_BYTE = 0x0008;
+    static final short FLAG_OFFSET_ONE_BYTE = 0x0008;
 
     /** Flag: offsets take 2 bytes. */
-    public static final short FLAG_OFFSET_TWO_BYTES = 0x0010;
+    static final short FLAG_OFFSET_TWO_BYTES = 0x0010;
 
     /** Flag: compact footer, no field IDs. */
     public static final short FLAG_COMPACT_FOOTER = 0x0020;
@@ -159,16 +155,16 @@ public class BinaryUtils {
     public static final short FLAG_CUSTOM_DOTNET_TYPE = 0x0040;
 
     /** Offset which fits into 1 byte. */
-    public static final int OFFSET_1 = 1;
+    static final int OFFSET_1 = 1;
 
     /** Offset which fits into 2 bytes. */
-    public static final int OFFSET_2 = 2;
+    static final int OFFSET_2 = 2;
 
     /** Offset which fits into 4 bytes. */
-    public static final int OFFSET_4 = 4;
+    static final int OFFSET_4 = 4;
 
     /** Field ID length. */
-    public static final int FIELD_ID_LEN = 4;
+    static final int FIELD_ID_LEN = 4;
 
     /** Whether to sort field in binary objects (doesn't affect Binarylizable). */
     public static boolean FIELDS_SORTED_ORDER =
@@ -297,7 +293,7 @@ public class BinaryUtils {
      * @param flags Flags.
      * @return {@code True} if set.
      */
-    public static boolean isUserType(short flags) {
+    static boolean isUserType(short flags) {
         return isFlagSet(flags, FLAG_USR_TYP);
     }
 
@@ -317,7 +313,7 @@ public class BinaryUtils {
      * @param flags Flags.
      * @return {@code True} if set.
      */
-    public static boolean hasRaw(short flags) {
+    static boolean hasRaw(short flags) {
         return isFlagSet(flags, FLAG_HAS_RAW);
     }
 
@@ -327,7 +323,7 @@ public class BinaryUtils {
      * @param flags Flags.
      * @return {@code True} if set.
      */
-    public static boolean isCompactFooter(short flags) {
+    static boolean isCompactFooter(short flags) {
         return isFlagSet(flags, FLAG_COMPACT_FOOTER);
     }
 
@@ -338,7 +334,7 @@ public class BinaryUtils {
      * @param flag Flag.
      * @return {@code True} if flag is set in flags.
      */
-    public static boolean isFlagSet(short flags, short flag) {
+    static boolean isFlagSet(short flags, short flag) {
         return (flags & flag) == flag;
     }
 
@@ -347,7 +343,7 @@ public class BinaryUtils {
      *
      * @return ID.
      */
-    public static int schemaInitialId() {
+    static int schemaInitialId() {
         return FNV1_OFFSET_BASIS;
     }
 
@@ -358,7 +354,7 @@ public class BinaryUtils {
      * @param fieldId Field ID.
      * @return New schema ID.
      */
-    public static int updateSchemaId(int schemaId, int fieldId) {
+    static int updateSchemaId(int schemaId, int fieldId) {
         schemaId = schemaId ^ (fieldId & 0xFF);
         schemaId = schemaId * FNV1_PRIME;
         schemaId = schemaId ^ ((fieldId >> 8) & 0xFF);
@@ -688,14 +684,6 @@ public class BinaryUtils {
     }
 
     /**
-     * @param obj Object to check.
-     * @return True if this is an object of a known type.
-     */
-    public static boolean knownCacheObject(Object obj) {
-        return obj instanceof CacheObject;
-    }
-
-    /**
      * @param arr Array to check.
      * @return {@code true} if this array is of a known type.
      */
@@ -737,24 +725,6 @@ public class BinaryUtils {
     }
 
     /**
-     * Attempts to create a new set of the same type as {@code set} has. Otherwise returns new {@code HashSet}
-     * instance.
-     *
-     * @param set Original set.
-     * @return New set.
-     */
-    public static <V> Set<V> newSet(Set<V> set) {
-        if (set instanceof LinkedHashSet)
-            return U.newLinkedHashSet(set.size());
-        else if (set instanceof TreeSet)
-            return new TreeSet<>(((TreeSet<Object>)set).comparator());
-        else if (set instanceof ConcurrentSkipListSet)
-            return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)set).comparator());
-
-        return U.newHashSet(set.size());
-    }
-
-    /**
      * Check protocol version.
      *
      * @param protoVer Protocol version.
@@ -776,7 +746,7 @@ public class BinaryUtils {
     }
 
     /** */
-    public static int dataStartRelative(BinaryPositionReadable in, int start) {
+    static int dataStartRelative(BinaryPositionReadable in, int start) {
         int typeId = in.readIntPositioned(start + GridBinaryMarshaller.TYPE_ID_POS);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
@@ -796,7 +766,7 @@ public class BinaryUtils {
      * @param start Object start position inside the stream.
      * @return Footer start.
      */
-    public static int footerStartRelative(BinaryPositionReadable in, int start) {
+    private static int footerStartRelative(BinaryPositionReadable in, int start) {
         short flags = in.readShortPositioned(start + GridBinaryMarshaller.FLAGS_POS);
 
         if (hasSchema(flags))
@@ -853,7 +823,7 @@ public class BinaryUtils {
      * @param start Object start position inside the stream.
      * @return Raw offset.
      */
-    public static int rawOffsetRelative(BinaryPositionReadable in, int start) {
+    private static int rawOffsetRelative(BinaryPositionReadable in, int start) {
         short flags = in.readShortPositioned(start + GridBinaryMarshaller.FLAGS_POS);
 
         int len = length(in, start);
@@ -1058,7 +1028,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return Mode.
      */
-    public static BinaryWriteMode mode(Class<?> cls) {
+    static BinaryWriteMode mode(Class<?> cls) {
         assert cls != null;
 
         // Primitives.
@@ -1501,7 +1471,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx, boolean detach) {
+    static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx, boolean detach) {
         if (in.offheapPointer() > 0) {
             int len = in.readInt();
 
@@ -1533,7 +1503,7 @@ public class BinaryUtils {
      * @return Class object specified at the input stream.
      * @throws BinaryObjectException If failed.
      */
-    public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
+    static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
         throws BinaryObjectException {
         return doReadClass(in, ctx, ldr, true);
     }
@@ -1546,7 +1516,7 @@ public class BinaryUtils {
      * @return Class object specified at the input stream if {@code deserialize == true}. Otherwise returns {@code null}
      * @throws BinaryObjectException If failed.
      */
-    public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, boolean deserialize)
+    private static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, boolean deserialize)
         throws BinaryObjectException {
         int typeId = in.readInt();
 
@@ -1565,7 +1535,7 @@ public class BinaryUtils {
      * @return Value.
      */
     @SuppressWarnings("ConstantConditions")
-    public static Object doReadProxy(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    static Object doReadProxy(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) {
         Class<?>[] intfs = new Class<?>[in.readInt()];
 
@@ -1599,7 +1569,7 @@ public class BinaryUtils {
      * @param in Input stream.
      * @return Class name.
      */
-    public static String doReadClassName(BinaryInputStream in) {
+    static String doReadClassName(BinaryInputStream in) {
         byte flag = in.readByte();
 
         if (flag != GridBinaryMarshaller.STRING)
@@ -1616,7 +1586,7 @@ public class BinaryUtils {
      * @return Class object specified at the input stream.
      * @throws BinaryObjectException If failed.
      */
-    public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, int typeId)
+    static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, int typeId)
         throws BinaryObjectException {
         Class cls;
 
@@ -1650,7 +1620,7 @@ public class BinaryUtils {
      * @param ldr Class loaded.
      * @return Resovled class.
      */
-    public static Class resolveClass(BinaryContext ctx, int typeId, @Nullable String clsName,
+    static Class resolveClass(BinaryContext ctx, int typeId, @Nullable String clsName,
         @Nullable ClassLoader ldr, boolean registerMeta) {
         Class cls;
 
@@ -1767,7 +1737,7 @@ public class BinaryUtils {
      * @param useCache True if class loader cache will be used, false otherwise.
      * @return Value.
      */
-    public static Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls, boolean useCache) throws BinaryObjectException {
+    static Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls, boolean useCache) throws BinaryObjectException {
         assert cls != null;
 
         if (!cls.isEnum())
@@ -1806,7 +1776,7 @@ public class BinaryUtils {
      * @param cls Enum class.
      * @return Value.
      */
-    public static Object[] doReadEnumArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, Class<?> cls)
+    static Object[] doReadEnumArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, Class<?> cls)
         throws BinaryObjectException {
         int len = in.readInt();
 
@@ -1835,7 +1805,7 @@ public class BinaryUtils {
         ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
         try {
-            return ctx.optimizedMarsh().unmarshal(input, U.resolveClassLoader(clsLdr, ctx.configuration()));
+            return ctx.optimizedMarsh().unmarshal(input, U.resolveClassLoader(clsLdr, ctx.classLoader()));
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);
@@ -1849,7 +1819,7 @@ public class BinaryUtils {
      * @return Object.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    @Nullable static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
         return reader(ctx, in, ldr, handles.handles(), false, true).deserialize();
     }
@@ -1858,7 +1828,7 @@ public class BinaryUtils {
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
+    @Nullable static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
         throws BinaryObjectException {
         return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolderImpl());
     }
@@ -1867,25 +1837,16 @@ public class BinaryUtils {
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    @Nullable static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
-        return unmarshal(in, ctx, ldr, handles, false);
+        return unmarshal(in, ctx, ldr, handles, false, false);
     }
 
     /**
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean detach) throws BinaryObjectException {
-        return unmarshal(in, ctx, ldr, handles, detach, false);
-    }
-
-    /**
-     * @return Unmarshalled value.
-     * @throws BinaryObjectException In case of error.
-     */
-    @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    @Nullable static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
         int start = in.position();
 
@@ -2078,7 +2039,7 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static Object[] doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    static Object[] doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
@@ -2114,7 +2075,7 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static BinaryArray doReadBinaryArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    private static BinaryArray doReadBinaryArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, boolean isEnumArray) {
         int hPos = positionForHandle(in);
 
@@ -2147,7 +2108,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public static Collection<?> doReadCollection(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    static Collection<?> doReadCollection(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryCollectionFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
@@ -2219,7 +2180,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public static Map<?, ?> doReadMap(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+    static Map<?, ?> doReadMap(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryMapFactory factory)
         throws BinaryObjectException {
         int hPos = positionForHandle(in);
@@ -2284,7 +2245,7 @@ public class BinaryUtils {
      *
      * @return Position for handle.
      */
-    public static int positionForHandle(BinaryInputStream in) {
+    static int positionForHandle(BinaryInputStream in) {
         return in.position() - 1;
     }
 
@@ -2294,7 +2255,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return {@code True} if binarylizable.
      */
-    public static boolean isBinarylizable(Class cls) {
+    static boolean isBinarylizable(Class cls) {
         for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
             if (Binarylizable.class.isAssignableFrom(c))
                 return true;
@@ -2310,7 +2271,7 @@ public class BinaryUtils {
      * @return {@code true} if custom Java serialization logic exists, {@code false} otherwise.
      */
     @SuppressWarnings("unchecked")
-    public static boolean isCustomJavaSerialization(Class cls) {
+    static boolean isCustomJavaSerialization(Class cls) {
         for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
             if (Externalizable.class.isAssignableFrom(c))
                 return true;
@@ -2338,42 +2299,8 @@ public class BinaryUtils {
      * @param fieldName Field name.
      * @return Qualified field name.
      */
-    public static String qualifiedFieldName(Class cls, String fieldName) {
+    static String qualifiedFieldName(Class cls, String fieldName) {
         return cls.getName() + "." + fieldName;
-    }
-
-    /**
-     * Write {@code IgniteUuid} instance.
-     *
-     * @param out Writer.
-     * @param val Value.
-     */
-    public static void writeIgniteUuid(BinaryRawWriter out, @Nullable IgniteUuid val) {
-        if (val != null) {
-            out.writeBoolean(true);
-
-            out.writeLong(val.globalId().getMostSignificantBits());
-            out.writeLong(val.globalId().getLeastSignificantBits());
-            out.writeLong(val.localId());
-        }
-        else
-            out.writeBoolean(false);
-    }
-
-    /**
-     * Read {@code IgniteUuid} instance.
-     *
-     * @param in Reader.
-     * @return Value.
-     */
-    @Nullable public static IgniteUuid readIgniteUuid(BinaryRawReader in) {
-        if (in.readBoolean()) {
-            UUID globalId = new UUID(in.readLong(), in.readLong());
-
-            return new IgniteUuid(globalId, in.readLong());
-        }
-        else
-            return null;
     }
 
     /**
@@ -2384,7 +2311,7 @@ public class BinaryUtils {
      * @param len length Byte array lenght.
      * @return string Resulting string.
      */
-    public static String utf8BytesToStr(byte[] arr, int off, int len) {
+    static String utf8BytesToStr(byte[] arr, int off, int len) {
         int c, charArrCnt = 0, total = off + len;
         int c2, c3;
         char[] res = new char[len];
@@ -2469,7 +2396,7 @@ public class BinaryUtils {
      * @param val String to convert.
      * @return Resulting byte array.
      */
-    public static byte[] strToUtf8Bytes(String val) {
+    static byte[] strToUtf8Bytes(String val) {
         int strLen = val.length();
         int utfLen = 0;
         int c, cnt;
@@ -2516,7 +2443,7 @@ public class BinaryUtils {
      * @param obj Binary object.
      * @return Binary type proxy.
      */
-    public static BinaryType typeProxy(BinaryContext ctx, BinaryObjectEx obj) {
+    static BinaryType typeProxy(BinaryContext ctx, BinaryObjectEx obj) {
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
@@ -2532,7 +2459,7 @@ public class BinaryUtils {
      * @param obj Binary object.
      * @return Binary type.
      */
-    public static BinaryType type(BinaryContext ctx, BinaryObjectEx obj) {
+    static BinaryType type(BinaryContext ctx, BinaryObjectEx obj) {
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
@@ -2593,7 +2520,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return Write replacer.
      */
-    public static BinaryWriteReplacer writeReplacer(Class cls) {
+    static BinaryWriteReplacer writeReplacer(Class cls) {
         return cls != null ? CLS_TO_WRITE_REPLACER.get(cls) : null;
     }
 
@@ -2635,7 +2562,7 @@ public class BinaryUtils {
      * @param newValues New enum value mapping.
      * @throws BinaryObjectException in case of name or value conflict.
      */
-    public static Map<String, Integer> mergeEnumValues(String typeName,
+    private static Map<String, Integer> mergeEnumValues(String typeName,
             @Nullable Map<String, Integer> oldValues,
             Map<String, Integer> newValues)
             throws BinaryObjectException {
