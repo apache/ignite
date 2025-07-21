@@ -145,7 +145,7 @@ public class JdbcUtils {
             JdbcProtocolContext protoCtx,
             boolean createByteArrayCopy
     ) throws BinaryObjectException {
-        return SqlListenerUtils.readObject(reader.readByte(), reader,
+        return SqlListenerUtils.readObject(reader,
                 protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT), protoCtx.keepBinary(), createByteArrayCopy);
     }
 
