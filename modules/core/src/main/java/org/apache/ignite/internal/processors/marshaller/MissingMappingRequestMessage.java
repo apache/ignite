@@ -117,11 +117,6 @@ public class MissingMappingRequestMessage implements Message {
         return 78;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
     /** */
     public byte platformId() {
         return platformId;

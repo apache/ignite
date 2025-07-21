@@ -149,8 +149,4 @@ public class LatchAckMessage implements Message {
         return 135;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
 }

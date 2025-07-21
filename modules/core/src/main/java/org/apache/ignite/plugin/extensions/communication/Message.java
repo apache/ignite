@@ -58,9 +58,4 @@ public interface Message {
      * @return Message type.
      */
     public short directType();
-
-    /**
-     * Method called when ack message received.
-     */
-    public void onAckReceived();
 }

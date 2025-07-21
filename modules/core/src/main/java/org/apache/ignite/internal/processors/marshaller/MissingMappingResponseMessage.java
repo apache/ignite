@@ -128,11 +128,6 @@ public class MissingMappingResponseMessage implements Message {
         return 79;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
     /**
      *
      */

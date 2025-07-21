@@ -71,11 +71,6 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 

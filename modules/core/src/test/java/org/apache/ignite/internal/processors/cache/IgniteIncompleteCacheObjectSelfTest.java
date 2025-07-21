@@ -176,9 +176,5 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
             return 0;
         }
 
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            // No-op
-        }
     }
 }

@@ -82,6 +82,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.extensions.communication.AckableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -3371,9 +3372,9 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public void onAckReceived() {
-            assert msg instanceof Message;
+            assert msg instanceof AckableMessage;
 
-            ((Message)msg).onAckReceived();
+            ((AckableMessage)msg).onAckReceived();
         }
 
         /** {@inheritDoc} */
@@ -3607,9 +3608,9 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public void onAckReceived() {
-            assert msg instanceof Message : msg;
+            assert msg instanceof AckableMessage : msg;
 
-            ((Message)msg).onAckReceived();
+            ((AckableMessage)msg).onAckReceived();
         }
 
         /** {@inheritDoc} */

@@ -308,11 +308,6 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public short directType() {
             throw new UnsupportedOperationException();
         }

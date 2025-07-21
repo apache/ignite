@@ -386,11 +386,6 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 119;
     }

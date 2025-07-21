@@ -251,8 +251,4 @@ public class StatisticsObjectData implements Message, Serializable {
         return TYPE_CODE;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-
-    }
 }

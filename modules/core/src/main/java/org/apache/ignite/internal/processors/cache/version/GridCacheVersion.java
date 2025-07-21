@@ -188,11 +188,6 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(topVer);
         out.writeLong(order);

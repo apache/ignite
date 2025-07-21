@@ -776,11 +776,6 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         if (detachAllowed) {
             int len = length();
