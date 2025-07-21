@@ -17,23 +17,22 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * A message with additional {@link Channel} attibutes which is send on connection established and
+ * A message with additional {@link Channel} attibutes which is send on connection established and
  * an appropriate channel is opened.
  */
-class SessionChannelMessage implements Message {
+public class SessionChannelMessage implements Message {
     /** Initial channel message type (value is {@code 175}). */
     public static final short TYPE_CODE = 175;
 
     /** Channel session unique identifier. */
+    @Order(0)
     private IgniteUuid sesId;
 
     /**
@@ -59,55 +58,14 @@ class SessionChannelMessage implements Message {
 
     /**
      * @param sesId The unique session id for the channel.
-     * @return {@code This} for chaining.
      */
-    public SessionChannelMessage sesId(IgniteUuid sesId) {
+    public void sesId(IgniteUuid sesId) {
         this.sesId = sesId;
-        return this;
     }
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIgniteUuid(sesId))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                sesId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

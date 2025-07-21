@@ -112,6 +112,12 @@ public class TestMessageSerializer implements MessageSerializer {
 
                 writer.incrementState();
 
+            case 11:
+                if (!writer.writeString(msg.overridenFieldMethod()))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -206,6 +212,14 @@ public class TestMessageSerializer implements MessageSerializer {
 
             case 10:
                 msg.bitSet(reader.readBitSet());
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
+                msg.overridenFieldMethod(reader.readString());
 
                 if (!reader.isLastRead())
                     return false;

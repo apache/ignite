@@ -17,16 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Entry information that gets passed over wire.
@@ -36,30 +33,34 @@ public class GridCacheEntryInfo implements Message {
     private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
 
     /** Cache key. */
+    @Order(0)
     @GridToStringInclude
     private KeyCacheObject key;
 
     /** Cache ID. */
+    @Order(1)
     private int cacheId;
 
     /** Cache value. */
+    @Order(value = 2, method = "value")
     private CacheObject val;
 
     /** Time to live. */
+    @Order(3)
     private long ttl;
 
     /** Expiration time. */
+    @Order(4)
     private long expireTime;
 
     /** Entry version. */
+    @Order(value = 5, method = "version")
     private GridCacheVersion ver;
 
     /** New flag. */
-    @GridDirectTransient
     private boolean isNew;
 
     /** Deleted flag. */
-    @GridDirectTransient
     private boolean deleted;
 
     /**
@@ -177,117 +178,6 @@ public class GridCacheEntryInfo implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong(expireTime))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeMessage(key))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeLong(ttl))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeMessage(val))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeMessage(ver))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cacheId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                expireTime = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                key = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                ttl = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                val = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                ver = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
