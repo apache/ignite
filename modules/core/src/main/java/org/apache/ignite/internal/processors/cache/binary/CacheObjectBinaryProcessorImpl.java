@@ -278,9 +278,15 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
         };
 
-        binaryCtx = useTestBinaryCtx ?
-            new TestBinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class)) :
-            new BinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class));
+        binaryCtx = useTestBinaryCtx
+            ? new TestBinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class))
+            : new BinaryContext(
+                metaHnd,
+                ctx.config().getIgniteInstanceName(),
+                ctx.config().getClassLoader(),
+                ctx.config().getBinaryConfiguration(),
+                ctx.log(BinaryContext.class)
+            );
 
         transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, binaryCtx, ctx, log);
 
@@ -1633,12 +1639,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         /**
          * @param metaHnd Meta handler.
-         * @param igniteCfg Ignite config.
+         * @param cfg Ignite configuration.
          * @param log Logger.
          */
-        public TestBinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg,
+        public TestBinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration cfg,
             IgniteLogger log) {
-            super(metaHnd, igniteCfg, log);
+            super(metaHnd, cfg.getIgniteInstanceName(), cfg.getClassLoader(), cfg.getBinaryConfiguration(), log);
         }
 
         /** {@inheritDoc} */

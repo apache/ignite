@@ -2176,6 +2176,22 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param cfg Ignite configuration.
+     * @return Type name to affinity key field name mapping.
+     */
+    public static Map<String, String> affinityFields(@Nullable IgniteConfiguration cfg) {
+        Map<String, String> affFields = new HashMap<>();
+
+        if (cfg == null || F.isEmpty(cfg.getCacheKeyConfiguration()))
+            return affFields;
+
+        for (CacheKeyConfiguration keyCfg : cfg.getCacheKeyConfiguration())
+            affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
+
+        return affFields;
+    }
+
+    /**
      *
      */
     public interface BackupPostProcessingClosure extends IgniteInClosure<Collection<GridCacheEntryInfo>>,
