@@ -3372,9 +3372,10 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public void onAckReceived() {
-            assert msg instanceof AckableMessage;
+            assert msg instanceof Message;
 
-            ((AckableMessage)msg).onAckReceived();
+            if (msg instanceof AckableMessage)
+                ((AckableMessage)msg).onAckReceived();
         }
 
         /** {@inheritDoc} */
@@ -3608,9 +3609,10 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public void onAckReceived() {
-            assert msg instanceof AckableMessage : msg;
+            assert msg instanceof Message : msg;
 
-            ((AckableMessage)msg).onAckReceived();
+            if (msg instanceof AckableMessage)
+                ((AckableMessage)msg).onAckReceived();
         }
 
         /** {@inheritDoc} */
