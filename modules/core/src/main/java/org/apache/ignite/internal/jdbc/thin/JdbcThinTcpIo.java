@@ -65,7 +65,6 @@ import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static java.lang.Math.abs;
