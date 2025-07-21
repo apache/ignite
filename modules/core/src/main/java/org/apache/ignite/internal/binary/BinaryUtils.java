@@ -68,14 +68,11 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -84,7 +81,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -327,7 +323,7 @@ public class BinaryUtils {
      * @param flags Flags.
      * @return {@code True} if set.
      */
-    public static boolean isCompactFooter(short flags) {
+    static boolean isCompactFooter(short flags) {
         return isFlagSet(flags, FLAG_COMPACT_FOOTER);
     }
 
@@ -685,14 +681,6 @@ public class BinaryUtils {
             cls == ArrayList.class ||
             cls == LinkedList.class ||
             cls == SINGLETON_LIST_CLS;
-    }
-
-    /**
-     * @param obj Object to check.
-     * @return True if this is an object of a known type.
-     */
-    public static boolean knownCacheObject(Object obj) {
-        return obj instanceof CacheObject;
     }
 
     /**
@@ -2257,7 +2245,7 @@ public class BinaryUtils {
      *
      * @return Position for handle.
      */
-    public static int positionForHandle(BinaryInputStream in) {
+    static int positionForHandle(BinaryInputStream in) {
         return in.position() - 1;
     }
 
@@ -2267,7 +2255,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return {@code True} if binarylizable.
      */
-    public static boolean isBinarylizable(Class cls) {
+    static boolean isBinarylizable(Class cls) {
         for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
             if (Binarylizable.class.isAssignableFrom(c))
                 return true;
@@ -2283,7 +2271,7 @@ public class BinaryUtils {
      * @return {@code true} if custom Java serialization logic exists, {@code false} otherwise.
      */
     @SuppressWarnings("unchecked")
-    public static boolean isCustomJavaSerialization(Class cls) {
+    static boolean isCustomJavaSerialization(Class cls) {
         for (Class c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
             if (Externalizable.class.isAssignableFrom(c))
                 return true;
@@ -2311,42 +2299,8 @@ public class BinaryUtils {
      * @param fieldName Field name.
      * @return Qualified field name.
      */
-    public static String qualifiedFieldName(Class cls, String fieldName) {
+    static String qualifiedFieldName(Class cls, String fieldName) {
         return cls.getName() + "." + fieldName;
-    }
-
-    /**
-     * Write {@code IgniteUuid} instance.
-     *
-     * @param out Writer.
-     * @param val Value.
-     */
-    public static void writeIgniteUuid(BinaryRawWriter out, @Nullable IgniteUuid val) {
-        if (val != null) {
-            out.writeBoolean(true);
-
-            out.writeLong(val.globalId().getMostSignificantBits());
-            out.writeLong(val.globalId().getLeastSignificantBits());
-            out.writeLong(val.localId());
-        }
-        else
-            out.writeBoolean(false);
-    }
-
-    /**
-     * Read {@code IgniteUuid} instance.
-     *
-     * @param in Reader.
-     * @return Value.
-     */
-    @Nullable public static IgniteUuid readIgniteUuid(BinaryRawReader in) {
-        if (in.readBoolean()) {
-            UUID globalId = new UUID(in.readLong(), in.readLong());
-
-            return new IgniteUuid(globalId, in.readLong());
-        }
-        else
-            return null;
     }
 
     /**
@@ -2357,7 +2311,7 @@ public class BinaryUtils {
      * @param len length Byte array lenght.
      * @return string Resulting string.
      */
-    public static String utf8BytesToStr(byte[] arr, int off, int len) {
+    static String utf8BytesToStr(byte[] arr, int off, int len) {
         int c, charArrCnt = 0, total = off + len;
         int c2, c3;
         char[] res = new char[len];
@@ -2442,7 +2396,7 @@ public class BinaryUtils {
      * @param val String to convert.
      * @return Resulting byte array.
      */
-    public static byte[] strToUtf8Bytes(String val) {
+    static byte[] strToUtf8Bytes(String val) {
         int strLen = val.length();
         int utfLen = 0;
         int c, cnt;
@@ -2489,7 +2443,7 @@ public class BinaryUtils {
      * @param obj Binary object.
      * @return Binary type proxy.
      */
-    public static BinaryType typeProxy(BinaryContext ctx, BinaryObjectEx obj) {
+    static BinaryType typeProxy(BinaryContext ctx, BinaryObjectEx obj) {
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
@@ -2505,7 +2459,7 @@ public class BinaryUtils {
      * @param obj Binary object.
      * @return Binary type.
      */
-    public static BinaryType type(BinaryContext ctx, BinaryObjectEx obj) {
+    static BinaryType type(BinaryContext ctx, BinaryObjectEx obj) {
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
@@ -2566,7 +2520,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return Write replacer.
      */
-    public static BinaryWriteReplacer writeReplacer(Class cls) {
+    static BinaryWriteReplacer writeReplacer(Class cls) {
         return cls != null ? CLS_TO_WRITE_REPLACER.get(cls) : null;
     }
 
@@ -2608,7 +2562,7 @@ public class BinaryUtils {
      * @param newValues New enum value mapping.
      * @throws BinaryObjectException in case of name or value conflict.
      */
-    public static Map<String, Integer> mergeEnumValues(String typeName,
+    static Map<String, Integer> mergeEnumValues(String typeName,
             @Nullable Map<String, Integer> oldValues,
             Map<String, Integer> newValues)
             throws BinaryObjectException {
