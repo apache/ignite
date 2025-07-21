@@ -3371,9 +3371,7 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public void onAckReceived() {
-            assert msg instanceof Message;
-
-            ((Message)msg).onAckReceived();
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -3607,9 +3605,7 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public void onAckReceived() {
-            assert msg instanceof Message : msg;
-
-            ((Message)msg).onAckReceived();
+            // No-op.
         }
 
         /** {@inheritDoc} */

@@ -136,8 +136,4 @@ public class StatisticsResponse implements Message {
         return TYPE_CODE;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-
-    }
 }

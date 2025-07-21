@@ -157,11 +157,6 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
         return TYPE_CODE;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
     /** @return Process id. */
     public UUID processId() {
         return processId;

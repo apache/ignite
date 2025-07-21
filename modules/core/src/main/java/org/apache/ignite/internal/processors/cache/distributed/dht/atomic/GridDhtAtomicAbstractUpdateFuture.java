@@ -341,6 +341,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         if (req != null) {
             synchronized (this) {
                 if (req.onResponse()) {
+                    req.cleanup();
+
                     resCnt0 = resCnt;
 
                     resCnt0 += 1;
