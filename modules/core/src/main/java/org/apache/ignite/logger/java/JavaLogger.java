@@ -358,7 +358,6 @@ public class JavaLogger implements IgniteLoggerEx {
             return s;
         }
 
-
         FileHandler fileHnd = findHandler(impl, FileHandler.class);
 
         return fileName(fileHnd);
