@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
 import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
@@ -34,7 +36,7 @@ public class TpchTest extends AbstractBasicIntegrationTest {
     /** */
     @Parameterized.Parameters(name = "queryId={0}")
     public static Collection<Object> params() {
-        return F.asList(16, 19, 20);
+        return F.asList(15, 16, 19, 20);
     }
 
     /** {@inheritDoc} */
@@ -58,6 +60,7 @@ public class TpchTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void test() {
-        sql(TpchHelper.getQuery(qryId));
+        for (FieldsQueryCursor<List<?>> cur : queryProcessor(client).query(queryContext(), "PUBLIC", TpchHelper.getQuery(qryId)))
+            cur.getAll();
     }
 }
