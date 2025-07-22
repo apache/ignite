@@ -29,6 +29,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
 import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
+import org.apache.ignite.internal.codegen.GridNearAtomicCheckUpdateRequestSerializer;
 import org.apache.ignite.internal.codegen.SessionChannelMessageSerializer;
 import org.apache.ignite.internal.codegen.UserAuthenticateRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.UserAuthenticateResponseMessageSerializer;
@@ -189,7 +190,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-53, SchemaOperationStatusMessage::new);
         factory.register((short)-52, GridIntList::new, new GridIntListSerializer());
         factory.register((short)-51, NearCacheUpdates::new);
-        factory.register((short)-50, GridNearAtomicCheckUpdateRequest::new);
+        factory.register((short)-50, GridNearAtomicCheckUpdateRequest::new, new GridNearAtomicCheckUpdateRequestSerializer());
         factory.register((short)-49, UpdateErrors::new);
         factory.register((short)-48, GridDhtAtomicNearResponse::new);
         factory.register((short)-45, GridChangeGlobalStateMessageResponse::new);
