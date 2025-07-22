@@ -175,6 +175,8 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -219,6 +221,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
@@ -2047,14 +2050,23 @@ public abstract class IgniteUtils extends CommonUtils {
      * ClassLoader at IgniteConfiguration in case it is not null or
      * ClassLoader used to start Ignite.
      */
-    public static ClassLoader resolveClassLoader(ClassLoader ldr, IgniteConfiguration cfg) {
+    public static ClassLoader resolveClassLoader(@Nullable ClassLoader ldr, IgniteConfiguration cfg) {
         assert cfg != null;
 
-        return (ldr != null && ldr != gridClassLoader) ?
-            ldr :
-            cfg.getClassLoader() != null ?
-                cfg.getClassLoader() :
-                gridClassLoader;
+        return resolveClassLoader(ldr, cfg.getClassLoader());
+    }
+
+    /**
+     * @param ldr Custom class loader.
+     * @param cfgLdr Class loader from config.
+     * @return ClassLoader passed as param in case it is not null or cfgLdr  in case it is not null or ClassLoader used to start Ignite.
+     */
+    public static ClassLoader resolveClassLoader(@Nullable ClassLoader ldr, @Nullable ClassLoader cfgLdr) {
+        return (ldr != null && ldr != gridClassLoader)
+            ? ldr
+            : cfgLdr != null
+                ? cfgLdr
+                : gridClassLoader;
     }
 
     /**
@@ -9808,6 +9820,11 @@ public abstract class IgniteUtils extends CommonUtils {
     /** */
     public static boolean isTxAwareQueriesEnabled(GridKernalContext kctx) {
         return kctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled();
+    }
+
+    /** @return Empty binary context instance. */
+    public static BinaryContext emptyBinaryContext() {
+        return new BinaryContext(BinaryUtils.cachingMetadataHandler(), NullLogger.INSTANCE);
     }
 
     /**

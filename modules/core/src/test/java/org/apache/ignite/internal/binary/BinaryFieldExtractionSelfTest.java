@@ -43,8 +43,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected BinaryMarshaller createMarshaller() throws Exception {
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), new IgniteConfiguration(),
-            log());
+        BinaryContext ctx = U.emptyBinaryContext();
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

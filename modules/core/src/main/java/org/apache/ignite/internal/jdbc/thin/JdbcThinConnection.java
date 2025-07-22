@@ -75,7 +75,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -121,6 +120,7 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -296,7 +296,7 @@ public class JdbcThinConnection implements Connection {
         netTimeout = connProps.getConnectionTimeout();
         qryTimeout = connProps.getQueryTimeout();
         maintenanceExecutor = Executors.newScheduledThreadPool(2,
-            new IgniteThreadFactory(ctx.configuration().getIgniteInstanceName(), "jdbc-maintenance"));
+            new IgniteThreadFactory(ctx.igniteInstanceName(), "jdbc-maintenance"));
 
         schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 
@@ -325,9 +325,9 @@ public class JdbcThinConnection implements Connection {
 
         BinaryConfiguration binCfg = new BinaryConfiguration().setCompactFooter(true);
 
-        BinaryContext ctx = new BinaryContext(metaHnd, new IgniteConfiguration(), new NullLogger());
+        BinaryContext ctx = new BinaryContext(metaHnd, NullLogger.INSTANCE);
 
-        ctx.configure(marsh, binCfg);
+        ctx.configure(marsh, binCfg, CU.affinityFields(null));
 
         ctx.registerUserTypesSchema();
 
