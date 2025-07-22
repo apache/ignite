@@ -11,6 +11,7 @@ The `MessageProcessor` performs the following tasks:
 - **Naming Convention Enforcement**: It verifies that all fields annotated with `@Order` have a corresponding pair of accessor methods:
     - A getter named exactly after the field (e.g., `fieldName()`)
     - A setter named after the field, accepting a single argument (e.g., `fieldName(Type val)`)
+    - By default, it is assumed that getters and setters are named as the annotated fields, e.g. field 'val' should have getters and satters with name 'val' (according Ignite's to code-style). If you need to override this behavior, you can specify their name in the {@link #method} attribute.
 -  **Access Modifiers**: Getters and setters for all fields annotated with `@Order` must be declared as `public`
 
 ## Usage
