@@ -36,7 +36,6 @@ import org.apache.calcite.rel.metadata.RelMdRowCount;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.IntPair;
@@ -46,7 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.apache.ignite.internal.util.typedef.F;
@@ -59,6 +58,9 @@ public class IgniteMdRowCount extends RelMdRowCount {
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(
             BuiltInMethod.ROW_COUNT.method, new IgniteMdRowCount());
+
+    /** */
+    private static final String PK_PROXY_NAME = SchemaManager.generateProxyIdxName(QueryUtils.PRIMARY_KEY_INDEX);
 
     /** {@inheritDoc} */
     @Override public Double getRowCount(Join rel, RelMetadataQuery mq) {
@@ -167,7 +169,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
                     assert leftTbl != null && rightTbl != null;
 
-                    return new JoinCtx(keyColumns(leftTbl).size(), keyColumns(rightTbl).size());
+                    return new JoinCtx(pkColumns(leftTbl).size(), pkColumns(rightTbl).size());
                 }
             ).resolveKeys(leftKey, rightKey);
         }
@@ -232,9 +234,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
             percentage = 1.0;
 
         // Additional join keys and non-equi conditions work as post-filtration. We should adjust the result.
-        double adjustment = ctxs.size() == 1 && joinInfo.isEqui() ? 1.0 : 0.7;
+        double res = ctxs.size() == 1 && joinInfo.isEqui() ? 1.0 : 0.7;
 
-        return rowCnt * percentage * adjustment;
+        res *= rowCnt * percentage;
+
+        System.err.println("TEST | rows: " + res);
+
+        return res;
     }
 
     /**
@@ -274,48 +280,52 @@ public class IgniteMdRowCount extends RelMdRowCount {
     private static IntMap<KeyColumnOrigin> findOrigins(RelMetadataQuery mq, RelNode joinInput, ImmutableIntList keys) {
         IntMap<KeyColumnOrigin> res = new IntRWHashMap<>();
 
-        for (int keyColIdx : keys) {
-            if (res.containsKey(keyColIdx))
+        IgniteTable table = null;
+        ImmutableIntList pkFields = null;
+
+        for (int joinKey : keys) {
+            if (res.get(joinKey) != null)
                 continue;
 
-            RelColumnOrigin origin = mq.getColumnOrigin(joinInput, keyColIdx);
+            RelColumnOrigin colOrigin = mq.getColumnOrigin(joinInput, joinKey);
 
-            if (origin == null)
-                continue;
+            if (colOrigin == null)
+                return res;
 
-            IgniteTable table = origin.getOriginTable().unwrap(IgniteTable.class);
+            // TODO: equals?
+            assert table == null || table == colOrigin.getOriginTable().unwrap(IgniteTable.class);
 
-            if (table == null)
-                continue;
+            if (table == null) {
+                table = colOrigin.getOriginTable().unwrap(IgniteTable.class);
 
-            int srcKeyColIdx = origin.getOriginColumnOrdinal();
+                if (table == null)
+                    return res;
 
-            RelDataType insertRowType = table.descriptor().insertRowType(Commons.typeFactory(joinInput));
-            RelDataType curRowType = origin.getOriginTable().getRowType();
-
-            assert curRowType.getFieldCount() >= insertRowType.getFieldCount();
-
-            if (curRowType.getFieldCount() > insertRowType.getFieldCount()) {
-                /** Current row type probably contains {@link QueryUtils#KEY_FIELD_NAME} and {@link QueryUtils#VAL_FIELD_NAME}. */
-                srcKeyColIdx -= curRowType.getFieldCount() - insertRowType.getFieldCount();
+                pkFields = pkColumns(table);
             }
 
-            int keyPos = keyColumns(table).indexOf(srcKeyColIdx);
+            if (pkFields == null)
+                return res;
 
-            res.put(keyColIdx, new KeyColumnOrigin(origin, keyPos));
+            int positionInPk = pkFields.indexOf(colOrigin.getOriginColumnOrdinal());
+
+            res.put(joinKey, new KeyColumnOrigin(colOrigin, positionInPk));
         }
 
         return res;
     }
 
     /** Returns column numbers of the primary index. */
-    private static ImmutableIntList keyColumns(IgniteTable table) {
+    private static ImmutableIntList pkColumns(IgniteTable table) {
         Map<String, IgniteIndex> indexes = table.indexes();
 
         if (F.isEmpty(indexes))
             return ImmutableIntList.of();
 
-        IgniteIndex idx = indexes.get(QueryUtils.PRIMARY_KEY_INDEX);
+        IgniteIndex idx = indexes.get(PK_PROXY_NAME);
+
+        if (idx == null)
+            idx = indexes.get(QueryUtils.PRIMARY_KEY_INDEX);
 
         return idx == null ? ImmutableIntList.of() : idx.collation().getKeys();
     }
@@ -400,11 +410,8 @@ public class IgniteMdRowCount extends RelMdRowCount {
             leftKeys.set(0, leftPkSize);
             rightKeys.set(0, rightPkSize);
 
-            if (commonKeys != null) {
-                assert leftPkSize == rightPkSize;
-
+            if (commonKeys != null)
                 commonKeys.set(0, leftPkSize);
-            }
         }
 
         /** */
@@ -421,6 +428,8 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
         /** */
         private JoiningRelationType joinType() {
+            if(true) return JoiningRelationType.PK_ON_PK;
+
             if (commonKeys != null && commonKeys.isEmpty())
                 return JoiningRelationType.PK_ON_PK;
 
