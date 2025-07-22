@@ -22,8 +22,6 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.junit.Assume.assumeTrue;
-
 /** */
 public class DistributedJoinIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** {@inheritDoc} */
@@ -90,62 +88,11 @@ public class DistributedJoinIntegrationTest extends AbstractBasicIntegrationTran
 
     /** */
     @Test
-    public void test0() {
-        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
-
-        sql("CREATE TABLE tbl0(id INT primary key, val0 INT, val1 INT)");
-        sql("CREATE TABLE tbl1(val0 INT, id INT, val1 INT, primary key(id))");
-        sql("CREATE TABLE tbl2(id0 INT, id1 INT, val0 INT, val1 INT, primary key(id0, id1))");
-        sql("CREATE TABLE tbl3(val0 INT, id1 INT, val1 INT, id0 INT, primary key(id1, id0))");
-
-        for (int i = 0; i < 10; ++i)
-            sql("INSERT INTO tbl0 values(?,?,?)", i, i, i);
-
-        for (int i = 0; i < 100; ++i)
-            sql("INSERT INTO tbl1 values(?,?,?)", i + 1, i + 1, i + 1);
-
-        for (int i = 0; i < 300; ++i)
-            sql("INSERT INTO tbl2 values(?,?,?,?)", i + 2, i + 2, i + 2, i + 2);
-
-        for (int i = 0; i < 500; ++i)
-            sql("INSERT INTO tbl3 values(?,?,?,?)", i + 3, i + 3, i + 3, i + 3);
-
-//        // PK on PK
-//        assertQuery("select /*+ ENFORCE_JOIN_ORDER */ t0.val0, t1.val1 from tbl0 t0 join tbl1 t1 on t0.id = t1.id")
-//            .resultSize(9).check();
-//        assertQuery("select /*+ ENFORCE_JOIN_ORDER */ t0.val0, t1.val1 from tbl0 t0 join tbl1 t1 on t0.id = t1.id + 1")
-//            .resultSize(8).check();;
-//        sql("select /*+ ENFORCE_JOIN_ORDER */ t0.val0, t1.val1 from tbl0 t0 join tbl1 t1 on t0.id + 1 = t1.id");
-//
-//        // PK on FK
-//        sql("select /*+ ENFORCE_JOIN_ORDER */ t0.val0, t1.val1 from tbl0 t0 join tbl1 t1 on t0.id = t1.val0");
-//        sql("select /*+ ENFORCE_JOIN_ORDER */ t0.val0, t1.val1 from tbl0 t0 join tbl1 t1 on t0.id + 1 = t1.val0");
-//        sql("select /*+ ENFORCE_JOIN_ORDER */ t0.val0, t1.val1 from tbl0 t0 join tbl1 t1 on t0.id = t1.val0 + 1");
-//
-//        // FK on PK
-//        sql("select /*+ ENFORCE_JOIN_ORDER */ t0.val0, t1.val1 from tbl0 t0 join tbl1 t1 on t0.val0 = t1.id");
-//
-//         UNKNOWN
-//        sql("select /*+ ENFORCE_JOIN_ORDER */ t0.val0, t1.val1 from tbl0 t0 join tbl1 t1 on t0.val0 = t1.val0");
-
-        // PK on PK
-        assertQuery("select /*+ ENFORCE_JOIN_ORDER */ t0.val0, t2.val1 from tbl0 t0 join tbl2 t2 on t0.id = t2.id0")
-            .resultSize(8).check();
-//        assertQuery("select /*+ ENFORCE_JOIN_ORDER */ t0.val0, t2.val1 from tbl0 t0 join tbl2 t2 on (t0.id = t2.id0 and t0.id = t2.id1)").returns(1).check();
-
-//        // FK on PK
-//        sql("select /*+ ENFORCE_JOIN_ORDER */ t2.val0, t3.val1 from tbl2 t2 join tbl3 t3 on t2.id0 = t3.id1 and t2.id1 = t3.id0");
-    }
-
-    /** */
-    @Test
     public void testTrimExchange() {
         sql("CREATE TABLE order_ids(id INTEGER PRIMARY KEY) WITH TEMPLATE=REPLICATED," + atomicity());
         prepareTables();
 
         sql("INSERT INTO order_ids(id) SELECT id FROM orders");
-
-        assertQuery("select _KEY from order_ids WHERE _KEY != ID").returns(1).check();
 
         assertQuery("SELECT sum(o.id) FROM orders o JOIN order_ids oid ON (o.id = oid.id)")
             .matches(QueryChecker.containsSubPlan("IgniteTrimExchange"))
@@ -203,15 +150,12 @@ public class DistributedJoinIntegrationTest extends AbstractBasicIntegrationTran
         sql("CREATE TABLE orders (\n" +
             "    id int,\n" +
             "    region varchar,\n" +
-            "    PRIMARY KEY (region))\n" +
+            "    PRIMARY KEY (id))\n" +
             "    WITH \"cache_name=orders,backups=1," + atomicity() + "\"");
-
-        sql("CREATE INDEX orders_region_id ON orders (id, region ASC)");
-        sql("CREATE INDEX orders_region ON orders (region ASC)");
 
         sql("CREATE INDEX order_items_orderId ON order_items (orderId ASC)");
         sql("CREATE INDEX order_items_itemId ON order_items (itemId ASC)");
-
+        sql("CREATE INDEX orders_region ON orders (region ASC)");
 
         for (int i = 0; i < 20; i++)
             sql("INSERT INTO items VALUES(?, ?)", i, "item" + i);

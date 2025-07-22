@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;

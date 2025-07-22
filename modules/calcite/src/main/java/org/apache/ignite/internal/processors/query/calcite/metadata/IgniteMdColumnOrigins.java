@@ -143,5 +143,4 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
                 getOperands(op, cls, res);
         }
     }
-
 }

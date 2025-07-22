@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import org.apache.calcite.plan.RelOptTable;
+import java.util.Set;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.Join;
@@ -49,6 +46,7 @@ import org.apache.ignite.internal.processors.query.schema.management.SchemaManag
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -76,8 +74,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
      * Estimates the number of rows produced by a join operation.
      *
      * <p>This method calculates an estimated row count for a join by analyzing the join type,
-     * join keys, and the cardinality of the left and right inputs. It provides specialized
-     * handling for primary key and foreign key relationships (see {@link JoiningRelationType for details}).
+     * join keys, and the cardinality of the left and right inputs.
      * When certain metadata is unavailable or when specific conditions are not met, it falls back to
      * Calcite's default implementation for estimating the row count.
      *
@@ -89,13 +86,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
      *   {@link RelMetadataQuery#getRowCount}. If either value is unavailable, the result is {@code null}.</li>
      *   <li>If the row counts are very small (≤ 1.0), the method uses the maximum row count as a fallback.</li>
      *   <li>Join key origins are resolved for the left and right inputs, and relationships between tables
-     *   (e.g., primary key or foreign key associations) are identified and grouped into join contexts.</li>
-     *   <li>If no valid join context is found, the method falls back to Calcite's implementation.</li>
+     *   (e.g., primary key key associations) are identified.</li>
+     *   <li>If no valid keys association is found, the method falls back to Calcite's implementation.</li>
      *   <li>The base row count is determined by the type of join relationship:
      *       <ul>
      *           <li>For primary key-to-primary key joins, the row count is based on the smaller table,
      *           adjusted by a percentage of the larger table's rows.</li>
-     *           <li>For foreign key joins, the base table is determined based on which table is
+     *           <li>For just one table's primary key joins, the base table is determined based on which table is
      *           joined using non-primary key columns.</li>
      *       </ul>
      *   </li>
@@ -108,95 +105,73 @@ public class IgniteMdRowCount extends RelMdRowCount {
      * {@link RelMdUtil#getJoinRowCount} for the estimation.</p>
      *
      * @param mq The {@link RelMetadataQuery} used to retrieve metadata about relational expressions.
-     * @param rel The {@link Join} relational expression representing the join operation.
+     * @param join The {@link Join} relational expression representing the join operation.
      * @return The estimated number of rows resulting from the join, or {@code null} if the estimation cannot be determined.
      *
      * @see RelMetadataQuery#getRowCount
      * @see RelMdUtil#getJoinRowCount
-     * @see JoiningRelationType
      */
-    public static @Nullable Double joinRowCount(RelMetadataQuery mq, Join rel) {
-        if (rel.getJoinType() != JoinRelType.INNER)
-            return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
+    public static @Nullable Double joinRowCount(RelMetadataQuery mq, Join join) {
+        if (join.getJoinType() != JoinRelType.INNER)
+            return RelMdUtil.getJoinRowCount(mq, join, join.getCondition());
 
-        JoinInfo joinInfo = rel.analyzeCondition();
+        JoinInfo joinInfo = join.analyzeCondition();
 
         if (joinInfo.pairs().isEmpty())
-            return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
+            return RelMdUtil.getJoinRowCount(mq, join, join.getCondition());
 
-        Double leftRowCnt = mq.getRowCount(rel.getLeft());
+        Double leftRowCnt = mq.getRowCount(join.getLeft());
 
         if (leftRowCnt == null)
             return null;
 
-        Double rightRowCnt = mq.getRowCount(rel.getRight());
+        Double rightRowCnt = mq.getRowCount(join.getRight());
 
         if (rightRowCnt == null)
             return null;
 
         // Zero row count is considered as 1. If product is very small, we use maximal row count.
         if (leftRowCnt <= 1.0 || rightRowCnt <= 1.0) {
-            Double max = mq.getMaxRowCount(rel);
+            Double max = mq.getMaxRowCount(join);
 
             if (max != null && max <= 1.0)
                 return max;
         }
 
-        IntMap<KeyColumnOrigin> leftColumns = findOrigins(mq, rel.getLeft(), joinInfo.leftKeys);
-        IntMap<KeyColumnOrigin> rightColumns = findOrigins(mq, rel.getRight(), joinInfo.rightKeys);
+        IntMap<Integer> leftPkPositions = pkPositions(mq, join.getLeft(), joinInfo.leftKeys);
+        IntMap<Integer> rightPkPositions = pkPositions(mq, join.getRight(), joinInfo.rightKeys);
 
         /** Check {@link IgniteMdColumnOrigins} and/or {@link RelMdColumnOrigins} if no origin is found. */
-        if (leftColumns.isEmpty() || rightColumns.isEmpty())
-            return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
+        if (leftPkPositions.isEmpty() && rightPkPositions.isEmpty())
+            return RelMdUtil.getJoinRowCount(mq, join, join.getCondition());
 
-        Map<TablesPair, JoinCtx> ctxs = new HashMap<>();
+        List<IntPair> pairs = joinInfo.pairs();
+        Set<IntPair> uniquePairs = U.newHashSet(pairs.size());
 
-        for (IntPair joinKeys : joinInfo.pairs()) {
-            KeyColumnOrigin leftKey = leftColumns.get(joinKeys.source);
-            KeyColumnOrigin rightKey = rightColumns.get(joinKeys.target);
+        boolean leftPkUsed = false;
+        boolean rightPkUsed = false;
 
-            if (leftKey == null || rightKey == null)
-                continue;
+        for (IntPair p : pairs) {
+            Integer leftPkPos = leftPkPositions.get(p.source);
 
-            ctxs.computeIfAbsent(
-                new TablesPair(
-                    leftKey.origin.getOriginTable(),
-                    rightKey.origin.getOriginTable()
-                ),
-                key -> {
-                    IgniteTable leftTbl = key.left.unwrap(IgniteTable.class);
-                    IgniteTable rightTbl = key.right.unwrap(IgniteTable.class);
+            if (!leftPkUsed && (leftPkPos != null && leftPkPos == 0))
+                leftPkUsed = true;
 
-                    assert leftTbl != null && rightTbl != null;
+            Integer rightPkPos = rightPkPositions.get(p.target);
 
-                    return new JoinCtx(pkColumns(leftTbl).size(), pkColumns(rightTbl).size());
-                }
-            ).resolveKeys(leftKey, rightKey);
+            if (!rightPkUsed && (rightPkPos != null && rightPkPos == 0))
+                rightPkUsed = true;
+
+            uniquePairs.add(p);
         }
 
-        if (ctxs.isEmpty())
-            return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
-
-        Iterator<JoinCtx> it = ctxs.values().iterator();
-        JoinCtx ctx = it.next();
-
-        while (it.hasNext()) {
-            JoinCtx nextCtx = it.next();
-
-            if (nextCtx.joinType().strength > ctx.joinType().strength)
-                ctx = nextCtx;
-
-            if (ctx.joinType().strength == JoiningRelationType.PK_ON_PK.strength)
-                break;
-        }
-
-        if (ctx.joinType() == JoiningRelationType.UNKNOWN)
-            return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
+        if (!leftPkUsed && !rightPkUsed)
+            return RelMdUtil.getJoinRowCount(mq, join, join.getCondition());
 
         double rowCnt;
         Double percentage;
 
-        if (ctx.joinType() == JoiningRelationType.PK_ON_PK) {
+        if (leftPkUsed && rightPkUsed) {
             // Consider some fact tables SALES and RETURNS refer to the same primary key. Sold items can be returned.
             // So, size(SALES) > size(RETURNS). If joining SALES and RETURNS by primary key, result size is equal to
             // the smallest table (RETURNS) adjusted by the percentage of rows of the biggest table (SALES). The percentage
@@ -205,28 +180,25 @@ public class IgniteMdRowCount extends RelMdRowCount {
             if (leftRowCnt > rightRowCnt) {
                 rowCnt = rightRowCnt;
 
-                percentage = mq.getPercentageOriginalRows(rel.getLeft());
+                percentage = mq.getPercentageOriginalRows(join.getLeft());
             }
             else {
                 rowCnt = leftRowCnt;
 
-                percentage = mq.getPercentageOriginalRows(rel.getRight());
+                percentage = mq.getPercentageOriginalRows(join.getRight());
             }
         }
+        else if (!leftPkUsed && rightPkUsed) {
+            rowCnt = leftRowCnt;
+
+            percentage = mq.getPercentageOriginalRows(join.getRight());
+        }
         else {
-            // For foreign key joins the base table is the one which is joined by non-primary key columns.
-            if (ctx.joinType() == JoiningRelationType.FK_ON_PK) {
-                rowCnt = leftRowCnt;
+            assert leftPkUsed && !rightPkUsed;
 
-                percentage = mq.getPercentageOriginalRows(rel.getRight());
-            }
-            else {
-                assert ctx.joinType() == JoiningRelationType.PK_ON_FK : ctx.joinType();
+            rowCnt = rightRowCnt;
 
-                rowCnt = rightRowCnt;
-
-                percentage = mq.getPercentageOriginalRows(rel.getLeft());
-            }
+            percentage = mq.getPercentageOriginalRows(join.getLeft());
         }
 
         // Got no info.
@@ -234,13 +206,9 @@ public class IgniteMdRowCount extends RelMdRowCount {
             percentage = 1.0;
 
         // Additional join keys and non-equi conditions work as post-filtration. We should adjust the result.
-        double res = ctxs.size() == 1 && joinInfo.isEqui() ? 1.0 : 0.7;
+        double adjustment = uniquePairs.size() == 1 && joinInfo.isEqui() ? 1.0 : 0.7;
 
-        res *= rowCnt * percentage;
-
-        System.err.println("TEST | rows: " + res);
-
-        return res;
+        return rowCnt * percentage * adjustment;
     }
 
     /**
@@ -277,8 +245,8 @@ public class IgniteMdRowCount extends RelMdRowCount {
     }
 
     /** */
-    private static IntMap<KeyColumnOrigin> findOrigins(RelMetadataQuery mq, RelNode joinInput, ImmutableIntList keys) {
-        IntMap<KeyColumnOrigin> res = new IntRWHashMap<>();
+    private static IntMap<Integer> pkPositions(RelMetadataQuery mq, RelNode input, ImmutableIntList keys) {
+        IntMap<Integer> res = new IntRWHashMap<>();
 
         IgniteTable table = null;
         ImmutableIntList pkFields = null;
@@ -287,35 +255,35 @@ public class IgniteMdRowCount extends RelMdRowCount {
             if (res.get(joinKey) != null)
                 continue;
 
-            RelColumnOrigin colOrigin = mq.getColumnOrigin(joinInput, joinKey);
+            RelColumnOrigin colOrigin = mq.getColumnOrigin(input, joinKey);
 
             if (colOrigin == null)
-                return res;
+                continue;
 
-            // TODO: equals?
             assert table == null || table == colOrigin.getOriginTable().unwrap(IgniteTable.class);
 
             if (table == null) {
                 table = colOrigin.getOriginTable().unwrap(IgniteTable.class);
 
                 if (table == null)
-                    return res;
+                    continue;
 
                 pkFields = pkColumns(table);
             }
 
             if (pkFields == null)
-                return res;
+                break;
 
             int positionInPk = pkFields.indexOf(colOrigin.getOriginColumnOrdinal());
 
-            res.put(joinKey, new KeyColumnOrigin(colOrigin, positionInPk));
+            if (positionInPk >= 0)
+                res.put(joinKey, positionInPk);
         }
 
         return res;
     }
 
-    /** Returns column numbers of the primary index. */
+    /** Returns column numbers of the table's primary key. */
     private static ImmutableIntList pkColumns(IgniteTable table) {
         Map<String, IgniteIndex> indexes = table.indexes();
 
@@ -328,157 +296,5 @@ public class IgniteMdRowCount extends RelMdRowCount {
             idx = indexes.get(QueryUtils.PRIMARY_KEY_INDEX);
 
         return idx == null ? ImmutableIntList.of() : idx.collation().getKeys();
-    }
-
-    /** */
-    private static class KeyColumnOrigin {
-        /** */
-        private final RelColumnOrigin origin;
-
-        /** */
-        private final int positionInKey;
-
-        /** */
-        private KeyColumnOrigin(RelColumnOrigin origin, int positionInKey) {
-            this.origin = origin;
-            this.positionInKey = positionInKey;
-        }
-    }
-
-    /** */
-    private static class TablesPair {
-        /** */
-        private final RelOptTable left;
-
-        /** */
-        private final RelOptTable right;
-
-        /** */
-        private TablesPair(RelOptTable left, RelOptTable right) {
-            this.left = left;
-            this.right = right;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            TablesPair that = (TablesPair)o;
-
-            // Reference equality on purpose.
-            return left == that.left && right == that.right;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(left, right);
-        }
-    }
-
-    /** Join context. */
-    private static class JoinCtx {
-        /** Used columns of primary key of table from left side. */
-        private final BitSet leftKeys;
-
-        /** Used columns of primary key of table from right side. */
-        private final BitSet rightKeys;
-
-        /**
-         * Used columns of primary key in both tables.
-         *
-         * <p>This bitset is initialized when PK of both tables has equal columns count, and
-         * bits are cleared when join pair contains columns with equal positions in PK of corresponding
-         * table. For example, having tables T1 and T2 with primary keys in both tables defined as
-         * CONSTRAINT PRIMARY KEY (a, b), in case of query
-         * {@code SELECT ... FROM t1 JOIN t2 ON t1.a = t2.a AND t1.b = t2.b} commonKeys will be initialized
-         * and cleared, but in case of query {@code SELECT ... FROM t1 JOIN t2 ON t1.a = t2.b AND t1.b = t2.a}
-         * (mind the join condition, where column A of one table compared with column B of another), will be
-         * only initialized (since size of the primary keys are equal), but not cleared.
-         */
-        private final @Nullable BitSet commonKeys;
-
-        /** */
-        private JoinCtx(int leftPkSize, int rightPkSize) {
-            this.leftKeys = new BitSet();
-            this.rightKeys = new BitSet();
-            this.commonKeys = leftPkSize == rightPkSize ? new BitSet() : null;
-
-            leftKeys.set(0, leftPkSize);
-            rightKeys.set(0, rightPkSize);
-
-            if (commonKeys != null)
-                commonKeys.set(0, leftPkSize);
-        }
-
-        /** */
-        private void resolveKeys(KeyColumnOrigin left, KeyColumnOrigin right) {
-            if (left.positionInKey >= 0)
-                leftKeys.clear(left.positionInKey);
-
-            if (right.positionInKey >= 0)
-                rightKeys.clear(right.positionInKey);
-
-            if (commonKeys != null && left.positionInKey == right.positionInKey && left.positionInKey >= 0)
-                commonKeys.clear(left.positionInKey);
-        }
-
-        /** */
-        private JoiningRelationType joinType() {
-            if(true) return JoiningRelationType.PK_ON_PK;
-
-            if (commonKeys != null && commonKeys.isEmpty())
-                return JoiningRelationType.PK_ON_PK;
-
-            if (rightKeys.isEmpty())
-                return JoiningRelationType.FK_ON_PK;
-
-            if (leftKeys.isEmpty())
-                return JoiningRelationType.PK_ON_FK;
-
-            return JoiningRelationType.UNKNOWN;
-        }
-    }
-
-    /** Enumeration of join types by their semantic. */
-    private enum JoiningRelationType {
-        /**
-         * Join by non-primary key columns.
-         *
-         * <p>Semantic is unknown.
-         */
-        UNKNOWN(0),
-        /**
-         * Join by primary keys on non-primary keys.
-         *
-         * <p>Currently we don't support Foreign Keys, thus we will assume such types of joins
-         * as joins by foreign key.
-         */
-        PK_ON_FK(UNKNOWN.strength + 1),
-        /**
-         * Join by non-primary keys on primary keys.
-         *
-         * <p>Currently we don't support Foreign Keys, thus we will assume such types of joins
-         * as joins by foreign key.
-         */
-        FK_ON_PK(PK_ON_FK.strength + 1),
-        /**
-         * Join of two tables which sharing the same primary key.
-         *
-         * <p>For example, join of tables CATALOG_SALES and CATALOG_RETURN from TPC-DS suite: both tables
-         * have the same primary key (ITEM_ID, ORDER_ID).
-         */
-        PK_ON_PK(FK_ON_PK.strength + 1);
-
-        /** The higher the better. */
-        private final int strength;
-
-        /** */
-        JoiningRelationType(int strength) {
-            this.strength = strength;
-        }
     }
 }
