@@ -21,13 +21,11 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Grid unique version.
@@ -46,12 +44,15 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     private static final int DR_ID_MASK = 0x1F;
 
     /** Topology version. */
+    @Order(value = 0, method = "topologyVersion")
     private int topVer;
 
     /** Node order (used as global order) and DR ID. */
+    @Order(value = 1, method = "nodeOrderAndDrIdRaw")
     private int nodeOrderDrId;
 
     /** Order. */
+    @Order(2)
     private long order;
 
     /**
@@ -104,6 +105,13 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     }
 
     /**
+     * @param topVer New topology version.
+     */
+    public void topologyVersion(int topVer) {
+        this.topVer = topVer;
+    }
+
+    /**
      * Gets combined node order and DR ID.
      *
      * @return Combined integer for node order and DR ID.
@@ -113,10 +121,24 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     }
 
     /**
+     * New combined node order and DR ID.
+     */
+    public void nodeOrderAndDrIdRaw(int nodeOrderDrId) {
+        this.nodeOrderDrId = nodeOrderDrId;
+    }
+
+    /**
      * @return Version order.
      */
     @Override public long order() {
         return order;
+    }
+
+    /**
+     * @param order New order.
+     */
+    public void order(long order) {
+        this.order = order;
     }
 
     /** {@inheritDoc} */
@@ -243,75 +265,6 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
             return res;
 
         return Integer.compare(nodeOrder(), other.nodeOrder());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(nodeOrderDrId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong(order))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeInt(topVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                nodeOrderDrId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                order = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                topVer = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

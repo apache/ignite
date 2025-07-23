@@ -27,6 +27,8 @@ import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
+import org.apache.ignite.internal.codegen.GridCacheVersionExSerializer;
+import org.apache.ignite.internal.codegen.GridCacheVersionSerializer;
 import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer;
@@ -273,7 +275,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)82, JobStealingRequest::new);
         factory.register((short)84, GridByteArrayList::new);
         factory.register((short)85, GridLongList::new);
-        factory.register((short)86, GridCacheVersion::new);
+        factory.register((short)86, GridCacheVersion::new, new GridCacheVersionSerializer());
         factory.register((short)87, GridDhtPartitionExchangeId::new);
         factory.register((short)88, GridCacheReturn::new);
         factory.register((short)89, CacheObjectImpl::new);
@@ -291,7 +293,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)101, TxEntryValueHolder::new);
         factory.register((short)102, CacheVersionedValue::new);
         factory.register((short)103, GridCacheRawVersionedEntry::new);
-        factory.register((short)104, GridCacheVersionEx::new);
+        factory.register((short)104, GridCacheVersionEx::new, new GridCacheVersionExSerializer());
         factory.register((short)105, CacheObjectByteArrayImpl::new);
         factory.register((short)106, GridQueryCancelRequest::new);
         factory.register((short)107, GridQueryFailResponse::new);
