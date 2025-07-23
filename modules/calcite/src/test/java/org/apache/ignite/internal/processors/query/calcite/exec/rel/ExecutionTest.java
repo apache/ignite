@@ -356,12 +356,6 @@ public class ExecutionTest extends AbstractExecutionTest {
         Assert.assertArrayEquals(new Object[] {null, null, "QA"}, rows.get(4));
     }
 
-    /** */
-    @Test
-    public void test0() {
-
-    }
-
     /**
      *
      */

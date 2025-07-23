@@ -35,16 +35,17 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.generateProxyIdxName;
 
 /**
- * Tests estimation of rows number of a inner join production.
+ * Tests estimation of rows number of an inner join production. This is an statistical and estimation test. In bases on
+ * a significant difference if the table (join inputs) sizes.
  *
  * @see IgniteMdRowCount#joinRowCount(RelMetadataQuery, Join)
  */
 public class InnerJoinRowsEstimationTest extends AbstractPlannerTest {
     /** */
-    private static final int LEFT_TBL_SZ = 100;
+    private static final int LEFT_TBL_SZ = 1000;
 
     /** */
-    private static final int RIGHT_TBL_SZ = 1000;
+    private static final int RIGHT_TBL_SZ = 100_000;
 
     /** Proxy PK on PK. The rows number should be taken from the left table. */
     @Test

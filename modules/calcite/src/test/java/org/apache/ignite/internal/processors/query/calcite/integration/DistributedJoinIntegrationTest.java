@@ -157,7 +157,7 @@ public class DistributedJoinIntegrationTest extends AbstractBasicIntegrationTran
         sql("CREATE INDEX order_items_itemId ON order_items (itemId ASC)");
         sql("CREATE INDEX orders_region ON orders (region ASC)");
 
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 200; i++)
             sql("INSERT INTO items VALUES(?, ?)", i, "item" + i);
 
         for (int i = 0; i < 30; i++) {

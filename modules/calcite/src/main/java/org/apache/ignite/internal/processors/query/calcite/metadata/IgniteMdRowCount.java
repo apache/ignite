@@ -138,40 +138,66 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 return max;
         }
 
-        IntMap<Integer> leftPkPositions = pkPositions(mq, join.getLeft(), joinInfo.leftKeys);
-        IntMap<Integer> rightPkPositions = pkPositions(mq, join.getRight(), joinInfo.rightKeys);
+        IntMap<RelColumnOrigin> leftOrigins = colOrigins(mq, join.getLeft(), joinInfo.leftKeys);
+        IntMap<RelColumnOrigin> rightOrigins = colOrigins(mq, join.getRight(), joinInfo.rightKeys);
 
         /** Check {@link IgniteMdColumnOrigins} and/or {@link RelMdColumnOrigins} if no origin is found. */
-        if (leftPkPositions.isEmpty() && rightPkPositions.isEmpty())
+        if (leftOrigins.isEmpty() || rightOrigins.isEmpty())
             return RelMdUtil.getJoinRowCount(mq, join, join.getCondition());
 
-        List<IntPair> pairs = joinInfo.pairs();
-        Set<IntPair> uniquePairs = U.newHashSet(pairs.size());
+        List<IntPair> joinPairs = joinInfo.pairs();
 
-        boolean leftPkUsed = false;
-        boolean rightPkUsed = false;
+        Set<IntPair> uniquePairs = U.newHashSet(joinPairs.size());
 
-        for (IntPair p : pairs) {
-            Integer leftPkPos = leftPkPositions.get(p.source);
+        int leftPosInPk = -1;
+        int rightPosInPk = -1;
 
-            if (!leftPkUsed && (leftPkPos != null && leftPkPos == 0))
-                leftPkUsed = true;
-
-            Integer rightPkPos = rightPkPositions.get(p.target);
-
-            if (!rightPkUsed && (rightPkPos != null && rightPkPos == 0))
-                rightPkUsed = true;
-
+        for (IntPair p : joinInfo.pairs()) {
             uniquePairs.add(p);
+
+            // Pproper usage of a PK on both hands is already found. Just store the unique pair.
+            if (leftPosInPk == 0 && rightPosInPk == 0)
+                continue;
+
+            RelColumnOrigin leftOrigin = leftOrigins.get(p.source);
+            RelColumnOrigin rightOrigin = rightOrigins.get(p.target);
+
+            if (leftOrigin == null || rightOrigin == null)
+                continue;
+
+            IgniteTable leftTbl = leftOrigin.getOriginTable().unwrap(IgniteTable.class);
+            int curLeftPkPos = pkColumns(leftTbl).indexOf(leftOrigin.getOriginColumnOrdinal());
+
+            IgniteTable rightTbl = rightOrigin.getOriginTable().unwrap(IgniteTable.class);
+            int curRightPkPos = pkColumns(rightTbl).indexOf(rightOrigin.getOriginColumnOrdinal());
+
+            // No proper index usage found on any hand.
+            if (curLeftPkPos != 0 && curRightPkPos != 0)
+                continue;
+
+            // Pproper usage of a PK on both hands is found. The best case.
+            if (curLeftPkPos == 0 && curRightPkPos == 0) {
+                leftPosInPk = rightPosInPk = 0;
+
+                continue;
+            }
+
+            // Found first index usage on one of the hands. Or a bit 'stronger' (PK on the right) condition is found.
+            if ((leftPosInPk < 0 && rightPosInPk < 0) || (leftPosInPk == 0 && curRightPkPos == 0)) {
+                leftPosInPk = curLeftPkPos;
+                rightPosInPk = curRightPkPos;
+            }
         }
 
-        if (!leftPkUsed && !rightPkUsed)
+        // No index proper usages found.
+        if (leftPosInPk != 0 && rightPosInPk != 0)
             return RelMdUtil.getJoinRowCount(mq, join, join.getCondition());
 
         double rowCnt;
         Double percentage;
 
-        if (leftPkUsed && rightPkUsed) {
+        // PKs on both hands are in use.
+        if (leftPosInPk == 0 && rightPosInPk == 0) {
             // Consider some fact tables SALES and RETURNS refer to the same primary key. Sold items can be returned.
             // So, size(SALES) > size(RETURNS). If joining SALES and RETURNS by primary key, result size is equal to
             // the smallest table (RETURNS) adjusted by the percentage of rows of the biggest table (SALES). The percentage
@@ -188,13 +214,14 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 percentage = mq.getPercentageOriginalRows(join.getRight());
             }
         }
-        else if (!leftPkUsed && rightPkUsed) {
+        else if (leftPosInPk != 0 && rightPosInPk == 0) { // PK only on the right used.
+
             rowCnt = leftRowCnt;
 
             percentage = mq.getPercentageOriginalRows(join.getRight());
         }
-        else {
-            assert leftPkUsed && !rightPkUsed;
+        else { // PK only on the left used.
+            assert leftPosInPk == 0 && rightPosInPk != 0;
 
             rowCnt = rightRowCnt;
 
@@ -245,11 +272,8 @@ public class IgniteMdRowCount extends RelMdRowCount {
     }
 
     /** */
-    private static IntMap<Integer> pkPositions(RelMetadataQuery mq, RelNode input, ImmutableIntList keys) {
-        IntMap<Integer> res = new IntRWHashMap<>();
-
-        IgniteTable table = null;
-        ImmutableIntList pkFields = null;
+    private static IntMap<RelColumnOrigin> colOrigins(RelMetadataQuery mq, RelNode input, ImmutableIntList keys) {
+        IntMap<RelColumnOrigin> res = new IntRWHashMap<>();
 
         for (int joinKey : keys) {
             if (res.get(joinKey) != null)
@@ -260,24 +284,12 @@ public class IgniteMdRowCount extends RelMdRowCount {
             if (colOrigin == null)
                 continue;
 
-            assert table == null || table == colOrigin.getOriginTable().unwrap(IgniteTable.class);
+            IgniteTable table = colOrigin.getOriginTable().unwrap(IgniteTable.class);
 
-            if (table == null) {
-                table = colOrigin.getOriginTable().unwrap(IgniteTable.class);
+            if (table == null)
+                continue;
 
-                if (table == null)
-                    continue;
-
-                pkFields = pkColumns(table);
-            }
-
-            if (pkFields == null)
-                break;
-
-            int positionInPk = pkFields.indexOf(colOrigin.getOriginColumnOrdinal());
-
-            if (positionInPk >= 0)
-                res.put(joinKey, positionInPk);
+            res.put(joinKey, colOrigin);
         }
 
         return res;
