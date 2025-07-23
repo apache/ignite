@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,19 +30,22 @@ import org.jetbrains.annotations.Nullable;
 @IgniteCodeGeneratingFail
 public class WalStateAckMessage implements Message {
     /** Operation ID. */
+    @Order(value = 0, method = "operationId")
     private UUID opId;
 
     /** Affinity node flag. */
+    @Order(1)
     private boolean affNode;
 
     /** Operation result. */
+    @Order(2)
     private boolean changed;
 
     /** Error message. */
+    @Order(value = 3, method = "errorMessage")
     private String errMsg;
 
     /** Sender node ID. */
-    @GridDirectTransient
     private UUID sndNodeId;
 
     /**
@@ -78,10 +78,24 @@ public class WalStateAckMessage implements Message {
     }
 
     /**
+     * @param opId New operation ID.
+     */
+    public void operationId(UUID opId) {
+        this.opId = opId;
+    }
+
+    /**
      * @return Affinity node flag.
      */
     public boolean affNode() {
         return affNode;
+    }
+
+    /**
+     * @param affNode New affinity node flag.
+     */
+    public void affNode(boolean affNode) {
+        this.affNode = affNode;
     }
 
     /**
@@ -92,10 +106,24 @@ public class WalStateAckMessage implements Message {
     }
 
     /**
+     * @param changed New operation result.
+     */
+    public void changed(boolean changed) {
+        this.changed = changed;
+    }
+
+    /**
      * @return Error message.
      */
     @Nullable public String errorMessage() {
         return errMsg;
+    }
+
+    /**
+     * @param errMsg New error message.
+     */
+    public void errorMessage(String errMsg) {
+        this.errMsg = errMsg;
     }
 
     /**
@@ -110,87 +138,6 @@ public class WalStateAckMessage implements Message {
      */
     public void senderNodeId(UUID sndNodeId) {
         this.sndNodeId = sndNodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeUuid(opId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeBoolean(affNode))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeBoolean(changed))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeString(errMsg))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                opId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                affNode = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                changed = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                errMsg = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
