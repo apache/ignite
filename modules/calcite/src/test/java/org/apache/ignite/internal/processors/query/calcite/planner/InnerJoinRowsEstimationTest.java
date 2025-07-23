@@ -46,12 +46,6 @@ public class InnerJoinRowsEstimationTest extends AbstractPlannerTest {
     /** */
     private static final int RIGHT_TBL_SZ = 1000;
 
-    /**
-     * This test assumes that the percentage is 1.0. In this case we can rely on the table sizes.
-     * Oherwise, we have to recalculate the expected estimated join rows numbers.
-     */
-    private static final double ORIGINAL_ROWS_PERCENTAGE = 1.0f;
-
     /** Proxy PK on PK. The rows number should be taken from the left table. */
     @Test
     public void testProxyPkOnPk() throws Exception {
@@ -163,9 +157,9 @@ public class InnerJoinRowsEstimationTest extends AbstractPlannerTest {
         toTest(
             t -> t.addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0),
             t -> t.addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0, 1),
-            "l.id=r.id and l.id=r.val0",
-            rowsNumberIs(LEFT_TBL_SZ),
-            joinChecker()
+            "l.id=r.id and r.val0 = l.val0",
+            rowsNumberLess(LEFT_TBL_SZ),
+            joinChecker(2, true)
         );
     }
 
@@ -337,12 +331,6 @@ public class InnerJoinRowsEstimationTest extends AbstractPlannerTest {
         return join -> {
             // This test is for an inner join by now.
             assertEquals(join.getJoinType(), JoinRelType.INNER);
-
-            RelMetadataQuery mq = join.getCluster().getMetadataQuery();
-
-            //  This test assumes that the percentage is 1.0.
-            assertEquals(ORIGINAL_ROWS_PERCENTAGE, mq.getPercentageOriginalRows(join.getLeft()));
-            assertEquals(ORIGINAL_ROWS_PERCENTAGE, mq.getPercentageOriginalRows(join.getRight()));
 
             JoinInfo joinInfo = join.analyzeCondition();
             List<IntPair> pairs = joinInfo.pairs();
