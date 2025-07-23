@@ -206,7 +206,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
             percentage = 1.0;
 
         // Additional join keys and non-equi conditions work as post-filtration. We should adjust the result.
-        double adjustment = uniquePairs.size() == 1 && joinInfo.isEqui() ? 1.0 : 0.7;
+        double adjustment = uniquePairs.size() == 1 && joinInfo.isEqui() ? 1.0 : 0.7f;
 
         return rowCnt * percentage * adjustment;
     }
