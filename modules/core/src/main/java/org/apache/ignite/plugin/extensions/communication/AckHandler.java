@@ -18,9 +18,9 @@
 package org.apache.ignite.plugin.extensions.communication;
 
 /**
- * Message, providing some action on ack message received.
+ * Class, providing some action on ack message received.
  */
-public interface AckableMessage extends Message {
+public interface AckHandler {
     /**
      * Method called when ack message received.
      */

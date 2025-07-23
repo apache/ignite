@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.AckableMessage;
+import org.apache.ignite.plugin.extensions.communication.AckHandler;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMessage implements GridCacheDeployable,
-    AckableMessage {
+    AckHandler {
     /** Skip store flag bit mask. */
     protected static final int DHT_ATOMIC_SKIP_STORE_FLAG_MASK = 0x01;
 
