@@ -109,7 +109,7 @@ public class BinaryMetadataMoveLegacyFolderTest extends GridCommonAbstractTest {
 
         int typeId = grid.context().cacheObjects().typeId(typeName);
 
-        BinaryMetadata metadata = grid.context().cacheObjects().metadata0(typeId);
+        BinaryMetadata metadata = grid.context().cacheObjects().binaryMetadata(typeId);
 
         byte[] marshalled = U.marshal(grid.context(), metadata);
 

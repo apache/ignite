@@ -248,15 +248,15 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
 
             @Override public BinaryMetadata metadata(int typeId) throws BinaryObjectException {
-                return CacheObjectBinaryProcessorImpl.this.metadata0(typeId);
+                return CacheObjectBinaryProcessorImpl.this.binaryMetadata(typeId);
             }
 
             @Override public BinaryMetadata metadata(int typeId, int schemaId) throws BinaryObjectException {
-                return CacheObjectBinaryProcessorImpl.this.metadata0(typeId, schemaId);
+                return CacheObjectBinaryProcessorImpl.this.binaryMetadata(typeId, schemaId);
             }
 
             @Override public Collection<BinaryMetadata> metadata() throws BinaryObjectException {
-                return CacheObjectBinaryProcessorImpl.this.binaryMetadata();
+                return CacheObjectBinaryProcessorImpl.this.localBinaryMetadata();
             }
         };
 
@@ -648,8 +648,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType metadata(final int typeId) {
-        BinaryMetadata meta = metadata0(typeId);
+    @Nullable @Override public BinaryType binaryType(final int typeId) {
+        BinaryMetadata meta = binaryMetadata(typeId);
 
         return meta != null ? meta.wrap(binaryCtx) : null;
     }
@@ -683,7 +683,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @return Metadata.
      * @throws IgniteException In case of error.
      */
-    @Nullable @Override public BinaryMetadata metadata0(final int typeId) {
+    @Nullable @Override public BinaryMetadata binaryMetadata(final int typeId) {
         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
         IgniteThread curThread = IgniteThread.current();
@@ -753,7 +753,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryMetadata metadata0(final int typeId, final int schemaId) {
+    @Nullable @Override public BinaryMetadata binaryMetadata(final int typeId, final int schemaId) {
         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
         if (ctx.clientNode()) {
@@ -875,7 +875,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, BinaryType> metadata(Collection<Integer> typeIds)
+    @Override public Map<Integer, BinaryType> localBinaryTypes(Collection<Integer> typeIds)
         throws BinaryObjectException {
         try {
             Map<Integer, BinaryType> res = U.newHashMap(metadataLocCache.size());
@@ -891,7 +891,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
+    @Override public Collection<BinaryType> localBinaryTypes() throws BinaryObjectException {
         return F.viewReadOnly(metadataLocCache.values(), new IgniteClosure<BinaryMetadataHolder, BinaryType>() {
             @Override public BinaryType apply(BinaryMetadataHolder metaHolder) {
                 return metaHolder.metadata().wrap(binaryCtx);
@@ -903,7 +903,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @return Cluster binary metadata.
      * @throws BinaryObjectException on error.
      */
-    @Override public Collection<BinaryMetadata> binaryMetadata() throws BinaryObjectException {
+    @Override public Collection<BinaryMetadata> localBinaryMetadata() throws BinaryObjectException {
         return F.viewReadOnly(metadataLocCache.values(), new IgniteClosure<BinaryMetadataHolder, BinaryMetadata>() {
             @Override public BinaryMetadata apply(BinaryMetadataHolder metaHolder) {
                 return metaHolder.metadata();
@@ -912,10 +912,10 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /**
-     * @return Binary metadata for specified type.
+     * @return Local binary metadata for specified type.
      * @throws BinaryObjectException on error.
      */
-    public BinaryMetadata binaryMetadata(int typeId) throws BinaryObjectException {
+    public BinaryMetadata localBinaryMetadata(int typeId) throws BinaryObjectException {
         BinaryMetadataHolder hld = metadataLocCache.get(typeId);
 
         return hld != null ? hld.metadata() : null;
@@ -949,7 +949,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             // Check the compatibility of the binary metadata.
             for (BinaryMetadata newMeta : metadata) {
-                BinaryMetadata oldMeta = binaryMetadata(newMeta.typeId());
+                BinaryMetadata oldMeta = localBinaryMetadata(newMeta.typeId());
 
                 if (oldMeta != null)
                     BinaryUtils.mergeMetadata(oldMeta, newMeta, null);
@@ -1003,7 +1003,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         int typeId = binaryCtx.typeId(typeName);
 
-        BinaryMetadata metadata = metadata0(typeId);
+        BinaryMetadata metadata = binaryMetadata(typeId);
 
         if (metadata == null)
             throw new BinaryObjectException("Failed to get metadata for type [typeId=" +
@@ -1032,7 +1032,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         updateMetadata(typeId, typeName, null, null, true, vals);
 
-        return binaryCtx.metadata(typeId);
+        return binaryCtx.binaryType(typeId);
     }
 
     /** {@inheritDoc} */
@@ -1602,7 +1602,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
         int typeId = binaryCtx.registerType(cls, true, false);
 
-        return metadata(typeId);
+        return binaryType(typeId);
     }
 
     /** */

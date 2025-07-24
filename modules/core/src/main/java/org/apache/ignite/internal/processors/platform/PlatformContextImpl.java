@@ -343,17 +343,17 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
     /** {@inheritDoc} */
     @Override public void writeMetadata(BinaryWriterEx writer, int typeId, boolean includeSchemas) {
-        writeMetadata0(writer, cacheObjProc.metadata0(typeId), includeSchemas);
+        writeBinaryMetadata(writer, cacheObjProc.binaryMetadata(typeId), includeSchemas);
     }
 
     /** {@inheritDoc} */
     @Override public void writeAllMetadata(BinaryWriterEx writer) {
-        Collection<BinaryMetadata> metas = cacheObjProc.binaryMetadata();
+        Collection<BinaryMetadata> metas = cacheObjProc.localBinaryMetadata();
 
         writer.writeInt(metas.size());
 
         for (BinaryMetadata m : metas)
-            writeMetadata0(writer, m, false);
+            writeBinaryMetadata(writer, m, false);
     }
 
     /** {@inheritDoc} */
@@ -367,7 +367,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
      * @param writer Writer.
      * @param meta Metadata.
      */
-    private void writeMetadata0(BinaryWriterEx writer, BinaryMetadata meta, boolean includeSchemas) {
+    private void writeBinaryMetadata(BinaryWriterEx writer, BinaryMetadata meta, boolean includeSchemas) {
         if (meta == null)
             writer.writeBoolean(false);
         else {
