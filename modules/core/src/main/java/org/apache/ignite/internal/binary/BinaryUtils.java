@@ -2762,10 +2762,10 @@ public class BinaryUtils {
         BinarySchema schema = schemaReg.schema(schemaId);
 
         if (schema == null) {
-            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
+            BinaryMetadata meta = cacheObjProc.metadata0(typeId);
 
             if (meta != null) {
-                for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                for (BinarySchema typeSchema : meta.schemas()) {
                     if (schemaId == typeSchema.schemaId()) {
                         schema = typeSchema;
                         break;
