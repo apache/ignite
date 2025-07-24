@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -62,7 +61,6 @@ import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -606,14 +604,12 @@ public class TcpIgniteClient implements IgniteClient {
         private volatile BinaryMetadataHandler cache = BinaryUtils.cachingMetadataHandler();
 
         /** {@inheritDoc} */
-        @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered)
+        @Override public void addMeta(int typeId, BinaryMetadata newMeta, boolean failIfUnregistered)
             throws BinaryObjectException {
-            BinaryType oldType = cache.metadata(typeId);
-            BinaryMetadata oldMeta = oldType == null ? null : ((BinaryTypeImpl)oldType).metadata();
-            BinaryMetadata newMeta = ((BinaryTypeImpl)meta).metadata();
+            BinaryMetadata oldMeta = cache.metadata(typeId);
 
             // If type wasn't registered before or metadata changed, send registration request.
-            if (oldType == null || BinaryUtils.mergeMetadata(oldMeta, newMeta) != oldMeta) {
+            if (oldMeta == null || BinaryUtils.mergeMetadata(oldMeta, newMeta) != oldMeta) {
                 try {
                     if (ch != null) { // Postpone binary type registration requests to server before channels initiated.
                         ch.request(
@@ -627,14 +623,14 @@ public class TcpIgniteClient implements IgniteClient {
                 }
             }
 
-            cache.addMeta(typeId, meta, failIfUnregistered); // merge
+            cache.addMeta(typeId, newMeta, failIfUnregistered);
         }
 
         /** Send registration requests to the server for all collected metadata. */
         public void sendAllMeta() {
             try {
                 CompletableFuture.allOf(cache.metadata().stream()
-                    .map(type -> sendMetaAsync(((BinaryTypeImpl)type).metadata()).toCompletableFuture())
+                    .map(meta -> sendMetaAsync(meta).toCompletableFuture())
                     .toArray(CompletableFuture[]::new)
                 ).get();
             }
@@ -649,14 +645,14 @@ public class TcpIgniteClient implements IgniteClient {
         }
 
         /** {@inheritDoc} */
-        @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+        @Override public void addMetaLocally(int typeId, BinaryMetadata meta, boolean failIfUnregistered)
             throws BinaryObjectException {
             throw new UnsupportedOperationException("Can't register metadata locally for thin client.");
         }
 
         /** {@inheritDoc} */
-        @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
-            BinaryType meta = cache.metadata(typeId);
+        @Override public BinaryMetadata metadata(int typeId) throws BinaryObjectException {
+            BinaryMetadata meta = cache.metadata(typeId);
 
             if (meta == null)
                 meta = requestAndCacheBinaryType(typeId);
@@ -665,38 +661,20 @@ public class TcpIgniteClient implements IgniteClient {
         }
 
         /** {@inheritDoc} */
-        @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
-            BinaryMetadata meta = cache.metadata0(typeId);
+        @Override public BinaryMetadata metadata(int typeId, int schemaId) throws BinaryObjectException {
+            BinaryMetadata meta = cache.metadata(typeId, schemaId);
 
-            if (meta == null)
-                meta = requestBinaryMetadata(typeId);
-
-            return meta;
-        }
-
-        /** {@inheritDoc} */
-        @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-            BinaryType meta = cache.metadata(typeId);
-
-            if (hasSchema(meta, schemaId))
+            if (meta != null)
                 return meta;
 
             meta = requestAndCacheBinaryType(typeId);
 
-            return hasSchema(meta, schemaId) ? meta : null;
+            return meta != null && meta.hasSchema(schemaId) ? meta : null;
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
+        @Override public Collection<BinaryMetadata> metadata() throws BinaryObjectException {
             return cache.metadata();
-        }
-
-        /**
-         * @param type Binary type.
-         * @param schemaId Schema id.
-         */
-        private boolean hasSchema(BinaryType type, int schemaId) {
-            return type != null && ((BinaryTypeImpl)type).metadata().hasSchema(schemaId);
         }
 
         /**
@@ -704,13 +682,11 @@ public class TcpIgniteClient implements IgniteClient {
          *
          * @param typeId Type id.
          */
-        private BinaryType requestAndCacheBinaryType(int typeId) throws BinaryObjectException {
-            BinaryMetadata meta0 = requestBinaryMetadata(typeId);
+        private BinaryMetadata requestAndCacheBinaryType(int typeId) throws BinaryObjectException {
+            BinaryMetadata meta = requestBinaryMetadata(typeId);
 
-            if (meta0 == null)
+            if (meta == null)
                 return null;
-
-            BinaryType meta = new BinaryTypeImpl(marsh.context(), meta0);
 
             cache.addMeta(typeId, meta, false);
 
