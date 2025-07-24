@@ -45,6 +45,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -617,15 +618,15 @@ public class BinaryContext {
     }
 
     /**
-     * Registers binary type locally.
+     * Registers binary metadata locally.
      *
-     * @param binaryType Binary type to register.
+     * @param meta Binary metadata to register.
      * @param failIfUnregistered Whether to fail when not registered.
      * @param platformId Platform ID (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
      */
-    public void registerClassLocally(BinaryType binaryType, boolean failIfUnregistered, byte platformId) {
-        metaHnd.addMetaLocally(binaryType.typeId(), binaryType, failIfUnregistered);
-        registerUserClassName(binaryType.typeId(), binaryType.typeName(), failIfUnregistered, true, platformId);
+    public void registerClassLocally(BinaryMetadata meta, boolean failIfUnregistered, byte platformId) {
+        metaHnd.addMetaLocally(meta.typeId(), meta, failIfUnregistered);
+        registerUserClassName(meta.typeId(), meta.typeName(), failIfUnregistered, true, platformId);
     }
 
     /**
@@ -862,9 +863,9 @@ public class BinaryContext {
 
             if (registerMeta) {
                 if (onlyLocReg)
-                    metaHnd.addMetaLocally(typeId, regDesc.metadata(false).wrap(this), false);
+                    metaHnd.addMetaLocally(typeId, regDesc.metadata(false), false);
                 else
-                    metaHnd.addMeta(typeId, regDesc.metadata(true).wrap(this), false);
+                    metaHnd.addMeta(typeId, regDesc.metadata(true), false);
             }
 
             descByCls.put(cls, regDesc);
@@ -1179,7 +1180,7 @@ public class BinaryContext {
         }
 
         metaHnd.addMeta(id,
-            new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum, enumMap).wrap(this), false);
+            new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum, enumMap), false);
     }
 
     /**
@@ -1284,32 +1285,34 @@ public class BinaryContext {
      * @throws BinaryObjectException In case of error.
      */
     @Nullable public BinaryType metadata(int typeId) throws BinaryObjectException {
-        return metaHnd != null ? metaHnd.metadata(typeId) : null;
+        return metaHnd != null ? metaHnd.metadata(typeId).wrap(this) : null;
     }
 
     /**
      * @param typeId Type ID
-     * @return Meta data.
+     * @return Unwrapped metadata.
      * @throws BinaryObjectException In case of error.
      */
     @Nullable public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
-        return metaHnd != null ? metaHnd.metadata0(typeId) : null;
+        return metaHnd != null ? metaHnd.metadata(typeId) : null;
     }
 
     /**
      * @return All metadata known to this node.
      */
     public Collection<BinaryType> metadata() throws BinaryObjectException {
-        return metaHnd != null ? metaHnd.metadata() : Collections.emptyList();
+        return metaHnd != null ?
+            metaHnd.metadata().stream().map(meta -> meta.wrap(this)).collect(Collectors.toList()) :
+            Collections.emptyList();
     }
 
     /**
      * @param typeId Type ID.
      * @param schemaId Schema ID.
-     * @return Meta data.
+     * @return Unwrapped metadata.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
+    public BinaryMetadata metadata0(int typeId, int schemaId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata(typeId, schemaId) : null;
     }
 
@@ -1323,7 +1326,7 @@ public class BinaryContext {
         String res = affKeyFieldNames.get(typeId);
 
         if (res == null) {
-            BinaryMetadata meta = metaHnd.metadata0(typeId);
+            BinaryMetadata meta = metaHnd.metadata(typeId);
 
             if (meta != null)
                 res = meta.affinityKeyFieldName();
@@ -1349,7 +1352,7 @@ public class BinaryContext {
      * @throws BinaryObjectException In case of error.
      */
     public void updateMetadata(int typeId, BinaryMetadata meta, boolean failIfUnregistered) throws BinaryObjectException {
-        metaHnd.addMeta(typeId, meta.wrap(this), failIfUnregistered);
+        metaHnd.addMeta(typeId, meta, failIfUnregistered);
     }
 
     /**

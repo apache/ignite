@@ -309,7 +309,7 @@ class BinaryMetadataFileStore {
 
     /**
      * {@code typeVer} parameter is always non-negative except one special case
-     * (see {@link CacheObjectBinaryProcessorImpl#addMeta(int, BinaryType, boolean)} for context):
+     * (see {@link CacheObjectBinaryProcessorImpl#addMeta(int, BinaryMetadata, boolean)} for context):
      * if request for bin meta update arrives right at the moment when node is stopping
      * {@link MetadataUpdateResult} of special type is generated: UPDATE_DISABLED.
      *

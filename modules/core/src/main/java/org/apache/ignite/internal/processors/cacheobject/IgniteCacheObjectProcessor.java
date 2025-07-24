@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -235,7 +236,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param failIfUnregistered Fail if unregistered.
      * @throws IgniteException In case of error.
      */
-    public void addMeta(int typeId, final BinaryType newMeta, boolean failIfUnregistered) throws IgniteException;
+    public void addMeta(int typeId, final BinaryMetadata newMeta, boolean failIfUnregistered) throws IgniteException;
 
     /**
      * Adds metadata locally without triggering discovery exchange.
@@ -247,7 +248,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param newMeta New metadata.
      * @throws IgniteException In case of error.
      */
-    public void addMetaLocally(int typeId, final BinaryType newMeta) throws IgniteException;
+    public void addMetaLocally(int typeId, final BinaryMetadata newMeta) throws IgniteException;
 
     /**
      * @param typeId Type ID.
@@ -269,6 +270,12 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      */
     @Nullable public BinaryType metadata(int typeId) throws IgniteException;
 
+    /**
+     * @param typeId Type ID.
+     * @return Metadata.
+     * @throws IgniteException In case of error.
+     */
+    @Nullable public BinaryMetadata metadata0(int typeId) throws IgniteException;
 
     /**
      * @param typeId Type ID.
@@ -276,7 +283,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Metadata.
      * @throws IgniteException In case of error.
      */
-    @Nullable public BinaryType metadata(int typeId, int schemaId) throws IgniteException;
+    @Nullable public BinaryMetadata metadata0(int typeId, int schemaId) throws IgniteException;
 
     /**
      * @param typeIds Type ID.
@@ -292,10 +299,16 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public Collection<BinaryType> metadata() throws IgniteException;
 
     /**
-     * @param types Collection of binary types to write to.
+     * @return Unwrapped metadata for all types.
+     * @throws IgniteException In case of error.
+     */
+    public Collection<BinaryMetadata> binaryMetadata() throws IgniteException;
+
+    /**
+     * @param meta Collection of binary types to write to.
      * @param ft File tree to save metadata on.
      */
-    public void saveMetadata(Collection<BinaryType> types, NodeFileTree ft);
+    public void saveMetadata(Collection<BinaryMetadata> meta, NodeFileTree ft);
 
     /**
      * Merge the binary metadata files stored in the specified directory.

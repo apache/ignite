@@ -45,7 +45,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.ThinProtocolFeature;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionAwarenessMappingGroup;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -1291,9 +1291,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
      */
     private JdbcResponse getBinaryType(JdbcBinaryTypeGetRequest req) {
         try {
-            BinaryTypeImpl type = (BinaryTypeImpl)connCtx.kernalContext().cacheObjects().binary().type(req.typeId());
+            BinaryMetadata meta = connCtx.kernalContext().cacheObjects().metadata0(req.typeId());
 
-            return resultToResonse(new JdbcBinaryTypeGetResult(req.requestId(), type != null ? type.metadata() : null));
+            return resultToResonse(new JdbcBinaryTypeGetResult(req.requestId(), meta));
         }
         catch (Exception e) {
             U.error(log, "Failed to get binary type name [reqId=" + req.requestId() + ", req=" + req + ']', e);

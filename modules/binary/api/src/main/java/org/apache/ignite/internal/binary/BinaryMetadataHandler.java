@@ -20,6 +20,7 @@ package org.apache.ignite.internal.binary;
 import java.util.Collection;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 
 /**
  * Binary metadata handler.
@@ -30,55 +31,46 @@ public interface BinaryMetadataHandler {
      * See {@code MetadataUpdateProposedMessage} javadoc for detailed protocol description.
      *
      * @param typeId Type ID.
-     * @param meta Metadata.
+     * @param meta unwrapped Metadata.
      * @param failIfUnregistered Fail if unregistered.
      * @throws BinaryObjectException In case of error.
      */
-    public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException;
+    public void addMeta(int typeId, BinaryMetadata meta, boolean failIfUnregistered) throws BinaryObjectException;
 
     /**
-     * Adds meta data locally on current node without sending any messages.
+     * Adds metadata locally on current node without sending any messages.
      *
      * @param typeId Type ID.
-     * @param meta Metadata.
+     * @param meta unwrapped Metadata.
      * @param failIfUnregistered Fail if unregistered.
      * @throws BinaryObjectException In case of error.
      */
-    public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException;
+    public void addMetaLocally(int typeId, BinaryMetadata meta, boolean failIfUnregistered) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided type ID.
      *
      * @param typeId Type ID.
-     * @return Metadata.
+     * @return unwrapped Metadata.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryType metadata(int typeId) throws BinaryObjectException;
-
-    /**
-     * Gets unwrapped metadata for provided type ID.
-     *
-     * @param typeId Type ID.
-     * @return Metadata.
-     * @throws BinaryObjectException In case of error.
-     */
-    public BinaryMetadata metadata0(int typeId) throws BinaryObjectException;
+    public BinaryMetadata metadata(int typeId) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided type ID and schema ID.
      *
      * @param typeId Type ID.
      * @param schemaId Schema ID.
-     * @return Metadata.
+     * @return unwrapped Metadata.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException;
+    public BinaryMetadata metadata(int typeId, int schemaId) throws BinaryObjectException;
 
     /**
      * Gets all metadata known to the node.
      *
-     * @return Metadata collection
+     * @return unwrapped Metadata collection
      * @throws BinaryObjectException If failed.
      */
-    public Collection<BinaryType> metadata() throws BinaryObjectException;
+    public Collection<BinaryMetadata> metadata() throws BinaryObjectException;
 }

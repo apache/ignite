@@ -2769,9 +2769,10 @@ public class BinaryUtils {
 
         if (schema == null) {
             BinaryTypeImpl meta = (BinaryTypeImpl)metadataProvider.apply(typeId);
+            BinaryMetadata meta = cacheObjProc.metadata0(typeId);
 
             if (meta != null) {
-                for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                for (BinarySchema typeSchema : meta.schemas()) {
                     if (schemaId == typeSchema.schemaId()) {
                         schema = typeSchema;
                         break;
