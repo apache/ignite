@@ -2575,7 +2575,7 @@ public class BinaryUtils {
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
-        return ctx.metadata(obj.typeId());
+        return ctx.binaryType(obj.typeId());
     }
 
     /** @param fileName Name of file with marshaller mapping information. */
@@ -2762,7 +2762,7 @@ public class BinaryUtils {
         BinarySchema schema = schemaReg.schema(schemaId);
 
         if (schema == null) {
-            BinaryMetadata meta = cacheObjProc.metadata0(typeId);
+            BinaryMetadata meta = cacheObjProc.binaryMetadata(typeId);
 
             if (meta != null) {
                 for (BinarySchema typeSchema : meta.schemas()) {
