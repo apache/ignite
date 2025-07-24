@@ -268,14 +268,14 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Metadata.
      * @throws IgniteException In case of error.
      */
-    @Nullable public BinaryType metadata(int typeId) throws IgniteException;
+    @Nullable public BinaryType binaryType(int typeId) throws IgniteException;
 
     /**
      * @param typeId Type ID.
      * @return Metadata.
      * @throws IgniteException In case of error.
      */
-    @Nullable public BinaryMetadata metadata0(int typeId) throws IgniteException;
+    @Nullable public BinaryMetadata binaryMetadata(int typeId) throws IgniteException;
 
     /**
      * @param typeId Type ID.
@@ -283,26 +283,26 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Metadata.
      * @throws IgniteException In case of error.
      */
-    @Nullable public BinaryMetadata metadata0(int typeId, int schemaId) throws IgniteException;
+    @Nullable public BinaryMetadata binaryMetadata(int typeId, int schemaId) throws IgniteException;
 
     /**
      * @param typeIds Type ID.
      * @return Metadata.
      * @throws IgniteException In case of error.
      */
-    public Map<Integer, BinaryType> metadata(Collection<Integer> typeIds) throws IgniteException;
+    public Map<Integer, BinaryType> localBinaryTypes(Collection<Integer> typeIds) throws IgniteException;
 
     /**
      * @return Metadata for all types.
      * @throws IgniteException In case of error.
      */
-    public Collection<BinaryType> metadata() throws IgniteException;
+    public Collection<BinaryType> localBinaryTypes() throws IgniteException;
 
     /**
      * @return Unwrapped metadata for all types.
      * @throws IgniteException In case of error.
      */
-    public Collection<BinaryMetadata> binaryMetadata() throws IgniteException;
+    public Collection<BinaryMetadata> localBinaryMetadata() throws IgniteException;
 
     /**
      * @param meta Collection of binary types to write to.

@@ -167,7 +167,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         dfltCache.put(1, bldr.build());
 
-        Collection<BinaryType> metadata = crd.context().cacheObjects().metadata();
+        Collection<BinaryType> metadata = crd.context().cacheObjects().localBinaryTypes();
 
         assertEquals(EXIT_CODE_OK, execute("--meta", "list"));
 
@@ -177,13 +177,13 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
-        metadata = crd.context().cacheObjects().metadata();
+        metadata = crd.context().cacheObjects().localBinaryTypes();
 
         assertEquals(metadata.toString(), 1, metadata.size());
 
         assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", typeName));
 
-        metadata = crd.context().cacheObjects().metadata();
+        metadata = crd.context().cacheObjects().localBinaryTypes();
 
         assertEquals("Binary metadata is expected to be empty but the following binary types were found: "
             + metadata
@@ -231,15 +231,15 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
         BinaryObject bo1 = bob1.build();
 
         assertEquals(EXIT_CODE_OK, execute("--meta", "details", "--typeName", "TypeName0"));
-        checkTypeDetails(log, testOut.toString(), crd.context().cacheObjects().metadata0(bo0.type().typeId()));
+        checkTypeDetails(log, testOut.toString(), crd.context().cacheObjects().binaryMetadata(bo0.type().typeId()));
 
         assertEquals(EXIT_CODE_OK, execute("--meta", "details", "--typeId",
             "0x" + Integer.toHexString(crd.context().cacheObjects().typeId("TypeName1"))));
-        checkTypeDetails(log, testOut.toString(), crd.context().cacheObjects().metadata0(bo1.type().typeId()));
+        checkTypeDetails(log, testOut.toString(), crd.context().cacheObjects().binaryMetadata(bo1.type().typeId()));
 
         assertEquals(EXIT_CODE_OK, execute("--meta", "details", "--typeId",
             Integer.toString(crd.context().cacheObjects().typeId("TypeName1"))));
-        checkTypeDetails(log, testOut.toString(), crd.context().cacheObjects().metadata0(bo1.type().typeId()));
+        checkTypeDetails(log, testOut.toString(), crd.context().cacheObjects().binaryMetadata(bo1.type().typeId()));
     }
 
     /**
@@ -396,7 +396,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
             repeat(cnt, i -> {
                 assertEquals(EXIT_CODE_OK, execute("--meta", "details", "--typeName", typeNames[i]));
-                checkTypeDetails(log, testOut.toString(), crd.context().cacheObjects().metadata0(typeIds[i]));
+                checkTypeDetails(log, testOut.toString(), crd.context().cacheObjects().binaryMetadata(typeIds[i]));
             });
         }
         finally {
@@ -555,7 +555,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
             assertContains(log, testOut.toString(), "typeName=Type0");
 
             assertEquals(EXIT_CODE_OK, execute("--meta", "details", "--typeName", "Type0"));
-            checkTypeDetails(log, testOut.toString(), crd.context().cacheObjects().metadata0(typeId));
+            checkTypeDetails(log, testOut.toString(), crd.context().cacheObjects().binaryMetadata(typeId));
 
             assertEquals(EXIT_CODE_OK, execute("--meta", "remove",
                 "--typeName", "Type0",

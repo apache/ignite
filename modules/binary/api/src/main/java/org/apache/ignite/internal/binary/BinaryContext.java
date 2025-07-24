@@ -863,9 +863,9 @@ public class BinaryContext {
 
             if (registerMeta) {
                 if (onlyLocReg)
-                    metaHnd.addMetaLocally(typeId, regDesc.metadata(false), false);
+                    metaHnd.addMetaLocally(typeId, regDesc.binaryMetadata(false), false);
                 else
-                    metaHnd.addMeta(typeId, regDesc.metadata(true), false);
+                    metaHnd.addMeta(typeId, regDesc.binaryMetadata(true), false);
             }
 
             descByCls.put(cls, regDesc);
@@ -1284,7 +1284,7 @@ public class BinaryContext {
      * @return Meta data.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public BinaryType metadata(int typeId) throws BinaryObjectException {
+    @Nullable public BinaryType binaryType(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata(typeId).wrap(this) : null;
     }
 
@@ -1293,14 +1293,14 @@ public class BinaryContext {
      * @return Unwrapped metadata.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
+    @Nullable public BinaryMetadata binaryMetadata(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata(typeId) : null;
     }
 
     /**
      * @return All metadata known to this node.
      */
-    public Collection<BinaryType> metadata() throws BinaryObjectException {
+    public Collection<BinaryType> binaryTypes() throws BinaryObjectException {
         return metaHnd != null ?
             metaHnd.metadata().stream().map(meta -> meta.wrap(this)).collect(Collectors.toList()) :
             Collections.emptyList();
@@ -1312,7 +1312,7 @@ public class BinaryContext {
      * @return Unwrapped metadata.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryMetadata metadata0(int typeId, int schemaId) throws BinaryObjectException {
+    public BinaryMetadata binaryMetadata(int typeId, int schemaId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata(typeId, schemaId) : null;
     }
 
