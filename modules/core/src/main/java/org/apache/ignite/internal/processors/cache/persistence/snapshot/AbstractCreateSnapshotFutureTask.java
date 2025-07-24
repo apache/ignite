@@ -184,7 +184,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
 
             Collection<BinaryMetadata> binMetadataCopy = cctx.kernalContext()
                 .cacheObjects()
-                .binaryMetadata();
+                .localBinaryMetadata();
 
             List<Map<Integer, MappedName>> mappingsCopy = cctx.kernalContext()
                 .marshallerContext()

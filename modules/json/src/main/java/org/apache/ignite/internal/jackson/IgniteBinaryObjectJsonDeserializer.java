@@ -114,7 +114,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
      */
     private Map<String, BinaryFieldMetadata> binaryFields(String type) {
         int typeId = ctx.cacheObjects().typeId(type);
-        BinaryMetadata meta = ctx.cacheObjects().metadata0(typeId);
+        BinaryMetadata meta = ctx.cacheObjects().binaryMetadata(typeId);
 
         if (meta != null)
             return meta.fieldsMap();

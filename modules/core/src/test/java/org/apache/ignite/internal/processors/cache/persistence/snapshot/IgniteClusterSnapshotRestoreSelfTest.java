@@ -524,7 +524,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
         // Ensure that existing type has been updated.
-        BinaryType type = ignite.context().cacheObjects().metadata(typeId);
+        BinaryType type = ignite.context().cacheObjects().binaryType(typeId);
 
         assertTrue(type.fieldNames().contains("name"));
 

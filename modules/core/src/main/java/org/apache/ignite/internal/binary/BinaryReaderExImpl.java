@@ -1991,7 +1991,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
 
         if (schema == null) {
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
-                BinaryMetadata meta = ctx.metadata0(typeId, schemaId);
+                BinaryMetadata meta = ctx.binaryMetadata(typeId, schemaId);
 
                 if (meta == null)
                     throw new BinaryObjectException("Cannot find metadata for object with compact footer " +
