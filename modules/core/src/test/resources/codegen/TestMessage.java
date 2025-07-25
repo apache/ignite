@@ -18,11 +18,13 @@
 package org.apache.ignite.internal;
 
 import java.lang.String;
+import java.util.List;
 import java.util.UUID;
 import java.util.BitSet;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -64,6 +66,15 @@ public class TestMessage implements Message {
 
     @Order(value = 11, method = "overridenFieldMethod")
     private String field;
+
+    @Order(12)
+    private List<GridCacheVersion> versions;
+
+    @Order(13)
+    private List<Integer> boxedIntValues;
+
+    @Order(14)
+    private GridLongList gridLongList;
 
     public int id() {
         return id;
@@ -159,6 +170,30 @@ public class TestMessage implements Message {
 
     public void overridenFieldMethod(String field) {
         this.field = field;
+    }
+
+    public List<GridCacheVersion> versions() {
+        return versions;
+    }
+
+    public void versions(List<GridCacheVersion> versions) {
+        this.versions = versions;
+    }
+
+    public List<Integer> boxedIntValues() {
+        return boxedIntValues;
+    }
+
+    public void boxedIntValues(List<Integer> boxedIntValues) {
+        this.boxedIntValues = boxedIntValues;
+    }
+
+    public GridLongList gridLongList() {
+        return gridLongList;
+    }
+
+    public void gridLongList(GridLongList gridLongList) {
+        this.gridLongList = gridLongList;
     }
 
     public short directType() {

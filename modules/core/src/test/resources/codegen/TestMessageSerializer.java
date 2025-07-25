@@ -118,6 +118,24 @@ public class TestMessageSerializer implements MessageSerializer {
 
                 writer.incrementState();
 
+            case 12:
+                if (!writer.writeCollection(msg.versions(), MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 13:
+                if (!writer.writeCollection(msg.boxedIntValues(), MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
+                if (!writer.writeMessage(msg.gridLongList()))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -220,6 +238,30 @@ public class TestMessageSerializer implements MessageSerializer {
 
             case 11:
                 msg.overridenFieldMethod(reader.readString());
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
+                msg.versions(reader.readCollection(MessageCollectionItemType.MSG));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 13:
+                msg.boxedIntValues(reader.readCollection(MessageCollectionItemType.INT));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 14:
+                msg.gridLongList(reader.readMessage());
 
                 if (!reader.isLastRead())
                     return false;
