@@ -49,7 +49,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Services;
-    using UU = UnmanagedUtils;
 
     /// <summary>
     /// Unmanaged callbacks.
@@ -497,8 +496,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var ses = TaskSession(sesPtr);
-                Task(stream.ReadLong()).Map(stream, ses);
+                var task = Task(stream.ReadLong());
+                var ses = TaskSession(sesPtr, task);
+                task.Map(stream, ses);
 
                 return 0;
             }
@@ -619,7 +619,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return _handleRegistry.Get<IComputeTaskHolder>(taskPtr);
         }
 
-        private IComputeTaskSession TaskSession(void* sesPtr)
+        private IComputeTaskSession TaskSession(void* sesPtr, IComputeTaskHolder task = null)
         {
             if (sesPtr == null)
             {
@@ -628,7 +628,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             
             var sesRef = _jvm.AttachCurrentThread().NewGlobalRef((IntPtr) sesPtr);
             var sesTarget = new PlatformJniTarget(sesRef, _ignite.Marshaller);
-            return new ComputeTaskSession(sesTarget);
+            return new ComputeTaskSession(sesTarget, task);
         }
 
         /// <summary>
