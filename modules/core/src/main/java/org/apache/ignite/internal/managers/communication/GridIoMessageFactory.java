@@ -29,6 +29,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionExSerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionSerializer;
+import org.apache.ignite.internal.codegen.GridDhtPartitionExchangeIdSerializer;
 import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillRequestSerializer;
@@ -279,7 +280,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)84, GridByteArrayList::new);
         factory.register((short)85, GridLongList::new);
         factory.register((short)86, GridCacheVersion::new, new GridCacheVersionSerializer());
-        factory.register((short)87, GridDhtPartitionExchangeId::new);
+        factory.register((short)87, GridDhtPartitionExchangeId::new, new GridDhtPartitionExchangeIdSerializer());
         factory.register((short)88, GridCacheReturn::new);
         factory.register((short)89, CacheObjectImpl::new);
         factory.register((short)90, KeyCacheObjectImpl::new);
