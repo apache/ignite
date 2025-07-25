@@ -15,21 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.message;
-
-import org.apache.ignite.plugin.extensions.communication.Message;
+package org.apache.ignite.plugin.extensions.communication;
 
 /**
- *
+ * Class, providing some action on ack message received.
  */
-public interface CalciteMessage extends Message {
+public interface AckHandler {
     /**
-     * @return Message type.
+     * Method called when ack message received.
      */
-    MessageType type();
-
-    /** {@inheritDoc} */
-    @Override default short directType() {
-        return type().directType();
-    }
+    public void onAckReceived();
 }

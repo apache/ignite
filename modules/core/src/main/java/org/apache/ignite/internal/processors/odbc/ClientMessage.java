@@ -215,11 +215,6 @@ public class ClientMessage implements Message, Externalizable {
         return Short.MIN_VALUE;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op
-    }
-
     /**
      * @return Message payload.
      */

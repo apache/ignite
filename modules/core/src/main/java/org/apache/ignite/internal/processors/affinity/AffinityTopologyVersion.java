@@ -138,11 +138,6 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;

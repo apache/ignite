@@ -41,11 +41,6 @@ public class HandshakeWaitMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         if (buf.remaining() < MESSAGE_FULL_SIZE)
             return false;

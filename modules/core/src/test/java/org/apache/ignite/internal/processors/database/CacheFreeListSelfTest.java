@@ -759,9 +759,5 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
             return 0;
         }
 
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            assert false;
-        }
     }
 }

@@ -48,8 +48,4 @@ public class WrongOrderEnumeration implements Message {
     public short directType() {
         return 0;
     }
-
-    public void onAckReceived() {
-        // No-op.
-    }
 }
