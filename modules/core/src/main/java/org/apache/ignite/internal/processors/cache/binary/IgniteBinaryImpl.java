@@ -100,7 +100,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
         guard();
 
         try {
-            return proc.metadata(proc.typeId(cls.getName()));
+            return proc.binaryType(proc.typeId(cls.getName()));
         }
         finally {
             unguard();
@@ -112,7 +112,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
         guard();
 
         try {
-            return proc.metadata(proc.typeId(typeName));
+            return proc.binaryType(proc.typeId(typeName));
         }
         finally {
             unguard();
@@ -124,7 +124,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
         guard();
 
         try {
-            return proc.metadata(typeId);
+            return proc.binaryType(typeId);
         }
         finally {
             unguard();
@@ -136,7 +136,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
         guard();
 
         try {
-            return proc.metadata();
+            return proc.localBinaryTypes();
         }
         finally {
             unguard();
