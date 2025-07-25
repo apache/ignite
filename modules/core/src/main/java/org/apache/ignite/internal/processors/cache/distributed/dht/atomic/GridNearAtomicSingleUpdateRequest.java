@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
@@ -47,9 +46,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  *
  */
 public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSingleUpdateRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Key to update. */
     @GridToStringInclude
     protected KeyCacheObject key;
@@ -58,7 +54,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     protected CacheObject val;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearAtomicSingleUpdateRequest() {
         // No-op.

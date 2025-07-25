@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,9 +44,6 @@ import org.jetbrains.annotations.Nullable;
  * Sent in response to {@link GridDhtPartitionsSingleRequest} and during processing partitions exchange future.
  */
 public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Local partitions. Serialized as {@link #partsBytes}, may be compressed. */
     @GridToStringInclude
     @GridDirectTransient
@@ -109,7 +105,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     private GridDhtPartitionsFullMessage finishMsg;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtPartitionsSingleMessage() {
         // No-op.

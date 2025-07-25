@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
@@ -39,9 +38,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT atomic cache backup update response.
  */
 public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -60,7 +56,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     private int partId;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtAtomicUpdateResponse() {
         // No-op.

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteLogger;
@@ -41,9 +40,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Transaction completion message.
  */
 public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     protected static final int WAIT_REMOTE_TX_FLAG_MASK = 0x01;
 
@@ -106,7 +102,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     private IgniteTxState txState;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDistributedTxFinishRequest() {
         /* No-op. */

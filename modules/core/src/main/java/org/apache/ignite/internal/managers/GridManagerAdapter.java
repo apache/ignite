@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -381,7 +380,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         }
                     }
 
-                    @Override public void send(ClusterNode node, Serializable msg, String topic)
+                    @Override public void send(ClusterNode node, Object msg, String topic)
                         throws IgniteSpiException {
                         A.notNull(node, "node");
                         A.notNull(msg, "msg");

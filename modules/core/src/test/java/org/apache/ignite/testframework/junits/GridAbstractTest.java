@@ -2024,7 +2024,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected BinaryMarshaller createStandaloneBinaryMarshaller(IgniteConfiguration cfg) throws IgniteCheckedException {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), cfg, new NullLogger());
+        BinaryContext ctx = new BinaryContext(
+            BinaryUtils.cachingMetadataHandler(),
+            cfg.getIgniteInstanceName(),
+            cfg.getClassLoader(),
+            cfg.getBinaryConfiguration(),
+            NullLogger.INSTANCE
+        );
 
         marsh.setContext(new MarshallerContextTestImpl());
 

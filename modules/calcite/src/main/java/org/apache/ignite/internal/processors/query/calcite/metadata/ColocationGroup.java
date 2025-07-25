@@ -306,7 +306,7 @@ public class ColocationGroup implements MarshalableMessage {
                 parts.add(i);
         }
 
-        return parts.array();
+        return parts.arrayCopy();
     }
 
     /** {@inheritDoc} */

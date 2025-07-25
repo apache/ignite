@@ -28,7 +28,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public abstract class AbstractTpchTest extends AbstractBasicIntegrationTest {
     /** */
-    protected static final Collection<Integer> USED_TESTS = F.asList(5, 16, 19, 20);
+    protected static final Collection<Integer> USED_TESTS = F.asList(5, 16, 17, 19, 20);
 
     /** Query ID. */
     @Parameterized.Parameter

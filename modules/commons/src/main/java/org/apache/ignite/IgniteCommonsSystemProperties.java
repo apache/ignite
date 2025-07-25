@@ -19,6 +19,8 @@ package org.apache.ignite;
 
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
@@ -67,6 +69,21 @@ public class IgniteCommonsSystemProperties {
     @SystemProperty("Whether Ignite can access unaligned memory addresses. Defaults to false, " +
         "meaning that unaligned access will be performed only on x86 architecture")
     public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
+
+    /**
+     * System property to specify how often in milliseconds marshal buffers
+     * should be rechecked and potentially trimmed. Default value is {@code 10,000ms}.
+     */
+    @SystemProperty(value = "How often in milliseconds marshal buffers should be rechecked and potentially trimmed",
+        type = Long.class, defaults = "" + DFLT_MARSHAL_BUFFERS_RECHECK)
+    public static final String IGNITE_MARSHAL_BUFFERS_RECHECK = "IGNITE_MARSHAL_BUFFERS_RECHECK";
+
+    /**
+     * System property to specify per thread binary allocator chunk pool size. Default value is {@code 32}.
+     */
+    @SystemProperty(value = "Per thread binary allocator chunk pool size",
+        type = Integer.class, defaults = "" + DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE)
+    public static final String IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = "IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE";
 
     /**
      * @param enumCls Enum type.

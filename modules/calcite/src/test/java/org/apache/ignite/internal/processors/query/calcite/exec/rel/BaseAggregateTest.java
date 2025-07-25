@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Aggregat
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Assert;
@@ -666,7 +667,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
             /** */
             @Override public Object[] create() {
-                throw new AssertionError();
+                return X.EMPTY_OBJECT_ARRAY;
             }
 
             /** */

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
@@ -46,9 +45,6 @@ import org.jetbrains.annotations.Nullable;
  * DHT atomic cache near update response.
  */
 public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Cache message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -85,7 +81,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     private boolean nodeLeft;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearAtomicUpdateResponse() {
         // No-op.

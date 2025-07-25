@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
@@ -35,9 +34,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Deployment request.
  */
 public class GridDeploymentRequest implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Response topic. Response should be sent back to this topic. */
     @GridDirectTransient
     private Object resTopic;
@@ -60,8 +56,7 @@ public class GridDeploymentRequest implements Message {
     private Collection<UUID> nodeIds;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Default constructor.
      */
     public GridDeploymentRequest() {
         // No-op.

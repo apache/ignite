@@ -16,11 +16,9 @@
  */
 package org.apache.ignite.internal.processors.marshaller;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Client node receives discovery messages in asynchronous mode
@@ -36,12 +34,11 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class MissingMappingRequestMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
+    @Order(0)
     private byte platformId;
 
     /** */
+    @Order(1)
     private int typeId;
 
     /**
@@ -61,61 +58,6 @@ public class MissingMappingRequestMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByte(platformId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeInt(typeId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                platformId = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                typeId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 78;
     }
@@ -131,8 +73,18 @@ public class MissingMappingRequestMessage implements Message {
     }
 
     /** */
+    public void platformId(byte platformId) {
+        this.platformId = platformId;
+    }
+
+    /** */
     public int typeId() {
         return typeId;
+    }
+
+    /** */
+    public void typeId(int typeId) {
+        this.typeId = typeId;
     }
 
     /** {@inheritDoc} */

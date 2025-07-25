@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -106,7 +105,7 @@ public interface IgniteSpiContext {
      * @param topic Topic to send message to.
      * @throws IgniteSpiException If failed to send a message to remote node.
      */
-    public void send(ClusterNode node, Serializable msg, String topic) throws IgniteSpiException;
+    public void send(ClusterNode node, Object msg, String topic) throws IgniteSpiException;
 
     /**
      * Register an local message listener to receive messages sent by remote nodes. The underlying
@@ -130,7 +129,7 @@ public interface IgniteSpiContext {
      * communication mechanism is defined by {@link org.apache.ignite.spi.communication.CommunicationSpi} implementation used.
      * <p>
      * This method can be used by jobs to communicate with other nodes in the grid. Remote nodes
-     * can send messages by calling {@link #send(org.apache.ignite.cluster.ClusterNode, Serializable, String)} method.
+     * can send messages by calling {@link #send(org.apache.ignite.cluster.ClusterNode, Object, String)} method.
      *
      * @param lsnr Message listener to register.
      * @param topic Topic to register listener for.

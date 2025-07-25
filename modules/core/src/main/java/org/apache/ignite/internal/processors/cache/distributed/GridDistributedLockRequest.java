@@ -42,9 +42,6 @@ import org.jetbrains.annotations.Nullable;
  * Lock request message.
  */
 public class GridDistributedLockRequest extends GridDistributedBaseMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Skip store flag bit mask. */
     private static final int SKIP_STORE_FLAG_MASK = 0x01;
 

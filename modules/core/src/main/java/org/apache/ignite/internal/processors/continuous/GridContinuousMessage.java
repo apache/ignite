@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
@@ -38,9 +37,6 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousMes
  * Continuous processor message.
  */
 public class GridContinuousMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message type. */
     private GridContinuousMessageType type;
 
@@ -63,7 +59,7 @@ public class GridContinuousMessage implements Message {
     private IgniteUuid futId;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridContinuousMessage() {
         // No-op.
