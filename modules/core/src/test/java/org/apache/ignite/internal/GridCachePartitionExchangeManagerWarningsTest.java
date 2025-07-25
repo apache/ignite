@@ -25,6 +25,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,12 +34,16 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
@@ -81,6 +87,9 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     /** */
     private ListeningTestLogger testLog;
 
+    /** */
+    private volatile Supplier<TcpCommunicationSpi> spiFactory = CustomTcpCommunicationSpi::new;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -101,6 +110,8 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         if (testLog != null)
             testLog.clearListeners();
 
+        spiFactory = CustomTcpCommunicationSpi::new;
+
         testLog = null;
 
         lifecycleBean = null;
@@ -112,7 +123,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCommunicationSpi(new CustomTcpCommunicationSpi());
+        cfg.setCommunicationSpi(spiFactory.get());
 
         if (testLog != null)
             cfg.setGridLogger(testLog);
@@ -129,6 +140,50 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         cfg.setCacheConfiguration(atomicCfg, txCfg);
 
         return cfg;
+    }
+
+    @Test
+    public void testSingleMessageErrorWarnings () throws Exception {
+        spiFactory = TestRecordingCommunicationSpi::new;
+
+        String logSubstr = "Failed to send local partitions";
+
+        LogListener logLstnr = LogListener.matches(logSubstr).build();
+
+        testLog = new ListeningTestLogger(log, logLstnr);
+
+
+        IgniteEx crd = startGrid(0);
+
+        IgniteConfiguration cfg1 = getConfiguration(getTestIgniteInstanceName(1));
+
+        TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
+
+        spi.blockMessages((node, message) -> message instanceof GridDhtPartitionsSingleMessage);
+
+        cfg1.setCommunicationSpi(spi);
+
+        cfg1.setGridLogger(testLog);
+
+        IgniteEx problemNode = startGrid(cfg1);
+
+        assertTrue(spi.waitForBlocked(1, 5000));
+
+        stopGrid(0);
+//
+//
+////        spi.blockMessages(TestRecordingCommunicationSpi.blockSingleExhangeMessage());
+//
+
+//        spi.waitForBlocked();
+
+
+        spi.stopBlock();
+
+        awaitPartitionMapExchange();
+
+
+        assertTrue(logLstnr.check());
     }
 
     /**
