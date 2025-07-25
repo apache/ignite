@@ -69,7 +69,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
 
         reader = BinaryUtils.reader(ctx,
             BinaryStreams.inputStream(arr, pos),
-            ctx.configuration().getClassLoader(),
+            ctx.classLoader(),
             false);
 
         objMap = new HashMap<>();
@@ -491,7 +491,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.OPTM_MARSH: {
                 final BinaryInputStream bin = BinaryStreams.inputStream(arr, pos + 1);
 
-                final Object obj = BinaryUtils.doReadOptimized(bin, ctx, U.resolveClassLoader(ctx.configuration()));
+                final Object obj = BinaryUtils.doReadOptimized(bin, ctx, U.resolveClassLoader(null, ctx.classLoader()));
 
                 return obj;
             }
@@ -843,7 +843,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.OPTM_MARSH: {
                 final BinaryInputStream bin = BinaryStreams.inputStream(arr, pos);
 
-                final Object obj = BinaryUtils.doReadOptimized(bin, ctx, U.resolveClassLoader(ctx.configuration()));
+                final Object obj = BinaryUtils.doReadOptimized(bin, ctx, U.resolveClassLoader(null, ctx.classLoader()));
 
                 pos = bin.position();
 
@@ -938,7 +938,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
 
         /** {@inheritDoc} */
         @Override public Object value() {
-            return BinaryUtils.unwrapLazy(wrappedCollection());
+            return BinaryObjectBuilders.unwrapLazy(wrappedCollection());
         }
     }
 }

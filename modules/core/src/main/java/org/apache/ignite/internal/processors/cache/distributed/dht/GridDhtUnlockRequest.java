@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,15 +34,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT cache unlock request.
  */
 public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Near keys. */
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> nearKeys;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtUnlockRequest() {
         // No-op.

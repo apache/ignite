@@ -39,9 +39,8 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
         List<Object[]> params = new ArrayList<>();
 
         for (SqlTransactionMode sqlTxMode : SqlTransactionMode.values()) {
-            for (JoinType jt : JoinType.values()) {
-                params.add(new Object[]{sqlTxMode, jt});
-            }
+            for (JoinType jt : JoinType.values())
+                params.add(new Object[] {sqlTxMode, jt});
         }
 
         return params;

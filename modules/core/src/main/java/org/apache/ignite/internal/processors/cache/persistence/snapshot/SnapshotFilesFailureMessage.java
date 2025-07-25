@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -31,14 +30,11 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
     /** Snapshot response message type (value is {@code 179}). */
     public static final short TYPE_CODE = 179;
 
-    /** Serialization version. */
-    private static final long serialVersionUID = 0L;
-
     /** Exception message which is occurred during snapshot request processing. */
     private String errMsg;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public SnapshotFilesFailureMessage() {
         // No-op.

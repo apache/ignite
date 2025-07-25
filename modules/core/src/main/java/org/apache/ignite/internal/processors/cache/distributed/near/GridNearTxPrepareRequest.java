@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,9 +41,6 @@ import org.jetbrains.annotations.Nullable;
  * Near transaction prepare request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
 public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private static final int NEAR_FLAG_MASK = 0x01;
 
@@ -84,7 +80,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @Nullable private String txLbl;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearTxPrepareRequest() {
         // No-op.

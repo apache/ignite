@@ -36,9 +36,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class NearCacheUpdates implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Indexes of keys for which values were generated on primary node (used if originating node has near cache). */
     @GridDirectCollection(int.class)
     private List<Integer> nearValsIdxs;

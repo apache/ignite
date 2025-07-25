@@ -26,7 +26,15 @@ import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
+import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
+import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer;
+import org.apache.ignite.internal.codegen.MissingMappingResponseMessageSerializer;
+import org.apache.ignite.internal.codegen.SessionChannelMessageSerializer;
+import org.apache.ignite.internal.codegen.UserAuthenticateRequestMessageSerializer;
+import org.apache.ignite.internal.codegen.UserAuthenticateResponseMessageSerializer;
+import org.apache.ignite.internal.codegen.WalStateAckMessageSerializer;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
@@ -181,7 +189,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // -46 ... -51 - snapshot messages.
         factory.register((short)-61, IgniteDiagnosticMessage::new);
         factory.register((short)-53, SchemaOperationStatusMessage::new);
-        factory.register((short)-52, GridIntList::new);
+        factory.register((short)-52, GridIntList::new, new GridIntListSerializer());
         factory.register((short)-51, NearCacheUpdates::new);
         factory.register((short)-50, GridNearAtomicCheckUpdateRequest::new);
         factory.register((short)-49, UpdateErrors::new);
@@ -258,8 +266,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)63, DataStreamerResponse::new);
         factory.register((short)76, GridTaskResultRequest::new);
         factory.register((short)77, GridTaskResultResponse::new);
-        factory.register((short)78, MissingMappingRequestMessage::new);
-        factory.register((short)79, MissingMappingResponseMessage::new);
+        factory.register((short)78, MissingMappingRequestMessage::new, new MissingMappingRequestMessageSerializer());
+        factory.register((short)79, MissingMappingResponseMessage::new, new MissingMappingResponseMessageSerializer());
         factory.register((short)80, MetadataRequestMessage::new);
         factory.register((short)81, MetadataResponseMessage::new);
         factory.register((short)82, JobStealingRequest::new);
@@ -270,7 +278,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)88, GridCacheReturn::new);
         factory.register((short)89, CacheObjectImpl::new);
         factory.register((short)90, KeyCacheObjectImpl::new);
-        factory.register((short)91, GridCacheEntryInfo::new);
+        factory.register((short)91, GridCacheEntryInfo::new, new GridCacheEntryInfoSerializer());
         factory.register((short)92, CacheEntryInfoCollection::new);
         factory.register((short)93, CacheInvokeDirectResult::new);
         factory.register((short)94, IgniteTxKey::new);
@@ -306,10 +314,10 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)126, GridNearAtomicSingleUpdateInvokeRequest::new);
         factory.register((short)127, GridNearAtomicSingleUpdateFilterRequest::new);
         factory.register((short)128, CacheGroupAffinityMessage::new);
-        factory.register((short)129, WalStateAckMessage::new);
+        factory.register((short)129, WalStateAckMessage::new, new WalStateAckMessageSerializer());
         factory.register((short)130, UserManagementOperationFinishedMessage::new);
-        factory.register((short)131, UserAuthenticateRequestMessage::new);
-        factory.register((short)132, UserAuthenticateResponseMessage::new);
+        factory.register((short)131, UserAuthenticateRequestMessage::new, new UserAuthenticateRequestMessageSerializer());
+        factory.register((short)132, UserAuthenticateResponseMessage::new, new UserAuthenticateResponseMessageSerializer());
         factory.register((short)133, ClusterMetricsUpdateMessage::new);
         factory.register((short)134, ContinuousRoutineStartResultMessage::new);
         factory.register((short)135, LatchAckMessage::new);
@@ -323,7 +331,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(GridQueryKillRequest.TYPE_CODE, GridQueryKillRequest::new);
         factory.register(GridQueryKillResponse.TYPE_CODE, GridQueryKillResponse::new);
         factory.register(GridIoSecurityAwareMessage.TYPE_CODE, GridIoSecurityAwareMessage::new);
-        factory.register(SessionChannelMessage.TYPE_CODE, SessionChannelMessage::new);
+        factory.register(SessionChannelMessage.TYPE_CODE, SessionChannelMessage::new, new SessionChannelMessageSerializer());
         factory.register(SingleNodeMessage.TYPE_CODE, SingleNodeMessage::new);
         factory.register((short)177, TcpInverseConnectionResponseMessage::new);
         factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new);

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary.builder;
 /**
  *
  */
-public interface BinaryLazyValue extends BinaryBuilderSerializationAware {
+interface BinaryLazyValue extends BinaryBuilderSerializationAware {
     /**
      * @return Value.
      */

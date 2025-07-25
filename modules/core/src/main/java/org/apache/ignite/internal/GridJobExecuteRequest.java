@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -45,9 +44,6 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
  * Job execution request.
  */
 public class GridJobExecuteRequest implements ExecutorAwareMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private IgniteUuid sesId;
 
@@ -157,7 +153,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     private String execName;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
+     * Default constructor.
      */
     public GridJobExecuteRequest() {
         // No-op.

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -37,9 +36,6 @@ import org.jetbrains.annotations.Nullable;
 public class GridIoMessage implements Message, SpanTransport {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
-
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Policy. */
     private byte plc;
@@ -71,8 +67,7 @@ public class GridIoMessage implements Message, SpanTransport {
     private byte[] span;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Default constructor.
      */
     public GridIoMessage() {
         // No-op.

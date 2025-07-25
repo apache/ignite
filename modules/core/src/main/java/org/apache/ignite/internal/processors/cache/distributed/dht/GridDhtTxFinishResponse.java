@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -36,9 +35,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT transaction finish response.
  */
 public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Flag indicating if this is a check-committed response. */
     private static final int CHECK_COMMITTED_FLAG_MASK = 0x01;
 
@@ -56,7 +52,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     private GridCacheReturn retVal;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtTxFinishResponse() {
         // No-op.

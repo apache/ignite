@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -28,13 +27,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private GridDhtPartitionExchangeId restoreExchId;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtPartitionsSingleRequest() {
         // No-op.

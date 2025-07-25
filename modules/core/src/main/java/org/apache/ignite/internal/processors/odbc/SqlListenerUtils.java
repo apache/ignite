@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
@@ -88,107 +87,10 @@ public abstract class SqlListenerUtils {
      */
     @Nullable public static Object readObject(byte type, BinaryReaderEx reader, boolean binObjAllow,
         boolean keepBinary, boolean createByteArrayCopy) throws BinaryObjectException {
-        switch (type) {
-            case GridBinaryMarshaller.NULL:
-                return null;
+        if (type == GridBinaryMarshaller.BYTE_ARR && !createByteArrayCopy && reader.in().hasArray())
+            return readJdbcByteArray(reader);
 
-            case GridBinaryMarshaller.BOOLEAN:
-                return reader.readBoolean();
-
-            case GridBinaryMarshaller.BYTE:
-                return reader.readByte();
-
-            case GridBinaryMarshaller.CHAR:
-                return reader.readChar();
-
-            case GridBinaryMarshaller.SHORT:
-                return reader.readShort();
-
-            case GridBinaryMarshaller.INT:
-                return reader.readInt();
-
-            case GridBinaryMarshaller.LONG:
-                return reader.readLong();
-
-            case GridBinaryMarshaller.FLOAT:
-                return reader.readFloat();
-
-            case GridBinaryMarshaller.DOUBLE:
-                return reader.readDouble();
-
-            case GridBinaryMarshaller.STRING:
-                return BinaryUtils.doReadString(reader.in());
-
-            case GridBinaryMarshaller.DECIMAL:
-                return BinaryUtils.doReadDecimal(reader.in());
-
-            case GridBinaryMarshaller.UUID:
-                return BinaryUtils.doReadUuid(reader.in());
-
-            case GridBinaryMarshaller.TIME:
-                return BinaryUtils.doReadTime(reader.in());
-
-            case GridBinaryMarshaller.TIMESTAMP:
-                return BinaryUtils.doReadTimestamp(reader.in());
-
-            case GridBinaryMarshaller.DATE:
-                return BinaryUtils.doReadDate(reader.in());
-
-            case GridBinaryMarshaller.BOOLEAN_ARR:
-                return BinaryUtils.doReadBooleanArray(reader.in());
-
-            case GridBinaryMarshaller.BYTE_ARR:
-                return readByteArray(reader, createByteArrayCopy);
-
-            case GridBinaryMarshaller.CHAR_ARR:
-                return BinaryUtils.doReadCharArray(reader.in());
-
-            case GridBinaryMarshaller.SHORT_ARR:
-                return BinaryUtils.doReadShortArray(reader.in());
-
-            case GridBinaryMarshaller.INT_ARR:
-                return BinaryUtils.doReadIntArray(reader.in());
-
-            case GridBinaryMarshaller.LONG_ARR:
-                return BinaryUtils.doReadLongArray(reader.in());
-
-            case GridBinaryMarshaller.FLOAT_ARR:
-                return BinaryUtils.doReadFloatArray(reader.in());
-
-            case GridBinaryMarshaller.DOUBLE_ARR:
-                return BinaryUtils.doReadDoubleArray(reader.in());
-
-            case GridBinaryMarshaller.STRING_ARR:
-                return BinaryUtils.doReadStringArray(reader.in());
-
-            case GridBinaryMarshaller.DECIMAL_ARR:
-                return BinaryUtils.doReadDecimalArray(reader.in());
-
-            case GridBinaryMarshaller.UUID_ARR:
-                return BinaryUtils.doReadUuidArray(reader.in());
-
-            case GridBinaryMarshaller.TIME_ARR:
-                return BinaryUtils.doReadTimeArray(reader.in());
-
-            case GridBinaryMarshaller.TIMESTAMP_ARR:
-                return BinaryUtils.doReadTimestampArray(reader.in());
-
-            case GridBinaryMarshaller.DATE_ARR:
-                return BinaryUtils.doReadDateArray(reader.in());
-
-            default:
-                reader.in().position(reader.in().position() - 1);
-
-                if (binObjAllow) {
-                    Object res = reader.readObjectDetached();
-
-                    return !keepBinary && res instanceof BinaryObject
-                        ? ((BinaryObject)res).deserialize()
-                        : res;
-                }
-                else
-                    throw new BinaryObjectException("Custom objects are not supported");
-        }
+        return BinaryUtils.unmarshallJdbc(type, reader, binObjAllow, keepBinary);
     }
 
     /**
@@ -199,21 +101,16 @@ public abstract class SqlListenerUtils {
      * the reader's input stream in a copy-on-write manner.
      *
      * @param reader Reader.
-     * @param createByteArrayCopy Whether create new byte array copy or try to create copy-on-write buffer.
      * @return Either byte[] or {@link JdbcBinaryBuffer}.
      */
-    private static Object readByteArray(BinaryReaderEx reader, boolean createByteArrayCopy) {
-        if (!createByteArrayCopy && reader.in().hasArray()) {
-            int len = reader.in().readInt();
+    private static Object readJdbcByteArray(BinaryReaderEx reader) {
+        int len = reader.in().readInt();
 
-            int position = reader.in().position();
+        int position = reader.in().position();
 
-            reader.in().position(position + len);
+        reader.in().position(position + len);
 
-            return JdbcBinaryBuffer.createReadOnly(reader.in().array(), position, len);
-        }
-        else
-            return BinaryUtils.doReadByteArray(reader.in());
+        return JdbcBinaryBuffer.createReadOnly(reader.in().array(), position, len);
     }
 
     /**

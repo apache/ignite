@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Grid deployment response containing requested resource bytes.
  */
 public class GridDeploymentResponse implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Result state. */
     private boolean success;
 
@@ -42,8 +38,7 @@ public class GridDeploymentResponse implements Message {
     private GridByteArrayList byteSrc;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Default constructor.
      */
     @SuppressWarnings({"RedundantNoArgConstructor"})
     public GridDeploymentResponse() {

@@ -17,24 +17,21 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Is sent from coordinator node to client to deliver the results of the user authentication.
  */
 public class UserAuthenticateResponseMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Request ID. */
+    @Order(0)
     private IgniteUuid id;
 
     /** Error message. */
+    @Order(value = 1, method = "errorMessage")
     private String errMsg;
 
     /**
@@ -68,65 +65,24 @@ public class UserAuthenticateResponseMessage implements Message {
     }
 
     /**
+     * @param errMsg New error message.
+     */
+    public void errorMessage(String errMsg) {
+        this.errMsg = errMsg;
+    }
+
+    /**
      * @return Request ID.
      */
     public IgniteUuid id() {
         return id;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString(errMsg))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeIgniteUuid(id))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                errMsg = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                id = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+    /**
+     * @param id New request ID.
+     */
+    public void id(IgniteUuid id) {
+        this.id = id;
     }
 
     /** {@inheritDoc} */
