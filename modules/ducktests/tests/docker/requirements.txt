@@ -14,5 +14,4 @@
 # limitations under the License.
 
 filelock==3.8.2
-ducktape==0.12.0
-psutil==5.7.2
+ducktape==0.13.0
