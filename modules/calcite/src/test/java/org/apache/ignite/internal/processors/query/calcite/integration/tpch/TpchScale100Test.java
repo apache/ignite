@@ -17,24 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
 public class TpchScale100Test extends AbstractTpchTest {
-    /** TODO Revise after https://issues.apache.org/jira/browse/IGNITE-25129 */
-    @Parameterized.Parameters(name = "queryId={0}")
-    public static Collection<Integer> params() {
-        Collection<Integer> res = new LinkedHashSet<>(USED_TESTS);
-
-        res.remove(16);
-
-        return res;
-    }
-
     /** {@inheritDoc} */
     @Override protected double scale() {
         return 1.0;
