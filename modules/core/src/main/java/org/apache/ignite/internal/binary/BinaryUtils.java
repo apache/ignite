@@ -1158,7 +1158,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static byte[] doReadByteArray(BinaryInputStream in) {
+    static byte[] doReadByteArray(BinaryInputStream in) {
         int len = in.readInt();
 
         return in.readByteArray(len);
@@ -1167,7 +1167,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static boolean[] doReadBooleanArray(BinaryInputStream in) {
+    static boolean[] doReadBooleanArray(BinaryInputStream in) {
         int len = in.readInt();
 
         return in.readBooleanArray(len);
@@ -1176,7 +1176,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static short[] doReadShortArray(BinaryInputStream in) {
+    static short[] doReadShortArray(BinaryInputStream in) {
         int len = in.readInt();
 
         return in.readShortArray(len);
@@ -1185,7 +1185,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static char[] doReadCharArray(BinaryInputStream in) {
+    static char[] doReadCharArray(BinaryInputStream in) {
         int len = in.readInt();
 
         return in.readCharArray(len);
@@ -1194,7 +1194,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static int[] doReadIntArray(BinaryInputStream in) {
+    static int[] doReadIntArray(BinaryInputStream in) {
         int len = in.readInt();
 
         return in.readIntArray(len);
@@ -1203,7 +1203,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static long[] doReadLongArray(BinaryInputStream in) {
+    static long[] doReadLongArray(BinaryInputStream in) {
         int len = in.readInt();
 
         return in.readLongArray(len);
@@ -1212,7 +1212,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static float[] doReadFloatArray(BinaryInputStream in) {
+    static float[] doReadFloatArray(BinaryInputStream in) {
         int len = in.readInt();
 
         return in.readFloatArray(len);
@@ -1221,7 +1221,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static double[] doReadDoubleArray(BinaryInputStream in) {
+    static double[] doReadDoubleArray(BinaryInputStream in) {
         int len = in.readInt();
 
         return in.readDoubleArray(len);
@@ -1230,7 +1230,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static BigDecimal doReadDecimal(BinaryInputStream in) {
+    static BigDecimal doReadDecimal(BinaryInputStream in) {
         int scale = in.readInt();
         byte[] mag = doReadByteArray(in);
 
@@ -1250,7 +1250,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static String doReadString(BinaryInputStream in) {
+    static String doReadString(BinaryInputStream in) {
         if (!in.hasArray()) {
             byte[] arr = doReadByteArray(in);
 
@@ -1282,14 +1282,14 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static UUID doReadUuid(BinaryInputStream in) {
+    static UUID doReadUuid(BinaryInputStream in) {
         return new UUID(in.readLong(), in.readLong());
     }
 
     /**
      * @return Value.
      */
-    public static Date doReadDate(BinaryInputStream in) {
+    static Date doReadDate(BinaryInputStream in) {
         long time = in.readLong();
 
         return new Date(time);
@@ -1298,7 +1298,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static Timestamp doReadTimestamp(BinaryInputStream in) {
+    static Timestamp doReadTimestamp(BinaryInputStream in) {
         long time = in.readLong();
         int nanos = in.readInt();
 
@@ -1312,7 +1312,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static Time doReadTime(BinaryInputStream in) {
+    static Time doReadTime(BinaryInputStream in) {
         long time = in.readLong();
 
         return new Time(time);
@@ -1322,7 +1322,7 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static BigDecimal[] doReadDecimalArray(BinaryInputStream in) throws BinaryObjectException {
+    static BigDecimal[] doReadDecimalArray(BinaryInputStream in) throws BinaryObjectException {
         int len = in.readInt();
 
         BigDecimal[] arr = new BigDecimal[len];
@@ -1372,7 +1372,7 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static UUID[] doReadUuidArray(BinaryInputStream in) throws BinaryObjectException {
+    static UUID[] doReadUuidArray(BinaryInputStream in) throws BinaryObjectException {
         int len = in.readInt();
 
         UUID[] arr = new UUID[len];
@@ -1397,7 +1397,7 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static Date[] doReadDateArray(BinaryInputStream in) throws BinaryObjectException {
+    static Date[] doReadDateArray(BinaryInputStream in) throws BinaryObjectException {
         int len = in.readInt();
 
         Date[] arr = new Date[len];
@@ -1422,7 +1422,7 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static Timestamp[] doReadTimestampArray(BinaryInputStream in) throws BinaryObjectException {
+    static Timestamp[] doReadTimestampArray(BinaryInputStream in) throws BinaryObjectException {
         int len = in.readInt();
 
         Timestamp[] arr = new Timestamp[len];
@@ -1447,7 +1447,7 @@ public class BinaryUtils {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    public static Time[] doReadTimeArray(BinaryInputStream in) throws BinaryObjectException {
+    static Time[] doReadTimeArray(BinaryInputStream in) throws BinaryObjectException {
         int len = in.readInt();
 
         Time[] arr = new Time[len];
@@ -2026,6 +2026,118 @@ public class BinaryUtils {
 
             default:
                 throw new BinaryObjectException("Invalid flag value: " + flag);
+        }
+    }
+
+    /**
+     * Unmarshall JDBC supported type.
+     * @param type Type.
+     * @param reader Binary reader.
+     * @param binObjAllow Allow to read non plaint objects.
+     * @param keepBinary Whether to deserialize objects or keep in binary format.
+     * @return Read object.
+     */
+    public static Object unmarshallJdbc(byte type, BinaryReaderEx reader, boolean binObjAllow, boolean keepBinary) {
+        switch (type) {
+            case GridBinaryMarshaller.NULL:
+                return null;
+
+            case GridBinaryMarshaller.BOOLEAN:
+                return reader.readBoolean();
+
+            case GridBinaryMarshaller.BYTE:
+                return reader.readByte();
+
+            case GridBinaryMarshaller.CHAR:
+                return reader.readChar();
+
+            case GridBinaryMarshaller.SHORT:
+                return reader.readShort();
+
+            case GridBinaryMarshaller.INT:
+                return reader.readInt();
+
+            case GridBinaryMarshaller.LONG:
+                return reader.readLong();
+
+            case GridBinaryMarshaller.FLOAT:
+                return reader.readFloat();
+
+            case GridBinaryMarshaller.DOUBLE:
+                return reader.readDouble();
+
+            case GridBinaryMarshaller.STRING:
+                return doReadString(reader.in());
+
+            case GridBinaryMarshaller.DECIMAL:
+                return doReadDecimal(reader.in());
+
+            case GridBinaryMarshaller.UUID:
+                return doReadUuid(reader.in());
+
+            case GridBinaryMarshaller.TIME:
+                return doReadTime(reader.in());
+
+            case GridBinaryMarshaller.TIMESTAMP:
+                return doReadTimestamp(reader.in());
+
+            case GridBinaryMarshaller.DATE:
+                return doReadDate(reader.in());
+
+            case GridBinaryMarshaller.BOOLEAN_ARR:
+                return doReadBooleanArray(reader.in());
+
+            case GridBinaryMarshaller.BYTE_ARR:
+                return doReadByteArray(reader.in());
+
+            case GridBinaryMarshaller.CHAR_ARR:
+                return doReadCharArray(reader.in());
+
+            case GridBinaryMarshaller.SHORT_ARR:
+                return doReadShortArray(reader.in());
+
+            case GridBinaryMarshaller.INT_ARR:
+                return doReadIntArray(reader.in());
+
+            case GridBinaryMarshaller.LONG_ARR:
+                return doReadLongArray(reader.in());
+
+            case GridBinaryMarshaller.FLOAT_ARR:
+                return doReadFloatArray(reader.in());
+
+            case GridBinaryMarshaller.DOUBLE_ARR:
+                return doReadDoubleArray(reader.in());
+
+            case GridBinaryMarshaller.STRING_ARR:
+                return doReadStringArray(reader.in());
+
+            case GridBinaryMarshaller.DECIMAL_ARR:
+                return doReadDecimalArray(reader.in());
+
+            case GridBinaryMarshaller.UUID_ARR:
+                return doReadUuidArray(reader.in());
+
+            case GridBinaryMarshaller.TIME_ARR:
+                return doReadTimeArray(reader.in());
+
+            case GridBinaryMarshaller.TIMESTAMP_ARR:
+                return doReadTimestampArray(reader.in());
+
+            case GridBinaryMarshaller.DATE_ARR:
+                return doReadDateArray(reader.in());
+
+            default:
+                reader.in().position(reader.in().position() - 1);
+
+                if (binObjAllow) {
+                    Object res = reader.readObjectDetached();
+
+                    return !keepBinary && res instanceof BinaryObject
+                        ? ((BinaryObject)res).deserialize()
+                        : res;
+                }
+                else
+                    throw new BinaryObjectException("Custom objects are not supported");
         }
     }
 
