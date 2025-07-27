@@ -353,8 +353,10 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
 
-            else if (assignableFrom(erasedType(type), erasedType(Collection.class.getName())) &&
-                !assignableFrom(erasedType(type), erasedType(Set.class.getName()))) {
+            else if (assignableFrom(erasedType(type), erasedType(Collection.class))) {
+                if (assignableFrom(erasedType(type), erasedType(Set.class)))
+                    throw new IllegalArgumentException("Unsupported declared type: " + type);
+
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
                 assert typeArgs.size() == 1;
@@ -467,13 +469,13 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfReadFailed(name, "reader.readMessage");
 
-            else if (assignableFrom(erasedType(type), erasedType(Collection.class.getName())) &&
-                !assignableFrom(erasedType(type), erasedType(Set.class.getName()))) {
+            else if (assignableFrom(erasedType(type), erasedType(Collection.class))) {
+                if (assignableFrom(erasedType(type), erasedType(Set.class)))
+                    throw new IllegalArgumentException("Unsupported declared type: " + type);
+
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
                 assert typeArgs.size() == 1;
-
-                imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
                 returnFalseIfReadFailed(name, "reader.readCollection",
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
@@ -648,8 +650,8 @@ class MessageSerializerGenerator {
     }
 
     /** */
-    private TypeMirror erasedType(String clazz) {
-        return erasedType(type(clazz));
+    private TypeMirror erasedType(Class<?> cls) {
+        return erasedType(type(cls.getName()));
     }
 
     /** */
