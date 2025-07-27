@@ -70,6 +70,14 @@ public class MessageProcessorTest {
 
     /** */
     @Test
+    public void testWrongCollectionUseOrder() {
+        Compilation compilation = compile("WrongCollectionUseOrder.java");
+
+        assertThat(compilation).failed();
+    }
+
+    /** */
+    @Test
     public void testStaticFieldOrderFailed() {
         Compilation compilation = compile("StaticFieldOrder.java");
 
