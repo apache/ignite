@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
@@ -34,7 +31,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 
 /** Hash join converter rule. */
 public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
@@ -53,21 +50,18 @@ public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
     @Override public boolean matchesJoin(RelOptRuleCall call) {
         LogicalJoin join = call.rel(0);
 
-        if (F.isEmpty(join.analyzeCondition().pairs()))
+        IgniteJoinInfo joinInfo = IgniteJoinInfo.of(join);
+
+        if (joinInfo.pairs().isEmpty())
             return false;
 
-        List<Boolean> filterNulls = new ArrayList<>();
-
-        RelOptUtil.splitJoinCondition(join.getLeft(), join.getRight(), join.getCondition(), new ArrayList<>(),
-            new ArrayList<>(), filterNulls);
-
-        // IS NOT DISTINCT currently not supported by HashJoin
-        if (filterNulls.stream().anyMatch(filter -> !filter))
+        // IS NOT DISTINCT is currently not supported simultaneously with equi conditions.
+        if (joinInfo.hasMatchingNulls() && joinInfo.matchingNullsCnt() != joinInfo.pairs().size())
             return false;
 
         // Current limitation: unmatched products on left or right part requires special handling of non-equi condition
         // on execution level.
-        return join.analyzeCondition().isEqui() || NON_EQ_CONDITIONS_SUPPORT.contains(join.getJoinType());
+        return joinInfo.isEqui() || NON_EQ_CONDITIONS_SUPPORT.contains(join.getJoinType());
     }
 
     /** {@inheritDoc} */

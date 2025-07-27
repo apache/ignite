@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptPlanner.CannotPlanException;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
@@ -35,13 +34,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.calcite.rel.RelFieldCollation.Direction.ASCENDING;
-import static org.apache.calcite.sql.ddl.SqlDdlNodes.createSchema;
-import static org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest.byClass;
-import static org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest.createTable;
-import static org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest.findFirstNode;
-import static org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest.findNodes;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.junit.Assert.assertNotNull;
 
 /** */
 public class HashJoinPlannerTest extends AbstractPlannerTest {
@@ -131,16 +124,22 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testHashJoinApplied() throws Exception {
+        // Parms: request, can be planned, only INNER or SEMI join.
         List<List<Object>> testParams = F.asList(
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = t2.c1", true, false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 using(c1)", true, false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = 1", false, false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 ON t1.id is not distinct from t2.c1", false, false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = ?", false, false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = OCTET_LENGTH('TEST')", false, false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = LOG10(t1.c1)", false, false),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = t2.c1 and t1.ID > t2.ID", true, true),
-            F.asList("select t1.c1 from t1 %s join t1 t2 on t1.c1 = 1 and t2.c1 = 1", false, false)
+            F.asList("select t1.c1 from t1 %s join t2 on t1.id = t2.id", true, false),
+            F.asList("select t1.c1 from t1 %s join t2 on t1.id = t2.id and t1.c1=t2.c1", true, false),
+            F.asList("select t1.c1 from t1 %s join t2 using(c1)", true, false),
+            F.asList("select t1.c1 from t1 %s join t2 on t1.c1 = 1", false, false),
+            F.asList("select t1.c1 from t1 %s join t2 ON t1.id is not distinct from t2.c1", true, false),
+            F.asList("select t1.c1 from t1 %s join t2 ON t1.id is not distinct from t2.c1 and t1.c1 is not distinct from  t2.id",
+                true, false),
+            F.asList("select t1.c1 from t1 %s join t2 ON t1.id is not distinct from t2.c1 and t1.c1 = t2.id", false, false),
+            F.asList("select t1.c1 from t1 %s join t2 ON t1.id is not distinct from t2.c1 and t1.c1 > t2.id", true, true),
+            F.asList("select t1.c1 from t1 %s join t2 on t1.c1 = ?", false, false),
+            F.asList("select t1.c1 from t1 %s join t2 on t1.c1 = OCTET_LENGTH('TEST')", false, false),
+            F.asList("select t1.c1 from t1 %s join t2 on t1.c1 = LOG10(t1.c1)", false, false),
+            F.asList("select t1.c1 from t1 %s join t2 on t1.c1 = t2.c1 and t1.ID > t2.ID", true, true),
+            F.asList("select t1.c1 from t1 %s join t2 on t1.c1 = 1 and t2.c1 = 1", false, false)
         );
 
         for (List<Object> paramSet : testParams) {
@@ -150,15 +149,19 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
             boolean canBePlanned = (Boolean)paramSet.get(1);
             boolean onlyInnerOrSemi = (Boolean)paramSet.get(2);
 
-            TestTable tbl = createTable("T1", IgniteDistributions.single(), "ID", Integer.class, "C1", Integer.class);
+            TestTable tbl1 = createTable("T1", IgniteDistributions.single(), "ID", Integer.class, "C1", Integer.class);
+            TestTable tbl2 = createTable("T2", IgniteDistributions.single(), "ID", Integer.class, "C1", Integer.class);
 
-            IgniteSchema schema = createSchema(tbl);
+            IgniteSchema schema = createSchema(tbl1, tbl2);
 
             for (String joinType : JOIN_TYPES) {
                 if (onlyInnerOrSemi && !joinType.equals("INNER") && !joinType.equals("SEMI"))
                     continue;
 
                 String sql0 = String.format(sql, joinType);
+
+                if (log.isInfoEnabled())
+                    log.info("Testing query '" + sql0 + "' for join type " + joinType);
 
                 if (canBePlanned)
                     assertPlan(sql0, schema, nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class)), DISABLED_RULES);

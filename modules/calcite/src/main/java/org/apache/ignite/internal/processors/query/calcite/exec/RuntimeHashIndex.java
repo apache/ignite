@@ -21,8 +21,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,6 +32,17 @@ import org.jetbrains.annotations.Nullable;
  * Runtime hash index based on on-heap hash map.
  */
 public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
+    /** Allowed key for null values but matching no any other key. */
+    private static final GroupKey NON_MATCHING_NULLS_KEY = new GroupKey<>(null, null) {
+        @Override public boolean equals(Object o) {
+            throw new UnsupportedOperationException("Rows with null values must not be compared at all.");
+        }
+
+        @Override public int hashCode() {
+            return 0;
+        }
+    };
+
     /** */
     protected final ExecutionContext<Row> ectx;
 
@@ -37,7 +50,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     private final RowHandler<Row> keysRowHnd;
 
     /** Rows. */
-    private final HashMap<GroupKey<Row>, Collection<Row>> rows;
+    private final Map<GroupKey<Row>, Collection<Row>> rows;
 
     /** */
     private final Supplier<Collection<Row>> collectionFactory;
@@ -45,22 +58,27 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     /** Allow NULL values. */
     private final boolean allowNulls;
 
+    /** */
+    private final boolean nullsMatch;
+
     /** Creates hash index with the default collection supplier. */
     public RuntimeHashIndex(ExecutionContext<Row> ectx, ImmutableBitSet keys, boolean allowNulls) {
-        this(ectx, keys, allowNulls, -1, null);
+        this(ectx, ImmutableIntList.of(keys.toArray()), allowNulls, true, -1, null);
     }
 
     /** */
     public RuntimeHashIndex(
         ExecutionContext<Row> ectx,
-        ImmutableBitSet keys,
+        ImmutableIntList keys,
         boolean allowNulls,
+        boolean nullsMatch,
         int initCapacity,
         @Nullable Supplier<Collection<Row>> collectionFactory
     ) {
         this(
             ectx,
             allowNulls,
+            nullsMatch,
             new MappingRowHandler<>(ectx.rowHandler(), keys),
             initCapacity >= 0 ? new HashMap<>(initCapacity) : new HashMap<>(),
             collectionFactory
@@ -71,12 +89,14 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     private RuntimeHashIndex(
         ExecutionContext<Row> ectx,
         boolean allowNulls,
+        boolean nullsMatch,
         RowHandler<Row> keysRowHnd,
-        HashMap<GroupKey<Row>, Collection<Row>> rows,
+        Map<GroupKey<Row>, Collection<Row>> rows,
         @Nullable Supplier<Collection<Row>> collectionFactory
     ) {
         this.ectx = ectx;
         this.allowNulls = allowNulls;
+        this.nullsMatch = allowNulls && nullsMatch;
 
         this.keysRowHnd = keysRowHnd;
         this.rows = rows;
@@ -117,10 +137,10 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
      * IS NOT DISTINCT FROM condition).
      */
     private @Nullable GroupKey<Row> key(Row r) {
-        if (!allowNulls) {
+        if (!allowNulls || !nullsMatch) {
             for (int i = 0; i < keysRowHnd.columnCount(r); i++) {
                 if (keysRowHnd.get(i, r) == null)
-                    return null;
+                    return allowNulls ? NON_MATCHING_NULLS_KEY : null;
             }
         }
 
@@ -128,7 +148,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     }
 
     /** */
-    public RuntimeHashIndex<Row> remappedSearcher(ImmutableBitSet remappedKeys) {
+    public RuntimeHashIndex<Row> remappedSearcher(int[] remappedKeys) {
         return new RemappedSearcher<>(this, remappedKeys);
     }
 
@@ -138,11 +158,11 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
         private final RuntimeHashIndex<Row> origin;
 
         /** */
-        private RemappedSearcher(RuntimeHashIndex<Row> origin, ImmutableBitSet remappedKeys){
-            super(origin.ectx, origin.allowNulls, new MappingRowHandler<>(origin.ectx.rowHandler(), remappedKeys),
-                origin.rows, origin.collectionFactory);
+        private RemappedSearcher(RuntimeHashIndex<Row> o, int[] remappedKeys) {
+            super(o.ectx, o.allowNulls, o.nullsMatch, new MappingRowHandler<>(o.ectx.rowHandler(), ImmutableIntList.of(remappedKeys)),
+                o.rows, o.collectionFactory);
 
-            this.origin = origin;
+            this.origin = o;
         }
 
         /** {@inheritDoc} */
@@ -169,8 +189,8 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
         public @Nullable Collection<Row> get() {
             GroupKey<Row> key = key(searchRow.get());
 
-            if (key == null)
-                return Collections.emptyList();
+            if (key == null || key == NON_MATCHING_NULLS_KEY)
+                return null;
 
             return rows.get(key);
         }

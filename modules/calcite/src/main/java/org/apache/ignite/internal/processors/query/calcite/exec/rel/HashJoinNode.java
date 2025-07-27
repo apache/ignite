@@ -21,28 +21,23 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiPredicate;
-import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeHashIndex;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /** Hash join implementor. */
 public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNode<Row> {
     /** */
     private static final int INITIAL_CAPACITY = 128;
-
-    /** All keys with null-fields are mapped to this object. */
-    private static final Key NULL_KEY = new Key();
 
     /** */
     private final int[] leftKeys;
@@ -53,14 +48,11 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     /** Output row handler. */
     protected final RowHandler<Row> outRowHnd;
 
-    /** */
-    protected final Map<Key, TouchedCollection<Row>> hashStore = U.newHashMap(INITIAL_CAPACITY);
-    protected final boolean keepRowsWithNull;
-//    /** */
-//    protected final RuntimeHashIndex<Row> hashIdx;
-//
-//    /** */
-//    protected final RuntimeHashIndex<Row> remappedHashIdx;
+    /** Right rows storage. */
+    protected final RuntimeHashIndex<Row> rightHashStore;
+
+    /** Uses the right keys for find matching left rows. */
+    protected final RuntimeHashIndex<Row> remappedLeftSearcher;
 
     /** */
     protected Iterator<Row> rightIt = Collections.emptyIterator();
@@ -72,7 +64,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
      * Creates hash join node.
      *
      * @param ctx Execution context.
-     * @param rowType Row type.
+     * @param rowType Out row type.
      * @param info Join info.
      * @param outRowHnd Output row handler.
      * @param keepRowsWithNull {@code True} if we need to store the row from right shoulder even if it contains NULL in
@@ -83,12 +75,16 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     protected HashJoinNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        JoinInfo info,
+        IgniteJoinInfo info,
         RowHandler<Row> outRowHnd,
         boolean keepRowsWithNull,
         @Nullable BiPredicate<Row, Row> nonEqCond
     ) {
         super(ctx, rowType);
+
+        // For IS NOT DISTINCT we have to keep rows with null values.
+        if (info.hasMatchingNulls())
+            keepRowsWithNull = true;
 
         leftKeys = info.leftKeys.toIntArray();
         rightKeys = info.rightKeys.toIntArray();
@@ -99,11 +95,16 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         this.nonEqCond = nonEqCond;
 
-        this.keepRowsWithNull = keepRowsWithNull;
+        rightHashStore = new RuntimeHashIndex<>(ctx, info.rightKeys, keepRowsWithNull, info.hasMatchingNulls(),
+            INITIAL_CAPACITY, TouchedArrayList::new);
 
-//        hashIdx = new RuntimeHashIndex<>(ctx, ImmutableBitSet.of(info.rightKeys), keepRowsWithNull, INITIAL_CAPACITY,
-//            TouchedArrayList::new);
-//        remappedHashIdx = hashIdx.remappedSearcher(ImmutableBitSet.of(info.leftKeys));
+        // We remap right keys to search left rows because values order might differ.
+        Map<Integer, Integer> remappedKeys = new LinkedHashMap<>(rightKeys.length, 1.0f);
+
+        for (int i = 0; i < rightKeys.length; ++i)
+            remappedKeys.put(rightKeys[i], leftKeys[i]);
+
+        remappedLeftSearcher = rightHashStore.remappedSearcher(remappedKeys.values().stream().mapToInt(i -> i).toArray());
     }
 
     /** {@inheritDoc} */
@@ -112,42 +113,45 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         rightIt = Collections.emptyIterator();
 
-        hashStore.clear();
-//        hashIdx.close();
+        rightHashStore.close();
     }
 
     /** Creates certain join node. */
     public static <RowT> HashJoinNode<RowT> create(
         ExecutionContext<RowT> ctx,
-        RelDataType outRowType,
+        RelDataType rowType,
         RelDataType leftRowType,
         RelDataType rightRowType,
         JoinRelType type,
-        JoinInfo info,
+        IgniteJoinInfo info,
         @Nullable BiPredicate<RowT, RowT> nonEqCond
     ) {
+        assert !info.pairs().isEmpty() && (info.isEqui() || type == JoinRelType.INNER || type == JoinRelType.SEMI);
+        assert !info.hasMatchingNulls() || info.matchingNullsCnt() == info.leftKeys.size();
+
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
         RowHandler<RowT> rowHnd = ctx.rowHandler();
 
         switch (type) {
             case INNER:
-                return new InnerHashJoin<>(ctx, outRowType, info, rowHnd, nonEqCond);
+                return new InnerHashJoin<>(ctx, rowType, info, rowHnd, nonEqCond);
 
             case LEFT:
-                return new LeftHashJoin<>(ctx, outRowType, info, rowHnd, rowHnd.factory(typeFactory, rightRowType), nonEqCond);
+                return new LeftHashJoin<>(ctx, rowType, info, rowHnd, rowHnd.factory(typeFactory, rightRowType), nonEqCond);
 
             case RIGHT:
-                return new RightHashJoin<>(ctx, outRowType, info, rowHnd, rowHnd.factory(typeFactory, leftRowType), nonEqCond);
+                return new RightHashJoin<>(ctx, rowType, info, rowHnd, rowHnd.factory(typeFactory, leftRowType), nonEqCond);
 
-            case FULL:
-                return new FullOuterHashJoin<>(ctx, outRowType, info, rowHnd, rowHnd.factory(typeFactory, leftRowType),
+            case FULL: {
+                return new FullOuterHashJoin<>(ctx, rowType, info, rowHnd, rowHnd.factory(typeFactory, leftRowType),
                     rowHnd.factory(typeFactory, rightRowType), nonEqCond);
+            }
 
             case SEMI:
-                return new SemiHashJoin<>(ctx, outRowType, info, rowHnd, nonEqCond);
+                return new SemiHashJoin<>(ctx, rowType, info, rowHnd, nonEqCond);
 
             case ANTI:
-                return new AntiHashJoin<>(ctx, outRowType, info, rowHnd, nonEqCond);
+                return new AntiHashJoin<>(ctx, rowType, info, rowHnd, nonEqCond);
 
             default:
                 throw new IllegalArgumentException("Join of type '" + type + "' isn't supported.");
@@ -156,43 +160,22 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
     /** */
     protected Collection<Row> lookup(Row row) {
-//        Collection<Row> res = remappedHashIdx.scan(() -> row).get();
-//
-//        if (res == null)
-//            return Collections.emptyList();
-//
-//        assert res instanceof TouchedArrayList;
-//
-//        ((TouchedArrayList<?>)res).touched = true;
-//
-//        return res == null ? Collections.emptyList() : res;
-// TODO: remove
-        Key row0 = extractKey(row, leftKeys);
+        Collection<Row> res = remappedLeftSearcher.scan(() -> row).get();
 
-        // Key with null field can't be compared with other keys.
-        if (row0 == NULL_KEY)
+        if (res == null)
             return Collections.emptyList();
 
-        TouchedCollection<Row> found = hashStore.get(row0);
+        assert res instanceof TouchedArrayList;
 
-        if (found != null) {
-            found.touched = true;
+        ((TouchedArrayList<?>)res).touched = true;
 
-            return found.items();
-        }
-
-        return Collections.emptyList();
+        return res;
     }
 
     /** */
     protected Iterator<Row> untouched() {
-        return F.flat(F.iterator(hashStore.values(), TouchedCollection::items, true, v -> !v.touched));
+        return F.flat(F.iterator(rightHashStore.rowSets(), c0 -> c0, true, c1 -> !((TouchedArrayList<Row>)c1).touched));
     }
-//
-//    /** */
-//    protected Iterator<Row> untouched() {
-//        return F.flat(F.iterator(hashIdx.rowSets(), c0 -> c0, true, c1 -> !((TouchedArrayList<Row>)c1).touched));
-//    }
 
     /** {@inheritDoc} */
     @Override protected void pushRight(Row row) throws Exception {
@@ -205,31 +188,10 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         waitingRight--;
 
-        //hashIdx.push(row);
-
-        Key key = extractKey(row, rightKeys);
-
-        // No storing in #hashIndex, if the row contains NULL. And we won't emit right part alone like in FULL OUTER and RIGHT joins.
-        if (keepRowsWithNull || key != NULL_KEY) {
-            TouchedCollection<Row> raw = hashStore.computeIfAbsent(key, k -> new TouchedCollection<>());
-
-            raw.add(row);
-        }
+        rightHashStore.push(row);
 
         if (waitingRight == 0)
             rightSource().request(waitingRight = IN_BUFFER_SIZE);
-    }
-
-    /** */
-    private Key extractKey(Row row, int[] mapping) {
-        RowHandler<Row> rowHnd = context().rowHandler();
-
-        for (int i : mapping) {
-            if (rowHnd.get(i, row) == null)
-                return NULL_KEY;
-        }
-
-        return new RowWrapper<>(row, rowHnd, mapping);
     }
 
     /** */
@@ -244,8 +206,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 && !rightIt.hasNext()) {
             requested = 0;
 
-            hashStore.clear();
-//            hashIdx.close();
+            rightHashStore.close();
 
             downstream().end();
         }
@@ -257,14 +218,14 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * Creates node for INNER JOIN.
          *
          * @param ctx Execution context.
-         * @param rowType Row type.
+         * @param rowType Out row type.
          * @param info Join info.
          * @param outRowHnd Output row handler.
          * @param nonEqCond If provided, only rows matching the predicate will be emitted as matched rows.
          */
         private InnerHashJoin(ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            JoinInfo info,
+            IgniteJoinInfo info,
             RowHandler<RowT> outRowHnd,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
@@ -285,24 +246,25 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                             rightIt = lookup(left).iterator();
                         }
 
-                        // Emits matched rows.
-                        while (rightIt.hasNext()) {
-                            checkState();
+                        if (rightIt.hasNext()) {
+                            // Emits matched rows.
+                            while (requested > 0 && rightIt.hasNext()) {
+                                checkState();
 
-                            RowT right = rightIt.next();
+                                RowT right = rightIt.next();
 
-                            if (nonEqCond != null && !nonEqCond.test(left, right))
-                                continue;
+                                if (nonEqCond != null && !nonEqCond.test(left, right))
+                                    continue;
 
-                            --requested;
+                                --requested;
 
-                            downstream().push(outRowHnd.concat(left, right));
+                                downstream().push(outRowHnd.concat(left, right));
+                            }
 
-                            if (requested == 0)
-                                break;
+                            if (!rightIt.hasNext())
+                                left = null;
                         }
-
-                        if (!rightIt.hasNext())
+                        else
                             left = null;
                     }
                 }
@@ -325,7 +287,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          *
          * @param ctx Execution context.
          * @param info Join info.
-         * @param rowType Row tyoe.
+         * @param rowType Out row type.
          * @param outRowHnd Output row handler.
          * @param rightRowFactory Right row factory.
          * @param nonEqCond If provided, only rows matching the predicate will be emitted as matched rows.
@@ -333,7 +295,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private LeftHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            JoinInfo info,
+            IgniteJoinInfo info,
             RowHandler<RowT> outRowHnd,
             RowHandler.RowFactory<RowT> rightRowFactory,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
@@ -369,21 +331,22 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                             rightIt = rightRows.iterator();
                         }
 
-                        // Emit unmatched left row.
-                        while (rightIt.hasNext()) {
-                            checkState();
+                        if (rightIt.hasNext()) {
+                            // Emit unmatched left row.
+                            while (requested > 0 && rightIt.hasNext()) {
+                                checkState();
 
-                            RowT right = rightIt.next();
+                                RowT right = rightIt.next();
 
-                            --requested;
+                                --requested;
 
-                            downstream().push(outRowHnd.concat(left, right));
+                                downstream().push(outRowHnd.concat(left, right));
+                            }
 
-                            if (requested == 0)
-                                break;
+                            if (!rightIt.hasNext())
+                                left = null;
                         }
-
-                        if (!rightIt.hasNext())
+                        else
                             left = null;
                     }
                 }
@@ -408,7 +371,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * Creates node for RIGHT OUTER JOIN.
          *
          * @param ctx Execution context.
-         * @param rowType Row type.
+         * @param rowType Out row type.
          * @param info Join info.
          * @param outRowHnd Output row handler.
          * @param leftRowFactory Left row factory.
@@ -417,7 +380,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private RightHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            JoinInfo info,
+            IgniteJoinInfo info,
             RowHandler<RowT> outRowHnd,
             RowHandler.RowFactory<RowT> leftRowFactory,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
@@ -445,21 +408,22 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                             rightIt = lookup(left).iterator();
                         }
 
-                        // Emits matched rows.
-                        while (rightIt.hasNext()) {
-                            checkState();
+                        if (rightIt.hasNext()) {
+                            // Emits matched rows.
+                            while (requested > 0 && rightIt.hasNext()) {
+                                checkState();
 
-                            RowT right = rightIt.next();
+                                RowT right = rightIt.next();
 
-                            --requested;
+                                --requested;
 
-                            downstream().push(outRowHnd.concat(left, right));
+                                downstream().push(outRowHnd.concat(left, right));
+                            }
 
-                            if (requested == 0)
-                                break;
+                            if (!rightIt.hasNext())
+                                left = null;
                         }
-
-                        if (!rightIt.hasNext())
+                        else
                             left = null;
                     }
                 }
@@ -482,7 +446,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
                     RowT emptyLeft = leftRowFactory.create();
 
-                    while (rightIt.hasNext()) {
+                    while (requested > 0 && rightIt.hasNext()) {
                         checkState();
 
                         RowT right = rightIt.next();
@@ -492,9 +456,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                         --requested;
 
                         downstream().push(row);
-
-                        if (requested == 0)
-                            break;
                     }
                 }
                 finally {
@@ -530,7 +491,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * @param ctx Execution context.
          * @param rowType Row type.
          * @param info Join info.
-         * @param outRowHnd Output row handler.
+         * @param outRowHnd Out row handler.
          * @param leftRowFactory Left row factory.
          * @param rightRowFactory Right row factory.
          * @param nonEqCond If provided, only rows matching the predicate will be emitted as matched rows.
@@ -538,7 +499,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private FullOuterHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            JoinInfo info,
+            IgniteJoinInfo info,
             RowHandler<RowT> outRowHnd,
             RowHandler.RowFactory<RowT> leftRowFactory,
             RowHandler.RowFactory<RowT> rightRowFactory,
@@ -599,7 +560,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            // Emit unmatched right rows.Add commentMore actions
+            // Emit unmatched right rows.
             if (left == null && leftInBuf.isEmpty() && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && requested > 0) {
                 inLoop = true;
 
@@ -647,7 +608,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * Creates node for SEMI JOIN operator.
          *
          * @param ctx Execution context.
-         * @param rowType Row type.
+         * @param rowType Out row type.
          * @param info Join info.
          * @param outRowHnd Output row handler.
          * @param nonEqCond If provided, only rows matching the predicate will be emitted as matched rows.
@@ -655,7 +616,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private SemiHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            JoinInfo info,
+            IgniteJoinInfo info,
             RowHandler<RowT> outRowHnd,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
@@ -671,16 +632,20 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                     while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
                         checkState();
 
-                        left = leftInBuf.remove();
+                        // Proceed with next left row, if previous was fully processed.
+                        if (!rightIt.hasNext()) {
+                            left = leftInBuf.remove();
 
-                        Collection<RowT> rightRows = lookup(left);
+                            rightIt = lookup(left).iterator();
+                        }
 
-                        boolean anyMatched = !rightRows.isEmpty();
+                        boolean anyMatched = rightIt.hasNext() && nonEqCond == null;
 
-                        if (anyMatched && nonEqCond != null) {
-                            anyMatched = false;
+                        if (!anyMatched) {
+                            // Find any matched row.
+                            while (rightIt.hasNext()) {
+                                RowT right = rightIt.next();
 
-                            for (RowT right : rightRows) {
                                 if (nonEqCond.test(left, right)) {
                                     anyMatched = true;
 
@@ -693,9 +658,12 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                             requested--;
 
                             downstream().push(left);
+
+                            rightIt = Collections.emptyIterator();
                         }
 
-                        left = null;
+                        if (!rightIt.hasNext())
+                            left = null;
                     }
                 }
                 finally {
@@ -713,7 +681,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * Creates node for ANTI JOIN.
          *
          * @param ctx Execution context.
-         * @param rowType Row type.
+         * @param rowType Out row type.
          * @param info Join info.
          * @param outRowHnd Output row handler.
          * @param nonEqCond If provided, only rows matching the predicate will be emitted as matched rows.
@@ -721,7 +689,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private AntiHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            JoinInfo info,
+            IgniteJoinInfo info,
             RowHandler<RowT> outRowHnd,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
@@ -759,90 +727,9 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         }
     }
 
-    /** Non-comparable key object. */
-    private static class Key {
-
-    }
-
-    /** Comparable key object. */
-    private static final class RowWrapper<RowT> extends Key {
-        /** */
-        private final RowT row;
-
-        /** */
-        private final RowHandler<RowT> handler;
-
-        /** */
-        private final int[] items;
-
-        /** */
-        private RowWrapper(RowT row, RowHandler<RowT> hnd, int[] items) {
-            this.row = row;
-            this.handler = hnd;
-            this.items = items;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int hashCode = 0;
-
-            for (int i : items)
-                hashCode += Objects.hashCode(handler.get(i, row));
-
-            return hashCode;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-
-            if (obj == null || getClass() != obj.getClass())
-                return false;
-
-            RowWrapper<RowT> row0 = (RowWrapper<RowT>)obj;
-
-            for (int i = 0; i < items.length; ++i) {
-                Object input = row0.handler.get(row0.items[i], row0.row);
-                Object cur = handler.get(items[i], row);
-
-                boolean comp = Objects.equals(input, cur);
-
-                if (!comp)
-                    return comp;
-            }
-
-            return true;
-        }
-    }
-
     /** */
     private static final class TouchedArrayList<T> extends ArrayList<T> {
         /** */
         private boolean touched;
-    }
-
-    /** */
-    private static final class TouchedCollection<RowT> {
-        /** */
-        private final Collection<RowT> coll;
-
-        /** */
-        private boolean touched;
-
-        /** */
-        private TouchedCollection() {
-            this.coll = new ArrayList<>();
-        }
-
-        /** */
-        private void add(RowT row) {
-            coll.add(row);
-        }
-
-        /** */
-        private Collection<RowT> items() {
-            return coll;
-        }
     }
 }

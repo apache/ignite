@@ -25,11 +25,11 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
-import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -37,12 +37,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.calcite.rel.core.JoinRelType.ANTI;
 import static org.apache.calcite.rel.core.JoinRelType.FULL;
-import static org.apache.calcite.rel.core.JoinRelType.INNER;
-import static org.apache.calcite.rel.core.JoinRelType.LEFT;
-import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
-import static org.apache.calcite.rel.core.JoinRelType.SEMI;
 
 /**
  *
@@ -61,7 +56,7 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
             assertTrue(((MergeJoinNode<?>)node).rightInBuf.size() <= IN_BUFFER_SIZE);
         };
 
-        doTestJoinBuffer(joinFactory, bufChecker);
+        doTestJoinBuffer(joinFactory, bufChecker, false);
     }
 
     /** */
@@ -73,13 +68,13 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
         Consumer<AbstractNode<?>> bufChecker = (node) ->
             assertTrue(((AbstractRightMaterializedJoinNode<?>)node).leftInBuf.size() <= IN_BUFFER_SIZE);
 
-        doTestJoinBuffer(joinFactory, bufChecker);
+        doTestJoinBuffer(joinFactory, bufChecker, false);
     }
 
     /** */
     @Test
     public void testHashJoinBuffers() throws Exception {
-        JoinInfo joinInfo = JoinInfo.of(ImmutableIntList.of(0), ImmutableIntList.of(0));
+        IgniteJoinInfo joinInfo = IgniteJoinInfo.of(ImmutableIntList.of(0), ImmutableIntList.of(0));
 
         JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType) ->
             HashJoinNode.create(ctx, outType, leftType, rightType, joinType, joinInfo, null);
@@ -87,7 +82,7 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
         Consumer<AbstractNode<?>> bufChecker = (node) ->
             assertTrue(((AbstractRightMaterializedJoinNode<?>)node).leftInBuf.size() <= IN_BUFFER_SIZE);
 
-        doTestJoinBuffer(joinFactory, bufChecker);
+        doTestJoinBuffer(joinFactory, bufChecker, true);
     }
 
     /**
@@ -95,17 +90,19 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
      *
      * @param joinFactory Creates certain join node.
      * @param joinBufChecker Finally check node after successfull run.
+     * @param sortResults If {@code true}, sorts results before checking.
      */
     private void doTestJoinBuffer(
         JoinFactory joinFactory,
-        Consumer<AbstractNode<?>> joinBufChecker
+        Consumer<AbstractNode<?>> joinBufChecker,
+        boolean sortResults
     ) throws Exception {
         for (JoinRelType joinType : F.asList(FULL)) {
             if (log.isInfoEnabled())
                 log.info("Testing join of type '" + joinType + "'...");
 
-            int size = IN_BUFFER_SIZE * 2 + IN_BUFFER_SIZE / 2;
-            int intersect = Math.max(10, IN_BUFFER_SIZE / 10);
+            int size = IN_BUFFER_SIZE * 2 + 1;
+            int intersect = 10;
 
             int leftTo = size + intersect;
             int rightTo = size * 2;
@@ -154,6 +151,23 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
             join.request(size * size);
 
             assertTrue(GridTestUtils.waitForCondition(finished::get, getTestTimeout()));
+
+            // Sorting might be needed because join may not produce a sorted result.
+            if (sortResults) {
+                res.sort(new Comparator<>() {
+                    @Override public int compare(Object[] row0, Object[] row1) {
+                        assert row0.length == row1.length;
+                        assert row0.length == 2;
+                        assert row0[0] == row0[1] && row0[0] != null || (row0[0] != null || row0[1] != null);
+                        assert row1[0] == row1[1] && row1[0] != null || (row1[0] != null || row1[1] != null);
+
+                        int v1 = (int)(row0[0] == null ? row0[1] : row0[0]);
+                        int v2 = (int)(row1[0] == null ? row1[1] : row1[0]);
+
+                        return Integer.compare(v1, v2);
+                    }
+                });
+            }
 
             switch (joinType) {
                 case LEFT:
