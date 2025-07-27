@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 
 /** */
 public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJoinNode<Row> {
-    /** */
+    /** TODO : use also in hash join */
     private static final int HALF_BUF_SIZE = IN_BUFFER_SIZE >> 1;
 
     /** */
@@ -152,7 +152,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                                 continue;
 
                             requested--;
-                            Row row = handler.concat(left, rightMaterialized.get(rightIdx - 1));
+                            Row row = rowHnd.concat(left, rightMaterialized.get(rightIdx - 1));
                             downstream().push(row);
                         }
 
@@ -226,7 +226,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                             requested--;
                             matched = true;
 
-                            Row row = handler.concat(left, rightMaterialized.get(rightIdx - 1));
+                            Row row = rowHnd.concat(left, rightMaterialized.get(rightIdx - 1));
                             downstream().push(row);
                         }
 
@@ -320,7 +320,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                             requested--;
                             rightNotMatchedIndexes.clear(rightIdx - 1);
 
-                            Row joined = handler.concat(left, right);
+                            Row joined = rowHnd.concat(left, right);
                             downstream().push(joined);
                         }
 
@@ -449,7 +449,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                             leftMatched = true;
                             rightNotMatchedIndexes.clear(rightIdx - 1);
 
-                            Row joined = handler.concat(left, right);
+                            Row joined = rowHnd.concat(left, right);
                             downstream().push(joined);
                         }
 

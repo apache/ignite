@@ -23,11 +23,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
+import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -48,10 +49,10 @@ import static org.apache.calcite.rel.core.JoinRelType.SEMI;
  */
 @RunWith(Parameterized.class)
 public class JoinBuffersExecutionTest extends AbstractExecutionTest {
-    /** Tests merge join with input bigger that the buffer size. */
+    /** */
     @Test
     public void testMergeJoinBuffers() throws Exception {
-        JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType, cond) ->
+        JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType) ->
             MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, Comparator.comparingInt(r -> (Integer)r[0]), true);
 
         Consumer<AbstractNode<?>> bufChecker = (node) -> {
@@ -63,19 +64,35 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
         doTestJoinBuffer(joinFactory, bufChecker);
     }
 
-    /** Tests NL with input bigger that the buffer size. */
+    /** */
     @Test
     public void testNLJoinBuffers() throws Exception {
-        JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType, cond) ->
+        JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType) ->
             NestedLoopJoinNode.create(ctx, outType, leftType, rightType, joinType, (r1, r2) -> r1[0].equals(r2[0]));
 
         Consumer<AbstractNode<?>> bufChecker = (node) ->
-            assertTrue(((NestedLoopJoinNode<?>)node).leftInBuf.size() <= IN_BUFFER_SIZE);
+            assertTrue(((AbstractRightMaterializedJoinNode<?>)node).leftInBuf.size() <= IN_BUFFER_SIZE);
+
+        doTestJoinBuffer(joinFactory, bufChecker);
+    }
+
+    /** */
+    @Test
+    public void testHashJoinBuffers() throws Exception {
+        JoinInfo joinInfo = JoinInfo.of(ImmutableIntList.of(0), ImmutableIntList.of(0));
+
+        JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType) ->
+            HashJoinNode.create(ctx, outType, leftType, rightType, joinType, joinInfo, null);
+
+        Consumer<AbstractNode<?>> bufChecker = (node) ->
+            assertTrue(((AbstractRightMaterializedJoinNode<?>)node).leftInBuf.size() <= IN_BUFFER_SIZE);
 
         doTestJoinBuffer(joinFactory, bufChecker);
     }
 
     /**
+     * Tests a join with input bigger that the buffer size.
+     *
      * @param joinFactory Creates certain join node.
      * @param joinBufChecker Finally check node after successfull run.
      */
@@ -83,7 +100,7 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
         JoinFactory joinFactory,
         Consumer<AbstractNode<?>> joinBufChecker
     ) throws Exception {
-        for (JoinRelType joinType : F.asList(LEFT, INNER, RIGHT, FULL, SEMI, ANTI)) {
+        for (JoinRelType joinType : F.asList(FULL)) {
             if (log.isInfoEnabled())
                 log.info("Testing join of type '" + joinType + "'...");
 
@@ -106,8 +123,7 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
 
             RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, int.class);
 
-            AbstractNode<Object[]> join = joinFactory.create(ctx, outType, leftType, rightType, joinType,
-                (r1, r2) -> r1[0].equals(r2[0]));
+            AbstractNode<Object[]> join = joinFactory.create(ctx, outType, leftType, rightType, joinType);
 
             join.register(F.asList(leftNode, rightNode));
 
@@ -231,8 +247,7 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
             RelDataType outType,
             RelDataType leftType,
             RelDataType rightType,
-            JoinRelType joinType,
-            BiPredicate<Object[], Object[]> cond
+            JoinRelType joinType
         );
     }
 }

@@ -35,8 +35,10 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.calcite.rel.core.JoinRelType.ANTI;
+import static org.apache.calcite.rel.core.JoinRelType.FULL;
 import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
+import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
 
 /** */
@@ -111,7 +113,7 @@ public class HashJoinExecutionTest extends AbstractExecutionTest {
     /** */
     @Test
     public void testEquiJoinWithDifferentBufferSize() {
-        for (JoinRelType joinType : JoinRelType.values()) {
+        for (JoinRelType joinType : F.asList(INNER, LEFT, RIGHT, FULL, SEMI, ANTI)) {
             validateEquiJoin(joinType, 0, 0);
             validateEquiJoin(joinType, 0, 1);
             validateEquiJoin(joinType, 0, 10);

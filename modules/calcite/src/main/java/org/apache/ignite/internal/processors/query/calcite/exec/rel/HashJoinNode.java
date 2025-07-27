@@ -55,9 +55,12 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
     /** */
     protected final Map<Key, TouchedCollection<Row>> hashStore = U.newHashMap(INITIAL_CAPACITY);
-
-    /** */
-    protected final RuntimeHashIndex<TouchedList> runtimeHashIdx;
+    protected final boolean keepRowsWithNull;
+//    /** */
+//    protected final RuntimeHashIndex<Row> hashIdx;
+//
+//    /** */
+//    protected final RuntimeHashIndex<Row> remappedHashIdx;
 
     /** */
     protected Iterator<Row> rightIt = Collections.emptyIterator();
@@ -72,6 +75,9 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
      * @param rowType Row type.
      * @param info Join info.
      * @param outRowHnd Output row handler.
+     * @param keepRowsWithNull {@code True} if we need to store the row from right shoulder even if it contains NULL in
+     *                         any of join key position. This is required for joins which emit unmatched part
+     *                         of the right shoulder, such as RIGHT JOIN and FULL OUTER JOIN.
      * @param nonEqCond If provided, only rows matching the predicate will be emitted as matched rows.
      */
     protected HashJoinNode(
@@ -79,6 +85,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         RelDataType rowType,
         JoinInfo info,
         RowHandler<Row> outRowHnd,
+        boolean keepRowsWithNull,
         @Nullable BiPredicate<Row, Row> nonEqCond
     ) {
         super(ctx, rowType);
@@ -92,7 +99,11 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         this.nonEqCond = nonEqCond;
 
-        runtimeHashIdx = new RuntimeHashIndex<>(ctx, ImmutableBitSet.of(info.rightKeys), keepRowsWithNull());
+        this.keepRowsWithNull = keepRowsWithNull;
+
+//        hashIdx = new RuntimeHashIndex<>(ctx, ImmutableBitSet.of(info.rightKeys), keepRowsWithNull, INITIAL_CAPACITY,
+//            TouchedArrayList::new);
+//        remappedHashIdx = hashIdx.remappedSearcher(ImmutableBitSet.of(info.leftKeys));
     }
 
     /** {@inheritDoc} */
@@ -102,7 +113,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         rightIt = Collections.emptyIterator();
 
         hashStore.clear();
-        runtimeHashIdx.close();
+//        hashIdx.close();
     }
 
     /** Creates certain join node. */
@@ -145,34 +156,43 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
     /** */
     protected Collection<Row> lookup(Row row) {
-        Collection<Row> res = runtimeHashIdx.scan(() -> row, leftKeys).get();
-
-        if (res == null)
-            return Collections.emptyList();
-
-        return res;
-
-//        Key row0 = extractKey(row, leftKeys);
+//        Collection<Row> res = remappedHashIdx.scan(() -> row).get();
 //
-//        // Key with null field can't be compared with other keys.
-//        if (row0 == NULL_KEY)
+//        if (res == null)
 //            return Collections.emptyList();
 //
-//        TouchedCollection<Row> found = hashStore.get(row0);
+//        assert res instanceof TouchedArrayList;
 //
-//        if (found != null) {
-//            found.touched = true;
+//        ((TouchedArrayList<?>)res).touched = true;
 //
-//            return found.items();
-//        }
-//
-//        return Collections.emptyList();
+//        return res == null ? Collections.emptyList() : res;
+// TODO: remove
+        Key row0 = extractKey(row, leftKeys);
+
+        // Key with null field can't be compared with other keys.
+        if (row0 == NULL_KEY)
+            return Collections.emptyList();
+
+        TouchedCollection<Row> found = hashStore.get(row0);
+
+        if (found != null) {
+            found.touched = true;
+
+            return found.items();
+        }
+
+        return Collections.emptyList();
     }
 
     /** */
-    private static <RowT> Iterator<RowT> untouched(Map<Key, TouchedCollection<RowT>> entries) {
-        return F.flat(F.iterator(entries.values(), TouchedCollection::items, true, v -> !v.touched));
+    protected Iterator<Row> untouched() {
+        return F.flat(F.iterator(hashStore.values(), TouchedCollection::items, true, v -> !v.touched));
     }
+//
+//    /** */
+//    protected Iterator<Row> untouched() {
+//        return F.flat(F.iterator(hashIdx.rowSets(), c0 -> c0, true, c1 -> !((TouchedArrayList<Row>)c1).touched));
+//    }
 
     /** {@inheritDoc} */
     @Override protected void pushRight(Row row) throws Exception {
@@ -185,15 +205,15 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         waitingRight--;
 
+        //hashIdx.push(row);
+
         Key key = extractKey(row, rightKeys);
 
-        // No storing in #hashStore, if the row contains NULL. And we won't emit right part alone like in FULL OUTER and RIGHT joins.
-        if (keepRowsWithNull() || key != NULL_KEY) {
+        // No storing in #hashIndex, if the row contains NULL. And we won't emit right part alone like in FULL OUTER and RIGHT joins.
+        if (keepRowsWithNull || key != NULL_KEY) {
             TouchedCollection<Row> raw = hashStore.computeIfAbsent(key, k -> new TouchedCollection<>());
 
             raw.add(row);
-
-            runtimeHashIdx.push(row);
         }
 
         if (waitingRight == 0)
@@ -225,20 +245,10 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             requested = 0;
 
             hashStore.clear();
-            runtimeHashIdx.close();
+//            hashIdx.close();
 
             downstream().end();
         }
-    }
-
-    /**
-     * Returns {@code true} if we need to store the row from right shoulder even if it contains NULL in any of join key position.
-     * This is required for joins which emit unmatched part of the right shoulder, such as RIGHT JOIN and FULL OUTER JOIN.
-     *
-     * @return {@code true} when row must be stored in {@link #hashStore} unconditionally.
-     */
-    protected boolean keepRowsWithNull() {
-        return false;
     }
 
     /** */
@@ -258,7 +268,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             RowHandler<RowT> outRowHnd,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
-            super(ctx, rowType, info, outRowHnd, nonEqCond);
+            super(ctx, rowType, info, outRowHnd, false, nonEqCond);
         }
 
         /** {@inheritDoc} */
@@ -328,7 +338,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             RowHandler.RowFactory<RowT> rightRowFactory,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
-            super(ctx, rowType, info, outRowHnd, nonEqCond);
+            super(ctx, rowType, info, outRowHnd, false, nonEqCond);
 
             assert nonEqCond == null : "Non equi condition is not supported in LEFT join";
 
@@ -412,7 +422,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             RowHandler.RowFactory<RowT> leftRowFactory,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
-            super(ctx, rowType, info, outRowHnd, nonEqCond);
+            super(ctx, rowType, info, outRowHnd, true, nonEqCond);
 
             assert nonEqCond == null : "Non equi condition is not supported in RIGHT join";
 
@@ -467,7 +477,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                         // Prevent scanning store more than once.
                         drainMaterialization = true;
 
-                        rightIt = untouched(hashStore);
+                        rightIt = untouched();
                     }
 
                     RowT emptyLeft = leftRowFactory.create();
@@ -493,11 +503,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             }
 
             requestMoreOrEnd();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean keepRowsWithNull() {
-            return true;
         }
 
         /** {@inheritDoc} */
@@ -539,7 +544,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             RowHandler.RowFactory<RowT> rightRowFactory,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
-            super(ctx, rowType, info, outRowHnd, nonEqCond);
+            super(ctx, rowType, info, outRowHnd, true, nonEqCond);
 
             assert nonEqCond == null : "Non equi condition is not supported in FULL OUTER join";
 
@@ -562,33 +567,31 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
                             Collection<RowT> rightRows = lookup(left);
 
-                            // Emit unmatched left row.
                             if (rightRows.isEmpty()) {
-                                requested--;
+                                // Emit empty right row for unmatched left row.
+                                rightIt = Collections.singletonList(rightRowFactory.create()).iterator();
+                            }
+                            else
+                                rightIt = rightRows.iterator();
+                        }
 
-                                downstream().push(outRowHnd.concat(left, rightRowFactory.create()));
+                        if (rightIt.hasNext()) {
+                            // Emits matched rows.
+                            while (requested > 0 && rightIt.hasNext()) {
+                                checkState();
+
+                                RowT right = rightIt.next();
+
+                                --requested;
+
+                                downstream().push(outRowHnd.concat(left, right));
                             }
 
-                            rightIt = rightRows.iterator();
+                            if (!rightIt.hasNext())
+                                left = null;
                         }
-
-                        // Emits matched rows.
-                        while (rightIt.hasNext()) {
-                            checkState();
-
-                            RowT right = rightIt.next();
-
-                            --requested;
-
-                            downstream().push(outRowHnd.concat(left, right));
-
-                            if (requested == 0)
-                                break;
-                        }
-
-                        if (!rightIt.hasNext())
+                        else
                             left = null;
-
                     }
                 }
                 finally {
@@ -605,22 +608,21 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                         // Prevent scanning store more than once.
                         drainMaterialization = true;
 
-                        rightIt = untouched(hashStore);
+                        rightIt = untouched();
                     }
 
                     RowT emptyLeft = leftRowFactory.create();
 
-                    while (rightIt.hasNext()) {
+                    while (requested > 0 && rightIt.hasNext()) {
                         checkState();
 
-                        RowT row = outRowHnd.concat(emptyLeft, rightIt.next());
+                        RowT right = rightIt.next();
+
+                        RowT row = outRowHnd.concat(emptyLeft, right);
 
                         --requested;
 
                         downstream().push(row);
-
-                        if (requested == 0)
-                            break;
                     }
                 }
                 finally {
@@ -629,11 +631,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             }
 
             requestMoreOrEnd();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean keepRowsWithNull() {
-            return true;
         }
 
         /** {@inheritDoc} */
@@ -662,7 +659,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             RowHandler<RowT> outRowHnd,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
-            super(ctx, rowType, info, outRowHnd, nonEqCond);
+            super(ctx, rowType, info, outRowHnd, false, nonEqCond);
         }
 
         /** {@inheritDoc} */
@@ -728,7 +725,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             RowHandler<RowT> outRowHnd,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
-            super(ctx, rowType, info, outRowHnd, nonEqCond);
+            super(ctx, rowType, info, outRowHnd, false, nonEqCond);
         }
 
         /** {@inheritDoc} */
@@ -820,7 +817,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     }
 
     /** */
-    private static final class TouchedList<Row> extends ArrayList<Row> {
+    private static final class TouchedArrayList<T> extends ArrayList<T> {
         /** */
         private boolean touched;
     }
