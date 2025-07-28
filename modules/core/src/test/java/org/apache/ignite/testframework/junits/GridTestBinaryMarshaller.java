@@ -23,13 +23,11 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -75,14 +73,6 @@ public class GridTestBinaryMarshaller {
                 }
             });
 
-        BinaryContext ctx = new BinaryContext(
-            BinaryUtils.cachingMetadataHandler(),
-            iCfg.getIgniteInstanceName(),
-            iCfg.getClassLoader(),
-            iCfg.getBinaryConfiguration(),
-            NullLogger.INSTANCE
-        );
-
         MarshallerContextTestImpl marshCtx = new MarshallerContextTestImpl();
 
         marshCtx.setMarshallerMappingFileStoreDir(new SharedFileTree(U.defaultWorkDirectory()).marshaller());
@@ -91,8 +81,7 @@ public class GridTestBinaryMarshaller {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(marshCtx);
-
-        marsh.setBinaryContext(ctx, iCfg);
+        marsh.setBinaryContext(U.binaryContext(marsh, iCfg));
 
         return marsh;
     }

@@ -176,6 +176,8 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
@@ -192,6 +194,7 @@ import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.TestBinaryContext;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -208,6 +211,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -495,6 +499,10 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Ignite test features enabled flag. */
     public static boolean IGNITE_TEST_FEATURES_ENABLED =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED);
+
+    /** For tests. */
+    @SuppressWarnings("PublicField")
+    public static boolean useTestBinaryCtx;
 
     /** */
     private static final boolean assertionsEnabled;
@@ -9823,8 +9831,38 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /** @return Empty binary context instance. */
-    public static BinaryContext emptyBinaryContext() {
-        return new BinaryContext(BinaryUtils.cachingMetadataHandler(), NullLogger.INSTANCE);
+    public static BinaryContext binaryContext(BinaryMarshaller marsh) {
+        return binaryContext(BinaryUtils.cachingMetadataHandler(), marsh);
+    }
+
+    /** @return Empty binary context instance. */
+    public static BinaryContext binaryContext(BinaryMetadataHandler metaHnd, BinaryMarshaller marsh) {
+        return binaryContext(metaHnd, marsh, new IgniteConfiguration(), NullLogger.INSTANCE);
+    }
+
+    /** @return Empty binary context instance. */
+    public static BinaryContext binaryContext(BinaryMarshaller marsh, IgniteConfiguration cfg) {
+        return binaryContext(BinaryUtils.cachingMetadataHandler(), marsh, cfg, NullLogger.INSTANCE);
+    }
+
+    /** @return Empty binary context instance. */
+    public static BinaryContext binaryContext(
+        BinaryMetadataHandler metaHnd,
+        BinaryMarshaller marsh,
+        IgniteConfiguration cfg,
+        IgniteLogger log
+    ) {
+        return useTestBinaryCtx
+            ? new TestBinaryContext(metaHnd, marsh, cfg, log)
+            : new BinaryContext(
+                metaHnd,
+                marsh,
+                cfg.getIgniteInstanceName(),
+                cfg.getClassLoader(),
+                cfg.getBinaryConfiguration(),
+                CU.affinityFields(cfg),
+                log
+            );
     }
 
     /**

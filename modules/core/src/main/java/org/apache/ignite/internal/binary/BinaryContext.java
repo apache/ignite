@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -157,7 +156,7 @@ public class BinaryContext {
     private final ConcurrentMap<Integer, BinaryIdentityResolver> identities = new ConcurrentHashMap<>(0);
 
     /** */
-    private BinaryMetadataHandler metaHnd;
+    private final BinaryMetadataHandler metaHnd;
 
     /** Node name. */
     private final @Nullable String igniteInstanceName;
@@ -175,7 +174,7 @@ public class BinaryContext {
     private final @Nullable BinaryConfiguration bcfg;
 
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller(false);
@@ -187,35 +186,21 @@ public class BinaryContext {
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
 
     /**
-     * @param log Logger
-     */
-    public BinaryContext(IgniteLogger log) {
-        this(BinaryNoopMetadataHandler.instance(), null, null, null, log);
-    }
-
-    /**
      * @param metaHnd Meta data handler.
-     * @param log Logger.
-     */
-    public BinaryContext(
-        BinaryMetadataHandler metaHnd,
-        IgniteLogger log
-    ) {
-        this(metaHnd, null, null, null, log);
-    }
-
-    /**
-     * @param metaHnd Meta data handler.
+     * @param marsh Binary marshaller.
      * @param igniteInstanceName Ignite instance name.
      * @param clsLdr Class loader.
      * @param bcfg Binary configuration.
+     * @param affFlds Affinity fields.
      * @param log Logger.
      */
     public BinaryContext(
         BinaryMetadataHandler metaHnd,
+        @Nullable BinaryMarshaller marsh,
         @Nullable String igniteInstanceName,
         @Nullable ClassLoader clsLdr,
         @Nullable BinaryConfiguration bcfg,
+        Map<String, String> affFlds,
         IgniteLogger log
     ) {
         assert metaHnd != null;
@@ -310,6 +295,8 @@ public class BinaryContext {
             U.warn(log, "ReflectionFactory not found, deserialization of binary objects for classes without " +
                 "default constructor is not possible");
         }
+
+        configure(marsh, bcfg, affFlds);
     }
 
     /**
@@ -363,19 +350,15 @@ public class BinaryContext {
 
     /**
      * @param marsh Binary marshaller.
-     * @throws BinaryObjectException In case of error.
-     */
-    public void configure(BinaryMarshaller marsh) throws BinaryObjectException {
-        configure(marsh, null, CU.affinityFields(null));
-    }
-
-    /**
-     * @param marsh Binary marshaller.
      * @param binaryCfg Binary configuration.
      * @param affFlds Type name to affinity key field name mapping.
      * @throws BinaryObjectException In case of error.
      */
-    public void configure(BinaryMarshaller marsh, BinaryConfiguration binaryCfg, Map<String, String> affFlds) throws BinaryObjectException {
+    private void configure(
+        BinaryMarshaller marsh,
+        BinaryConfiguration binaryCfg,
+        Map<String, String> affFlds
+    ) throws BinaryObjectException {
         if (marsh == null)
             return;
 

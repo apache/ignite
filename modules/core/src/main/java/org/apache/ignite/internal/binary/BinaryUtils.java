@@ -2941,11 +2941,14 @@ public class BinaryUtils {
         return new BinaryWriterExImpl(ctx, out, schema, null);
     }
 
-    /**
-     * @return Instance of caching handler.
-     */
+    /** @return Instance of caching handler. */
     public static BinaryMetadataHandler cachingMetadataHandler() {
         return BinaryCachingMetadataHandler.create();
+    }
+
+    /** @return Instance of noop handler. */
+    public static BinaryMetadataHandler noopMetadataHandler() {
+        return BinaryNoopMetadataHandler.instance();
     }
 
     /**

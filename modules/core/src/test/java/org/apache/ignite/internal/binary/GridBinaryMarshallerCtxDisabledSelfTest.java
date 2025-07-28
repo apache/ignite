@@ -46,10 +46,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
     public void testObjectExchange() throws Exception {
         BinaryMarshaller marsh = new BinaryMarshaller();
         marsh.setContext(new MarshallerContextWithNoStorage());
-
-        BinaryContext ctx = U.emptyBinaryContext();
-
-        marsh.setBinaryContext(ctx, new IgniteConfiguration());
+        marsh.setBinaryContext(U.binaryContext(marsh, new IgniteConfiguration()));
 
         SimpleObject simpleObj = new SimpleObject();
 

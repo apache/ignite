@@ -445,17 +445,17 @@ public class IgniteMock implements IgniteEx {
             /** {@inheritDoc} */
             ctx = new BinaryContext(
                 BinaryUtils.cachingMetadataHandler(),
+                (BinaryMarshaller)marshaller,
                 configuration().getIgniteInstanceName(),
                 configuration().getClassLoader(),
                 configuration().getBinaryConfiguration(),
-                new NullLogger()
+                CU.affinityFields(configuration()),
+                NullLogger.INSTANCE
             ) {
                 @Override public int typeId(String typeName) {
                     return typeName.hashCode();
                 }
             };
-
-            ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration(), CU.affinityFields(configuration()));
         }
 
         binaryMock = new NoOpBinary() {
