@@ -105,29 +105,22 @@ public class BinaryContext {
         new BinaryInternalMapper(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true), false);
 
     /** Set of system classes that should be marshalled with BinaryMarshaller. */
-    private static final Set<String> BINARYLIZABLE_SYS_CLSS;
-
-    /* Binarylizable system classes set initialization. */
-    static {
-        Set<String> sysClss = new HashSet<>();
-
+    private static final Set<String> BINARYLIZABLE_SYS_CLSS = Set.of(
         // Closure processor classes.
-        sysClss.add(GridClosureProcessor.C1.class.getName());
-        sysClss.add(GridClosureProcessor.C1MLA.class.getName());
-        sysClss.add(GridClosureProcessor.C2.class.getName());
-        sysClss.add(GridClosureProcessor.C2MLA.class.getName());
-        sysClss.add(GridClosureProcessor.C4.class.getName());
-        sysClss.add(GridClosureProcessor.C4MLA.class.getName());
+        GridClosureProcessor.C1.class.getName(),
+        GridClosureProcessor.C1MLA.class.getName(),
+        GridClosureProcessor.C2.class.getName(),
+        GridClosureProcessor.C2MLA.class.getName(),
+        GridClosureProcessor.C4.class.getName(),
+        GridClosureProcessor.C4MLA.class.getName(),
 
-        sysClss.add(IgniteUuid.class.getName());
+        IgniteUuid.class.getName(),
 
         // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
-        sysClss.add(BinaryTreeMap.class.getName());
-        sysClss.add(TreeMap.class.getName());
-        sysClss.add(TreeSet.class.getName());
-
-        BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
-    }
+        BinaryTreeMap.class.getName(),
+        TreeMap.class.getName(),
+        TreeSet.class.getName()
+    );
 
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap<>();
@@ -184,7 +177,7 @@ public class BinaryContext {
     private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller(false);
 
     /** Compact footer flag. */
-    private boolean compactFooter;
+    private final boolean compactFooter;
 
     /** Object schemas. */
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
