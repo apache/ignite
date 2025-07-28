@@ -321,7 +321,6 @@ public class JdbcThinConnection implements Connection {
     /** Create new binary context. */
     private BinaryContext createBinaryCtx(JdbcBinaryMetadataHandler metaHnd, JdbcMarshallerContext marshCtx) {
         BinaryMarshaller marsh = new BinaryMarshaller();
-
         marsh.setContext(marshCtx);
 
         BinaryContext ctx = U.binaryContext(
