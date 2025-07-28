@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -82,10 +81,7 @@ public class GridTestBinaryMarshaller {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(marshCtx);
-
-        BinaryContext ctx = U.binaryContext(marsh, iCfg);
-
-        marsh.setBinaryContext(ctx);
+        marsh.setBinaryContext(U.binaryContext(marsh, iCfg));
 
         return marsh;
     }

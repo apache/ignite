@@ -676,11 +676,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextTestImpl(null));
-
-        // Noop here
-        BinaryContext ctx = U.binaryContext(marsh, iCfg);;
-
-        marsh.setBinaryContext(ctx);
+        marsh.setBinaryContext(U.binaryContext(marsh, iCfg));
 
         return marsh;
     }

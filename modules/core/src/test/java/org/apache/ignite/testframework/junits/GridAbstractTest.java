@@ -82,7 +82,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
@@ -2024,10 +2023,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextTestImpl());
-
-        BinaryContext ctx = U.binaryContext(marsh, cfg);
-
-        marsh.setBinaryContext(ctx);
+        marsh.setBinaryContext(U.binaryContext(marsh, cfg));
 
         return marsh;
     }

@@ -52,22 +52,14 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setCompactFooter(compactFooter());
-
         bCfg.setTypeConfigurations(Arrays.asList(
             new BinaryTypeConfiguration(TestObject.class.getName()),
             new BinaryTypeConfiguration(TestOuterObject.class.getName()),
             new BinaryTypeConfiguration(TestInnerObject.class.getName())
         ));
 
-        IgniteConfiguration iCfg = new IgniteConfiguration();
-
-        iCfg.setBinaryConfiguration(bCfg);
-
         marsh.setContext(new MarshallerContextTestImpl(null));
-
-        BinaryContext ctx = U.binaryContext(marsh, iCfg);
-
-        marsh.setBinaryContext(ctx);
+        marsh.setBinaryContext(U.binaryContext(marsh, new IgniteConfiguration().setBinaryConfiguration(bCfg)));
 
         return marsh;
     }

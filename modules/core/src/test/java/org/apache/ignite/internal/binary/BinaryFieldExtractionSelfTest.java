@@ -45,17 +45,8 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     protected BinaryMarshaller createMarshaller() throws Exception {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        BinaryConfiguration bCfg = new BinaryConfiguration();
-
-        IgniteConfiguration iCfg = new IgniteConfiguration();
-
-        iCfg.setBinaryConfiguration(bCfg);
-
         marsh.setContext(new MarshallerContextTestImpl(null));
-
-        BinaryContext ctx = U.binaryContext(marsh, iCfg);
-
-        marsh.setBinaryContext(ctx);
+        marsh.setBinaryContext(U.binaryContext(marsh, new IgniteConfiguration().setBinaryConfiguration(new BinaryConfiguration())));
 
         return marsh;
     }
