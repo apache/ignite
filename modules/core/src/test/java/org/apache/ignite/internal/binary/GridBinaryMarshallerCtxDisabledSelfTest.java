@@ -47,7 +47,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
         BinaryMarshaller marsh = new BinaryMarshaller();
         marsh.setContext(new MarshallerContextWithNoStorage());
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh, new IgniteConfiguration());
+        BinaryContext ctx = U.binaryContext(marsh, new IgniteConfiguration());
 
         marsh.setBinaryContext(ctx);
 

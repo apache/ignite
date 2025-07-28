@@ -108,7 +108,7 @@ class ClientBinaryMarshaller {
 
         marsh.setContext(marshCtx);
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(
+        BinaryContext ctx = U.binaryContext(
             metaHnd,
             marsh,
             new IgniteConfiguration().setBinaryConfiguration(binCfg),

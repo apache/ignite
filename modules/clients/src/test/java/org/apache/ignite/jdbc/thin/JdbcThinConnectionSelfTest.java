@@ -2232,7 +2232,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         marsh.setContext(getFakeMarshallerCtx());
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh);
+        BinaryContext ctx = U.binaryContext(marsh);
 
         ctx.registerUserTypesSchema();
 

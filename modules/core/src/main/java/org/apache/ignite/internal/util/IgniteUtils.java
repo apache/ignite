@@ -194,7 +194,7 @@ import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.TestBinaryContext;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -9831,29 +9831,29 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /** @return Empty binary context instance. */
-    public static BinaryContext createAndConfigureBinaryContext(BinaryMarshaller marsh) {
-        return createAndConfigureBinaryContext(BinaryUtils.cachingMetadataHandler(), marsh);
+    public static BinaryContext binaryContext(BinaryMarshaller marsh) {
+        return binaryContext(BinaryUtils.cachingMetadataHandler(), marsh);
     }
 
     /** @return Empty binary context instance. */
-    public static BinaryContext createAndConfigureBinaryContext(BinaryMetadataHandler metaHnd, BinaryMarshaller marsh) {
-        return createAndConfigureBinaryContext(metaHnd, marsh, new IgniteConfiguration(), NullLogger.INSTANCE);
+    public static BinaryContext binaryContext(BinaryMetadataHandler metaHnd, BinaryMarshaller marsh) {
+        return binaryContext(metaHnd, marsh, new IgniteConfiguration(), NullLogger.INSTANCE);
     }
 
     /** @return Empty binary context instance. */
-    public static BinaryContext createAndConfigureBinaryContext(BinaryMarshaller marsh, IgniteConfiguration cfg) {
-        return createAndConfigureBinaryContext(BinaryUtils.cachingMetadataHandler(), marsh, cfg, NullLogger.INSTANCE);
+    public static BinaryContext binaryContext(BinaryMarshaller marsh, IgniteConfiguration cfg) {
+        return binaryContext(BinaryUtils.cachingMetadataHandler(), marsh, cfg, NullLogger.INSTANCE);
     }
 
     /** @return Empty binary context instance. */
-    public static BinaryContext createAndConfigureBinaryContext(
+    public static BinaryContext binaryContext(
         BinaryMetadataHandler metaHnd,
         BinaryMarshaller marsh,
         IgniteConfiguration cfg,
         IgniteLogger log
     ) {
         return useTestBinaryCtx
-            ? new CacheObjectBinaryProcessorImpl.TestBinaryContext(metaHnd, marsh, cfg, log)
+            ? new TestBinaryContext(metaHnd, marsh, cfg, log)
             : new BinaryContext(
                 metaHnd,
                 marsh,

@@ -65,7 +65,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh, iCfg);
+        BinaryContext ctx = U.binaryContext(marsh, iCfg);
 
         marsh.setBinaryContext(ctx);
 

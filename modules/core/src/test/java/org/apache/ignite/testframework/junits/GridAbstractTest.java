@@ -2025,7 +2025,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         marsh.setContext(new MarshallerContextTestImpl());
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh, cfg);
+        BinaryContext ctx = U.binaryContext(marsh, cfg);
 
         marsh.setBinaryContext(ctx);
 

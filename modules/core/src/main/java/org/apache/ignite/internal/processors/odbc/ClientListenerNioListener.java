@@ -360,7 +360,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh);
+        BinaryContext ctx = U.binaryContext(marsh);
 
         BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(msg.payload()), null, true);
 

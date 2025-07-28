@@ -324,7 +324,7 @@ public class JdbcThinConnection implements Connection {
 
         marsh.setContext(marshCtx);
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(
+        BinaryContext ctx = U.binaryContext(
             metaHnd,
             marsh,
             new IgniteConfiguration().setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true)),

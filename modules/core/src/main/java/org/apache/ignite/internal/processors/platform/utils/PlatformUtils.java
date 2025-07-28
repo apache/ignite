@@ -885,7 +885,7 @@ public class PlatformUtils {
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(BinaryUtils.noopMetadataHandler(), marsh);
+        BinaryContext ctx = U.binaryContext(BinaryUtils.noopMetadataHandler(), marsh);
 
         return new GridBinaryMarshaller(ctx);
     }

@@ -272,7 +272,7 @@ public class JdbcThinTcpIo {
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh);
+        BinaryContext ctx = U.binaryContext(marsh);
 
         BinaryWriterEx writer = BinaryUtils.writer(ctx, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE),
             null);

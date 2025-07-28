@@ -274,7 +274,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
         };
 
-        binaryCtx = U.createAndConfigureBinaryContext(metaHnd, marsh, ctx.config(), ctx.log(BinaryContext.class));
+        binaryCtx = U.binaryContext(metaHnd, marsh, ctx.config(), ctx.log(BinaryContext.class));
 
         marsh.setBinaryContext(binaryCtx);
 

@@ -101,7 +101,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh, cfg);
+        BinaryContext ctx = U.binaryContext(marsh, cfg);
 
         marsh.setBinaryContext(ctx);
 

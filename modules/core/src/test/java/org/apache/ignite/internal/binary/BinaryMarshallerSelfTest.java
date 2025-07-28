@@ -4179,7 +4179,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         marsh.setContext(marshCtx);
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh, iCfg);
+        BinaryContext ctx = U.binaryContext(marsh, iCfg);
 
         marsh.setBinaryContext(ctx);
 
@@ -4240,7 +4240,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         marsh.setContext(marshCtx);
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh, iCfg);
+        BinaryContext ctx = U.binaryContext(marsh, iCfg);
 
         marsh.setBinaryContext(ctx);
 

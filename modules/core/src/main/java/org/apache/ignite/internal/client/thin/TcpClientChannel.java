@@ -839,7 +839,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Send handshake request. */
     private void handshakeReq(ProtocolVersion proposedVer, String user, String pwd,
         Map<String, String> userAttrs) throws ClientConnectionException {
-        BinaryContext ctx = U.createAndConfigureBinaryContext(null);
+        BinaryContext ctx = U.binaryContext(null);
 
         try (BinaryWriterEx writer = BinaryUtils.writer(ctx, BinaryStreams.outputStream(32), null)) {
             ProtocolContext protocolCtx = protocolContextFromVersion(proposedVer);
