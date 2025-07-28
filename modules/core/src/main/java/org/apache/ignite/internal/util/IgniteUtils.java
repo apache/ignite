@@ -9999,9 +9999,7 @@ public abstract class IgniteUtils extends CommonUtils {
             void onBeforeMetadataUpdate(int typeId, BinaryMetadata metadata);
         }
 
-        /**
-         * @param lsnr Listener.
-         */
+        /** @param lsnr Listener. */
         public void addListener(TestBinaryContextListener lsnr) {
             if (listeners == null)
                 listeners = new ArrayList<>();
