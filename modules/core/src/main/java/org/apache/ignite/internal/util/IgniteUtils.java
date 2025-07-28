@@ -9839,6 +9839,15 @@ public abstract class IgniteUtils extends CommonUtils {
         return ctx;
     }
 
+    /** @return Empty binary context instance. */
+    public static BinaryContext createAndConfigureBinaryContext(BinaryMarshaller marsh, IgniteConfiguration cfg) {
+        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), NullLogger.INSTANCE);
+
+        ctx.configure(marsh, cfg.getBinaryConfiguration(), CU.affinityFields(cfg));
+
+        return ctx;
+    }
+
     /**
      * @param ctx {@link GridKernalContext}.
      * @return A warning message indicating excessive RAM usage or {@code null} if the RAM usage is within acceptable

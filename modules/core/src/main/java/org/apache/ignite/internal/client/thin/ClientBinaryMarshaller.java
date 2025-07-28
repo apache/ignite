@@ -103,11 +103,11 @@ class ClientBinaryMarshaller {
             binCfg.setCompactFooter(false);
         }
 
-        BinaryContext ctx = new BinaryContext(metaHnd, null, null, binCfg, NullLogger.INSTANCE);
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(marshCtx);
+
+        BinaryContext ctx = new BinaryContext(metaHnd, null, null, binCfg, NullLogger.INSTANCE);
 
         ctx.configure(marsh, binCfg, CU.affinityFields(null));
 

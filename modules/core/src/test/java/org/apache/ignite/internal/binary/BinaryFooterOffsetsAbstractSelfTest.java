@@ -62,9 +62,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        ctx = U.createAndConfigureBinaryContext(null);
-
-        ctx.configure(marsh, iCfg.getBinaryConfiguration(), CU.affinityFields(iCfg));
+        ctx = U.createAndConfigureBinaryContext(marsh, iCfg);
 
         marsh.setBinaryContext(ctx);
     }

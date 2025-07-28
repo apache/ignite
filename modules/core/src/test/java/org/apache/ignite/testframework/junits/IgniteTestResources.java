@@ -31,7 +31,6 @@ import org.apache.ignite.internal.SensitiveInfoTestLoggerProxy;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -250,9 +249,7 @@ public class IgniteTestResources {
 
         marsh.setContext(new MarshallerContextTestImpl());
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(null);
-
-        ctx.configure(marsh, new IgniteConfiguration().getBinaryConfiguration(), CU.affinityFields(new IgniteConfiguration()));
+        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh, new IgniteConfiguration());
 
         marsh.setBinaryContext(ctx);
 

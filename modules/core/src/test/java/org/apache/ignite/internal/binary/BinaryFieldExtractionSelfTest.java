@@ -54,9 +54,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        BinaryContext ctx = U.createAndConfigureBinaryContext(null);
-
-        ctx.configure(marsh, iCfg.getBinaryConfiguration(), CU.affinityFields(iCfg));
+        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh, iCfg);
 
         marsh.setBinaryContext(ctx);
 
