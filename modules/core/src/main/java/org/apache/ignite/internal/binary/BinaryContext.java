@@ -187,9 +187,11 @@ public class BinaryContext {
 
     /**
      * @param metaHnd Meta data handler.
+     * @param marsh Binary marshaller.
      * @param igniteInstanceName Ignite instance name.
      * @param clsLdr Class loader.
      * @param bcfg Binary configuration.
+     * @param affFlds Affinity fields.
      * @param log Logger.
      */
     public BinaryContext(
