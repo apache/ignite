@@ -28,6 +28,7 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -47,8 +48,6 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     protected BinaryMarshaller createMarshaller() throws Exception {
-        BinaryContext ctx = U.emptyBinaryContext();
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
@@ -67,7 +66,11 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        marsh.setBinaryContext(ctx, iCfg);
+        BinaryContext ctx = U.createAndConfigureBinaryContext(null);
+
+        ctx.configure(marsh, iCfg.getBinaryConfiguration(), CU.affinityFields(iCfg));
+
+        marsh.setBinaryContext(ctx);
 
         return marsh;
     }

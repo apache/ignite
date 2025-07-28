@@ -76,7 +76,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.Nullable;
 
@@ -882,13 +881,11 @@ public class PlatformUtils {
      * @return Marshaller.
      */
     public static GridBinaryMarshaller marshaller() {
-        BinaryContext ctx = new BinaryContext(NullLogger.INSTANCE);
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        ctx.configure(marsh);
+        BinaryContext ctx = U.createAndConfigureBinaryContext(BinaryUtils.noopMetadataHandler(), marsh);
 
         return new GridBinaryMarshaller(ctx);
     }

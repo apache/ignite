@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -185,13 +184,6 @@ public class BinaryContext {
 
     /** Object schemas. */
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
-
-    /**
-     * @param log Logger
-     */
-    public BinaryContext(IgniteLogger log) {
-        this(BinaryNoopMetadataHandler.instance(), null, null, null, log);
-    }
 
     /**
      * @param metaHnd Meta data handler.
@@ -359,14 +351,6 @@ public class BinaryContext {
      */
     public ClassLoader classLoader() {
         return clsLdr;
-    }
-
-    /**
-     * @param marsh Binary marshaller.
-     * @throws BinaryObjectException In case of error.
-     */
-    public void configure(BinaryMarshaller marsh) throws BinaryObjectException {
-        configure(marsh, null, CU.affinityFields(null));
     }
 
     /**

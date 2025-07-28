@@ -96,6 +96,7 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -4166,14 +4167,6 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         });
         iCfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
 
-        BinaryContext ctx = new BinaryContext(
-            BinaryUtils.cachingMetadataHandler(),
-            iCfg.getIgniteInstanceName(),
-            iCfg.getClassLoader(),
-            iCfg.getBinaryConfiguration(),
-            NullLogger.INSTANCE
-        );
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         MarshallerContextTestImpl marshCtx = new MarshallerContextTestImpl(null, excludedClasses);
@@ -4188,7 +4181,17 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         marsh.setContext(marshCtx);
 
-        marsh.setBinaryContext(ctx, iCfg);
+        BinaryContext ctx = new BinaryContext(
+            BinaryUtils.cachingMetadataHandler(),
+            iCfg.getIgniteInstanceName(),
+            iCfg.getClassLoader(),
+            iCfg.getBinaryConfiguration(),
+            NullLogger.INSTANCE
+        );
+
+        ctx.configure(marsh, iCfg.getBinaryConfiguration(), CU.affinityFields(iCfg));
+
+        marsh.setBinaryContext(ctx);
 
         return marsh;
     }
@@ -4233,14 +4236,6 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         });
         iCfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
 
-        BinaryContext ctx = new BinaryContext(
-            BinaryUtils.cachingMetadataHandler(),
-            iCfg.getIgniteInstanceName(),
-            iCfg.getClassLoader(),
-            iCfg.getBinaryConfiguration(),
-            NullLogger.INSTANCE
-        );
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         MarshallerContextTestImpl marshCtx = new MarshallerContextTestImpl(null, excludedClasses);
@@ -4255,7 +4250,17 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         marsh.setContext(marshCtx);
 
-        marsh.setBinaryContext(ctx, iCfg);
+        BinaryContext ctx = new BinaryContext(
+            BinaryUtils.cachingMetadataHandler(),
+            iCfg.getIgniteInstanceName(),
+            iCfg.getClassLoader(),
+            iCfg.getBinaryConfiguration(),
+            NullLogger.INSTANCE
+        );
+
+        ctx.configure(marsh, iCfg.getBinaryConfiguration(), CU.affinityFields(iCfg));
+
+        marsh.setBinaryContext(ctx);
 
         return BinaryObjectBuilders.builder(ctx, typeName);
     }

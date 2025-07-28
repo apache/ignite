@@ -69,7 +69,7 @@ public class PlatformGetInternalCachesTask extends ComputeTaskAdapter<Object, by
         @Override public byte[] execute() {
             IgniteEx ign = (IgniteEx)ignite;
 
-            BinaryContext ctx = U.emptyBinaryContext();
+            BinaryContext ctx = U.createAndConfigureBinaryContext(null);
 
             try (BinaryWriterEx writer
                      = BinaryUtils.writer(ctx, BinaryStreams.outputStream(512), null)) {

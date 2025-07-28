@@ -28,8 +28,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.SensitiveInfoTestLoggerProxy;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -247,10 +249,12 @@ public class IgniteTestResources {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextTestImpl());
-        marsh.setBinaryContext(
-            U.emptyBinaryContext(),
-            new IgniteConfiguration()
-        );
+
+        BinaryContext ctx = U.createAndConfigureBinaryContext(null);
+
+        ctx.configure(marsh, new IgniteConfiguration().getBinaryConfiguration(), CU.affinityFields(new IgniteConfiguration()));
+
+        marsh.setBinaryContext(ctx);
 
         return marsh;
     }

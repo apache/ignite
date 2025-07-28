@@ -176,6 +176,8 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
@@ -208,6 +210,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -9823,8 +9826,17 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /** @return Empty binary context instance. */
-    public static BinaryContext emptyBinaryContext() {
-        return new BinaryContext(BinaryUtils.cachingMetadataHandler(), NullLogger.INSTANCE);
+    public static BinaryContext createAndConfigureBinaryContext(BinaryMarshaller marsh) {
+        return createAndConfigureBinaryContext(BinaryUtils.cachingMetadataHandler(), marsh);
+    }
+
+    /** @return Empty binary context instance. */
+    public static BinaryContext createAndConfigureBinaryContext(BinaryMetadataHandler metaHnd, BinaryMarshaller marsh) {
+        BinaryContext ctx = new BinaryContext(metaHnd, NullLogger.INSTANCE);
+
+        ctx.configure(marsh, null, CU.affinityFields(null));
+
+        return ctx;
     }
 
     /**

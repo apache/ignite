@@ -77,15 +77,11 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
 
     /** */
     public static BinaryContext createTestBinaryContext() {
-        BinaryContext ctx = U.emptyBinaryContext();
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new TestMarshallerContext());
 
-        ctx.configure(marsh);
-
-        return ctx;
+        return U.createAndConfigureBinaryContext(marsh);
     }
 
     /** */

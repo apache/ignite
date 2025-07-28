@@ -101,6 +101,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -2024,6 +2025,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected BinaryMarshaller createStandaloneBinaryMarshaller(IgniteConfiguration cfg) throws IgniteCheckedException {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
+        marsh.setContext(new MarshallerContextTestImpl());
+
         BinaryContext ctx = new BinaryContext(
             BinaryUtils.cachingMetadataHandler(),
             cfg.getIgniteInstanceName(),
@@ -2032,9 +2035,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             NullLogger.INSTANCE
         );
 
-        marsh.setContext(new MarshallerContextTestImpl());
+        ctx.configure(marsh, cfg.getBinaryConfiguration(), CU.affinityFields(cfg));
 
-        marsh.setBinaryContext(ctx, cfg);
+        marsh.setBinaryContext(ctx);
 
         return marsh;
     }
