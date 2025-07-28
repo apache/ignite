@@ -56,6 +56,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -442,14 +443,22 @@ public class IgniteMock implements IgniteEx {
             return binaryMock;
 
         if (ctx == null) {
+            IgniteConfiguration cfg = configuration();
+
+            BinaryConfiguration bcfg = cfg.getBinaryConfiguration() == null ? new BinaryConfiguration() : cfg.getBinaryConfiguration();
+
             /** {@inheritDoc} */
             ctx = new BinaryContext(
                 BinaryUtils.cachingMetadataHandler(),
                 (BinaryMarshaller)marshaller,
-                configuration().getIgniteInstanceName(),
-                configuration().getClassLoader(),
-                configuration().getBinaryConfiguration(),
+                cfg.getIgniteInstanceName(),
+                cfg.getClassLoader(),
+                bcfg.getSerializer(),
+                bcfg.getIdMapper(),
+                bcfg.getNameMapper(),
+                bcfg.getTypeConfigurations(),
                 CU.affinityFields(configuration()),
+                bcfg.isCompactFooter(),
                 NullLogger.INSTANCE
             ) {
                 @Override public int typeId(String typeName) {

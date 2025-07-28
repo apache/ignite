@@ -155,6 +155,12 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -164,6 +170,7 @@ import org.apache.ignite.compute.ComputeTaskCancelledException;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.AddressResolver;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -177,6 +184,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -194,7 +202,6 @@ import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.TestBinaryContext;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -9852,15 +9859,33 @@ public abstract class IgniteUtils extends CommonUtils {
         IgniteConfiguration cfg,
         IgniteLogger log
     ) {
+        BinaryConfiguration bcfg = cfg.getBinaryConfiguration() == null ? new BinaryConfiguration() : cfg.getBinaryConfiguration();
+
         return useTestBinaryCtx
-            ? new TestBinaryContext(metaHnd, marsh, cfg, log)
+            ? new TestBinaryContext(
+                metaHnd,
+                marsh,
+                cfg.getIgniteInstanceName(),
+                cfg.getClassLoader(),
+                bcfg.getSerializer(),
+                bcfg.getIdMapper(),
+                bcfg.getNameMapper(),
+                bcfg.getTypeConfigurations(),
+                CU.affinityFields(cfg),
+                bcfg.isCompactFooter(),
+                log
+            )
             : new BinaryContext(
                 metaHnd,
                 marsh,
                 cfg.getIgniteInstanceName(),
                 cfg.getClassLoader(),
-                cfg.getBinaryConfiguration(),
+                bcfg.getSerializer(),
+                bcfg.getIdMapper(),
+                bcfg.getNameMapper(),
+                bcfg.getTypeConfigurations(),
                 CU.affinityFields(cfg),
+                bcfg.isCompactFooter(),
                 log
             );
     }
@@ -9911,5 +9936,84 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         return null;
+    }
+
+    /** */
+    @SuppressWarnings("PublicInnerClass")
+    public static class TestBinaryContext extends BinaryContext {
+        /** */
+        private List<TestBinaryContextListener> listeners;
+
+        /** */
+        public TestBinaryContext(
+            BinaryMetadataHandler metaHnd,
+            @Nullable BinaryMarshaller marsh,
+            @Nullable String igniteInstanceName,
+            @Nullable ClassLoader clsLdr,
+            @Nullable BinarySerializer dfltSerializer,
+            @Nullable BinaryIdMapper idMapper,
+            @Nullable BinaryNameMapper nameMapper,
+            @Nullable Collection<BinaryTypeConfiguration> typeCfgs,
+            Map<String, String> affFlds,
+            boolean compactFooter,
+            IgniteLogger log
+        ) {
+            super(metaHnd, marsh, igniteInstanceName, clsLdr, dfltSerializer, idMapper, nameMapper, typeCfgs, affFlds, compactFooter, log);
+        }
+
+
+        /** {@inheritDoc} */
+        @Nullable @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+            BinaryType metadata = super.metadata(typeId);
+
+            if (listeners != null) {
+                for (TestBinaryContextListener listener : listeners)
+                    listener.onAfterMetadataRequest(typeId, metadata);
+            }
+
+            return metadata;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateMetadata(int typeId, BinaryMetadata meta, boolean failIfUnregistered) throws BinaryObjectException {
+            if (listeners != null) {
+                for (TestBinaryContextListener listener : listeners)
+                    listener.onBeforeMetadataUpdate(typeId, meta);
+            }
+
+            super.updateMetadata(typeId, meta, failIfUnregistered);
+        }
+
+        /** */
+        public interface TestBinaryContextListener {
+            /**
+             * @param typeId Type id.
+             * @param type Type.
+             */
+            void onAfterMetadataRequest(int typeId, BinaryType type);
+
+            /**
+             * @param typeId Type id.
+             * @param metadata Metadata.
+             */
+            void onBeforeMetadataUpdate(int typeId, BinaryMetadata metadata);
+        }
+
+        /**
+         * @param lsnr Listener.
+         */
+        public void addListener(TestBinaryContextListener lsnr) {
+            if (listeners == null)
+                listeners = new ArrayList<>();
+
+            if (!listeners.contains(lsnr))
+                listeners.add(lsnr);
+        }
+
+        /** */
+        public void clearAllListener() {
+            if (listeners != null)
+                listeners.clear();
+        }
     }
 }

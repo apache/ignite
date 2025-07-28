@@ -63,7 +63,6 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
@@ -195,7 +194,6 @@ public class BinaryContext {
      * @param marsh Binary marshaller.
      * @param igniteInstanceName Ignite instance name.
      * @param clsLdr Class loader.
-     * @param bcfg Binary configuration.
      * @param affFlds Affinity fields.
      * @param log Logger.
      */
@@ -204,7 +202,6 @@ public class BinaryContext {
         @Nullable BinaryMarshaller marsh,
         @Nullable String igniteInstanceName,
         @Nullable ClassLoader clsLdr,
-        @Nullable BinaryConfiguration bcfg,
         @Nullable BinarySerializer dfltSerializer,
         @Nullable BinaryIdMapper idMapper,
         @Nullable BinaryNameMapper nameMapper,
@@ -314,7 +311,17 @@ public class BinaryContext {
                 "default constructor is not possible");
         }
 
-        configure(marsh, bcfg, affFlds);
+        if (marsh != null) {
+            this.marsh = marsh;
+
+            marshCtx = marsh.getContext();
+
+            assert marshCtx != null;
+
+            optmMarsh.setContext(marshCtx);
+
+            configure(nameMapper, idMapper, dfltSerializer, typeCfgs, affFlds);
+        }
     }
 
     /**
@@ -364,40 +371,6 @@ public class BinaryContext {
      */
     public ClassLoader classLoader() {
         return clsLdr;
-    }
-
-    /**
-     * @param marsh Binary marshaller.
-     * @param binaryCfg Binary configuration.
-     * @param affFlds Type name to affinity key field name mapping.
-     * @throws BinaryObjectException In case of error.
-     */
-    private void configure(
-        BinaryMarshaller marsh,
-        BinaryConfiguration binaryCfg,
-        Map<String, String> affFlds
-    ) throws BinaryObjectException {
-        if (marsh == null)
-            return;
-
-        this.marsh = marsh;
-
-        marshCtx = marsh.getContext();
-
-        if (binaryCfg == null)
-            binaryCfg = new BinaryConfiguration();
-
-        assert marshCtx != null;
-
-        optmMarsh.setContext(marshCtx);
-
-        configure(
-            binaryCfg.getNameMapper(),
-            binaryCfg.getIdMapper(),
-            binaryCfg.getSerializer(),
-            binaryCfg.getTypeConfigurations(),
-            affFlds
-        );
     }
 
     /**
