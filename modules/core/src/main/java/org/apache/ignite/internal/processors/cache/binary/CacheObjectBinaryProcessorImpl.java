@@ -167,10 +167,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** How long to wait for schema if no updates in progress. */
     private long waitSchemaTimeout = IgniteSystemProperties.getLong(IGNITE_WAIT_SCHEMA_UPDATE, DFLT_WAIT_SCHEMA_UPDATE);
 
-    /** For tests. */
-    @SuppressWarnings("PublicField")
-    public static boolean useTestBinaryCtx;
-
     /** */
     @GridToStringExclude
     private IgniteBinary binaries;
@@ -278,17 +274,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
         };
 
-        binaryCtx = useTestBinaryCtx
-            ? new TestBinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class))
-            : new BinaryContext(
-                metaHnd,
-                ctx.config().getIgniteInstanceName(),
-                ctx.config().getClassLoader(),
-                ctx.config().getBinaryConfiguration(),
-                ctx.log(BinaryContext.class)
-            );
-
-        binaryCtx.configure(marsh, ctx.config().getBinaryConfiguration(), CU.affinityFields(ctx.config()));
+        binaryCtx = U.createAndConfigureBinaryContext(metaHnd, marsh, ctx.config(), ctx.log(BinaryContext.class));
 
         marsh.setBinaryContext(binaryCtx);
 

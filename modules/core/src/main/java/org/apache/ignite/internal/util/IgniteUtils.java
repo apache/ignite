@@ -194,6 +194,7 @@ import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -498,6 +499,10 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Ignite test features enabled flag. */
     public static boolean IGNITE_TEST_FEATURES_ENABLED =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED);
+
+    /** For tests. */
+    @SuppressWarnings("PublicField")
+    public static boolean useTestBinaryCtx;
 
     /** */
     private static final boolean assertionsEnabled;
@@ -9841,13 +9846,25 @@ public abstract class IgniteUtils extends CommonUtils {
 
     /** @return Empty binary context instance. */
     public static BinaryContext createAndConfigureBinaryContext(BinaryMarshaller marsh, IgniteConfiguration cfg) {
-        BinaryContext ctx = new BinaryContext(
-            BinaryUtils.cachingMetadataHandler(),
-            cfg.getIgniteInstanceName(),
-            cfg.getClassLoader(),
-            cfg.getBinaryConfiguration(),
-            NullLogger.INSTANCE
-        );
+        return createAndConfigureBinaryContext(BinaryUtils.cachingMetadataHandler(), marsh, cfg, NullLogger.INSTANCE);
+    }
+
+    /** @return Empty binary context instance. */
+    public static BinaryContext createAndConfigureBinaryContext(
+        BinaryMetadataHandler metaHnd,
+        BinaryMarshaller marsh,
+        IgniteConfiguration cfg,
+        IgniteLogger log
+    ) {
+        BinaryContext ctx = useTestBinaryCtx
+            ? new CacheObjectBinaryProcessorImpl.TestBinaryContext(metaHnd, cfg, log)
+            : new BinaryContext(
+                metaHnd,
+                cfg.getIgniteInstanceName(),
+                cfg.getClassLoader(),
+                cfg.getBinaryConfiguration(),
+                log
+            );
 
         ctx.configure(marsh, cfg.getBinaryConfiguration(), CU.affinityFields(cfg));
 
