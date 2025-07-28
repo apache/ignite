@@ -112,7 +112,7 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
         assertRebuildIndexes(ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary(), onlyPrimary);
 
         for (Ignite grid : G.allGrids())
-            assertNotNull(((IgniteEx)grid).context().cacheObjects().metadata(typeId));
+            assertNotNull(((IgniteEx)grid).context().cacheObjects().binaryType(typeId));
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
     }
