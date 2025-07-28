@@ -96,11 +96,9 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -4181,15 +4179,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         marsh.setContext(marshCtx);
 
-        BinaryContext ctx = new BinaryContext(
-            BinaryUtils.cachingMetadataHandler(),
-            iCfg.getIgniteInstanceName(),
-            iCfg.getClassLoader(),
-            iCfg.getBinaryConfiguration(),
-            NullLogger.INSTANCE
-        );
-
-        ctx.configure(marsh, iCfg.getBinaryConfiguration(), CU.affinityFields(iCfg));
+        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh, iCfg);
 
         marsh.setBinaryContext(ctx);
 
@@ -4250,15 +4240,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         marsh.setContext(marshCtx);
 
-        BinaryContext ctx = new BinaryContext(
-            BinaryUtils.cachingMetadataHandler(),
-            iCfg.getIgniteInstanceName(),
-            iCfg.getClassLoader(),
-            iCfg.getBinaryConfiguration(),
-            NullLogger.INSTANCE
-        );
-
-        ctx.configure(marsh, iCfg.getBinaryConfiguration(), CU.affinityFields(iCfg));
+        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh, iCfg);
 
         marsh.setBinaryContext(ctx);
 

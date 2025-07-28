@@ -21,9 +21,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi;
 import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi;
@@ -103,15 +101,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        BinaryContext ctx = new BinaryContext(
-            BinaryUtils.cachingMetadataHandler(),
-            cfg.getIgniteInstanceName(),
-            cfg.getClassLoader(),
-            cfg.getBinaryConfiguration(),
-            NullLogger.INSTANCE
-        );
-
-        ctx.configure(marsh, cfg.getBinaryConfiguration(), CU.affinityFields(cfg));
+        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh, cfg);
 
         marsh.setBinaryContext(ctx);
 

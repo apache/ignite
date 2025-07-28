@@ -9841,7 +9841,13 @@ public abstract class IgniteUtils extends CommonUtils {
 
     /** @return Empty binary context instance. */
     public static BinaryContext createAndConfigureBinaryContext(BinaryMarshaller marsh, IgniteConfiguration cfg) {
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), NullLogger.INSTANCE);
+        BinaryContext ctx = new BinaryContext(
+            BinaryUtils.cachingMetadataHandler(),
+            cfg.getIgniteInstanceName(),
+            cfg.getClassLoader(),
+            cfg.getBinaryConfiguration(),
+            NullLogger.INSTANCE
+        );
 
         ctx.configure(marsh, cfg.getBinaryConfiguration(), CU.affinityFields(cfg));
 

@@ -32,9 +32,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -679,15 +677,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        BinaryContext ctx = new BinaryContext(
-            BinaryNoopMetadataHandler.instance(),
-            iCfg.getIgniteInstanceName(),
-            iCfg.getClassLoader(),
-            iCfg.getBinaryConfiguration(),
-            NullLogger.INSTANCE
-        );
-
-        ctx.configure(marsh, iCfg.getBinaryConfiguration(), CU.affinityFields(iCfg));
+        // Noop here
+        BinaryContext ctx = U.createAndConfigureBinaryContext(marsh, iCfg);;
 
         marsh.setBinaryContext(ctx);
 
