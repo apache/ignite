@@ -192,9 +192,8 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
 
         if (withFaulireHandler) { // FH doesn't fail tx coordinator
             if (faultyNodeRole == FaultyNodeRole.TX_COORDINATOR) {
-                if (faultyNodeType == FaultyNodeType.BACKUP) {
+                if (faultyNodeType == FaultyNodeType.BACKUP)
                     waitForTopology(2); // two servers - tx coordinator hosting backup partition fails
-                }
                 else {
                     waitForTopology(3); // three servers - tx coordinator hosting primary partition doesn't fail
 
@@ -214,27 +213,24 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
             }
 
         }
-        else {
+        else
             checkKeysOnFaultyNode(keysOnFaultyNode);
-        }
 
         checkKeysOnHealthyNodes(keysOnFaultyNode);
     }
 
     /** */
     private void fillCache(IgniteCache<Integer, Integer> cache, int numOfKeys) {
-        for (int i = 0; i < numOfKeys; i++) {
+        for (int i = 0; i < numOfKeys; i++)
             cache.put(i, i);
-        }
     }
 
     /** */
     private void checkKeysOnFaultyNode(List<Integer> keysToCheck) {
         IgniteCache<Object, Object> cache = grid(FAULTY_NODE_IDX).cache(DEFAULT_CACHE_NAME);
 
-        for (Integer key : keysToCheck) {
+        for (Integer key : keysToCheck)
             assertEquals(storeStgy.getFromStore(key), cache.get(key));
-        }
     }
 
     /** */
@@ -259,9 +255,8 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
         IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ig.transactions().txStart()) {
-            for (Integer key : keys) {
+            for (Integer key : keys)
                 cache.put(key, KEY_UPDATE_FUNCTION.apply(key));
-            }
 
             tx.commit();
         }
@@ -273,7 +268,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
             updateKeysInTx(ig, keys);
         }
         catch (Exception ignored) {
-            // No-op
+            // No-op.
         }
     }
 
