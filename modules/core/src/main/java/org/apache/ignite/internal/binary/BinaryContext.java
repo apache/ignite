@@ -43,6 +43,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
@@ -77,6 +78,7 @@ import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetS
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -170,8 +172,11 @@ public class BinaryContext {
     /** */
     private MarshallerContext marshCtx;
 
-    /** Binary configuration. */
-    private final @Nullable BinaryConfiguration bcfg;
+    /** */
+    private final @Nullable BinarySerializer dfltSerializer;
+
+    /** */
+    private final Function<String, BinaryInternalMapper> mapperProvider;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -200,7 +205,12 @@ public class BinaryContext {
         @Nullable String igniteInstanceName,
         @Nullable ClassLoader clsLdr,
         @Nullable BinaryConfiguration bcfg,
+        @Nullable BinarySerializer dfltSerializer,
+        @Nullable BinaryIdMapper idMapper,
+        @Nullable BinaryNameMapper nameMapper,
+        @Nullable Collection<BinaryTypeConfiguration> typeCfgs,
         Map<String, String> affFlds,
+        boolean compactFooter,
         IgniteLogger log
     ) {
         assert metaHnd != null;
@@ -210,7 +220,15 @@ public class BinaryContext {
         this.metaHnd = metaHnd;
         this.igniteInstanceName = igniteInstanceName;
         this.clsLdr = clsLdr;
-        this.bcfg = bcfg;
+        this.dfltSerializer = dfltSerializer;
+
+        if (idMapper != null || nameMapper != null || !F.isEmpty(typeCfgs))
+            this.mapperProvider = clsName -> resolveMapper(clsName, idMapper, nameMapper, typeCfgs);
+        else
+            this.mapperProvider = clsName -> DFLT_MAPPER;
+
+        this.compactFooter = compactFooter;
+
         this.log = log;
 
         colTypes.put(ArrayList.class, GridBinaryMarshaller.ARR_LIST);
@@ -380,8 +398,6 @@ public class BinaryContext {
             binaryCfg.getTypeConfigurations(),
             affFlds
         );
-
-        compactFooter = binaryCfg.isCompactFooter();
     }
 
     /**
@@ -932,7 +948,7 @@ public class BinaryContext {
      * @return Default serializer.
      */
     private BinarySerializer defaultSerializer() {
-        return bcfg != null ? bcfg.getSerializer() : null;
+        return dfltSerializer;
     }
 
     /**
@@ -1011,12 +1027,7 @@ public class BinaryContext {
         if (mapper != null)
             return mapper;
 
-        mapper = bcfg == null ? DFLT_MAPPER : resolveMapper(
-            clsName,
-            bcfg.getIdMapper(),
-            bcfg.getNameMapper(),
-            bcfg.getTypeConfigurations()
-        );
+        mapper = mapperProvider.apply(clsName);;
 
         BinaryInternalMapper prevMap = cls2Mappers.putIfAbsent(clsName, mapper);
 
