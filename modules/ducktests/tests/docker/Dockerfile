@@ -89,9 +89,10 @@ RUN userdel -r ubuntu \
     && useradd -ms /bin/bash ducker \
     && mkdir -p /home/ducker/ \
     && rsync -aiq /root/.ssh/ /home/ducker/.ssh \
-    && chown -R ducker:ducker /home/ducker/ /mnt/ /var/log/ /opt \
+    && chown -R ducker /home/ducker/ /mnt/ /var/log/ /opt \
+    && cp /dev/null /etc/environment \
     && echo "LANG=C.UTF-8" >> /home/ducker/.ssh/environment \
-    && echo "PATH=$(runuser -l ducker -c 'echo $PATH'):$JAVA_HOME/bin" >> /home/ducker/.ssh/environment \
+    && echo "PATH=$(runuser -l ducker -c 'echo $PATH'):$JAVA_HOME/bin:/opt/venv/bin" >> /home/ducker/.ssh/environment \
     && echo "JAVA_HOME=$JAVA_HOME" >> /home/ducker/.ssh/environment \
     && echo 'PATH=$PATH:'"$JAVA_HOME/bin" >> /home/ducker/.profile \
     && echo 'ducker ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
