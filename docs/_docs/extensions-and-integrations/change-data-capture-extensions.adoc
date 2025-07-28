@@ -348,7 +348,7 @@ It uses Apache Ignite’s Change Data Capture (CDC) mechanism to track data chan
 - Per-cache replication (only selected caches are replicated)
 - `onlyPrimary` support (replicates only from primary nodes)
 - Auto table creation in PostgreSQL if needed (`createTables=true`)
-- Batch replication (`maxBatchSize` and `maxCommitSize`)
+- Batch replication (`batchSize`)
 - User-defined `DataSource` — user configures reliability and transactional guarantees
 
 == Configuration
@@ -366,8 +366,7 @@ Spring XML configuration example (`ignite-to-postgres.xml`):
                     <value>T2</value>
                 </list>
             </property>
-            <property name="maxBatchSize" value="1000" />
-            <property name="maxCommitSize" value="100" />
+            <property name="batchSize" value="1024" />
             <property name="onlyPrimary" value="true" />
             <property name="createTables" value="true" />
             <property name="dataSource" ref="dataSource" />
@@ -386,13 +385,11 @@ The following settings can be used to configure the behavior of `IgniteToPostgre
 | `dataSource` | JDBC `DataSource` used to connect to the target PostgreSQL database. Must be provided by the user. | _Required_
 | `caches` | Set of Ignite cache names to replicate. Must be provided by the user. | _Required_
 | `onlyPrimary` | If `true`, replicates only events originating from the primary node. Useful to avoid duplicate updates in replicated clusters. | `true`
-| `maxBatchSize`  | Maximum number of statements per batch submitted to PostgreSQL. Affects how many rows are sent in a single `executeBatch()` call. | `1024` |
-| `maxCommitSize` | Maximum number of batches executed before committing the current transaction (when auto-commit is disabled). Controls how many `executeBatch()` calls are grouped into one transaction. | `10`   |
-| `autoCommit` | If `true`, each batch is committed immediately after submission. If false, batches accumulate and are committed by the connector after finishing the last WAL segment | `false`
+| `maxBatchSize`  | Maximum number of statements per batch submitted to PostgreSQL. Affects how many rows are commited in a single `executeBatch()` call. | `1024` |
 | `createTables`| If `true`, missing target tables in PostgreSQL will be created automatically during startup.| `false`
 |===
 
- If `autoCommit` is disabled (`false`), batches are accumulated and committed either manually or by the connector after processing a group of batches. If `autoCommit` is enabled (`true`), each batch is committed immediately, and `maxCommitSize` has no effect.
+We use `PreparedStatement` for batching with `autoCommit` set to `false`, committing manually after each batch execution.
 
 
 [WARNING]
