@@ -1630,9 +1630,16 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
          * @param cfg Ignite configuration.
          * @param log Logger.
          */
-        public TestBinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration cfg,
-            IgniteLogger log) {
-            super(metaHnd, cfg.getIgniteInstanceName(), cfg.getClassLoader(), cfg.getBinaryConfiguration(), log);
+        public TestBinaryContext(BinaryMetadataHandler metaHnd, BinaryMarshaller marsh, IgniteConfiguration cfg, IgniteLogger log) {
+            super(
+                metaHnd,
+                marsh,
+                cfg.getIgniteInstanceName(),
+                cfg.getClassLoader(),
+                cfg.getBinaryConfiguration(),
+                CU.affinityFields(cfg),
+                log
+            );
         }
 
         /** {@inheritDoc} */

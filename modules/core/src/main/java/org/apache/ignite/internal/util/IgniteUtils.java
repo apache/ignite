@@ -9837,11 +9837,7 @@ public abstract class IgniteUtils extends CommonUtils {
 
     /** @return Empty binary context instance. */
     public static BinaryContext createAndConfigureBinaryContext(BinaryMetadataHandler metaHnd, BinaryMarshaller marsh) {
-        BinaryContext ctx = new BinaryContext(metaHnd, NullLogger.INSTANCE);
-
-        ctx.configure(marsh, null, CU.affinityFields(null));
-
-        return ctx;
+        return createAndConfigureBinaryContext(metaHnd, marsh, new IgniteConfiguration(), NullLogger.INSTANCE);
     }
 
     /** @return Empty binary context instance. */
@@ -9856,19 +9852,17 @@ public abstract class IgniteUtils extends CommonUtils {
         IgniteConfiguration cfg,
         IgniteLogger log
     ) {
-        BinaryContext ctx = useTestBinaryCtx
-            ? new CacheObjectBinaryProcessorImpl.TestBinaryContext(metaHnd, cfg, log)
+        return useTestBinaryCtx
+            ? new CacheObjectBinaryProcessorImpl.TestBinaryContext(metaHnd, marsh, cfg, log)
             : new BinaryContext(
                 metaHnd,
+                marsh,
                 cfg.getIgniteInstanceName(),
                 cfg.getClassLoader(),
                 cfg.getBinaryConfiguration(),
+                CU.affinityFields(cfg),
                 log
             );
-
-        ctx.configure(marsh, cfg.getBinaryConfiguration(), CU.affinityFields(cfg));
-
-        return ctx;
     }
 
     /**
