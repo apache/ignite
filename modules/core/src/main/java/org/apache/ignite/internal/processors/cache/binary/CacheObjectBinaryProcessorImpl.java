@@ -43,6 +43,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -116,6 +117,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_SCHEMA_UPDATE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.BINARY_PROC;
+import static org.apache.ignite.internal.binary.BinaryContext.affinityFieldName;
 import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -271,6 +273,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         };
 
         binaryCtx = U.binaryContext(metaHnd, marsh, ctx.config(), ctx.log(BinaryContext.class));
+
+        ctx.closure().onBinaryContextCreated(binaryCtx);
+        onBinaryContextCreated(binaryCtx);
 
         marsh.setBinaryContext(binaryCtx);
 
@@ -1613,5 +1618,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         int typeId = binaryCtx.registerType(cls, true, false);
 
         return metadata(typeId);
+    }
+
+    /** */
+    private void onBinaryContextCreated(BinaryContext ctx) {
+        // Classes with overriden default serialization flag.
+        ctx.registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class), true);
     }
 }

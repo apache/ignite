@@ -53,6 +53,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -110,6 +111,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.binary.BinaryContext.affinityFieldName;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_LONG;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_REF;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_SEQ;
@@ -256,6 +258,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
+
+        BinaryContext bctx = ctx.marshaller().binaryMarshaller().context();
+
+        // Classes with overriden default serialization flag.
+        bctx.registerPredefinedType(CollocatedSetItemKey.class, 0, affinityFieldName(CollocatedSetItemKey.class), true);
+        bctx.registerPredefinedType(CollocatedQueueItemKey.class, 0, affinityFieldName(CollocatedQueueItemKey.class), true);
     }
 
     /** {@inheritDoc} */

@@ -61,19 +61,11 @@ import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
-import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
-import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
-import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
-import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
-import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
-import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -103,24 +95,6 @@ public class BinaryContext {
     /** */
     static final BinaryInternalMapper SIMPLE_NAME_LOWER_CASE_MAPPER =
         new BinaryInternalMapper(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true), false);
-
-    /** Set of system classes that should be marshalled with BinaryMarshaller. */
-    private static final Set<String> BINARYLIZABLE_SYS_CLSS = Set.of(
-        // Closure processor classes.
-        GridClosureProcessor.C1.class.getName(),
-        GridClosureProcessor.C1MLA.class.getName(),
-        GridClosureProcessor.C2.class.getName(),
-        GridClosureProcessor.C2MLA.class.getName(),
-        GridClosureProcessor.C4.class.getName(),
-        GridClosureProcessor.C4MLA.class.getName(),
-
-        IgniteUuid.class.getName(),
-
-        // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
-        BinaryTreeMap.class.getName(),
-        TreeMap.class.getName(),
-        TreeSet.class.getName()
-    );
 
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap<>();
@@ -276,30 +250,25 @@ public class BinaryContext {
         registerPredefinedType(HashMap.class, 0);
         registerPredefinedType(LinkedHashMap.class, 0);
 
-        // Classes with overriden default serialization flag.
-        registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class), true);
-        registerPredefinedType(CollocatedSetItemKey.class, 0, affinityFieldName(CollocatedSetItemKey.class), true);
-        registerPredefinedType(CollocatedQueueItemKey.class, 0, affinityFieldName(CollocatedQueueItemKey.class), true);
-
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
         registerPredefinedType(T2.class, 62);
         registerPredefinedType(IgniteUuid.class, 63);
 
-        registerPredefinedType(PlatformJavaObjectFactoryProxy.class,
-            GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY);
-
         registerPredefinedType(BinaryObjectImpl.class, 0);
         registerPredefinedType(BinaryObjectOffheapImpl.class, 0);
-        registerPredefinedType(BinaryMetadataKey.class, 0);
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
         registerPredefinedType(BinaryTreeMap.class, 0);
         registerPredefinedType(BinaryArray.class, 0);
         registerPredefinedType(BinaryEnumArray.class, 0);
 
-        registerPredefinedType(PlatformDotNetSessionData.class, 0);
-        registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
+        registerBinarilizableSystemClass(IgniteUuid.class);
+
+        // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
+        registerBinarilizableSystemClass(BinaryTreeMap.class);
+        registerBinarilizableSystemClass(TreeMap.class);
+        registerBinarilizableSystemClass(TreeSet.class);
 
         // IDs range [200..1000] is used by Ignite internal APIs.
 
@@ -643,6 +612,16 @@ public class BinaryContext {
     }
 
     /**
+     * Register system class that should be marshalled with BinaryMarshaller.
+     * @param cls Class to register.
+     */
+    public void registerBinarilizableSystemClass(Class<?> cls) {
+        String clsName = cls.getName();
+
+        descByCls.put(cls, systemClassDescriptor(cls, clsName, new BinaryReflectiveSerializer()));
+    }
+
+    /**
      * Registers binary type locally.
      *
      * @param binaryType Binary type to register.
@@ -677,24 +656,8 @@ public class BinaryContext {
     @NotNull private BinaryClassDescriptor createDescriptorForClass(Class<?> cls) {
         String clsName = cls.getName();
 
-        if (marshCtx.isSystemType(clsName)) {
-            BinarySerializer serializer = null;
-
-            if (BINARYLIZABLE_SYS_CLSS.contains(clsName))
-                serializer = new BinaryReflectiveSerializer();
-
-            return new BinaryClassDescriptor(this,
-                cls,
-                false,
-                clsName.hashCode(),
-                clsName,
-                null,
-                SIMPLE_NAME_LOWER_CASE_MAPPER,
-                serializer,
-                false,
-                false
-            );
-        }
+        if (marshCtx.isSystemType(clsName))
+            return systemClassDescriptor(cls, clsName, null);
         else {
             BinaryInternalMapper mapper = userTypeMapper(clsName);
 
@@ -721,6 +684,26 @@ public class BinaryContext {
                 false
             );
         }
+    }
+
+    /**
+     * @param cls Class.
+     * @param clsName Class name.
+     * @param serializer Serializer.
+     * @return Binary class descriptor
+     */
+    private BinaryClassDescriptor systemClassDescriptor(Class<?> cls, String clsName, @Nullable BinarySerializer serializer) {
+        return new BinaryClassDescriptor(this,
+            cls,
+            false,
+            clsName.hashCode(),
+            clsName,
+            null,
+            SIMPLE_NAME_LOWER_CASE_MAPPER,
+            serializer,
+            false,
+            false
+        );
     }
 
     /**
@@ -1092,19 +1075,17 @@ public class BinaryContext {
     /**
      * @param cls Class.
      * @param id Type ID.
-     * @return GridBinaryClassDescriptor.
      */
-    BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id) {
-        return registerPredefinedType(cls, id, null, true);
+    public void registerPredefinedType(Class<?> cls, int id) {
+        registerPredefinedType(cls, id, null, true);
     }
 
     /**
      * @param cls Class.
      * @param id Type ID.
      * @param affFieldName Affinity field name.
-     * @return GridBinaryClassDescriptor.
      */
-    BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName, boolean registered) {
+    public void registerPredefinedType(Class<?> cls, int id, String affFieldName, boolean registered) {
         String simpleClsName = SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(cls.getName());
 
         if (id == 0)
@@ -1130,8 +1111,6 @@ public class BinaryContext {
 
         if (affFieldName != null)
             affKeyFieldNames.putIfAbsent(id, affFieldName);
-
-        return desc;
     }
 
     /**
