@@ -39,7 +39,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -144,46 +143,45 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
 
     @Test
     public void testSingleMessageErrorWarnings () throws Exception {
-        spiFactory = TestRecordingCommunicationSpi::new;
+        String expectedLogMsg = "Failed to send local partitions";
 
-        String logSubstr = "Failed to send local partitions";
+        LogListener logListener = LogListener.matches(expectedLogMsg).build();
+        testLog = new ListeningTestLogger(log, logListener);
 
-        LogListener logLstnr = LogListener.matches(logSubstr).build();
-
-        testLog = new ListeningTestLogger(log, logLstnr);
-
-
-        IgniteEx crd = startGrid(0);
+        IgniteConfiguration cfg0 = getConfiguration(getTestIgniteInstanceName(0));
+        TestRecordingCommunicationSpi spi0 = new TestRecordingCommunicationSpi();
+        cfg0.setCommunicationSpi(spi0);
+        cfg0.setGridLogger(testLog);
+        startGrid(cfg0);
 
         IgniteConfiguration cfg1 = getConfiguration(getTestIgniteInstanceName(1));
-
-        TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
-
-        spi.blockMessages((node, message) -> message instanceof GridDhtPartitionsSingleMessage);
-
-        cfg1.setCommunicationSpi(spi);
-
+        TestRecordingCommunicationSpi spi1 = new TestRecordingCommunicationSpi();
+        cfg1.setCommunicationSpi(spi1);
         cfg1.setGridLogger(testLog);
 
-        IgniteEx problemNode = startGrid(cfg1);
+        IgniteEx node1 = startGrid(cfg1);
 
-        assertTrue(spi.waitForBlocked(1, 5000));
-
-        stopGrid(0);
-//
-//
-////        spi.blockMessages(TestRecordingCommunicationSpi.blockSingleExhangeMessage());
-//
-
-//        spi.waitForBlocked();
-
-
-        spi.stopBlock();
-
+        node1.cluster().state(ClusterState.ACTIVE);
         awaitPartitionMapExchange();
 
+        spi1.blockMessages((node, msg) -> msg instanceof GridDhtPartitionsSingleMessage);
 
-        assertTrue(logLstnr.check());
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            node1.context().cache().context().exchange().refreshPartitions();
+        });
+
+        assertTrue("Message not blocked", spi1.waitForBlocked(1, 5_000));
+
+        stopGrid(0);
+
+        spi1.stopBlock();
+
+        fut.get(5_000);
+
+        U.sleep(500);
+
+        assertTrue("Expected log not found",
+                GridTestUtils.waitForCondition(logListener::check, 3000));
     }
 
     /**
