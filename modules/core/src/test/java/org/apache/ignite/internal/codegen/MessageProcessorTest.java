@@ -40,21 +40,17 @@ public class MessageProcessorTest {
     /** */
     @Test
     public void testProcessorGeneratesSerializer() {
-        Compilation compilation = compile("TestMessage.java");
+        Compilation compilation = compile("TestMessage");
 
         assertThat(compilation).succeeded();
 
-        assertEquals(1, compilation.generatedSourceFiles().size());
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestMessageSerializer")
-            .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
+        checkSerializers(compilation, "TestMessage");
     }
 
     /** */
     @Test
     public void testEmptyMessage() {
-        Compilation compilation = compile("EmptyMessage.java");
+        Compilation compilation = compile("EmptyMessage");
 
         assertThat(compilation).succeeded();
         assertTrue(compilation.generatedSourceFiles().isEmpty());
@@ -63,7 +59,7 @@ public class MessageProcessorTest {
     /** */
     @Test
     public void testWrongClassUseOrder() {
-        Compilation compilation = compile("WrongClassUseOrder.java");
+        Compilation compilation = compile("WrongClassUseOrder");
 
         assertThat(compilation).failed();
     }
@@ -71,7 +67,7 @@ public class MessageProcessorTest {
     /** */
     @Test
     public void testStaticFieldOrderFailed() {
-        Compilation compilation = compile("StaticFieldOrder.java");
+        Compilation compilation = compile("StaticFieldOrder");
 
         assertThat(compilation).failed();
     }
@@ -79,7 +75,7 @@ public class MessageProcessorTest {
     /** */
     @Test
     public void testWrongOrderEnumerationFailed() {
-        Compilation compilation = compile("WrongOrderEnumeration.java");
+        Compilation compilation = compile("WrongOrderEnumeration");
 
         assertThat(compilation).failed();
     }
@@ -87,39 +83,39 @@ public class MessageProcessorTest {
     /** */
     @Test
     public void testInheritedMessages() {
-        Compilation compilation = compile("AbstractMessage.java", "ChildMessage.java");
+        Compilation compilation = compile("AbstractMessage", "ChildMessage");
 
         assertThat(compilation).succeeded();
 
-        assertEquals(1, compilation.generatedSourceFiles().size());
+        checkSerializers(compilation, "ChildMessage");
+    }
 
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.ChildMessageSerializer")
-            .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
+    /** */
+    @Test
+    public void testNestedMessages() {
+        Compilation compilation = compile("NestedMessage", "MessageWithNestedMessage", "TestMessageWithNestedMessages");
+
+        assertThat(compilation).succeeded();
+
+        checkSerializers(compilation, "NestedMessage", "MessageWithNestedMessage", "TestMessageWithNestedMessages");
     }
 
     /** */
     @Test
     public void testMultipleMessages() {
-        Compilation compilation = compile("TestMessage.java", "AbstractMessage.java", "ChildMessage.java");
+        Compilation compilation = compile("TestMessage", "AbstractMessage", "ChildMessage", "NestedMessage",
+            "MessageWithNestedMessage", "TestMessageWithNestedMessages");
 
         assertThat(compilation).succeeded();
 
-        assertEquals(2, compilation.generatedSourceFiles().size());
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.ChildMessageSerializer")
-            .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestMessageSerializer")
-            .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
+        checkSerializers(compilation, "ChildMessage", "TestMessage", "NestedMessage", "MessageWithNestedMessage",
+            "MessageWithNestedMessage");
     }
 
     /** */
     @Test
     public void testMatrixMessageFailed() {
-        Compilation compilation = compile("MatrixMessageMessage.java");
+        Compilation compilation = compile("MatrixMessageMessage");
 
         assertThat(compilation).failed();
     }
@@ -127,7 +123,7 @@ public class MessageProcessorTest {
     /** */
     @Test
     public void testPojoFieldFailed() {
-        Compilation compilation = compile("PojoFieldMessage.java");
+        Compilation compilation = compile("PojoFieldMessage");
 
         assertThat(compilation).failed();
     }
@@ -150,7 +146,7 @@ public class MessageProcessorTest {
 
     /** */
     private JavaFileObject javaFile(String srcName) {
-        return JavaFileObjects.forResource("codegen/" + srcName);
+        return JavaFileObjects.forResource("codegen/" + srcName + ".java");
     }
 
     /** */
@@ -166,6 +162,19 @@ public class MessageProcessorTest {
         }
         catch (Exception e) {
             throw new RuntimeException("Unable to locate JAR for: " + clazz.getName(), e);
+        }
+    }
+
+    /** */
+    private void checkSerializers(Compilation compilation, String... msgClasses) {
+        assertEquals(msgClasses.length, compilation.generatedSourceFiles().size());
+
+        for (String msgCls : msgClasses) {
+            String serCls = msgCls + "Serializer";
+
+            assertThat(compilation)
+                .generatedSourceFile("org.apache.ignite.internal.codegen." + serCls)
+                .hasSourceEquivalentTo(javaFile(serCls));
         }
     }
 }
