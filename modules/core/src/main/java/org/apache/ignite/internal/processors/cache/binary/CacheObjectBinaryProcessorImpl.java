@@ -274,10 +274,13 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         binaryCtx = U.binaryContext(metaHnd, marsh, ctx.config(), ctx.log(BinaryContext.class));
 
-        ctx.closure().onBinaryContextCreated(binaryCtx);
-        onBinaryContextCreated(binaryCtx);
-
         marsh.setBinaryContext(binaryCtx);
+
+        // Will be null in case of StandaloneGridKernalContext.
+        if (ctx.closure() != null)
+            ctx.closure().onBinaryContextCreated(binaryCtx);
+
+        onBinaryContextCreated(binaryCtx);
 
         transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, binaryCtx, ctx, log);
 
