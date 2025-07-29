@@ -997,7 +997,7 @@ public class BinaryContext {
         if (mapper != null)
             return mapper;
 
-        mapper = mapperProvider.apply(clsName);;
+        mapper = mapperProvider.apply(clsName);
 
         BinaryInternalMapper prevMap = cls2Mappers.putIfAbsent(clsName, mapper);
 
