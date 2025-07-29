@@ -187,7 +187,11 @@ public class BinaryContext {
      * @param marsh Binary marshaller.
      * @param igniteInstanceName Ignite instance name.
      * @param clsLdr Class loader.
+     * @param dfltSerializer Binary serializer.
+     * @param idMapper Binary id mapper.
+     * @param nameMapper Binary name mapper.
      * @param affFlds Affinity fields.
+     * @param compactFooter Compact footer flag.
      * @param log Logger.
      */
     public BinaryContext(
@@ -213,9 +217,9 @@ public class BinaryContext {
         this.dfltSerializer = dfltSerializer;
 
         if (idMapper != null || nameMapper != null || !F.isEmpty(typeCfgs))
-            this.mapperProvider = clsName -> resolveMapper(clsName, idMapper, nameMapper, typeCfgs);
+            mapperProvider = clsName -> resolveMapper(clsName, idMapper, nameMapper, typeCfgs);
         else
-            this.mapperProvider = clsName -> DFLT_MAPPER;
+            mapperProvider = clsName -> DFLT_MAPPER;
 
         this.compactFooter = compactFooter;
 
