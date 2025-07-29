@@ -315,9 +315,6 @@ public class BinaryContext {
         BinaryClassDescriptor desc = descByCls.get(cls);
 
         if (desc == null) {
-            if (cls == TreeMap.class || cls == TreeSet.class)
-                return false;
-
             return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
                 QueryUtils.isGeometryClass(cls);
         }
