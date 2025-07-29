@@ -21,12 +21,10 @@ import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -38,7 +36,6 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
@@ -50,7 +47,6 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -1617,84 +1613,5 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         int typeId = binaryCtx.registerType(cls, true, false);
 
         return metadata(typeId);
-    }
-
-    /** */
-    @SuppressWarnings("PublicInnerClass")
-    public static class TestBinaryContext extends BinaryContext {
-        /** */
-        private List<TestBinaryContextListener> listeners;
-
-        /**
-         * @param metaHnd Meta handler.
-         * @param cfg Ignite configuration.
-         * @param log Logger.
-         */
-        public TestBinaryContext(BinaryMetadataHandler metaHnd, BinaryMarshaller marsh, IgniteConfiguration cfg, IgniteLogger log) {
-            super(
-                metaHnd,
-                marsh,
-                cfg.getIgniteInstanceName(),
-                cfg.getClassLoader(),
-                cfg.getBinaryConfiguration(),
-                CU.affinityFields(cfg),
-                log
-            );
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
-            BinaryType metadata = super.metadata(typeId);
-
-            if (listeners != null) {
-                for (TestBinaryContextListener listener : listeners)
-                    listener.onAfterMetadataRequest(typeId, metadata);
-            }
-
-            return metadata;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateMetadata(int typeId, BinaryMetadata meta,
-            boolean failIfUnregistered) throws BinaryObjectException {
-            if (listeners != null) {
-                for (TestBinaryContextListener listener : listeners)
-                    listener.onBeforeMetadataUpdate(typeId, meta);
-            }
-
-            super.updateMetadata(typeId, meta, failIfUnregistered);
-        }
-
-        /** */
-        public interface TestBinaryContextListener {
-            /**
-             * @param typeId Type id.
-             * @param type Type.
-             */
-            void onAfterMetadataRequest(int typeId, BinaryType type);
-
-            /**
-             * @param typeId Type id.
-             * @param metadata Metadata.
-             */
-            void onBeforeMetadataUpdate(int typeId, BinaryMetadata metadata);
-        }
-
-        /**
-         * @param lsnr Listener.
-         */
-        public void addListener(TestBinaryContextListener lsnr) {
-            if (listeners == null)
-                listeners = new ArrayList<>();
-
-            if (!listeners.contains(lsnr))
-                listeners.add(lsnr);
-        }
-
-        /** */
-        public void clearAllListener() {
-            if (listeners != null)
-                listeners.clear();
-        }
     }
 }
