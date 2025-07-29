@@ -18,10 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.core.Join;
@@ -31,19 +28,19 @@ import org.apache.calcite.util.ImmutableIntList;
 
 /** */
 public class IgniteJoinInfo extends JoinInfo {
-    /** */
-    private final Set<Integer> matchingNulls;
+    /** Filtered nulls of equi conditions. It usually means presence of IS NOT DISTINCT. */
+    private final int matchingNullsCnt;
 
     /** */
     protected IgniteJoinInfo(
         ImmutableIntList leftKeys,
         ImmutableIntList rightKeys,
-        Set<Integer> matchingNulls,
+        int matchingNullsCnt,
         ImmutableList<RexNode> nonEquis
     ) {
         super(leftKeys, rightKeys, nonEquis);
 
-        this.matchingNulls = matchingNulls;
+        this.matchingNullsCnt = matchingNullsCnt;
     }
 
     /** */
@@ -56,42 +53,33 @@ public class IgniteJoinInfo extends JoinInfo {
         RelOptUtil.splitJoinCondition(join.getLeft(), join.getRight(), join.getCondition(), leftKeys, rightKeys,
             filteredNulls, nonEquis);
 
-        Set<Integer> bs = Collections.emptySet();
+        int matchingNullsCnt = 0;
 
         for (int i = 0; i < filteredNulls.size(); ++i) {
-            if (!filteredNulls.get(i)) {
-                if (bs == Collections.EMPTY_SET)
-                    bs = new HashSet<>();
-
-                bs.add(i);
-            }
+            if (!filteredNulls.get(i))
+                ++matchingNullsCnt;
         }
 
         return new IgniteJoinInfo(
             ImmutableIntList.of(leftKeys.stream().mapToInt(i -> i).toArray()),
             ImmutableIntList.of(rightKeys.stream().mapToInt(i -> i).toArray()),
-            bs,
+            matchingNullsCnt,
             ImmutableList.copyOf(nonEquis)
         );
     }
 
     /** */
     public static IgniteJoinInfo of(ImmutableIntList leftKeys, ImmutableIntList rightKeys) {
-        return new IgniteJoinInfo(leftKeys, rightKeys, Collections.emptySet(), ImmutableList.of());
+        return new IgniteJoinInfo(leftKeys, rightKeys, 0, ImmutableList.of());
     }
 
     /** */
     public boolean hasMatchingNulls() {
-        return !matchingNulls.isEmpty();
+        return matchingNullsCnt != 0;
     }
 
     /** */
     public int matchingNullsCnt() {
-        return matchingNulls.size();
-    }
-
-    /** */
-    public boolean matchingNull(int equiPairIdx) {
-        return matchingNulls.contains(equiPairIdx);
+        return matchingNullsCnt;
     }
 }

@@ -343,11 +343,6 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected ExecutionContext<Object[]> executionContext(UUID nodeId) {
-        return executionContext(nodeId, UUID.randomUUID(), 0);
-    }
-
-    /** */
     protected ExecutionContext<Object[]> executionContext(UUID nodeId, UUID qryId, long fragmentId) {
         FragmentDescription fragmentDesc = new FragmentDescription(fragmentId, null, null, null);
         return new ExecutionContext<>(
