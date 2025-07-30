@@ -34,7 +34,6 @@ import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
@@ -1257,12 +1256,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "Number of checkpoint history entries held in memory", type = Integer.class,
         defaults = "" + DFLT_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE)
     public static final String IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE = "IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE";
-
-    /**
-     * If this property is set to {@code true} enable logging in {@link GridClient}.
-     */
-    @SystemProperty("Enables logging in GridClient")
-    public static final String IGNITE_GRID_CLIENT_LOG_ENABLED = "IGNITE_GRID_CLIENT_LOG_ENABLED";
 
     /**
      * When set to {@code true}, direct IO may be enabled. Direct IO enabled only if JAR file with corresponding

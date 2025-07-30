@@ -22,16 +22,11 @@ import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientAuthenticationException;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
 /**
  * Security tests for thin client.
@@ -52,42 +47,10 @@ public class AdditionalSecurityCheckTest extends CommonSecurityCheckTest {
         assertEquals(3, ignite.cluster().topologyVersion());
         assertFalse(ignite.cluster().state().active());
 
-        try (GridClient client = GridClientFactory.start(getGridClientConfiguration())) {
-            assertTrue(client.connected());
-
-            client.state().state(ACTIVE, false);
-        }
-
         try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {
             client.createCache("test_cache");
 
             assertEquals(1, client.cacheNames().size());
-        }
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testClientInfoGridClientFail() throws Exception {
-        Ignite ignite = startGrids(2);
-
-        assertEquals(2, ignite.cluster().topologyVersion());
-
-        startGrid(2);
-
-        assertEquals(3, ignite.cluster().topologyVersion());
-
-        fail = true;
-
-        try (GridClient client = GridClientFactory.start(getGridClientConfiguration())) {
-            assertFalse(client.connected());
-            GridTestUtils.assertThrowsAnyCause(log,
-                () -> {
-                    throw client.checkLastError();
-                },
-                GridClientAuthenticationException.class,
-                "Client version is not found.");
         }
     }
 
