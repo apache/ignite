@@ -258,12 +258,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
-
-        BinaryContext bctx = ctx.marshaller().binaryMarshaller().context();
-
-        // Classes with overriden default serialization flag.
-        bctx.registerPredefinedType(CollocatedSetItemKey.class, 0, affinityFieldName(CollocatedSetItemKey.class), true);
-        bctx.registerPredefinedType(CollocatedQueueItemKey.class, 0, affinityFieldName(CollocatedQueueItemKey.class), true);
     }
 
     /** {@inheritDoc} */
