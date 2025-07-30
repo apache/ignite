@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
@@ -174,9 +173,9 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
             updateKeysInTx(txCoordinator, keysOnFaultyNode);
 
         if (withFaulireHandler) {
-            // FH doesn't fail TX coordinator node, this should be fixed here:
+            // FH doesn't fail TX coordinator node now, this behavior is wrong and should be fixed here:
             // TODO https://issues.apache.org/jira/browse/IGNITE-26060
-            if (faultyNodeRole == FaultyNodeRole.REGULAR) {
+            if (faultyNodeRole != FaultyNodeRole.TX_COORDINATOR) {
                 waitForTopology(3);
 
                 assertTrue("Client node should survive test scenario",
