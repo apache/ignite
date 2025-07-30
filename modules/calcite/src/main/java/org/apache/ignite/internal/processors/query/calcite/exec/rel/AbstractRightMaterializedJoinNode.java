@@ -26,6 +26,9 @@ import org.jetbrains.annotations.Nullable;
 
 /** Right-part materialized join node. Holds data from the right part locally. */
 public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrackingNode<Row> {
+    /** */
+    protected static final int HALF_BUF_SIZE = IN_BUFFER_SIZE >> 1;
+
     /** Special flag which marks that all the rows are received. */
     protected static final int NOT_WAITING = -1;
 

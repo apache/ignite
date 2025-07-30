@@ -196,20 +196,22 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
     /** */
     protected void requestMoreOrEnd() throws Exception {
-        if (waitingRight == 0)
-            rightSource().request(waitingRight = IN_BUFFER_SIZE);
-
-        if (waitingLeft == 0 && leftInBuf.isEmpty())
-            leftSource().request(waitingLeft = IN_BUFFER_SIZE);
-
         if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && leftInBuf.isEmpty() && left == null
-                && !rightIt.hasNext()) {
+            && !rightIt.hasNext()) {
             requested = 0;
 
             rightHashStore.close();
 
             downstream().end();
+
+            return;
         }
+
+        if (waitingRight == 0 && requested > 0)
+            rightSource().request(waitingRight = IN_BUFFER_SIZE);
+
+        if (waitingLeft == 0 && leftInBuf.size() <= HALF_BUF_SIZE)
+            leftSource().request(waitingLeft = IN_BUFFER_SIZE - leftInBuf.size());
     }
 
     /** */

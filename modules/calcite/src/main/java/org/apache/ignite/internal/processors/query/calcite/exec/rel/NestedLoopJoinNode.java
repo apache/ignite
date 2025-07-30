@@ -28,9 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 
 /** */
 public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJoinNode<Row> {
-    /** TODO : use also in hash join */
-    private static final int HALF_BUF_SIZE = IN_BUFFER_SIZE >> 1;
-
     /** */
     protected final BiPredicate<Row, Row> cond;
 
