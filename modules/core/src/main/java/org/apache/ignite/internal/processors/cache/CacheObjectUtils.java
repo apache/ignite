@@ -188,7 +188,7 @@ public class CacheObjectUtils {
         if (o == null)
             return o;
 
-        while (BinaryUtils.knownCacheObject(o)) {
+        while (o instanceof CacheObject) {
             CacheObject co = (CacheObject)o;
 
             if (!co.isPlatformType() && keepBinary)

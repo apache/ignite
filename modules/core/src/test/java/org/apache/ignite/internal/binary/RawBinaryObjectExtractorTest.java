@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
@@ -78,15 +77,11 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
 
     /** */
     public static BinaryContext createTestBinaryContext() {
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), new IgniteConfiguration(), null);
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new TestMarshallerContext());
 
-        ctx.configure(marsh);
-
-        return ctx;
+        return U.binaryContext(marsh);
     }
 
     /** */

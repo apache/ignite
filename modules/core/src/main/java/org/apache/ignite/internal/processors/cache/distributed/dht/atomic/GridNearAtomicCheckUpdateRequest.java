@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  */
 public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Cache message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 

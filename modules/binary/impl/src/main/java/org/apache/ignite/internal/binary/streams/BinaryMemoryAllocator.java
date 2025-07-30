@@ -19,12 +19,12 @@ package org.apache.ignite.internal.binary.streams;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
-import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
-import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
 
 /**
  * On-heap memory allocator.
@@ -129,7 +129,7 @@ abstract class BinaryMemoryAllocator {
 
                 long nowNanos = System.nanoTime();
 
-                if (U.nanosToMillis(nowNanos - lastCheckNanos) >= CHECK_FREQ) {
+                if (CommonUtils.nanosToMillis(nowNanos - lastCheckNanos) >= CHECK_FREQ) {
                     int halfSize = data.length >> 1;
 
                     if (this.maxMsgSize < halfSize)
@@ -212,12 +212,12 @@ abstract class BinaryMemoryAllocator {
                 cntr = cntr == Integer.MAX_VALUE ? 0 : cntr + 1;
 
                 long now = System.nanoTime();
-                if (U.nanosToMillis(now - lastCheckNanos) >= CHECK_FREQ && cntr > history.length) {
+                if (CommonUtils.nanosToMillis(now - lastCheckNanos) >= CHECK_FREQ && cntr > history.length) {
                     lastCheckNanos = now;
 
                     int[] tmp = Arrays.copyOf(history, history.length);
                     Arrays.sort(tmp);
-                    int adjusted = U.nextPowerOf2(tmp[tmp.length / 2]);
+                    int adjusted = CommonUtils.nextPowerOf2(tmp[tmp.length / 2]);
 
                     if (adjusted < data.length)
                         data = new byte[adjusted];

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -35,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  * Reply for synchronous phase 2.
  */
 public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Heuristic error. */
     @GridDirectTransient
     private Throwable err;
@@ -52,7 +48,7 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
     private long nearThreadId;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearTxFinishResponse() {
         // No-op.

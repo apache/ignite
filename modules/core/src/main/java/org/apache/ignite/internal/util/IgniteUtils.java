@@ -79,8 +79,6 @@ import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -106,7 +104,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Random;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -158,6 +155,12 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -167,6 +170,7 @@ import org.apache.ignite.compute.ComputeTaskCancelledException;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.AddressResolver;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -178,6 +182,11 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -209,6 +218,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -222,6 +232,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
@@ -495,6 +506,10 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Ignite test features enabled flag. */
     public static boolean IGNITE_TEST_FEATURES_ENABLED =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED);
+
+    /** For tests. */
+    @SuppressWarnings("PublicField")
+    public static boolean useTestBinaryCtx;
 
     /** */
     private static final boolean assertionsEnabled;
@@ -869,19 +884,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * @param svcCls Service class to load.
-     * @param <S> Type of loaded interfaces.
-     * @return Lazy iterable structure over loaded class implementations.
-     */
-    public static <S> Iterable<S> loadService(Class<S> svcCls) {
-        return AccessController.doPrivileged(new PrivilegedAction<Iterable<S>>() {
-            @Override public Iterable<S> run() {
-                return ServiceLoader.load(svcCls);
-            }
-        });
-    }
-
-    /**
      * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
      * does not wrap passed in exception if none suitable converter found.
      *
@@ -938,57 +940,6 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     public static long currentTimeMillis() {
         return curTimeMillis;
-    }
-
-    /**
-     * Convert milliseconds time interval to nanoseconds.
-     *
-     * @param millis Original time interval.
-     * @return Calculated time interval.
-     */
-    public static long millisToNanos(long millis) {
-        return TimeUnit.MILLISECONDS.toNanos(millis);
-    }
-
-    /**
-     * Convert nanoseconds time interval to milliseconds.
-     *
-     * @param nanos Original time interval.
-     * @return Calculated time interval.
-     */
-    public static long nanosToMillis(long nanos) {
-        return TimeUnit.NANOSECONDS.toMillis(nanos);
-    }
-
-    /**
-     * Returns number of milliseconds passed after the given nanos timestamp.
-     *
-     * @param nanos Nanos timestamp.
-     * @return Number of milliseconds passed after the given nanos timestamp.
-     * @see System#nanoTime()
-     */
-    public static long millisSinceNanos(long nanos) {
-        return nanosToMillis(System.nanoTime() - nanos);
-    }
-
-    /**
-     * Gets nearest power of 2 larger or equal than v.
-     *
-     * @param v Value.
-     * @return Nearest power of 2.
-     */
-    public static int ceilPow2(int v) {
-        int i = v - 1;
-
-        return Integer.highestOneBit(i) << 1 - (i >>> 30 ^ v >> 31);
-    }
-
-    /**
-     * @param i Value.
-     * @return {@code true} If the given value is power of 2 (0 is not power of 2).
-     */
-    public static boolean isPow2(int i) {
-        return i > 0 && (i & (i - 1)) == 0;
     }
 
     /**
@@ -2114,14 +2065,23 @@ public abstract class IgniteUtils extends CommonUtils {
      * ClassLoader at IgniteConfiguration in case it is not null or
      * ClassLoader used to start Ignite.
      */
-    public static ClassLoader resolveClassLoader(ClassLoader ldr, IgniteConfiguration cfg) {
+    public static ClassLoader resolveClassLoader(@Nullable ClassLoader ldr, IgniteConfiguration cfg) {
         assert cfg != null;
 
-        return (ldr != null && ldr != gridClassLoader) ?
-            ldr :
-            cfg.getClassLoader() != null ?
-                cfg.getClassLoader() :
-                gridClassLoader;
+        return resolveClassLoader(ldr, cfg.getClassLoader());
+    }
+
+    /**
+     * @param ldr Custom class loader.
+     * @param cfgLdr Class loader from config.
+     * @return ClassLoader passed as param in case it is not null or cfgLdr  in case it is not null or ClassLoader used to start Ignite.
+     */
+    public static ClassLoader resolveClassLoader(@Nullable ClassLoader ldr, @Nullable ClassLoader cfgLdr) {
+        return (ldr != null && ldr != gridClassLoader)
+            ? ldr
+            : cfgLdr != null
+                ? cfgLdr
+                : gridClassLoader;
     }
 
     /**
@@ -7023,21 +6983,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Round up the argument to the next highest power of 2;
-     *
-     * @param v Value to round up.
-     * @return Next closest power of 2.
-     */
-    public static int nextPowerOf2(int v) {
-        A.ensure(v >= 0, "v must not be negative");
-
-        if (v == 0)
-            return 1;
-
-        return 1 << (32 - Integer.numberOfLeadingZeros(v - 1));
-    }
-
-    /**
      * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
      *
      * @param i Integer.
@@ -9892,6 +9837,59 @@ public abstract class IgniteUtils extends CommonUtils {
         return kctx.config().getTransactionConfiguration().isTxAwareQueriesEnabled();
     }
 
+    /** @return Empty binary context instance. */
+    public static BinaryContext binaryContext(BinaryMarshaller marsh) {
+        return binaryContext(BinaryUtils.cachingMetadataHandler(), marsh);
+    }
+
+    /** @return Empty binary context instance. */
+    public static BinaryContext binaryContext(BinaryMetadataHandler metaHnd, BinaryMarshaller marsh) {
+        return binaryContext(metaHnd, marsh, new IgniteConfiguration(), NullLogger.INSTANCE);
+    }
+
+    /** @return Empty binary context instance. */
+    public static BinaryContext binaryContext(BinaryMarshaller marsh, IgniteConfiguration cfg) {
+        return binaryContext(BinaryUtils.cachingMetadataHandler(), marsh, cfg, NullLogger.INSTANCE);
+    }
+
+    /** @return Empty binary context instance. */
+    public static BinaryContext binaryContext(
+        BinaryMetadataHandler metaHnd,
+        BinaryMarshaller marsh,
+        IgniteConfiguration cfg,
+        IgniteLogger log
+    ) {
+        BinaryConfiguration bcfg = cfg.getBinaryConfiguration() == null ? new BinaryConfiguration() : cfg.getBinaryConfiguration();
+
+        return useTestBinaryCtx
+            ? new TestBinaryContext(
+                metaHnd,
+                marsh,
+                cfg.getIgniteInstanceName(),
+                cfg.getClassLoader(),
+                bcfg.getSerializer(),
+                bcfg.getIdMapper(),
+                bcfg.getNameMapper(),
+                bcfg.getTypeConfigurations(),
+                CU.affinityFields(cfg),
+                bcfg.isCompactFooter(),
+                log
+            )
+            : new BinaryContext(
+                metaHnd,
+                marsh,
+                cfg.getIgniteInstanceName(),
+                cfg.getClassLoader(),
+                bcfg.getSerializer(),
+                bcfg.getIdMapper(),
+                bcfg.getNameMapper(),
+                bcfg.getTypeConfigurations(),
+                CU.affinityFields(cfg),
+                bcfg.isCompactFooter(),
+                log
+            );
+    }
+
     /**
      * @param ctx {@link GridKernalContext}.
      * @return A warning message indicating excessive RAM usage or {@code null} if the RAM usage is within acceptable
@@ -9938,5 +9936,82 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         return null;
+    }
+
+    /** */
+    @SuppressWarnings("PublicInnerClass")
+    public static class TestBinaryContext extends BinaryContext {
+        /** */
+        private List<TestBinaryContextListener> listeners;
+
+        /** */
+        public TestBinaryContext(
+            BinaryMetadataHandler metaHnd,
+            @Nullable BinaryMarshaller marsh,
+            @Nullable String igniteInstanceName,
+            @Nullable ClassLoader clsLdr,
+            @Nullable BinarySerializer dfltSerializer,
+            @Nullable BinaryIdMapper idMapper,
+            @Nullable BinaryNameMapper nameMapper,
+            @Nullable Collection<BinaryTypeConfiguration> typeCfgs,
+            Map<String, String> affFlds,
+            boolean compactFooter,
+            IgniteLogger log
+        ) {
+            super(metaHnd, marsh, igniteInstanceName, clsLdr, dfltSerializer, idMapper, nameMapper, typeCfgs, affFlds, compactFooter, log);
+        }
+
+
+        /** {@inheritDoc} */
+        @Nullable @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+            BinaryType metadata = super.metadata(typeId);
+
+            if (listeners != null) {
+                for (TestBinaryContextListener listener : listeners)
+                    listener.onAfterMetadataRequest(typeId, metadata);
+            }
+
+            return metadata;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateMetadata(int typeId, BinaryMetadata meta, boolean failIfUnregistered) throws BinaryObjectException {
+            if (listeners != null) {
+                for (TestBinaryContextListener listener : listeners)
+                    listener.onBeforeMetadataUpdate(typeId, meta);
+            }
+
+            super.updateMetadata(typeId, meta, failIfUnregistered);
+        }
+
+        /** */
+        public interface TestBinaryContextListener {
+            /**
+             * @param typeId Type id.
+             * @param type Type.
+             */
+            void onAfterMetadataRequest(int typeId, BinaryType type);
+
+            /**
+             * @param typeId Type id.
+             * @param metadata Metadata.
+             */
+            void onBeforeMetadataUpdate(int typeId, BinaryMetadata metadata);
+        }
+
+        /** @param lsnr Listener. */
+        public void addListener(TestBinaryContextListener lsnr) {
+            if (listeners == null)
+                listeners = new ArrayList<>();
+
+            if (!listeners.contains(lsnr))
+                listeners.add(lsnr);
+        }
+
+        /** */
+        public void clearAllListener() {
+            if (listeners != null)
+                listeners.clear();
+        }
     }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -30,14 +29,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridTaskCancelRequest implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private IgniteUuid sesId;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Default constructor.
      */
     public GridTaskCancelRequest() {
         // No-op.

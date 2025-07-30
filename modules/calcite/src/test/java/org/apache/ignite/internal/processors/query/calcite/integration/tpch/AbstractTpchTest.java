@@ -26,15 +26,21 @@ import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
-public class TpchTest extends AbstractBasicIntegrationTest {
+public abstract class AbstractTpchTest extends AbstractBasicIntegrationTest {
+    /** */
+    protected static final Collection<Integer> USED_TESTS = F.asList(16, 17, 19, 20);
+
     /** Query ID. */
     @Parameterized.Parameter
     public int qryId;
 
     /** */
+    protected abstract double scale();
+
+    /** */
     @Parameterized.Parameters(name = "queryId={0}")
-    public static Collection<Object> params() {
-        return F.asList(16, 19, 20);
+    public static Collection<Integer> params() {
+        return USED_TESTS;
     }
 
     /** {@inheritDoc} */
@@ -43,7 +49,7 @@ public class TpchTest extends AbstractBasicIntegrationTest {
 
         TpchHelper.createTables(client);
 
-        TpchHelper.fillTables(client, 0.1);
+        TpchHelper.fillTables(client, scale());
 
         TpchHelper.collectSqlStatistics(client);
     }

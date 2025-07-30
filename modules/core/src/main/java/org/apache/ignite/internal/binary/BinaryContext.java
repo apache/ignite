@@ -43,6 +43,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
@@ -60,11 +61,8 @@ import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
@@ -107,29 +105,22 @@ public class BinaryContext {
         new BinaryInternalMapper(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true), false);
 
     /** Set of system classes that should be marshalled with BinaryMarshaller. */
-    private static final Set<String> BINARYLIZABLE_SYS_CLSS;
-
-    /* Binarylizable system classes set initialization. */
-    static {
-        Set<String> sysClss = new HashSet<>();
-
+    private static final Set<String> BINARYLIZABLE_SYS_CLSS = Set.of(
         // Closure processor classes.
-        sysClss.add(GridClosureProcessor.C1.class.getName());
-        sysClss.add(GridClosureProcessor.C1MLA.class.getName());
-        sysClss.add(GridClosureProcessor.C2.class.getName());
-        sysClss.add(GridClosureProcessor.C2MLA.class.getName());
-        sysClss.add(GridClosureProcessor.C4.class.getName());
-        sysClss.add(GridClosureProcessor.C4MLA.class.getName());
+        GridClosureProcessor.C1.class.getName(),
+        GridClosureProcessor.C1MLA.class.getName(),
+        GridClosureProcessor.C2.class.getName(),
+        GridClosureProcessor.C2MLA.class.getName(),
+        GridClosureProcessor.C4.class.getName(),
+        GridClosureProcessor.C4MLA.class.getName(),
 
-        sysClss.add(IgniteUuid.class.getName());
+        IgniteUuid.class.getName(),
 
         // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
-        sysClss.add(BinaryTreeMap.class.getName());
-        sysClss.add(TreeMap.class.getName());
-        sysClss.add(TreeSet.class.getName());
-
-        BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
-    }
+        BinaryTreeMap.class.getName(),
+        TreeMap.class.getName(),
+        TreeSet.class.getName()
+    );
 
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap<>();
@@ -159,7 +150,13 @@ public class BinaryContext {
     private final ConcurrentMap<Integer, BinaryIdentityResolver> identities = new ConcurrentHashMap<>(0);
 
     /** */
-    private BinaryMetadataHandler metaHnd;
+    private final BinaryMetadataHandler metaHnd;
+
+    /** Node name. */
+    private final @Nullable String igniteInstanceName;
+
+    /** Class loader. */
+    private final @Nullable ClassLoader clsLdr;
 
     /** Actual marshaller. */
     private BinaryMarshaller marsh;
@@ -168,41 +165,64 @@ public class BinaryContext {
     private MarshallerContext marshCtx;
 
     /** */
-    private IgniteConfiguration igniteCfg;
+    private final @Nullable BinarySerializer dfltSerializer;
+
+    /** */
+    private final Function<String, BinaryInternalMapper> mapperProvider;
 
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** */
     private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller(false);
 
     /** Compact footer flag. */
-    private boolean compactFooter;
+    private final boolean compactFooter;
 
     /** Object schemas. */
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
 
     /**
-     * @param igniteCfg Ignite configuration.
-     * @param log Logger.
-     */
-    public BinaryContext(IgniteConfiguration igniteCfg, IgniteLogger log) {
-        this(BinaryNoopMetadataHandler.instance(), igniteCfg, log);
-    }
-
-    /**
      * @param metaHnd Meta data handler.
-     * @param igniteCfg Ignite configuration.
+     * @param marsh Binary marshaller.
+     * @param igniteInstanceName Ignite instance name.
+     * @param clsLdr Class loader.
+     * @param dfltSerializer Binary serializer.
+     * @param idMapper Binary id mapper.
+     * @param nameMapper Binary name mapper.
+     * @param affFlds Affinity fields.
+     * @param compactFooter Compact footer flag.
      * @param log Logger.
      */
-    public BinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg, IgniteLogger log) {
+    public BinaryContext(
+        BinaryMetadataHandler metaHnd,
+        @Nullable BinaryMarshaller marsh,
+        @Nullable String igniteInstanceName,
+        @Nullable ClassLoader clsLdr,
+        @Nullable BinarySerializer dfltSerializer,
+        @Nullable BinaryIdMapper idMapper,
+        @Nullable BinaryNameMapper nameMapper,
+        @Nullable Collection<BinaryTypeConfiguration> typeCfgs,
+        Map<String, String> affFlds,
+        boolean compactFooter,
+        IgniteLogger log
+    ) {
         assert metaHnd != null;
-        assert igniteCfg != null;
 
-        MarshallerUtils.setNodeName(optmMarsh, igniteCfg.getIgniteInstanceName());
+        MarshallerUtils.setNodeName(optmMarsh, igniteInstanceName);
 
         this.metaHnd = metaHnd;
-        this.igniteCfg = igniteCfg;
+        this.igniteInstanceName = igniteInstanceName;
+        this.clsLdr = clsLdr;
+        this.dfltSerializer = dfltSerializer;
+
+        if (idMapper != null || nameMapper != null || !F.isEmpty(typeCfgs))
+            mapperProvider = clsName -> resolveMapper(clsName, idMapper, nameMapper, typeCfgs);
+        else
+            mapperProvider = clsName -> DFLT_MAPPER;
+
+        this.compactFooter = compactFooter;
+
         this.log = log;
 
         colTypes.put(ArrayList.class, GridBinaryMarshaller.ARR_LIST);
@@ -287,6 +307,18 @@ public class BinaryContext {
             U.warn(log, "ReflectionFactory not found, deserialization of binary objects for classes without " +
                 "default constructor is not possible");
         }
+
+        if (marsh != null) {
+            this.marsh = marsh;
+
+            marshCtx = marsh.getContext();
+
+            assert marshCtx != null;
+
+            optmMarsh.setContext(marshCtx);
+
+            configure(nameMapper, idMapper, dfltSerializer, typeCfgs, affFlds);
+        }
     }
 
     /**
@@ -325,70 +357,35 @@ public class BinaryContext {
     }
 
     /**
-     * @return Ignite configuration.
+     * @return Ignite instance name.
      */
-    public IgniteConfiguration configuration() {
-        return igniteCfg;
+    public String igniteInstanceName() {
+        return igniteInstanceName;
     }
 
     /**
-     * @param marsh Binary marshaller.
-     * @throws BinaryObjectException In case of error.
+     * @return Class loader.
      */
-    public void configure(BinaryMarshaller marsh) throws BinaryObjectException {
-        configure(marsh, null);
+    public ClassLoader classLoader() {
+        return clsLdr;
     }
 
     /**
-     * @param marsh Binary marshaller.
-     * @param binaryCfg Binary configuration.
-     * @throws BinaryObjectException In case of error.
-     */
-    public void configure(BinaryMarshaller marsh, BinaryConfiguration binaryCfg) throws BinaryObjectException {
-        if (marsh == null)
-            return;
-
-        this.marsh = marsh;
-
-        marshCtx = marsh.getContext();
-
-        if (binaryCfg == null)
-            binaryCfg = new BinaryConfiguration();
-
-        assert marshCtx != null;
-
-        optmMarsh.setContext(marshCtx);
-
-        configure(
-            binaryCfg.getNameMapper(),
-            binaryCfg.getIdMapper(),
-            binaryCfg.getSerializer(),
-            binaryCfg.getTypeConfigurations()
-        );
-
-        compactFooter = binaryCfg.isCompactFooter();
-    }
-
-    /**
+     * @param globalNameMapper Name mapper.
      * @param globalIdMapper ID mapper.
      * @param globalSerializer Serializer.
      * @param typeCfgs Type configurations.
+     * @param affFields Type to affinity fields mapping.
      * @throws BinaryObjectException In case of error.
      */
     private void configure(
         BinaryNameMapper globalNameMapper,
         BinaryIdMapper globalIdMapper,
         BinarySerializer globalSerializer,
-        Collection<BinaryTypeConfiguration> typeCfgs
+        Collection<BinaryTypeConfiguration> typeCfgs,
+        Map<String, String> affFields
     ) throws BinaryObjectException {
         TypeDescriptors descs = new TypeDescriptors();
-
-        Map<String, String> affFields = new HashMap<>();
-
-        if (!F.isEmpty(igniteCfg.getCacheKeyConfiguration())) {
-            for (CacheKeyConfiguration keyCfg : igniteCfg.getCacheKeyConfiguration())
-                affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
-        }
 
         if (typeCfgs != null) {
             for (BinaryTypeConfiguration typeCfg : typeCfgs) {
@@ -921,9 +918,7 @@ public class BinaryContext {
      * @return Default serializer.
      */
     private BinarySerializer defaultSerializer() {
-        BinaryConfiguration binCfg = igniteCfg.getBinaryConfiguration();
-
-        return binCfg != null ? binCfg.getSerializer() : null;
+        return dfltSerializer;
     }
 
     /**
@@ -1002,7 +997,7 @@ public class BinaryContext {
         if (mapper != null)
             return mapper;
 
-        mapper = resolveMapper(clsName, igniteCfg.getBinaryConfiguration());
+        mapper = mapperProvider.apply(clsName);
 
         BinaryInternalMapper prevMap = cls2Mappers.putIfAbsent(clsName, mapper);
 
@@ -1021,19 +1016,18 @@ public class BinaryContext {
 
     /**
      * @param clsName Type name.
-     * @param cfg Binary configuration.
+     * @param globalIdMapper Default id mapper.
+     * @param globalNameMapper Default name mapper.
+     * @param typeCfgs Type configurations.
      * @return Mapper according to configuration.
      */
-    private static BinaryInternalMapper resolveMapper(String clsName, BinaryConfiguration cfg) {
+    private static BinaryInternalMapper resolveMapper(
+        String clsName,
+        BinaryIdMapper globalIdMapper,
+        BinaryNameMapper globalNameMapper,
+        Collection<BinaryTypeConfiguration> typeCfgs
+    ) {
         assert clsName != null;
-
-        if (cfg == null)
-            return DFLT_MAPPER;
-
-        BinaryIdMapper globalIdMapper = cfg.getIdMapper();
-        BinaryNameMapper globalNameMapper = cfg.getNameMapper();
-
-        Collection<BinaryTypeConfiguration> typeCfgs = cfg.getTypeConfigurations();
 
         if (typeCfgs != null) {
             for (BinaryTypeConfiguration typeCfg : typeCfgs) {
@@ -1163,7 +1157,7 @@ public class BinaryContext {
         Class<?> cls = null;
 
         try {
-            cls = U.resolveClassLoader(configuration()).loadClass(clsName);
+            cls = U.resolveClassLoader(null, classLoader()).loadClass(clsName);
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
             // No-op.

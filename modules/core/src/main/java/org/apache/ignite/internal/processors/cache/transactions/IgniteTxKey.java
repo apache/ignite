@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -33,9 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * for multiple caches.
  */
 public class IgniteTxKey implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Key. */
     @GridToStringInclude(sensitive = true)
     private KeyCacheObject key;
@@ -44,7 +40,7 @@ public class IgniteTxKey implements Message {
     private int cacheId;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public IgniteTxKey() {
         // No-op.

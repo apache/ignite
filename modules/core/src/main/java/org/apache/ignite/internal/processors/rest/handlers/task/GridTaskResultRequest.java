@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.task;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.lang.IgniteUuid;
@@ -29,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Task result request.
  */
 public class GridTaskResultRequest implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Task ID. */
     private IgniteUuid taskId;
 
@@ -43,7 +39,7 @@ public class GridTaskResultRequest implements Message {
     private byte[] topicBytes;
 
     /**
-     * Public no-arg constructor for {@link Externalizable} support.
+     * Empty constructor.
      */
     public GridTaskResultRequest() {
         // No-op.

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Map;
@@ -45,9 +44,6 @@ import org.jetbrains.annotations.Nullable;
  * DHT lock request.
  */
 public class GridDhtLockRequest extends GridDistributedLockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Invalidate reader flags. */
     private BitSet invalidateEntries;
 
@@ -83,7 +79,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     private String txLbl;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtLockRequest() {
         // No-op.

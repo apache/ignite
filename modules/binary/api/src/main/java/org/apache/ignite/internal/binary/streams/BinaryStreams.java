@@ -18,11 +18,28 @@
 package org.apache.ignite.internal.binary.streams;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
+import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Utility class to provide static methods to create {@link BinaryInputStream} or {@link BinaryOutputStream} in different modes.
  */
 public class BinaryStreams {
+    /** Streams factory implementation. */
+    private static final BinaryStreamsFactory factory;
+
+    static {
+        Iterator<BinaryStreamsFactory> factories = CommonUtils.loadService(BinaryStreamsFactory.class).iterator();
+
+        A.ensure(
+            factories.hasNext(),
+            "Implementation for BinaryStreamsFactory service not found. Please add ignite-binary-impl to classpath"
+        );
+
+        factory = factories.next();
+    }
+
     /**
      * Create stream with pointer set at the given position.
      *
@@ -31,7 +48,7 @@ public class BinaryStreams {
      * @return Stream.
      */
     public static BinaryInputStream inputStream(byte[] data, int pos) {
-        return BinaryHeapInputStream.create(data, pos);
+        return factory.inputStream(data, pos);
     }
 
     /**
@@ -41,7 +58,7 @@ public class BinaryStreams {
      * @return Stream.
      */
     public static BinaryInputStream inputStream(byte[] data) {
-        return new BinaryHeapInputStream(data);
+        return factory.inputStream(data);
     }
 
     /**
@@ -49,7 +66,7 @@ public class BinaryStreams {
      * @return Stream.
      */
     public static BinaryInputStream inputStream(ByteBuffer buf) {
-        return new BinaryByteBufferInputStream(buf);
+        return factory.inputStream(buf);
     }
 
     /**
@@ -58,7 +75,7 @@ public class BinaryStreams {
      * @return Stream.
      */
     public static BinaryInputStream inputStream(long ptr, int cap) {
-        return new BinaryOffheapInputStream(ptr, cap);
+        return factory.inputStream(ptr, cap);
     }
 
     /**
@@ -69,7 +86,7 @@ public class BinaryStreams {
      * @return Stream.
      */
     public static BinaryInputStream inputStream(long ptr, int cap, boolean forceHeap) {
-        return new BinaryOffheapInputStream(ptr, cap, forceHeap);
+        return factory.inputStream(ptr, cap, forceHeap);
     }
 
     /**
@@ -79,7 +96,7 @@ public class BinaryStreams {
      * @return Binary output stream data.
      */
     public static BinaryOutputStream createPooledOutputStream(int cap, boolean disableAutoClose) {
-        return new BinaryHeapOutputStream(cap, BinaryMemoryAllocator.POOLED.chunk(), disableAutoClose);
+        return factory.createPooledOutputStream(cap, disableAutoClose);
     }
 
     /**
@@ -87,7 +104,7 @@ public class BinaryStreams {
      * @return Binary output stream data.
      */
     public static BinaryOutputStream outputStream(int cap) {
-        return new BinaryHeapOutputStream(cap);
+        return factory.outputStream(cap);
     }
 
     /**
@@ -96,13 +113,13 @@ public class BinaryStreams {
      * @return Binary output stream.
      */
     public static BinaryOutputStream outputStream(int cap, BinaryMemoryAllocatorChunk chunk) {
-        return new BinaryHeapOutputStream(cap, chunk);
+        return factory.outputStream(cap, chunk);
     }
 
     /**
      * @return Thread local binary memory allocator.
      */
     public static BinaryMemoryAllocatorChunk threadLocalChunk() {
-        return BinaryMemoryAllocator.THREAD_LOCAL.chunk();
+        return factory.threadLocalChunk();
     }
 }

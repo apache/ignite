@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,9 +48,6 @@ import org.jetbrains.annotations.Nullable;
  * Near cache prepare response.
  */
 public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Tx onePhaseCommit flag on primary node. */
     private static final int NEAR_PREPARE_ONE_PHASE_COMMIT_FLAG_MASK = 0x01;
 
@@ -98,7 +94,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     private AffinityTopologyVersion clientRemapVer;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearTxPrepareResponse() {
         // No-op.

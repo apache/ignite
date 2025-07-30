@@ -21,7 +21,6 @@ import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 
@@ -72,7 +71,7 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
     @Override public Object get(int idx) {
         ensureDelegateInit();
 
-        return BinaryUtils.unwrapLazy(delegate.get(idx));
+        return BinaryObjectBuilders.unwrapLazy(delegate.get(idx));
     }
 
     /** {@inheritDoc} */
@@ -93,14 +92,14 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
     @Override public Object set(int idx, Object element) {
         ensureDelegateInit();
 
-        return BinaryUtils.unwrapLazy(delegate.set(idx, element));
+        return BinaryObjectBuilders.unwrapLazy(delegate.set(idx, element));
     }
 
     /** {@inheritDoc} */
     @Override public Object remove(int idx) {
         ensureDelegateInit();
 
-        return BinaryUtils.unwrapLazy(delegate.remove(idx));
+        return BinaryObjectBuilders.unwrapLazy(delegate.remove(idx));
     }
 
     /** {@inheritDoc} */

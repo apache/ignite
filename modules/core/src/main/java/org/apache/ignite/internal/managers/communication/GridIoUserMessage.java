@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
@@ -39,9 +38,6 @@ import org.jetbrains.annotations.Nullable;
  * User message wrapper.
  */
 public class GridIoUserMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message body. */
     @GridDirectTransient
     private Object body;
@@ -110,7 +106,7 @@ public class GridIoUserMessage implements Message {
     }
 
     /**
-     * Default constructor, required for {@link Externalizable}.
+     * Default constructor.
      */
     public GridIoUserMessage() {
         // No-op.
