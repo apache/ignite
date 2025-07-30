@@ -1160,7 +1160,10 @@ public class QueryUtils {
      * @return {@code true} If this is geometry.
      */
     public static boolean isGeometryClass(Class<?> cls) {
-        return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
+        boolean b = GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
+        if (b)
+            throw new RuntimeException("Geometry!");
+        return b;
     }
 
     /**
