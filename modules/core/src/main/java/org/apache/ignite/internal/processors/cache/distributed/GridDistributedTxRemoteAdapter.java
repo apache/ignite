@@ -794,13 +794,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                         err = heuristicException(ex);
 
                         try {
-                            clearCacheStoreBackedEntries();
-                        }
-                        catch (Throwable e) {
-                            err.addSuppressed(e);
-                        }
-
-                        try {
                             uncommit();
                         }
                         catch (Throwable e) {
