@@ -519,9 +519,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         while (iter.hasNext()) {
             int cacheId = iter.next();
 
-            if (cctx.cacheContext(cacheId) == null)
-                return;
-
             if (!cctx.cacheContext(cacheId).config().isReadThrough())
                 return;
         }
@@ -530,9 +527,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             try {
                 GridCacheEntryEx entry = e.cached();
 
-                if (e.op() != NOOP) {
+                if (e.op() != NOOP)
                     entry.clear(xidVer, true);
-                }
             }
             catch (Throwable t) {
                 U.error(log, "Failed to clear transaction entries while reverting a commit.", t);

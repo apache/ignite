@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.transactions.Transaction;
@@ -40,6 +41,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests to check scenarios with system failures during transaction commit. Internal system failures are simulated by
@@ -92,34 +95,19 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
     public boolean withFaulireHandler;
 
     /** */
-    @Parameterized.Parameter(3)
-    public boolean withNearCacheConfiguration;
-
-    /** */
-    @Parameterized.Parameters(name = "faultyNodeType={0}, faultyNodeRole={1}, withFaulireHandler={2}, withNearCacheConfiguration={3}")
+    @Parameterized.Parameters(name = "faultyNodeType={0}, faultyNodeRole={1}, withFaulireHandler={2}")
     public static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, true, false});
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, false, false});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, true, false});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, false, false});
+        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, true});
+        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, false});
+        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, true});
+        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, false});
 
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, false, false});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, false, false});
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, true, false});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, true, false});
-
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, true, true});
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, false, true});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, true, true});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, false, true});
-
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, false, true});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, false, true});
-        // TODO https://issues.apache.org/jira/browse/IGNITE-25924
-        // params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, true, true});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, true, true});
+        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, false});
+        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, false});
+        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, true});
+        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, true});
 
         return params;
     }
@@ -157,11 +145,6 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return withNearCacheConfiguration ? super.nearConfiguration() : null;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
@@ -190,19 +173,10 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
         else
             updateKeysInTx(txCoordinator, keysOnFaultyNode);
 
-        if (withFaulireHandler) { // FH doesn't fail tx coordinator
-            if (faultyNodeRole == FaultyNodeRole.TX_COORDINATOR) {
-                if (faultyNodeType == FaultyNodeType.BACKUP)
-                    waitForTopology(2); // two servers - tx coordinator hosting backup partition fails
-                else {
-                    waitForTopology(3); // three servers - tx coordinator hosting primary partition doesn't fail
-
-                    // check on affected node should pass as the node is alive and cache entries are cleaned up from the cache
-                    checkKeysOnFaultyNode(keysOnFaultyNode);
-                }
-            }
-            else {
-                // two servers and a client node which is a tx coordinator
+        if (withFaulireHandler) {
+            // FH doesn't fail TX coordinator node, this should be fixed here:
+            // TODO https://issues.apache.org/jira/browse/IGNITE-26060
+            if (faultyNodeRole == FaultyNodeRole.REGULAR) {
                 waitForTopology(3);
 
                 assertTrue("Client node should survive test scenario",
@@ -211,7 +185,6 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
                         .filter(ignite -> ((IgniteEx)ignite).context().clientNode())
                         .count() == 1);
             }
-
         }
         else
             checkKeysOnFaultyNode(keysOnFaultyNode);
@@ -234,7 +207,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
     }
 
     /** */
-    private void checkKeysOnHealthyNodes(List<Integer> keysToCheck) {
+    private void checkKeysOnHealthyNodes(List<Integer> keysToCheck) throws IgniteInterruptedCheckedException {
         for (int i = 0; i < gridCount(); i++) {
             if (i != FAULTY_NODE_IDX) {
                 IgniteEx ig = grid(i);
@@ -242,9 +215,23 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
                 IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
 
                 for (Integer key : keysToCheck) {
-                    assertEquals("Key inconsistent with CacheStore found on node " + i + "; nodeName " + ig.name(),
-                        storeStgy.getFromStore(key),
-                        cache.get(key));
+                    boolean checkResult = waitForCondition(
+                        () -> {
+                            if (storeStgy.getFromStore(key) == null || cache.get(key) == null)
+                                return false;
+
+                            return storeStgy.getFromStore(key).equals(cache.get(key));
+                        },
+                        1_000);
+
+                    assertTrue(
+                        String.format("Key inconsistent with CacheStore found on node %d; nodeName: %s. " +
+                                "Key in store: %s, key in cache: %s.",
+                            i,
+                            ig.name(),
+                            storeStgy.getFromStore(key),
+                            cache.get(key)),
+                        checkResult);
                 }
             }
         }
