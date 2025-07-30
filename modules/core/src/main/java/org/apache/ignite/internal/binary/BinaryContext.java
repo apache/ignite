@@ -263,8 +263,6 @@ public class BinaryContext {
         registerPredefinedType(BinaryArray.class, 0);
         registerPredefinedType(BinaryEnumArray.class, 0);
 
-        registerBinarilizableSystemClass(IgniteUuid.class);
-
         // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
         registerBinarilizableSystemClass(BinaryTreeMap.class);
         registerBinarilizableSystemClass(TreeMap.class);
