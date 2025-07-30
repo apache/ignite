@@ -66,7 +66,6 @@ import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
@@ -313,8 +312,7 @@ public class BinaryContext {
         BinaryClassDescriptor desc = descByCls.get(cls);
 
         if (desc == null) {
-            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
-                QueryUtils.isGeometryClass(cls);
+            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null;
         }
         else
             return desc.useOptimizedMarshaller();
