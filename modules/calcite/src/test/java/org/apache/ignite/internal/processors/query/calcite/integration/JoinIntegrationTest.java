@@ -277,20 +277,23 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
             .returns(4, 4, 4)
             .check();
 
+        // MERGE JOIN doesn't support non-equi conditions.
+        if (joinType != JoinType.MERGE) {
+            assertQuery("select t1.c2, t1.c3, t2.c2+3 as t2c2, t2.c3 from t1 join t2 on t1.c2 is not distinct from t2.c3 and " +
+                "t1.c3<t2.c2+3 order by t1.c2, t1.c3, t2c2, t2.c3")
+                .returns(1, 1, 4, 1)
+                .returns(2, 2, 5, 2)
+                .returns(3, 3, 6, 3)
+                .returns(4, 4, 7, 4)
+                .returns(null, 2, 5, null)
+                .check();
+        }
+
         // HASH JOIN doesn't support: completely non-equi conditions, additional non-equi conditions (post filters)
         // except INNER and SEMI joins, equi and IS NOT DISTINCT conditions simultaneously.
         // MERGE JOIN doesn't support: non-equi conditions, equi and IS NOT DISTINCT conditions simultaneously.
         if (joinType == JoinType.HASH || joinType == JoinType.MERGE)
             return;
-
-        assertQuery("select t1.c2, t1.c3, t2.c2+3 as t2c2, t2.c3 from t1 join t2 on t1.c2 is not distinct from t2.c3 and " +
-            "t1.c3<t2.c2+3 order by t1.c2, t1.c3, t2c2, t2.c3")
-            .returns(1, 1, 4, 1)
-            .returns(2, 2, 5, 2)
-            .returns(3, 3, 6, 3)
-            .returns(4, 4, 7, 4)
-            .returns(null, 2, 5, null)
-            .check();
 
         assertQuery("select t1.c1, t2.c1 from t1 join t2 on t1.c1=4 order by t1.c1, t2.c1")
             .returns(4, 1)

@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.function.BiPredicate;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
@@ -51,7 +49,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     /** Right rows storage. */
     protected final RuntimeHashIndex<Row> rightHashStore;
 
-    /** Uses the right keys for find matching left rows. */
+    /** Uses keys of right hand to find matching left rows. */
     protected final RuntimeHashIndex<Row> remappedLeftSearcher;
 
     /** */
@@ -98,13 +96,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         rightHashStore = new RuntimeHashIndex<>(ctx, info.rightKeys, keepRowsWithNull, info.hasMatchingNulls(),
             INITIAL_CAPACITY, TouchedArrayList::new);
 
-        // We remap right keys to search left rows because values order might differ.
-        Map<Integer, Integer> remappedKeys = new LinkedHashMap<>(rightKeys.length, 1.0f);
-
-        for (int i = 0; i < rightKeys.length; ++i)
-            remappedKeys.put(rightKeys[i], leftKeys[i]);
-
-        remappedLeftSearcher = rightHashStore.remappedSearcher(remappedKeys.values().stream().mapToInt(i -> i).toArray());
+        remappedLeftSearcher = rightHashStore.remappedSearcher(leftKeys);
     }
 
     /** {@inheritDoc} */
@@ -128,6 +120,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     ) {
         assert !info.pairs().isEmpty() && (info.isEqui() || type == JoinRelType.INNER || type == JoinRelType.SEMI);
         assert !info.hasMatchingNulls() || info.matchingNullsCnt() == info.leftKeys.size();
+        assert nonEqCond == null || type == JoinRelType.INNER || type == JoinRelType.SEMI;
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
         RowHandler<RowT> rowHnd = ctx.rowHandler();
@@ -137,10 +130,10 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 return new InnerHashJoin<>(ctx, rowType, info, rowHnd, nonEqCond);
 
             case LEFT:
-                return new LeftHashJoin<>(ctx, rowType, info, rowHnd, rowHnd.factory(typeFactory, rightRowType), nonEqCond);
+                return new LeftHashJoin<>(ctx, rowType, info, rowHnd, rowHnd.factory(typeFactory, rightRowType));
 
             case RIGHT:
-                return new RightHashJoin<>(ctx, rowType, info, rowHnd, rowHnd.factory(typeFactory, leftRowType), nonEqCond);
+                return new RightHashJoin<>(ctx, rowType, info, rowHnd, rowHnd.factory(typeFactory, leftRowType));
 
             case FULL: {
                 return new FullOuterHashJoin<>(ctx, rowType, info, rowHnd, rowHnd.factory(typeFactory, leftRowType),
@@ -292,17 +285,15 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * @param rowType Out row type.
          * @param outRowHnd Output row handler.
          * @param rightRowFactory Right row factory.
-         * @param nonEqCond If provided, only rows matching the predicate will be emitted as matched rows.
          */
         private LeftHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
             IgniteJoinInfo info,
             RowHandler<RowT> outRowHnd,
-            RowHandler.RowFactory<RowT> rightRowFactory,
-            @Nullable BiPredicate<RowT, RowT> nonEqCond
+            RowHandler.RowFactory<RowT> rightRowFactory
         ) {
-            super(ctx, rowType, info, outRowHnd, false, nonEqCond);
+            super(ctx, rowType, info, outRowHnd, false, null);
 
             assert nonEqCond == null : "Non equi condition is not supported in LEFT join";
 
@@ -377,17 +368,15 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * @param info Join info.
          * @param outRowHnd Output row handler.
          * @param leftRowFactory Left row factory.
-         * @param nonEqCond If provided, only rows matching the predicate will be emitted as matched rows.
          */
         private RightHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
             IgniteJoinInfo info,
             RowHandler<RowT> outRowHnd,
-            RowHandler.RowFactory<RowT> leftRowFactory,
-            @Nullable BiPredicate<RowT, RowT> nonEqCond
+            RowHandler.RowFactory<RowT> leftRowFactory
         ) {
-            super(ctx, rowType, info, outRowHnd, true, nonEqCond);
+            super(ctx, rowType, info, outRowHnd, true, null);
 
             assert nonEqCond == null : "Non equi condition is not supported in RIGHT join";
 
@@ -477,7 +466,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     }
 
     /** */
-    private static class FullOuterHashJoin<RowT> extends HashJoinNode<RowT> {
+    private static final class FullOuterHashJoin<RowT> extends HashJoinNode<RowT> {
         /** Left row factory. */
         private final RowHandler.RowFactory<RowT> leftRowFactory;
 
@@ -496,7 +485,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * @param outRowHnd Out row handler.
          * @param leftRowFactory Left row factory.
          * @param rightRowFactory Right row factory.
-         * @param nonEqCond If provided, only rows matching the predicate will be emitted as matched rows.
          */
         private FullOuterHashJoin(
             ExecutionContext<RowT> ctx,
@@ -507,7 +495,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             RowHandler.RowFactory<RowT> rightRowFactory,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
-            super(ctx, rowType, info, outRowHnd, true, nonEqCond);
+            super(ctx, rowType, info, outRowHnd, true, null);
 
             assert nonEqCond == null : "Non equi condition is not supported in FULL OUTER join";
 
@@ -686,7 +674,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * @param rowType Out row type.
          * @param info Join info.
          * @param outRowHnd Output row handler.
-         * @param nonEqCond If provided, only rows matching the predicate will be emitted as matched rows.
          */
         private AntiHashJoin(
             ExecutionContext<RowT> ctx,
@@ -695,7 +682,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             RowHandler<RowT> outRowHnd,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
-            super(ctx, rowType, info, outRowHnd, false, nonEqCond);
+            super(ctx, rowType, info, outRowHnd, false, null);
         }
 
         /** {@inheritDoc} */

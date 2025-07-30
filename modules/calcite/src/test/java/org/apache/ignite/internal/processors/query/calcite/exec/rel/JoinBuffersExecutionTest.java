@@ -37,11 +37,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.calcite.rel.core.JoinRelType.ANTI;
 import static org.apache.calcite.rel.core.JoinRelType.FULL;
+import static org.apache.calcite.rel.core.JoinRelType.INNER;
+import static org.apache.calcite.rel.core.JoinRelType.LEFT;
+import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
+import static org.apache.calcite.rel.core.JoinRelType.SEMI;
 
-/**
- *
- */
+/** Tests that buffers of join nodes are cleared at the join end and that a join node is not stuck. */
 @RunWith(Parameterized.class)
 public class JoinBuffersExecutionTest extends AbstractExecutionTest {
     /** */
@@ -97,12 +100,12 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
         Consumer<AbstractNode<?>> joinBufChecker,
         boolean sortResults
     ) throws Exception {
-        for (JoinRelType joinType : F.asList(FULL)) {
+        for (JoinRelType joinType : F.asList(LEFT, INNER, RIGHT, FULL, SEMI, ANTI)) {
             if (log.isInfoEnabled())
                 log.info("Testing join of type '" + joinType + "'...");
 
-            int size = IN_BUFFER_SIZE * 2 + 1;
-            int intersect = 10;
+            int size = IN_BUFFER_SIZE * 2 + IN_BUFFER_SIZE / 2;
+            int intersect = Math.max(10, IN_BUFFER_SIZE / 10);
 
             int leftTo = size + intersect;
             int rightTo = size * 2;
@@ -153,21 +156,8 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
             assertTrue(GridTestUtils.waitForCondition(finished::get, getTestTimeout()));
 
             // Sorting might be needed because join may not produce a sorted result.
-            if (sortResults) {
-                res.sort(new Comparator<>() {
-                    @Override public int compare(Object[] row0, Object[] row1) {
-                        assert row0.length == row1.length;
-                        assert row0.length == 2;
-                        assert row0[0] == row0[1] && row0[0] != null || (row0[0] != null || row0[1] != null);
-                        assert row1[0] == row1[1] && row1[0] != null || (row1[0] != null || row1[1] != null);
-
-                        int v1 = (int)(row0[0] == null ? row0[1] : row0[0]);
-                        int v2 = (int)(row1[0] == null ? row1[1] : row1[0]);
-
-                        return Integer.compare(v1, v2);
-                    }
-                });
-            }
+            if (sortResults)
+                sortResults(res, joinType);
 
             switch (joinType) {
                 case LEFT:
@@ -250,6 +240,36 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
 
             joinBufChecker.accept(join);
         }
+    }
+
+    /** */
+    private static void sortResults(List<Object[]> res, JoinRelType joinType) {
+        res.sort(new Comparator<>() {
+            @Override public int compare(Object[] row0, Object[] row1) {
+                assert row0.length == row1.length;
+
+                int v1;
+                int v2;
+
+                if (joinType == SEMI || joinType == ANTI) {
+                    assert row0.length == 1;
+                    assert row0[0] != null && row1[0] != null;
+
+                    v1 = (int)row0[0];
+                    v2 = (int)row1[0];
+                }
+                else {
+                    assert row0.length == 2;
+                    assert (row0[0] == row0[1] && row0[0] != null) || row0[0] != null || row0[1] != null;
+                    assert (row1[0] == row1[1] && row1[0] != null) || row1[0] != null || row1[1] != null;
+
+                    v1 = (int)(row0[0] == null ? row0[1] : row0[0]);
+                    v2 = (int)(row1[0] == null ? row1[1] : row1[0]);
+                }
+
+                return Integer.compare(v1, v2);
+            }
+        });
     }
 
     /** */

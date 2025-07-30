@@ -42,7 +42,6 @@ import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
 
 /** */
-@SuppressWarnings("TypeMayBeWeakened")
 public class HashJoinExecutionTest extends AbstractExecutionTest {
     /** */
     @Test
@@ -208,7 +207,7 @@ public class HashJoinExecutionTest extends AbstractExecutionTest {
             new Object[] {3, "QA"}
         };
 
-        BiPredicate<Object[], Object[]> condition = (l, r) -> ((String)r[1]).length() > 3 && ((String)l[1]).length() > 4;
+        BiPredicate<Object[], Object[]> condition = (l, r) -> ((CharSequence)r[1]).length() > 3 && ((CharSequence)l[1]).length() > 4;
 
         Object[][] expected = {{3, "Alexey", 1, 1, "Core"}};
 
@@ -231,7 +230,7 @@ public class HashJoinExecutionTest extends AbstractExecutionTest {
             new Object[] {3, "QA"}
         };
 
-        BiPredicate<Object[], Object[]> condition = (l, r) -> ((String)r[1]).length() > 3 && ((String)l[1]).length() > 4;
+        BiPredicate<Object[], Object[]> condition = (l, r) -> ((CharSequence)r[1]).length() > 3 && ((CharSequence)l[1]).length() > 4;
 
         Object[][] expected = {{3, "Alexey", 1}};
 

@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
-/** Represent hash join. */
+/** */
 public class IgniteHashJoin extends AbstractIgniteJoin {
     /** */
     public IgniteHashJoin(

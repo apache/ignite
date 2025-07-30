@@ -26,7 +26,7 @@ import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableIntList;
 
-/** */
+/** Extended {@link JoinInfo}. */
 public class IgniteJoinInfo extends JoinInfo {
     /** Filtered nulls of equi conditions. It usually means presence of IS NOT DISTINCT. */
     private final int matchingNullsCnt;
