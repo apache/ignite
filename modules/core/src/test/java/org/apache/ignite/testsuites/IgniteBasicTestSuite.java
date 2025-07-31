@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.TransactionContextCleanupTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
@@ -143,7 +144,8 @@ import org.junit.runners.Suite;
     JavaVersionCommandParserTest.class,
     ClientSessionOutboundQueueLimitTest.class,
 
-    MessageProcessorTest.class
+    MessageProcessorTest.class,
+    TransactionContextCleanupTest.class
 })
 public class IgniteBasicTestSuite {
 }
