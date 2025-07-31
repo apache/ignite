@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
+import org.apache.ignite.internal.codegen.GenerateEncryptionKeyRequestSerializer;
 import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionExSerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionSerializer;
@@ -331,7 +332,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)135, LatchAckMessage::new);
         factory.register((short)157, PartitionUpdateCountersMessage::new);
         factory.register((short)158, GridDhtPartitionSupplyErrorMessage::new);
-        factory.register((short)162, GenerateEncryptionKeyRequest::new);
+        factory.register((short)162, GenerateEncryptionKeyRequest::new, new GenerateEncryptionKeyRequestSerializer());
         factory.register((short)163, GenerateEncryptionKeyResponse::new);
         factory.register((short)167, ServiceDeploymentProcessId::new);
         factory.register((short)168, ServiceSingleNodeDeploymentResultBatch::new);
