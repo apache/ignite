@@ -523,8 +523,8 @@ class MessageSerializerGenerator {
             if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 return "AFFINITY_TOPOLOGY_VERSION";
 
-            if (isBoxedType(type))
-                return env.getTypeUtils().unboxedType(type).getKind().name();
+            if (boxedType(type))
+                return env.getTypeUtils().unboxedType(type).getKind().toString();
         }
 
         if (!assignableFrom(type, type(MESSAGE_INTERFACE)))
@@ -541,7 +541,7 @@ class MessageSerializerGenerator {
      * @param type Type.
      * @return true if the given type is a boxed primitive.
      */
-    private boolean isBoxedType(TypeMirror type) {
+    private boolean boxedType(TypeMirror type) {
         try {
             env.getTypeUtils().unboxedType(type);
 
@@ -656,11 +656,6 @@ class MessageSerializerGenerator {
         TypeElement typeElement = elementUtils.getTypeElement(clazz);
 
         return typeElement != null ? typeElement.asType() : null;
-    }
-
-    /** */
-    private TypeMirror erasedType(Class<?> cls) {
-        return erasedType(type(cls.getName()));
     }
 
     /** */
