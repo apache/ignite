@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
@@ -349,8 +348,7 @@ public class BinaryContext {
             if (cls == TreeMap.class || cls == TreeSet.class)
                 return false;
 
-            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
-                QueryUtils.isGeometryClass(cls);
+            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null;
         }
         else
             return desc.useOptimizedMarshaller();
