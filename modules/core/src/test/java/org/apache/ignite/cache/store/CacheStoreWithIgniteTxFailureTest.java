@@ -150,7 +150,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
         ccfg.setInterceptor(
             new FaultyNodeInterceptor(
                 igniteInstanceName,
-                getTestIgniteInstanceIndex(igniteInstanceName),
+                getTestIgniteInstanceIndex(igniteInstanceName) == FAULTY_NODE_IDX,
                 faultyNodeRole
             )
         );
@@ -286,9 +286,9 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
          * @param instanceName Ignite node instance name.
          * @param faultyNodeRole Flag if node is tx coordinator.
          */
-        private FaultyNodeInterceptor(String instanceName, int nodeIdx, FaultyNodeRole faultyNodeRole) {
+        private FaultyNodeInterceptor(String instanceName, boolean faultyNode, FaultyNodeRole faultyNodeRole) {
             this.instanceName = instanceName;
-            faultyNode = (FAULTY_NODE_IDX == nodeIdx);
+            this.faultyNode = faultyNode;
             this.faultyNodeRole = faultyNodeRole;
         }
 
