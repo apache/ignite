@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.util.UUID;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 public class TestMessageWithNestedMessages implements Message {
