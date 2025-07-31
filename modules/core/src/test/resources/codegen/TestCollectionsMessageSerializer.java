@@ -47,133 +47,133 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection(msg.booleanArrayList(),MessageCollectionItemType.BOOLEAN_ARR))
+                if (!writer.writeCollection(msg.booleanArrayList(), MessageCollectionItemType.BOOLEAN_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeCollection(msg.byteArrayList(),MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection(msg.byteArrayList(), MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection(msg.shortArrayList(),MessageCollectionItemType.SHORT_ARR))
+                if (!writer.writeCollection(msg.shortArrayList(), MessageCollectionItemType.SHORT_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeCollection(msg.intArrayList(),MessageCollectionItemType.INT_ARR))
+                if (!writer.writeCollection(msg.intArrayList(), MessageCollectionItemType.INT_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection(msg.longArrayList(),MessageCollectionItemType.LONG_ARR))
+                if (!writer.writeCollection(msg.longArrayList(), MessageCollectionItemType.LONG_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection(msg.charArrayList(),MessageCollectionItemType.CHAR_ARR))
+                if (!writer.writeCollection(msg.charArrayList(), MessageCollectionItemType.CHAR_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection(msg.floatArrayList(),MessageCollectionItemType.FLOAT_ARR))
+                if (!writer.writeCollection(msg.floatArrayList(), MessageCollectionItemType.FLOAT_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeCollection(msg.doubleArrayList(),MessageCollectionItemType.DOUBLE_ARR))
+                if (!writer.writeCollection(msg.doubleArrayList(), MessageCollectionItemType.DOUBLE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeCollection(msg.stringList(),MessageCollectionItemType.STRING))
+                if (!writer.writeCollection(msg.stringList(), MessageCollectionItemType.STRING))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollection(msg.uuidList(),MessageCollectionItemType.UUID))
+                if (!writer.writeCollection(msg.uuidList(), MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeCollection(msg.bitSetList(),MessageCollectionItemType.BIT_SET))
+                if (!writer.writeCollection(msg.bitSetList(), MessageCollectionItemType.BIT_SET))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeCollection(msg.igniteUuidList(),MessageCollectionItemType.IGNITE_UUID))
+                if (!writer.writeCollection(msg.igniteUuidList(), MessageCollectionItemType.IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeCollection(msg.affTopVersionList(),MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION))
+                if (!writer.writeCollection(msg.affTopVersionList(), MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection(msg.boxedBooleanList(),MessageCollectionItemType.BOOLEAN))
+                if (!writer.writeCollection(msg.boxedBooleanList(), MessageCollectionItemType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollection(msg.boxedByteList(),MessageCollectionItemType.BYTE))
+                if (!writer.writeCollection(msg.boxedByteList(), MessageCollectionItemType.BYTE))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeCollection(msg.boxedShortList(),MessageCollectionItemType.SHORT))
+                if (!writer.writeCollection(msg.boxedShortList(), MessageCollectionItemType.SHORT))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeCollection(msg.boxedIntList(),MessageCollectionItemType.INT))
+                if (!writer.writeCollection(msg.boxedIntList(), MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeCollection(msg.boxedLongList(),MessageCollectionItemType.LONG))
+                if (!writer.writeCollection(msg.boxedLongList(), MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeCollection(msg.boxedCharList(),MessageCollectionItemType.CHAR))
+                if (!writer.writeCollection(msg.boxedCharList(), MessageCollectionItemType.CHAR))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeCollection(msg.boxedFloatList(),MessageCollectionItemType.FLOAT))
+                if (!writer.writeCollection(msg.boxedFloatList(), MessageCollectionItemType.FLOAT))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeCollection(msg.boxedDoubleList(),MessageCollectionItemType.DOUBLE))
+                if (!writer.writeCollection(msg.boxedDoubleList(), MessageCollectionItemType.DOUBLE))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeCollection(msg.messageList(),MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(msg.messageList(), MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
