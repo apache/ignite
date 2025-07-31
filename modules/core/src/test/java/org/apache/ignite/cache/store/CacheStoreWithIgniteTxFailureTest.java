@@ -19,7 +19,7 @@ package org.apache.ignite.cache.store;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
 import javax.cache.Cache;
@@ -91,7 +91,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
 
     /** */
     @Parameterized.Parameter(2)
-    public boolean withFaulireHandler;
+    public boolean withFaulireHnd;
 
     /** */
     @Parameterized.Parameters(name = "faultyNodeType={0}, faultyNodeRole={1}, withFaulireHandler={2}")
@@ -140,14 +140,20 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return withFaulireHandler ? new StopNodeFailureHandler() : super.getFailureHandler(igniteInstanceName);
+        return withFaulireHnd ? new StopNodeFailureHandler() : super.getFailureHandler(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
+    @Override protected CacheConfiguration<?, ?> cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration<Integer, Integer> ccfg = (CacheConfiguration<Integer, Integer>) super.cacheConfiguration(igniteInstanceName);
 
-        ccfg.setInterceptor(new FaultyNodeInterceptor(igniteInstanceName, faultyNodeRole));
+        ccfg.setInterceptor(
+            new FaultyNodeInterceptor(
+                igniteInstanceName,
+                getTestIgniteInstanceIndex(igniteInstanceName),
+                faultyNodeRole
+            )
+        );
 
         return ccfg;
     }
@@ -166,13 +172,17 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
 
         List<Integer> keysOnFaultyNode = findKeys(grid(FAULTY_NODE_IDX).localNode(), cache, 5, 0, keysType);
 
-        IgniteEx txCoordinator = faultyNodeRole == FaultyNodeRole.TX_COORDINATOR ? grid(FAULTY_NODE_IDX) : startClientGrid();
+        IgniteEx txCoordinator =
+            faultyNodeRole == FaultyNodeRole.TX_COORDINATOR
+                ? grid(FAULTY_NODE_IDX)
+                : startClientGrid(GRID_COUNT + 1);
+
         if (faultyNodeType == FaultyNodeType.PRIMARY)
             updateKeysInTxWithExceptionCatching(txCoordinator, keysOnFaultyNode);
         else
             updateKeysInTx(txCoordinator, keysOnFaultyNode);
 
-        if (withFaulireHandler) {
+        if (withFaulireHnd) {
             // FH doesn't fail TX coordinator node now, this behavior is wrong and should be fixed here:
             // TODO https://issues.apache.org/jira/browse/IGNITE-26060
             if (faultyNodeRole != FaultyNodeRole.TX_COORDINATOR) {
@@ -261,36 +271,38 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
     /** */
     private static class FaultyNodeInterceptor extends CacheInterceptorAdapter<Integer, Integer> {
         /** */
-        private static final String FAULTY_NODE_SUFFIX = "Test" + FAULTY_NODE_IDX;
+        private final FaultyNodeRole faultyNodeRole;
 
         /** */
         private final String instanceName;
 
         /** */
-        private final FaultyNodeRole faultyNodeRole;
+        private final boolean faultyNode;
 
         /** */
-        private final Map<Integer, Boolean> map = new ConcurrentHashMap<>();
+        private final Set<Integer> seenKeys = ConcurrentHashMap.newKeySet();
 
         /**
          * @param instanceName Ignite node instance name.
          * @param faultyNodeRole Flag if node is tx coordinator.
          */
-        private FaultyNodeInterceptor(String instanceName, FaultyNodeRole faultyNodeRole) {
+        private FaultyNodeInterceptor(String instanceName, int nodeIdx, FaultyNodeRole faultyNodeRole) {
             this.instanceName = instanceName;
+            faultyNode = (FAULTY_NODE_IDX == nodeIdx);
             this.faultyNodeRole = faultyNodeRole;
         }
 
         /** {@inheritDoc} */
         @Override public @Nullable Integer onBeforePut(Cache.Entry<Integer, Integer> entry, Integer newVal) {
+            // It is an initial cache loading, actual test logic will be executed later.
             if (newVal < 2 * KEYS_NUMBER)
                 return newVal;
 
-            if (instanceName.contains(FAULTY_NODE_SUFFIX)) {
+            if (faultyNode) {
                 if (faultyNodeRole == FaultyNodeRole.TX_COORDINATOR) {
-                    if (!map.containsKey(newVal))
-                        map.put(newVal, true);
-                    else
+                    // On TX coordinator node CacheInterceptor#onBeforePut is called twice for the same key
+                    // at different stages of TX handling path.
+                    if (!seenKeys.add(newVal))
                         throw new IgniteException("IgniteException from onBeforePut on tx coordinator: " + instanceName);
                 }
                 else
