@@ -24,7 +24,6 @@ import java.util.BitSet;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -72,9 +71,6 @@ public class TestMessage implements Message {
 
     @Order(13)
     private List<Integer> boxedIntValues;
-
-    @Order(14)
-    private GridLongList gridLongList;
 
     public int id() {
         return id;
@@ -186,14 +182,6 @@ public class TestMessage implements Message {
 
     public void boxedIntValues(List<Integer> boxedIntValues) {
         this.boxedIntValues = boxedIntValues;
-    }
-
-    public GridLongList gridLongList() {
-        return gridLongList;
-    }
-
-    public void gridLongList(GridLongList gridLongList) {
-        this.gridLongList = gridLongList;
     }
 
     public short directType() {
