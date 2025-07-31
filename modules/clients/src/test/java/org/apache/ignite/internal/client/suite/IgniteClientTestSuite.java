@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.rest.RestBinaryProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.RestMemcacheProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorMultiStartSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorStartSelfTest;
+import org.apache.ignite.internal.processors.rest.RestProtocolStartTest;
 import org.apache.ignite.internal.processors.rest.TaskCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.TcpRestUnmarshalVulnerabilityTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRedisParserSelfTest;
@@ -195,7 +196,8 @@ import org.junit.runners.Suite;
     CacheEventSecurityContextTest.class,
     RebalanceCacheEventSecurityContextTest.class,
     ClusterStateChangeEventSecurityContextTest.class,
-    ComputeTaskPermissionsTest.class
+    ComputeTaskPermissionsTest.class,
+    RestProtocolStartTest.class
 })
 public class IgniteClientTestSuite {
 }
