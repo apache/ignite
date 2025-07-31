@@ -508,12 +508,12 @@ public class QueryUtils {
 
         if (!keyOrValMustDeserialize) {
             // Safe to check null.
-            if (SQL_TYPES.contains(valCls))
+            if (valCls != null && isSqlType(valCls))
                 desc.valueClass(valCls);
             else
                 desc.valueClass(Object.class);
 
-            if (SQL_TYPES.contains(keyCls))
+            if (isSqlType(keyCls))
                 desc.keyClass(keyCls);
             else
                 desc.keyClass(Object.class);
