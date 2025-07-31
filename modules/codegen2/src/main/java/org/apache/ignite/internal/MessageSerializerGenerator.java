@@ -353,10 +353,7 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
 
-            else if (assignableFrom(erasedType(type), erasedType(Collection.class))) {
-                if (assignableFrom(erasedType(type), erasedType(Set.class)))
-                    throw new IllegalArgumentException("Unsupported declared type: " + type);
-
+            else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
                 assert typeArgs.size() == 1;
@@ -469,10 +466,7 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfReadFailed(name, "reader.readMessage");
 
-            else if (assignableFrom(erasedType(type), erasedType(Collection.class))) {
-                if (assignableFrom(erasedType(type), erasedType(Set.class)))
-                    throw new IllegalArgumentException("Unsupported declared type: " + type);
-
+            else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
                 assert typeArgs.size() == 1;
@@ -514,9 +508,6 @@ class MessageSerializerGenerator {
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
-            if (sameType(type, Integer.class))
-                return "INT";
-
             if (sameType(type, String.class))
                 return "STRING";
 
@@ -531,6 +522,9 @@ class MessageSerializerGenerator {
 
             if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 return "AFFINITY_TOPOLOGY_VERSION";
+
+            if (isBoxedType(type))
+                return env.getTypeUtils().unboxedType(type).getKind().name();
         }
 
         if (!assignableFrom(type, type(MESSAGE_INTERFACE)))
@@ -541,6 +535,21 @@ class MessageSerializerGenerator {
         imports.add(cls);
 
         return "MSG";
+    }
+
+    /**
+     * @param type Type.
+     * @return true if the given type is a boxed primitive.
+     */
+    private boolean isBoxedType(TypeMirror type) {
+        try {
+            env.getTypeUtils().unboxedType(type);
+
+            return true;
+        }
+        catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     /**

@@ -53,6 +53,20 @@ public class MessageProcessorTest {
 
     /** */
     @Test
+    public void testCollectionsMessage() {
+        Compilation compilation = compile("TestCollectionsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.codegen.TestCollectionsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestCollectionsMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
     public void testEmptyMessage() {
         Compilation compilation = compile("EmptyMessage.java");
 
@@ -64,14 +78,6 @@ public class MessageProcessorTest {
     @Test
     public void testWrongClassUseOrder() {
         Compilation compilation = compile("WrongClassUseOrder.java");
-
-        assertThat(compilation).failed();
-    }
-
-    /** */
-    @Test
-    public void testWrongCollectionUseOrder() {
-        Compilation compilation = compile("WrongCollectionUseOrder.java");
 
         assertThat(compilation).failed();
     }
