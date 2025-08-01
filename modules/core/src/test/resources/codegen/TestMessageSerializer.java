@@ -23,7 +23,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.transactions.TxLockList;
 import org.apache.ignite.internal.TestMessage;
 
 /**
@@ -114,6 +116,24 @@ public class TestMessageSerializer implements MessageSerializer {
 
             case 11:
                 if (!writer.writeString(msg.overridenFieldMethod()))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
+                if (!writer.writeMessage(msg.gridDeploymentInfoBean()))
+                    return false;
+
+                writer.incrementState();
+
+            case 13:
+                if (!writer.writeObjectArray(msg.igniteTxKeys(), MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
+                if (!writer.writeObjectArray(msg.txLockLists(), MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -220,6 +240,30 @@ public class TestMessageSerializer implements MessageSerializer {
 
             case 11:
                 msg.overridenFieldMethod(reader.readString());
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
+                msg.gridDeploymentInfoBean(reader.readMessage());
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 13:
+                msg.igniteTxKeys(reader.readObjectArray(MessageCollectionItemType.MSG, IgniteTxKey.class));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 14:
+                msg.txLockLists(reader.readObjectArray(MessageCollectionItemType.MSG, TxLockList.class));
 
                 if (!reader.isLastRead())
                     return false;
