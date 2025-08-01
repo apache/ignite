@@ -118,6 +118,12 @@ public class TestMessageSerializer implements MessageSerializer {
 
                 writer.incrementState();
 
+            case 12:
+                if (!writer.writeMap(msg.mapValue(), MessageCollectionItemType.LONG, MessageCollectionItemType.IGNITE_UUID))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -220,6 +226,14 @@ public class TestMessageSerializer implements MessageSerializer {
 
             case 11:
                 msg.overridenFieldMethod(reader.readString());
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
+                msg.mapValue(reader.readMap(MessageCollectionItemType.LONG, MessageCollectionItemType.IGNITE_UUID, false));
 
                 if (!reader.isLastRead())
                     return false;
