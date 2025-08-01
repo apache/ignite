@@ -17,25 +17,23 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.task;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Task result request.
  */
 public class GridTaskResultRequest implements Message {
     /** Task ID. */
+    @Order(0)
     private IgniteUuid taskId;
 
     /** Topic. */
-    @GridDirectTransient
     private Object topic;
 
     /** Serialized topic. */
+    @Order(1)
     private byte[] topicBytes;
 
     /**
@@ -87,6 +85,13 @@ public class GridTaskResultRequest implements Message {
     }
 
     /**
+     * @param topicBytes New serialized topic.
+     */
+    public void topicBytes(byte[] topicBytes) {
+        this.topicBytes = topicBytes;
+    }
+
+    /**
      * @param topic Topic.
      */
     public void topic(String topic) {
@@ -98,61 +103,6 @@ public class GridTaskResultRequest implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIgniteUuid(taskId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByteArray(topicBytes))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                taskId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                topicBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
