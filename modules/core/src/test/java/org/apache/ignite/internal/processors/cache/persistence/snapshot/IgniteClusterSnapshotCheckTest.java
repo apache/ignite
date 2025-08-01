@@ -1211,12 +1211,15 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         int coordIdx = -1;
 
         for (int i = 0; i < grids; ++i) {
+            if (stopped.contains(i))
+                continue;
+
             final IgniteEx g = grid(i);
 
             // Wait for all nodes complete checking.
             waitForCondition(() -> !snp(g).isSnapshotChecking(SNAPSHOT_NAME), 10_000, 50);
 
-            if (stopped.contains(i) || !U.isLocalNodeCoordinator(g.context().discovery()))
+            if (!U.isLocalNodeCoordinator(g.context().discovery()))
                 continue;
 
             coordIdx = i;
