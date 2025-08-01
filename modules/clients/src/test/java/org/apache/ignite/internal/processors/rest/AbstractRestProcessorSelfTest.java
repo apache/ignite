@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     /** Local host. */
-    protected static final String LOC_HOST = "127.0.0.1";
+    public static final String LOC_HOST = "127.0.0.1";
 
     /**
      * @return Grid count.
