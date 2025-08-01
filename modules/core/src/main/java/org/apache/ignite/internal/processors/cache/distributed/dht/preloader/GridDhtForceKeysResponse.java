@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,9 +43,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Force keys response. Contains absent keys.
  */
 public class GridDhtForceKeysResponse extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
     private IgniteUuid futId;
 
@@ -71,7 +67,7 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
     private List<GridCacheEntryInfo> infos;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtForceKeysResponse() {
         // No-op.

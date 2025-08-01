@@ -27,8 +27,10 @@ import java.lang.annotation.Target;
  * <p>
  * The {@code value} indicates the index of the field in the serialization order.
  * Fields annotated with {@code @Order} are processed in ascending order of their index.
- * <p>
- * This annotation must be used on non-static fields, and access to those fields
+ * <p> By default, it is assumed that getters and setters are named as the annotated fields,
+ * e.g. field 'val' should have getters and satters with name 'val' (according Ignite's to code-style).
+ * If you need to override this behavior, you can specify their name in the {@link #method} attribute.
+ * <p> This annotation must be used on non-static fields, and access to those fields
  * should be performed strictly through corresponding getter and setter methods
  * following the naming convention: {@code fieldName()} for getter and {@code fieldName(Type)} for setter.
  */
@@ -37,4 +39,7 @@ import java.lang.annotation.Target;
 public @interface Order {
     /** @return Order of the field. */
     int value();
+
+    /** @return Getter and setter name. */
+    String method() default "";
 }

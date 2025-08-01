@@ -531,7 +531,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
      * @return Reader.
      */
     private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
-        return reader(rCtx, ctx.configuration().getClassLoader(), forUnmarshal);
+        return reader(rCtx, ctx.classLoader(), forUnmarshal);
     }
 
     /**

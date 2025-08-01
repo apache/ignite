@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.binary.builder;
 
+import java.util.Iterator;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility class to provide static methods to create {@link BinaryObjectBuilder}.
@@ -68,5 +70,36 @@ public class BinaryObjectBuilders {
 
             builder0.affinityFieldName(fieldName);
         }
+    }
+
+    /**
+     * @param obj Value to unwrap.
+     * @return Unwrapped value.
+     */
+    static Object unwrapLazy(@Nullable Object obj) {
+        if (obj instanceof BinaryLazyValue)
+            return ((BinaryLazyValue)obj).value();
+
+        return obj;
+    }
+
+    /**
+     * @param delegate Iterator to delegate.
+     * @return New iterator.
+     */
+    static Iterator<Object> unwrapLazyIterator(final Iterator<Object> delegate) {
+        return new Iterator<Object>() {
+            @Override public boolean hasNext() {
+                return delegate.hasNext();
+            }
+
+            @Override public Object next() {
+                return unwrapLazy(delegate.next());
+            }
+
+            @Override public void remove() {
+                delegate.remove();
+            }
+        };
     }
 }

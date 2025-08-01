@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -37,9 +36,6 @@ import org.jetbrains.annotations.NotNull;
  */
 @IgniteCodeGeneratingFail
 public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Cache rebalance topic. */
     private static final Object REBALANCE_TOPIC = GridCachePartitionExchangeManager.rebalanceTopic(0);
 
@@ -93,7 +89,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     }
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtPartitionDemandMessage() {
         // No-op.

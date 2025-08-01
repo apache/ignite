@@ -41,9 +41,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private long futId;
 
     /** Topology version. */

@@ -56,6 +56,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -74,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Standa
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -441,14 +443,28 @@ public class IgniteMock implements IgniteEx {
             return binaryMock;
 
         if (ctx == null) {
+            IgniteConfiguration cfg = configuration();
+
+            BinaryConfiguration bcfg = cfg.getBinaryConfiguration() == null ? new BinaryConfiguration() : cfg.getBinaryConfiguration();
+
             /** {@inheritDoc} */
-            ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), configuration(), new NullLogger()) {
+            ctx = new BinaryContext(
+                BinaryUtils.cachingMetadataHandler(),
+                (BinaryMarshaller)marshaller,
+                cfg.getIgniteInstanceName(),
+                cfg.getClassLoader(),
+                bcfg.getSerializer(),
+                bcfg.getIdMapper(),
+                bcfg.getNameMapper(),
+                bcfg.getTypeConfigurations(),
+                CU.affinityFields(configuration()),
+                bcfg.isCompactFooter(),
+                NullLogger.INSTANCE
+            ) {
                 @Override public int typeId(String typeName) {
                     return typeName.hashCode();
                 }
             };
-
-            ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration());
         }
 
         binaryMock = new NoOpBinary() {

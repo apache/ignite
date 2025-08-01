@@ -21,13 +21,11 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Minimal list API to work with primitive ints. This list exists
@@ -38,9 +36,11 @@ public class GridIntList implements Message, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(0)
     private int[] arr;
 
     /** */
+    @Order(1)
     private int idx;
 
     /**
@@ -85,6 +85,34 @@ public class GridIntList implements Message, Externalizable {
     private GridIntList(int[] arr, int size) {
         this.arr = arr;
         idx = size;
+    }
+
+    /**
+     * @return Array.
+     */
+    public int[] arr() {
+        return arr;
+    }
+
+    /**
+     * @param arr New array.
+     */
+    public void arr(int[] arr) {
+        this.arr = arr;
+    }
+
+    /**
+     * @return Index.
+     */
+    public int idx() {
+        return idx;
+    }
+
+    /**
+     * @param idx New index.
+     */
+    public void idx(int idx) {
+        this.idx = idx;
     }
 
     /** {@inheritDoc} */
@@ -273,7 +301,7 @@ public class GridIntList implements Message, Externalizable {
     /**
      * @return Array copy.
      */
-    public int[] array() {
+    public int[] arrayCopy() {
         int[] res = new int[idx];
 
         System.arraycopy(arr, 0, res, 0, idx);
@@ -331,61 +359,6 @@ public class GridIntList implements Message, Externalizable {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIntArray(arr))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeInt(idx))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                arr = reader.readIntArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                idx = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

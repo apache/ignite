@@ -302,7 +302,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         }
 
         if (keyIdx < keyDefs.size()) {
-            recommender.recommend(row, inlineSize);
+            recommender.recommend(row, inlineSize, pageSize());
 
             if (currRow == null)
                 currRow = getRow(io, pageAddr, idx);

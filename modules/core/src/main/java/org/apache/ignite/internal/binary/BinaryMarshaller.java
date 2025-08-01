@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
@@ -73,9 +72,7 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
      * <p/>
      * @param ctx Binary context.
      */
-    public void setBinaryContext(BinaryContext ctx, IgniteConfiguration cfg) {
-        ctx.configure(this, cfg != null ? cfg.getBinaryConfiguration() : null);
-
+    public void setBinaryContext(BinaryContext ctx) {
         impl = new GridBinaryMarshaller(ctx);
     }
 

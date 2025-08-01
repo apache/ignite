@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -155,15 +154,15 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
         checkNoAction((GridTestCollisionJobContext)waitCtxs.get(2));
 
         // Make sure that no message was sent.
-        Serializable msg1 = getSpiContext().removeSentMessage(getSpiContext().localNode());
+        Object msg1 = getSpiContext().removeSentMessage(getSpiContext().localNode());
 
         assert msg1 == null;
 
-        Serializable mgs2 = getSpiContext().removeSentMessage(rmtNode1);
+        Object mgs2 = getSpiContext().removeSentMessage(rmtNode1);
 
         assert mgs2 == null;
 
-        Serializable msg3 = getSpiContext().removeSentMessage(rmtNode2);
+        Object msg3 = getSpiContext().removeSentMessage(rmtNode2);
 
         assert msg3 == null;
     }

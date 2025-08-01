@@ -32,9 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * One Phase Commit Near transaction ack request.
  */
 public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Lock or transaction versions. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)

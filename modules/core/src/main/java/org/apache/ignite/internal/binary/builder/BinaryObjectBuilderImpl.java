@@ -147,7 +147,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             Class cls;
 
             try {
-                cls = U.forName(clsNameToWrite, ctx.configuration().getClassLoader());
+                cls = U.forName(clsNameToWrite, ctx.classLoader());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsNameToWrite, e);
@@ -521,7 +521,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         else
             return null;
 
-        return (T)BinaryUtils.unwrapLazy(val);
+        return (T)BinaryObjectBuilders.unwrapLazy(val);
     }
 
     /** {@inheritDoc} */

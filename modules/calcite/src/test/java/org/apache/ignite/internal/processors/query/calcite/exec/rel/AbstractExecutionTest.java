@@ -210,7 +210,15 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
                 taskExecutor = executor;
             }
             else {
-                taskExecutor = new QueryBlockingTaskExecutor(kernal);
+                taskExecutor = new QueryBlockingTaskExecutor(kernal) {
+                    @Override public void execute(UUID qryId, long fragmentId, Runnable qryTask) {
+                        super.execute(qryId, fragmentId, () -> {
+                            qryTask.run();
+
+                            LockSupport.parkNanos(ThreadLocalRandom.current().nextLong(1_000, 10_000));
+                        });
+                    }
+                };
 
                 taskExecutor.onStart(kernal);
             }

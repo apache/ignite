@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
@@ -48,9 +47,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  *
  */
 public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Optional arguments for entry processor. */
     @GridDirectTransient
     private Object[] invokeArgs;
@@ -66,7 +62,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     private byte[] entryProcessorBytes;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearAtomicSingleUpdateInvokeRequest() {
         // No-op.
