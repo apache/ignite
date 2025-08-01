@@ -39,6 +39,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
@@ -523,8 +524,10 @@ class MessageSerializerGenerator {
             if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 return "AFFINITY_TOPOLOGY_VERSION";
 
-            if (boxedType(type))
-                return env.getTypeUtils().unboxedType(type).getKind().toString();
+            PrimitiveType primitiveType = unboxedType(type);
+
+            if (primitiveType != null)
+                return primitiveType.getKind().toString();
         }
 
         if (!assignableFrom(type, type(MESSAGE_INTERFACE)))
@@ -538,17 +541,18 @@ class MessageSerializerGenerator {
     }
 
     /**
-     * @param type Type.
-     * @return true if the given type is a boxed primitive.
+     * Returns the type (a primitive type) of unboxed values of a given type.
+     * That is, <i>unboxing conversion</i> is applied.
+     *
+     * @param type  the type to be unboxed
+     * @return the type of unboxed value of type {@code type} or null if the given type has no unboxing conversion
      */
-    private boolean boxedType(TypeMirror type) {
+    private PrimitiveType unboxedType(TypeMirror type) {
         try {
-            env.getTypeUtils().unboxedType(type);
-
-            return true;
+            return env.getTypeUtils().unboxedType(type);
         }
         catch (IllegalArgumentException e) {
-            return false;
+            return null;
         }
     }
 
