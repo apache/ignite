@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJobSibling;
@@ -24,6 +25,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,10 +34,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridJobSiblingsResponse implements Message {
     /** */
+    @GridDirectTransient
     private Collection<ComputeJobSibling> siblings;
 
     /** */
-    @Order(0)
     private byte[] siblingsBytes;
 
     /**
@@ -61,20 +64,6 @@ public class GridJobSiblingsResponse implements Message {
     }
 
     /**
-     * @return Serialized siblings.
-     */
-    public byte[] siblingsBytes() {
-        return siblingsBytes;
-    }
-
-    /**
-     * @param siblingsBytes New serialized siblings.
-     */
-    public void siblingsBytes(byte[] siblingsBytes) {
-        this.siblingsBytes = siblingsBytes;
-    }
-
-    /**
      * @param marsh Marshaller.
      * @throws IgniteCheckedException In case of error.
      */
@@ -88,6 +77,47 @@ public class GridJobSiblingsResponse implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeByteArray(siblingsBytes))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        switch (reader.state()) {
+            case 0:
+                siblingsBytes = reader.readByteArray();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

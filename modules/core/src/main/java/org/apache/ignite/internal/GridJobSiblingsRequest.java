@@ -21,6 +21,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
+import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_SIBLINGS;
+
 /**
  * Job siblings request.
  */
@@ -34,7 +36,7 @@ public class GridJobSiblingsRequest implements Message {
 
     /** */
     @Order(1)
-    private byte[] topicBytes;
+    private long topicId;
 
     /**
      * Empty constructor.
@@ -45,16 +47,14 @@ public class GridJobSiblingsRequest implements Message {
 
     /**
      * @param sesId Session ID.
-     * @param topic Topic.
-     * @param topicBytes Serialized topic.
+     * @param topicId Topic ID.
      */
-    public GridJobSiblingsRequest(IgniteUuid sesId, Object topic, byte[] topicBytes) {
+    public GridJobSiblingsRequest(IgniteUuid sesId, long topicId) {
         assert sesId != null;
-        assert topic != null || topicBytes != null;
 
         this.sesId = sesId;
-        this.topic = topic;
-        this.topicBytes = topicBytes;
+        this.topicId = topicId;
+        topic = TOPIC_JOB_SIBLINGS.topic(sesId, topicId);
     }
 
     /**
@@ -79,17 +79,17 @@ public class GridJobSiblingsRequest implements Message {
     }
 
     /**
-     * @return Serialized topic.
+     * @return Topic ID.
      */
-    public byte[] topicBytes() {
-        return topicBytes;
+    public long topicId() {
+        return topicId;
     }
 
     /**
-     * @param topicBytes New serialized topic.
+     * @param topicId New topic ID.
      */
-    public void topicBytes(byte[] topicBytes) {
-        this.topicBytes = topicBytes;
+    public void topicId(long topicId) {
+        this.topicId = topicId;
     }
 
     /** {@inheritDoc} */
