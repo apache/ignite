@@ -118,7 +118,7 @@ public class SnapshotHandlerRestoreTask {
          * @param grps Cache group names.
          * @param check If {@code true} check snapshot before restore.
          */
-        public SnapshotHandlerRestoreJob(
+        SnapshotHandlerRestoreJob(
             IgniteEx ignite,
             SnapshotFileTree sft,
             Collection<String> grps,
