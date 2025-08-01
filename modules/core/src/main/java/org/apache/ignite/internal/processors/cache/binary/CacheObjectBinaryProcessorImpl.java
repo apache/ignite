@@ -119,9 +119,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_SCHEMA_UPDATE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.BINARY_PROC;
-import static org.apache.ignite.internal.binary.BinaryContext.affinityFieldName;
 import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.util.typedef.internal.CU.affinityFieldName;
 
 /**
  * Binary processor implementation.
