@@ -25,6 +25,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,12 +34,15 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
@@ -81,6 +86,9 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     /** */
     private ListeningTestLogger testLog;
 
+    /** */
+    private volatile Supplier<TcpCommunicationSpi> spiFactory = CustomTcpCommunicationSpi::new;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -101,6 +109,8 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         if (testLog != null)
             testLog.clearListeners();
 
+        spiFactory = CustomTcpCommunicationSpi::new;
+
         testLog = null;
 
         lifecycleBean = null;
@@ -112,7 +122,7 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCommunicationSpi(new CustomTcpCommunicationSpi());
+        cfg.setCommunicationSpi(spiFactory.get());
 
         if (testLog != null)
             cfg.setGridLogger(testLog);
@@ -129,6 +139,49 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         cfg.setCacheConfiguration(atomicCfg, txCfg);
 
         return cfg;
+    }
+
+    @Test
+    public void testSingleMessageErrorWarnings () throws Exception {
+        String expectedLogMsg = "Failed to send local partitions";
+
+        LogListener logListener = LogListener.matches(expectedLogMsg).build();
+        testLog = new ListeningTestLogger(log, logListener);
+
+        IgniteConfiguration cfg0 = getConfiguration(getTestIgniteInstanceName(0));
+        TestRecordingCommunicationSpi spi0 = new TestRecordingCommunicationSpi();
+        cfg0.setCommunicationSpi(spi0);
+        cfg0.setGridLogger(testLog);
+        startGrid(cfg0);
+
+        IgniteConfiguration cfg1 = getConfiguration(getTestIgniteInstanceName(1));
+        TestRecordingCommunicationSpi spi1 = new TestRecordingCommunicationSpi();
+        cfg1.setCommunicationSpi(spi1);
+        cfg1.setGridLogger(testLog);
+
+        IgniteEx node1 = startGrid(cfg1);
+
+        node1.cluster().state(ClusterState.ACTIVE);
+        awaitPartitionMapExchange();
+
+        spi1.blockMessages((node, msg) -> msg instanceof GridDhtPartitionsSingleMessage);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            node1.context().cache().context().exchange().refreshPartitions();
+        });
+
+        assertTrue("Message not blocked", spi1.waitForBlocked(1, 5_000));
+
+        stopGrid(0);
+
+        spi1.stopBlock();
+
+        fut.get(5_000);
+
+        U.sleep(500);
+
+        assertTrue("Expected log not found",
+                GridTestUtils.waitForCondition(logListener::check, 3000));
     }
 
     /**
