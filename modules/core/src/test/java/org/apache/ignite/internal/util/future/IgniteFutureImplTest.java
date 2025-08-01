@@ -609,20 +609,24 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
             private final CountDownLatch latch;
 
             /** */
-            private TestClosure(CountDownLatch latch) {
+            private final String threadName;
+
+            /** */
+            private TestClosure(CountDownLatch latch, String threadName) {
                 this.latch = latch;
+                this.threadName = threadName;
             }
 
             /** {@inheritDoc} */
             @Override public void apply(IgniteFuture<Integer> fut) {
-                assertEquals(CUSTOM_THREAD_NAME, Thread.currentThread().getName());
+                assertEquals(threadName, Thread.currentThread().getName());
                 assertEquals(10, (int)fut.get());
 
                 latch.countDown();
             }
         }
 
-        chained1.listen(new TestClosure(latch));
+        chained1.listen(new TestClosure(latch, CUSTOM_THREAD_NAME));
 
         fut0.onDone("10");
 
@@ -646,13 +650,13 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
         IgniteFuture<Integer> chained2 = createFuture(ffut0).chainAsync(chainClos, customExec);
 
-        chained2.listen(new TestClosure(latch1));
-
         chained2.get(100, TimeUnit.MILLISECONDS);
 
         assertTrue(chained2.isDone());
 
         assertEquals(10, (int)chained2.get());
+
+        chained2.listen(new TestClosure(latch1, Thread.currentThread().getName()));
 
         assert latch1.await(100, TimeUnit.MILLISECONDS);
     }
