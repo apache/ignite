@@ -21,11 +21,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
@@ -41,9 +39,11 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     public static final AffinityTopologyVersion ZERO = new AffinityTopologyVersion(0, 0);
 
     /** */
+    @Order(value = 0, method = "topologyVersion")
     private long topVer;
 
     /** */
+    @Order(value = 1, method = "minorTopologyVersion")
     private int minorTopVer;
 
     /**
@@ -96,10 +96,24 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /**
+     * @param topVer New topology version.
+     */
+    public void topologyVersion(long topVer) {
+        this.topVer = topVer;
+    }
+
+    /**
      * @return Minor topology version.
      */
     public int minorTopologyVersion() {
         return minorTopVer;
+    }
+
+    /**
+     * @param minorTopVer New minor topology version.
+     */
+    public void minorTopologyVersion(int minorTopVer) {
+        this.minorTopVer = minorTopVer;
     }
 
     /** {@inheritDoc} */
@@ -170,61 +184,6 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         topVer = in.readLong();
         minorTopVer = in.readInt();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(minorTopVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong(topVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                minorTopVer = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                topVer = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
