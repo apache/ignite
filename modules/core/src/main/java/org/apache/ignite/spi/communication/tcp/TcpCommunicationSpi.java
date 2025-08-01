@@ -597,7 +597,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         }
 
         if (cfg.connectionsPerNode() > 1)
-            connPlc = new RoundRobinConnectionPolicy(cfg);
+            connPlc = new RoundRobinConnectionPolicy(cfg.connectionsPerNode());
         else
             connPlc = new FirstConnectionPolicy();
 
