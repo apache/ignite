@@ -27,13 +27,13 @@ import java.nio.channels.Channel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -182,13 +182,13 @@ public class GridNioServerWrapper {
     private final ThrowableBiFunction<ClusterNode, Integer, GridCommunicationClient, IgniteCheckedException> createTcpClientFun;
 
     /** Recovery descs. */
-    private final ConcurrentMap<ConnectionKey, GridNioRecoveryDescriptor> recoveryDescs = GridConcurrentFactory.newMap();
+    private final Map<ConnectionKey, GridNioRecoveryDescriptor> recoveryDescs;
 
     /** Out rec descs. */
-    private final ConcurrentMap<ConnectionKey, GridNioRecoveryDescriptor> outRecDescs = GridConcurrentFactory.newMap();
+    private final Map<ConnectionKey, GridNioRecoveryDescriptor> outRecDescs;
 
     /** In rec descs. */
-    private final ConcurrentMap<ConnectionKey, GridNioRecoveryDescriptor> inRecDescs = GridConcurrentFactory.newMap();
+    private final Map<ConnectionKey, GridNioRecoveryDescriptor> inRecDescs;
 
     /**
      *
@@ -289,6 +289,10 @@ public class GridNioServerWrapper {
         this.handshakeTimeoutExecutorService = newSingleThreadScheduledExecutor(
             new IgniteThreadFactory(igniteInstanceName, "handshake-timeout-nio")
         );
+
+        recoveryDescs = cfg.usePairedConnections() ? Collections.emptyMap() : GridConcurrentFactory.newMap();
+        outRecDescs = cfg.usePairedConnections() ? GridConcurrentFactory.newMap() : Collections.emptyMap();
+        inRecDescs = cfg.usePairedConnections() ? GridConcurrentFactory.newMap() : Collections.emptyMap();
     }
 
     /**
@@ -725,21 +729,21 @@ public class GridNioServerWrapper {
     /**
      * @return Recovery descs.
      */
-    public ConcurrentMap<ConnectionKey, GridNioRecoveryDescriptor> recoveryDescs() {
+    public Map<ConnectionKey, GridNioRecoveryDescriptor> recoveryDescs() {
         return recoveryDescs;
     }
 
     /**
      * @return Out rec descs.
      */
-    public ConcurrentMap<ConnectionKey, GridNioRecoveryDescriptor> outRecDescs() {
+    public Map<ConnectionKey, GridNioRecoveryDescriptor> outRecDescs() {
         return outRecDescs;
     }
 
     /**
      * @return In rec descs.
      */
-    public ConcurrentMap<ConnectionKey, GridNioRecoveryDescriptor> inRecDescs() {
+    public Map<ConnectionKey, GridNioRecoveryDescriptor> inRecDescs() {
         return inRecDescs;
     }
 
@@ -999,7 +1003,7 @@ public class GridNioServerWrapper {
      * @return Recovery receive data for given node.
      */
     private GridNioRecoveryDescriptor recoveryDescriptor(
-        ConcurrentMap<ConnectionKey, GridNioRecoveryDescriptor> recoveryDescs,
+        Map<ConnectionKey, GridNioRecoveryDescriptor> recoveryDescs,
         boolean pairedConnections,
         ClusterNode node,
         ConnectionKey key) {
@@ -1151,7 +1155,6 @@ public class GridNioServerWrapper {
      * @param key The connection key to cleanup descriptors on local node.
      */
     private void cleanupLocalNodeRecoveryDescriptor(ConnectionKey key) {
-
         if (usePairedConnections(locNodeSupplier.get(), attrs.pairedConnection())) {
             inRecDescs.remove(key);
             outRecDescs.remove(key);
