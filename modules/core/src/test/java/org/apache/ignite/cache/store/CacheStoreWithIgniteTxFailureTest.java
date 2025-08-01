@@ -145,7 +145,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<?, ?> cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration<Integer, Integer> ccfg = (CacheConfiguration<Integer, Integer>) super.cacheConfiguration(igniteInstanceName);
+        CacheConfiguration<Integer, Integer> ccfg = (CacheConfiguration<Integer, Integer>)super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setInterceptor(
             new FaultyNodeInterceptor(
