@@ -53,6 +53,20 @@ public class MessageProcessorTest {
 
     /** */
     @Test
+    public void testCollectionsMessage() {
+        Compilation compilation = compile("TestCollectionsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.codegen.TestCollectionsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestCollectionsMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
     public void testEmptyMessage() {
         Compilation compilation = compile("EmptyMessage.java");
 
