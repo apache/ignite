@@ -254,10 +254,10 @@ public class ZookeeperDiscoverySegmentationAndConnectionRestoreTest extends Zook
             srvs.get(0).stop();
             srvs.get(1).stop();
 
-            QuorumPeer qp = srvs.get(2).getQuorumPeer();
+            int timeoutMs = 2000 * 10 + 5000;
 
-            // Zookeeper's socket timeout [tickTime * initLimit] + 5 additional seconds for other logic
-            assertTrue(l.await(qp.getTickTime() * qp.getInitLimit() + 5000, TimeUnit.MILLISECONDS));
+            assertTrue(l.await(timeoutMs, TimeUnit.MILLISECONDS));
+
         }
         finally {
             zkCluster.close();
