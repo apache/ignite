@@ -64,6 +64,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1116,7 +1117,22 @@ public class GridCacheSharedContext<K, V> {
         else
             tx.state(MARKED_ROLLBACK);
 
-        return tx.rollbackNearTxLocalAsync(clearThreadMap, false);
+        IgniteInternalFuture<IgniteInternalTx> fut = tx.rollbackNearTxLocalAsync(clearThreadMap, false);
+
+        GridFutureAdapter<IgniteInternalTx> f0 = new GridFutureAdapter<>();
+
+        fut.listen(() -> new Thread(() -> {
+            try {
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            f0.onDone(new IgniteCheckedException((">>>>>> Failure")));
+        }).start());
+
+        return f0;
     }
 
     /**

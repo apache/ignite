@@ -3987,31 +3987,33 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         TransactionState state = state();
 
         try {
-            if (state == COMMITTED || state == ROLLED_BACK)
-                return;
+            throw new IgniteCheckedException(">>>>>> Close failure");
 
-            boolean rmv = false;
-
-            if (trackTimeout)
-                rmv = removeTimeoutHandler();
-
-            if (state != COMMITTING && state != ROLLING_BACK &&
-                (!trackTimeout || rmv || (prepFut != null && prepFut.isDone())))
-                rollbackNearTxLocalAsync(clearThreadMap, false).get();
-
-            synchronized (this) {
-                try {
-                    while (!done())
-                        wait();
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-
-                    if (!done())
-                        throw new IgniteCheckedException("Got interrupted while waiting for transaction to complete: " +
-                            this, e);
-                }
-            }
+//            if (state == COMMITTED || state == ROLLED_BACK)
+//                return;
+//
+//            boolean rmv = false;
+//
+//            if (trackTimeout)
+//                rmv = removeTimeoutHandler();
+//
+//            if (state != COMMITTING && state != ROLLING_BACK &&
+//                (!trackTimeout || rmv || (prepFut != null && prepFut.isDone())))
+//                rollbackNearTxLocalAsync(clearThreadMap, false).get();
+//
+//            synchronized (this) {
+//                try {
+//                    while (!done())
+//                        wait();
+//                }
+//                catch (InterruptedException e) {
+//                    Thread.currentThread().interrupt();
+//
+//                    if (!done())
+//                        throw new IgniteCheckedException("Got interrupted while waiting for transaction to complete: " +
+//                            this, e);
+//                }
+//            }
         }
         finally {
             if (clearThreadMap)
