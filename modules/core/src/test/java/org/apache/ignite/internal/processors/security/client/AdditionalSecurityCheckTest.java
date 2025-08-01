@@ -28,6 +28,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+
 /**
  * Security tests for thin client.
  */
@@ -48,6 +50,8 @@ public class AdditionalSecurityCheckTest extends CommonSecurityCheckTest {
         assertFalse(ignite.cluster().state().active());
 
         try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {
+            client.cluster().state(ACTIVE);
+
             client.createCache("test_cache");
 
             assertEquals(1, client.cacheNames().size());
