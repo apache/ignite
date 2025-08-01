@@ -66,7 +66,6 @@ import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -74,7 +73,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -182,7 +180,7 @@ public class BinaryContext {
     ) {
         assert metaHnd != null;
 
-        MarshallerUtils.setNodeName(optmMarsh, igniteInstanceName);
+        optmMarsh.nodeName(igniteInstanceName);
 
         this.metaHnd = metaHnd;
         this.igniteInstanceName = igniteInstanceName;
@@ -472,7 +470,7 @@ public class BinaryContext {
 
         String pkgPath = pkgName.replaceAll("\\.", "/");
 
-        URL[] urls = IgniteUtils.classLoaderUrls(ldr);
+        URL[] urls = U.classLoaderUrls(ldr);
 
         for (URL url : urls) {
             String proto = url.getProtocol().toLowerCase();
