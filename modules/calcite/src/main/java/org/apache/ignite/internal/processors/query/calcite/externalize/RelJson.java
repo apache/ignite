@@ -71,6 +71,7 @@ import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexVariable;
 import org.apache.calcite.rex.RexWindowBound;
 import org.apache.calcite.rex.RexWindowBounds;
+import org.apache.calcite.rex.RexWindowExclusion;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.JoinConditionType;
 import org.apache.calcite.sql.JoinType;
@@ -196,6 +197,7 @@ class RelJson {
         register(enumByName, SqlTrimFunction.Flag.class);
         register(enumByName, TimeUnitRange.class);
         register(enumByName, Spool.Type.class);
+        register(enumByName, RexWindowExclusion.class);
         ENUM_BY_NAME = enumByName.build();
     }
 
@@ -460,7 +462,7 @@ class RelJson {
                     Boolean distinct = (Boolean)winAggregate.get("distinct");
                     Boolean ignoreNulls = (Boolean)winAggregate.get("ignoreNulls");
                     return new Window.RexWinAggCall(
-                        (SqlAggFunction) operator,
+                        (SqlAggFunction)operator,
                         type,
                         rexOperands,
                         ordinal,
@@ -710,14 +712,14 @@ class RelJson {
         if (group == null)
             return null;
 
-        List<Window.RexWinAggCall> aggCalls = Commons.transform((List<Map<String, Object>>) group.get("calls"),
-            it -> (Window.RexWinAggCall) toRex(input, it));
+        List<Window.RexWinAggCall> aggCalls = Commons.transform((List<Map<String, Object>>)group.get("calls"),
+            it -> (Window.RexWinAggCall)toRex(input, it));
         ImmutableBitSet partition = group.get("partition") == null
             ? ImmutableBitSet.of()
             : ImmutableBitSet.of((Iterable<Integer>)group.get("partition"));
         RelCollation order = group.get("order") == null
             ? RelCollations.EMPTY
-            : toCollation((List<Map<String, Object>>) group.get("order"));
+            : toCollation((List<Map<String, Object>>)group.get("order"));
         RexWindowBound lowerBound;
         RexWindowBound upperBound;
         boolean physical;
@@ -737,11 +739,13 @@ class RelJson {
             upperBound = null;
             physical = false;
         }
+        RexWindowExclusion exclude = toEnum(group.get("exclude"));
         return new Window.Group(
             partition,
             physical,
             lowerBound,
             upperBound,
+            exclude,
             order,
             aggCalls
         );
@@ -922,29 +926,30 @@ class RelJson {
     }
 
     /** */
-    private Object toJson(Window.Group group) {
+    private Object toJson(Window.Group grp) {
         Map<String, Object> map = map();
-        map.put("calls", toJson(group.aggCalls));
-        if (!group.keys.isEmpty())
-            map.put("partition", toJson(group.keys));
-        if (!group.orderKeys.getKeys().isEmpty())
-            map.put("order", toJson(group.orderKeys));
-        if (group.lowerBound == null) {
+        map.put("calls", toJson(grp.aggCalls));
+        if (!grp.keys.isEmpty())
+            map.put("partition", toJson(grp.keys));
+        if (!grp.orderKeys.getKeys().isEmpty())
+            map.put("order", toJson(grp.orderKeys));
+        if (grp.lowerBound == null) {
             // No ROWS or RANGE clause
         }
-        else if (group.upperBound == null)
-            if (group.isRows)
-                map.put("rows-lower", toJson(group.lowerBound));
+        else if (grp.upperBound == null)
+            if (grp.isRows)
+                map.put("rows-lower", toJson(grp.lowerBound));
             else
-                map.put("range-lower", toJson(group.lowerBound));
-        else if (group.isRows) {
-            map.put("rows-lower", toJson(group.lowerBound));
-            map.put("rows-upper", toJson(group.upperBound));
+                map.put("range-lower", toJson(grp.lowerBound));
+        else if (grp.isRows) {
+            map.put("rows-lower", toJson(grp.lowerBound));
+            map.put("rows-upper", toJson(grp.upperBound));
         }
         else {
-            map.put("range-lower", toJson(group.lowerBound));
-            map.put("range-upper", toJson(group.upperBound));
+            map.put("range-lower", toJson(grp.lowerBound));
+            map.put("range-upper", toJson(grp.upperBound));
         }
+        map.put("exclude", toJson(grp.exclude));
         return map;
     }
 

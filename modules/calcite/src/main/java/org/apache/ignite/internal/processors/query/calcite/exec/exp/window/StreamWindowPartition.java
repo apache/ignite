@@ -23,15 +23,24 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 
-/** Non-buffering implementation of the ROWS / RANGE window partition */
+/** Non-buffering implementation of the ROWS / RANGE window partition. */
 final class StreamWindowPartition<Row> extends WindowPartitionBase<Row> {
+    /** */
     private Row prevRow;
+
+    /** */
     private Row currRow;
+
+    /** */
     private int rowIdx = -1;
+
+    /** */
     private int peerIdx = -1;
+
+    /** */
     private List<WindowFunctionWrapper<Row>> accumulators;
 
-    /**  */
+    /** */
     StreamWindowPartition(
         Comparator<Row> peerCmp,
         Supplier<List<WindowFunctionWrapper<Row>>> accFactory,

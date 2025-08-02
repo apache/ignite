@@ -25,12 +25,12 @@ import org.jetbrains.annotations.Nullable;
 /** Interface for window function. */
 interface WindowFunction<Row> {
 
-    /**  */
+    /** Performs window function computation for the specified row inside the buffered frame. */
     @Nullable Object call(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame);
 
-    /**  */
+    /** */
     List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory);
 
-    /**  */
+    /** */
     RelDataType returnType(IgniteTypeFactory typeFactory);
 }

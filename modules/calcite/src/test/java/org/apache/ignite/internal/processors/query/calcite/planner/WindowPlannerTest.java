@@ -42,7 +42,10 @@ public class WindowPlannerTest extends AbstractPlannerTest {
     /** Public schema. */
     private IgniteSchema publicSchema;
 
+    /** */
     private final IgniteDistribution affinity = IgniteDistributions.affinity(0, "affinity_tbl", "hash");
+
+    /** */
     private final IgniteDistribution hash = IgniteDistributions.hash(ImmutableIntList.of(0));
 
     /** {@inheritDoc} */
@@ -67,7 +70,8 @@ public class WindowPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testSplitWindowRelsByGroup() throws Exception {
-        String sql = "SELECT SUM(VALUE) OVER (PARTITION BY ID), ROW_NUMBER() OVER () FROM SINGLE_TBL";
+        String sql = "SELECT SUM(VALUE) OVER (PARTITION BY ID), ROW_NUMBER() OVER (), " +
+            "MIN(VALUE) OVER (PARTITION BY ID) FROM SINGLE_TBL";
 
         assertPlan(sql, publicSchema,
             hasChildThat(isInstanceOf(IgniteWindow.class)
@@ -75,7 +79,7 @@ public class WindowPlannerTest extends AbstractPlannerTest {
                 .and(it -> "window(rows between UNBOUNDED PRECEDING and CURRENT ROW aggs [ROW_NUMBER()])".equals(it.getGroup().toString()))
                 .and(hasChildThat(isInstanceOf(IgniteWindow.class)
                     .and(not(IgniteWindow::isStreaming))
-                    .and(it -> "window(partition {0} aggs [SUM($1)])".equals(it.getGroup().toString()))))));
+                    .and(it -> "window(partition {0} aggs [SUM($1), MIN($1)])".equals(it.getGroup().toString()))))));
     }
 
     /**
@@ -83,7 +87,9 @@ public class WindowPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testProjectWindowConstants() throws Exception {
-        String sql = "SELECT ID, VALUE, MAX(2) OVER (PARTITION BY ID ORDER BY VALUE ROWS BETWEEN 10 PRECEDING AND 20 FOLLOWING) FROM SINGLE_TBL";
+        String sql = "SELECT ID, VALUE, " +
+            "MAX(2) OVER (PARTITION BY ID ORDER BY VALUE ROWS BETWEEN 10 PRECEDING AND 20 FOLLOWING) " +
+            "FROM SINGLE_TBL";
 
         assertPlan(sql, publicSchema,
             isInstanceOf(IgniteProject.class)

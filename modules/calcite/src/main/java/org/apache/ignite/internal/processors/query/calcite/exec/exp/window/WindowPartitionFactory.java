@@ -27,12 +27,13 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
-/** Factory to create {@link WindowPartitionBase} factory from {@link Window.Group} */
+/** Factory to create {@link WindowPartitionBase} factory from {@link Window.Group}. */
 public final class WindowPartitionFactory<Row> implements Supplier<WindowPartition<Row>> {
 
+    /** */
     private final Supplier<WindowPartition<Row>> supplier;
 
-    /**  */
+    /** */
     public WindowPartitionFactory(
         ExecutionContext<Row> ctx,
         Window.Group group,
@@ -56,7 +57,7 @@ public final class WindowPartitionFactory<Row> implements Supplier<WindowPartiti
             if (accFactory.isStreamable())
                 return new StreamWindowPartition<>(peerCmp, accFactory, aggRowFactory);
             else
-                return new BufWindowPartition<>(peerCmp, accFactory, aggRowFactory, ctx, group, inputRowType);
+                return new BufferingWindowPartition<>(peerCmp, accFactory, aggRowFactory, ctx, group, inputRowType);
         };
     }
 

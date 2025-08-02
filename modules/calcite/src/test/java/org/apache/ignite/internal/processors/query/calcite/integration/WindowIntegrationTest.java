@@ -47,7 +47,7 @@ public class WindowIntegrationTest extends AbstractBasicIntegrationTransactional
         // NO-OP
     }
 
-    /**  */
+    /** */
     @Test
     public void testRowNumber() {
         assertQuery("SELECT empno, ROW_NUMBER() OVER (ORDER BY salary) FROM empsalary")
@@ -64,10 +64,11 @@ public class WindowIntegrationTest extends AbstractBasicIntegrationTransactional
             .check();
     }
 
-    /**  */
+    /** */
     @Test
     public void testCountAllRange() {
-        assertQuery("SELECT depname, COUNT(1) OVER (ORDER BY depname RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM empsalary")
+        assertQuery("SELECT depname, " +
+            "COUNT(1) OVER (ORDER BY depname RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM empsalary")
             .returns("develop", 10L)
             .returns("develop", 10L)
             .returns("develop", 10L)
@@ -81,7 +82,7 @@ public class WindowIntegrationTest extends AbstractBasicIntegrationTransactional
             .check();
     }
 
-    /**  */
+    /** */
     @Test
     public void testCountRangePartitioned() {
         assertQuery("SELECT depname, COUNT(1) OVER (PARTITION BY depname) FROM empsalary")
@@ -98,10 +99,11 @@ public class WindowIntegrationTest extends AbstractBasicIntegrationTransactional
             .check();
     }
 
-    /**  */
+    /** */
     @Test
     public void testCountRangePartitionedWithIntBounds() {
-        assertQuery("SELECT depname, COUNT(1) OVER (PARTITION BY depname ORDER BY empno RANGE BETWEEN 2 PRECEDING AND 1 FOLLOWING) FROM empsalary")
+        assertQuery("SELECT depname, " +
+            "COUNT(1) OVER (PARTITION BY depname ORDER BY empno RANGE BETWEEN 2 PRECEDING AND 1 FOLLOWING) FROM empsalary")
             .returns("develop", 2L)
             .returns("develop", 3L)
             .returns("develop", 3L)
@@ -115,10 +117,12 @@ public class WindowIntegrationTest extends AbstractBasicIntegrationTransactional
             .check();
     }
 
-    /**  */
+    /** */
     @Test
     public void testCountRangePartitionedWithDateBounds() {
-        assertQuery("SELECT depname, COUNT(1) OVER (PARTITION BY depname ORDER BY enroll_date RANGE BETWEEN INTERVAL 730 DAYS PRECEDING AND INTERVAL 360 DAYS FOLLOWING) FROM empsalary")
+        assertQuery("SELECT depname, " +
+            "COUNT(1) OVER (PARTITION BY depname ORDER BY enroll_date " +
+            "RANGE BETWEEN INTERVAL 730 DAYS PRECEDING AND INTERVAL 360 DAYS FOLLOWING) FROM empsalary")
             .returns("develop", 3L)
             .returns("develop", 5L)
             .returns("develop", 5L)
@@ -132,11 +136,11 @@ public class WindowIntegrationTest extends AbstractBasicIntegrationTransactional
             .check();
     }
 
-    /**  */
+    /** */
     @Test
     public void testCountRowsPartitioned() {
-        // todo: there is a bug in calcite parser - it ignores frame spec (ROWS...) in case order by is missing in query
-        assertQuery("SELECT depname, COUNT(1) OVER (PARTITION BY depname ORDER BY empno ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM empsalary")
+        assertQuery("SELECT depname, " +
+            "COUNT(1) OVER (PARTITION BY depname ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM empsalary")
             .returns("develop", 1L)
             .returns("develop", 2L)
             .returns("develop", 3L)
@@ -150,10 +154,11 @@ public class WindowIntegrationTest extends AbstractBasicIntegrationTransactional
             .check();
     }
 
-    /**  */
+    /** */
     @Test
     public void testCountRowsPartitionedWithBounds() {
-        assertQuery("SELECT depname, COUNT(1) OVER (PARTITION BY depname ORDER BY empno ROWS BETWEEN 2 PRECEDING AND 1 FOLLOWING) FROM empsalary")
+        assertQuery("SELECT depname, " +
+            "COUNT(1) OVER (PARTITION BY depname ORDER BY empno ROWS BETWEEN 2 PRECEDING AND 1 FOLLOWING) FROM empsalary")
             .returns("develop", 2L)
             .returns("develop", 3L)
             .returns("develop", 4L)
@@ -167,7 +172,7 @@ public class WindowIntegrationTest extends AbstractBasicIntegrationTransactional
             .check();
     }
 
-    /**  */
+    /** */
     @Test
     public void testCorrelation() {
         assertQuery("SELECT depname, (SELECT ROW_NUMBER() OVER (ORDER BY depname)) FROM empsalary")
@@ -184,7 +189,7 @@ public class WindowIntegrationTest extends AbstractBasicIntegrationTransactional
             .check();
     }
 
-    /**  */
+    /** */
     @Test
     public void testAggregateWithWindowFunction() {
         assertQuery("SELECT depname, COUNT(*), SUM(SUM(salary)) OVER (PARTITION BY depname) FROM empsalary GROUP BY depname")

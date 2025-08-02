@@ -91,7 +91,7 @@ import org.junit.runners.Suite;
     UncollectPlannerTest.class,
     WindowPlannerTest.class,
 
-    HintsTestSuite.class
+    HintsTestSuite.class,
 })
 public class PlannerTestSuite {
 }

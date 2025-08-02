@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
@@ -493,24 +492,6 @@ public class TraitUtils {
         return RelCollations.of(
             keys.stream().map(TraitUtils::createFieldCollation).collect(Collectors.toList())
         );
-    }
-
-    /**
-     * Merges provided collation is sinle one.
-     *
-     * @param collation0 First collation
-     * @param collation1 Second collation
-     * @return New collation
-     */
-    public static RelCollation mergeCollations(RelCollation collation0, RelCollation collation1) {
-        ImmutableBitSet keys = ImmutableBitSet.of(collation0.getKeys());
-        List<RelFieldCollation> fields = U.arrayList(collation0.getFieldCollations());
-        for (RelFieldCollation it : collation1.getFieldCollations()) {
-            if (!keys.get(it.getFieldIndex())) {
-                fields.add(it);
-            }
-        }
-        return RelCollations.of(fields);
     }
 
     /**

@@ -141,6 +141,7 @@ public abstract class AccumulatorsFactoryBase<Row> {
         return Commons.compile(CastFunction.class, Expressions.toString(F.asList(decl), "\n", false));
     }
 
+    /** */
     private final ExecutionContext<Row> ctx;
 
     /** */

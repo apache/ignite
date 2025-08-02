@@ -22,10 +22,10 @@ import java.util.List;
 
 /** Rows frame for window function. */
 abstract class WindowFunctionFrame<Row> {
-    /** Holds immutable refrence to buffered window partition rows */
+    /** Holds immutable refrence to buffered window partition rows. */
     protected final List<Row> buffer;
 
-    /**  */
+    /** */
     WindowFunctionFrame(List<Row> buffer) {
         this.buffer = Collections.unmodifiableList(buffer);
     }
@@ -42,7 +42,7 @@ abstract class WindowFunctionFrame<Row> {
     /** Returns end frame index in partition for current row peer. */
     abstract int getFrameEnd(Row row, int rowIdx, int peerIdx);
 
-    /** Return number of peers in current frame */
+    /** Return number of peers in current frame. */
     abstract int countPeers();
 
     /** Returns frame size in partition for the current row peer. */

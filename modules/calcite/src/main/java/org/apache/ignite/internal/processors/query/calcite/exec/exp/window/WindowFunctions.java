@@ -36,45 +36,41 @@ import static org.apache.calcite.sql.type.SqlTypeName.BIGINT;
 import static org.apache.calcite.sql.type.SqlTypeName.DOUBLE;
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
 
-/**  */
+/** */
 public final class WindowFunctions {
 
     /** Check window group can be processed with streaming partition. */
     public static boolean streamable(Window.Group group) {
         // Can execute window streaming in case:
-
-        // group aggs does not contain operators can access whole partition.
-        if (group.aggCalls.stream().anyMatch(it -> BUFFERING_FUNCTIONS.contains(it.op))) {
+        // - group aggs does not contain operators can access whole partition.
+        if (group.aggCalls.stream().anyMatch(it -> BUFFERING_FUNCTIONS.contains(it.op)))
             return false;
-        }
 
-        // group aggs contains only ROW_NUMBER, RANK, DENSE_RANK operators
-        if (group.aggCalls.stream().allMatch(it -> STREAMING_FUNCTIONS.contains(it.op))) {
+        // - group aggs contains only ROW_NUMBER, RANK, DENSE_RANK operators
+        if (group.aggCalls.stream().allMatch(it -> STREAMING_FUNCTIONS.contains(it.op)))
             return true;
-        }
 
         // group frame in 'ROWS BETWEEN UNBOUNDED PRESCENDING AND CURRENT ROW'
         //noinspection RedundantIfStatement
-        if (group.isRows && group.lowerBound.isUnbounded() && group.upperBound.isCurrentRow()) {
+        if (group.isRows && group.lowerBound.isUnbounded() && group.upperBound.isCurrentRow())
             return true;
-        }
 
         return false;
     }
 
-    /**  */
+    /** Determines if the specified {@link SqlOperator} supports sreaming execution. */
     static boolean isStreamingFunction(SqlOperator op) {
         return STREAMING_FUNCTIONS.contains(op);
     }
 
-    // Window functions, which definitly supports sreaming execution.
+    /** Window functions, which definitly supports sreaming execution. */
     private static final Set<SqlOperator> STREAMING_FUNCTIONS = Set.of(
         SqlStdOperatorTable.ROW_NUMBER,
         SqlStdOperatorTable.RANK,
         SqlStdOperatorTable.DENSE_RANK
     );
 
-    // Window functions, which definitly requires buffering.
+    /** Window functions, which definitly requires buffering. */
     private static final Set<SqlOperator> BUFFERING_FUNCTIONS = Set.of(
         SqlStdOperatorTable.PERCENT_RANK,
         SqlStdOperatorTable.CUME_DIST,
@@ -86,13 +82,13 @@ public final class WindowFunctions {
         SqlStdOperatorTable.NTH_VALUE
     );
 
-    /**  */
+    /** Determines if the specified SqlOperator is a window function call. */
     static boolean isWindowFunction(AggregateCall call) {
         return STREAMING_FUNCTIONS.contains(call.getAggregation())
             || BUFFERING_FUNCTIONS.contains(call.getAggregation());
     }
 
-    /**  */
+    /** */
     static <Row> Supplier<WindowFunction<Row>> windowFunctionFactory(
         AggregateCall call,
         ExecutionContext<Row> ctx
@@ -126,48 +122,52 @@ public final class WindowFunctions {
         }
     }
 
-    /**  */
+    /** */
     private abstract static class AbstractWindowFunction<Row> {
-        /**  */
+
+        /** */
         private final RowHandler<Row> hnd;
-        /**  */
+
+        /** */
         private final AggregateCall aggCall;
 
+        /** */
         private AbstractWindowFunction(RowHandler<Row> hnd, AggregateCall aggCall) {
             this.hnd = hnd;
             this.aggCall = aggCall;
         }
 
-        /**  */
+        /** */
         <T> T get(int idx, Row row) {
             assert idx < arguments().size() : "idx=" + idx + "; arguments=" + arguments();
 
             return (T)hnd.get(arguments().get(idx), row);
         }
 
-        /**  */
+        /** */
         protected AggregateCall aggregateCall() {
             return aggCall;
         }
 
-        /**  */
+        /** */
         protected List<Integer> arguments() {
             return aggCall.getArgList();
         }
 
-        /**  */
+        /** */
         int columnCount(Row row) {
             return hnd.columnCount(row);
         }
     }
 
-    /**  */
+    /** */
     private abstract static class AbstractLagLeadWindowFunction<Row> extends AbstractWindowFunction<Row> implements WindowFunction<Row> {
+        /** */
         private AbstractLagLeadWindowFunction(RowHandler<Row> hnd, AggregateCall aggCall) {
             super(hnd, aggCall);
         }
 
-        /**  */
+        /** */
         protected int getOffset(Row row) {
             if (arguments().size() > 1)
                 return get(1, row);
@@ -175,7 +175,7 @@ public final class WindowFunctions {
                 return 1;
         }
 
-        /**  */
+        /** */
         protected Object getDefault(Row row) {
             if (arguments().size() > 2)
                 return get(2, row);
@@ -191,15 +191,15 @@ public final class WindowFunctions {
                 return getDefault(row);
             else {
                 Row offsetRow = frame.get(idx);
-                Object value = get(0, offsetRow);
-                if (value == null) {
-                    value = getDefault(row);
+                Object val = get(0, offsetRow);
+                if (val == null) {
+                    val = getDefault(row);
                 }
-                return value;
+                return val;
             }
         }
 
-        /**  */
+        /** */
         protected abstract int applyOffset(int rowIdx, int offset);
 
         /** {@inheritDoc} */
@@ -227,7 +227,7 @@ public final class WindowFunctions {
     /** ROW_NUMBER window function implementation. */
     private static class RowNumber<Row> extends AbstractWindowFunction<Row> implements StreamWindowFunction<Row> {
 
-        /**  */
+        /** */
         private RowNumber(RowHandler<Row> hnd, AggregateCall aggCall) {
             super(hnd, aggCall);
         }
@@ -250,12 +250,16 @@ public final class WindowFunctions {
 
     /** RANK window function implementation. */
     private static class Rank<Row> extends AbstractWindowFunction<Row> implements StreamWindowFunction<Row> {
-
+        /** */
         private int previousPeerIdx = -1;
-        private long rank = 1;
-        private long count;
 
-        /**  */
+        /** */
+        private long rank = 1;
+
+        /** */
+        private long cnt;
+
+        /** */
         private Rank(RowHandler<Row> hnd, AggregateCall aggCall) {
             super(hnd, aggCall);
         }
@@ -264,10 +268,10 @@ public final class WindowFunctions {
         @Override public Object call(Row row, int rowIdx, int peerIdx) {
             if (previousPeerIdx != peerIdx) {
                 previousPeerIdx = peerIdx;
-                rank += count;
-                count = 0;
+                rank += cnt;
+                cnt = 0;
             }
-            count++;
+            cnt++;
             return rank;
         }
 
@@ -285,7 +289,7 @@ public final class WindowFunctions {
     /** DENSE_RANK window function implementation. */
     private static class DenseRank<Row> extends AbstractWindowFunction<Row> implements StreamWindowFunction<Row> {
 
-        /**  */
+        /** */
         private DenseRank(RowHandler<Row> hnd, AggregateCall aggCall) {
             super(hnd, aggCall);
         }
@@ -309,9 +313,10 @@ public final class WindowFunctions {
     /** PERCENT_RANK window function implementation. */
     private static class PercentRank<Row> extends AbstractWindowFunction<Row> implements WindowFunction<Row> {
 
+        /** */
         private final Rank<Row> rank;
 
-        /**  */
+        /** */
         private PercentRank(RowHandler<Row> hnd, AggregateCall aggCall) {
             super(hnd, aggCall);
             rank = new Rank<>(hnd, aggCall);
@@ -342,15 +347,15 @@ public final class WindowFunctions {
     /** CUME_DIST window function implementation. */
     private static class CumeDist<Row> extends AbstractWindowFunction<Row> implements WindowFunction<Row> {
 
-        /**  */
+        /** */
         private CumeDist(RowHandler<Row> hnd, AggregateCall aggCall) {
             super(hnd, aggCall);
         }
 
         /** {@inheritDoc} */
         @Override public Object call(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame) {
-            int count = frame.size(rowIdx, peerIdx);
-            return ((double)count) / frame.partitionSize();
+            int cnt = frame.size(rowIdx, peerIdx);
+            return ((double)cnt) / frame.partitionSize();
         }
 
         /** {@inheritDoc} */
@@ -367,7 +372,7 @@ public final class WindowFunctions {
     /** LAG window function implementation. */
     private static class Lag<Row> extends AbstractLagLeadWindowFunction<Row> {
 
-        /**  */
+        /** */
         private Lag(RowHandler<Row> hnd, AggregateCall aggCall) {
             super(hnd, aggCall);
         }
@@ -381,7 +386,7 @@ public final class WindowFunctions {
     /** LEAD window function implementation. */
     private static class Lead<Row> extends AbstractLagLeadWindowFunction<Row> {
 
-        /**  */
+        /** */
         private Lead(RowHandler<Row> hnd, AggregateCall aggCall) {
             super(hnd, aggCall);
         }
@@ -395,7 +400,7 @@ public final class WindowFunctions {
     /** FIRST_VALUE window function implementation. */
     private static class FirstValue<Row> extends AbstractWindowFunction<Row> implements WindowFunction<Row> {
 
-        /**  */
+        /** */
         private FirstValue(RowHandler<Row> hnd, AggregateCall aggCall) {
             super(hnd, aggCall);
         }
@@ -420,7 +425,7 @@ public final class WindowFunctions {
 
     /** LAST_VALUE window function implementation. */
     private static class LastValue<Row> extends AbstractWindowFunction<Row> implements WindowFunction<Row> {
-        /**  */
+        /** */
         private LastValue(RowHandler<Row> hnd, AggregateCall aggCall) {
             super(hnd, aggCall);
         }
@@ -450,8 +455,7 @@ public final class WindowFunctions {
     /** NTILE window function implementation. */
     private static class NTile<Row> extends AbstractWindowFunction<Row> implements WindowFunction<Row> {
 
-
-        /**  */
+        /** */
         private NTile(RowHandler<Row> hnd, AggregateCall aggCall) {
             super(hnd, aggCall);
         }
@@ -459,12 +463,12 @@ public final class WindowFunctions {
         /** {@inheritDoc} */
         @Override public Object call(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame) {
             int buckets = get(0, row);
-            int rowCount = frame.partitionSize();
-            if (buckets >= rowCount)
+            int rowCnt = frame.partitionSize();
+            if (buckets >= rowCnt)
                 return rowIdx + 1;
             else {
-                int rowsPerBucket = rowCount / buckets;
-                int remainderRows = rowCount % buckets;
+                int rowsPerBucket = rowCnt / buckets;
+                int remainderRows = rowCnt % buckets;
 
                 // Remainder rows are assigned starting from the first bucket.
                 // Thus, each of those buckets has an additional row.
@@ -489,7 +493,7 @@ public final class WindowFunctions {
     /** NTH_VALUE window function implementation. */
     private static class NthValue<Row> extends AbstractWindowFunction<Row> implements WindowFunction<Row> {
 
-        /**  */
+        /** */
         private NthValue(RowHandler<Row> hnd, AggregateCall aggCall) {
             super(hnd, aggCall);
         }
@@ -504,12 +508,12 @@ public final class WindowFunctions {
             int startIdx = frame.getFrameStart(row, rowIdx, peerIdx);
             int endIdx = frame.getFrameEnd(row, rowIdx, peerIdx);
             // offset is base 1
-            int valueIdx = startIdx + offset - 1;
-            if (valueIdx > endIdx)
+            int valIdx = startIdx + offset - 1;
+            if (valIdx > endIdx)
                 return null;
             else {
-                Row valueRow = frame.get(valueIdx);
-                return get(0, valueRow);
+                Row valRow = frame.get(valIdx);
+                return get(0, valRow);
             }
         }
 
@@ -523,5 +527,4 @@ public final class WindowFunctions {
             return typeFactory.createSqlType(ANY);
         }
     }
-
 }

@@ -30,9 +30,9 @@ public interface WindowPartition<Row> {
      */
     boolean add(Row row);
 
-    /** Drains partition to an output collection */
+    /** Drains partition to an output collection. */
     void drainTo(RowHandler.RowFactory<Row> factory, Collection<Row> output);
 
-    /** Reset current window partition (i.e., on partition restart) */
+    /** Reset current window partition (i.e., on partition restart). */
     void reset();
 }

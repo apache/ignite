@@ -48,7 +48,7 @@ public interface ExpressionFactory<Row> {
     );
 
     /** */
-    Supplier<WindowPartition<Row>> windowFrameFactory(
+    Supplier<WindowPartition<Row>> windowPartitionFactory(
         Window.Group group,
         List<AggregateCall> calls,
         RelDataType rowType,
