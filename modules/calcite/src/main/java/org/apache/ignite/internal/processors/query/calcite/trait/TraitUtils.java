@@ -45,6 +45,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Spool;
+import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -377,6 +378,10 @@ public class TraitUtils {
 
             @Override public List<SearchBounds> getSearchBounds(String tag) {
                 return ((RelInputEx)input).getSearchBounds(tag);
+            }
+
+            @Override public Window.Group getWindowGroup(String tag) {
+                return ((RelInputEx)input).getWindowGroup(tag);
             }
         };
     }
