@@ -75,7 +75,6 @@ import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMu
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.LogicalOrToUnionRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectScanMergeRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectWindowConstantsRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.ProjectWindowTransposeRule;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.hep;
@@ -105,6 +104,7 @@ public enum PlannerPhase {
 
     /** */
     HEP_WINDOW_SPLIT("Heuristic phase to split project to project and window") {
+        /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return ctx.rules(
                 RuleSets.ofList(
@@ -114,6 +114,7 @@ public enum PlannerPhase {
             );
         }
 
+        /** {@inheritDoc} */
         @Override public Program getProgram(PlanningContext ctx) {
             return hep(getRules(ctx));
         }
@@ -158,7 +159,7 @@ public enum PlannerPhase {
                     CoreRules.PROJECT_MERGE,
                     CoreRules.PROJECT_REMOVE,
                     CoreRules.PROJECT_FILTER_TRANSPOSE,
-                    ProjectWindowTransposeRule.INSTANCE
+                    CoreRules.PROJECT_WINDOW_TRANSPOSE
                 )
             );
         }

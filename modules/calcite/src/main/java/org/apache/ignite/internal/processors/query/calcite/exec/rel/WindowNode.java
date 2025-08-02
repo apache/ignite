@@ -27,43 +27,43 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartition;
 import org.apache.ignite.internal.util.typedef.F;
 
-/** Window support node */
+/** Window node. */
 public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNode<Row>, Downstream<Row> {
-    /**  */
+    /** */
     private final Comparator<Row> partCmp;
 
-    /**  */
-    private final Supplier<WindowPartition<Row>> partitionFactory;
+    /** */
+    private final Supplier<WindowPartition<Row>> partFactory;
 
-    /**  */
+    /** */
     private final RowHandler.RowFactory<Row> rowFactory;
 
-    /**  */
-    private WindowPartition<Row> partition;
+    /** */
+    private WindowPartition<Row> part;
 
-    /**  */
+    /** */
     private int requested;
 
-    /**  */
+    /** */
     private int waiting;
 
-    /**  */
+    /** */
     private Row prevRow;
 
-    /**  */
+    /** */
     private final Deque<Row> outBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
 
-    /**  */
+    /** */
     public WindowNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
         Comparator<Row> partCmp,
-        Supplier<WindowPartition<Row>> partitionFactory,
+        Supplier<WindowPartition<Row>> partFactory,
         RowHandler.RowFactory<Row> rowFactory
     ) {
         super(ctx, rowType, DFLT_ROW_OVERHEAD);
         this.partCmp = partCmp;
-        this.partitionFactory = partitionFactory;
+        this.partFactory = partFactory;
         this.rowFactory = rowFactory;
     }
 
@@ -86,6 +86,7 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
             downstream().end();
     }
 
+    /** {@inheritDoc} */
     @Override public void push(Row row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
@@ -94,17 +95,16 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
 
         waiting--;
 
-        if (partition == null) {
-            partition = partitionFactory.get();
-        }
+        if (part == null)
+            part = partFactory.get();
         else if (prevRow != null && partCmp != null && partCmp.compare(prevRow, row) != 0) {
-            partition.drainTo(rowFactory, outBuf);
-            partition.reset();
+            part.drainTo(rowFactory, outBuf);
+            part.reset();
             doPush();
         }
 
-        if (partition.add(row)) {
-            partition.drainTo(rowFactory, outBuf);
+        if (part.add(row)) {
+            part.drainTo(rowFactory, outBuf);
             doPush();
         }
         else
@@ -119,6 +119,7 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void end() throws Exception {
         assert downstream() != null;
         if (waiting < 0) {
@@ -129,9 +130,9 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
 
         checkState();
 
-        if (partition != null) {
-            partition.drainTo(rowFactory, outBuf);
-            partition.reset();
+        if (part != null) {
+            part.drainTo(rowFactory, outBuf);
+            part.reset();
         }
 
         doPush();
@@ -143,9 +144,9 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
     @Override protected void rewindInternal() {
         requested = 0;
         waiting = 0;
-        if (partition != null) {
-            partition.reset();
-            partition = null;
+        if (part != null) {
+            part.reset();
+            part = null;
         }
         outBuf.clear();
         nodeMemoryTracker.reset();
@@ -159,7 +160,7 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
         return this;
     }
 
-    /**  */
+    /** */
     private void doPush() throws Exception {
         while (requested > 0 && !outBuf.isEmpty()) {
             requested--;

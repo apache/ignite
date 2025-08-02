@@ -149,7 +149,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
 
     /** {@inheritDoc} */
-    @Override public Supplier<WindowPartition<Row>> windowFrameFactory(
+    @Override public Supplier<WindowPartition<Row>> windowPartitionFactory(
         Window.Group group,
         List<AggregateCall> calls,
         RelDataType rowType,

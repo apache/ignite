@@ -31,6 +31,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexWindowBound;
 import org.apache.calcite.rex.RexWindowBounds;
+import org.apache.calcite.rex.RexWindowExclusion;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -52,24 +53,31 @@ import org.junit.runners.Parameterized;
  */
 public class WindowExecutionTest extends AbstractExecutionTest {
 
+    /** */
     private static final int TEST_GRP_PARAM_NUM = LAST_PARAM_NUM + 1;
+
+    /** */
     private static final int TEST_RES_PARAM_NUM = TEST_GRP_PARAM_NUM + 1;
+
+    /** */
     private static final int TEST_STREAM = TEST_RES_PARAM_NUM + 1;
 
+    /** */
     private static final IgniteTypeFactory typeFactory = new IgniteTypeFactory();
 
-    /**  */
+    /** */
     @Parameterized.Parameter(TEST_GRP_PARAM_NUM)
     public Window.Group testGrp;
 
-    /**  */
+    /** */
     @Parameterized.Parameter(TEST_RES_PARAM_NUM)
     public List<List<Integer>> testRes;
 
+    /** */
     @Parameterized.Parameter(TEST_STREAM)
     public boolean testStream;
 
-    /**  */
+    /** */
     @Parameterized.Parameters(name = PARAMS_STRING
         + ", grp={" + TEST_GRP_PARAM_NUM
         + "}, res={" + TEST_RES_PARAM_NUM
@@ -261,7 +269,7 @@ public class WindowExecutionTest extends AbstractExecutionTest {
             ctx,
             outRowType,
             partCmp,
-            ctx.expressionFactory().windowFrameFactory(testGrp, calls, inputRowType, testStream),
+            ctx.expressionFactory().windowPartitionFactory(testGrp, calls, inputRowType, testStream),
             rowFactory()
         );
 
@@ -306,6 +314,7 @@ public class WindowExecutionTest extends AbstractExecutionTest {
             true,
             RexWindowBounds.UNBOUNDED_PRECEDING,
             RexWindowBounds.CURRENT_ROW,
+            RexWindowExclusion.EXCLUDE_NO_OTHER,
             RelCollations.EMPTY,
             ImmutableList.of(aggCall)
         );
@@ -328,6 +337,7 @@ public class WindowExecutionTest extends AbstractExecutionTest {
             true,
             lower,
             upper,
+            RexWindowExclusion.EXCLUDE_NO_OTHER,
             RelCollations.EMPTY,
             ImmutableList.of(aggCall)
         );
@@ -350,6 +360,7 @@ public class WindowExecutionTest extends AbstractExecutionTest {
             false,
             lower,
             upper,
+            RexWindowExclusion.EXCLUDE_NO_OTHER,
             TraitUtils.createCollation(ImmutableIntList.of(1)),
             ImmutableList.of(aggCall)
         );
@@ -360,7 +371,7 @@ public class WindowExecutionTest extends AbstractExecutionTest {
      * row_number() over (partition by {0} rows between unbounded prescending and current row)
      */
     private static Window.Group sumRowsAndRowNumber() {
-        Window.RexWinAggCall countCall = new Window.RexWinAggCall(
+        Window.RexWinAggCall sumCall = new Window.RexWinAggCall(
             SqlStdOperatorTable.SUM,
             typeFactory.createType(int.class),
             ImmutableList.of(new RexInputRef(0, typeFactory.createType(int.class))),
@@ -381,12 +392,13 @@ public class WindowExecutionTest extends AbstractExecutionTest {
             true,
             RexWindowBounds.UNBOUNDED_PRECEDING,
             RexWindowBounds.CURRENT_ROW,
+            RexWindowExclusion.EXCLUDE_NO_OTHER,
             RelCollations.EMPTY,
-            ImmutableList.of(countCall, rowNumberCall)
+            ImmutableList.of(sumCall, rowNumberCall)
         );
     }
 
-    /**  */
+    /** */
     protected RowHandler.RowFactory<Object[]> rowFactory() {
         return new RowHandler.RowFactory<Object[]>() {
             /** */

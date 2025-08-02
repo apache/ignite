@@ -35,15 +35,24 @@ import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
 
 /** {@link WindowFunctionFrame} for ROWS clause. */
 final class RowWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
-    /**  */
+
+    /** Returns the offset that marks the start of the frame. */
     private final Function<Row, Integer> lowerBoundOffset;
-    /**  */
+
+    /** Returns the offset that marks the end of the frame. */
     private final Function<Row, Integer> upperBoundOffset;
 
     // cache for row offset
+    /** Cached row idx for which the frame start offset has been computed. */
     private int cachedStartRowIdx = -1;
+
+    /** Cached frame start offset. */
     private Integer cachedStartOffset;
+
+    /** Cached row idx for which the frame end offset has been computed. */
     private int cachedEndRowIdx = -1;
+
+    /** Cached frame end offset. */
     private Integer cachedEndOffset;
 
     /** */
@@ -98,6 +107,7 @@ final class RowWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
         cachedEndRowIdx = -1;
     }
 
+    /** */
     private static int applyOffset(int rowIdx, int offset, int cap) {
         int idx = Math.addExact(rowIdx, offset);
         return Math.max(Math.min(idx, cap), -1);

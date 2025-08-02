@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 /** Interface for a window function supporting streaming. */
 interface StreamWindowFunction<Row> extends WindowFunction<Row> {
 
-    /** */
+    /** Performs the window function computation for a given row in streaming mode. */
     @Nullable Object call(Row row, int rowIdx, int peerIdx);
 
     /** {@inheritDoc} */

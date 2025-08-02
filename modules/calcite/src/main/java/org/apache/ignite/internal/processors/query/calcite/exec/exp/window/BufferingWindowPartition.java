@@ -27,14 +27,16 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 
-/** Buffering implementation of the ROWS / RANGE window partition */
-final class BufWindowPartition<Row> extends WindowPartitionBase<Row> {
-    private final List<Row> buffer;
-    // frame within partition.
+/** Buffering implementation of the ROWS / RANGE window partition. */
+final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
+    /** Rows in partition. */
+    private final List<Row> buf;
+
+    /** Frame within partition. */
     private final WindowFunctionFrame<Row> frame;
 
-    /**  */
-    BufWindowPartition(
+    /** */
+    BufferingWindowPartition(
         Comparator<Row> peerCmp,
         Supplier<List<WindowFunctionWrapper<Row>>> accFactory,
         RowHandler.RowFactory<Row> accRowFactory,
@@ -43,29 +45,29 @@ final class BufWindowPartition<Row> extends WindowPartitionBase<Row> {
         RelDataType inputRowType
     ) {
         super(peerCmp, accFactory, accRowFactory);
-        buffer = new ArrayList<>();
-        frame = createFrame(ctx, peerCmp, group, inputRowType, buffer);
+        buf = new ArrayList<>();
+        frame = createFrame(ctx, peerCmp, group, inputRowType, buf);
     }
 
     /** {@inheritDoc} */
     @Override public boolean add(Row row) {
-        buffer.add(row);
+        buf.add(row);
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public void drainTo(RowHandler.RowFactory<Row> factory, Collection<Row> output) {
-        if (buffer.isEmpty()) {
+        if (buf.isEmpty()) {
             return;
         }
 
         List<WindowFunctionWrapper<Row>> accumulators = createWrappers();
 
-        int size = buffer.size();
+        int size = buf.size();
         Row prevRow = null;
         int peerIdx = -1;
         for (int rowIdx = 0; rowIdx < size; rowIdx++) {
-            Row currRow = buffer.get(rowIdx);
+            Row currRow = buf.get(rowIdx);
             if (isNewPeer(currRow, prevRow)) {
                 peerIdx++;
             }
@@ -86,21 +88,21 @@ final class BufWindowPartition<Row> extends WindowPartitionBase<Row> {
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        buffer.clear();
+        buf.clear();
         frame.reset();
     }
 
-    /** Creates frame for partition */
+    /** Creates frame for partition. */
     private static <Row> WindowFunctionFrame<Row> createFrame(
         ExecutionContext<Row> ctx,
         Comparator<Row> peerCmp,
-        Window.Group group,
+        Window.Group grp,
         RelDataType inputRowType,
         List<Row> buffer
     ) {
-        if (group.isRows)
-            return new RowWindowPartitionFrame<>(buffer, ctx, group, inputRowType);
+        if (grp.isRows)
+            return new RowWindowPartitionFrame<>(buffer, ctx, grp, inputRowType);
         else
-            return new RangeWindowPartitionFrame<>(buffer, ctx, peerCmp, group, inputRowType);
+            return new RangeWindowPartitionFrame<>(buffer, ctx, peerCmp, grp, inputRowType);
     }
 }

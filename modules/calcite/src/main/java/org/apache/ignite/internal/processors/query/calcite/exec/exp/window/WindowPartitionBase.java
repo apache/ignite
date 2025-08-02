@@ -23,13 +23,19 @@ import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.jetbrains.annotations.Nullable;
 
-/** Base implementation of window partition */
+/** Base implementation of window partition. */
 abstract class WindowPartitionBase<Row> implements WindowPartition<Row> {
+
+    /** Comparator for computing the peer index. */
     private final Comparator<Row> peerCmp;
+
+    /** */
     private final Supplier<List<WindowFunctionWrapper<Row>>> accFactory;
+
+    /** */
     private final RowHandler.RowFactory<Row> accRowFactory;
 
-    /**  */
+    /** */
     WindowPartitionBase(
         Comparator<Row> peerCmp,
         Supplier<List<WindowFunctionWrapper<Row>>> accFactory,
@@ -40,7 +46,7 @@ abstract class WindowPartitionBase<Row> implements WindowPartition<Row> {
         this.accRowFactory = accRowFactory;
     }
 
-    /** Creates {@link WindowFunctionWrapper} list */
+    /** Creates {@link WindowFunctionWrapper} list. */
     final List<WindowFunctionWrapper<Row>> createWrappers() {
         return accFactory.get();
     }
@@ -55,7 +61,7 @@ abstract class WindowPartitionBase<Row> implements WindowPartition<Row> {
             return false;
     }
 
-    /** Creates row with window function results */
+    /** Creates row with window function results. */
     protected final Row createResultRow(RowHandler.RowFactory<Row> rowFactory, Row source, Object... results) {
         Row resultsRow = accRowFactory.create(results);
         return rowFactory.handler().concat(source, resultsRow);

@@ -42,33 +42,37 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /** {@link WindowFunctionFrame} for RANGE clause. */
 final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
 
-    /**  */
+    /** Comparator for determining a peer's index within a partition. */
     private final Comparator<Row> peerCmp;
 
-    /**  */
+    /** Returns the row that marks the start of the frame. */
     private final Function<Row, Row> lowerBound;
 
-    /**  */
+    /** */
     private final boolean cacheableLowerBound;
 
-    /**  */
+    /** Returns the row that marks the end of the frame. */
     private final Function<Row, Row> upperBound;
 
-    /**  */
+    /** */
     private final boolean cacheableUpperBound;
 
-    /**  */
+    /** Total number of peers in the current partition. */
     private int peerCount = -1;
 
-    // cache for the row range start.
+    /** Cached peer idx for which the frame start row has been computed. */
     private int cachedStartPeerIdx = -1;
+
+    /** Cached start row idx of frame. */
     private int cachedStartIdx;
 
-    // cache for the row range end.
+    /** Cached peer idx for which the frame end row has been computed. */
     private int cachedEndPeerIdx = -1;
+
+    /** Cached end row idx of frame. */
     private int cachedEndIdx;
 
-    /**  */
+    /** */
     RangeWindowPartitionFrame(
         List<Row> buffer,
         ExecutionContext<Row> ctx,
@@ -84,7 +88,7 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
         cacheableUpperBound = isCacheableBound(group.upperBound);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override protected int getFrameStart(Row row, int rowIdx, int peerIdx) {
         if (cacheableLowerBound && cachedStartPeerIdx == peerIdx)
             return cachedStartIdx;
@@ -100,7 +104,7 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
         return cachedStartIdx;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override protected int getFrameEnd(Row row, int rowIdx, int peerIdx) {
         if (cacheableUpperBound && cachedEndPeerIdx == peerIdx)
             return cachedEndIdx;
@@ -116,7 +120,7 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
         return cachedEndIdx;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override int countPeers() {
         if (peerCount == -1) {
             int size = buffer.size();
@@ -138,7 +142,7 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
         return peerCount;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public void reset() {
         // Reseting index cache.
         cachedStartPeerIdx = -1;
@@ -192,6 +196,7 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
         return end;
     }
 
+    /** */
     private int compareRowPeer(Row row1, Row row2) {
         // in case peerCmp is not set - all rows has one peer
         return peerCmp == null ? 0 : peerCmp.compare(row1, row2);
@@ -248,6 +253,7 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
         }
     }
 
+    /** Verifies that {@link RexWindowBound} supports caching of frame start or end indexes. */
     private static boolean isCacheableBound(RexWindowBound bound) {
         return bound.isCurrentRow() || bound.isUnbounded() || bound.getOffset() instanceof RexLiteral;
     }

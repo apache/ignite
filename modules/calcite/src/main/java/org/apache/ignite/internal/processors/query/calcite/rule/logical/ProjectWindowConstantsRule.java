@@ -42,19 +42,19 @@ import org.immutables.value.Value;
  * A rule to split window rel with constants to:
  * - project with constants
  * - window without constants
- * - project removing constants
+ * - project removing constants.
  */
 @Value.Enclosing
 public class ProjectWindowConstantsRule extends RelRule<ProjectWindowConstantsRule.Config> implements TransformationRule {
-    /**  */
+    /** */
     public static final ProjectWindowConstantsRule INSTANCE = new ProjectWindowConstantsRule(ProjectWindowConstantsRule.Config.DEFAULT);
 
-    /**  */
+    /** */
     private ProjectWindowConstantsRule(Config cfg) {
         super(cfg);
     }
 
-    /**  */
+    /** */
     @Override public void onMatch(RelOptRuleCall call) {
         LogicalWindow window = call.rel(0);
         assert !window.constants.isEmpty();
@@ -108,25 +108,26 @@ public class ProjectWindowConstantsRule extends RelRule<ProjectWindowConstantsRu
 
         // Replace input refs to constants in group bounds with actual constant values.
         // In some cases it lets reuse calculated frame bound for the same peer.
-        ImmutableList.Builder<Window.Group> newGroups = ImmutableList.builder();
-        for (Window.Group group : window.groups) {
-            if (group.lowerBound.getOffset() instanceof RexInputRef || group.upperBound.getOffset() instanceof RexInputRef) {
-                Window.Group newGroup = new Window.Group(
-                    group.keys,
-                    group.isRows,
-                    replaceInputRefWithConst(group.lowerBound, inputFieldCnt, window),
-                    replaceInputRefWithConst(group.upperBound, inputFieldCnt, window),
-                    group.orderKeys,
-                    group.aggCalls
+        ImmutableList.Builder<Window.Group> newGrps = ImmutableList.builder();
+        for (Window.Group grp : window.groups) {
+            if (grp.lowerBound.getOffset() instanceof RexInputRef || grp.upperBound.getOffset() instanceof RexInputRef) {
+                Window.Group newGrp = new Window.Group(
+                    grp.keys,
+                    grp.isRows,
+                    replaceInputRefWithConst(grp.lowerBound, inputFieldCnt, window),
+                    replaceInputRefWithConst(grp.upperBound, inputFieldCnt, window),
+                    grp.exclude,
+                    grp.orderKeys,
+                    grp.aggCalls
                 );
-                newGroups.add(newGroup);
-            } else
-                newGroups.add(group);
+                newGrps.add(newGrp);
+            }
+            else newGrps.add(grp);
         }
 
         // agg calls in the original window allready reference fields by index,
         // do not need to remap it
-        return LogicalWindow.create(window.getTraitSet(), newInput, ImmutableList.of(), type, newGroups.build());
+        return LogicalWindow.create(window.getTraitSet(), newInput, ImmutableList.of(), type, newGrps.build());
     }
 
     /** Creates projection without window constants. */
@@ -155,7 +156,7 @@ public class ProjectWindowConstantsRule extends RelRule<ProjectWindowConstantsRu
         assert !bound.isUnbounded() && !bound.isCurrentRow() && bound.getOffset() instanceof RexInputRef;
         assert bound.isPreceding() || bound.isFollowing();
 
-        RexInputRef ref = (RexInputRef) bound.getOffset();
+        RexInputRef ref = (RexInputRef)bound.getOffset();
         if (ref.getIndex() < constantStartIdx)
             return bound;
 
@@ -169,7 +170,7 @@ public class ProjectWindowConstantsRule extends RelRule<ProjectWindowConstantsRu
     /** Rule configuration. */
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        /**  */
+        /** */
         ProjectWindowConstantsRule.Config DEFAULT = ImmutableProjectWindowConstantsRule.Config.of()
             .withOperandSupplier(b -> b.operand(LogicalWindow.class)
                 .predicate(it -> !it.constants.isEmpty())

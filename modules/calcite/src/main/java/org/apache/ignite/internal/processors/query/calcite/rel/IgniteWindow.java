@@ -62,25 +62,28 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
  */
 public class IgniteWindow extends Window implements IgniteRel {
 
-    private final Group group;
+    /** */
+    private final Group grp;
+
+    /** */
     private final boolean streaming;
 
-    /**  */
+    /** */
     public IgniteWindow(
         RelOptCluster cluster,
         RelTraitSet traitSet,
         RelNode input,
         RelDataType rowType,
-        Group group,
+        Group grp,
         boolean streaming
     ) {
-        super(cluster, traitSet, input, ImmutableList.of(), rowType, ImmutableList.of(group));
-        this.group = group;
+        super(cluster, traitSet, input, ImmutableList.of(), rowType, ImmutableList.of(grp));
+        this.grp = grp;
         this.streaming = streaming;
-        assert !group.aggCalls.isEmpty();
+        assert !grp.aggCalls.isEmpty();
     }
 
-    /**  */
+    /** */
     public IgniteWindow(RelInput input) {
         this(input.getCluster(),
             changeTraits(input, IgniteConvention.INSTANCE).getTraitSet(),
@@ -90,19 +93,19 @@ public class IgniteWindow extends Window implements IgniteRel {
             input.getBoolean("streaming", false));
     }
 
-    /**  */
+    /** */
     public Group getGroup() {
-        return group;
+        return grp;
     }
 
-    /**  */
+    /** */
     public boolean isStreaming() {
         return streaming;
     }
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new IgniteWindow(getCluster(), traitSet, sole(inputs), getRowType(), group, streaming);
+        return new IgniteWindow(getCluster(), traitSet, sole(inputs), getRowType(), grp, streaming);
     }
 
     /** {@inheritDoc} */
@@ -118,7 +121,7 @@ public class IgniteWindow extends Window implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteWindow(cluster, getTraitSet(), sole(inputs), getRowType(), group, streaming);
+        return new IgniteWindow(cluster, getTraitSet(), sole(inputs), getRowType(), grp, streaming);
     }
 
     /** {@inheritDoc} */
@@ -126,7 +129,7 @@ public class IgniteWindow extends Window implements IgniteRel {
         return pw
             .input("input", getInput())
             .item("rowType", getRowType())
-            .item("group", group)
+            .item("group", grp)
             .item("streaming", streaming);
     }
 
@@ -134,17 +137,17 @@ public class IgniteWindow extends Window implements IgniteRel {
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
-        int aggCnt = group.aggCalls.size();
+        int aggCnt = grp.aggCalls.size();
 
         double rowCnt = mq.getRowCount(getInput());
         double cpuCost = rowCnt * ROW_COMPARISON_COST;
         double memCost = (getRowType().getFieldCount() * AVERAGE_FIELD_SIZE + aggCnt * AGG_CALL_MEM_COST) * (streaming ? 1.0 : rowCnt);
 
-        RelOptCost cost =  costFactory.makeCost(rowCnt, cpuCost, 0, memCost, 0);
+        RelOptCost cost = costFactory.makeCost(rowCnt, cpuCost, 0, memCost, 0);
 
         // Distributed processing is more preferable than processing on the single node.
         if (TraitUtils.distribution(traitSet).satisfies(IgniteDistributions.single()))
-            cost.plus(costFactory.makeTinyCost());
+            cost = cost.plus(costFactory.makeTinyCost());
 
         return cost;
     }
@@ -169,7 +172,6 @@ public class IgniteWindow extends Window implements IgniteRel {
         return Pair.of(traits, ImmutableList.of(traits));
     }
 
-
     /**
      * Propagates the trait set from the parent to the child, or derives it from the child node.
      *
@@ -178,22 +180,22 @@ public class IgniteWindow extends Window implements IgniteRel {
      * - If they are not, replace them with suitable traits.
      * - Request a new trait set from the input accordingly.
      */
-    private @Nullable RelTraitSet passThroughOrDerivedTraits(RelTraitSet tgt) {
-        if (tgt.getConvention() != IgniteConvention.INSTANCE)
+    private @Nullable RelTraitSet passThroughOrDerivedTraits(RelTraitSet target) {
+        if (target.getConvention() != IgniteConvention.INSTANCE)
             return null;
 
-        RelTraitSet traits = tgt;
-        RelCollation requiredCollation = TraitUtils.collation(tgt);
+        RelTraitSet traits = target;
+        RelCollation requiredCollation = TraitUtils.collation(target);
         if (!satisfiesCollationSansGroupFields(requiredCollation)) {
             traits = traits.replace(collation());
         }
 
-        IgniteDistribution distribution = TraitUtils.distribution(tgt);
+        IgniteDistribution distribution = TraitUtils.distribution(target);
         if (!satisfiesDistribution(distribution))
             traits = traits.replace(distribution());
         else if (distribution.getType() == RelDistribution.Type.HASH_DISTRIBUTED) {
             // Group set contains all distribution keys, shift distribution keys according to used columns.
-            IgniteDistribution outDistribution = distribution.apply(Commons.mapping(group.keys, rowType.getFieldCount()));
+            IgniteDistribution outDistribution = distribution.apply(Commons.mapping(grp.keys, rowType.getFieldCount()));
             traits = traits.replace(outDistribution);
         }
 
@@ -214,7 +216,7 @@ public class IgniteWindow extends Window implements IgniteRel {
 
         if (distribution.getType() == RelDistribution.Type.HASH_DISTRIBUTED) {
             for (Integer key : distribution.getKeys()) {
-                if (!group.keys.get(key))
+                if (!grp.keys.get(key))
                     // can't derive distribution with fields unmatched to group keys
                     return false;
             }
@@ -240,7 +242,7 @@ public class IgniteWindow extends Window implements IgniteRel {
             return false;
         }
 
-        int grpKeysSize = group.keys.cardinality();
+        int grpKeysSize = grp.keys.cardinality();
         // strip group keys
         List<RelFieldCollation> desiredFieldCollations = Util.skip(desiredCollation.getFieldCollations(), grpKeysSize);
         List<RelFieldCollation> fieldCollations = Util.skip(collation.getFieldCollations(), grpKeysSize);

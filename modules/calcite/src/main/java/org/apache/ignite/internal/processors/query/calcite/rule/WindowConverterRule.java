@@ -26,6 +26,8 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.logical.LogicalWindow;
@@ -33,6 +35,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelRecordType;
 import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowFunctions;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteWindow;
@@ -40,19 +43,17 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/**  */
+/** */
 public class WindowConverterRule extends AbstractIgniteConverterRule<LogicalWindow> {
-    /**  */
+    /** */
     public static final RelOptRule INSTANCE = new WindowConverterRule();
 
-    /**  */
+    /** */
     private WindowConverterRule() {
         super(LogicalWindow.class, "WindowConverterRule");
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalWindow window) {
         RelOptCluster cluster = window.getCluster();
 
@@ -61,11 +62,11 @@ public class WindowConverterRule extends AbstractIgniteConverterRule<LogicalWind
         assert window.constants.isEmpty();
 
         for (int grpIdx = 0; grpIdx < window.groups.size(); grpIdx++) {
-            Window.Group group = window.groups.get(grpIdx);
+            Window.Group grp = window.groups.get(grpIdx);
 
-            RelCollation collation = TraitUtils.mergeCollations(
-                TraitUtils.createCollation(group.keys.asList()),
-                group.collation()
+            RelCollation collation = mergeCollations(
+                TraitUtils.createCollation(grp.keys.asList()),
+                grp.collation()
             );
 
             RelTraitSet inTraits = cluster
@@ -82,32 +83,33 @@ public class WindowConverterRule extends AbstractIgniteConverterRule<LogicalWind
 
             // add fields added by current group.
             // see org.apache.calcite.rel.logical.LogicalWindow#create
-            String groupFieldPrefix = "w" + grpIdx + "$";
-            List<RelDataTypeField> fieldsAddedByCurrentGroup = U.arrayList(window.getRowType().getFieldList(),
-                it -> it.getName().startsWith(groupFieldPrefix));
-            List<RelDataTypeField> groupFields = new ArrayList<>(result.getRowType().getFieldList());
-            groupFields.addAll(fieldsAddedByCurrentGroup);
+            String grpFieldPrefix = "w" + grpIdx + "$";
+            List<RelDataTypeField> fieldsAddedByCurGrp = U.arrayList(window.getRowType().getFieldList(),
+                it -> it.getName().startsWith(grpFieldPrefix));
+            List<RelDataTypeField> grpFields = new ArrayList<>(result.getRowType().getFieldList());
+            grpFields.addAll(fieldsAddedByCurGrp);
 
-            RelRecordType rowType = new RelRecordType(groupFields);
+            RelRecordType rowType = new RelRecordType(grpFields);
 
-            Window.Group newGroup = convertGroup(group);
+            Window.Group newGrp = replaceAggCallOrdinal(grp);
 
             result = new IgniteWindow(
                 window.getCluster(),
                 window.getTraitSet().merge(outTraits),
                 result,
                 rowType,
-                newGroup,
-                WindowFunctions.streamable(newGroup)
+                newGrp,
+                WindowFunctions.streamable(newGrp)
             );
         }
 
         return (PhysicalNode)result;
     }
 
-    private static Window.Group convertGroup(Window.Group group) {
-        List<Window.RexWinAggCall> newAggCalls = new ArrayList<>(group.aggCalls.size());
-        ImmutableList<Window.RexWinAggCall> calls = group.aggCalls;
+    /** Replaces origial agg call ordinal with sequential index within group. */
+    private static Window.Group replaceAggCallOrdinal(Window.Group grp) {
+        List<Window.RexWinAggCall> newAggCalls = new ArrayList<>(grp.aggCalls.size());
+        ImmutableList<Window.RexWinAggCall> calls = grp.aggCalls;
         for (int i = 0; i < calls.size(); i++) {
             Window.RexWinAggCall aggCall = calls.get(i);
             Window.RexWinAggCall newCall = new Window.RexWinAggCall(
@@ -122,12 +124,29 @@ public class WindowConverterRule extends AbstractIgniteConverterRule<LogicalWind
         }
 
         return new Window.Group(
-            group.keys,
-            group.isRows,
-            group.lowerBound,
-            group.upperBound,
-            group.orderKeys,
+            grp.keys,
+            grp.isRows,
+            grp.lowerBound,
+            grp.upperBound,
+            grp.exclude,
+            grp.orderKeys,
             newAggCalls
         );
+    }
+
+    /**
+     * Merges provided collation is sinle one.
+     *
+     * @param collation0 First collation
+     * @param collation1 Second collation
+     * @return New collation
+     */
+    public static RelCollation mergeCollations(RelCollation collation0, RelCollation collation1) {
+        ImmutableBitSet keys = ImmutableBitSet.of(collation0.getKeys());
+        List<RelFieldCollation> fields = U.arrayList(collation0.getFieldCollations());
+        for (RelFieldCollation it : collation1.getFieldCollations())
+            if (!keys.get(it.getFieldIndex()))
+                fields.add(it);
+        return RelCollations.of(fields);
     }
 }

@@ -60,7 +60,7 @@ import org.junit.runners.Suite;
     LimitExecutionTest.class,
     TimeCalculationExecutionTest.class,
     UncollectExecutionTest.class,
-    WindowExecutionTest.class
+    WindowExecutionTest.class,
 })
 public class ExecutionTestSuite {
 }

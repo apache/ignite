@@ -30,13 +30,19 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Aggregat
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.NotNull;
 
-/**  */
+/** A factory class responsible for instantiating window functions. */
 final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> implements Supplier<List<WindowFunctionWrapper<Row>>> {
+
+    /** */
     private final List<WindowFunctionPrototype<Row>> prototypes;
+
+    /** */
     private final RelDataType inputRowType;
+
+    /** */
     private final ExecutionContext<Row> ctx;
 
-    /**  */
+    /** */
     WindowFunctionFactory(
         ExecutionContext<Row> ctx,
         Window.Group group,
@@ -64,35 +70,35 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> impl
         return Commons.transform(prototypes, Supplier::get);
     }
 
-    /** Checks whenether window functions can be streamed */
+    /** Checks whenether window functions can be streamed. */
     boolean isStreamable() {
         return prototypes.stream().allMatch(WindowFunctionPrototype::isStreamable);
     }
 
-    /**  */
+    /** */
     private interface WindowFunctionPrototype<Row> extends Supplier<WindowFunctionWrapper<Row>> {
-        /**  */
+        /** */
         boolean isStreamable();
     }
 
-    /**  */
+    /** */
     private final class WindowFunctionWrapperPrototype implements WindowFunctionPrototype<Row> {
-        /**  */
+        /** */
         private Supplier<WindowFunction<Row>> funcFactory;
 
-        /**  */
+        /** */
         private final AggregateCall call;
 
-        /**  */
+        /** */
         private Function<Row, Row> inAdapter;
 
-        /**  */
+        /** */
         private Function<Object, Object> outAdapter;
 
-        /**  */
+        /** */
         private final boolean supportsStreaming;
 
-        /**  */
+        /** */
         private WindowFunctionWrapperPrototype(AggregateCall call) {
             this.call = call;
             supportsStreaming = WindowFunctions.isStreamingFunction(call.getAggregation());
@@ -104,7 +110,7 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> impl
             return new FunctionWrapper(windowFunction, inAdapter, outAdapter);
         }
 
-        /**  */
+        /** */
         @NotNull private WindowFunction<Row> windowFunction() {
             if (funcFactory != null)
                 return funcFactory.get();
@@ -121,35 +127,36 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> impl
             return windowFunction;
         }
 
-        /**  */
+        /** */
         @NotNull private Function<Row, Row> createInAdapter(WindowFunction<Row> windowFunction) {
             List<RelDataType> outTypes = windowFunction.argumentTypes(ctx.getTypeFactory());
             return WindowFunctionFactory.this.createInAdapter(call, inputRowType, outTypes, false);
         }
 
-        /**  */
+        /** */
         @NotNull private Function<Object, Object> createOutAdapter(WindowFunction<Row> windowFunction) {
             RelDataType inType = windowFunction.returnType(ctx.getTypeFactory());
             return WindowFunctionFactory.this.createOutAdapter(call, inType);
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isStreamable() {
             return supportsStreaming;
         }
     }
 
-    /**  */
+    /** */
     private final class FunctionWrapper implements WindowFunctionWrapper<Row> {
-        /**  */
+        /** */
         private final WindowFunction<Row> windowFunction;
 
-        /**  */
+        /** */
         private final Function<Row, Row> inAdapter;
 
-        /**  */
+        /** */
         private final Function<Object, Object> outAdapter;
 
-        /**  */
+        /** */
         FunctionWrapper(
             WindowFunction<Row> windowFunction,
             Function<Row, Row> inAdapter,
@@ -181,16 +188,19 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> impl
         }
     }
 
-    /**  */
+    /** */
     private final class WindowFunctionAccumulatorAdapterPrototype implements WindowFunctionPrototype<Row> {
 
+        /** */
         private final Supplier<org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper<Row>> factory;
+
+        /** */
         private final boolean streamable;
 
-        /**  */
+        /** */
         private WindowFunctionAccumulatorAdapterPrototype(AggregateCall call, Window.Group group) {
-            Supplier<List<org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper<Row>>> accFactory = ctx.expressionFactory()
-                .accumulatorsFactory(AggregateType.SINGLE, List.of(call), inputRowType);
+            Supplier<List<org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper<Row>>> accFactory =
+                ctx.expressionFactory().accumulatorsFactory(AggregateType.SINGLE, List.of(call), inputRowType);
             factory = () -> accFactory.get().get(0);
             streamable = group.isRows
                 && group.lowerBound.isUnbounded()
@@ -208,16 +218,24 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> impl
         }
     }
 
-    /**  */
+    /** */
     private static final class AccumulatorWrapper<Row> implements WindowFunctionWrapper<Row> {
+        /** */
         private final Supplier<org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper<Row>> factory;
+
+        /** */
         private final boolean streamable;
 
+        /** */
         private org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper<Row> accHolder;
+
+        /** */
         private int frameStart = -1;
+
+        /** */
         private int frameEnd = -1;
 
-        /**  */
+        /** */
         private AccumulatorWrapper(
             Supplier<org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper<Row>> factory,
             boolean streamable) {
@@ -246,21 +264,22 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> impl
                 // recreate accumulator.
                 acc = accumulator();
                 for (int i = frameStart; i <= end; i++) {
-                    Row valueRow = frame.get(i);
-                    acc.add(valueRow);
+                    Row valRow = frame.get(i);
+                    acc.add(valRow);
                 }
             }
             else if (frameEnd != end && end >= 0) {
                 // append rows to accumulator
                 for (int i = frameEnd + 1; i <= end; i++) {
-                    Row valueRow = frame.get(i);
-                    acc.add(valueRow);
+                    Row valRow = frame.get(i);
+                    acc.add(valRow);
                 }
             }
             frameEnd = end;
             return acc.end();
         }
 
+        /** */
         private org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper<Row> accumulator() {
             if (accHolder != null)
                 return accHolder;

@@ -168,7 +168,7 @@ import org.junit.runners.Suite;
     TpchScale100Test.class,
     UnnestIntegrationTest.class,
     CalcitePlanningDumpTest.class,
-    WindowIntegrationTest.class
+    WindowIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

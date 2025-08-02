@@ -898,7 +898,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Comparator<Row> partCmp = expressionFactory.comparator(TraitUtils.createCollation(grpKeys));
 
         List<AggregateCall> aggCalls = rel.getGroup().getAggregateCalls(rel);
-        Supplier<WindowPartition<Row>> frameFactory = expressionFactory.windowFrameFactory(rel.getGroup(), aggCalls, inputType, false);
+        Supplier<WindowPartition<Row>> frameFactory = expressionFactory.windowPartitionFactory(
+            rel.getGroup(), aggCalls, inputType, rel.isStreaming());
 
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), outType);
 
