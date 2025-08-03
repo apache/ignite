@@ -1219,12 +1219,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             // Wait for all nodes complete checking.
             waitForCondition(() -> !snp(g).isSnapshotChecking(SNAPSHOT_NAME), 10_000);
 
-            if (!U.isLocalNodeCoordinator(g.context().discovery()))
-                continue;
-
-            coordIdx = i;
-
-            break;
+            if (U.isLocalNodeCoordinator(g.context().discovery()))
+                coordIdx = i;
         }
 
         try {
