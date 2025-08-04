@@ -29,12 +29,9 @@ public class GridTaskResultRequest implements Message {
     @Order(0)
     private IgniteUuid taskId;
 
-    /** Topic. */
-    private Object topic;
-
-    /** Serialized topic. */
+    /** Topic ID. */
     @Order(1)
-    private byte[] topicBytes;
+    private long topicId;
 
     /**
      * Empty constructor.
@@ -45,13 +42,11 @@ public class GridTaskResultRequest implements Message {
 
     /**
      * @param taskId Task ID.
-     * @param topic Topic.
-     * @param topicBytes Serialized topic.
+     * @param topicId Topic ID.
      */
-    GridTaskResultRequest(IgniteUuid taskId, Object topic, byte[] topicBytes) {
+    GridTaskResultRequest(IgniteUuid taskId, long topicId) {
         this.taskId = taskId;
-        this.topic = topic;
-        this.topicBytes = topicBytes;
+        this.topicId = topicId;
     }
 
     /**
@@ -71,33 +66,17 @@ public class GridTaskResultRequest implements Message {
     }
 
     /**
-     * @return Topic.
+     * @return Topic ID.
      */
-    public Object topic() {
-        return topic;
+    public long topicId() {
+        return topicId;
     }
 
     /**
-     * @return Serialized topic.
+     * @param topicId New topic ID.
      */
-    public byte[] topicBytes() {
-        return topicBytes;
-    }
-
-    /**
-     * @param topicBytes New serialized topic.
-     */
-    public void topicBytes(byte[] topicBytes) {
-        this.topicBytes = topicBytes;
-    }
-
-    /**
-     * @param topic Topic.
-     */
-    public void topic(String topic) {
-        assert topic != null;
-
-        this.topic = topic;
+    public void topicId(long topicId) {
+        this.topicId = topicId;
     }
 
     /** {@inheritDoc} */
