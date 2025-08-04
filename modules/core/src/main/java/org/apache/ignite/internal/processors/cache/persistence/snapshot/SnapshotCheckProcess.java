@@ -48,8 +48,10 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -436,7 +438,6 @@ public class SnapshotCheckProcess {
 
         SnapshotCheckContext ctx;
 
-        // Sync. with stopping in #interrupt.
         synchronized (contexts) {
             if (nodeStopping)
                 return new GridFinishedFuture<>(new NodeStoppingException("The node is stopping: " + kctx.localNodeId()));
@@ -541,7 +542,7 @@ public class SnapshotCheckProcess {
                 contexts.remove(ctx.req.snapshotName());
 
                 if (log.isInfoEnabled())
-                    log.info("Finished snapshot validation [req=" + ctx.req + ']');
+                    log.info("Finished snapshot validation with error [req=" + ctx.req + ", err=" + th.getMessage() + ']');
             }
 
             if (clusterOpFut != null)
@@ -667,6 +668,7 @@ public class SnapshotCheckProcess {
     /** Operation context. */
     private static final class SnapshotCheckContext {
         /** Request. */
+        @GridToStringInclude
         private final SnapshotCheckProcessRequest req;
 
         /** Current process' future. Listens error, stop requests, etc. */
@@ -679,6 +681,7 @@ public class SnapshotCheckProcess {
         @Nullable private List<SnapshotMetadata> metas;
 
         /** Map of snapshot pathes per consistent id for {@link #metas}. */
+        @GridToStringInclude
         @Nullable private Map<String, SnapshotFileTree> locFileTree;
 
         /** All the snapshot metadatas. */
@@ -696,6 +699,11 @@ public class SnapshotCheckProcess {
             locProcFut.listen(f -> fut.onDone(f.error()));
 
             return fut;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SnapshotCheckContext.class, this);
         }
     }
 
