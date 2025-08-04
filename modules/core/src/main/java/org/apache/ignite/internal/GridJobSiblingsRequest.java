@@ -21,8 +21,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_SIBLINGS;
-
 /**
  * Job siblings request.
  */
@@ -30,9 +28,6 @@ public class GridJobSiblingsRequest implements Message {
     /** */
     @Order(value = 0, method = "sessionId")
     private IgniteUuid sesId;
-
-    /** */
-    private Object topic;
 
     /** */
     @Order(1)
@@ -54,7 +49,6 @@ public class GridJobSiblingsRequest implements Message {
 
         this.sesId = sesId;
         this.topicId = topicId;
-        topic = TOPIC_JOB_SIBLINGS.topic(sesId, topicId);
     }
 
     /**
@@ -69,13 +63,6 @@ public class GridJobSiblingsRequest implements Message {
      */
     public void sessionId(IgniteUuid sesId) {
         this.sesId = sesId;
-    }
-
-    /**
-     * @return Topic.
-     */
-    public Object topic() {
-        return topic;
     }
 
     /**

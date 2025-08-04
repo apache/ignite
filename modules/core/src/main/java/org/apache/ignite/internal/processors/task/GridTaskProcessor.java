@@ -1411,10 +1411,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 }
 
                 try {
-                    Object topic = req.topic();
-
-                    if (topic == null)
-                        topic = TOPIC_JOB_SIBLINGS.topic(req.sessionId(), req.topicId());
+                    Object topic = TOPIC_JOB_SIBLINGS.topic(req.sessionId(), req.topicId());
 
                     boolean loc = ctx.localNodeId().equals(nodeId);
 
