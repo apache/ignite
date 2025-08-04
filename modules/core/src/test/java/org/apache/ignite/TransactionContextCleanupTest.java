@@ -68,7 +68,7 @@ public class TransactionContextCleanupTest extends GridCommonAbstractTest {
     public int backups;
 
     /** */
-    @Parameters(name="concurrency={0}, isolation={1}, backups={2}")
+    @Parameters(name = "concurrency={0}, isolation={1}, backups={2}")
     public static List<Object[]> parameters() {
         return List.of(
             new Object[]{PESSIMISTIC, READ_COMMITTED, 0},
@@ -143,7 +143,8 @@ public class TransactionContextCleanupTest extends GridCommonAbstractTest {
         doSleep(TX_TIMEOUT * 2);
         assertEquals("Unexpected transaction state", TransactionState.ROLLED_BACK, tx.state());
 
-        Throwable t = assertThrows(null, () -> {
+        Throwable t = assertThrows(null,
+            () -> {
                 txAction.accept(cache, tx);
 
                 return null;
