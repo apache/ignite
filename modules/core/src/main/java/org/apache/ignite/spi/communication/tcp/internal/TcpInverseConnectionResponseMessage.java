@@ -17,10 +17,8 @@
 
 package org.apache.ignite.spi.communication.tcp.internal;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Inverse connection response message sent by client node as a response to
@@ -31,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAwareMessage {
     /** */
+    @Order(value = 0, method = "connectionIndex")
     private int connIdx;
 
     /** */
@@ -47,50 +46,16 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
         return connIdx;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(connIdx))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
+    /**
+     * @param connIdx New connection index.
+     */
+    public void connectionIndex(int connIdx) {
+        this.connIdx = connIdx;
     }
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                connIdx = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

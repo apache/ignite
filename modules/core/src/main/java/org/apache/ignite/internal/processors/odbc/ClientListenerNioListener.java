@@ -28,7 +28,6 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -356,15 +355,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @param msg Message bytes.
      */
     private void onHandshake(GridNioSession ses, ClientMessage msg) {
-        BinaryContext ctx = U.emptyBinaryContext();
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        ctx.configure(marsh);
-
-        BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(msg.payload()), null, true);
+        BinaryReaderEx reader = BinaryUtils.reader(U.binaryContext(marsh), BinaryStreams.inputStream(msg.payload()), null, true);
 
         byte cmd = reader.readByte();
 
