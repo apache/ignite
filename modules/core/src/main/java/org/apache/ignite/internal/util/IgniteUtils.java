@@ -125,6 +125,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -9873,6 +9874,7 @@ public abstract class IgniteUtils extends CommonUtils {
                 bcfg.getTypeConfigurations(),
                 CU.affinityFields(cfg),
                 bcfg.isCompactFooter(),
+                CU::affinityFieldName,
                 log
             )
             : new BinaryContext(
@@ -9886,6 +9888,7 @@ public abstract class IgniteUtils extends CommonUtils {
                 bcfg.getTypeConfigurations(),
                 CU.affinityFields(cfg),
                 bcfg.isCompactFooter(),
+                CU::affinityFieldName,
                 log
             );
     }
@@ -9956,9 +9959,23 @@ public abstract class IgniteUtils extends CommonUtils {
             @Nullable Collection<BinaryTypeConfiguration> typeCfgs,
             Map<String, String> affFlds,
             boolean compactFooter,
+            Function<Class<?>, String> affFldNameProvider,
             IgniteLogger log
         ) {
-            super(metaHnd, marsh, igniteInstanceName, clsLdr, dfltSerializer, idMapper, nameMapper, typeCfgs, affFlds, compactFooter, log);
+            super(
+                metaHnd,
+                marsh,
+                igniteInstanceName,
+                clsLdr,
+                dfltSerializer,
+                idMapper,
+                nameMapper,
+                typeCfgs,
+                affFlds,
+                compactFooter,
+                affFldNameProvider,
+                log
+            );
         }
 
 

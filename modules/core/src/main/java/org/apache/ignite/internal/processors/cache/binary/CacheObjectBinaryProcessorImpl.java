@@ -43,6 +43,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -86,6 +87,8 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
+import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -118,6 +121,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.BINARY_PROC;
 import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.util.typedef.internal.CU.affinityFieldName;
 
 /**
  * Binary processor implementation.
@@ -273,6 +277,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         binaryCtx = U.binaryContext(metaHnd, marsh, ctx.config(), ctx.log(BinaryContext.class));
 
         marsh.setBinaryContext(binaryCtx);
+
+        // Will be null in case of StandaloneGridKernalContext.
+        if (ctx.closure() != null)
+            ctx.closure().onBinaryContextCreated(binaryCtx);
+
+        onBinaryContextCreated(binaryCtx);
 
         transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, binaryCtx, ctx, log);
 
@@ -1613,5 +1623,13 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         int typeId = binaryCtx.registerType(cls, true, false);
 
         return metadata(typeId);
+    }
+
+    /** */
+    private void onBinaryContextCreated(BinaryContext ctx) {
+        // Classes with overriden default serialization flag.
+        ctx.registerPredefinedType(AffinityKey.class, 0, affinityFieldName(AffinityKey.class), true);
+        ctx.registerPredefinedType(CollocatedSetItemKey.class, 0, affinityFieldName(CollocatedSetItemKey.class), true);
+        ctx.registerPredefinedType(CollocatedQueueItemKey.class, 0, affinityFieldName(CollocatedQueueItemKey.class), true);
     }
 }

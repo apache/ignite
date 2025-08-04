@@ -39,8 +39,10 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -65,6 +67,8 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.processors.platform.transactions.PlatformTransactions;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -242,6 +246,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      */
     public PlatformProcessorImpl(GridKernalContext ctx) {
         super(ctx);
+
+        BinaryContext bctx = ctx.marshaller().binaryMarshaller().context();
+
+        bctx.registerPredefinedType(PlatformJavaObjectFactoryProxy.class, GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY);
+        bctx.registerPredefinedType(PlatformDotNetSessionData.class, 0);
+        bctx.registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
 
         log = ctx.log(PlatformProcessorImpl.class);
 
