@@ -27,12 +27,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.client.GridClientCacheMode;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocol;
@@ -188,7 +188,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         GridClientCacheBean cacheBean = new GridClientCacheBean();
 
         cacheBean.setName(ccfg.getName());
-        cacheBean.setMode(GridClientCacheMode.valueOf(ccfg.getCacheMode().toString()));
+        cacheBean.setMode(CacheMode.valueOf(ccfg.getCacheMode().toString()));
         cacheBean.setSqlSchema(ccfg.getSqlSchema());
 
         return cacheBean;
