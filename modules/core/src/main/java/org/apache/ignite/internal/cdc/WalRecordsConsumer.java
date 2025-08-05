@@ -192,7 +192,7 @@ public class WalRecordsConsumer<K, V> {
      */
     public void start(MetricRegistryImpl cdcReg, MetricRegistryImpl cdcConsumerReg, Path cdcDir) throws IgniteCheckedException {
         if (consumer instanceof CdcConsumerEx)
-            ((CdcConsumerEx) consumer).start(cdcConsumerReg, cdcDir);
+            ((CdcConsumerEx)consumer).start(cdcConsumerReg, cdcDir);
         else
             consumer.start(cdcConsumerReg);
 
