@@ -946,7 +946,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         doTestNodeStopsDuringSnapshotChecking(5, 3, stopped);
 
         // Snapshot checking started from a client.
-        doTestNodeStopsDuringSnapshotChecking(5, 2, stopped);
+        doTestNodeStopsDuringSnapshotChecking(6, 2, stopped);
 
         // The same baseline leaves.
         doTestNodeStopsDuringSnapshotChecking(1, 1, stopped);
@@ -1287,9 +1287,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 // Wait for all nodes complete checking.
                 assertTrue(waitForCondition(() -> !snp(g).isSnapshotChecking(SNAPSHOT_NAME), 10_000));
 
-                chkAgainIdx = i;
-
-                break;
+                if (chkAgainIdx == -1)
+                    chkAgainIdx = i;
             }
 
             assert chkAgainIdx >= 0;

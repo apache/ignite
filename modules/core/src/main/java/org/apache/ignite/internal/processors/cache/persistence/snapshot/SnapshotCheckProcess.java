@@ -447,7 +447,7 @@ public class SnapshotCheckProcess {
 
         if (!ctx.req.requestId().equals(req.requestId())) {
             return new GridFinishedFuture<>(new IllegalStateException("Validation of snapshot '" + req.snapshotName()
-                + "' has already started. Request=" + ctx + '.'));
+                + "' has already started [ctx=" + ctx + ']'));
         }
 
         // Excludes non-baseline initiator.
