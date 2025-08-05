@@ -41,6 +41,7 @@ import org.apache.ignite.internal.codegen.IgniteTxKeySerializer;
 import org.apache.ignite.internal.codegen.LatchAckMessageSerializer;
 import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.MissingMappingResponseMessageSerializer;
+import org.apache.ignite.internal.codegen.NearCacheUpdatesSerializer;
 import org.apache.ignite.internal.codegen.SessionChannelMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpInverseConnectionResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.TxLockSerializer;
@@ -203,7 +204,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-61, IgniteDiagnosticMessage::new);
         factory.register((short)-53, SchemaOperationStatusMessage::new);
         factory.register((short)-52, GridIntList::new, new GridIntListSerializer());
-        factory.register((short)-51, NearCacheUpdates::new);
+        factory.register((short)-51, NearCacheUpdates::new, new NearCacheUpdatesSerializer());
         factory.register((short)-50, GridNearAtomicCheckUpdateRequest::new);
         factory.register((short)-49, UpdateErrors::new);
         factory.register((short)-48, GridDhtAtomicNearResponse::new);
