@@ -329,7 +329,7 @@ public class CommunicationWorker extends GridWorker {
     /**
      * @param recoveryDescs Recovery descriptors to cleanup.
      */
-    private void cleanupRecovery(Map<ConnectionKey, GridNioRecoveryDescriptor> recoveryDescs) {
+    private void cleanupRecovery(ConcurrentMap<ConnectionKey, GridNioRecoveryDescriptor> recoveryDescs) {
         Set<ConnectionKey> left = null;
 
         for (Map.Entry<ConnectionKey, GridNioRecoveryDescriptor> e : recoveryDescs.entrySet()) {

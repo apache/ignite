@@ -43,10 +43,8 @@ import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
-import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.AttributeNames;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.thread.IgniteThreadFactory;
@@ -77,18 +75,11 @@ public class ConnectionClientPool {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Statistics. */
-    @Nullable
-    private volatile TcpCommunicationMetricsListener metricsLsnr;
-
     /** Local node supplier. */
     private final Supplier<ClusterNode> locNodeSupplier;
 
     /** Node getter. */
     private final Function<UUID, ClusterNode> nodeGetter;
-
-    /** Message formatter supplier. */
-    private final Supplier<MessageFormatter> msgFormatterSupplier;
 
     /** Workers registry. */
     private final WorkersRegistry registry;
@@ -120,7 +111,6 @@ public class ConnectionClientPool {
      * @param cfg Config.
      * @param attrs Attributes.
      * @param log Logger.
-     * @param metricsLsnr Metrics listener.
      * @param locNodeSupplier Local node supplier.
      * @param nodeGetter Node getter.
      * @param msgFormatterSupplier Message formatter supplier.
@@ -134,10 +124,8 @@ public class ConnectionClientPool {
         TcpCommunicationConfiguration cfg,
         AttributeNames attrs,
         IgniteLogger log,
-        TcpCommunicationMetricsListener metricsLsnr,
         Supplier<ClusterNode> locNodeSupplier,
         Function<UUID, ClusterNode> nodeGetter,
-        Supplier<MessageFormatter> msgFormatterSupplier,
         WorkersRegistry registry,
         TcpCommunicationSpi tcpCommSpi,
         ClusterStateProvider clusterStateProvider,
@@ -147,10 +135,8 @@ public class ConnectionClientPool {
         this.cfg = cfg;
         this.attrs = attrs;
         this.log = log;
-        this.metricsLsnr = metricsLsnr;
         this.locNodeSupplier = locNodeSupplier;
         this.nodeGetter = nodeGetter;
-        this.msgFormatterSupplier = msgFormatterSupplier;
         this.registry = registry;
         this.tcpCommSpi = tcpCommSpi;
         this.clusterStateProvider = clusterStateProvider;
@@ -661,12 +647,5 @@ public class ConnectionClientPool {
     public void completeFutures(IgniteClientDisconnectedCheckedException err) {
         for (GridFutureAdapter<GridCommunicationClient> clientFut : clientFuts.values())
             clientFut.onDone(err);
-    }
-
-    /**
-     * @param metricsLsnr New statistics.
-     */
-    public void metricsListener(@Nullable TcpCommunicationMetricsListener metricsLsnr) {
-        this.metricsLsnr = metricsLsnr;
     }
 }

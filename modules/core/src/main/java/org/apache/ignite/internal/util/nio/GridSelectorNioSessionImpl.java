@@ -28,7 +28,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -38,8 +37,6 @@ import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
-import static org.apache.ignite.internal.util.nio.GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC;
-import static org.apache.ignite.internal.util.nio.GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME;
 
 /**
  * Session implementation bound to selector API and socket API.
@@ -88,8 +85,11 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
     /** Close channel on session #close() called. */
     private volatile boolean closeSocket = true;
 
-    /** Outbound messages queue size metric. */
-    @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
+    /** Metric of outbound messages queue size of all client connections. */
+    @Nullable private final LongAdderMetric outboundMessagesOveralQueueSizeMetric;
+
+    /** Metric of outbound messages queue size for certain node. */
+    @Nullable private final LongAdderMetric outboundMessagesNodeQueueSizeMetric;
 
     /**
      * Creates session instance.
@@ -103,6 +103,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      * @param sndQueueLimit Send queue limit.
      * @param writeBuf Write buffer.
      * @param readBuf Read buffer.
+     * @param outboundMessagesOveralQueueSizeMetric Metric of outbound messages queue size of all client connections.
+     * @param outboundMessagesNodeQueueSizeMetric Metric of outbound messages queue size for certain node.
      */
     GridSelectorNioSessionImpl(
         IgniteLogger log,
@@ -112,9 +114,10 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
         InetSocketAddress rmtAddr,
         boolean accepted,
         int sndQueueLimit,
-        @Nullable MetricRegistryImpl mreg,
         @Nullable ByteBuffer writeBuf,
-        @Nullable ByteBuffer readBuf
+        @Nullable ByteBuffer readBuf,
+        @Nullable LongAdderMetric outboundMessagesOveralQueueSizeMetric,
+        @Nullable LongAdderMetric outboundMessagesNodeQueueSizeMetric
     ) {
         super(filterChain, locAddr, rmtAddr, accepted);
 
@@ -144,10 +147,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
             this.readBuf = readBuf;
         }
 
-        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
-            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
-            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
-        );
+        this.outboundMessagesOveralQueueSizeMetric = outboundMessagesOveralQueueSizeMetric;
+        this.outboundMessagesNodeQueueSizeMetric = outboundMessagesNodeQueueSizeMetric;
     }
 
     /** {@inheritDoc} */
@@ -313,8 +314,11 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         assert res : "Future was not added to queue";
 
-        if (outboundMessagesQueueSizeMetric != null)
-            outboundMessagesQueueSizeMetric.increment();
+        if (outboundMessagesOveralQueueSizeMetric != null)
+            outboundMessagesOveralQueueSizeMetric.increment();
+
+        if (outboundMessagesNodeQueueSizeMetric != null)
+            outboundMessagesNodeQueueSizeMetric.increment();
 
         return queue.sizex();
     }
@@ -343,8 +347,11 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         assert res : "Future was not added to queue";
 
-        if (outboundMessagesQueueSizeMetric != null)
-            outboundMessagesQueueSizeMetric.increment();
+        if (outboundMessagesOveralQueueSizeMetric != null)
+            outboundMessagesOveralQueueSizeMetric.increment();
+
+        if (outboundMessagesNodeQueueSizeMetric != null)
+            outboundMessagesNodeQueueSizeMetric.increment();
 
         return queue.sizex();
     }
@@ -359,8 +366,11 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         assert add;
 
-        if (outboundMessagesQueueSizeMetric != null)
-            outboundMessagesQueueSizeMetric.add(futs.size());
+        if (outboundMessagesOveralQueueSizeMetric != null)
+            outboundMessagesOveralQueueSizeMetric.add(futs.size());
+
+        if (outboundMessagesNodeQueueSizeMetric != null)
+            outboundMessagesNodeQueueSizeMetric.add(futs.size());
     }
 
     /**
@@ -370,8 +380,11 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
         SessionWriteRequest last = queue.poll();
 
         if (last != null) {
-            if (outboundMessagesQueueSizeMetric != null)
-                outboundMessagesQueueSizeMetric.decrement();
+            if (outboundMessagesOveralQueueSizeMetric != null)
+                outboundMessagesOveralQueueSizeMetric.decrement();
+
+            if (outboundMessagesNodeQueueSizeMetric != null)
+                outboundMessagesNodeQueueSizeMetric.decrement();
 
             if (sem != null && !last.messageThread())
                 sem.release();
@@ -405,8 +418,13 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         boolean rmv = queue.removeLastOccurrence(fut);
 
-        if (rmv && outboundMessagesQueueSizeMetric != null)
-            outboundMessagesQueueSizeMetric.decrement();
+        if (rmv) {
+            if (outboundMessagesOveralQueueSizeMetric != null)
+                outboundMessagesOveralQueueSizeMetric.decrement();
+
+            if (outboundMessagesNodeQueueSizeMetric != null)
+                outboundMessagesNodeQueueSizeMetric.decrement();
+        }
 
         return rmv;
     }

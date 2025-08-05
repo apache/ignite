@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
@@ -85,6 +87,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -95,6 +98,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATI
 import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
 
 /**
  * TCP NIO server. Due to asynchronous nature of connections processing
@@ -146,10 +150,19 @@ public class GridNioServer<T> {
     public static final int DFLT_IO_BALANCE_PERIOD = 5000;
 
     /** */
-    public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME = "outboundMessagesQueueSize";
+    public static final String OUTBOUND_MESSAGES_TOTAL_QUEUE_SIZE_METRIC_NAME = "outboundMessagesQueueSize";
 
     /** */
-    public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC = "Number of messages waiting to be sent";
+    public static final String OUTBOUND_MESSAGES_TOTAL_QUEUE_SIZE_METRIC_DESC
+        = "Total number of messages waiting to be sent over all client connections";
+
+    /** */
+    public static final String OUTBOUND_MESSAGES_NODE_QUEUE_SIZE_METRIC_NAME_PREFIX
+        = MetricUtils.metricName(OUTBOUND_MESSAGES_TOTAL_QUEUE_SIZE_METRIC_NAME, "node");
+
+    /** */
+    public static final String OUTBOUND_MESSAGES_NODE_QUEUE_SIZE_METRIC_DESC
+        = "Number of messages waiting to be sent to certain node";
 
     /** */
     public static final String RECEIVED_BYTES_METRIC_NAME = "receivedBytes";
@@ -249,7 +262,7 @@ public class GridNioServer<T> {
     @Nullable private final LongAdderMetric sentBytesCntMetric;
 
     /** Outbound messages queue size. */
-    @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
+    @Nullable private final LongAdderMetric outboundMessagesTotalQueueSizeMetric;
 
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
@@ -453,9 +466,9 @@ public class GridNioServer<T> {
         sentBytesCntMetric = mreg == null ?
             null : mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
 
-        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
-            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
-            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
+        outboundMessagesTotalQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
+            OUTBOUND_MESSAGES_TOTAL_QUEUE_SIZE_METRIC_NAME,
+            OUTBOUND_MESSAGES_TOTAL_QUEUE_SIZE_METRIC_DESC
         );
 
         if (mreg != null) {
@@ -804,6 +817,17 @@ public class GridNioServer<T> {
         impl.offerStateChange(fut);
 
         return fut;
+    }
+
+    /** */
+    private @Nullable LongAdderMetric outboundMessagesPerNodeQueueSizeMetric(@Nullable MetricRegistryImpl mreg, UUID nodeId) {
+        if (mreg == null)
+            return null;
+
+        return mreg.longAdderMetric(
+            MetricUtils.metricName(OUTBOUND_MESSAGES_NODE_QUEUE_SIZE_METRIC_NAME_PREFIX, nodeId.toString()),
+            OUTBOUND_MESSAGES_NODE_QUEUE_SIZE_METRIC_DESC
+        );
     }
 
     /**
@@ -1826,6 +1850,11 @@ public class GridNioServer<T> {
             lsnr.onMessageSent(ses, (T)msg);
     }
 
+    /** */
+    public void onNodeLeft(UUID nodeId) {
+        mreg.remove(outboundMessagesPerNodeQueueSizeMetric(mreg, nodeId).name());
+    }
+
     /**
      * Thread performing only read operations from the channel.
      */
@@ -2686,6 +2715,10 @@ public class GridNioServer<T> {
                     readBuf.order(order);
                 }
 
+                Map<Integer, ?> meta = fut.meta();
+
+                ConnectionKey connectionKey = meta == null ? null : (ConnectionKey)meta.get(CONN_IDX_META);
+
                 final GridSelectorNioSessionImpl ses = new GridSelectorNioSessionImpl(
                     log,
                     this,
@@ -2694,11 +2727,11 @@ public class GridNioServer<T> {
                     (InetSocketAddress)sockCh.getRemoteAddress(),
                     fut.accepted(),
                     sndQueueLimit,
-                    mreg,
                     writeBuf,
-                    readBuf);
-
-                Map<Integer, ?> meta = fut.meta();
+                    readBuf,
+                    outboundMessagesTotalQueueSizeMetric,
+                    connectionKey == null ? null : outboundMessagesPerNodeQueueSizeMetric(mreg, connectionKey.nodeId())
+                );
 
                 if (meta != null) {
                     for (Entry<Integer, ?> e : meta.entrySet())
@@ -2975,10 +3008,10 @@ public class GridNioServer<T> {
      * @return Write queue size.
      */
     public int outboundMessagesQueueSize() {
-        if (outboundMessagesQueueSizeMetric == null)
+        if (outboundMessagesTotalQueueSizeMetric == null)
             return -1;
 
-        return (int)outboundMessagesQueueSizeMetric.value();
+        return (int)outboundMessagesTotalQueueSizeMetric.value();
     }
 
     /**
