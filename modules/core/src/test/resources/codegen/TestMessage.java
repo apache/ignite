@@ -21,9 +21,6 @@ import java.lang.String;
 import java.util.UUID;
 import java.util.BitSet;
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.transactions.TxLockList;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -67,15 +64,6 @@ public class TestMessage implements Message {
 
     @Order(value = 11, method = "overridenFieldMethod")
     private String field;
-
-    @Order(12)
-    private GridDeploymentInfoBean gridDeploymentInfoBean;
-
-    @Order(13)
-    private IgniteTxKey[] igniteTxKeys;
-
-    @Order(14)
-    private TxLockList[] txLockLists;
 
     public int id() {
         return id;
@@ -171,30 +159,6 @@ public class TestMessage implements Message {
 
     public void overridenFieldMethod(String field) {
         this.field = field;
-    }
-
-    public GridDeploymentInfoBean gridDeploymentInfoBean() {
-        return gridDeploymentInfoBean;
-    }
-
-    public void gridDeploymentInfoBean(GridDeploymentInfoBean gridDeploymentInfoBean) {
-        this.gridDeploymentInfoBean = gridDeploymentInfoBean;
-    }
-
-    public IgniteTxKey[] igniteTxKeys() {
-        return igniteTxKeys;
-    }
-
-    public void igniteTxKeys(IgniteTxKey[] igniteTxKeys) {
-        this.igniteTxKeys = igniteTxKeys;
-    }
-
-    public TxLockList[] txLockLists() {
-        return txLockLists;
-    }
-
-    public void txLockLists(TxLockList[] txLockLists) {
-        this.txLockLists = txLockLists;
     }
 
     public short directType() {
