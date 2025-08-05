@@ -353,6 +353,13 @@ public abstract class CommonUtils {
     }
 
     /**
+     * @return System time approximated by 10 ms.
+     */
+    public static long currentTimeMillis() {
+        return curTimeMillis;
+    }
+
+    /**
      * Starts clock timer if grid is first.
      */
     public static void onGridStart() {
@@ -409,13 +416,6 @@ public abstract class CommonUtils {
                 timer0.join();
             }
         }
-    }
-
-    /**
-     * @return System time approximated by 10 ms.
-     */
-    public static long currentTimeMillis() {
-        return curTimeMillis;
     }
 
     /**
