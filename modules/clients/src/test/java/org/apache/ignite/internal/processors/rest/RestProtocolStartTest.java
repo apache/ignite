@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.ConnectorConfiguration.DFLT_TCP_PORT;
-import static org.apache.ignite.internal.processors.rest.AbstractRestProcessorSelfTest.LOC_HOST;
+import static org.apache.ignite.internal.client.integration.ClientAbstractSelfTest.HOST;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestProtocol.REST_CONNECTOR_METRIC_REGISTRY_NAME;
 import static org.apache.ignite.internal.util.nio.GridNioServer.SESSIONS_CNT_METRIC_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -70,7 +70,7 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
         FailingGridRestProtocol.restStarted.await();
 
         IgniteInternalFuture<Object> cliFut = GridTestUtils.runAsync(() -> {
-            try (TestBinaryClient client = new TestBinaryClient(LOC_HOST, DFLT_TCP_PORT)) {
+            try (TestBinaryClient client = new TestBinaryClient(HOST, DFLT_TCP_PORT)) {
                 // No-op.
             }
             catch (RuntimeException e) {

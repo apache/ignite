@@ -11,6 +11,7 @@ The `MessageProcessor` performs the following tasks:
 - **Naming Convention Enforcement**: It verifies that all fields annotated with `@Order` have a corresponding pair of accessor methods:
     - A getter named exactly after the field (e.g., `fieldName()`)
     - A setter named after the field, accepting a single argument (e.g., `fieldName(Type val)`)
+-  **Access Modifiers**: Getters and setters for all fields annotated with `@Order` must be declared as `public`
 
 ## Usage
 
