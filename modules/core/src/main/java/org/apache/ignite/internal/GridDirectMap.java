@@ -24,6 +24,7 @@ import java.lang.annotation.Target;
 
 /**
  * Annotates map fields.
+ * Deprecated, see {@link Order} and {@link MessageProcessor} for details.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

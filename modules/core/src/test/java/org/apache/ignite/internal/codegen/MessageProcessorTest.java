@@ -67,6 +67,20 @@ public class MessageProcessorTest {
 
     /** */
     @Test
+    public void testMapMessage() {
+        Compilation compilation = compile("TestMapMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.codegen.TestMapMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMapMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
     public void testEmptyMessage() {
         Compilation compilation = compile("EmptyMessage.java");
 

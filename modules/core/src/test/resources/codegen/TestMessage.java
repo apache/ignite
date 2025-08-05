@@ -18,13 +18,11 @@
 package org.apache.ignite.internal;
 
 import java.lang.String;
-import java.util.Map;
 import java.util.UUID;
 import java.util.BitSet;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -66,9 +64,6 @@ public class TestMessage implements Message {
 
     @Order(value = 11, method = "overridenFieldMethod")
     private String field;
-
-    @Order(12)
-    private Map<Long, IgniteUuid> mapValue;
 
     public int id() {
         return id;
@@ -164,14 +159,6 @@ public class TestMessage implements Message {
 
     public void overridenFieldMethod(String field) {
         this.field = field;
-    }
-
-    public Map<Long, IgniteUuid> mapValue() {
-        return mapValue;
-    }
-
-    public void mapValue(Map<Long, IgniteUuid> mapValue) {
-        this.mapValue = mapValue;
     }
 
     public short directType() {

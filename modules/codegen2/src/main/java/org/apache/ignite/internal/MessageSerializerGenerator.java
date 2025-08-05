@@ -353,7 +353,7 @@ class MessageSerializerGenerator {
             else if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 returnFalseIfWriteFailed(write, "writer.writeAffinityTopologyVersion", getExpr);
 
-            else if (assignableFrom(erasedType(type), erasedType(Map.class.getName()))) {
+            else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
                 assert typeArgs.size() == 2;
@@ -478,14 +478,12 @@ class MessageSerializerGenerator {
             else if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 returnFalseIfReadFailed(name, "reader.readAffinityTopologyVersion");
 
-            else if (assignableFrom(erasedType(type), erasedType(Map.class.getName()))) {
+            else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
                 assert typeArgs.size() == 2;
 
                 boolean linked = sameType(type, LinkedHashMap.class);
-
-                imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
                 returnFalseIfReadFailed(name, "reader.readMap",
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
@@ -538,9 +536,6 @@ class MessageSerializerGenerator {
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
-            if (sameType(type, Long.class))
-                return "LONG";
-
             if (sameType(type, String.class))
                 return "STRING";
 
