@@ -21,14 +21,12 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersion>, Externalizable, Message {
+public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,11 +37,9 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     public static final AffinityTopologyVersion ZERO = new AffinityTopologyVersion(0, 0);
 
     /** */
-    @Order(value = 0, method = "topologyVersion")
     private long topVer;
 
     /** */
-    @Order(value = 1, method = "minorTopologyVersion")
     private int minorTopVer;
 
     /**
@@ -73,7 +69,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /**
-     * @return {@code True} if this is real topology version (neither {@link #NONE} nor {@link #ZERO}.
+     * @return {@code True} if this is real topology version (neither {@link #NONE} nor {@link #ZERO}).
      */
     public boolean initialized() {
         return topVer > 0;
@@ -96,24 +92,10 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(long topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return Minor topology version.
      */
     public int minorTopologyVersion() {
         return minorTopVer;
-    }
-
-    /**
-     * @param minorTopVer New minor topology version.
-     */
-    public void minorTopologyVersion(int minorTopVer) {
-        this.minorTopVer = minorTopVer;
     }
 
     /** {@inheritDoc} */
@@ -152,11 +134,6 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -184,11 +161,6 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         topVer = in.readLong();
         minorTopVer = in.readInt();
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 111;
     }
 
     /** {@inheritDoc} */

@@ -26,7 +26,6 @@ import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.codegen.AffinityTopologyVersionSerializer;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
 import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
@@ -57,7 +56,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateResponseMessage;
 import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
@@ -312,7 +310,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)107, GridQueryFailResponse::new);
         factory.register((short)108, GridQueryNextPageRequest::new);
         factory.register((short)109, GridQueryNextPageResponse::new);
-        factory.register((short)111, AffinityTopologyVersion::new, new AffinityTopologyVersionSerializer());
         factory.register((short)112, GridCacheSqlQuery::new);
         // 113 - BinaryObjectImpl
         factory.register((short)114, GridDhtPartitionSupplyMessage::new);
