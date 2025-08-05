@@ -136,6 +136,8 @@ public class SnapshotCheckProcess {
         contexts.forEach((snpName, ctx) -> ctx.locProcFut.onDone(err));
 
         clusterOpFuts.forEach((reqId, fut) -> fut.onDone(err));
+
+        contexts.clear();
     }
 
     /** Phase 2 and process finish. */

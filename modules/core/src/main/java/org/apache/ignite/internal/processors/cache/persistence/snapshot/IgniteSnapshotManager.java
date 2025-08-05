@@ -1735,8 +1735,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         res.listen(lsnr -> {
             if (log.isInfoEnabled()) {
-                log.info("The check snapshot procedure finished [snpName=" + name + ", snpPath=" + snpPath
-                    + ", incIdx=" + incIdx + ", grps=" + grps + ']');
+                Throwable err = lsnr.error();
+
+                log.info("The check snapshot procedure finished [success=" + (err == null) + ", snpName=" + name + ", snpPath=" + snpPath
+                    + ", incIdx=" + incIdx + ", grps=" + grps + (err == null ? "" : ", err=" + err.getMessage()) + ']');
             }
         });
 
