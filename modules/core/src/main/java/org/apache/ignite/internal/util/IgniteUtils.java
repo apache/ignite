@@ -4419,44 +4419,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Writes UUID to output stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
-     *
-     * @param out Output stream.
-     * @param uid UUID to write.
-     * @throws IOException If write failed.
-     */
-    public static void writeUuid(DataOutput out, UUID uid) throws IOException {
-        // Write null flag.
-        out.writeBoolean(uid == null);
-
-        if (uid != null) {
-            out.writeLong(uid.getMostSignificantBits());
-            out.writeLong(uid.getLeastSignificantBits());
-        }
-    }
-
-    /**
-     * Reads UUID from input stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
-     *
-     * @param in Input stream.
-     * @return Read UUID.
-     * @throws IOException If read failed.
-     */
-    @Nullable public static UUID readUuid(DataInput in) throws IOException {
-        // If UUID is not null.
-        if (!in.readBoolean()) {
-            long most = in.readLong();
-            long least = in.readLong();
-
-            return IgniteUuidCache.onIgniteUuidRead(new UUID(most, least));
-        }
-
-        return null;
-    }
-
-    /**
      * Writes {@link org.apache.ignite.lang.IgniteUuid} to output stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
