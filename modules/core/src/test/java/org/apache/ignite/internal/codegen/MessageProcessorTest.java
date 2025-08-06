@@ -28,6 +28,7 @@ import com.google.testing.compile.JavaFileObjects;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.junit.Test;
 
@@ -155,9 +156,10 @@ public class MessageProcessorTest {
 
         File igniteCoreJar = jarForClass(Message.class);
         File igniteCodegenJar = jarForClass(Order.class);
+        File igniteBinaryApiJar = jarForClass(IgniteUuid.class);
 
         return Compiler.javac()
-            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar))
+            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar))
             .withProcessors(new MessageProcessor())
             .compile(input);
     }
