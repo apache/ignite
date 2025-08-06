@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -47,7 +46,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     public GridClientOptimizedMarshaller() {
         opMarsh = new OptimizedMarshaller();
 
-        opMarsh.setContext(new ClientMarshallerContext());
+        opMarsh.setContext(new MarshallerContextImpl(null, null));
     }
 
     /**
@@ -58,24 +57,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     public GridClientOptimizedMarshaller(@Nullable List<PluginProvider> plugins) {
         opMarsh = new OptimizedMarshaller();
 
-        opMarsh.setContext(new ClientMarshallerContext(plugins));
-    }
-
-    /**
-     * Constructs optimized marshaller with specific parameters.
-     *
-     * @param requireSer Require serializable flag.
-     * @param poolSize Object streams pool size.
-     * @throws IOException If an I/O error occurs while writing stream header.
-     * @throws IgniteException If this marshaller is not supported on the current JVM.
-     * @see OptimizedMarshaller
-     */
-    public GridClientOptimizedMarshaller(boolean requireSer, int poolSize) throws IOException {
-        opMarsh = new OptimizedMarshaller();
-
-        opMarsh.setContext(new ClientMarshallerContext());
-        opMarsh.setRequireSerializable(requireSer);
-        opMarsh.setPoolSize(poolSize);
+        opMarsh.setContext(new MarshallerContextImpl(plugins, null));
     }
 
     /** {@inheritDoc} */
@@ -109,22 +91,6 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
         }
         catch (IgniteCheckedException e) {
             throw new IOException(e);
-        }
-    }
-
-    /**
-     */
-    private static class ClientMarshallerContext extends MarshallerContextImpl {
-        /** */
-        public ClientMarshallerContext() {
-            super(null, null);
-        }
-
-        /**
-         * @param plugins Plugins.
-         */
-        public ClientMarshallerContext(@Nullable List<PluginProvider> plugins) {
-            super(plugins, null);
         }
     }
 }
