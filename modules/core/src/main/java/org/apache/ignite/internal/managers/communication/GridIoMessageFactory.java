@@ -45,6 +45,7 @@ import org.apache.ignite.internal.codegen.NearCacheUpdatesSerializer;
 import org.apache.ignite.internal.codegen.SessionChannelMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpInverseConnectionResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.TxLockSerializer;
+import org.apache.ignite.internal.codegen.UUIDCollectionMessageSerializer;
 import org.apache.ignite.internal.codegen.UserAuthenticateRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.UserAuthenticateResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.UserManagementOperationFinishedMessageSerializer;
@@ -313,7 +314,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)112, GridCacheSqlQuery::new);
         // 113 - BinaryObjectImpl
         factory.register((short)114, GridDhtPartitionSupplyMessage::new);
-        factory.register((short)115, UUIDCollectionMessage::new);
+        factory.register((short)115, UUIDCollectionMessage::new, new UUIDCollectionMessageSerializer());
         factory.register((short)116, GridNearSingleGetRequest::new);
         factory.register((short)117, GridNearSingleGetResponse::new);
         factory.register((short)118, CacheContinuousQueryBatchAck::new);

@@ -18,6 +18,7 @@
 package org.apache.ignite.util;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.codegen.UUIDCollectionMessageSerializer;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
@@ -107,7 +108,12 @@ public class GridMessageCollectionTest {
         MessageFactory msgFactory =
             new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
 
-        m.writeTo(buf, writer(msgFactory));
+        UUIDCollectionMessageSerializer serializer = new UUIDCollectionMessageSerializer();
+
+        if (m instanceof UUIDCollectionMessage)
+            serializer.writeTo(m, buf, writer(msgFactory));
+        else
+            m.writeTo(buf, writer(msgFactory));
 
         buf.flip();
 
@@ -120,7 +126,10 @@ public class GridMessageCollectionTest {
 
         Message mx = msgFactory.create(type);
 
-        mx.readFrom(buf, reader(msgFactory));
+        if (mx instanceof UUIDCollectionMessage)
+            serializer.readFrom(mx, buf, reader(msgFactory));
+        else
+            mx.readFrom(buf, reader(msgFactory));
 
         assertEquals(m, mx);
     }
