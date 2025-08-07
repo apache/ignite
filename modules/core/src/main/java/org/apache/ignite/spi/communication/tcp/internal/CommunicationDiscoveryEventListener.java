@@ -41,7 +41,8 @@ public class CommunicationDiscoveryEventListener implements GridLocalEventListen
     private final ConnectionClientPool clientPool;
 
     /** Statistics. */
-    @Nullable private volatile TcpCommunicationMetricsListener metricsLsnr;
+    @Nullable
+    private volatile TcpCommunicationMetricsListener metricsLsnr;
 
     /**
      * @param nioSrv NIO server.
@@ -51,7 +52,7 @@ public class CommunicationDiscoveryEventListener implements GridLocalEventListen
     public CommunicationDiscoveryEventListener(
         GridNioServer<?> nioSrv,
         ConnectionClientPool clientPool,
-        @Nullable TcpCommunicationMetricsListener metricsLsnr
+        TcpCommunicationMetricsListener metricsLsnr
     ) {
         this.nioSrv = nioSrv;
         this.clientPool = clientPool;
@@ -80,9 +81,11 @@ public class CommunicationDiscoveryEventListener implements GridLocalEventListen
     private void onNodeLeft(Object consistentId, UUID nodeId) {
         assert nodeId != null;
 
-        nioSrv.onNodeLeft(nodeId);
-        clientPool.onNodeLeft(nodeId);
         metricsLsnr.onNodeLeft(consistentId);
+
+        clientPool.onNodeLeft(nodeId);
+
+        nioSrv.onNodeLeft(nodeId);
     }
 
     /**

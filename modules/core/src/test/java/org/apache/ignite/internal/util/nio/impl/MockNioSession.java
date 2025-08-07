@@ -110,11 +110,6 @@ public class MockNioSession extends GridMetadataAwareAdapter implements GridNioS
     }
 
     /** {@inheritDoc} */
-    @Override public long totalActiveTime() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridNioFuture<Boolean> close() {
         return new GridNioFinishedFuture<>(true);
     }

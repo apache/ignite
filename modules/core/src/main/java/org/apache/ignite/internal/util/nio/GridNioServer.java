@@ -150,15 +150,15 @@ public class GridNioServer<T> {
     public static final int DFLT_IO_BALANCE_PERIOD = 5000;
 
     /** */
-    public static final String OUTBOUND_MESSAGES_TOTAL_QUEUE_SIZE_METRIC_NAME = "outboundMessagesQueueSize";
+    public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME = "outboundMessagesQueueSize";
 
     /** */
-    public static final String OUTBOUND_MESSAGES_TOTAL_QUEUE_SIZE_METRIC_DESC
+    public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
         = "Total number of messages waiting to be sent over all client connections";
 
     /** */
     public static final String MESSAGES_TO_NODE_QUEUE_SIZE_METRIC_NAME_PREFIX
-        = MetricUtils.metricName(OUTBOUND_MESSAGES_TOTAL_QUEUE_SIZE_METRIC_NAME, "node");
+        = MetricUtils.metricName(OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME, "node");
 
     /** */
     public static final String MESSAGES_TO_NODE_QUEUE_SIZE_METRIC_DESC
@@ -262,7 +262,7 @@ public class GridNioServer<T> {
     @Nullable private final LongAdderMetric sentBytesCntMetric;
 
     /** Outbound messages queue size. */
-    @Nullable private final LongAdderMetric outboundMessagesTotalQueueSizeMetric;
+    @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
 
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
@@ -466,9 +466,9 @@ public class GridNioServer<T> {
         sentBytesCntMetric = mreg == null ?
             null : mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
 
-        outboundMessagesTotalQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
-            OUTBOUND_MESSAGES_TOTAL_QUEUE_SIZE_METRIC_NAME,
-            OUTBOUND_MESSAGES_TOTAL_QUEUE_SIZE_METRIC_DESC
+        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
         );
 
         if (mreg != null) {
@@ -1195,8 +1195,6 @@ public class GridNioServer<T> {
 
                 return;
             }
-            
-            long time = System.nanoTime();
 
             ReadableByteChannel sockCh = (ReadableByteChannel)key.channel();
 
@@ -1219,11 +1217,8 @@ public class GridNioServer<T> {
 
                     return;
                 }
-                else if (cnt == 0) {
-                    ses.addActivityTime(time);
-
+                else if (cnt == 0)
                     return;
-                }
 
                 if (log.isTraceEnabled())
                     log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');
@@ -1252,9 +1247,6 @@ public class GridNioServer<T> {
                 catch (IgniteCheckedException e) {
                     close(ses, e);
                 }
-                finally {
-                    ses.addActivityTime(time);
-                }
             }
             finally {
                 ses.active(false);
@@ -1268,12 +1260,11 @@ public class GridNioServer<T> {
          * @throws IOException If write failed.
          */
         @Override protected void processWrite(SelectionKey key) throws IOException {
-            long time = System.nanoTime();
-            long extraWorkingTime = 0;
-
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
+
+            ses.active(true);
 
             try {
                 while (true) {
@@ -1284,11 +1275,7 @@ public class GridNioServer<T> {
                     if (buf == null) {
                         assert req == null;
 
-                        extraWorkingTime += System.nanoTime() - time;
-
                         req = ses.pollFuture();
-
-                        time = System.nanoTime();
 
                         if (req == null) {
                             stopPollingForWrite(key, ses);
@@ -1343,8 +1330,6 @@ public class GridNioServer<T> {
             }
             finally {
                 ses.active(false);
-
-                ses.addActivityTime(time, extraWorkingTime);
             }
         }
 
@@ -1467,28 +1452,22 @@ public class GridNioServer<T> {
          * @throws IOException If write failed.
          */
         private void processWriteSsl(SelectionKey key) throws IOException {
-            long time = System.nanoTime();
-            long extraWorkingTime = 0;
-
-            WritableByteChannel sockCh = (WritableByteChannel)key.channel();
-
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
-
-            MessageWriter writer = messageWriter(ses);
 
             boolean handshakeFinished = sslFilter.lock(ses);
 
             ses.active(true);
 
             try {
+                WritableByteChannel sockCh = (WritableByteChannel)key.channel();
+                MessageWriter writer = messageWriter(ses);
+
                 boolean writeFinished = writeSslSystem(ses, sockCh);
 
                 // If post-handshake message is not written fully (possible on JDK 17), we should retry.
                 if (!handshakeFinished || !writeFinished) {
                     if (writeFinished)
                         stopPollingForWrite(key, ses);
-
-                    ses.addActivityTime(time, extraWorkingTime);
 
                     return;
                 }
@@ -1505,8 +1484,6 @@ public class GridNioServer<T> {
 
                     if (sslNetBuf.hasRemaining()) {
                         ses.addMeta(BUF_META_KEY, sslNetBuf);
-
-                        ses.addActivityTime(time, extraWorkingTime);
 
                         return;
                     }
@@ -1530,11 +1507,7 @@ public class GridNioServer<T> {
                         req = systemMessage(ses);
 
                         if (req == null) {
-                            extraWorkingTime += System.nanoTime() - time;
-
                             req = ses.pollFuture();
-
-                            time = System.nanoTime();
 
                             if (req == null && buf.position() == 0) {
                                 stopPollingForWrite(key, ses);
@@ -1555,13 +1528,8 @@ public class GridNioServer<T> {
                     while (finished) {
                         req = systemMessage(ses);
 
-                        if (req == null) {
-                            extraWorkingTime += System.nanoTime() - time;
-
+                        if (req == null)
                             req = ses.pollFuture();
-
-                            time = System.nanoTime();
-                        }
 
                         if (req == null)
                             break;
@@ -1634,8 +1602,6 @@ public class GridNioServer<T> {
                 ses.active(false);
 
                 sslFilter.unlock(ses);
-
-                ses.addActivityTime(time, extraWorkingTime);
             }
         }
 
@@ -1738,8 +1704,8 @@ public class GridNioServer<T> {
          */
         private void processWrite0(SelectionKey key) throws IOException {
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
-            long time = System.nanoTime();
-            long extraWorkingTime = 0;
+
+            ses.active(true);
 
             try {
                 WritableByteChannel sockCh = (WritableByteChannel)key.channel();
@@ -1753,16 +1719,10 @@ public class GridNioServer<T> {
                     req = systemMessage(ses);
 
                     if (req == null) {
-                        extraWorkingTime += System.nanoTime() - time;
-
                         req = ses.pollFuture();
-
-                        time = System.nanoTime();
 
                         if (req == null && buf.position() == 0) {
                             stopPollingForWrite(key, ses);
-
-                            ses.addActivityTime(time, extraWorkingTime);
 
                             return;
                         }
@@ -1780,13 +1740,8 @@ public class GridNioServer<T> {
 
                     req = systemMessage(ses);
 
-                    if (req == null) {
-                        extraWorkingTime += System.nanoTime() - time;
-
+                    if (req == null)
                         req = ses.pollFuture();
-
-                        time = System.nanoTime();
-                    }
 
                     if (req == null)
                         break;
@@ -1830,8 +1785,6 @@ public class GridNioServer<T> {
             }
             finally {
                 ses.active(false);
-
-                ses.addActivityTime(time, extraWorkingTime);
             }
         }
 
@@ -2801,7 +2754,7 @@ public class GridNioServer<T> {
                     sndQueueLimit,
                     writeBuf,
                     readBuf,
-                    outboundMessagesTotalQueueSizeMetric,
+                    outboundMessagesQueueSizeMetric,
                     connectionKey == null ? null : messagesToNodeQueueSizeMetric(mreg, connectionKey.nodeId())
                 );
 
@@ -3080,10 +3033,10 @@ public class GridNioServer<T> {
      * @return Write queue size.
      */
     public int outboundMessagesQueueSize() {
-        if (outboundMessagesTotalQueueSizeMetric == null)
+        if (outboundMessagesQueueSizeMetric == null)
             return -1;
 
-        return (int)outboundMessagesTotalQueueSizeMetric.value();
+        return (int)outboundMessagesQueueSizeMetric.value();
     }
 
     /**

@@ -88,7 +88,8 @@ public interface GridNioSession {
     /**
      * Returns activity flag.
      *
-     * @return {@code True} session data is being sent, received or if nessesary related processes are active.
+     * @return {@code True} if session data is being sent or received through this session. Or if related
+     * nessesary processes are active.
      */
     public boolean active();
 
@@ -98,13 +99,6 @@ public interface GridNioSession {
      * @return Last send schedule time.
      */
     public long lastSendScheduleTime();
-
-    /**
-     * Returns total active time to send and receive data and of related necessary jobs.
-     *
-     * @return Total active time to send and receive data and of related necessary jobs.
-     */
-    public long totalActiveTime();
 
     /**
      * Performs a request for asynchronous session close.

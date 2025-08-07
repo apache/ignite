@@ -112,8 +112,6 @@ public class IpcToNioAdapter<T> {
      * @throws InterruptedException If interrupted.
      */
     public void serve() throws InterruptedException {
-        long time = System.nanoTime();
-
         ses.active(true);
 
         try {
@@ -163,7 +161,6 @@ public class IpcToNioAdapter<T> {
         }
         finally {
             ses.active(false);
-            ses.addActivityTime(time);
 
             try {
                 // Assuming remote end closed connection - pushing event from head to tail.
@@ -183,11 +180,10 @@ public class IpcToNioAdapter<T> {
      * @return Send result.
      */
     private GridNioFuture<?> send(Message msg) {
-        long time = System.nanoTime();
-
         assert writeBuf.hasArray();
 
         int cnt = 0;
+
         ses.active(true);
 
         try {
@@ -200,9 +196,8 @@ public class IpcToNioAdapter<T> {
         }
         finally {
             ses.active(false);
-            ses.bytesSent(cnt);
 
-            ses.addActivityTime(time);
+            ses.bytesSent(cnt);
         }
 
         return new GridNioFinishedFuture<>((Object)null);

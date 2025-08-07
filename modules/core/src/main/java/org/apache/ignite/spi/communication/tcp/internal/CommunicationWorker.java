@@ -254,7 +254,7 @@ public class CommunicationWorker extends GridWorker {
                     }
                 }
 
-                long idleTime = client.idleTime();
+                long idleTime = client.getIdleTime();
 
                 if (idleTime >= cfg.idleConnectionTimeout()) {
                     if (recovery == null && cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()))

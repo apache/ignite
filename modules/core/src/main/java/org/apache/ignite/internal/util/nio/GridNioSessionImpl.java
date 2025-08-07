@@ -64,9 +64,6 @@ public class GridNioSessionImpl implements GridNioSession {
     /** Received bytes since last NIO sessions balancing. */
     private final LongAdder bytesRcvd0 = new LongAdder();
 
-    /** Total activity time in nanos. */
-    protected final LongAdder activityTime = new LongAdder();
-
     /** Last send schedule timestamp. */
     private volatile long sndSchedTime;
 
@@ -80,7 +77,7 @@ public class GridNioSessionImpl implements GridNioSession {
     private volatile boolean readsPaused;
 
     /** Filter chain that will handle write and close requests. */
-    private GridNioFilterChain filterChain;
+    private final GridNioFilterChain filterChain;
 
     /** Accepted flag. */
     private final boolean accepted;
@@ -115,16 +112,10 @@ public class GridNioSessionImpl implements GridNioSession {
 
     /** {@inheritDoc} */
     @Override public GridNioFuture<?> send(Object msg) {
-        long now = System.nanoTime();
-
         try {
             resetSendScheduleTime();
 
-            GridNioFuture<?> res = chain().onSessionWrite(this, msg, true, null);
-
-            res.listen(() -> activityTime.add(System.nanoTime() - now));
-
-            return res;
+            return chain().onSessionWrite(this, msg, true, null);
         }
         catch (IgniteCheckedException e) {
             close();
@@ -134,9 +125,8 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void sendNoFuture(Object msg, IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
-        long now = System.nanoTime();
-
+    @Override public void sendNoFuture(Object msg, IgniteInClosure<IgniteException> ackC)
+        throws IgniteCheckedException {
         try {
             chain().onSessionWrite(this, msg, false, ackC);
         }
@@ -144,9 +134,6 @@ public class GridNioSessionImpl implements GridNioSession {
             close();
 
             throw e;
-        }
-        finally {
-            activityTime.add(System.nanoTime() - now);
         }
     }
 
@@ -183,33 +170,6 @@ public class GridNioSessionImpl implements GridNioSession {
         catch (IgniteCheckedException e) {
             return new GridNioFinishedFuture<>(e);
         }
-    }
-
-    /**
-     * Adds related to this session external activity time compared to now.
-     *
-     * @see #bytesSent(int)
-     * @see #bytesReceived(int)
-     * @see #addActivityTime(long, long)
-     */
-    public void addActivityTime(long sinceNonos) {
-        activityTime.add(System.nanoTime() - sinceNonos);
-    }
-
-    /**
-     * Adds related to this session external activity time compared to now and with additional gathered value.
-     *
-     * @see #bytesSent(int)
-     * @see #bytesReceived(int)
-     * @see #addActivityTime(long)
-     */
-    public void addActivityTime(long sinceNonos, long extraTime) {
-        activityTime.add((System.nanoTime() - sinceNonos) + extraTime);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long totalActiveTime() {
-        return U.nanosToMillis(activityTime.sum());
     }
 
     /** {@inheritDoc} */
@@ -349,7 +309,6 @@ public class GridNioSessionImpl implements GridNioSession {
      * Note that this method is designed to be called in one thread only.
      *
      * @param cnt Number of bytes sent.
-     * @see #addActivityTime(long)
      */
     public void bytesSent(int cnt) {
         bytesSent.add(cnt);
@@ -364,7 +323,6 @@ public class GridNioSessionImpl implements GridNioSession {
      * Note that this method is designed to be called in one thread only.
      *
      * @param cnt Number of bytes received.
-     * @see #addActivityTime(long)
      */
     public void bytesReceived(int cnt) {
         bytesRcvd.add(cnt);
@@ -390,9 +348,11 @@ public class GridNioSessionImpl implements GridNioSession {
         return closeTime.compareAndSet(0, U.currentTimeMillis());
     }
 
-    /** Sets the activity flag. */
+    /** Manages the activity flag. */
     public void active(boolean active) {
         activityCnt.add(active ? 1 : -1);
+
+        assert !active || activityCnt.sum() >= 0;
     }
 
     /**

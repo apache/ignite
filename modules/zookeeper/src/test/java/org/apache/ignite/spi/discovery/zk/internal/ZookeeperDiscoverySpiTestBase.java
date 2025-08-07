@@ -800,18 +800,13 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             }
 
             /** {@inheritDoc} */
-            @Override public long idleTime() {
-                return delegate.idleTime();
+            @Override public long getIdleTime() {
+                return delegate.getIdleTime();
             }
 
             /** {@inheritDoc} */
             @Override public boolean active() {
                 return delegate.active();
-            }
-
-            /** {@inheritDoc} */
-            @Override public long totalActiveTime() {
-                return delegate.totalActiveTime();
             }
 
             /** {@inheritDoc} */

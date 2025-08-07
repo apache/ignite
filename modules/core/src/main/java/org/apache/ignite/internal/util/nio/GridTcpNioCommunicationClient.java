@@ -100,7 +100,10 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
         if (closed())
             throw new IgniteCheckedException("Client was closed: " + this);
 
-        ses.send(data);
+        GridNioFuture<?> fut = ses.send(data);
+
+        if (fut.isDone())
+            fut.get();
     }
 
     /** {@inheritDoc} */
@@ -134,12 +137,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public long creationTime() {
-        return ses.createTime();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long idleTime() {
+    @Override public long getIdleTime() {
         long now = U.currentTimeMillis();
 
         // Session can be used for receiving and sending.
@@ -148,8 +146,8 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public long totalActiveTime() {
-        return ses.totalActiveTime();
+    @Override public long creationTime() {
+        return ses.createTime();
     }
 
     /** {@inheritDoc} */
