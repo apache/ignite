@@ -125,6 +125,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -429,9 +430,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Supplier of network interfaces. Could be used for tests purposes, must not be changed in production code. */
     public static InterfaceSupplier INTERFACE_SUPPLIER = NetworkInterface::getNetworkInterfaces;
 
-    /** */
-    static volatile long curTimeMillis = System.currentTimeMillis();
-
     /** Primitive class map. */
     private static final Map<String, Class<?>> primitiveMap = new HashMap<>(16, .5f);
 
@@ -456,15 +454,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
     /** Random is used to get random server node to authentication from client node. */
     private static final Random RND = new Random(System.currentTimeMillis());
-
-    /** Clock timer. */
-    private static Thread timer;
-
-    /** Grid counter. */
-    static int gridCnt;
-
-    /** Mutex. */
-    static final Object mux = new Object();
 
     /** Exception converters. */
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
@@ -933,13 +922,6 @@ public abstract class IgniteUtils extends CommonUtils {
             return (IgniteException)e.getCause();
 
         return new IgniteException(e.getMessage(), e);
-    }
-
-    /**
-     * @return System time approximated by 10 ms.
-     */
-    public static long currentTimeMillis() {
-        return curTimeMillis;
     }
 
     /**
@@ -2760,65 +2742,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Starts clock timer if grid is first.
-     */
-    public static void onGridStart() {
-        synchronized (mux) {
-            if (gridCnt == 0) {
-                assert timer == null;
-
-                timer = new Thread(new Runnable() {
-                    @SuppressWarnings({"BusyWait"})
-                    @Override public void run() {
-                        while (true) {
-                            curTimeMillis = System.currentTimeMillis();
-
-                            try {
-                                Thread.sleep(10);
-                            }
-                            catch (InterruptedException ignored) {
-                                break;
-                            }
-                        }
-                    }
-                }, "ignite-clock");
-
-                timer.setDaemon(true);
-
-                timer.setPriority(10);
-
-                timer.start();
-            }
-
-            ++gridCnt;
-        }
-    }
-
-    /**
-     * Stops clock timer if all nodes into JVM were stopped.
-     * @throws InterruptedException If interrupted.
-     */
-    public static void onGridStop() throws InterruptedException {
-        synchronized (mux) {
-            // Grid start may fail and onGridStart() does not get called.
-            if (gridCnt == 0)
-                return;
-
-            --gridCnt;
-
-            Thread timer0 = timer;
-
-            if (gridCnt == 0 && timer0 != null) {
-                timer = null;
-
-                timer0.interrupt();
-
-                timer0.join();
-            }
-        }
-    }
-
-    /**
      * Copies input byte stream to output byte stream.
      *
      * @param in Input byte stream.
@@ -4415,44 +4338,6 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     public static ClusterGroupEmptyCheckedException emptyTopologyException() {
         return new ClusterGroupEmptyCheckedException("Cluster group is empty.");
-    }
-
-    /**
-     * Writes UUID to output stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
-     *
-     * @param out Output stream.
-     * @param uid UUID to write.
-     * @throws IOException If write failed.
-     */
-    public static void writeUuid(DataOutput out, UUID uid) throws IOException {
-        // Write null flag.
-        out.writeBoolean(uid == null);
-
-        if (uid != null) {
-            out.writeLong(uid.getMostSignificantBits());
-            out.writeLong(uid.getLeastSignificantBits());
-        }
-    }
-
-    /**
-     * Reads UUID from input stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
-     *
-     * @param in Input stream.
-     * @return Read UUID.
-     * @throws IOException If read failed.
-     */
-    @Nullable public static UUID readUuid(DataInput in) throws IOException {
-        // If UUID is not null.
-        if (!in.readBoolean()) {
-            long most = in.readLong();
-            long least = in.readLong();
-
-            return IgniteUuidCache.onIgniteUuidRead(new UUID(most, least));
-        }
-
-        return null;
     }
 
     /**
@@ -9873,6 +9758,7 @@ public abstract class IgniteUtils extends CommonUtils {
                 bcfg.getTypeConfigurations(),
                 CU.affinityFields(cfg),
                 bcfg.isCompactFooter(),
+                CU::affinityFieldName,
                 log
             )
             : new BinaryContext(
@@ -9886,6 +9772,7 @@ public abstract class IgniteUtils extends CommonUtils {
                 bcfg.getTypeConfigurations(),
                 CU.affinityFields(cfg),
                 bcfg.isCompactFooter(),
+                CU::affinityFieldName,
                 log
             );
     }
@@ -9956,9 +9843,23 @@ public abstract class IgniteUtils extends CommonUtils {
             @Nullable Collection<BinaryTypeConfiguration> typeCfgs,
             Map<String, String> affFlds,
             boolean compactFooter,
+            Function<Class<?>, String> affFldNameProvider,
             IgniteLogger log
         ) {
-            super(metaHnd, marsh, igniteInstanceName, clsLdr, dfltSerializer, idMapper, nameMapper, typeCfgs, affFlds, compactFooter, log);
+            super(
+                metaHnd,
+                marsh,
+                igniteInstanceName,
+                clsLdr,
+                dfltSerializer,
+                idMapper,
+                nameMapper,
+                typeCfgs,
+                affFlds,
+                compactFooter,
+                affFldNameProvider,
+                log
+            );
         }
 
 

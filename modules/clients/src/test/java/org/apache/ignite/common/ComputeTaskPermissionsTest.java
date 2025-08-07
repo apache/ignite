@@ -48,9 +48,6 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
@@ -71,7 +68,6 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
@@ -279,21 +275,6 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
             () -> grid(0).context().task().execute(PublicAccessSystemTask.class, null).get(getTestTimeout()),
             SRV_NODES_CNT
         );
-    }
-
-    /** */
-    @Test
-    public void testGridClient() throws Exception {
-        GridClientConfiguration cfg = new GridClientConfiguration()
-            .setServers(singletonList("127.0.0.1:11211"))
-            .setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(new SecurityCredentials("grid-client", "")));
-
-        try (GridClient cli = GridClientFactory.start(cfg)) {
-            checkTask(String.class, (t, a) -> cli.compute().execute(t, a));
-            checkTask(String.class, (t, a) -> cli.compute().executeAsync(t, a).get());
-            checkTask(String.class, (t, a) -> cli.compute().affinityExecute(t, CACHE, "key", a));
-            checkTask(String.class, (t, a) -> cli.compute().affinityExecuteAsync(t, CACHE, "key", a).get());
-        }
     }
 
     /** */

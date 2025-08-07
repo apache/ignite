@@ -19,7 +19,6 @@ package org.apache.ignite.internal.binary;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -61,12 +60,10 @@ import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -74,7 +71,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -143,6 +139,9 @@ public class BinaryContext {
     /** */
     private final Function<String, BinaryInternalMapper> mapperProvider;
 
+    /** */
+    private final Function<Class<?>, String> affFldNameProvider;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -165,6 +164,7 @@ public class BinaryContext {
      * @param nameMapper Binary name mapper.
      * @param affFlds Affinity fields.
      * @param compactFooter Compact footer flag.
+     * @param affFldNameProvider Affinity field name provider function.
      * @param log Logger.
      */
     public BinaryContext(
@@ -178,11 +178,12 @@ public class BinaryContext {
         @Nullable Collection<BinaryTypeConfiguration> typeCfgs,
         Map<String, String> affFlds,
         boolean compactFooter,
+        Function<Class<?>, String> affFldNameProvider,
         IgniteLogger log
     ) {
         assert metaHnd != null;
 
-        MarshallerUtils.setNodeName(optmMarsh, igniteInstanceName);
+        optmMarsh.nodeName(igniteInstanceName);
 
         this.metaHnd = metaHnd;
         this.igniteInstanceName = igniteInstanceName;
@@ -195,6 +196,7 @@ public class BinaryContext {
             mapperProvider = clsName -> DFLT_MAPPER;
 
         this.compactFooter = compactFooter;
+        this.affFldNameProvider = affFldNameProvider;
 
         this.log = log;
 
@@ -373,7 +375,7 @@ public class BinaryContext {
                             Class<?> cls = U.classForName(clsName0, null);
 
                             if (cls != null)
-                                affField = affinityFieldName(cls);
+                                affField = affFldNameProvider.apply(cls);
                         }
 
                         descs.add(clsName0, mapper, serializer, identity, affField,
@@ -387,7 +389,7 @@ public class BinaryContext {
                         Class<?> cls = U.classForName(clsName, null);
 
                         if (cls != null)
-                            affField = affinityFieldName(cls);
+                            affField = affFldNameProvider.apply(cls);
                     }
 
                     descs.add(clsName, mapper, serializer, identity, affField,
@@ -472,7 +474,7 @@ public class BinaryContext {
 
         String pkgPath = pkgName.replaceAll("\\.", "/");
 
-        URL[] urls = IgniteUtils.classLoaderUrls(ldr);
+        URL[] urls = U.classLoaderUrls(ldr);
 
         for (URL url : urls) {
             String proto = url.getProtocol().toLowerCase();
@@ -660,7 +662,7 @@ public class BinaryContext {
             BinarySerializer serializer = serializerForClass(cls);
 
             // Firstly check annotations, then check in cache key configurations.
-            String affFieldName = affinityFieldName(cls);
+            String affFieldName = affFldNameProvider.apply(cls);
             if (affFieldName == null)
                 affFieldName = affKeyFieldNames.get(typeId);
 
@@ -787,7 +789,7 @@ public class BinaryContext {
 
         BinarySerializer serializer = serializerForClass(cls);
 
-        String affFieldName = affinityFieldName(cls);
+        String affFieldName = affFldNameProvider.apply(cls);
 
         return new BinaryClassDescriptor(this,
             cls,
@@ -1047,21 +1049,6 @@ public class BinaryContext {
         BinaryInternalMapper mapper = userTypeMapper(clsName);
 
         return mapper.typeName(clsName);
-    }
-
-    /**
-     * @param cls Class to get affinity field for.
-     * @return Affinity field name or {@code null} if field name was not found.
-     */
-    public static String affinityFieldName(Class cls) {
-        for (; cls != Object.class && cls != null; cls = cls.getSuperclass()) {
-            for (Field f : cls.getDeclaredFields()) {
-                if (f.getAnnotation(AffinityKeyMapped.class) != null)
-                    return f.getName();
-            }
-        }
-
-        return null;
     }
 
     /**

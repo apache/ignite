@@ -89,7 +89,7 @@ public class ServiceDeploymentProcessId implements Message, Serializable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage(topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
@@ -110,7 +110,7 @@ public class ServiceDeploymentProcessId implements Message, Serializable {
 
         switch (reader.state()) {
             case 0:
-                topVer = reader.readMessage();
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;

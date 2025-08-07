@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.util;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.Externalizable;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ServiceLoader;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
@@ -66,6 +71,18 @@ public abstract class CommonUtils {
 
     /** Version of the JDK. */
     static String jdkVer;
+
+    /** */
+    static volatile long curTimeMillis = System.currentTimeMillis();
+
+    /** Clock timer. */
+    private static Thread timer;
+
+    /** Grid counter. */
+    static int gridCnt;
+
+    /** Mutex. */
+    static final Object mux = new Object();
 
     static {
         try {
@@ -333,5 +350,109 @@ public abstract class CommonUtils {
             return 1;
 
         return 1 << (32 - Integer.numberOfLeadingZeros(v - 1));
+    }
+
+    /**
+     * @return System time approximated by 10 ms.
+     */
+    public static long currentTimeMillis() {
+        return curTimeMillis;
+    }
+
+    /**
+     * Starts clock timer if grid is first.
+     */
+    public static void onGridStart() {
+        synchronized (mux) {
+            if (gridCnt == 0) {
+                assert timer == null;
+
+                timer = new Thread(new Runnable() {
+                    @SuppressWarnings({"BusyWait"})
+                    @Override public void run() {
+                        while (true) {
+                            curTimeMillis = System.currentTimeMillis();
+
+                            try {
+                                Thread.sleep(10);
+                            }
+                            catch (InterruptedException ignored) {
+                                break;
+                            }
+                        }
+                    }
+                }, "ignite-clock");
+
+                timer.setDaemon(true);
+
+                timer.setPriority(10);
+
+                timer.start();
+            }
+
+            ++gridCnt;
+        }
+    }
+
+    /**
+     * Stops clock timer if all nodes into JVM were stopped.
+     * @throws InterruptedException If interrupted.
+     */
+    public static void onGridStop() throws InterruptedException {
+        synchronized (mux) {
+            // Grid start may fail and onGridStart() does not get called.
+            if (gridCnt == 0)
+                return;
+
+            --gridCnt;
+
+            Thread timer0 = timer;
+
+            if (gridCnt == 0 && timer0 != null) {
+                timer = null;
+
+                timer0.interrupt();
+
+                timer0.join();
+            }
+        }
+    }
+
+    /**
+     * Writes UUID to output stream. This method is meant to be used by
+     * implementations of {@link Externalizable} interface.
+     *
+     * @param out Output stream.
+     * @param uid UUID to write.
+     * @throws IOException If write failed.
+     */
+    public static void writeUuid(DataOutput out, UUID uid) throws IOException {
+        // Write null flag.
+        out.writeBoolean(uid == null);
+
+        if (uid != null) {
+            out.writeLong(uid.getMostSignificantBits());
+            out.writeLong(uid.getLeastSignificantBits());
+        }
+    }
+
+    /**
+     * Reads UUID from input stream. This method is meant to be used by
+     * implementations of {@link Externalizable} interface.
+     *
+     * @param in Input stream.
+     * @return Read UUID.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static UUID readUuid(DataInput in) throws IOException {
+        // If UUID is not null.
+        if (!in.readBoolean()) {
+            long most = in.readLong();
+            long least = in.readLong();
+
+            return IgniteUuidCache.onIgniteUuidRead(new UUID(most, least));
+        }
+
+        return null;
     }
 }
