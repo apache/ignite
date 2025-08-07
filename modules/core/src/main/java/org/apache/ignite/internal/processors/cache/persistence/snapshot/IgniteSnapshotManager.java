@@ -2222,10 +2222,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
-        if (cctx.kernalContext().isStopping())
+        if (clusterSnpReq == null || cctx.kernalContext().clientNode() || !isSnapshotOperation(fut.firstEvent()))
             return;
 
-        if (clusterSnpReq == null || cctx.kernalContext().clientNode() || !isSnapshotOperation(fut.firstEvent()))
+        if (cctx.kernalContext().isStopping())
             return;
 
         SnapshotOperationRequest snpReq = clusterSnpReq;
