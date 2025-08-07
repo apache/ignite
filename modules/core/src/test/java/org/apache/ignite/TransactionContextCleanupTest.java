@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -41,6 +40,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -141,7 +141,13 @@ public class TransactionContextCleanupTest extends GridCommonAbstractTest {
 
         // Ensure acynchronous rollback.
         doSleep(TX_TIMEOUT * 2);
-        assertEquals("Unexpected transaction state", TransactionState.ROLLED_BACK, tx.state());
+        assertTrue("Transaction was not rolled back",
+            waitForCondition(() -> TransactionState.ROLLED_BACK == tx.state(), getTestTimeout() / 2));
+
+        GridCacheContext<?, ?> cctx = ignite.cachex(DEFAULT_CACHE_NAME).context();
+
+        assertNotNull("Transaction in context expected", cctx.tm().threadLocalTx(cctx));
+        assertNotNull("Transaction via public API expected", transactions.tx());
 
         Throwable t = assertThrows(null,
             () -> {
@@ -154,8 +160,8 @@ public class TransactionContextCleanupTest extends GridCommonAbstractTest {
 
         assertTrue(t instanceof TransactionTimeoutException || t instanceof CacheException);
 
-        GridCacheContext<?, ?> cctx = ignite.cachex(DEFAULT_CACHE_NAME).context();
-        assertNull("Context was not cleared:" + U.nl(), cctx.tm().threadLocalTx(cctx));
+        assertNull("Transaction was not cleared from context", cctx.tm().threadLocalTx(cctx));
+        assertNull("No transaction expectet via public API ", transactions.tx());
 
         assertEquals(1, (int)cache.get(1));
     }
