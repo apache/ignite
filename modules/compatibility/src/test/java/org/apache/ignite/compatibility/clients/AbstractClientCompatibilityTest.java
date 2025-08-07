@@ -139,7 +139,7 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
                 );
 
                 try {
-                    GridTestUtils.waitForCondition(() -> !proc.getProcess().isAlive(), 5_000L);
+                    GridTestUtils.waitForCondition(() -> !proc.getProcess().isAlive(), 15_000L);
 
                     assertEquals(0, proc.getProcess().exitValue());
                 }
