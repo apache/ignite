@@ -100,10 +100,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
         if (closed())
             throw new IgniteCheckedException("Client was closed: " + this);
 
-        GridNioFuture<?> fut = ses.send(data);
-
-        if (fut.isDone())
-            fut.get();
+        ses.send(data);
     }
 
     /** {@inheritDoc} */
@@ -152,7 +149,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
 
     /** {@inheritDoc} */
     @Override public boolean active() {
-        return ses.active();
+        return !closed() && ses.active();
     }
 
     /** {@inheritDoc} */

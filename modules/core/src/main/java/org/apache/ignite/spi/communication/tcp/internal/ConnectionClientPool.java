@@ -23,9 +23,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
@@ -38,12 +41,11 @@ import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
@@ -56,6 +58,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DISABLED_CLIENT_PORT;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.nodeAddresses;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.usePairedConnections;
@@ -68,26 +71,35 @@ public class ConnectionClientPool {
     private static final int CONNECTION_ESTABLISH_THRESHOLD_MS = 100;
 
     /** */
-    public static final String SHARED_METRICS_REGISTRY_NAME
-        = MetricUtils.metricName(TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME, "connectionPool");
+    public static final long NODE_METRICS_UPDATE_THRESHOLD = U.millisToNanos(300);
+
+    /** */
+    public static final String SHARED_METRICS_REGISTRY_NAME = metricName(TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME,
+        "connectionPool");
 
     /** */
     public static final String METRIC_POOL_SIZE_NAME = "poolSize";
 
     /** */
-    public static final String METRIC_POOL_SIZE_DESC = "Maximal connections number.";
+    public static final String METRIC_PAIRED_CONN_NAME = "pairedConnections";
 
     /** */
-    private static final String NODE_METRICS_REGISTRY_NAME_PREFIX = MetricUtils.metricName(SHARED_METRICS_REGISTRY_NAME, "node");
+    public static final String METRIC_ASYNC_NAME = "async";
+
+    /** */
+    private static final String NODE_METRICS_REGISTRY_NAME_PREFIX = metricName(SHARED_METRICS_REGISTRY_NAME, "node");
 
     /** */
     public static final String NODE_METRIC_CONSIST_ID_NAME = "consistentId";
 
     /** */
-    public static final String NODE_METRIC_CONNS_CNT_NAME = "connectionsCnt";
+    public static final String NODE_METRIC_CONNS_CNT_NAME = "currentCnt";
 
     /** */
-    public static final String NODE_METRIC_ACTIVE_CNT_NAME = "activeCnt";
+    public static final String NODE_METRIC_ACTIVE_CONNS_CNT_NAME = "activeCnt";
+
+    /** */
+    public static final String NODE_METRIC_REMOVED_CONNS_CNT_NAME = "removedCnt";
 
     /** */
     public static final String NODE_METRIC_AVG_IDLE_TIME_NAME = "avgIdleTime";
@@ -96,13 +108,14 @@ public class ConnectionClientPool {
     public static final String NODE_METRIC_AVG_LIFE_TIME_NAME = "avgLifeTime";
 
     /** */
-    private static final long NODE_METRICS_UPDATE_THRESHOLD = U.millisToNanos(300);
+    public static final String NODE_METRIC_CONN_ACQUIRE_TIME_NAME = "acquireTime";
 
     /** Clients. */
-    private final ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridConcurrentFactory.newMap();
+    private final Map<UUID, GridCommunicationClient[]> clients
+        = new ConcurrentHashMap<>(64, 0.75f, Math.max(16, Runtime.getRuntime().availableProcessors()));
 
     /** Metrics for each remote node. */
-    private final ConcurrentMap<UUID, NodeMetrics> nodeMetrics = GridConcurrentFactory.newMap();
+    private final Map<UUID, NodeMetrics> metrics;
 
     /** Config. */
     private final TcpCommunicationConfiguration cfg;
@@ -147,6 +160,9 @@ public class ConnectionClientPool {
 
     /** */
     @Nullable private final GridMetricManager metricsMgr;
+
+    /** */
+    private volatile AtomicBoolean asyncMetric;
 
     /**
      * @param cfg Config.
@@ -202,8 +218,13 @@ public class ConnectionClientPool {
         if (metricsMgr != null) {
             MetricRegistryImpl mreg = metricsMgr.registry(SHARED_METRICS_REGISTRY_NAME);
 
-            mreg.register(METRIC_POOL_SIZE_NAME, () -> cfg.connectionsPerNode(), METRIC_POOL_SIZE_DESC);
+            mreg.register(METRIC_POOL_SIZE_NAME, () -> cfg.connectionsPerNode(), "Maximal connections number to a remote node.");
+            mreg.register(METRIC_PAIRED_CONN_NAME, () -> cfg.usePairedConnections(), "Paired connections flag.");
+
+            metrics = new ConcurrentHashMap<>(64, 0.75f, Math.max(16, Runtime.getRuntime().availableProcessors()));
         }
+        else
+            metrics = null;
     }
 
     /**
@@ -237,6 +258,8 @@ public class ConnectionClientPool {
      * @throws IgniteCheckedException Thrown if any exception occurs.
      */
     public GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
+        long acquireTime = System.nanoTime();
+
         assert node != null;
         assert (connIdx >= 0 && connIdx < cfg.connectionsPerNode())
             || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()))
@@ -254,6 +277,8 @@ public class ConnectionClientPool {
         if (log.isDebugEnabled())
             log.debug("The node client is going to reserve a connection [nodeId=" + node.id() + ", connIdx=" + connIdx + "]");
 
+        ConnectionKey connKey = new ConnectionKey(nodeId, connIdx, -1);
+
         while (true) {
             GridCommunicationClient[] curClients = clients.get(nodeId);
 
@@ -266,8 +291,6 @@ public class ConnectionClientPool {
 
                 // Do not allow concurrent connects.
                 GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture();
-
-                ConnectionKey connKey = new ConnectionKey(nodeId, connIdx, -1);
 
                 GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(connKey, fut);
 
@@ -298,11 +321,18 @@ public class ConnectionClientPool {
                                 }
                             }
                             else {
-                                U.sleep(200);
+                                for (int i = 0; i < 4; ++i) {
+                                    if (nodeGetter.apply(node.id()) == null) {
+                                        throw new ClusterTopologyCheckedException("Failed to send message " +
+                                            "(node left topology): " + node);
+                                    }
 
-                                if (nodeGetter.apply(node.id()) == null) {
-                                    throw new ClusterTopologyCheckedException("Failed to send message " +
-                                        "(node left topology): " + node);
+                                    U.sleep(50);
+                                }
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Failed to create communication client, will retry " +
+                                        "[node=" + node + ", connectionIdx=" + connIdx + ']');
                                 }
                             }
                         }
@@ -381,12 +411,40 @@ public class ConnectionClientPool {
 
             assert connIdx == client.connectionIndex() : client;
 
-            if (client.reserve())
+            if (client.reserve()) {
+                if (metricsMgr != null)
+                    updateClientAcquiredMetrics(nodeId, client, acquireTime);
+
                 return client;
+            }
             else
                 // Client has just been closed by idle worker. Help it and try again.
                 removeNodeClient(nodeId, client);
         }
+    }
+
+    /** */
+    private void updateClientAcquiredMetrics(UUID nodeId, GridCommunicationClient client, long acquireTime) {
+        NodeMetrics nodeMetrics = metrics.get(nodeId);
+
+        if (nodeMetrics != null && nodeMetrics != NodeMetrics.EMPTY)
+            nodeMetrics.acquireTime(System.nanoTime() - acquireTime);
+
+        if (asyncMetric == null) {
+            synchronized (metrics) {
+                if (asyncMetric == null) {
+                    MetricRegistryImpl mreg = metricsMgr.registry(SHARED_METRICS_REGISTRY_NAME);
+
+                    // We assume that all the clients have the same async flag.
+                    asyncMetric = new AtomicBoolean(client.async());
+
+                    mreg.register(METRIC_ASYNC_NAME, () -> asyncMetric.get(), "Asynchronous flag. If TRUE, " +
+                        "connections put data in a queue (with some preprocessing) instead of immediate sending.");
+                }
+            }
+        }
+        else
+            assert client.async() == asyncMetric.get();
     }
 
     /**
@@ -597,61 +655,99 @@ public class ConnectionClientPool {
         mreg.register(NODE_METRIC_CONSIST_ID_NAME, () -> node.consistentId().toString(), String.class,
             "Consistent id of the remote node.");
 
-        mreg.register(NODE_METRIC_CONNS_CNT_NAME, () -> nodeMetrics(node).connsCnt,
+        mreg.register(NODE_METRIC_CONNS_CNT_NAME, () -> updatedNodeMetrics(node.id()).connsCnt,
             "Number of current connections to the remote node.");
 
-        mreg.register(NODE_METRIC_ACTIVE_CNT_NAME, () -> nodeMetrics(node).activeCnt,
+        mreg.register(NODE_METRIC_ACTIVE_CONNS_CNT_NAME, () -> updatedNodeMetrics(node.id()).activeCnt,
             "Number of current active connections to the remote node.");
 
-        mreg.register(NODE_METRIC_AVG_IDLE_TIME_NAME, () -> nodeMetrics(node).avgIdleTime,
+        mreg.register(NODE_METRIC_AVG_IDLE_TIME_NAME, () -> updatedNodeMetrics(node.id()).avgIdleTime,
             "Average connection idle time in milliseconds.");
 
-        mreg.register(NODE_METRIC_AVG_LIFE_TIME_NAME, () -> nodeMetrics(node).avgLifeTime,
+        mreg.register(NODE_METRIC_AVG_LIFE_TIME_NAME, () -> updatedNodeMetrics(node.id()).avgLifeTime,
             "Average connection life time before closed in milliseconds.");
+
+        mreg.register(NODE_METRIC_CONN_ACQUIRE_TIME_NAME, () -> updatedNodeMetrics(node.id()).estimatedAcquireTime,
+            "Estimated average duration of connection acquiring in nanoseconds.");
+
+        mreg.register(NODE_METRIC_REMOVED_CONNS_CNT_NAME, () -> updatedNodeMetrics(node.id()).removedConnectionsCnt.get(),
+            "Total number of removed connections.");
+
+        // Create metrics record.
+        updatedNodeMetrics(node.id());
     }
 
     /** */
-    private NodeMetrics nodeMetrics(ClusterNode node) {
-        NodeMetrics metrics = nodeMetrics.compute(node.id(), (nodeId0, metrics0) -> {
-            if (metrics0 != null && (System.nanoTime() - metrics0.lastUpdateNanos) < NODE_METRICS_UPDATE_THRESHOLD)
-                return metrics0;
+    private @Nullable NodeMetrics updatedNodeMetrics(UUID nodeId) {
+        long nowNanos = System.nanoTime();
 
-            GridCommunicationClient[] nodeClients = clients.get(node.id());
+        NodeMetrics res = metrics.get(nodeId);
 
-            if (F.isEmpty(nodeClients))
-                return null;
+        if (res == null || (nowNanos - res.updateTs > NODE_METRICS_UPDATE_THRESHOLD && res.canUpdate())) {
+            GridCommunicationClient[] nodeClients = clients.get(nodeId);
 
-            metrics0 = new NodeMetrics();
+            if (nodeClients != null) {
+                long nowMillis = U.currentTimeMillis();
 
-            long nowMillis = System.currentTimeMillis();
+                res = new NodeMetrics(res);
 
-            for (GridCommunicationClient nodeClient : nodeClients) {
-                if (nodeClient == null)
-                    continue;
+                for (GridCommunicationClient nodeClient : nodeClients) {
+                    if (nodeClient == null)
+                        continue;
 
-                ++metrics0.connsCnt;
+                    ++res.connsCnt;
 
-                if (nodeClient.active())
-                    ++metrics0.activeCnt;
+                    if (nodeClient.active())
+                        ++res.activeCnt;
 
-                metrics0.avgIdleTime += nodeClient.getIdleTime();
-                metrics0.avgLifeTime += nowMillis - nodeClient.creationTime();
+                    res.avgIdleTime += nodeClient.getIdleTime();
+                    res.avgLifeTime += nowMillis - nodeClient.creationTime();
+                }
+
+                res.avgIdleTime /= res.connsCnt;
+                res.avgLifeTime /= res.connsCnt;
+
+                int[] cnt = new int[1];
+                long[] summ = new long[1];
+
+                res.acquireTimesBuf.forEach(time -> {
+                    ++cnt[0];
+                    summ[0] += time;
+                });
+
+                if (cnt[0] > 0)
+                    summ[0] /= cnt[0];
+
+                res.estimatedAcquireTime = summ[0];
+
+                res.updateTs = System.nanoTime();
+
+                NodeMetrics res0 = res;
+
+                clients.compute(nodeId, (nodeId0, clients) -> {
+                    if (clients == null)
+                        metrics.remove(nodeId);
+                    else
+                        metrics.put(nodeId, res0);
+
+                    return clients;
+                });
+
+                metrics.put(nodeId, res);
             }
+            else {
+                metrics.remove(nodeId);
 
-            metrics0.avgIdleTime /= metrics0.connsCnt;
-            metrics0.avgLifeTime /= metrics0.connsCnt;
+                res = null;
+            }
+        }
 
-            metrics0.lastUpdateNanos = System.nanoTime();
-
-            return metrics0;
-        });
-
-        return metrics == null ? NodeMetrics.EMPTY : metrics;
+        return res == null ? NodeMetrics.EMPTY : res;
     }
 
     /** */
     public static String nodeMetricsRegName(UUID nodeId) {
-        return MetricUtils.metricName(NODE_METRICS_REGISTRY_NAME_PREFIX, nodeId.toString());
+        return metricName(NODE_METRICS_REGISTRY_NAME_PREFIX, nodeId.toString());
     }
 
     /**
@@ -675,8 +771,14 @@ public class ConnectionClientPool {
 
             newClients[rmvClient.connectionIndex()] = null;
 
-            if (clients.replace(nodeId, curClients, newClients))
+            if (clients.replace(nodeId, curClients, newClients)) {
+                NodeMetrics nodeMetrics = metricsMgr != null ? metrics.get(nodeId) : null;
+
+                if (nodeMetrics != null && nodeMetrics != NodeMetrics.EMPTY)
+                    nodeMetrics.removedConnectionsCnt.addAndGet(1);
+
                 return true;
+            }
         }
     }
 
@@ -691,14 +793,10 @@ public class ConnectionClientPool {
         if (log.isDebugEnabled())
             log.debug("The node client connections were closed [nodeId=" + nodeId + "]");
 
+        removeNodeMetrics(nodeId);
+
         GridCommunicationClient[] clients = this.clients.remove(nodeId);
         if (nonNull(clients)) {
-            if (metricsMgr != null) {
-                metricsMgr.remove(nodeMetricsRegName(nodeId));
-
-                nodeMetrics.remove(nodeId);
-            }
-
             for (GridCommunicationClient client : clients)
                 client.forceClose();
         }
@@ -740,7 +838,7 @@ public class ConnectionClientPool {
         if (metricsMgr != null) {
             metricsMgr.remove(nodeMetricsRegName(nodeId));
 
-            nodeMetrics.remove(nodeId);
+            metrics.remove(nodeId);
         }
     }
 
@@ -807,10 +905,13 @@ public class ConnectionClientPool {
     /** */
     private static final class NodeMetrics {
         /** */
-        private static final NodeMetrics EMPTY = new NodeMetrics();
+        private static final NodeMetrics EMPTY = new NodeMetrics(null);
 
         /** */
-        private long lastUpdateNanos;
+        private volatile long updateTs = System.nanoTime();
+
+        /** */
+        private volatile boolean updatingFlag;
 
         /** */
         private int connsCnt;
@@ -823,5 +924,59 @@ public class ConnectionClientPool {
 
         /** */
         private long avgLifeTime;
+
+        /** */
+        private final AtomicLong removedConnectionsCnt;
+
+        /** */
+        private final GridCircularBuffer<Long> acquireTimesBuf;
+
+        /** */
+        private volatile long acquireTimesUpdateTs;
+
+        /** */
+        private long estimatedAcquireTime;
+
+        /** */
+        private NodeMetrics(@Nullable NodeMetrics prev) {
+            this.acquireTimesBuf = prev == null ? new GridCircularBuffer<>(32) : prev.acquireTimesBuf;
+            this.acquireTimesUpdateTs = prev == null ? System.nanoTime() : prev.acquireTimesUpdateTs;
+            this.removedConnectionsCnt = prev == null ? new AtomicLong() : prev.removedConnectionsCnt;
+        }
+
+        /** */
+        private boolean canUpdate() {
+            if (updatingFlag)
+                return false;
+
+            synchronized (this) {
+                if (updatingFlag)
+                    return false;
+
+                updatingFlag = true;
+
+                return true;
+            }
+        }
+
+        /** */
+        private void acquireTime(long nanos) {
+            long nowNanos = System.nanoTime();
+
+            if (nowNanos - acquireTimesUpdateTs > NODE_METRICS_UPDATE_THRESHOLD) {
+                synchronized (acquireTimesBuf) {
+                    if (nowNanos - acquireTimesUpdateTs > NODE_METRICS_UPDATE_THRESHOLD) {
+                        acquireTimesUpdateTs = nowNanos;
+
+                        try {
+                            acquireTimesBuf.add(nanos);
+                        }
+                        catch (InterruptedException ignored) {
+                            // No-op.
+                        }
+                    }
+                }
+            }
+        }
     }
 }

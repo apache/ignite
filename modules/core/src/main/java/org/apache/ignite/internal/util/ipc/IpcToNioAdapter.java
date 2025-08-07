@@ -112,7 +112,7 @@ public class IpcToNioAdapter<T> {
      * @throws InterruptedException If interrupted.
      */
     public void serve() throws InterruptedException {
-        ses.active(true);
+        ses.markActivity(true);
 
         try {
             chain.onSessionOpened(ses);
@@ -160,7 +160,7 @@ public class IpcToNioAdapter<T> {
             chain.onExceptionCaught(ses, new IgniteCheckedException("Failed to read from IPC endpoint.", e));
         }
         finally {
-            ses.active(false);
+            ses.markActivity(false);
 
             try {
                 // Assuming remote end closed connection - pushing event from head to tail.
@@ -184,7 +184,7 @@ public class IpcToNioAdapter<T> {
 
         int cnt = 0;
 
-        ses.active(true);
+        ses.markActivity(true);
 
         try {
             cnt = U.writeMessageFully(msg, endp.outputStream(), writeBuf, writerFactory.writer(ses));
@@ -195,7 +195,7 @@ public class IpcToNioAdapter<T> {
             return new GridNioFinishedFuture<Object>(e);
         }
         finally {
-            ses.active(false);
+            ses.markActivity(false);
 
             ses.bytesSent(cnt);
         }

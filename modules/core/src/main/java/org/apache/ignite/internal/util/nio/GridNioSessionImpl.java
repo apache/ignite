@@ -112,6 +112,8 @@ public class GridNioSessionImpl implements GridNioSession {
 
     /** {@inheritDoc} */
     @Override public GridNioFuture<?> send(Object msg) {
+        activityCnt.increment();
+
         try {
             resetSendScheduleTime();
 
@@ -120,13 +122,17 @@ public class GridNioSessionImpl implements GridNioSession {
         catch (IgniteCheckedException e) {
             close();
 
-            return new GridNioFinishedFuture<Object>(e);
+            return new GridNioFinishedFuture<>(e);
+        }
+        finally {
+            activityCnt.decrement();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void sendNoFuture(Object msg, IgniteInClosure<IgniteException> ackC)
-        throws IgniteCheckedException {
+    @Override public void sendNoFuture(Object msg, IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
+        activityCnt.increment();
+
         try {
             chain().onSessionWrite(this, msg, false, ackC);
         }
@@ -134,6 +140,9 @@ public class GridNioSessionImpl implements GridNioSession {
             close();
 
             throw e;
+        }
+        finally {
+            activityCnt.decrement();
         }
     }
 
@@ -348,8 +357,8 @@ public class GridNioSessionImpl implements GridNioSession {
         return closeTime.compareAndSet(0, U.currentTimeMillis());
     }
 
-    /** Manages the activity flag. */
-    public void active(boolean active) {
+    /** Marks related to this session work. */
+    public void markActivity(boolean active) {
         activityCnt.add(active ? 1 : -1);
 
         assert !active || activityCnt.sum() >= 0;

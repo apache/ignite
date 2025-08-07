@@ -48,6 +48,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -154,7 +155,7 @@ public class GridNioServer<T> {
 
     /** */
     public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
-        = "Total number of messages waiting to be sent over all client connections";
+        = "Total number of messages waiting to be sent over all communication connections";
 
     /** */
     public static final String MESSAGES_TO_NODE_QUEUE_SIZE_METRIC_NAME_PREFIX
@@ -162,7 +163,7 @@ public class GridNioServer<T> {
 
     /** */
     public static final String MESSAGES_TO_NODE_QUEUE_SIZE_METRIC_DESC
-        = "Number of messages waiting to be sent to certain node";
+        = "Number of messages waiting to be sent to a certain remote node";
 
     /** */
     public static final String RECEIVED_BYTES_METRIC_NAME = "receivedBytes";
@@ -1200,7 +1201,7 @@ public class GridNioServer<T> {
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
-            ses.active(true);
+            ses.markActivity(true);
 
             try {
                 // Reset buffer to read bytes up to its capacity.
@@ -1249,7 +1250,7 @@ public class GridNioServer<T> {
                 }
             }
             finally {
-                ses.active(false);
+                ses.markActivity(false);
             }
         }
 
@@ -1264,7 +1265,7 @@ public class GridNioServer<T> {
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
-            ses.active(true);
+            ses.markActivity(true);
 
             try {
                 while (true) {
@@ -1329,7 +1330,7 @@ public class GridNioServer<T> {
                 }
             }
             finally {
-                ses.active(false);
+                ses.markActivity(false);
             }
         }
 
@@ -1456,7 +1457,7 @@ public class GridNioServer<T> {
 
             boolean handshakeFinished = sslFilter.lock(ses);
 
-            ses.active(true);
+            ses.markActivity(true);
 
             try {
                 WritableByteChannel sockCh = (WritableByteChannel)key.channel();
@@ -1599,7 +1600,7 @@ public class GridNioServer<T> {
                 }
             }
             finally {
-                ses.active(false);
+                ses.markActivity(false);
 
                 sslFilter.unlock(ses);
             }
@@ -1705,7 +1706,7 @@ public class GridNioServer<T> {
         private void processWrite0(SelectionKey key) throws IOException {
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
-            ses.active(true);
+            ses.markActivity(true);
 
             try {
                 WritableByteChannel sockCh = (WritableByteChannel)key.channel();
@@ -1784,7 +1785,7 @@ public class GridNioServer<T> {
                     buf.clear();
             }
             finally {
-                ses.active(false);
+                ses.markActivity(false);
             }
         }
 
@@ -1900,16 +1901,10 @@ public class GridNioServer<T> {
         private final int idx;
 
         /** */
-        private long bytesRcvd;
+        private final LongAdder bytesRcvd = new LongAdder();
 
         /** */
-        private long bytesSent;
-
-        /** */
-        private volatile long bytesRcvd0;
-
-        /** */
-        private volatile long bytesSent0;
+        private final LongAdder bytesSent = new LongAdder();
 
         /** Sessions assigned to this worker. */
         @GridToStringExclude
@@ -2410,10 +2405,8 @@ public class GridNioServer<T> {
         private void dumpSelectorInfo(StringBuilder sb, Set<SelectionKey> keys) {
             sb.append(">> Selector info [id=").append(idx)
                 .append(", keysCnt=").append(keys.size())
-                .append(", bytesRcvd=").append(bytesRcvd)
-                .append(", bytesRcvd0=").append(bytesRcvd0)
-                .append(", bytesSent=").append(bytesSent)
-                .append(", bytesSent0=").append(bytesSent0)
+                .append(", bytesRcvd=").append(bytesRcvd.sum())
+                .append(", bytesSent=").append(bytesSent.sum())
                 .append("]").append(U.nl());
         }
 
@@ -2998,24 +2991,22 @@ public class GridNioServer<T> {
          * @param cnt
          */
         final void onRead(int cnt) {
-            bytesRcvd += cnt;
-            bytesRcvd0 += cnt;
+            bytesRcvd.add(cnt);
         }
 
         /**
          * @param cnt
          */
         final void onWrite(int cnt) {
-            bytesSent += cnt;
-            bytesSent0 += cnt;
+            bytesSent.add(cnt);
         }
 
         /**
          *
          */
         final void reset0() {
-            bytesSent0 = 0;
-            bytesRcvd0 = 0;
+            bytesSent.reset();
+            bytesRcvd.reset();
 
             for (GridSelectorNioSessionImpl ses : workerSessions)
                 ses.reset0();
@@ -4263,7 +4254,7 @@ public class GridNioServer<T> {
 
                     if (i % 2 == 0) {
                         // Reader.
-                        long bytesRcvd0 = worker.bytesRcvd0;
+                        long bytesRcvd0 = worker.bytesRcvd.sum();
 
                         if ((maxRcvd0 == -1 || bytesRcvd0 > maxRcvd0) && bytesRcvd0 > 0 && sesCnt > 1) {
                             maxRcvd0 = bytesRcvd0;
@@ -4277,7 +4268,7 @@ public class GridNioServer<T> {
                     }
                     else {
                         // Writer.
-                        long bytesSent0 = worker.bytesSent0;
+                        long bytesSent0 = worker.bytesSent.sum();
 
                         if ((maxSent0 == -1 || bytesSent0 > maxSent0) && bytesSent0 > 0 && sesCnt > 1) {
                             maxSent0 = bytesSent0;
@@ -4407,7 +4398,7 @@ public class GridNioServer<T> {
 
                     int sesCnt = worker.workerSessions.size();
 
-                    long bytes0 = worker.bytesRcvd0 + worker.bytesSent0;
+                    long bytes0 = worker.bytesRcvd.sum() + worker.bytesSent.sum();
 
                     if ((maxBytes0 == -1 || bytes0 > maxBytes0) && bytes0 > 0 && sesCnt > 1) {
                         maxBytes0 = bytes0;

@@ -612,7 +612,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             connectGate,
             failureProcSupplier,
             attributeNames,
-            metricsLsnr,
             nioSrvWrapper,
             ctxInitLatch,
             client,
