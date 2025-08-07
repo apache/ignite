@@ -39,17 +39,7 @@ public class IgniteSnapshotTestSuite {
 
     /** */
     public static void addSnapshotTests(List<Class<?>> suite, Collection<Class> ignoredTests) {
-//        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotManagerSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotSelfTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotRemoteRequestTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotCheckTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotWithMetastorageTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotMXBeanTest.class, ignoredTests);
-//        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotRestoreSelfTest.class, ignoredTests);
-
         for (int i = 0; i < 50; i++)
             GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotHandlerTest.class, ignoredTests);
-
-//        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotRestoreFromRemoteTest.class, ignoredTests);
     }
 }
