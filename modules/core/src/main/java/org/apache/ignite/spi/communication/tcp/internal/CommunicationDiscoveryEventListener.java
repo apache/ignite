@@ -34,7 +34,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Listener on discovery events.
  */
 public class CommunicationDiscoveryEventListener implements GridLocalEventListener, HighPriorityListener {
-    /** Nio server. */
+    /** NIO server. */
     private final GridNioServer<?> nioSrv;
 
     /** Client pool. */
@@ -80,9 +80,9 @@ public class CommunicationDiscoveryEventListener implements GridLocalEventListen
     private void onNodeLeft(Object consistentId, UUID nodeId) {
         assert nodeId != null;
 
-        metricsLsnr.onNodeLeft(consistentId);
-        clientPool.onNodeLeft(nodeId);
         nioSrv.onNodeLeft(nodeId);
+        clientPool.onNodeLeft(nodeId);
+        metricsLsnr.onNodeLeft(consistentId);
     }
 
     /**

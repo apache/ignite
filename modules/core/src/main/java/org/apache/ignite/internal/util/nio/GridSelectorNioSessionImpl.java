@@ -86,10 +86,10 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
     private volatile boolean closeSocket = true;
 
     /** Metric of outbound messages queue size of all client connections. */
-    @Nullable private final LongAdderMetric outboundMessagesOveralQueueSizeMetric;
+    @Nullable private final LongAdderMetric outboundMsgsOveralQueueSizeMetric;
 
     /** Metric of outbound messages queue size for certain node. */
-    @Nullable private final LongAdderMetric outboundMessagesNodeQueueSizeMetric;
+    @Nullable private final LongAdderMetric outboundMsgsNodeQueueSizeMetric;
 
     /**
      * Creates session instance.
@@ -103,21 +103,21 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      * @param sndQueueLimit Send queue limit.
      * @param writeBuf Write buffer.
      * @param readBuf Read buffer.
-     * @param outboundMessagesOveralQueueSizeMetric Metric of outbound messages queue size of all client connections.
-     * @param outboundMessagesNodeQueueSizeMetric Metric of outbound messages queue size for certain node.
+     * @param outboundMsgsOveralQueueSizeMetric Metric of outbound messages queue size of all client connections.
+     * @param outboundMsgsNodeQueueSizeMetric Metric of outbound messages queue size for certain node.
      */
     GridSelectorNioSessionImpl(
         IgniteLogger log,
         GridNioWorker worker,
-        GridNioFilterChain filterChain,
+        GridNioFilterChain<?> filterChain,
         InetSocketAddress locAddr,
         InetSocketAddress rmtAddr,
         boolean accepted,
         int sndQueueLimit,
         @Nullable ByteBuffer writeBuf,
         @Nullable ByteBuffer readBuf,
-        @Nullable LongAdderMetric outboundMessagesOveralQueueSizeMetric,
-        @Nullable LongAdderMetric outboundMessagesNodeQueueSizeMetric
+        @Nullable LongAdderMetric outboundMsgsOveralQueueSizeMetric,
+        @Nullable LongAdderMetric outboundMsgsNodeQueueSizeMetric
     ) {
         super(filterChain, locAddr, rmtAddr, accepted);
 
@@ -147,8 +147,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
             this.readBuf = readBuf;
         }
 
-        this.outboundMessagesOveralQueueSizeMetric = outboundMessagesOveralQueueSizeMetric;
-        this.outboundMessagesNodeQueueSizeMetric = outboundMessagesNodeQueueSizeMetric;
+        this.outboundMsgsOveralQueueSizeMetric = outboundMsgsOveralQueueSizeMetric;
+        this.outboundMsgsNodeQueueSizeMetric = outboundMsgsNodeQueueSizeMetric;
     }
 
     /** {@inheritDoc} */
@@ -220,6 +220,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      * @return {@code True} if session move was scheduled.
      */
     boolean offerMove(GridNioWorker from, GridNioServer.SessionChangeRequest fut) {
+        long now = System.nanoTime();
+
         synchronized (this) {
             if (log.isDebugEnabled())
                 log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
@@ -232,6 +234,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
             worker.offer(fut);
         }
 
+        activityTime.add(System.nanoTime() - now);
+
         return true;
     }
 
@@ -239,6 +243,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      * @param fut Future.
      */
     void offerStateChange(GridNioServer.SessionChangeRequest fut) {
+        long now = System.nanoTime();
+
         synchronized (this) {
             if (log.isDebugEnabled())
                 log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
@@ -254,12 +260,16 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
             else
                 worker0.offer(fut);
         }
+
+        activityTime.add(System.nanoTime() - now);
     }
 
     /**
      * @param moveFrom Current session worker.
      */
     void startMoveSession(GridNioWorker moveFrom) {
+        long now = System.nanoTime();
+
         synchronized (this) {
             assert this.worker == moveFrom;
 
@@ -277,12 +287,16 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
                 pendingStateChanges.addAll(sesReqs);
             }
         }
+
+        activityTime.add(System.nanoTime() - now);
     }
 
     /**
      * @param moveTo New session worker.
      */
     void finishMoveSession(GridNioWorker moveTo) {
+        long now = System.nanoTime();
+
         synchronized (this) {
             assert worker == null;
 
@@ -297,6 +311,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
                 pendingStateChanges = null;
             }
         }
+
+        activityTime.add(System.nanoTime() - now);
     }
 
     /**
@@ -306,6 +322,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      * @return Updated size of the queue.
      */
     int offerSystemFuture(SessionWriteRequest writeFut) {
+        long now = System.nanoTime();
+
         writeFut.messageThread(true);
 
         boolean res = queue.offerFirst(writeFut);
@@ -314,11 +332,13 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         assert res : "Future was not added to queue";
 
-        if (outboundMessagesOveralQueueSizeMetric != null)
-            outboundMessagesOveralQueueSizeMetric.increment();
+        if (outboundMsgsOveralQueueSizeMetric != null)
+            outboundMsgsOveralQueueSizeMetric.increment();
 
-        if (outboundMessagesNodeQueueSizeMetric != null)
-            outboundMessagesNodeQueueSizeMetric.increment();
+        if (outboundMsgsNodeQueueSizeMetric != null)
+            outboundMsgsNodeQueueSizeMetric.increment();
+
+        activityTime.add(System.nanoTime() - now);
 
         return queue.sizex();
     }
@@ -334,6 +354,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      * @return Updated size of the queue.
      */
     int offerFuture(SessionWriteRequest writeFut) {
+        long now = System.nanoTime();
+
         boolean msgThread = GridNioBackPressureControl.threadProcessingMessage();
 
         if (sem != null && !msgThread)
@@ -347,11 +369,13 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         assert res : "Future was not added to queue";
 
-        if (outboundMessagesOveralQueueSizeMetric != null)
-            outboundMessagesOveralQueueSizeMetric.increment();
+        if (outboundMsgsOveralQueueSizeMetric != null)
+            outboundMsgsOveralQueueSizeMetric.increment();
 
-        if (outboundMessagesNodeQueueSizeMetric != null)
-            outboundMessagesNodeQueueSizeMetric.increment();
+        if (outboundMsgsNodeQueueSizeMetric != null)
+            outboundMsgsNodeQueueSizeMetric.increment();
+
+        activityTime.add(System.nanoTime() - now);
 
         return queue.sizex();
     }
@@ -360,31 +384,37 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      * @param futs Futures to resend.
      */
     void resend(Collection<SessionWriteRequest> futs) {
+        long now = System.nanoTime();
+
         assert queue.isEmpty() : queue.size();
 
         boolean add = queue.addAll(futs);
 
         assert add;
 
-        if (outboundMessagesOveralQueueSizeMetric != null)
-            outboundMessagesOveralQueueSizeMetric.add(futs.size());
+        if (outboundMsgsOveralQueueSizeMetric != null)
+            outboundMsgsOveralQueueSizeMetric.add(futs.size());
 
-        if (outboundMessagesNodeQueueSizeMetric != null)
-            outboundMessagesNodeQueueSizeMetric.add(futs.size());
+        if (outboundMsgsNodeQueueSizeMetric != null)
+            outboundMsgsNodeQueueSizeMetric.add(futs.size());
+
+        activityTime.add(System.nanoTime() - now);
     }
 
     /**
      * @return Message that is in the head of the queue, {@code null} if queue is empty.
      */
     @Nullable SessionWriteRequest pollFuture() {
+        long now = System.nanoTime();
+
         SessionWriteRequest last = queue.poll();
 
         if (last != null) {
-            if (outboundMessagesOveralQueueSizeMetric != null)
-                outboundMessagesOveralQueueSizeMetric.decrement();
+            if (outboundMsgsOveralQueueSizeMetric != null)
+                outboundMsgsOveralQueueSizeMetric.decrement();
 
-            if (outboundMessagesNodeQueueSizeMetric != null)
-                outboundMessagesNodeQueueSizeMetric.decrement();
+            if (outboundMsgsNodeQueueSizeMetric != null)
+                outboundMsgsNodeQueueSizeMetric.decrement();
 
             if (sem != null && !last.messageThread())
                 sem.release();
@@ -406,6 +436,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
             }
         }
 
+        activityTime.add(System.nanoTime() - now);
+
         return last;
     }
 
@@ -414,17 +446,21 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      * @return {@code True} if future was removed from queue.
      */
     boolean removeFuture(SessionWriteRequest fut) {
+        long now = System.nanoTime();
+
         assert closed();
 
         boolean rmv = queue.removeLastOccurrence(fut);
 
         if (rmv) {
-            if (outboundMessagesOveralQueueSizeMetric != null)
-                outboundMessagesOveralQueueSizeMetric.decrement();
+            if (outboundMsgsOveralQueueSizeMetric != null)
+                outboundMsgsOveralQueueSizeMetric.decrement();
 
-            if (outboundMessagesNodeQueueSizeMetric != null)
-                outboundMessagesNodeQueueSizeMetric.decrement();
+            if (outboundMsgsNodeQueueSizeMetric != null)
+                outboundMsgsNodeQueueSizeMetric.decrement();
         }
+
+        activityTime.add(System.nanoTime() - now);
 
         return rmv;
     }

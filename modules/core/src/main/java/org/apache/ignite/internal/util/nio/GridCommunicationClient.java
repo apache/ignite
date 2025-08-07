@@ -69,11 +69,33 @@ public interface GridCommunicationClient {
     public void release();
 
     /**
-     * Gets idle time of this client.
+     * Provides creation time of this client in milliseconds.
      *
-     * @return Idle time of this client.
+     * @return Creation time of this client in milliseconds.
      */
-    public long getIdleTime();
+    public long creationTime();
+
+    /**
+     * Provides last idle time of this client in milliseconds.
+     *
+     * @return Last idle time of this client in milliseconds.
+     */
+    public long idleTime();
+
+    /**
+     * Provides total active time of this client in milliseconds.
+     *
+     * @return Total active time of this client in milliseconds.
+     */
+    public long totalActiveTime();
+
+    /**
+     * @return Connection index.
+     */
+    public int connectionIndex();
+
+    /** @return {@code True} is connection is active. */
+    boolean active();
 
     /**
      * @param data Data to send.
@@ -102,9 +124,4 @@ public interface GridCommunicationClient {
      * @return {@code True} if send is asynchronous.
      */
     public boolean async();
-
-    /**
-     * @return Connection index.
-     */
-    public int connectionIndex();
 }

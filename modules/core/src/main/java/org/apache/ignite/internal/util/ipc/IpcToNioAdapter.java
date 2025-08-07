@@ -112,6 +112,10 @@ public class IpcToNioAdapter<T> {
      * @throws InterruptedException If interrupted.
      */
     public void serve() throws InterruptedException {
+        long time = System.nanoTime();
+
+        ses.active(true);
+
         try {
             chain.onSessionOpened(ses);
 
@@ -130,6 +134,7 @@ public class IpcToNioAdapter<T> {
 
                 if (read > 0) {
                     rcvdBytesCntMetric.add(read);
+                    ses.bytesReceived(read);
 
                     readBuf.position(0);
                     readBuf.limit(pos + read);
@@ -157,6 +162,9 @@ public class IpcToNioAdapter<T> {
             chain.onExceptionCaught(ses, new IgniteCheckedException("Failed to read from IPC endpoint.", e));
         }
         finally {
+            ses.active(false);
+            ses.addActivityTime(time);
+
             try {
                 // Assuming remote end closed connection - pushing event from head to tail.
                 chain.onSessionClosed(ses);
@@ -175,15 +183,26 @@ public class IpcToNioAdapter<T> {
      * @return Send result.
      */
     private GridNioFuture<?> send(Message msg) {
+        long time = System.nanoTime();
+
         assert writeBuf.hasArray();
 
+        int cnt = 0;
+        ses.active(true);
+
         try {
-            int cnt = U.writeMessageFully(msg, endp.outputStream(), writeBuf, writerFactory.writer(ses));
+            cnt = U.writeMessageFully(msg, endp.outputStream(), writeBuf, writerFactory.writer(ses));
 
             sentBytesCntMetric.add(cnt);
         }
         catch (IOException | IgniteCheckedException e) {
             return new GridNioFinishedFuture<Object>(e);
+        }
+        finally {
+            ses.active(false);
+            ses.bytesSent(cnt);
+
+            ses.addActivityTime(time);
         }
 
         return new GridNioFinishedFuture<>((Object)null);

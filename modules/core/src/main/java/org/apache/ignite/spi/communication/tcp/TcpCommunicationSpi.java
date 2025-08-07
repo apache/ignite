@@ -682,7 +682,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             this,
             stateProvider,
             nioSrvWrapper,
-            getName()
+            getName(),
+            ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().metric() : null
         ));
 
         this.srvLsnr.setClientPool(clientPool);

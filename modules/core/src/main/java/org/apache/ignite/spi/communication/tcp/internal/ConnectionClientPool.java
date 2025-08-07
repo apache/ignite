@@ -36,10 +36,14 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
@@ -63,8 +67,45 @@ public class ConnectionClientPool {
     /** Time threshold to log too long connection establish. */
     private static final int CONNECTION_ESTABLISH_THRESHOLD_MS = 100;
 
+    /** */
+    public static final String SHARED_METRICS_REGISTRY_NAME
+        = MetricUtils.metricName(TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME, "connectionPool");
+
+    /** */
+    public static final String METRIC_POOL_SIZE_NAME = "poolSize";
+
+    /** */
+    public static final String METRIC_POOL_SIZE_DESC = "Maximal connections number.";
+
+    /** */
+    private static final String NODE_METRICS_REGISTRY_NAME_PREFIX = MetricUtils.metricName(SHARED_METRICS_REGISTRY_NAME, "node");
+
+    /** */
+    public static final String NODE_METRIC_CONSIST_ID_NAME = "consistentId";
+
+    /** */
+    public static final String NODE_METRIC_CONNS_CNT_NAME = "connectionsCnt";
+
+    /** */
+    public static final String NODE_METRIC_ACTIVE_CONNS_CNT_NAME = "activeConnectionsCnt";
+
+    /** */
+    public static final String NODE_METRIC_AVG_IDLE_TIME_NAME = "avgIdleTime";
+
+    /** */
+    public static final String NODE_METRIC_AVG_TOTAL_IDLE_TIME_NAME = "avgTotalIdleTime";
+
+    /** */
+    public static final String NODE_METRIC_AVG_LIFE_TIME_NAME = "avgLifeTime";
+
+    /** */
+    private static final long NODE_METRICS_UPDATE_THRESHOLD = U.millisToNanos(300);
+
     /** Clients. */
     private final ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridConcurrentFactory.newMap();
+
+    /** Metrics for each remote node. */
+    private final ConcurrentMap<UUID, NodeMetrics> nodeMetrics = GridConcurrentFactory.newMap();
 
     /** Config. */
     private final TcpCommunicationConfiguration cfg;
@@ -107,18 +148,21 @@ public class ConnectionClientPool {
     private boolean forcibleNodeKillEnabled = IgniteSystemProperties
         .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
+    /** */
+    private final GridMetricManager metricManager;
+
     /**
      * @param cfg Config.
      * @param attrs Attributes.
      * @param log Logger.
      * @param locNodeSupplier Local node supplier.
      * @param nodeGetter Node getter.
-     * @param msgFormatterSupplier Message formatter supplier.
      * @param registry Registry.
      * @param tcpCommSpi Tcp communication spi.
      * @param clusterStateProvider Cluster state provider.
      * @param nioSrvWrapper Nio server wrapper.
      * @param igniteInstanceName Ignite instance name.
+     * @param metricManager Metric manager. If {@code null}, metrics are not created.
      */
     public ConnectionClientPool(
         TcpCommunicationConfiguration cfg,
@@ -130,7 +174,8 @@ public class ConnectionClientPool {
         TcpCommunicationSpi tcpCommSpi,
         ClusterStateProvider clusterStateProvider,
         GridNioServerWrapper nioSrvWrapper,
-        String igniteInstanceName
+        String igniteInstanceName,
+        @Nullable GridMetricManager metricManager
     ) {
         this.cfg = cfg;
         this.attrs = attrs;
@@ -141,10 +186,17 @@ public class ConnectionClientPool {
         this.tcpCommSpi = tcpCommSpi;
         this.clusterStateProvider = clusterStateProvider;
         this.nioSrvWrapper = nioSrvWrapper;
+        this.metricManager = metricManager;
 
         this.handshakeTimeoutExecutorService = newSingleThreadScheduledExecutor(
             new IgniteThreadFactory(igniteInstanceName, "handshake-timeout-client")
         );
+
+        if (metricManager != null) {
+            MetricRegistryImpl mreg = metricManager.registry(SHARED_METRICS_REGISTRY_NAME);
+
+            mreg.register(METRIC_POOL_SIZE_NAME, () -> cfg.connectionsPerNode(), METRIC_POOL_SIZE_DESC);
+        }
     }
 
     /**
@@ -152,6 +204,12 @@ public class ConnectionClientPool {
      */
     public void stop() {
         this.stopping = true;
+
+        if (metricManager != null) {
+            metricManager.remove(SHARED_METRICS_REGISTRY_NAME);
+
+            clients.keySet().forEach(nodeId -> metricManager.remove(nodeMetricsRegName(nodeId)));
+        }
 
         for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values()) {
             if (fut instanceof ConnectionRequestFuture) {
@@ -500,8 +558,11 @@ public class ConnectionClientPool {
                 newClients = new GridCommunicationClient[cfg.connectionsPerNode()];
                 newClients[connIdx] = addClient;
 
-                if (clients.putIfAbsent(node.id(), newClients) == null)
+                if (clients.putIfAbsent(node.id(), newClients) == null) {
+                    createNodeMetrics(node);
+
                     break;
+                }
             }
             else {
                 newClients = curClients.clone();
@@ -514,6 +575,82 @@ public class ConnectionClientPool {
                     break;
             }
         }
+    }
+
+    /** */
+    private void createNodeMetrics(ClusterNode node) {
+        if (metricManager == null)
+            return;
+
+        MetricRegistryImpl mreg = metricManager.registry(nodeMetricsRegName(node.id()));
+
+        assert !mreg.iterator().hasNext() : "Node connection pools metrics aren't empty.";
+
+        mreg.register(NODE_METRIC_CONSIST_ID_NAME, () -> node.consistentId().toString(), String.class,
+            "Consistent id on node connected to.");
+
+        mreg.register(NODE_METRIC_CONNS_CNT_NAME, () -> nodeMetrics(node).connsCnt,
+            "Number of current connections to remote node.");
+
+        mreg.register(NODE_METRIC_ACTIVE_CONNS_CNT_NAME, () -> nodeMetrics(node).activeCnt,
+            "Number of current active connections to remote node.");
+
+        mreg.register(NODE_METRIC_AVG_IDLE_TIME_NAME, () -> nodeMetrics(node).avgLastIdleTime,
+            "Average last idle time of a connection to remote node in milliseconds.");
+
+        mreg.register(NODE_METRIC_AVG_TOTAL_IDLE_TIME_NAME, () -> nodeMetrics(node).avgTotalIdleTime,
+            "Average total idle time since creation of a connection to remote node in milliseconds.");
+
+        mreg.register(NODE_METRIC_AVG_LIFE_TIME_NAME, () -> nodeMetrics(node).avgLifeTime,
+            "Average connection life time before closed in milliseconds.");
+    }
+
+    /** */
+    private NodeMetrics nodeMetrics(ClusterNode node) {
+        NodeMetrics metrics = nodeMetrics.compute(node.id(), (nodeId0, metrics0) -> {
+            if (metrics0 != null && (System.nanoTime() - metrics0.lastUpdateNanos) < NODE_METRICS_UPDATE_THRESHOLD)
+                return metrics0;
+
+            GridCommunicationClient[] nodeClients = clients.get(node.id());
+
+            if (F.isEmpty(nodeClients))
+                return null;
+
+            metrics0 = new NodeMetrics();
+
+            metrics0.consistId = node.consistentId();
+
+            long nowMillis = System.currentTimeMillis();
+
+            for (GridCommunicationClient nodeClient : nodeClients) {
+                if (nodeClient == null)
+                    continue;
+
+                ++metrics0.connsCnt;
+
+                if (nodeClient.active())
+                    ++metrics0.activeCnt;
+
+                metrics0.avgLastIdleTime += nodeClient.idleTime();
+                metrics0.avgLifeTime += nowMillis - nodeClient.creationTime();
+                metrics0.avgTotalIdleTime += nodeClient.totalActiveTime();
+            }
+
+            metrics0.avgLastIdleTime /= metrics0.connsCnt;
+            metrics0.avgLifeTime /= metrics0.connsCnt;
+            metrics0.avgTotalIdleTime = metrics0.avgLifeTime - metrics0.avgTotalIdleTime;
+
+            metrics0.lastUpdateNanos = System.nanoTime();
+
+            return metrics0;
+        });
+
+        return metrics == null ? NodeMetrics.EMPTY : metrics;
+    }
+
+    /** */
+    public static String nodeMetricsRegName(UUID nodeId) {
+        return MetricUtils.metricName(NODE_METRICS_REGISTRY_NAME_PREFIX, nodeId.toString());
     }
 
     /**
@@ -554,7 +691,14 @@ public class ConnectionClientPool {
             log.debug("The node client connections were closed [nodeId=" + nodeId + "]");
 
         GridCommunicationClient[] clients = this.clients.remove(nodeId);
+
         if (nonNull(clients)) {
+            if (metricManager != null) {
+                metricManager.remove(nodeMetricsRegName(nodeId));
+
+                nodeMetrics.remove(nodeId);
+            }
+
             for (GridCommunicationClient client : clients)
                 client.forceClose();
         }
@@ -576,6 +720,12 @@ public class ConnectionClientPool {
         GridCommunicationClient[] clients0 = clients.remove(nodeId);
 
         if (clients0 != null) {
+            if (metricManager != null) {
+                metricManager.remove(nodeMetricsRegName(nodeId));
+
+                nodeMetrics.remove(nodeId);
+            }
+
             for (GridCommunicationClient client : clients0) {
                 if (client != null) {
                     if (log.isDebugEnabled()) {
@@ -647,5 +797,32 @@ public class ConnectionClientPool {
     public void completeFutures(IgniteClientDisconnectedCheckedException err) {
         for (GridFutureAdapter<GridCommunicationClient> clientFut : clientFuts.values())
             clientFut.onDone(err);
+    }
+
+    /** */
+    private static final class NodeMetrics {
+        /** */
+        private static final NodeMetrics EMPTY = new NodeMetrics();
+
+        /** */
+        private long lastUpdateNanos;
+
+        /** */
+        private Object consistId;
+
+        /** */
+        private int connsCnt;
+
+        /** */
+        private int activeCnt;
+
+        /** */
+        private long avgLastIdleTime;
+
+        /** */
+        private long avgTotalIdleTime;
+
+        /** */
+        private long avgLifeTime;
     }
 }
