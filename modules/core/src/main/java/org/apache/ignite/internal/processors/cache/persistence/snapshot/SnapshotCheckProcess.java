@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -55,8 +54,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
@@ -100,26 +97,6 @@ public class SnapshotCheckProcess {
 
         phase2PartsHashes = new DistributedProcess<>(kctx, CHECK_SNAPSHOT_PARTS, this::validateParts,
             this::reduceValidatePartsAndFinish);
-
-        kctx.event().addLocalEventListener(evt -> {
-            UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
-
-            Throwable err = new ClusterTopologyCheckedException("Snapshot validation stopped. A required node left " +
-                "the cluster [nodeId=" + nodeId + ']');
-
-            contexts.values().forEach(ctx -> {
-                if (ctx.req.nodes().contains(nodeId)) {
-                    ctx.locProcFut.onDone(err);
-
-                    // We have no a guaranty that a node-left-event is processed strictly before the 1st phase reduce which
-                    // can handle this error.
-                    GridFutureAdapter<?> clusterFut = clusterOpFuts.get(ctx.req.requestId());
-
-                    if (clusterFut != null)
-                        clusterFut.onDone(err);
-                }
-            });
-        }, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
     /**
@@ -136,8 +113,6 @@ public class SnapshotCheckProcess {
         contexts.forEach((snpName, ctx) -> ctx.locProcFut.onDone(err));
 
         clusterOpFuts.forEach((reqId, fut) -> fut.onDone(err));
-
-        contexts.clear();
     }
 
     /** Phase 2 and process finish. */
@@ -161,14 +136,20 @@ public class SnapshotCheckProcess {
         if (clusterOpFut == null)
             return new GridFinishedFuture<>();
 
-        SnapshotFileTree sft = ctx.locFileTree == null ? null : ctx.locFileTree.get(kctx.config().getConsistentId());
+        ClusterTopologyCheckedException ex = checkNodeLeft(ctx.req.nodes(), results.keySet());
 
-        if (ctx.req.incrementalIndex() > 0)
-            reduceIncrementalResults(sft, ctx.req.incrementalIndex(), ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
-        else if (ctx.req.allRestoreHandlers())
-            reduceCustomHandlersResults(ctx, results, errors, clusterOpFut);
-        else
-            reducePartitionsHashesResults(ctx.clusterMetas, results, errors, clusterOpFut);
+        if (ex != null)
+            clusterOpFut.onDone(ex);
+        else {
+            SnapshotFileTree sft = ctx.locFileTree == null ? null : ctx.locFileTree.get(kctx.config().getConsistentId());
+
+            if (ctx.req.incrementalIndex() > 0)
+                reduceIncrementalResults(sft, ctx.req.incrementalIndex(), ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
+            else if (ctx.req.allRestoreHandlers())
+                reduceCustomHandlersResults(ctx, results, errors, clusterOpFut);
+            else
+                reducePartitionsHashesResults(ctx.clusterMetas, results, errors, clusterOpFut);
+        }
 
         return new GridFinishedFuture<>();
     }
@@ -498,8 +479,10 @@ public class SnapshotCheckProcess {
                 return;
             }
 
-            if (ctx.locProcFut.error() != null)
-                throw ctx.locProcFut.error();
+            ClusterTopologyCheckedException ex;
+
+            if ((ex = checkNodeLeft(ctx.req.nodes(), results.keySet())) != null)
+                throw ex;
 
             Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
 
@@ -665,6 +648,24 @@ public class SnapshotCheckProcess {
         ClusterNode node = kctx.cluster().get().node(nodeId);
 
         return node != null && CU.baselineNode(node, kctx.state().clusterState());
+    }
+
+    /**
+     * @param reqNodes Set of required topology nodes.
+     * @param respNodes Set of responding topology nodes.
+     * @return Error, if no response was received from the required topology node.
+     */
+    private @Nullable ClusterTopologyCheckedException checkNodeLeft(Collection<UUID> reqNodes, Set<UUID> respNodes) {
+        if (!respNodes.containsAll(reqNodes)) {
+            Set<UUID> leftNodes = new HashSet<>(reqNodes);
+
+            leftNodes.removeAll(respNodes);
+
+            return new ClusterTopologyCheckedException("Snapshot validation stopped. " +
+                "Required node has left the cluster [nodeId=" + leftNodes + ']');
+        }
+
+        return null;
     }
 
     /** Operation context. */
