@@ -17,26 +17,21 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.task;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Task result request.
  */
 public class GridTaskResultRequest implements Message {
     /** Task ID. */
+    @Order(0)
     private IgniteUuid taskId;
 
-    /** Topic. */
-    @GridDirectTransient
-    private Object topic;
-
-    /** Serialized topic. */
-    private byte[] topicBytes;
+    /** Topic ID. */
+    @Order(1)
+    private long topicId;
 
     /**
      * Empty constructor.
@@ -47,13 +42,11 @@ public class GridTaskResultRequest implements Message {
 
     /**
      * @param taskId Task ID.
-     * @param topic Topic.
-     * @param topicBytes Serialized topic.
+     * @param topicId Topic ID.
      */
-    GridTaskResultRequest(IgniteUuid taskId, Object topic, byte[] topicBytes) {
+    GridTaskResultRequest(IgniteUuid taskId, long topicId) {
         this.taskId = taskId;
-        this.topic = topic;
-        this.topicBytes = topicBytes;
+        this.topicId = topicId;
     }
 
     /**
@@ -73,86 +66,22 @@ public class GridTaskResultRequest implements Message {
     }
 
     /**
-     * @return Topic.
+     * @return Topic ID.
      */
-    public Object topic() {
-        return topic;
+    public long topicId() {
+        return topicId;
     }
 
     /**
-     * @return Serialized topic.
+     * @param topicId New topic ID.
      */
-    public byte[] topicBytes() {
-        return topicBytes;
-    }
-
-    /**
-     * @param topic Topic.
-     */
-    public void topic(String topic) {
-        assert topic != null;
-
-        this.topic = topic;
+    public void topicId(long topicId) {
+        this.topicId = topicId;
     }
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIgniteUuid(taskId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByteArray(topicBytes))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                taskId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                topicBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
