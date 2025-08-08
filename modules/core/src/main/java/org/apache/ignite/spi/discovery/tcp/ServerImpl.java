@@ -3376,7 +3376,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     TcpDiscoveryAbstractMessage msg0 = msg;
-                    byte[] msgBytes0 = msgBytes;
 
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
@@ -3389,8 +3388,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     U.resolveClassLoader(spi.ignite().configuration()));
 
                                 prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null, null);
-
-                                msgBytes0 = null;
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to create message copy: " + msg, e);
@@ -3398,7 +3395,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                     }
 
-                    clientMsgWorker.addMessage(msg0, msgBytes0);
+                    clientMsgWorker.addMessage(msg0);
                 }
             }
         }
@@ -6985,8 +6982,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     try {
                         SecurityUtils.serializeVersion(1);
 
-                        TcpDiscoveryAbstractMessage msg = U.unmarshal(spi.marshaller(), in,
-                            U.resolveClassLoader(spi.ignite().configuration()));
+                        TcpDiscoveryAbstractMessage msg = spi.readMessage(sock, in, sock.getSoTimeout());
 
                         msg.senderNodeId(nodeId);
 
@@ -7758,11 +7754,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             try {
                 assert msg.verified() : msg;
 
-                byte[] msgBytes = msgT.get2();
-
-                if (msgBytes == null)
-                    msgBytes = U.marshal(spi.marshaller(), msg);
-
                 DebugLogger msgLog = messageLogger(msg);
 
                 if (msg instanceof TcpDiscoveryClientAckResponse) {
@@ -7784,7 +7775,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
                         }
 
-                        spi.writeToSocket(sock, msg, msgBytes, spi.failureDetectionTimeoutEnabled() ?
+                        spi.writeToSocket(sock, msg, spi.failureDetectionTimeoutEnabled() ?
                             spi.clientFailureDetectionTimeout() : spi.getSocketTimeout());
                     }
                 }
@@ -7796,7 +7787,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     assert topologyInitialized(msg) : msg;
 
-                    spi.writeToSocket(sock, msg, msgBytes, spi.getEffectiveSocketTimeout(false));
+                    spi.writeToSocket(sock, msg, spi.getEffectiveSocketTimeout(false));
                 }
 
                 boolean clientFailed = msg instanceof TcpDiscoveryNodeFailedMessage &&
