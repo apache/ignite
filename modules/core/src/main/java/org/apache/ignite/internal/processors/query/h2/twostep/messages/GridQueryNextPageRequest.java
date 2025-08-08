@@ -17,29 +17,32 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Request to fetch next page.
  */
 public class GridQueryNextPageRequest implements Message {
     /** */
+    @Order(value = 0, method = "queryRequestId")
     private long qryReqId;
 
     /** */
+    @Order(1)
     private int segmentId;
 
     /** */
+    @Order(value = 2, method = "query")
     private int qry;
 
     /** */
+    @Order(3)
     private int pageSize;
 
     /** */
+    @Order(value = 4, method = "getFlags")
     private byte flags;
 
     /**
@@ -72,10 +75,24 @@ public class GridQueryNextPageRequest implements Message {
     }
 
     /**
+     * @param flags New flags.
+     */
+    public void getFlags(byte flags) {
+        this.flags = flags;
+    }
+
+    /**
      * @return Query request ID.
      */
     public long queryRequestId() {
         return qryReqId;
+    }
+
+    /**
+     * @param qryReqId New query request ID.
+     */
+    public void queryRequestId(long qryReqId) {
+        this.qryReqId = qryReqId;
     }
 
     /**
@@ -85,9 +102,23 @@ public class GridQueryNextPageRequest implements Message {
         return qry;
     }
 
+    /**
+     * @param qry New query.
+     */
+    public void query(int qry) {
+        this.qry = qry;
+    }
+
     /** @return Index segment ID */
     public int segmentId() {
         return segmentId;
+    }
+
+    /**
+     * @param segmentId New index segment ID.
+     */
+    public void segmentId(int segmentId) {
+        this.segmentId = segmentId;
     }
 
     /**
@@ -95,6 +126,13 @@ public class GridQueryNextPageRequest implements Message {
      */
     public int pageSize() {
         return pageSize;
+    }
+
+    /**
+     * @param pageSize New page size.
+     */
+    public void pageSize(int pageSize) {
+        this.pageSize = pageSize;
     }
 
     /** {@inheritDoc} */
@@ -105,103 +143,6 @@ public class GridQueryNextPageRequest implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeInt(pageSize))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeInt(qry))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeLong(qryReqId))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeInt(segmentId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                pageSize = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                qry = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                qryReqId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                segmentId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
