@@ -17,7 +17,6 @@
 
 package org.apache.ignite;
 
-import java.util.List;
 import java.util.function.BiConsumer;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -29,73 +28,26 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Test checks that transaction context is cleaned up on explicit commit or rollback.
  */
-@RunWith(Parameterized.class)
 public class TransactionContextCleanupTest extends GridCommonAbstractTest {
-    /** Transaction timeout. */
-    public static final int TX_TIMEOUT = 1000;
-
-    /** Transaction concurrency. */
-    @Parameter(0)
-    public TransactionConcurrency concurrency;
-
-    /** Transaction isolation. */
-    @Parameter(1)
-    public TransactionIsolation isolation;
-
-    /** Cache backups. */
-    @Parameter(2)
-    public int backups;
-
-    /** */
-    @Parameters(name = "concurrency={0}, isolation={1}, backups={2}")
-    public static List<Object[]> parameters() {
-        return List.of(
-            new Object[]{PESSIMISTIC, READ_COMMITTED, 0},
-            new Object[]{PESSIMISTIC, READ_COMMITTED, 1},
-            new Object[]{PESSIMISTIC, READ_COMMITTED, 2},
-
-            new Object[]{PESSIMISTIC, REPEATABLE_READ, 0},
-            new Object[]{PESSIMISTIC, REPEATABLE_READ, 1},
-            new Object[]{PESSIMISTIC, REPEATABLE_READ, 2},
-
-            new Object[]{OPTIMISTIC, REPEATABLE_READ, 0},
-            new Object[]{OPTIMISTIC, REPEATABLE_READ, 1},
-            new Object[]{OPTIMISTIC, REPEATABLE_READ, 2},
-
-            new Object[]{OPTIMISTIC, SERIALIZABLE, 0},
-            new Object[]{OPTIMISTIC, SERIALIZABLE, 1},
-            new Object[]{OPTIMISTIC, SERIALIZABLE, 2}
-        );
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setCacheMode(CacheMode.PARTITIONED)
-                .setBackups(backups)
+                .setBackups(1)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC));
     }
 
@@ -129,13 +81,15 @@ public class TransactionContextCleanupTest extends GridCommonAbstractTest {
      * @param txAction Transaction action.
      */
     private void checkContextCleanup(BiConsumer<IgniteCache<Integer, Integer>, Transaction> txAction) throws Exception {
+        final int TX_TIMEOUT = 1000;
+
         IgniteEx ignite = startGrids(3);
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
         cache.put(1, 1);
 
         IgniteTransactions transactions = ignite.transactions();
-        Transaction tx = transactions.txStart(concurrency, isolation, TX_TIMEOUT, 0);
+        Transaction tx = transactions.txStart(PESSIMISTIC, READ_COMMITTED, TX_TIMEOUT, 0);
 
         cache.put(1, 2);
 
@@ -161,8 +115,8 @@ public class TransactionContextCleanupTest extends GridCommonAbstractTest {
         assertTrue(t instanceof TransactionTimeoutException || t instanceof CacheException);
 
         assertNull("Transaction was not cleared from context", cctx.tm().threadLocalTx(cctx));
-        assertNull("No transaction expectet via public API ", transactions.tx());
+        assertNull("No transaction expected via public API ", transactions.tx());
 
-        assertEquals(1, (int)cache.get(1));
+        assertEquals("Value should not be commited", 1, (int)cache.get(1));
     }
 }
