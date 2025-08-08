@@ -1056,12 +1056,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     @Nullable public GridNearTxLocal userTx() {
         IgniteInternalTx tx = txContext();
 
-        if (tx != null && tx.user())
+        if (activeUserTx(tx))
             return (GridNearTxLocal)tx;
 
         tx = tx(null, Thread.currentThread().getId());
 
-        if (tx != null && tx.user())
+        if (activeUserTx(tx))
             return (GridNearTxLocal)tx;
 
         return null;
