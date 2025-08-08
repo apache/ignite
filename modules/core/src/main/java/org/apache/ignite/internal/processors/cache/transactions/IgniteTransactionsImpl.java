@@ -217,9 +217,9 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public Transaction tx() {
-        GridNearTxLocal tx = cctx.tm().userTx();
+        GridNearTxLocal tx = cctx.tm().threadLocalTx(null);
 
-        return tx != null ? tx.proxy() : null;
+        return tx != null && !tx.internal() ? tx.proxy() : null;
     }
 
     /** {@inheritDoc} */
