@@ -261,6 +261,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         txCommits.reset();
         rollbackTime.reset();
         txRollbacks.reset();
+        txDeadlocks.reset();
     }
 
     /** @return Current metrics values. */

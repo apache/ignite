@@ -514,8 +514,10 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
         fut1.get();
 
-        for (Ignite g : G.allGrids())
+        for (Ignite g : G.allGrids()) {
             assertEquals(g == ignite ? 1 : 0, g.transactions().metrics().txRollbacks());
+            assertEquals(g == ignite ? 1 : 0, g.transactions().metrics().txDeadlocks());
+        }
     }
 
     /**
