@@ -30,10 +30,10 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * This is a faster performing version of {@link UUID}. On basic tests this version is at least
@@ -48,7 +48,7 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
     public static final UUID VM_ID = UUID.randomUUID();
 
     /** */
-    private static final AtomicLong cntGen = new AtomicLong(U.currentTimeMillis());
+    private static final AtomicLong cntGen = new AtomicLong(CommonUtils.currentTimeMillis());
 
     /** */
     private UUID gid;
@@ -161,14 +161,14 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeUuid(out, gid);
+        CommonUtils.writeUuid(out, gid);
 
         out.writeLong(locId);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
-        gid = U.readUuid(in);
+        gid = CommonUtils.readUuid(in);
 
         locId = in.readLong();
     }
