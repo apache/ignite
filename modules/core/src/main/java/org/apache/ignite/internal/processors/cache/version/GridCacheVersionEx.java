@@ -21,10 +21,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import org.apache.ignite.cache.CacheEntryVersion;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.internal.Order;
 
 /**
  * Extended cache version which also has additional DR version.
@@ -34,6 +32,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
     private static final long serialVersionUID = 0L;
 
     /** DR version. */
+    @Order(value = 3, method = "conflictVersion")
     private GridCacheVersion drVer;
 
     /**
@@ -82,6 +81,13 @@ public class GridCacheVersionEx extends GridCacheVersion {
         return drVer;
     }
 
+    /**
+     * @param drVer New DR version.
+     */
+    public void conflictVersion(GridCacheVersion drVer) {
+        this.drVer = drVer;
+    }
+
     /** {@inheritDoc} */
     @Override public CacheEntryVersion otherClusterVersion() {
         return conflictVersion();
@@ -90,53 +96,6 @@ public class GridCacheVersionEx extends GridCacheVersion {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 104;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 3:
-                if (!writer.writeMessage(drVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 3:
-                drVer = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

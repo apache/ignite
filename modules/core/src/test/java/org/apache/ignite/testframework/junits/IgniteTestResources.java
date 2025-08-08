@@ -247,10 +247,7 @@ public class IgniteTestResources {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextTestImpl());
-        marsh.setBinaryContext(
-            U.emptyBinaryContext(),
-            new IgniteConfiguration()
-        );
+        marsh.setBinaryContext(U.binaryContext(marsh, new IgniteConfiguration()));
 
         return marsh;
     }

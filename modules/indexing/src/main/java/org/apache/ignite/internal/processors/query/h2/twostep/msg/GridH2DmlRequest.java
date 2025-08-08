@@ -416,7 +416,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeMessage(topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
@@ -512,7 +512,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 10:
-                topVer = reader.readMessage();
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
