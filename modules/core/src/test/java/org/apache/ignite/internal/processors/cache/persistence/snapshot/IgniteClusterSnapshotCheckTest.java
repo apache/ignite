@@ -1266,7 +1266,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     null,
                     () -> fut.get(getTestTimeout()),
                     ClusterTopologyCheckedException.class,
-                    "Snapshot validation stopped. A required node left the cluster"
+                    "Snapshot validation stopped. Required node has left the cluster"
                 );
             }
             else

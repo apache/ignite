@@ -416,7 +416,7 @@ public class SnapshotCheckProcess {
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
     private IgniteInternalFuture<SnapshotCheckResponse> prepareAndCheckMetas(SnapshotCheckProcessRequest req) {
-        if (!req.nodes().contains(kctx.localNodeId()))
+        if (!req.nodes().contains(kctx.localNodeId()) && clusterOpFuts.get(req.requestId()) == null)
             return new GridFinishedFuture<>();
 
         SnapshotCheckContext ctx;
@@ -607,9 +607,6 @@ public class SnapshotCheckProcess {
         UUID reqId = UUID.randomUUID();
 
         Set<UUID> requiredNodes = new HashSet<>(F.viewReadOnly(kctx.discovery().discoCache().aliveBaselineNodes(), node2id()));
-
-        // Initiator is also a required node. It collects the final operation result.
-        requiredNodes.add(kctx.localNodeId());
 
         SnapshotCheckProcessRequest req = new SnapshotCheckProcessRequest(
             reqId,
