@@ -365,6 +365,9 @@ class MessageSerializerGenerator {
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.GridCacheOperation")))
+                returnFalseIfEnumWriteFailed(write, "writer.writeByte", getExpr);
+
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
 
@@ -385,6 +388,25 @@ class MessageSerializerGenerator {
         String argsStr = String.join(",", args);
 
         code.add(line("if (!%s(msg.%s))", accessor, argsStr));
+
+        indent++;
+
+        code.add(line("return false;"));
+
+        indent--;
+    }
+
+    /**
+     * Generate code of writing single enum field:
+     * <pre>
+     * if (!writer.writeByte(msg.op() != null ? (byte)msg.op().ordinal() : -1)))
+     *     return false;
+     * </pre>
+     */
+    private void returnFalseIfEnumWriteFailed(Collection<String> code, String accessor, String mtd) {
+        String enumToByte = String.format("msg.%1$s != null ? (byte)msg.%1$s.ordinal() : -1", mtd);
+
+        code.add(line("if (!%s(%s))", accessor, enumToByte));
 
         indent++;
 
@@ -474,6 +496,12 @@ class MessageSerializerGenerator {
 
                 returnFalseIfReadFailed(name, "reader.readCollection",
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+            }
+
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.GridCacheOperation"))) {
+                String mtd = type + ".fromOrdinal(reader.readByte";
+
+                returnFalseIfReadFailed(name, mtd, ")");
             }
 
             else
