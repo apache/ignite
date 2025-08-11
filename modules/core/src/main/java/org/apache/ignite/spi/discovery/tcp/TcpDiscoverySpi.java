@@ -2960,6 +2960,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                     return (T)msg;
                 }
 
+                detectSslAlert(serMode, in);
+
                 throw new EOFException();
             }
             catch (Exception e) {
@@ -2975,6 +2977,25 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         private void readNBytes(InputStream in, int nbytes) throws IOException {
             if (in.readNBytes(buf.array(), 0, nbytes) < nbytes)
                 throw new EOFException();
+        }
+
+        /**
+         * Checks wheter input stream contains SSL alert.
+         * See handling {@code StreamCorruptedException} in {@link #readMessage(Socket, InputStream, long)}.
+         * Keeps logic similar to {@link java.io.ObjectInputStream#readStreamHeader}.
+         */
+        private void detectSslAlert(byte firstByte, InputStream in) throws IOException {
+            byte[] hdr = new byte[4];
+            hdr[0] = firstByte;
+            int read = in.readNBytes(hdr, 1, 3);
+
+            if (read < 3)
+                throw new EOFException();
+
+            String hex = String.format("%02x%02x%02x%02x", hdr[0], hdr[1], hdr[2], hdr[3]);
+
+            if (hex.matches("15....00"))
+                throw new StreamCorruptedException("invalid stream header: " + hex);
         }
     }
 }
