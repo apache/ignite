@@ -18,7 +18,6 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 

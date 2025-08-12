@@ -34,7 +34,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -75,7 +75,7 @@ final class TestMemcacheClient {
     private final IgniteLogger log = new JavaLogger();
 
     /** JDK marshaller. */
-    private final Marshaller jdkMarshaller = new JdkMarshaller();
+    private final Marshaller jdkMarshaller = Marshallers.jdkMarshaller();
 
     /** Socket. */
     private final Socket sock;

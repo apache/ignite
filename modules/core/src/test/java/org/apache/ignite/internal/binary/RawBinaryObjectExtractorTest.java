@@ -33,6 +33,7 @@ import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -157,7 +158,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return new JdkMarshaller();
+            return Marshallers.jdkMarshaller();
         }
     }
 

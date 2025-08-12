@@ -19,7 +19,6 @@ package org.apache.ignite.marshaller;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
