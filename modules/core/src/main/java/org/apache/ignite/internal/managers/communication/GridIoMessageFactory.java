@@ -39,6 +39,7 @@ import org.apache.ignite.internal.codegen.GridQueryKillRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillResponseSerializer;
 import org.apache.ignite.internal.codegen.GridTaskResultRequestSerializer;
 import org.apache.ignite.internal.codegen.IgniteTxKeySerializer;
+import org.apache.ignite.internal.codegen.JobStealingRequestSerializer;
 import org.apache.ignite.internal.codegen.LatchAckMessageSerializer;
 import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.MissingMappingResponseMessageSerializer;
@@ -284,7 +285,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)79, MissingMappingResponseMessage::new, new MissingMappingResponseMessageSerializer());
         factory.register((short)80, MetadataRequestMessage::new);
         factory.register((short)81, MetadataResponseMessage::new);
-        factory.register((short)82, JobStealingRequest::new);
+        factory.register((short)82, JobStealingRequest::new, new JobStealingRequestSerializer());
         factory.register((short)84, GridByteArrayList::new);
         factory.register((short)85, GridLongList::new);
         factory.register((short)86, GridCacheVersion::new, new GridCacheVersionSerializer());
