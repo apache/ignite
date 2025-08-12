@@ -43,16 +43,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.SerializableTransient;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 
@@ -95,8 +91,6 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.UUID;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.computeSerialVersionUid;
 import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
-import static org.apache.ignite.marshaller.MarshallerUtils.jobReceiverVersion;
-import static org.apache.ignite.marshaller.MarshallerUtils.jobSenderVersion;
 
 /**
  * Class descriptor.
@@ -173,9 +167,6 @@ class OptimizedClassDescriptor {
 
     /** Proxy interfaces. */
     private Class<?>[] proxyIntfs;
-
-    /** Method returns serializable transient fields. */
-    private Method serTransMtd;
 
     /**
      * Creates descriptor for class.
@@ -484,26 +475,6 @@ class OptimizedClassDescriptor {
                             }
 
                             readObjMtds.add(mtd);
-
-                            final SerializableTransient serTransAn = c.getAnnotation(SerializableTransient.class);
-
-                            // Custom serialization policy for transient fields.
-                            if (serTransAn != null) {
-                                try {
-                                    serTransMtd = c.getDeclaredMethod(serTransAn.methodName(), IgniteProductVersion.class);
-
-                                    int mod = serTransMtd.getModifiers();
-
-                                    if (isStatic(mod) && isPrivate(mod) && serTransMtd.getReturnType() == String[].class)
-                                        serTransMtd.setAccessible(true);
-                                    else
-                                        // Set method back to null if it has incorrect signature.
-                                        serTransMtd = null;
-                                }
-                                catch (NoSuchMethodException ignored) {
-                                    serTransMtd = null;
-                                }
-                            }
 
                             Field[] clsFields0 = c.getDeclaredFields();
 
@@ -864,65 +835,12 @@ class OptimizedClassDescriptor {
                 writeTypeData(out);
 
                 out.writeShort(checksum);
-                out.writeSerializable(obj, writeObjMtds, fields(obj.getClass(), jobReceiverVersion()));
+                out.writeSerializable(obj, writeObjMtds, fields);
 
                 break;
 
             default:
                 throw new IllegalStateException("Invalid class type: " + type);
-        }
-    }
-
-    /**
-     * Gets list of serializable fields. If {@link #serTransMtd} method
-     * returns list of transient fields, they will be added to other fields.
-     * Transient fields that are not included in that list will be normally
-     * ignored.
-     *
-     * @param cls Class.
-     * @param ver Job sender version.
-     * @return Serializable fields.
-     */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    private Fields fields(Class<?> cls, IgniteProductVersion ver) {
-        if (ver == null // No context available.
-            || serTransMtd == null)
-            return fields;
-
-        try {
-            final String[] transFields = serTransMtd == null ? null : (String[])serTransMtd.invoke(null, ver);
-
-            if (F.isEmpty(transFields))
-                return fields;
-
-            Map<String, FieldInfo> clsFields = new TreeMap<>();
-
-            for (FieldInfo field : fields.fields.get(0).fields) {
-                clsFields.put(field.fieldName, field);
-            }
-
-            // Add serializable transient fields
-            if (!F.isEmpty(transFields)) {
-                for (int i = 0; i < transFields.length; i++) {
-                    final String fieldName = transFields[i];
-
-                    final Field f = cls.getDeclaredField(fieldName);
-
-                    FieldInfo fieldInfo = new FieldInfo(f, f.getName(),
-                        GridUnsafe.objectFieldOffset(f), fieldType(f.getType()));
-
-                    clsFields.put(fieldName, fieldInfo);
-                }
-            }
-
-            List<ClassFields> fields = new ArrayList<>(1);
-
-            fields.add(new ClassFields(new ArrayList<>(clsFields.values())));
-
-            return new Fields(fields);
-        }
-        catch (Exception ignored) {
-            return fields;
         }
     }
 
@@ -958,7 +876,7 @@ class OptimizedClassDescriptor {
             case SERIALIZABLE:
                 verifyChecksum(in.readShort());
 
-                return in.readSerializable(cls, readObjMtds, readResolveMtd, fields(cls, jobSenderVersion()));
+                return in.readSerializable(cls, readObjMtds, readResolveMtd, fields);
 
             default:
                 assert false : "Unexpected type: " + type;
