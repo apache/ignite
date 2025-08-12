@@ -18,12 +18,17 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.Collection;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Next page response.
@@ -34,31 +39,25 @@ public class GridQueryNextPageResponse implements Message, Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 0, method = "queryRequestId")
     private long qryReqId;
 
     /** */
-    @Order(1)
     private int segmentId;
 
     /** */
-    @Order(value = 2, method = "query")
     private int qry;
 
     /** */
-    @Order(3)
     private int page;
 
     /** */
-    @Order(4)
     private int allRows;
 
     /** */
-    @Order(value = 5, method = "columns")
     private int cols;
 
     /** */
-    @Order(value = 6, method = "values")
+    @GridDirectCollection(Message.class)
     private Collection<Message> vals;
 
     /**
@@ -66,18 +65,16 @@ public class GridQueryNextPageResponse implements Message, Serializable {
      * See {@code org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory#toMessages}.
      * See javadoc for {@code org.h2.result.ResultInterface#getVisibleColumnCount()} and {@code org.h2.result.ResultInterface#currentRow()}.
      */
+    @GridDirectTransient
     private transient Collection<?> plainRows;
 
     /** */
-    @Order(7)
     private AffinityTopologyVersion retry;
 
     /** Retry cause description. */
-    @Order(8)
     private String retryCause;
 
     /** Last page flag. */
-    @Order(9)
     private boolean last;
 
     /**
@@ -122,24 +119,10 @@ public class GridQueryNextPageResponse implements Message, Serializable {
     }
 
     /**
-     * @param qryReqId New query request ID.
-     */
-    public void queryRequestId(long qryReqId) {
-        this.qryReqId = qryReqId;
-    }
-
-    /**
      * @return Index segment ID.
      */
     public int segmentId() {
         return segmentId;
-    }
-
-    /**
-     * @param segmentId New index segment ID.
-     */
-    public void segmentId(int segmentId) {
-        this.segmentId = segmentId;
     }
 
     /**
@@ -150,24 +133,10 @@ public class GridQueryNextPageResponse implements Message, Serializable {
     }
 
     /**
-     * @param qry New query.
-     */
-    public void query(int qry) {
-        this.qry = qry;
-    }
-
-    /**
      * @return Page.
      */
     public int page() {
         return page;
-    }
-
-    /**
-     * @param page New page.
-     */
-    public void page(int page) {
-        this.page = page;
     }
 
     /**
@@ -178,13 +147,6 @@ public class GridQueryNextPageResponse implements Message, Serializable {
     }
 
     /**
-     * @param allRows New all rows.
-     */
-    public void allRows(int allRows) {
-        this.allRows = allRows;
-    }
-
-    /**
      * @return Columns in row.
      */
     public int columns() {
@@ -192,24 +154,10 @@ public class GridQueryNextPageResponse implements Message, Serializable {
     }
 
     /**
-     * @param cols New columns in row.
-     */
-    public void columns(int cols) {
-        this.cols = cols;
-    }
-
-    /**
      * @return Values.
      */
     public Collection<Message> values() {
         return vals;
-    }
-
-    /**
-     * @param vals New values.
-     */
-    public void values(Collection<Message> vals) {
-        this.vals = vals;
     }
 
     /**
@@ -222,6 +170,171 @@ public class GridQueryNextPageResponse implements Message, Serializable {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeInt(allRows))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeInt(cols))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeInt(page))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeInt(qry))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeLong(qryReqId))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeCollection(vals, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeAffinityTopologyVersion(retry))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
+                if (!writer.writeInt(segmentId))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
+                if (!writer.writeBoolean(last))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
+                if (!writer.writeString(retryCause))
+                    return false;
+
+                writer.incrementState();
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        switch (reader.state()) {
+            case 0:
+                allRows = reader.readInt();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                cols = reader.readInt();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                page = reader.readInt();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                qry = reader.readInt();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                qryReqId = reader.readLong();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                vals = reader.readCollection(MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                retry = reader.readAffinityTopologyVersion();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
+                segmentId = reader.readInt();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
+                last = reader.readBoolean();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
+                retryCause = reader.readString();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

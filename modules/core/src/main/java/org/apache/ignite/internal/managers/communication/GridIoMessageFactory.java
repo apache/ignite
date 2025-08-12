@@ -38,7 +38,6 @@ import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillResponseSerializer;
 import org.apache.ignite.internal.codegen.GridQueryNextPageRequestSerializer;
-import org.apache.ignite.internal.codegen.GridQueryNextPageResponseSerializer;
 import org.apache.ignite.internal.codegen.GridTaskResultRequestSerializer;
 import org.apache.ignite.internal.codegen.IgniteTxKeySerializer;
 import org.apache.ignite.internal.codegen.LatchAckMessageSerializer;
@@ -312,7 +311,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)106, GridQueryCancelRequest::new);
         factory.register((short)107, GridQueryFailResponse::new);
         factory.register((short)108, GridQueryNextPageRequest::new, new GridQueryNextPageRequestSerializer());
-        factory.register((short)109, GridQueryNextPageResponse::new, new GridQueryNextPageResponseSerializer());
+        factory.register((short)109, GridQueryNextPageResponse::new);
         factory.register((short)112, GridCacheSqlQuery::new);
         // 113 - BinaryObjectImpl
         factory.register((short)114, GridDhtPartitionSupplyMessage::new);

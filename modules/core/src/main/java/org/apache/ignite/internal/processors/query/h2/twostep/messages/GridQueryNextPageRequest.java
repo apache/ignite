@@ -42,7 +42,7 @@ public class GridQueryNextPageRequest implements Message {
     private int pageSize;
 
     /** */
-    @Order(value = 4, method = "getFlags")
+    @Order(4)
     private byte flags;
 
     /**
@@ -70,14 +70,14 @@ public class GridQueryNextPageRequest implements Message {
     /**
      * @return Flags.
      */
-    public byte getFlags() {
+    public byte flags() {
         return flags;
     }
 
     /**
      * @param flags New flags.
      */
-    public void getFlags(byte flags) {
+    public void flags(byte flags) {
         this.flags = flags;
     }
 
