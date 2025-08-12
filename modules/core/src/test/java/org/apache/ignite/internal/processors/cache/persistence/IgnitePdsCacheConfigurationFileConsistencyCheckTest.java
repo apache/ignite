@@ -199,7 +199,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
      * @throws IgniteCheckedException If fails.
      */
     private void storeTmpCacheData(DynamicCacheDescriptor cacheDescr) throws Exception {
-        Marshaller marshaller = Marshallers.jdkMarshaller();
+        Marshaller marshaller = Marshallers.jdk();
 
         for (int i = 0; i < NODES; i++) {
             IgniteEx ig = grid(i);

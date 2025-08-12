@@ -109,7 +109,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private static final String ATTR_CONN = "JDBC_STORE_CONNECTION";
 
     /** Marshaller. */
-    private static final Marshaller marsh = Marshallers.jdkMarshaller();
+    private static final Marshaller marsh = Marshallers.jdk();
 
     /** Connection URL. */
     private String connUrl = DFLT_CONN_URL;

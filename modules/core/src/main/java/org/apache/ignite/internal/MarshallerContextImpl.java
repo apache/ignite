@@ -118,7 +118,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      */
     public MarshallerContextImpl(@Nullable Collection<PluginProvider> plugins, IgnitePredicate<String> clsFilter) {
         this.clsFilter = clsFilter;
-        this.jdkMarsh = Marshallers.jdkMarshaller(clsFilter);
+        this.jdkMarsh = Marshallers.jdk(clsFilter);
 
         initializeCaches();
         initializeMarshallerExclusions();

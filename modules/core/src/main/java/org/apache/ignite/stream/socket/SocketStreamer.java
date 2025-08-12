@@ -229,7 +229,7 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
          * @param igniteInstanceName Ignite instance name.
          */
         private DefaultConverter(@Nullable String igniteInstanceName) {
-            marsh = Marshallers.jdkMarshaller(((IgniteKernal)ignite).context().marshallerContext().classNameFilter());
+            marsh = Marshallers.jdk(((IgniteKernal)ignite).context().marshallerContext().classNameFilter());
 
             MarshallerUtils.setNodeName(marsh, igniteInstanceName);
         }

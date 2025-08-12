@@ -183,7 +183,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected static final int SERVICE_DEPLOYMENT_WAIT_TIMEOUT = 10_000;
 
     /** */
-    public static final JdkMarshaller TEST_JDK_MARSHALLER = Marshallers.jdkMarshaller();
+    public static final JdkMarshaller TEST_JDK_MARSHALLER = Marshallers.jdk();
 
     /**
      * @param startGrid If {@code true}, then grid node will be auto-started.

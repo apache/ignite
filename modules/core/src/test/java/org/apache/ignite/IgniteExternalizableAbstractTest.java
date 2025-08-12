@@ -36,7 +36,7 @@ public class IgniteExternalizableAbstractTest extends GridCommonAbstractTest {
 
         BinaryMarshaller bin = createStandaloneBinaryMarshaller();
 
-        marshallers.add(Marshallers.jdkMarshaller());
+        marshallers.add(Marshallers.jdk());
         marshallers.add(bin);
 
         return marshallers;

@@ -99,7 +99,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try (Socket sock = new Socket(InetAddress.getLocalHost(), port);
                      OutputStream os = new BufferedOutputStream(sock.getOutputStream())) {
-                    Marshaller marsh = Marshallers.jdkMarshaller();
+                    Marshaller marsh = Marshallers.jdk();
 
                     for (int i = 0; i < CNT; i++) {
                         byte[] msg = marsh.marshal(new Message(i));
@@ -128,7 +128,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try (Socket sock = new Socket(InetAddress.getLocalHost(), port);
                      OutputStream os = new BufferedOutputStream(sock.getOutputStream())) {
-                    Marshaller marsh = Marshallers.jdkMarshaller();
+                    Marshaller marsh = Marshallers.jdk();
 
                     int[] values = new int[CNT];
                     for (int i = 0; i < CNT; i++)
@@ -199,7 +199,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try (Socket sock = new Socket(InetAddress.getLocalHost(), port);
                     OutputStream os = new BufferedOutputStream(sock.getOutputStream())) {
-                    Marshaller marsh = Marshallers.jdkMarshaller();
+                    Marshaller marsh = Marshallers.jdk();
 
                     for (int i = 0; i < CNT; i++) {
                         byte[] msg = marsh.marshal(new Message(i));

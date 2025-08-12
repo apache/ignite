@@ -77,7 +77,7 @@ public class GridTcpRestParser implements GridNioParser {
      * @param routerClient Router client flag.
      */
     public GridTcpRestParser(boolean routerClient) {
-        this(routerClient, Marshallers.jdkMarshaller());
+        this(routerClient, Marshallers.jdk());
     }
 
     /**

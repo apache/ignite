@@ -17,10 +17,15 @@
 
 package org.apache.ignite.marshaller;
 
+import java.io.Serializable;
+import org.apache.ignite.IgniteCommonsSystemProperties;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshallerImpl;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 
 /**
  * Factory to create implementation of {@link Marshaller}.
@@ -29,11 +34,15 @@ public class Marshallers {
     /** Flag whether class caching should be used by the current thread. */
     public static final ThreadLocal<Boolean> USE_CACHE = ThreadLocal.withInitial(() -> Boolean.TRUE);
 
+    /** Use default {@code serialVersionUID} for {@link Serializable} classes. */
+    public static final boolean USE_DFLT_SUID =
+        IgniteCommonsSystemProperties.getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, false);
+
     /** Singleton instance. */
     private static final JdkMarshaller INSTANCE = new JdkMarshallerImpl();
 
     /** @return Default instance of {@link JdkMarshaller}. */
-    public static JdkMarshaller jdkMarshaller() {
+    public static JdkMarshaller jdk() {
         return INSTANCE;
     }
 
@@ -41,7 +50,22 @@ public class Marshallers {
      * @param clsFilter Class filter.
      * @return Filtered instance of {@link JdkMarshaller}.
      */
-    public static JdkMarshaller jdkMarshaller(@Nullable IgnitePredicate<String> clsFilter) {
+    public static JdkMarshaller jdk(@Nullable IgnitePredicate<String> clsFilter) {
         return new JdkMarshallerImpl(clsFilter);
+    }
+
+    /**
+     * @return {@link OptimizedMarshaller} instancel.
+     */
+    public static OptimizedMarshaller optimized() {
+        return null;
+    }
+
+    /**
+     * @param requireSer Whether or not to require an object to be serializable in order to be marshalled.
+     * @return {@link OptimizedMarshaller} instancel.
+     */
+    public static OptimizedMarshaller optimized(boolean requireSer) {
+        return null;
     }
 }

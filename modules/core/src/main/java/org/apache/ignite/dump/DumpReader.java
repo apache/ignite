@@ -321,7 +321,7 @@ public class DumpReader implements Runnable {
      * @return List of snapshot metadata saved in {@code #dumpDir}.
      */
     public static List<SnapshotMetadata> metadata(File dumpDir) {
-        JdkMarshaller marsh = Marshallers.jdkMarshaller();
+        JdkMarshaller marsh = Marshallers.jdk();
 
         ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
 

@@ -129,7 +129,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return Marshallers.jdkMarshaller();
+            return Marshallers.jdk();
         }
     }
 

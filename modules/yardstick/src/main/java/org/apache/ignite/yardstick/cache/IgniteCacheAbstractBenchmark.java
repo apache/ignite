@@ -128,7 +128,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
             List<CacheConfiguration> toCreate = new ArrayList<>();
 
             for (int i = 0; i < caches - 1; i++) {
-                JdkMarshaller marsh = Marshallers.jdkMarshaller();
+                JdkMarshaller marsh = Marshallers.jdk();
 
                 CacheConfiguration ccfg0 = marsh.unmarshal(marsh.marshal(ccfg), null);
 

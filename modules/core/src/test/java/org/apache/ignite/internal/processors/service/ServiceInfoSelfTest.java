@@ -142,7 +142,7 @@ public class ServiceInfoSelfTest {
     /** */
     private ServiceInfo serviceInfo(ServiceConfiguration cfg) {
         try {
-            JdkMarshaller marsh = Marshallers.jdkMarshaller();
+            JdkMarshaller marsh = Marshallers.jdk();
 
             byte[] srvcBytes = U.marshal(marsh, cfg.getService());
             byte[] nodeFilterBytes = U.marshal(marsh, cfg.getNodeFilter());

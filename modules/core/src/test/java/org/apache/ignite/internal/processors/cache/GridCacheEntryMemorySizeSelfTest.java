@@ -161,7 +161,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             }
 
             @Override public JdkMarshaller jdkMarshaller() {
-                return Marshallers.jdkMarshaller();
+                return Marshallers.jdk();
             }
         });
 

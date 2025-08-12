@@ -158,7 +158,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return Marshallers.jdkMarshaller();
+            return Marshallers.jdk();
         }
     }
 

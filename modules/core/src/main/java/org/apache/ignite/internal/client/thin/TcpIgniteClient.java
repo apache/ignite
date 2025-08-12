@@ -882,7 +882,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return Marshallers.jdkMarshaller();
+            return Marshallers.jdk();
         }
 
         /**
