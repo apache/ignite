@@ -17,6 +17,9 @@
 
 package org.apache.ignite.marshaller;
 
+import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
+import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
+
 /**
  * Base class for marshallers. Provides default implementations of methods
  * that work with byte array or {@link GridByteArrayList}. These implementations

@@ -23,6 +23,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.Marshallers;
 
 /**
  * This class defines custom JDK object input stream.
@@ -56,7 +57,7 @@ class JdkMarshallerObjectInputStream extends ObjectInputStream {
         // Must have 'Class.forName()' instead of clsLoader.loadClass()
         // due to weird ClassNotFoundExceptions for arrays of classes
         // in certain cases.
-        return CommonUtils.forName(desc.getName(), clsLdr, clsFilter);
+        return CommonUtils.forName(desc.getName(), clsLdr, clsFilter, Marshallers.USE_CACHE.get());
     }
 
     /** {@inheritDoc} */

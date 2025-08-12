@@ -234,6 +234,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -250,7 +251,6 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
 
 import static java.util.Objects.isNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_HOSTNAME_VERIFIER;
@@ -312,9 +312,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
     /** @see IgniteSystemProperties#IGNITE_MBEAN_APPEND_CLASS_LOADER_ID */
     public static final boolean DFLT_MBEAN_APPEND_CLASS_LOADER_ID = true;
-
-    /** {@code True} if {@code unsafe} should be used for array copy. */
-    private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
 
     /** All grid event names. */
     private static final Map<Integer, String> GRID_EVT_NAMES = new HashMap<>();
@@ -1229,45 +1226,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Gets class for the given name if it can be loaded or default given class.
-     *
-     * @param cls Class.
-     * @param dflt Default class to return.
-     * @return Class or default given class if it can't be found.
-     */
-    @Nullable public static Class<?> classForName(@Nullable String cls, @Nullable Class<?> dflt) {
-        return classForName(cls, dflt, false);
-    }
-
-    /**
-     * Gets class for the given name if it can be loaded or default given class.
-     *
-     * @param cls Class.
-     * @param dflt Default class to return.
-     * @param includePrimitiveTypes Whether class resolution should include primitive types
-     *                              (i.e. "int" will resolve to int.class if flag is set)
-     * @return Class or default given class if it can't be found.
-     */
-    @Nullable public static Class<?> classForName(
-        @Nullable String cls,
-        @Nullable Class<?> dflt,
-        boolean includePrimitiveTypes
-    ) {
-        Class<?> clazz;
-        if (cls == null)
-            clazz = dflt;
-        else if (!includePrimitiveTypes || cls.length() > 7 || (clazz = primitiveMap.get(cls)) == null) {
-            try {
-                clazz = Class.forName(cls);
-            }
-            catch (ClassNotFoundException ignore) {
-                clazz = dflt;
-            }
-        }
-        return clazz;
-    }
-
-    /**
      * Creates new instance of a class only if it has an empty constructor (can be non-public).
      *
      * @param cls Class name.
@@ -1996,13 +1954,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * @return Class loader used to load Ignite itself.
-     */
-    public static ClassLoader gridClassLoader() {
-        return gridClassLoader;
-    }
-
-    /**
      * @return ClassLoader at IgniteConfiguration in case it is not null or
      * ClassLoader used to start Ignite.
      */
@@ -2019,19 +1970,6 @@ public abstract class IgniteUtils extends CommonUtils {
         assert cfg != null;
 
         return resolveClassLoader(ldr, cfg.getClassLoader());
-    }
-
-    /**
-     * @param ldr Custom class loader.
-     * @param cfgLdr Class loader from config.
-     * @return ClassLoader passed as param in case it is not null or cfgLdr  in case it is not null or ClassLoader used to start Ignite.
-     */
-    public static ClassLoader resolveClassLoader(@Nullable ClassLoader ldr, @Nullable ClassLoader cfgLdr) {
-        return (ldr != null && ldr != gridClassLoader)
-            ? ldr
-            : cfgLdr != null
-                ? cfgLdr
-                : gridClassLoader;
     }
 
     /**
@@ -5050,32 +4988,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Tests whether or not given class is loadable provided class loader.
-     *
-     * @param clsName Class name to test.
-     * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead.
-     *      If System class loader is not set - this method will return {@code false}.
-     * @return {@code True} if class is loadable, {@code false} otherwise.
-     */
-    public static boolean isLoadableBy(String clsName, @Nullable ClassLoader ldr) {
-        assert clsName != null;
-
-        if (ldr == null)
-            ldr = gridClassLoader;
-
-        String lambdaParent = lambdaEnclosingClassName(clsName);
-
-        try {
-            ldr.loadClass(lambdaParent == null ? clsName : lambdaParent);
-
-            return true;
-        }
-        catch (ClassNotFoundException ignore) {
-            return false;
-        }
-    }
-
-    /**
      * Gets the peer deploy aware instance for the object with the widest class loader.
      * If collection is {@code null}, empty or contains only {@code null}s - the peer
      * deploy aware object based on system class loader will be returned.
@@ -6887,6 +6799,34 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
+     * Gets class for provided name. Accepts primitive types names.
+     *
+     * @param clsName Class name.
+     * @param ldr Class loader.
+     * @return Class.
+     * @throws ClassNotFoundException If class not found.
+     */
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
+        return forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+    }
+
+    /**
+     * Gets class for provided name. Accepts primitive types names.
+     *
+     * @param clsName Class name.
+     * @param ldr Class loader.
+     * @return Class.
+     * @throws ClassNotFoundException If class not found.
+     */
+    public static Class<?> forName(
+        String clsName,
+        @Nullable ClassLoader ldr,
+        IgnitePredicate<String> clsFilter
+    ) throws ClassNotFoundException {
+        return forName(clsName, ldr, clsFilter, Marshallers.USE_CACHE.get());
+    }
+
+    /**
      * Applies a supplemental hash function to a given hashCode, which
      * defends against poor quality hash functions.  This is critical
      * because ConcurrentHashMap uses power-of-two length hash tables,
@@ -6962,47 +6902,6 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     public static List<String> jvmArgs() {
         return ManagementFactory.getRuntimeMXBean().getInputArguments();
-    }
-
-    /**
-     * As long as array copying uses JVM-private API, which is not guaranteed
-     * to be available on all JVM, this method should be called to ensure
-     * logic could work properly.
-     *
-     * @return {@code True} if unsafe copying can work on the current JVM or
-     *      {@code false} if it can't.
-     */
-    @SuppressWarnings("TypeParameterExtendsFinalClass")
-    private static boolean unsafeByteArrayCopyAvailable() {
-        try {
-            Class<? extends Unsafe> unsafeCls = Unsafe.class;
-
-            unsafeCls.getMethod("copyMemory", Object.class, long.class, Object.class, long.class, long.class);
-
-            return true;
-        }
-        catch (Exception ignored) {
-            return false;
-        }
-    }
-
-    /**
-     * @param src Buffer to copy from (length included).
-     * @param off Offset in source buffer.
-     * @param resBuf Result buffer.
-     * @param resOff Result offset.
-     * @param len Length.
-     * @return Number of bytes overwritten in {@code bytes} array.
-     */
-    public static int arrayCopy(byte[] src, int off, byte[] resBuf, int resOff, int len) {
-        assert resBuf.length >= resOff + len;
-
-        if (UNSAFE_BYTE_ARR_CP)
-            GridUnsafe.copyMemory(src, GridUnsafe.BYTE_ARR_OFF + off, resBuf, GridUnsafe.BYTE_ARR_OFF + resOff, len);
-        else
-            System.arraycopy(src, off, resBuf, resOff, len);
-
-        return resOff + len;
     }
 
     /**
@@ -7533,23 +7432,6 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         return e;
-    }
-
-    /**
-     * Extracts full name of enclosing class from JDK8 lambda class name.
-     *
-     * @param clsName JDK8 lambda class name.
-     * @return Full name of enclosing class for JDK8 lambda class name or
-     *      {@code null} if passed in name is not related to lambda.
-     */
-    @Nullable public static String lambdaEnclosingClassName(String clsName) {
-        int idx0 = clsName.indexOf("$$Lambda$"); // Java 8+
-        int idx1 = clsName.indexOf("$$Lambda/"); // Java 21+
-
-        if (idx0 == idx1)
-            return null;
-
-        return clsName.substring(0, idx0 >= 0 ? idx0 : idx1);
     }
 
     /**
