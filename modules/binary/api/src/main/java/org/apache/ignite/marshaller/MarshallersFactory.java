@@ -18,7 +18,6 @@
 package org.apache.ignite.marshaller;
 
 import java.util.ServiceLoader;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -30,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see CommonUtils#loadService(Class)
  * @see JdkMarshaller
- * @see OptimizedMarshaller
  */
 public interface MarshallersFactory {
     /** @return Default instance of {@link JdkMarshaller}. */

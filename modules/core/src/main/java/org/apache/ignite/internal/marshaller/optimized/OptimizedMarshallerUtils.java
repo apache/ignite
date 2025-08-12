@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
@@ -376,7 +375,7 @@ class OptimizedMarshallerUtils {
                 throw new IOException(e);
             }
 
-            if (Marshallers.USE_DFLT_SUID)
+            if (OptimizedMarshaller.USE_DFLT_SUID)
                 return (short)ObjectStreamClass.lookup(cls).getSerialVersionUID();
         }
 

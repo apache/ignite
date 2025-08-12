@@ -86,15 +86,6 @@ public class IgniteCommonsSystemProperties {
     public static final String IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = "IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE";
 
     /**
-     * Manages {@link OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
-     * {@link Serializable} classes.
-     */
-    @SystemProperty("Manages OptimizedMarshaller behavior of serialVersionUID computation " +
-        "for Serializable classes")
-    public static final String IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID =
-        "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
-
-    /**
      * @param enumCls Enum type.
      * @param name Name of the system property or environment variable.
      * @param <E> Type of the enum.

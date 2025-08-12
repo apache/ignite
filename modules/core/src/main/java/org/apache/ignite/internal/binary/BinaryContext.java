@@ -147,7 +147,7 @@ public class BinaryContext {
     private final IgniteLogger log;
 
     /** */
-    private final OptimizedMarshaller optmMarsh = Marshallers.optimized(false);
+    private final OptimizedMarshaller optmMarsh = new OptimizedMarshaller(false);
 
     /** Compact footer flag. */
     private final boolean compactFooter;

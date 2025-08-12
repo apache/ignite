@@ -33,8 +33,12 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
     /** Node name. */
     private volatile String nodeName = CommonUtils.LOC_IGNITE_NAME_EMPTY;
 
-    /** {@inheritDoc} */
-    @Override public void nodeName(@Nullable String nodeName) {
+    /**
+     * Set node name.
+     *
+     * @param nodeName Node name.
+     */
+    public void nodeName(@Nullable String nodeName) {
         if (!nodeNameSet) {
             this.nodeName = nodeName;
 

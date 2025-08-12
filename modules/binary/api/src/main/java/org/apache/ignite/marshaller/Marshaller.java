@@ -74,13 +74,6 @@ public interface Marshaller {
     public void setContext(MarshallerContext ctx);
 
     /**
-     * Set node name.
-     *
-     * @param nodeName Node name.
-     */
-    public void nodeName(@Nullable String nodeName);
-
-    /**
      * Marshals object to the output stream. This method should not close
      * given output stream.
      *
@@ -121,13 +114,4 @@ public interface Marshaller {
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException;
-
-    /**
-     * Undeployment callback invoked when class loader is being undeployed.
-     *
-     * Some marshallers may want to clean their internal state that uses the undeployed class loader somehow.
-     *
-     * @param ldr Class loader being undeployed.
-     */
-    public void onUndeploy(ClassLoader ldr);
 }

@@ -26,12 +26,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
-import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 
 /**
  * Optimized implementation of {@link org.apache.ignite.marshaller.Marshaller}.
@@ -81,7 +84,11 @@ import sun.misc.Unsafe;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller implements OptimizedMarshaller {
+public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
+    /** Use default {@code serialVersionUID} for {@link Serializable} classes. */
+    public static final boolean USE_DFLT_SUID =
+        IgniteSystemProperties.getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, false);
+
     /** Default class loader. */
     private final ClassLoader dfltClsLdr = getClass().getClassLoader();
 
@@ -105,7 +112,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
      *
      * @throws IgniteException If this marshaller is not supported on the current JVM.
      */
-    public OptimizedMarshallerImpl() {
+    public OptimizedMarshaller() {
         if (!available())
             throw new IgniteException("Using OptimizedMarshaller on unsupported JVM version (some of " +
                 "JVM-private APIs required for the marshaller to work are missing).");
@@ -117,26 +124,51 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
      *
      * @param requireSer Whether to require {@link Serializable}.
      */
-    public OptimizedMarshallerImpl(boolean requireSer) {
+    public OptimizedMarshaller(boolean requireSer) {
         this.requireSer = requireSer;
     }
 
-    /** {@inheritDoc} */
-    @Override public OptimizedMarshaller setRequireSerializable(boolean requireSer) {
+    /**
+     * Sets whether marshaller should require {@link Serializable} interface or not.
+     *
+     * @param requireSer Whether to require {@link Serializable}.
+     * @return {@code this} for chaining.
+     */
+    public OptimizedMarshaller setRequireSerializable(boolean requireSer) {
         this.requireSer = requireSer;
 
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public OptimizedMarshaller setIdMapper(OptimizedMarshallerIdMapper mapper) {
+    /**
+     * Sets ID mapper.
+     *
+     * @param mapper ID mapper.
+     * @return {@code this} for chaining.
+     */
+    public OptimizedMarshaller setIdMapper(OptimizedMarshallerIdMapper mapper) {
         this.mapper = mapper;
 
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public OptimizedMarshallerImpl setPoolSize(int poolSize) {
+    /**
+     * Specifies size of cached object streams used by marshaller. Object streams are cached for
+     * performance reason to avoid costly recreation for every serialization routine. If {@code 0} (default),
+     * pool is not used and each thread has its own cached object stream which it keeps reusing.
+     * <p>
+     * Since each stream has an internal buffer, creating a stream for each thread can lead to
+     * high memory consumption if many large messages are marshalled or unmarshalled concurrently.
+     * Consider using pool in this case. This will limit number of streams that can be created and,
+     * therefore, decrease memory consumption.
+     * <p>
+     * NOTE: Using streams pool can decrease performance since streams will be shared between
+     * different threads which will lead to more frequent context switching.
+     *
+     * @param poolSize Streams pool size. If {@code 0}, pool is not used.
+     * @return {@code this} for chaining.
+     */
+    public OptimizedMarshaller setPoolSize(int poolSize) {
         registry = poolSize > 0 ?
             new OptimizedObjectPooledStreamRegistry(poolSize) :
             new OptimizedObjectSharedStreamRegistry();
@@ -190,7 +222,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
 
     /** {@inheritDoc} */
     @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
-        return unmarshal0(in, clsLdr, Marshallers.USE_CACHE.get());
+        return unmarshal0(in, clsLdr, GridBinaryMarshaller.USE_CACHE.get());
     }
 
     /**
@@ -246,7 +278,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
             objIn = registry.in();
 
             objIn.context(clsMap, ctx, mapper,
-                clsLdr != null ? clsLdr : dfltClsLdr, Marshallers.USE_CACHE.get());
+                clsLdr != null ? clsLdr : dfltClsLdr, GridBinaryMarshaller.USE_CACHE.get());
 
             objIn.in().bytes(arr, arr.length);
 
@@ -308,13 +340,17 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
         U.clearClassCache(ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public void clearClassDescriptorsCache() {
+    /**
+     * Clears the optimized class descriptors cache. This is essential for the clients
+     * on disconnect in order to make them register their user types again (server nodes may
+     * lose previously registered types).
+     */
+    public void clearClassDescriptorsCache() {
         clsMap.clear();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(OptimizedMarshallerImpl.class, this);
+        return S.toString(OptimizedMarshaller.class, this);
     }
 }

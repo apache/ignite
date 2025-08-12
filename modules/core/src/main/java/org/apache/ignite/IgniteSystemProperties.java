@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -832,6 +833,15 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     /** Indicating whether local store keeps primary only. Backward compatibility flag. */
     @SystemProperty("Enables local store keeps primary only. Backward compatibility flag")
     public static final String IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY = "IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY";
+
+    /**
+     * Manages {@link OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
+     * {@link Serializable} classes.
+     */
+    @SystemProperty("Manages OptimizedMarshaller behavior of serialVersionUID computation " +
+        "for Serializable classes")
+    public static final String IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID =
+        "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
 
     /**
      * Manages type of serialization mechanism for {@link String} that is marshalled/unmarshalled by BinaryMarshaller.
