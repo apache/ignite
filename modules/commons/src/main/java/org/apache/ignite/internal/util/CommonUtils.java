@@ -740,4 +740,16 @@ public abstract class CommonUtils {
 
         return clsName.substring(0, idx0 >= 0 ? idx0 : idx1);
     }
+
+    /**
+     * Creates new {@link HashMap} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <K> Type of map keys.
+     * @param <V> Type of map values.
+     * @return New map.
+     */
+    public static <K, V> HashMap<K, V> newHashMap(int expSize) {
+        return new HashMap<>(capacity(expSize));
+    }
 }

@@ -26,8 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
@@ -305,7 +305,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
                 clsMap.remove(cls);
         }
 
-        U.clearClassCache(ldr);
+        CommonUtils.clearClassCache(ldr);
     }
 
     /** {@inheritDoc} */
