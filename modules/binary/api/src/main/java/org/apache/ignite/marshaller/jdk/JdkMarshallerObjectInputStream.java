@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**
@@ -56,7 +56,7 @@ class JdkMarshallerObjectInputStream extends ObjectInputStream {
         // Must have 'Class.forName()' instead of clsLoader.loadClass()
         // due to weird ClassNotFoundExceptions for arrays of classes
         // in certain cases.
-        return U.forName(desc.getName(), clsLdr, clsFilter);
+        return CommonUtils.forName(desc.getName(), clsLdr, clsFilter);
     }
 
     /** {@inheritDoc} */

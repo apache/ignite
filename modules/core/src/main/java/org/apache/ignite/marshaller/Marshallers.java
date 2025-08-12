@@ -26,6 +26,9 @@ import org.jetbrains.annotations.Nullable;
  * Factory to create implementation of {@link Marshaller}.
  */
 public class Marshallers {
+    /** Flag whether class caching should be used by the current thread. */
+    public static final ThreadLocal<Boolean> USE_CACHE = ThreadLocal.withInitial(() -> Boolean.TRUE);
+
     /** Singleton instance. */
     private static final JdkMarshaller INSTANCE = new JdkMarshallerImpl();
 

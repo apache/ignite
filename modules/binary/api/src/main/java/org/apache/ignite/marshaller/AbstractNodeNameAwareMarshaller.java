@@ -20,9 +20,7 @@ package org.apache.ignite.marshaller;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,7 +31,7 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
     private volatile boolean nodeNameSet;
 
     /** Node name. */
-    private volatile String nodeName = U.LOC_IGNITE_NAME_EMPTY;
+    private volatile String nodeName = CommonUtils.LOC_IGNITE_NAME_EMPTY;
 
     /**
      * Set node name.
@@ -50,49 +48,49 @@ public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller
 
     /** {@inheritDoc} */
     @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
-        String oldNodeName = IgniteUtils.setCurrentIgniteName(nodeName);
+        String oldNodeName = CommonUtils.setCurrentIgniteName(nodeName);
 
         try {
             return marshal0(obj);
         }
         finally {
-            IgniteUtils.restoreOldIgniteName(oldNodeName, nodeName);
+            CommonUtils.restoreOldIgniteName(oldNodeName, nodeName);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
-        String oldNodeName = IgniteUtils.setCurrentIgniteName(nodeName);
+        String oldNodeName = CommonUtils.setCurrentIgniteName(nodeName);
 
         try {
             marshal0(obj, out);
         }
         finally {
-            IgniteUtils.restoreOldIgniteName(oldNodeName, nodeName);
+            CommonUtils.restoreOldIgniteName(oldNodeName, nodeName);
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
-        String oldNodeName = IgniteUtils.setCurrentIgniteName(nodeName);
+        String oldNodeName = CommonUtils.setCurrentIgniteName(nodeName);
 
         try {
             return unmarshal0(arr, clsLdr);
         }
         finally {
-            IgniteUtils.restoreOldIgniteName(oldNodeName, nodeName);
+            CommonUtils.restoreOldIgniteName(oldNodeName, nodeName);
         }
     }
 
     /** {@inheritDoc} */
     @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
-        String oldNodeName = IgniteUtils.setCurrentIgniteName(nodeName);
+        String oldNodeName = CommonUtils.setCurrentIgniteName(nodeName);
 
         try {
             return unmarshal0(in, clsLdr);
         }
         finally {
-            IgniteUtils.restoreOldIgniteName(oldNodeName, nodeName);
+            CommonUtils.restoreOldIgniteName(oldNodeName, nodeName);
         }
     }
 

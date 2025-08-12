@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -1594,7 +1595,7 @@ public class BinaryUtils {
             cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
         else {
             String clsName = doReadClassName(in);
-            boolean useCache = GridBinaryMarshaller.USE_CACHE.get();
+            boolean useCache = Marshallers.USE_CACHE.get();
 
             try {
                 cls = U.forName(clsName, ldr, null);
@@ -1788,7 +1789,7 @@ public class BinaryUtils {
             if (flag == GridBinaryMarshaller.NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadEnum(in, doReadClass(in, ctx, ldr), GridBinaryMarshaller.USE_CACHE.get());
+                arr[i] = doReadEnum(in, doReadClass(in, ctx, ldr), Marshallers.USE_CACHE.get());
         }
 
         return arr;
