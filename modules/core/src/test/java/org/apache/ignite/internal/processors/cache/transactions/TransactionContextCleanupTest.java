@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.function.BiConsumer;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -108,6 +107,7 @@ public class TransactionContextCleanupTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @SuppressWarnings("ThrowableNotThrown")
     private void checkContextCleanup(ConsumerX<Transaction> rollbackAction,
         BiConsumer<IgniteCache<Integer, Integer>, Transaction> txAction, Class<? extends Throwable> eCls) throws Exception {
         IgniteEx ignite = startGrids(2);
@@ -129,7 +129,7 @@ public class TransactionContextCleanupTest extends GridCommonAbstractTest {
         assertNotNull("Transaction in context expected", transactions.tx());
         assertEquals("Transactions are not equal", tx, transactions.tx());
 
-        Throwable t = assertThrows(null,
+        assertThrows(null,
             () -> {
                 txAction.accept(cache, tx);
 
@@ -138,10 +138,7 @@ public class TransactionContextCleanupTest extends GridCommonAbstractTest {
             eCls,
             null);
 
-        assertTrue(t.getClass().equals(eCls) || t instanceof CacheException);
-
         assertNull("No transaction expected in context", transactions.tx());
-
         assertEquals("Value should not be commited", 1, (int)cache.get(1));
     }
 }
