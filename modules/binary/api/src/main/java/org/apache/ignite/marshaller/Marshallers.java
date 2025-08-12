@@ -18,11 +18,13 @@
 package org.apache.ignite.marshaller;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshallerImpl;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
@@ -38,12 +40,23 @@ public class Marshallers {
     public static final boolean USE_DFLT_SUID =
         IgniteCommonsSystemProperties.getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, false);
 
-    /** Singleton instance. */
-    private static final JdkMarshaller INSTANCE = new JdkMarshallerImpl();
+    /** Streams factory implementation. */
+    private static final MarshallersFactory factory;
+
+    static {
+        Iterator<MarshallersFactory> factories = CommonUtils.loadService(MarshallersFactory.class).iterator();
+
+        A.ensure(
+            factories.hasNext(),
+            "Implementation for MarshallersFactory service not found. Please add ignite-binary-impl to classpath"
+        );
+
+        factory = factories.next();
+    }
 
     /** @return Default instance of {@link JdkMarshaller}. */
     public static JdkMarshaller jdk() {
-        return INSTANCE;
+        return factory.jdk();
     }
 
     /**
@@ -51,7 +64,7 @@ public class Marshallers {
      * @return Filtered instance of {@link JdkMarshaller}.
      */
     public static JdkMarshaller jdk(@Nullable IgnitePredicate<String> clsFilter) {
-        return new JdkMarshallerImpl(clsFilter);
+        return factory.jdk(clsFilter);
     }
 
     /**

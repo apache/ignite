@@ -55,7 +55,7 @@ import org.jetbrains.annotations.Nullable;
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.apache.ignite.marshaller.jdk.JdkMarshaller"/&gt;
+ *         &lt;bean class="org.apache.ignite.marshaller.MarshallersFactory"/&gt;
  *     &lt;/property&gt;
  *     ...
  * &lt;/bean&gt;
