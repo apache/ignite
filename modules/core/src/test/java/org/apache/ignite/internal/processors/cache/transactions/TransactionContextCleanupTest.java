@@ -93,7 +93,7 @@ public class TransactionContextCleanupTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testContextCleanupOnRollbackAsync() throws Exception {
+    public void testContextCleanupAfterAsyncRollback() throws Exception {
         checkContextCleanup(
             tx -> runAsync(tx::rollback).get(), // Rollback from other thread.
             (cache, tx) -> {
