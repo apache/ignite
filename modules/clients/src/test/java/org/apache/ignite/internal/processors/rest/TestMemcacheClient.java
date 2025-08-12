@@ -31,6 +31,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
@@ -444,13 +445,13 @@ final class TestMemcacheClient {
         }
 
         if (cacheNameBytes != null)
-            U.arrayCopy(cacheNameBytes, 0, packet, HDR_LEN + cmd.extrasLength(), cacheNameLength);
+            GridUnsafe.arrayCopy(cacheNameBytes, 0, packet, HDR_LEN + cmd.extrasLength(), cacheNameLength);
 
         if (keyData.getBytes() != null)
-            U.arrayCopy(keyData.getBytes(), 0, packet, HDR_LEN + extrasLength, keyData.length());
+            GridUnsafe.arrayCopy(keyData.getBytes(), 0, packet, HDR_LEN + extrasLength, keyData.length());
 
         if (valData.getBytes() != null)
-            U.arrayCopy(valData.getBytes(), 0, packet, HDR_LEN + extrasLength + keyData.length(), valData.length());
+            GridUnsafe.arrayCopy(valData.getBytes(), 0, packet, HDR_LEN + extrasLength + keyData.length(), valData.length());
 
         return packet;
     }

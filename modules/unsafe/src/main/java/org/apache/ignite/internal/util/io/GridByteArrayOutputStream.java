@@ -22,7 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
-import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -102,7 +102,7 @@ public class GridByteArrayOutputStream extends OutputStream {
         if (newCnt > buf.length)
             buf = Arrays.copyOf(buf, Math.max(buf.length << 1, newCnt));
 
-        CommonUtils.arrayCopy(b, off, buf, cnt, len);
+        GridUnsafe.arrayCopy(b, off, buf, cnt, len);
 
         cnt = newCnt;
     }

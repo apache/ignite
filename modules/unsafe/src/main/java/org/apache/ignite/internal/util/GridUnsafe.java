@@ -1574,6 +1574,22 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * @param src Buffer to copy from (length included).
+     * @param off Offset in source buffer.
+     * @param resBuf Result buffer.
+     * @param resOff Result offset.
+     * @param len Length.
+     * @return Number of bytes overwritten in {@code bytes} array.
+     */
+    public static int arrayCopy(byte[] src, int off, byte[] resBuf, int resOff, int len) {
+        assert resBuf.length >= resOff + len;
+
+        copyMemory(src, BYTE_ARR_OFF + off, resBuf, BYTE_ARR_OFF + resOff, len);
+
+        return resOff + len;
+    }
+
+    /**
      * Returns unaligned flag.
      */
     private static boolean unaligned() {

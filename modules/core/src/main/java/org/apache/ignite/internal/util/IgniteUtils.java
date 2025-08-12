@@ -2061,7 +2061,7 @@ public abstract class IgniteUtils extends CommonUtils {
         byte[] res = new byte[size];
         int position = 0;
         for (byte[] buf : bufs) {
-            arrayCopy(buf, 0, res, position, buf.length);
+            GridUnsafe.arrayCopy(buf, 0, res, position, buf.length);
             position += buf.length;
         }
 

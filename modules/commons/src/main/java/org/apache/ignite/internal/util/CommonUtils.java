@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
 
 /**
  * Collection of utility methods used in 'ignite-commons' and throughout the system.
@@ -100,9 +99,6 @@ public abstract class CommonUtils {
             return LOC_IGNITE_NAME_EMPTY;
         }
     };
-
-    /** {@code True} if {@code unsafe} should be used for array copy. */
-    private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
 
     /** Class loader used to load Ignite. */
     private static final ClassLoader gridClassLoader = CommonUtils.class.getClassLoader();
@@ -743,48 +739,5 @@ public abstract class CommonUtils {
             return null;
 
         return clsName.substring(0, idx0 >= 0 ? idx0 : idx1);
-    }
-
-    /**
-     * As long as array copying uses JVM-private API, which is not guaranteed
-     * to be available on all JVM, this method should be called to ensure
-     * logic could work properly.
-     *
-     * @return {@code True} if unsafe copying can work on the current JVM or
-     *      {@code false} if it can't.
-     */
-    @SuppressWarnings("TypeParameterExtendsFinalClass")
-    private static boolean unsafeByteArrayCopyAvailable() {
-        try {
-            Class<? extends Unsafe> unsafeCls = Unsafe.class;
-
-            unsafeCls.getMethod("copyMemory", Object.class, long.class, Object.class, long.class, long.class);
-
-            return true;
-        }
-        catch (Exception ignored) {
-            return false;
-        }
-    }
-
-    /**
-     * @param src Buffer to copy from (length included).
-     * @param off Offset in source buffer.
-     * @param resBuf Result buffer.
-     * @param resOff Result offset.
-     * @param len Length.
-     * @return Number of bytes overwritten in {@code bytes} array.
-     */
-    public static int arrayCopy(byte[] src, int off, byte[] resBuf, int resOff, int len) {
-        assert resBuf.length >= resOff + len;
-
-/*
-        if (UNSAFE_BYTE_ARR_CP)
-            GridUnsafe.copyMemory(src, GridUnsafe.BYTE_ARR_OFF + off, resBuf, GridUnsafe.BYTE_ARR_OFF + resOff, len);
-        else
-*/
-        System.arraycopy(src, off, resBuf, resOff, len);
-
-        return resOff + len;
     }
 }

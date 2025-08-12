@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -109,7 +110,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
 
             valBytes[0] = GridBinaryMarshaller.ENUM;
 
-            U.arrayCopy(arr, 1, valBytes, 1, arr.length - 1);
+            GridUnsafe.arrayCopy(arr, 1, valBytes, 1, arr.length - 1);
         }
 
         this.ctx = ctx;

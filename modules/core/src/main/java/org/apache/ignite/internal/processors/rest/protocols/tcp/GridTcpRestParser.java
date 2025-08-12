@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridRouterRespo
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -819,7 +820,7 @@ public class GridTcpRestParser implements GridNioParser {
             if (extras.length - len > 0) {
                 byte[] cacheName = new byte[extras.length - len];
 
-                U.arrayCopy(extras, len, cacheName, 0, extras.length - len);
+                GridUnsafe.arrayCopy(extras, len, cacheName, 0, extras.length - len);
 
                 req.cacheName(new String(cacheName, UTF_8));
             }
