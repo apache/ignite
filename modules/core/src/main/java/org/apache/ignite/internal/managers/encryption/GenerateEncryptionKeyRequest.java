@@ -28,7 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class GenerateEncryptionKeyRequest implements Message {
     /** Request ID. */
     @Order(0)
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    private IgniteUuid id;
 
     /** */
     @Order(value = 1, method = "keyCount")
