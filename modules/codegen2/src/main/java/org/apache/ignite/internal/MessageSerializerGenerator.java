@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.UUID;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -365,7 +366,7 @@ class MessageSerializerGenerator {
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
-            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.GridCacheOperation")))
+            else if (isEnum(type))
                 returnFalseIfEnumWriteFailed(write, "writer.writeByte", getExpr);
 
             else
@@ -498,7 +499,7 @@ class MessageSerializerGenerator {
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
-            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.GridCacheOperation"))) {
+            else if (isEnum(type)) {
                 String mtd = type + ".fromOrdinal(reader.readByte";
 
                 returnFalseIfReadFailed(name, mtd, ")");
@@ -511,6 +512,10 @@ class MessageSerializerGenerator {
         }
 
         throw new IllegalArgumentException("Unsupported type kind: " + type.getKind());
+    }
+
+    private boolean isEnum(TypeMirror type) {
+        return ((DeclaredType)type).asElement().getKind() == ElementKind.ENUM;
     }
 
     /**
