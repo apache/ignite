@@ -69,7 +69,7 @@ public class Marshallers {
 
     /** @return Optimized marshaller instance. */
     public static OptimizedMarshaller optimized() {
-        return null;
+        return factory.optimized();
     }
 
     /**
@@ -80,6 +80,6 @@ public class Marshallers {
      * @return Optimized marshaller instance.
      */
     public static OptimizedMarshaller optimized(boolean requireSer) {
-        return null;
+        return factory.optimized(requireSer);
     }
 }
