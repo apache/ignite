@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
@@ -133,7 +132,6 @@ import static org.apache.ignite.internal.processors.query.schema.SchemaIndexCach
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TIMEOUT;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TOKEN_INVALIDATE_INTERVAL;
 import static org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler.DFLT_MAX_TASK_RESULTS;
-import static org.apache.ignite.internal.util.GridLogThrottle.DFLT_LOG_THROTTLE_CAPACITY;
 import static org.apache.ignite.internal.util.GridReflectionCache.DFLT_REFLECTION_CACHE_SIZE;
 import static org.apache.ignite.internal.util.IgniteExceptionRegistry.DEFAULT_QUEUE_SIZE;
 import static org.apache.ignite.internal.util.IgniteUtils.DFLT_MBEAN_APPEND_CLASS_LOADER_ID;
@@ -1152,11 +1150,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         defaults = "" + DFLT_USE_ASYNC_FILE_IO_FACTORY)
     public static final String IGNITE_USE_ASYNC_FILE_IO_FACTORY = "IGNITE_USE_ASYNC_FILE_IO_FACTORY";
 
-    /** Max amount of remembered errors for {@link GridLogThrottle}. */
-    @SystemProperty(value = "Max amount of remembered errors for GridLogThrottle", type = Integer.class,
-        defaults = "" + DFLT_LOG_THROTTLE_CAPACITY)
-    public static final String IGNITE_LOG_THROTTLE_CAPACITY = "IGNITE_LOG_THROTTLE_CAPACITY";
-
     /**
      * If this property is set, {@link DataStorageConfiguration#setWriteThrottlingEnabled(boolean)}
      * will be overridden to {@code true} regardless the initial value in the configuration.
@@ -1256,13 +1249,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         "file with corresponding feature is available in classpath and OS and filesystem settings allows to enable " +
         "this mode", defaults = "true")
     public static final String IGNITE_DIRECT_IO_ENABLED = "IGNITE_DIRECT_IO_ENABLED";
-
-    /**
-     * When set to {@code true}, warnings that are intended for development environments and not for production
-     * (such as coding mistakes in code using Ignite) will not be logged.
-     */
-    @SystemProperty("Enables development environments warnings")
-    public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
 
     /**
      * When set to {@code true} (default), pages are written to page store without holding segment lock (with delay).

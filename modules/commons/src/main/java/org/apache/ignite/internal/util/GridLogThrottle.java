@@ -18,15 +18,13 @@
 package org.apache.ignite.internal.util;
 
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_THROTTLE_CAPACITY;
 import static org.jsr166.ConcurrentLinkedHashMap.DFLT_CONCUR_LVL;
 
 /**
@@ -44,12 +42,12 @@ public class GridLogThrottle {
     /** Throttle timeout in milliseconds. */
     private static volatile int throttleTimeout = DFLT_THROTTLE_TIMEOUT;
 
-    /** @see IgniteSystemProperties#IGNITE_LOG_THROTTLE_CAPACITY */
+    /** @see IgniteCommonsSystemProperties#IGNITE_LOG_THROTTLE_CAPACITY */
     public static final int DFLT_LOG_THROTTLE_CAPACITY = 128;
 
     /** Throttle capacity. */
     private static final int throttleCap =
-        IgniteSystemProperties.getInteger(IGNITE_LOG_THROTTLE_CAPACITY, DFLT_LOG_THROTTLE_CAPACITY);
+        IgniteCommonsSystemProperties.getInteger(IgniteCommonsSystemProperties.IGNITE_LOG_THROTTLE_CAPACITY, DFLT_LOG_THROTTLE_CAPACITY);
 
     /** Errors. */
     private static volatile ConcurrentMap<IgniteBiTuple<Class<? extends Throwable>, String>, Long> errors =
@@ -220,7 +218,7 @@ public class GridLogThrottle {
         while (true) {
             Long loggedTs = errors.get(tup);
 
-            long curTs = U.currentTimeMillis();
+            long curTs = CommonUtils.currentTimeMillis();
 
             if (loggedTs == null || loggedTs < curTs - throttleTimeout) {
                 if (replace(tup, loggedTs, curTs)) {
@@ -268,9 +266,9 @@ public class GridLogThrottle {
             /** {@inheritDoc} */
             @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (e != null)
-                    U.error(log, msg, e);
+                    CommonUtils.error(log, msg, e);
                 else
-                    U.error(log, msg);
+                    CommonUtils.error(log, msg);
             }
         },
 
@@ -279,9 +277,9 @@ public class GridLogThrottle {
             /** {@inheritDoc} */
             @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (quiet)
-                    U.quietAndWarn(log, msg, e);
+                    CommonUtils.quietAndWarn(log, msg, e);
                 else
-                    U.warn(log, msg, e);
+                    CommonUtils.warn(log, msg, e);
             }
         },
 
@@ -290,7 +288,7 @@ public class GridLogThrottle {
             /** {@inheritDoc} */
             @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (quiet)
-                    U.quietAndInfo(log, msg);
+                    CommonUtils.quietAndInfo(log, msg);
                 else {
                     if (log.isInfoEnabled())
                         log.info(msg);

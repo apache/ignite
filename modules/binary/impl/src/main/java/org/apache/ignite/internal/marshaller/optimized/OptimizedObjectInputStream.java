@@ -344,9 +344,14 @@ class OptimizedObjectInputStream extends ObjectInputStream {
             case SERIALIZABLE:
                 int typeId = readInt();
 
-                OptimizedClassDescriptor desc = typeId == 0 ?
-                    classDescriptor(clsMap, CommonUtils.forName(readUTF(), clsLdr, ctx.classNameFilter(), useCache), useCache, ctx, mapper) :
-                    classDescriptor(clsMap, typeId, clsLdr, useCache, ctx, mapper);
+                OptimizedClassDescriptor desc = typeId == 0
+                    ? classDescriptor(
+                        clsMap,
+                        CommonUtils.forName(readUTF(), clsLdr, ctx.classNameFilter(), useCache),
+                        useCache,
+                        ctx,
+                        mapper)
+                    : classDescriptor(clsMap, typeId, clsLdr, useCache, ctx, mapper);
 
                 curCls = desc.describedClass();
 

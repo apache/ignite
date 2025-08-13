@@ -35,7 +35,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.PrintStream;
 import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringWriter;
@@ -55,7 +54,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -70,10 +68,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileLock;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
@@ -218,7 +213,6 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -353,9 +347,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Length of numbered file name. */
     public static final int NUMBER_FILE_NAME_LENGTH = 16;
 
-    /** Ignite package. */
-    public static final String IGNITE_PKG = "org.apache.ignite.";
-
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
@@ -402,14 +393,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Long date format pattern for log messages. */
     public static final DateTimeFormatter LONG_DATE_FMT =
         DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss").withZone(ZoneId.systemDefault());
-
-    /**
-     * Short date format pattern for log messages in "quiet" mode.
-     * Only time is included since we don't expect "quiet" mode to be used
-     * for longer runs.
-     */
-    public static final DateTimeFormatter SHORT_DATE_FMT =
-        DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
 
     /** Debug date format. */
     public static final DateTimeFormatter DEBUG_DATE_FMT =
@@ -492,10 +475,6 @@ public abstract class IgniteUtils extends CommonUtils {
      * Note: needs for compatibility with Java 9.
      */
     private static final Field urlClsLdrField = urlClassLoaderField();
-
-    /** Dev only logging disabled. */
-    private static final boolean devOnlyLogDisabled =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
 
     /** JDK9: jdk.internal.loader.URLClassPath. */
     private static Class clsURLClassPath;
@@ -3265,59 +3244,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Closes given resource logging possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable AutoCloseable rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null) {
-            try {
-                rsrc.close();
-            }
-            catch (Exception e) {
-                warn(log, "Failed to close resource: " + e.getMessage(), e);
-            }
-        }
-    }
-
-    /**
-     * Closes given socket logging possible checked exception.
-     *
-     * @param sock Socket to close. If it's {@code null} - it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
-        if (sock == null || sock.isClosed())
-            return;
-
-        try {
-            // Closing output and input first to avoid tls 1.3 incompatibility
-            // https://bugs.openjdk.java.net/browse/JDK-8208526
-            if (!sock.isOutputShutdown())
-                sock.shutdownOutput();
-            if (!sock.isInputShutdown())
-                sock.shutdownInput();
-        }
-        catch (ClosedChannelException | SocketException ex) {
-            LT.warn(log, "Failed to shutdown socket", ex);
-        }
-        catch (Exception e) {
-            warn(log, "Failed to shutdown socket: " + e.getMessage(), e);
-        }
-
-        try {
-            sock.close();
-        }
-        catch (ClosedChannelException | SocketException ex) {
-            LT.warn(log, "Failed to close socket", ex);
-        }
-        catch (Exception e) {
-            warn(log, "Failed to close socket: " + e.getMessage(), e);
-        }
-    }
-
-    /**
      * Closes given resource suppressing possible checked exception.
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
@@ -3346,62 +3272,6 @@ public abstract class IgniteUtils extends CommonUtils {
             catch (Exception ignored) {
                 // No-op.
             }
-    }
-
-    /**
-     * Closes given resource logging possible checked exceptions.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable SelectionKey rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
-            // This apply will automatically deregister the selection key as well.
-            close(rsrc.channel(), log);
-    }
-
-    /**
-     * Closes given resource.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     */
-    public static void close(@Nullable DatagramSocket rsrc) {
-        if (rsrc != null)
-            rsrc.close();
-    }
-
-    /**
-     * Closes given resource logging possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable Selector rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
-            try {
-                if (rsrc.isOpen())
-                    rsrc.close();
-            }
-            catch (IOException e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
-            }
-    }
-
-    /**
-     * Closes class loader logging possible checked exception.
-     *
-     * @param clsLdr Class loader. If it's {@code null} - it's no-op.
-     * @param log Logger to log possible checked exception with (optional).
-     */
-    public static void close(@Nullable URLClassLoader clsLdr, @Nullable IgniteLogger log) {
-        if (clsLdr != null) {
-            try {
-                clsLdr.close();
-            }
-            catch (Exception e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
-            }
-        }
     }
 
     /**
@@ -3497,158 +3367,6 @@ public abstract class IgniteUtils extends CommonUtils {
         else
             X.println("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (courtesy) " +
                 compact(shortMsg.toString()));
-    }
-
-    /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log WARN message. If {@code log} is {@code null}
-     * or in QUIET mode it will add {@code (wrn)} prefix to the message.
-     *
-     * @param log Optional logger to use when QUIET mode is not enabled.
-     * @param msg Message to log.
-     */
-    public static void warn(@Nullable IgniteLogger log, Object msg) {
-        assert msg != null;
-
-        String s = msg.toString();
-
-        warn(log, s, null);
-    }
-
-    /**
-     * Logs warning message in both verbose and quiet modes.
-     *
-     * @param log Logger to use.
-     * @param msg Message to log.
-     */
-    public static void quietAndWarn(IgniteLogger log, Object msg) {
-        quietAndWarn(log, msg, msg);
-    }
-
-    /**
-     * Logs warning message in both verbose and quiet modes.
-     *
-     * @param log Logger to use.
-     * @param shortMsg Short message.
-     * @param msg Message to log.
-     */
-    public static void quietAndWarn(IgniteLogger log, Object msg, Object shortMsg) {
-        warn(log, msg);
-
-        if (log.isQuiet())
-            quiet(false, shortMsg);
-    }
-
-    /**
-     * Logs warning message in both verbose and quiet modes.
-     *
-     * @param log Logger to use.
-     * @param msg Message to log.
-     * @param e Optional exception.
-     */
-    public static void quietAndWarn(IgniteLogger log, Object msg, @Nullable Throwable e) {
-        warn(log, msg, e);
-
-        if (log.isQuiet())
-            quiet(false, msg);
-    }
-
-    /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log ERROR message. If {@code log} is {@code null}
-     * or in QUIET mode it will add {@code (err)} prefix to the message.
-     *
-     * @param log Optional logger to use when QUIET mode is not enabled.
-     * @param msg Message to log.
-     */
-    public static void error(@Nullable IgniteLogger log, Object msg) {
-        assert msg != null;
-
-        if (msg instanceof Throwable) {
-            Throwable t = (Throwable)msg;
-
-            error(log, t.getMessage(), t);
-        }
-        else {
-            String s = msg.toString();
-
-            error(log, s, s, null);
-        }
-    }
-
-    /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log WARN message. If {@code log} is {@code null}
-     * or in QUIET mode it will add {@code (wrn)} prefix to the message.
-     *
-     * @param log Optional logger to use when QUIET mode is not enabled.
-     * @param msg Message to log using normal logger.
-     * @param e Optional exception.
-     */
-    public static void warn(@Nullable IgniteLogger log, Object msg, @Nullable Throwable e) {
-        assert msg != null;
-
-        if (log != null)
-            log.warning(compact(msg.toString()), e);
-        else {
-            X.println("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (wrn) " +
-                    compact(msg.toString()));
-
-            if (e != null)
-                e.printStackTrace(System.err);
-            else
-                X.printerrln();
-        }
-    }
-
-    /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log WARN message with {@link IgniteLogger#DEV_ONLY DEV_ONLY} marker.
-     * If {@code log} is {@code null} or in QUIET mode it will add {@code (wrn)} prefix to the message.
-     * If property {@link IgniteSystemProperties#IGNITE_DEV_ONLY_LOGGING_DISABLED IGNITE_DEV_ONLY_LOGGING_DISABLED}
-     * is set to true, the message will not be logged.
-     *
-     * @param log Optional logger to use when QUIET mode is not enabled.
-     * @param msg Message to log.
-     */
-    public static void warnDevOnly(@Nullable IgniteLogger log, Object msg) {
-        assert msg != null;
-
-        // don't log message if DEV_ONLY messages are disabled
-        if (devOnlyLogDisabled)
-            return;
-
-        if (log != null)
-            log.warning(IgniteLogger.DEV_ONLY, compact(msg.toString()), null);
-        else
-            X.println("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (wrn) " +
-                compact(msg.toString()));
-    }
-
-    /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log INFO message.
-     * <p>
-     * <b>NOTE:</b> unlike the normal logging when INFO level may not be enabled and
-     * therefore no logging will happen - using this method the log will be written
-     * always either via INFO log or quiet mode.
-     * <p>
-     * <b>USE IT APPROPRIATELY.</b>
-     *
-     * @param log Optional logger to use when QUIET mode is not enabled.
-     * @param longMsg Message to log using normal logger.
-     * @param shortMsg Message to log using quiet logger.
-     */
-    public static void log(@Nullable IgniteLogger log, Object longMsg, Object shortMsg) {
-        assert longMsg != null;
-        assert shortMsg != null;
-
-        if (log != null) {
-            if (log.isInfoEnabled())
-                log.info(compact(longMsg.toString()));
-        }
-        else
-            quiet(false, shortMsg);
     }
 
     /**
@@ -3771,118 +3489,6 @@ public abstract class IgniteUtils extends CommonUtils {
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to create logger.", e);
         }
-    }
-
-    /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log INF0 message.
-     * <p>
-     * <b>NOTE:</b> unlike the normal logging when INFO level may not be enabled and
-     * therefore no logging will happen - using this method the log will be written
-     * always either via INFO log or quiet mode.
-     * <p>
-     * <b>USE IT APPROPRIATELY.</b>
-     *
-     * @param log Optional logger to use when QUIET mode is not enabled.
-     * @param msg Message to log.
-     */
-    public static void log(@Nullable IgniteLogger log, Object msg) {
-        assert msg != null;
-
-        String s = msg.toString();
-
-        log(log, s, s);
-    }
-
-    /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log ERROR message. If {@code log} is {@code null}
-     * or in QUIET mode it will add {@code (err)} prefix to the message.
-     *
-     * @param log Optional logger to use when QUIET mode is not enabled.
-     * @param longMsg Message to log using normal logger.
-     * @param shortMsg Message to log using quiet logger.
-     * @param e Optional exception.
-     */
-    public static void error(@Nullable IgniteLogger log, Object longMsg, Object shortMsg, @Nullable Throwable e) {
-        assert longMsg != null;
-        assert shortMsg != null;
-
-        if (log != null) {
-            if (e == null)
-                log.error(compact(longMsg.toString()));
-            else
-                log.error(compact(longMsg.toString()), e);
-        }
-        else {
-            X.printerr("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (err) " +
-                compact(shortMsg.toString()));
-
-            if (e != null)
-                e.printStackTrace(System.err);
-            else
-                X.printerrln();
-        }
-    }
-
-    /**
-     * Shortcut for {@link #error(org.apache.ignite.IgniteLogger, Object, Object, Throwable)}.
-     *
-     * @param log Optional logger.
-     * @param shortMsg Message to log using quiet logger.
-     * @param e Optional exception.
-     */
-    public static void error(@Nullable IgniteLogger log, Object shortMsg, @Nullable Throwable e) {
-        assert shortMsg != null;
-
-        String s = shortMsg.toString();
-
-        error(log, s, s, e);
-    }
-
-    /**
-     *
-     * @param err Whether to print to {@code System.err}.
-     * @param objs Objects to log in quiet mode.
-     */
-    public static void quiet(boolean err, Object... objs) {
-        assert objs != null;
-
-        String time = SHORT_DATE_FMT.format(Instant.now());
-
-        SB sb = new SB();
-
-        for (Object obj : objs)
-            sb.a('[').a(time).a("] ").a(obj.toString()).a(NL);
-
-        PrintStream ps = err ? System.err : System.out;
-
-        ps.print(compact(sb.toString()));
-    }
-
-    /**
-     *
-     * @param err Whether to print to {@code System.err}.
-     * @param multiline Multiple lines string to print.
-     */
-    public static void quietMultipleLines(boolean err, String multiline) {
-        assert multiline != null;
-
-        quiet(err, multiline.split(NL));
-    }
-
-    /**
-     * Prints out the message in quiet and info modes.
-     *
-     * @param log Logger.
-     * @param msg Message to print.
-     */
-    public static void quietAndInfo(IgniteLogger log, String msg) {
-        if (log.isQuiet())
-            quiet(false, msg);
-
-        if (log.isInfoEnabled())
-            log.info(msg);
     }
 
     /**
@@ -5306,20 +4912,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Replaces all occurrences of {@code org.apache.ignite.} with {@code o.a.i.},
-     * {@code org.apache.ignite.internal.} with {@code o.a.i.i.},
-     * {@code org.apache.ignite.internal.visor.} with {@code o.a.i.i.v.} and
-     *
-     * @param s String to replace in.
-     * @return Replaces string.
-     */
-    public static String compact(String s) {
-        return s.replace("org.apache.ignite.internal.visor.", "o.a.i.i.v.").
-            replace("org.apache.ignite.internal.", "o.a.i.i.").
-            replace(IGNITE_PKG, "o.a.i.");
-    }
-
-    /**
      * Check if given class is of JDK type.
      *
      * @param cls Class to check.
@@ -5332,21 +4924,6 @@ public abstract class IgniteUtils extends CommonUtils {
         String s = cls.getName();
 
         return s.startsWith("java.") || s.startsWith("javax.");
-    }
-
-    /**
-     * Check if given class represents a Enum.
-     *
-     * @param cls Class to check.
-     * @return {@code True} if this is a Enum class.
-     */
-    public static boolean isEnum(Class cls) {
-        if (cls.isEnum())
-            return true;
-
-        Class sCls = cls.getSuperclass();
-
-        return sCls != null && sCls.isEnum();
     }
 
     /**
