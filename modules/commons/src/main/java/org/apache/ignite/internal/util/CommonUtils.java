@@ -561,7 +561,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Tests whether or not given class is loadable provided class loader.
+     * Tests whether given class is loadable by provided class loader.
      *
      * @param clsName Class name to test.
      * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead.
@@ -587,7 +587,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Gets class for the given name if it can be loaded or default given class.
+     * Gets a class for a given name if it can be loaded or a given default class otherwise.
      *
      * @param cls Class.
      * @param dflt Default class to return.
@@ -598,7 +598,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Gets class for the given name if it can be loaded or default given class.
+     * Gets a class for a given name if it can be loaded or a given default class otherwise.
      *
      * @param cls Class.
      * @param dflt Default class to return.
@@ -637,7 +637,7 @@ public abstract class CommonUtils {
     public static Class<?> forName(
         String clsName,
         @Nullable ClassLoader ldr,
-        IgnitePredicate<String> clsFilter,
+        @Nullable IgnitePredicate<String> clsFilter,
         boolean useCache
     ) throws ClassNotFoundException {
         assert clsName != null;

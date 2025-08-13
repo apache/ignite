@@ -24,6 +24,7 @@ import java.io.ObjectStreamClass;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshallers;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class defines custom JDK object input stream.
@@ -38,9 +39,10 @@ class JdkMarshallerObjectInputStream extends ObjectInputStream {
     /**
      * @param in Parent input stream.
      * @param clsLdr Custom class loader.
+     * @param clsFilter Class filter lambda.
      * @throws IOException If initialization failed.
      */
-    JdkMarshallerObjectInputStream(InputStream in, ClassLoader clsLdr, IgnitePredicate<String> clsFilter) throws IOException {
+    JdkMarshallerObjectInputStream(InputStream in, ClassLoader clsLdr, @Nullable IgnitePredicate<String> clsFilter) throws IOException {
         super(in);
 
         assert clsLdr != null;
