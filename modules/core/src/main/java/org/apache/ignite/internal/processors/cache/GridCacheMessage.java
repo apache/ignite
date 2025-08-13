@@ -665,7 +665,8 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) { // TODO: Safe to remove only after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        // TODO: Safe to remove only after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
@@ -700,7 +701,8 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) { // TODO: Safe to remove only after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        // TODO: Safe to remove only after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         reader.setBuffer(buf);
 
         switch (reader.state()) {
