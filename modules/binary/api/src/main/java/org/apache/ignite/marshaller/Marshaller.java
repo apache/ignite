@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * Ignite provides the following {@code Marshaller} implementations:
  * <ul>
  * <li>Default binary marshaller. Will be used when no other marshaller is explicitly set to the
- * configuration. For more information, see {@link IgniteBinary}.</li>
+ * configuration. For more information, see {@code IgniteBinary}.</li>
  * <li>{@link org.apache.ignite.marshaller.jdk.JdkMarshaller}</li>
  * </ul>
  * <p>

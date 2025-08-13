@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.CommonUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Marshaller allowing for {@link Ignition#localIgnite()} calls.
+ * Marshaller allowing for {@code Ignition#localIgnite()} calls.
  */
 public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller {
     /** Whether node name is set. */

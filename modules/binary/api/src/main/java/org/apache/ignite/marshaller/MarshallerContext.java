@@ -34,7 +34,7 @@ public interface MarshallerContext {
      * @param platformId Id of a platform (java, .NET, etc.) to register mapping for.
      * @param typeId Type ID.
      * @param clsName Class name.
-     * @param failIfUnregistered If {@code true} then throw {@link UnregisteredBinaryTypeException} with
+     * @param failIfUnregistered If {@code true} then throw {@code UnregisteredBinaryTypeException} with
      *      registration future instead of synchronously awaiting for its completion.
      * @return {@code True} if mapping was registered successfully.
      * @throws IgniteCheckedException In case of error.
