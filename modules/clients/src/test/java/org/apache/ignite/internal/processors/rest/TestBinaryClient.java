@@ -65,7 +65,7 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
 /**
  * Test client.
  */
-final class TestBinaryClient {
+final class TestBinaryClient implements AutoCloseable {
     /** Logger. */
     private final IgniteLogger log = new JavaLogger();
 
@@ -121,6 +121,9 @@ final class TestBinaryClient {
 
             // Wait for handshake response.
             int read = input.read(buf);
+
+            if (read == -1)
+                throw new RuntimeException("Client disconnected");
 
             assert read == 2 : read;
 
@@ -223,22 +226,6 @@ final class TestBinaryClient {
         });
 
         rdr.start();
-    }
-
-    /** */
-    public void shutdown() throws IgniteCheckedException {
-        try {
-            if (rdr != null) {
-                rdr.interrupt();
-
-                U.closeQuiet(sock);
-
-                rdr.join();
-            }
-        }
-        catch (InterruptedException e) {
-            throw new IgniteCheckedException(e);
-        }
     }
 
     /**
@@ -596,6 +583,22 @@ final class TestBinaryClient {
         msg.includeMetrics(includeMetrics);
 
         return makeRequest(msg).getObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        try {
+            if (rdr != null) {
+                rdr.interrupt();
+
+                U.closeQuiet(sock);
+
+                rdr.join();
+            }
+        }
+        catch (InterruptedException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**

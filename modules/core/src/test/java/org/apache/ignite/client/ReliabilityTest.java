@@ -35,7 +35,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -298,6 +297,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
     public void testNullRetryPolicyDisablesFailover() {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setClusterDiscoveryEnabled(false)
                  .setRetryPolicy(null)
                  .setAddresses(
                      cluster.clientAddresses().iterator().next(),
@@ -312,7 +312,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
             // Reuse second address without fail.
-            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
+            GridTestUtils.assertThrows(null, () -> cache.size(), ClientConnectionException.class,
                     "Channel is closed");
         }
     }
@@ -325,6 +325,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
     public void testRetryNonePolicyDisablesFailover() {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setClusterDiscoveryEnabled(false)
                  .setRetryPolicy(new ClientRetryNonePolicy())
                  .setAddresses(
                      cluster.clientAddresses().iterator().next(),
@@ -339,7 +340,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
             // Reuse second address without fail.
-            GridTestUtils.assertThrows(null, () -> cachePut(cache, 0, 0), IgniteException.class,
+            GridTestUtils.assertThrows(null, () -> cache.size(), ClientConnectionException.class,
                     "Channel is closed");
         }
     }
