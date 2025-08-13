@@ -9326,37 +9326,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Returns {@code true} if class is a lambda.
-     *
-     * @param objectClass Class.
-     * @return {@code true} if class is a lambda, {@code false} otherwise.
-     */
-    public static boolean isLambda(Class<?> objectClass) {
-        return !objectClass.isPrimitive() && !objectClass.isArray()
-            // Order is crucial here, isAnonymousClass and isLocalClass may fail if
-            // class' outer class was loaded with different classloader.
-            && objectClass.isSynthetic()
-            && !objectClass.isAnonymousClass() && !objectClass.isLocalClass()
-            && classCannotBeLoadedByName(objectClass);
-    }
-
-    /**
-     * Returns {@code true} if class can not be loaded by name.
-     *
-     * @param objectClass Class.
-     * @return {@code true} if class can not be loaded by name, {@code false} otherwise.
-     */
-    public static boolean classCannotBeLoadedByName(Class<?> objectClass) {
-        try {
-            Class.forName(objectClass.getName());
-            return false;
-        }
-        catch (ClassNotFoundException e) {
-            return true;
-        }
-    }
-
-    /**
      * Appends spaces to end of input string for extending to needed length.
      *
      * @param s Input string.

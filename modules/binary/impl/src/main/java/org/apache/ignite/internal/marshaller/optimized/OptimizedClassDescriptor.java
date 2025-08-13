@@ -89,7 +89,7 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.STR;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.UUID;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.computeSerialVersionUid;
-import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
+import static org.apache.ignite.internal.util.CommonUtils.isLambda;
 
 /**
  * Class descriptor.
@@ -841,19 +841,6 @@ class OptimizedClassDescriptor {
             default:
                 throw new IllegalStateException("Invalid class type: " + type);
         }
-    }
-
-    /**
-     * Gets list of serializable fields. If {@link #serTransMtd} method
-     * returns list of transient fields, they will be added to other fields.
-     * Transient fields that are not included in that list will be normally
-     * ignored.
-     *
-     * @return Serializable fields.
-     */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    private Fields fields() {
-        return fields;
     }
 
     /**
