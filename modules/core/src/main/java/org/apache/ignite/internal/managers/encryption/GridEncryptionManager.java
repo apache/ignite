@@ -1192,7 +1192,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (rndNode == null)
             throw new IgniteCheckedException("There is no node to send GenerateEncryptionKeyRequest to");
 
-        GenerateEncryptionKeyRequest req = new GenerateEncryptionKeyRequest(fut.keyCount());
+        GenerateEncryptionKeyRequest req = new GenerateEncryptionKeyRequest(IgniteUuid.randomUuid(), fut.keyCount());
 
         fut.id(req.id());
         fut.nodeId(rndNode.id());
