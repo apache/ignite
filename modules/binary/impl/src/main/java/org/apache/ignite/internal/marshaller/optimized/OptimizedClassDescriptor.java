@@ -90,8 +90,6 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.UUID;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.computeSerialVersionUid;
 import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
-import static org.apache.ignite.marshaller.MarshallerUtils.jobReceiverVersion;
-import static org.apache.ignite.marshaller.MarshallerUtils.jobSenderVersion;
 
 /**
  * Class descriptor.
@@ -836,7 +834,7 @@ class OptimizedClassDescriptor {
                 writeTypeData(out);
 
                 out.writeShort(checksum);
-                out.writeSerializable(obj, writeObjMtds, fields(obj.getClass(), jobReceiverVersion()));
+                out.writeSerializable(obj, writeObjMtds, fields);
 
                 break;
 
@@ -890,7 +888,7 @@ class OptimizedClassDescriptor {
             case SERIALIZABLE:
                 verifyChecksum(in.readShort());
 
-                return in.readSerializable(cls, readObjMtds, readResolveMtd, fields(cls, jobSenderVersion()));
+                return in.readSerializable(cls, readObjMtds, readResolveMtd, fields);
 
             default:
                 assert false : "Unexpected type: " + type;
