@@ -23,7 +23,7 @@ import java.util.Set;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 
 /**
- * Controls what classes should be excluded from marshalling by default.
+ * Checks whether given class should be excluded from marshalling.
  */
 public final class MarshallerExclusions {
     /**

@@ -81,7 +81,7 @@ public class JdkMarshallerImpl extends AbstractNodeNameAwareMarshaller implement
     /**
      * @param clsFilter Class name filter.
      */
-    public JdkMarshallerImpl(IgnitePredicate<String> clsFilter) {
+    public JdkMarshallerImpl(@Nullable IgnitePredicate<String> clsFilter) {
         this.clsFilter = clsFilter;
     }
 

@@ -51,6 +51,7 @@ import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Properties;
 import java.util.Queue;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -1112,7 +1113,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testExcludedClass() throws Exception {
-        Class<?>[] exclClasses = U.staticField(MarshallerExclusions.class, "EXCL_CLASSES");
+        Set<Class<?>> exclClasses = U.staticField(MarshallerExclusions.class, "EXCL_CLASSES");
 
         assertFalse(F.isEmpty(exclClasses));
 
