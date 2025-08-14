@@ -89,7 +89,7 @@ public class IgniteCommonsSystemProperties {
     public static final String IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = "IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE";
 
     /**
-     * Manages {@link OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
+     * Manages {@code OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
      * {@link Serializable} classes.
      */
     @SystemProperty("Manages OptimizedMarshaller behavior of serialVersionUID computation " +
