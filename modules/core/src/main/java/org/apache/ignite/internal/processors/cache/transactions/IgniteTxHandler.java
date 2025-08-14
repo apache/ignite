@@ -1791,7 +1791,7 @@ public class IgniteTxHandler {
                                     !entry.skipStore() &&
                                     entry.op() == TRANSFORM &&
                                     entry.oldValueOnPrimary() &&
-                                    !entry.hasValue()) {
+                                    !entry.hasWriteValue()) {
                                     while (true) {
                                         try {
                                             GridCacheEntryEx cached = entry.cached();

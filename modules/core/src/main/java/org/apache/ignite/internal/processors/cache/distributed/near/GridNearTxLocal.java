@@ -1392,7 +1392,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         CU.isNearEnabled(cacheCtx));
 
                     if (op == TRANSFORM && txEntry.value() == null && old != null)
-                        txEntry.value(cacheCtx.toCacheObject(old), false, false);
+                        txEntry.value(cacheCtx.toCacheObject(old), false);
 
                     if (enlisted != null)
                         enlisted.add(cacheKey);
@@ -2222,7 +2222,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 if (txEntry != null) {
                     CacheObject val = txEntry.value();
 
-                    if (txEntry.hasValue()) {
+                    if (txEntry.hasWriteValue()) {
                         if (!F.isEmpty(txEntry.entryProcessors()))
                             val = txEntry.applyEntryProcessors(val);
 
@@ -2550,7 +2550,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             success = isAll(e.context(), key, cacheVal, filter);
 
                             if (!success) {
-                                e.value(cacheVal, false, false);
+                                e.value(cacheVal, false);
 
                                 e.op(READ);
                             }

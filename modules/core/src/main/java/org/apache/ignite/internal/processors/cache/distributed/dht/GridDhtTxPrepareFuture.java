@@ -426,7 +426,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         if (!F.isEmpty(txEntry.entryProcessors())) {
                             invoke = true;
 
-                            if (txEntry.hasValue())
+                            if (txEntry.hasWriteValue())
                                 val = txEntry.value();
 
                             KeyCacheObject key = txEntry.key();
