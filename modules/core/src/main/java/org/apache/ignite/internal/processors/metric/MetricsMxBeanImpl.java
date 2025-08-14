@@ -64,6 +64,16 @@ public class MetricsMxBeanImpl implements MetricsMxBean {
     }
 
     /** {@inheritDoc} */
+    @Override public void configureIntervalMetric(String name, long interval) {
+        try {
+            mmgr.configureIntervalMetric(name, interval);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void configureHistogramMetric(String name, long[] bounds) {
         try {
             mmgr.configureHistogram(name, bounds);

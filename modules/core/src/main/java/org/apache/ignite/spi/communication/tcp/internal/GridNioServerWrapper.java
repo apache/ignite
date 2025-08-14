@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.net.ssl.SSLEngine;
@@ -130,6 +131,9 @@ public class GridNioServerWrapper {
     /** Default delay between reconnects attempts in case of temporary network issues. */
     private static final int DFLT_RECONNECT_DELAY = 50;
 
+    /** Minimum frequency (in milliseconds) of high message queue size warning. */
+    private static final long MIN_MSG_QUEUE_SIZE_WARN_FREQUENCY = 30_000L;
+
     /** Channel meta used for establishing channel connections. */
     static final int CHANNEL_FUT_META = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -219,6 +223,9 @@ public class GridNioServerWrapper {
 
     /** Executor for establishing a connection to a node. */
     private final TcpHandshakeExecutor tcpHandshakeExecutor;
+
+    /** Timestamp of the last high message queue size warning. */
+    private final AtomicLong lastMsqQueueSizeWarningTs = new AtomicLong();
 
     /**
      * @param log Logger.
@@ -885,7 +892,9 @@ public class GridNioServerWrapper {
                 boolean clientMode = Boolean.TRUE.equals(igniteCfg.isClientMode());
 
                 IgniteBiInClosure<GridNioSession, Integer> queueSizeMonitor =
-                    !clientMode && cfg.slowClientQueueLimit() > 0 ? this::checkClientQueueSize : null;
+                    !clientMode && (cfg.slowClientQueueLimit() > 0 || cfg.messageQueueWarningSize() > 0)
+                        ? cfg.messageQueueWarningSize() > 0 ? this::checkNodeQueueSize : this::checkClientQueueSize
+                        : null;
 
                 List<GridNioFilter> filters = new ArrayList<>();
 
@@ -1248,6 +1257,33 @@ public class GridNioServerWrapper {
                 }
             }
         }
+    }
+
+    /**
+     * Checks node message queue size and produce warning if message queue size exceeds the configured threshold.
+     *
+     * @param ses Node communication session.
+     * @param msgQueueSize Message queue size.
+     */
+    private void checkNodeQueueSize(GridNioSession ses, int msgQueueSize) {
+        if (cfg.messageQueueWarningSize() > 0 && msgQueueSize > cfg.messageQueueWarningSize()) {
+            long lastWarnTs = lastMsqQueueSizeWarningTs.get();
+
+            if (U.currentTimeMillis() > lastWarnTs + MIN_MSG_QUEUE_SIZE_WARN_FREQUENCY) {
+                if (lastMsqQueueSizeWarningTs.compareAndSet(lastWarnTs, U.currentTimeMillis())) {
+                    ConnectionKey id = ses.meta(CONN_IDX_META);
+                    if (id != null) {
+                        String msg = "Outbound message queue size for node exceeded configured " +
+                            "messageQueueWarningSize value, it may be caused by node failure or a network problems " +
+                            "[node=" + id.nodeId() + ", msqQueueSize=" + msgQueueSize + ']';
+
+                        log.warning(msg);
+                    }
+                }
+            }
+        }
+
+        checkClientQueueSize(ses, msgQueueSize);
     }
 
     /**
