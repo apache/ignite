@@ -1178,56 +1178,49 @@ public class GridNioServer<T> {
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
-            ses.markActivity(true);
+            // Reset buffer to read bytes up to its capacity.
+            readBuf.clear();
+
+            // Attempt to read off the channel
+            int cnt = sockCh.read(readBuf);
+
+            if (cnt == -1) {
+                if (log.isDebugEnabled())
+                    log.debug("Remote client closed connection: " + ses);
+
+                close(ses, null);
+
+                return;
+            }
+            else if (cnt == 0)
+                return;
+
+            if (log.isTraceEnabled())
+                log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+
+            if (rcvdBytesCntMetric != null)
+                rcvdBytesCntMetric.add(cnt);
+
+            ses.bytesReceived(cnt);
+
+            // Sets limit to current position and
+            // resets position to 0.
+            readBuf.flip();
 
             try {
-                // Reset buffer to read bytes up to its capacity.
-                readBuf.clear();
+                assert readBuf.hasRemaining();
 
-                // Attempt to read off the channel
-                int cnt = sockCh.read(readBuf);
+                filterChain.onMessageReceived(ses, readBuf);
 
-                if (cnt == -1) {
-                    if (log.isDebugEnabled())
-                        log.debug("Remote client closed connection: " + ses);
+                if (readBuf.remaining() > 0) {
+                    LT.warn(log, "Read buffer contains data after filter chain processing (will discard " +
+                        "remaining bytes) [ses=" + ses + ", remainingCnt=" + readBuf.remaining() + ']');
 
-                    close(ses, null);
-
-                    return;
-                }
-                else if (cnt == 0)
-                    return;
-
-                if (log.isTraceEnabled())
-                    log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');
-
-                if (rcvdBytesCntMetric != null)
-                    rcvdBytesCntMetric.add(cnt);
-
-                ses.bytesReceived(cnt);
-
-                // Sets limit to current position and
-                // resets position to 0.
-                readBuf.flip();
-
-                try {
-                    assert readBuf.hasRemaining();
-
-                    filterChain.onMessageReceived(ses, readBuf);
-
-                    if (readBuf.remaining() > 0) {
-                        LT.warn(log, "Read buffer contains data after filter chain processing (will discard " +
-                            "remaining bytes) [ses=" + ses + ", remainingCnt=" + readBuf.remaining() + ']');
-
-                        readBuf.clear();
-                    }
-                }
-                catch (IgniteCheckedException e) {
-                    close(ses, e);
+                    readBuf.clear();
                 }
             }
-            finally {
-                ses.markActivity(false);
+            catch (IgniteCheckedException e) {
+                close(ses, e);
             }
         }
 
@@ -1242,72 +1235,65 @@ public class GridNioServer<T> {
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
-            ses.markActivity(true);
+            while (true) {
+                ByteBuffer buf = ses.removeMeta(BUF_META_KEY);
+                SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
 
-            try {
-                while (true) {
-                    ByteBuffer buf = ses.removeMeta(BUF_META_KEY);
-                    SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
+                // Check if there were any pending data from previous writes.
+                if (buf == null) {
+                    assert req == null;
 
-                    // Check if there were any pending data from previous writes.
-                    if (buf == null) {
-                        assert req == null;
+                    req = ses.pollFuture();
 
-                        req = ses.pollFuture();
-
-                        if (req == null) {
-                            stopPollingForWrite(key, ses);
-
-                            break;
-                        }
-
-                        buf = (ByteBuffer)req.message();
-                    }
-
-                    if (!skipWrite) {
-                        Span span = tracing.create(COMMUNICATION_SOCKET_WRITE, req.span());
-
-                        try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                            int cnt = sockCh.write(buf);
-
-                            if (log.isTraceEnabled())
-                                log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
-
-                            span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(cnt));
-
-                            if (sentBytesCntMetric != null)
-                                sentBytesCntMetric.add(cnt);
-
-                            ses.bytesSent(cnt);
-                        }
-                    }
-                    else {
-                        // For test purposes only (skipWrite is set to true in tests only).
-                        try {
-                            U.sleep(50);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            throw new IOException("Thread has been interrupted.", e);
-                        }
-                    }
-
-                    if (buf.remaining() > 0) {
-                        // Not all data was written.
-                        ses.addMeta(BUF_META_KEY, buf);
-                        ses.addMeta(NIO_OPERATION.ordinal(), req);
+                    if (req == null) {
+                        stopPollingForWrite(key, ses);
 
                         break;
                     }
-                    else {
-                        // Message was successfully written.
-                        assert req != null;
 
-                        req.onMessageWritten();
+                    buf = (ByteBuffer)req.message();
+                }
+
+                if (!skipWrite) {
+                    Span span = tracing.create(COMMUNICATION_SOCKET_WRITE, req.span());
+
+                    try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
+                        int cnt = sockCh.write(buf);
+
+                        if (log.isTraceEnabled())
+                            log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+
+                        span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(cnt));
+
+                        if (sentBytesCntMetric != null)
+                            sentBytesCntMetric.add(cnt);
+
+                        ses.bytesSent(cnt);
                     }
                 }
-            }
-            finally {
-                ses.markActivity(false);
+                else {
+                    // For test purposes only (skipWrite is set to true in tests only).
+                    try {
+                        U.sleep(50);
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        throw new IOException("Thread has been interrupted.", e);
+                    }
+                }
+
+                if (buf.remaining() > 0) {
+                    // Not all data was written.
+                    ses.addMeta(BUF_META_KEY, buf);
+                    ses.addMeta(NIO_OPERATION.ordinal(), req);
+
+                    break;
+                }
+                else {
+                    // Message was successfully written.
+                    assert req != null;
+
+                    req.onMessageWritten();
+                }
             }
         }
 
@@ -1434,152 +1420,143 @@ public class GridNioServer<T> {
 
             boolean handshakeFinished = sslFilter.lock(ses);
 
-            ses.markActivity(true);
+            WritableByteChannel sockCh = (WritableByteChannel)key.channel();
+            MessageWriter writer = messageWriter(ses);
 
-            try {
-                WritableByteChannel sockCh = (WritableByteChannel)key.channel();
-                MessageWriter writer = messageWriter(ses);
+            boolean writeFinished = writeSslSystem(ses, sockCh);
 
-                boolean writeFinished = writeSslSystem(ses, sockCh);
+            // If post-handshake message is not written fully (possible on JDK 17), we should retry.
+            if (!handshakeFinished || !writeFinished) {
+                if (writeFinished)
+                    stopPollingForWrite(key, ses);
 
-                // If post-handshake message is not written fully (possible on JDK 17), we should retry.
-                if (!handshakeFinished || !writeFinished) {
-                    if (writeFinished)
-                        stopPollingForWrite(key, ses);
+                return;
+            }
+
+            ByteBuffer sslNetBuf = ses.removeMeta(BUF_META_KEY);
+
+            if (sslNetBuf != null) {
+                int cnt = sockCh.write(sslNetBuf);
+
+                if (sentBytesCntMetric != null)
+                    sentBytesCntMetric.add(cnt);
+
+                ses.bytesSent(cnt);
+
+                if (sslNetBuf.hasRemaining()) {
+                    ses.addMeta(BUF_META_KEY, sslNetBuf);
 
                     return;
                 }
+                else {
+                    List<SessionWriteRequest> requests = ses.removeMeta(REQUESTS_META_KEY);
 
-                ByteBuffer sslNetBuf = ses.removeMeta(BUF_META_KEY);
+                    if (requests != null)
+                        onRequestsWritten(ses, requests);
+                }
+            }
 
-                if (sslNetBuf != null) {
-                    int cnt = sockCh.write(sslNetBuf);
+            ByteBuffer buf = ses.writeBuffer();
+
+            if (ses.meta(WRITE_BUF_LIMIT) != null)
+                buf.limit(ses.meta(WRITE_BUF_LIMIT));
+
+            SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
+
+            while (true) {
+                if (req == null) {
+                    req = systemMessage(ses);
+
+                    if (req == null) {
+                        req = ses.pollFuture();
+
+                        if (req == null && buf.position() == 0) {
+                            stopPollingForWrite(key, ses);
+
+                            break;
+                        }
+                    }
+                }
+
+                boolean finished = false;
+
+                List<SessionWriteRequest> pendingRequests = new ArrayList<>(2);
+
+                if (req != null)
+                    finished = writeToBuffer(writer, buf, req, pendingRequests);
+
+                // Fill up as many messages as possible to write buffer.
+                while (finished) {
+                    req = systemMessage(ses);
+
+                    if (req == null)
+                        req = ses.pollFuture();
+
+                    if (req == null)
+                        break;
+
+                    finished = writeToBuffer(writer, buf, req, pendingRequests);
+                }
+
+                int sesBufLimit = buf.limit();
+                int sesCap = buf.capacity();
+
+                buf.flip();
+
+                buf = sslFilter.encrypt(ses, buf);
+
+                ByteBuffer sesBuf = ses.writeBuffer();
+
+                sesBuf.clear();
+
+                if (sesCap - buf.limit() < 0) {
+                    int limit = sesBufLimit + (sesCap - buf.limit()) - 100;
+
+                    ses.addMeta(WRITE_BUF_LIMIT, limit);
+
+                    sesBuf.limit(limit);
+                }
+
+                assert buf.hasRemaining();
+
+                if (!skipWrite) {
+                    int cnt = sockCh.write(buf);
+
+                    if (log.isTraceEnabled())
+                        log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
                     if (sentBytesCntMetric != null)
                         sentBytesCntMetric.add(cnt);
 
                     ses.bytesSent(cnt);
-
-                    if (sslNetBuf.hasRemaining()) {
-                        ses.addMeta(BUF_META_KEY, sslNetBuf);
-
-                        return;
+                }
+                else {
+                    // For test purposes only (skipWrite is set to true in tests only).
+                    try {
+                        U.sleep(50);
                     }
-                    else {
-                        List<SessionWriteRequest> requests = ses.removeMeta(REQUESTS_META_KEY);
-
-                        if (requests != null)
-                            onRequestsWritten(ses, requests);
+                    catch (IgniteInterruptedCheckedException e) {
+                        throw new IOException("Thread has been interrupted.", e);
                     }
                 }
 
-                ByteBuffer buf = ses.writeBuffer();
+                ses.addMeta(NIO_OPERATION.ordinal(), req);
 
-                if (ses.meta(WRITE_BUF_LIMIT) != null)
-                    buf.limit(ses.meta(WRITE_BUF_LIMIT));
+                if (buf.hasRemaining()) {
+                    ses.addMeta(BUF_META_KEY, buf);
 
-                SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
+                    ses.addMeta(REQUESTS_META_KEY, pendingRequests);
 
-                while (true) {
-                    if (req == null) {
-                        req = systemMessage(ses);
-
-                        if (req == null) {
-                            req = ses.pollFuture();
-
-                            if (req == null && buf.position() == 0) {
-                                stopPollingForWrite(key, ses);
-
-                                break;
-                            }
-                        }
-                    }
-
-                    boolean finished = false;
-
-                    List<SessionWriteRequest> pendingRequests = new ArrayList<>(2);
-
-                    if (req != null)
-                        finished = writeToBuffer(writer, buf, req, pendingRequests);
-
-                    // Fill up as many messages as possible to write buffer.
-                    while (finished) {
-                        req = systemMessage(ses);
-
-                        if (req == null)
-                            req = ses.pollFuture();
-
-                        if (req == null)
-                            break;
-
-                        finished = writeToBuffer(writer, buf, req, pendingRequests);
-                    }
-
-                    int sesBufLimit = buf.limit();
-                    int sesCap = buf.capacity();
-
-                    buf.flip();
-
-                    buf = sslFilter.encrypt(ses, buf);
-
-                    ByteBuffer sesBuf = ses.writeBuffer();
-
-                    sesBuf.clear();
-
-                    if (sesCap - buf.limit() < 0) {
-                        int limit = sesBufLimit + (sesCap - buf.limit()) - 100;
-
-                        ses.addMeta(WRITE_BUF_LIMIT, limit);
-
-                        sesBuf.limit(limit);
-                    }
-
-                    assert buf.hasRemaining();
-
-                    if (!skipWrite) {
-                        int cnt = sockCh.write(buf);
-
-                        if (log.isTraceEnabled())
-                            log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
-
-                        if (sentBytesCntMetric != null)
-                            sentBytesCntMetric.add(cnt);
-
-                        ses.bytesSent(cnt);
-                    }
-                    else {
-                        // For test purposes only (skipWrite is set to true in tests only).
-                        try {
-                            U.sleep(50);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            throw new IOException("Thread has been interrupted.", e);
-                        }
-                    }
-
-                    ses.addMeta(NIO_OPERATION.ordinal(), req);
-
-                    if (buf.hasRemaining()) {
-                        ses.addMeta(BUF_META_KEY, buf);
-
-                        ses.addMeta(REQUESTS_META_KEY, pendingRequests);
-
-                        break;
-                    }
-                    else {
-                        onRequestsWritten(ses, pendingRequests);
-
-                        buf = ses.writeBuffer();
-
-                        if (ses.meta(WRITE_BUF_LIMIT) != null)
-                            buf.limit(ses.meta(WRITE_BUF_LIMIT));
-                    }
+                    break;
                 }
-            }
-            finally {
-                ses.markActivity(false);
+                else {
+                    onRequestsWritten(ses, pendingRequests);
 
-                sslFilter.unlock(ses);
+                    buf = ses.writeBuffer();
+
+                    if (ses.meta(WRITE_BUF_LIMIT) != null)
+                        buf.limit(ses.meta(WRITE_BUF_LIMIT));
+                }
             }
         }
 
@@ -1683,87 +1660,80 @@ public class GridNioServer<T> {
         private void processWrite0(SelectionKey key) throws IOException {
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
-            ses.markActivity(true);
+            WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
-            try {
-                WritableByteChannel sockCh = (WritableByteChannel)key.channel();
+            ByteBuffer buf = ses.writeBuffer();
+            SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
 
-                ByteBuffer buf = ses.writeBuffer();
-                SessionWriteRequest req = ses.removeMeta(NIO_OPERATION.ordinal());
+            MessageWriter writer = messageWriter(ses);
 
-                MessageWriter writer = messageWriter(ses);
+            if (req == null) {
+                req = systemMessage(ses);
 
                 if (req == null) {
-                    req = systemMessage(ses);
+                    req = ses.pollFuture();
 
-                    if (req == null) {
-                        req = ses.pollFuture();
+                    if (req == null && buf.position() == 0) {
+                        stopPollingForWrite(key, ses);
 
-                        if (req == null && buf.position() == 0) {
-                            stopPollingForWrite(key, ses);
-
-                            return;
-                        }
+                        return;
                     }
                 }
-
-                boolean finished = false;
-
-                if (req != null)
-                    finished = writeToBuffer(ses, buf, req, writer);
-
-                // Fill up as many messages as possible to write buffer.
-                while (finished) {
-                    req.onMessageWritten();
-
-                    req = systemMessage(ses);
-
-                    if (req == null)
-                        req = ses.pollFuture();
-
-                    if (req == null)
-                        break;
-
-                    finished = writeToBuffer(ses, buf, req, writer);
-                }
-
-                buf.flip();
-
-                assert buf.hasRemaining();
-
-                if (!skipWrite) {
-                    int cnt = sockCh.write(buf);
-
-                    if (log.isTraceEnabled())
-                        log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
-
-                    if (sentBytesCntMetric != null)
-                        sentBytesCntMetric.add(cnt);
-
-                    ses.bytesSent(cnt);
-                    onWrite(cnt);
-                }
-                else {
-                    // For test purposes only (skipWrite is set to true in tests only).
-                    try {
-                        U.sleep(50);
-                    }
-                    catch (IgniteInterruptedCheckedException e) {
-                        throw new IOException("Thread has been interrupted.", e);
-                    }
-                }
-
-                if (buf.hasRemaining() || !finished) {
-                    buf.compact();
-
-                    ses.addMeta(NIO_OPERATION.ordinal(), req);
-                }
-                else
-                    buf.clear();
             }
-            finally {
-                ses.markActivity(false);
+
+            boolean finished = false;
+
+            if (req != null)
+                finished = writeToBuffer(ses, buf, req, writer);
+
+            // Fill up as many messages as possible to write buffer.
+            while (finished) {
+                req.onMessageWritten();
+
+                req = systemMessage(ses);
+
+                if (req == null)
+                    req = ses.pollFuture();
+
+                if (req == null)
+                    break;
+
+                finished = writeToBuffer(ses, buf, req, writer);
             }
+
+            buf.flip();
+
+            assert buf.hasRemaining();
+
+            if (!skipWrite) {
+                int cnt = sockCh.write(buf);
+
+                if (log.isTraceEnabled())
+                    log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+
+                if (sentBytesCntMetric != null)
+                    sentBytesCntMetric.add(cnt);
+
+                ses.bytesSent(cnt);
+                onWrite(cnt);
+            }
+            else {
+                // For test purposes only (skipWrite is set to true in tests only).
+                try {
+                    U.sleep(50);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IOException("Thread has been interrupted.", e);
+                }
+            }
+
+            if (buf.hasRemaining() || !finished) {
+                buf.compact();
+
+                ses.addMeta(NIO_OPERATION.ordinal(), req);
+            }
+            else
+                buf.clear();
         }
 
         /** */

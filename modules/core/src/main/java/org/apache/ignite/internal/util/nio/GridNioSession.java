@@ -86,14 +86,6 @@ public interface GridNioSession {
     public long lastSendTime();
 
     /**
-     * Returns activity flag.
-     *
-     * @return {@code True} if session data is being sent or received through this session. Or if related
-     * nessesary processes are active.
-     */
-    public boolean active();
-
-    /**
      * Returns number of pending messages.
      *
      * @return Number of pending messages.

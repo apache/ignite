@@ -805,11 +805,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             }
 
             /** {@inheritDoc} */
-            @Override public boolean active() {
-                return delegate.active();
-            }
-
-            /** {@inheritDoc} */
             @Override public int messagesQueueSize() {
                 return delegate.messagesQueueSize();
             }

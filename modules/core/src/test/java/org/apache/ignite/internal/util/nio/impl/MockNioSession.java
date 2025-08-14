@@ -105,11 +105,6 @@ public class MockNioSession extends GridMetadataAwareAdapter implements GridNioS
     }
 
     /** {@inheritDoc} */
-    @Override public boolean active() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public int messagesQueueSize() {
         return 0;
     }

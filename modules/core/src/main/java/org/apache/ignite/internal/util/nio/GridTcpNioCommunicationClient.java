@@ -148,11 +148,6 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public boolean active() {
-        return !closed() && ses.active();
-    }
-
-    /** {@inheritDoc} */
     @Override public int messagesQueueSize() {
         return ses.messagesQueueSize();
     }

@@ -56,7 +56,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_ACTIVE_CNT;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_CUR_CNT;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_MAX_IDLE_TIME;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_MIN_LIFE_TIME;
@@ -121,7 +120,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         idleTimeout = 500;
 
         Ignite server = startGridsMultiThreaded(2);
-        Ignite client = startClientGridsMultiThreaded(2, 1);
+        Ignite client = startClientGrid(G.allGrids().size());
 
         Ignite ldr = clientLdr ? client : server;
 
@@ -146,10 +145,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
                     LongMetric lm = mreg.findMetric(NODE_METRIC_NAME_MIN_LIFE_TIME);
 
-                    if (lm == null || lm.value() == 0)
-                        return false;
-
-                    return true;
+                    return lm != null && lm.value() != 0;
                 },
                 getTestTimeout())
             );
@@ -184,7 +180,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         int preloadCnt = 300;
 
         Ignite server = startGridsMultiThreaded(2);
-        Ignite client = startClientGridsMultiThreaded(2, 1);
+        Ignite client = startClientGrid(G.allGrids().size());
 
         Ignite ldr = clientLdr ? client : server;
 
@@ -217,9 +213,6 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             assertTrue(waitForCondition(() -> connsPerNode == poolMreg.<IntMetric>findMetric(NODE_METRIC_NAME_CUR_CNT).value(),
                 getTestTimeout(), checkPeriod));
 
-            assertTrue(waitForCondition(() -> poolMreg.<IntMetric>findMetric(NODE_METRIC_NAME_ACTIVE_CNT).value() >= 1,
-                getTestTimeout(), checkPeriod));
-
             assertTrue(poolMreg.<LongMetric>findMetric(NODE_METRIC_NAME_MIN_LIFE_TIME).value() >=
                 poolMreg.<LongMetric>findMetric(NODE_METRIC_NAME_MAX_IDLE_TIME).value());
 
@@ -246,7 +239,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         int preloadCnt = 500;
 
         Ignite server = startGridsMultiThreaded(2);
-        Ignite client = startClientGridsMultiThreaded(2, 1);
+        Ignite client = startClientGrid(G.allGrids().size());
 
         Ignite ldr = clientLdr ? client : server;
 
@@ -279,11 +272,6 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
                 continue;
 
             MetricRegistryImpl poolMreg = metricsMgr.registry(nodeMetricsRegName(node.cluster().localNode().id()));
-
-            assertTrue(waitForCondition(
-                () -> poolMreg.<IntMetric>findMetric(NODE_METRIC_NAME_ACTIVE_CNT).value() >= Math.max(1, connsPerNode / 2),
-                getTestTimeout(), checkPeriod)
-            );
 
             assertTrue(waitForCondition(
                 () -> poolMreg.<IntMetric>findMetric(NODE_METRIC_NAME_MSG_QUEUE_SIZE).value() >= Math.max(10, msgQueueLimit),

@@ -92,9 +92,6 @@ public class ConnectionClientPool {
     public static final String NODE_METRIC_NAME_CUR_CNT = "currentCnt";
 
     /** */
-    public static final String NODE_METRIC_NAME_ACTIVE_CNT = "activeCnt";
-
-    /** */
     public static final String NODE_METRIC_NAME_MSG_QUEUE_SIZE = "messagesQueueSize";
 
     /** */
@@ -636,10 +633,7 @@ public class ConnectionClientPool {
         mreg.register(NODE_METRIC_NAME_CUR_CNT, () -> updatedNodeMetrics(node.id()).connsCnt,
             "Number of current connections to the remote node.");
 
-        mreg.register(NODE_METRIC_NAME_ACTIVE_CNT, () -> updatedNodeMetrics(node.id()).activeCnt,
-            "Number of connections sending, receiving data or processing messages queue.");
-
-        mreg.register(NODE_METRIC_NAME_MSG_QUEUE_SIZE, () -> updatedNodeMetrics(node.id()).messagesQueueSize,
+        mreg.register(NODE_METRIC_NAME_MSG_QUEUE_SIZE, () -> updatedNodeMetrics(node.id()).msgsQueueSize,
             "Number of pending messages to the remote node.");
 
         mreg.register(NODE_METRIC_NAME_MAX_IDLE_TIME, () -> updatedNodeMetrics(node.id()).maxIdleTime,
@@ -656,7 +650,7 @@ public class ConnectionClientPool {
     }
 
     /** */
-    private @Nullable NodeMetrics updatedNodeMetrics(UUID nodeId) {
+    private NodeMetrics updatedNodeMetrics(UUID nodeId) {
         long nowNanos = System.nanoTime();
 
         NodeMetrics res = metrics.get(nodeId);
@@ -678,9 +672,6 @@ public class ConnectionClientPool {
 
                     ++res.connsCnt;
 
-                    if (nodeClient.active())
-                        ++res.activeCnt;
-
                     avgLifetime += nowMillis - nodeClient.creationTime();
 
                     long nodeIdleTime = nodeClient.getIdleTime();
@@ -688,7 +679,7 @@ public class ConnectionClientPool {
                     if (nodeIdleTime > maxIdleTime)
                         maxIdleTime = nodeIdleTime;
 
-                    res.messagesQueueSize += nodeClient.messagesQueueSize();
+                    res.msgsQueueSize += nodeClient.messagesQueueSize();
                 }
 
                 if (res.connsCnt != 0)
@@ -699,8 +690,6 @@ public class ConnectionClientPool {
                 res.updateTs = System.nanoTime();
 
                 NodeMetrics res0 = res;
-
-                System.err.println("TEST | activeCnt: " + res.activeCnt);
 
                 clients.compute(nodeId, (nodeId0, clients) -> {
                     if (clients == null)
@@ -893,10 +882,7 @@ public class ConnectionClientPool {
         private int connsCnt;
 
         /** */
-        private int activeCnt;
-
-        /** */
-        private int messagesQueueSize;
+        private int msgsQueueSize;
 
         /** */
         private long maxIdleTime;

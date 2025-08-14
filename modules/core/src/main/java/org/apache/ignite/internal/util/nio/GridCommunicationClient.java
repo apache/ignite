@@ -83,13 +83,6 @@ public interface GridCommunicationClient {
     public long creationTime();
 
     /**
-     * Provides connection activity flag.
-     *
-     * @return {@code True} if data is being sent or received through this connection. Or if related nessesary processes are active.
-     */
-    public boolean active();
-
-    /**
      * Provides number of pending messages.
      *
      * @return Number of pending messages.

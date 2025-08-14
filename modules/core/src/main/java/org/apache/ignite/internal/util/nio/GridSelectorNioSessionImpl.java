@@ -353,18 +353,11 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      * @param futs Futures to resend.
      */
     void resend(Collection<SessionWriteRequest> futs) {
-        markActivity(true);
+        assert queue.isEmpty() : queue.size();
 
-        try {
-            assert queue.isEmpty() : queue.size();
+        boolean add = queue.addAll(futs);
 
-            boolean add = queue.addAll(futs);
-
-            assert add;
-        }
-        finally {
-            markActivity(false);
-        }
+        assert add;
 
         if (outboundMessagesQueueSizeMetric != null)
             outboundMessagesQueueSizeMetric.add(futs.size());
@@ -416,11 +409,6 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
             outboundMessagesQueueSizeMetric.decrement();
 
         return rmv;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean active() {
-        return super.active() || (sem != null && sem.availablePermits() == 0);
     }
 
     /** {@inheritDoc} */

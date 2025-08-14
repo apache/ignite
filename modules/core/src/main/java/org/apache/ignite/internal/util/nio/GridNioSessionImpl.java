@@ -82,9 +82,6 @@ public class GridNioSessionImpl implements GridNioSession {
     /** Accepted flag. */
     private final boolean accepted;
 
-    /** Activity counter. */
-    private final LongAdder activityCnt = new LongAdder();
-
     /**
      * @param filterChain Chain.
      * @param locAddr Local address.
@@ -112,8 +109,6 @@ public class GridNioSessionImpl implements GridNioSession {
 
     /** {@inheritDoc} */
     @Override public GridNioFuture<?> send(Object msg) {
-        activityCnt.increment();
-
         try {
             resetSendScheduleTime();
 
@@ -122,17 +117,12 @@ public class GridNioSessionImpl implements GridNioSession {
         catch (IgniteCheckedException e) {
             close();
 
-            return new GridNioFinishedFuture<>(e);
-        }
-        finally {
-            activityCnt.decrement();
+            return new GridNioFinishedFuture<Object>(e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void sendNoFuture(Object msg, IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
-        activityCnt.increment();
-
         try {
             chain().onSessionWrite(this, msg, false, ackC);
         }
@@ -140,9 +130,6 @@ public class GridNioSessionImpl implements GridNioSession {
             close();
 
             throw e;
-        }
-        finally {
-            activityCnt.decrement();
         }
     }
 
@@ -249,13 +236,8 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean active() {
-        return !closed() && activityCnt.sum() > 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public int messagesQueueSize() {
-        return active() ? 1 : 0;
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -362,13 +344,6 @@ public class GridNioSessionImpl implements GridNioSession {
      */
     public boolean setClosed() {
         return closeTime.compareAndSet(0, U.currentTimeMillis());
-    }
-
-    /** Marks related to this session work. */
-    public void markActivity(boolean active) {
-        activityCnt.add(active ? 1 : -1);
-
-        assert !active || activityCnt.sum() >= 0;
     }
 
     /**
