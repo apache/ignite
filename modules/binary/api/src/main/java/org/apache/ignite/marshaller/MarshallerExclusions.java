@@ -17,24 +17,13 @@
 
 package org.apache.ignite.marshaller;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import javax.management.MBeanServer;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.compute.ComputeJobContext;
-import org.apache.ignite.compute.ComputeLoadBalancer;
-import org.apache.ignite.compute.ComputeTaskContinuousMapper;
-import org.apache.ignite.compute.ComputeTaskSession;
-import org.apache.ignite.internal.GridComponent;
-import org.apache.ignite.internal.GridLoggerProxy;
-import org.apache.ignite.internal.executor.GridExecutorService;
+import java.util.Set;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Controls what classes should be excluded from marshalling by default.
+ * Checks whether given class should be excluded from marshalling.
  */
 public final class MarshallerExclusions {
     /**
@@ -43,11 +32,7 @@ public final class MarshallerExclusions {
      * <p>
      * Note that this list supersedes {@link #EXCL_CLASSES}.
      */
-    private static final Class<?>[] INCL_CLASSES = new Class[] {
-        // Ignite classes.
-        GridLoggerProxy.class,
-        GridExecutorService.class
-    };
+    private static final Set<Class<?>> INCL_CLASSES = new HashSet<>();
 
     /** */
     private static volatile Map<Class<?>, Boolean> cache = new GridBoundedConcurrentLinkedHashMap<>(
@@ -59,43 +44,7 @@ public final class MarshallerExclusions {
      * <p>
      * Note that {@link #INCL_CLASSES} supersedes this list.
      */
-    private static final Class<?>[] EXCL_CLASSES;
-
-    /**
-     *
-     */
-    static {
-        Class springCtxCls = null;
-
-        try {
-            springCtxCls = Class.forName("org.springframework.context.ApplicationContext");
-        }
-        catch (Exception ignored) {
-            // No-op.
-        }
-
-        List<Class<?>> excl = new ArrayList<>();
-
-        // Non-Ignite classes.
-        excl.add(MBeanServer.class);
-        excl.add(ExecutorService.class);
-        excl.add(ClassLoader.class);
-        excl.add(Thread.class);
-
-        if (springCtxCls != null)
-            excl.add(springCtxCls);
-
-        // Ignite classes.
-        excl.add(IgniteLogger.class);
-        excl.add(ComputeTaskSession.class);
-        excl.add(ComputeLoadBalancer.class);
-        excl.add(ComputeJobContext.class);
-        excl.add(Marshaller.class);
-        excl.add(GridComponent.class);
-        excl.add(ComputeTaskContinuousMapper.class);
-
-        EXCL_CLASSES = U.toArray(excl, new Class[excl.size()]);
-    }
+    private static final Set<Class<?>> EXCL_CLASSES = new HashSet<>();
 
     /**
      * Ensures singleton.
@@ -114,18 +63,12 @@ public final class MarshallerExclusions {
     private static boolean isExcluded0(Class<?> cls) {
         assert cls != null;
 
-        final Class<?>[] inc = INCL_CLASSES;
-
-        // NOTE: don't use foreach for performance reasons.
-        for (int i = 0; i < inc.length; i++)
-            if (inc[i].isAssignableFrom(cls))
+        for (Class<?> inclCls : INCL_CLASSES)
+            if (inclCls.isAssignableFrom(cls))
                 return false;
 
-        final Class<?>[] exc = EXCL_CLASSES;
-
-        // NOTE: don't use foreach for performance reasons.
-        for (int i = 0; i < exc.length; i++)
-            if (exc[i].isAssignableFrom(cls))
+        for (Class<?> exclCls : EXCL_CLASSES)
+            if (exclCls.isAssignableFrom(cls))
                 return true;
 
         return false;
@@ -154,5 +97,21 @@ public final class MarshallerExclusions {
      */
     public static void clearCache() {
         cache = new GridBoundedConcurrentLinkedHashMap<>(512, 512, 0.75f, 16);
+    }
+
+    /**
+     * Adds Ignite class included in serialization.
+     * @param cls Class to add.
+     */
+    public static void exclude(Class<?> cls) {
+        EXCL_CLASSES.add(cls);
+    }
+
+    /**
+     * Adds Ignite class included in serialization.
+     * @param cls Class to add.
+     */
+    public static void include(Class<?> cls) {
+        INCL_CLASSES.add(cls);
     }
 }
