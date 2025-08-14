@@ -49,7 +49,7 @@ class BinaryObjectArrayLazyValue extends BinaryAbstractLazyValue {
             Class cls;
 
             try {
-                cls = U.forName(reader.readString(), reader.binaryContext().configuration().getClassLoader());
+                cls = U.forName(reader.readString(), reader.binaryContext().classLoader());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);

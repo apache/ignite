@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
@@ -53,9 +52,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  * Query request.
  */
 public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00;
 
@@ -160,7 +156,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private byte flags;
 
     /**
-     * Required by {@link Externalizable}
+     * Empty constructor.
      */
     public GridCacheQueryRequest() {
         // No-op.

@@ -31,9 +31,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Generate encryption key response.
  */
 public class GenerateEncryptionKeyResponse implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Request message ID. */
     private IgniteUuid id;
 

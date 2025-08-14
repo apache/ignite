@@ -41,6 +41,7 @@
         <module>modules/tools</module>
         <module>modules/commons</module>
         <module>modules/binary/api</module>
+        <module>modules/binary/impl</module>
         <module>modules/unsafe</module>
         <module>modules/core</module>
         <module>modules/compress</module>
@@ -62,6 +63,7 @@
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/codegen</module>
+        <module>modules/codegen2</module>
         <module>modules/zookeeper</module>
         <module>modules/web/ignite-appserver-test</module>
         <module>modules/web/ignite-websphere-test</module>

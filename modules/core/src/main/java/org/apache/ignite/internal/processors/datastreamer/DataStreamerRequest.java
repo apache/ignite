@@ -42,9 +42,6 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
  */
 public class DataStreamerRequest implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private long reqId;
 
     /** */
@@ -96,7 +93,7 @@ public class DataStreamerRequest implements Message {
     private int partId;
 
     /**
-     * {@code Externalizable} support.
+     * Empty constructor.
      */
     public DataStreamerRequest() {
         // No-op.

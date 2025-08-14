@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -34,9 +33,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Transactions recovery check response.
  */
 public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
     private IgniteUuid futId;
 
@@ -51,7 +47,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
     private IgniteTxState txState;
 
     /**
-     * Empty constructor required by {@link Externalizable}
+     * Empty constructor.
      */
     public GridCacheTxRecoveryResponse() {
         // No-op.

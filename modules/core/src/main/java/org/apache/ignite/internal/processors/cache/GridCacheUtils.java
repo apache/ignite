@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,6 +52,7 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
@@ -2173,6 +2175,37 @@ public class GridCacheUtils {
         }
 
         return strategies;
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @return Type name to affinity key field name mapping.
+     */
+    public static Map<String, String> affinityFields(@Nullable IgniteConfiguration cfg) {
+        Map<String, String> affFields = new HashMap<>();
+
+        if (cfg == null || F.isEmpty(cfg.getCacheKeyConfiguration()))
+            return affFields;
+
+        for (CacheKeyConfiguration keyCfg : cfg.getCacheKeyConfiguration())
+            affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
+
+        return affFields;
+    }
+
+    /**
+     * @param cls Class to get affinity field for.
+     * @return Affinity field name or {@code null} if field name was not found.
+     */
+    public static String affinityFieldName(Class cls) {
+        for (; cls != Object.class && cls != null; cls = cls.getSuperclass()) {
+            for (Field f : cls.getDeclaredFields()) {
+                if (f.getAnnotation(AffinityKeyMapped.class) != null)
+                    return f.getName();
+            }
+        }
+
+        return null;
     }
 
     /**

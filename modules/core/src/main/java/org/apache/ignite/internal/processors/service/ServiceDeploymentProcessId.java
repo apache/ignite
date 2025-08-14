@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -31,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Service deployment process' identifier.
  */
-public class ServiceDeploymentProcessId implements Message {
+public class ServiceDeploymentProcessId implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -88,7 +89,7 @@ public class ServiceDeploymentProcessId implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage(topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
@@ -109,7 +110,7 @@ public class ServiceDeploymentProcessId implements Message {
 
         switch (reader.state()) {
             case 0:
-                topVer = reader.readMessage();
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;

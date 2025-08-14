@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Query table descriptor.
  */
 public class QueryTable implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Schema. */
     private String schema;
 
@@ -38,7 +35,7 @@ public class QueryTable implements Message {
     private String tbl;
 
     /**
-     * Defalt constructor.
+     * Default constructor.
      */
     public QueryTable() {
         // No-op.

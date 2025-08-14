@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -179,7 +178,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
         checkRejected((GridTestCollisionJobContext)waitCtxs.get(0), rmtNode);
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         assert msg == null;
     }
@@ -213,7 +212,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
         checkRejected((GridTestCollisionJobContext)waitCtxs.get(0), rmtNode);
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         assert msg == null;
     }
@@ -251,7 +250,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
         checkNoAction((GridTestCollisionJobContext)waitCtxs.get(2));
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         assert msg == null;
     }
@@ -291,7 +290,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
         checkRejected((GridTestCollisionJobContext)waitCtxs.get(1), rmtNode);
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         assert msg == null;
     }
@@ -334,7 +333,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
         checkActivated((GridTestCollisionJobContext)waitCtxs.get(0));
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         assert msg == null;
     }
@@ -362,7 +361,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
         checkNoAction((GridTestCollisionJobContext)activeCtxs.get(0));
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         assert msg == null;
     }
@@ -384,7 +383,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
 
         assert sentMsg.delta() == 1 : "Invalid sent message: " + sentMsg;
 
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         assert msg != null;
     }
@@ -430,7 +429,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
         checkRejected(ctx2, rmtNode);
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         assert msg == null;
     }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -35,14 +34,11 @@ import org.jetbrains.annotations.NotNull;
  * Near transaction finish request.
  */
 public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Mini future ID. */
     private int miniId;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearTxFinishRequest() {
         // No-op.

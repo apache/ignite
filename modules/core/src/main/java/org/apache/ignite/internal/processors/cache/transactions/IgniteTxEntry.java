@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -226,7 +225,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private transient @Nullable GridAbsClosureX cqNotifyC;
 
     /**
-     * Required by {@link Externalizable}
+     * Empty constructor.
      */
     public IgniteTxEntry() {
         /* No-op. */

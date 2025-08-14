@@ -198,6 +198,20 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         return super.needToCast(scope, node, toType);
     }
 
+    /** {@inheritDoc} */
+    @Override public @Nullable RelDataType getTightestCommonType(@Nullable RelDataType type1, @Nullable RelDataType type2) {
+        // TODO Workaround for https://issues.apache.org/jira/browse/CALCITE-7062
+        if (type1 != null && type2 != null) {
+            if (SqlTypeUtil.isDate(type1) && SqlTypeUtil.isTimestamp(type2))
+                return factory.createTypeWithNullability(type2, type1.isNullable() || type2.isNullable());
+
+            if (SqlTypeUtil.isDate(type2) && SqlTypeUtil.isTimestamp(type1))
+                return factory.createTypeWithNullability(type1, type1.isNullable() || type2.isNullable());
+        }
+
+        return super.getTightestCommonType(type1, type2);
+    }
+
     // The method is fully copied from parent class with cutted operand check to SqlDynamicParam, which not supported.
     /** {@inheritDoc} */
     @Override protected boolean coerceColumnType(

@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -42,9 +41,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuer
  * Request for DML operation on remote node.
  */
 public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Request id. */
     @GridToStringInclude
     private long reqId;
@@ -92,7 +88,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     private boolean explicitTimeout;
 
     /**
-     * Required by {@link Externalizable}
+     * Empty constructor.
      */
     public GridH2DmlRequest() {
         // No-op.
@@ -420,7 +416,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeMessage(topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
@@ -516,7 +512,7 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 10:
-                topVer = reader.readMessage();
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;

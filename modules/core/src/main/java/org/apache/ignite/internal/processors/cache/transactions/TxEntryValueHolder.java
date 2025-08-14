@@ -45,9 +45,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 @IgniteCodeGeneratingFail // Need to handle 'hasWriteVal' flag during write.
 public class TxEntryValueHolder implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridToStringInclude(sensitive = true)
     private CacheObject val;
 

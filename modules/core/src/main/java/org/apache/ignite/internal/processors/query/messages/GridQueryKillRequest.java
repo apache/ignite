@@ -18,11 +18,9 @@
 
 package org.apache.ignite.internal.processors.query.messages;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Query kill request.
@@ -31,16 +29,16 @@ public class GridQueryKillRequest implements Message {
     /** */
     public static final short TYPE_CODE = 172;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Request id. */
+    @Order(value = 0, method = "requestId")
     private long reqId;
 
     /** Query id on a node. */
+    @Order(1)
     private long nodeQryId;
 
     /** Async response flag. */
+    @Order(value = 2, method = "asyncResponse")
     private boolean asyncRes;
 
     /**
@@ -69,10 +67,24 @@ public class GridQueryKillRequest implements Message {
     }
 
     /**
+     * @param reqId New request id.
+     */
+    public void requestId(long reqId) {
+        this.reqId = reqId;
+    }
+
+    /**
      * @return Query id on a node.
      */
     public long nodeQryId() {
         return nodeQryId;
+    }
+
+    /**
+     * @param nodeQryId New query id on a node.
+     */
+    public void nodeQryId(long nodeQryId) {
+        this.nodeQryId = nodeQryId;
     }
 
     /**
@@ -82,78 +94,16 @@ public class GridQueryKillRequest implements Message {
         return asyncRes;
     }
 
+    /**
+     * @param asyncRes New async response flag.
+     */
+    public void asyncResponse(boolean asyncRes) {
+        this.asyncRes = asyncRes;
+    }
+
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeBoolean(asyncRes))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong(nodeQryId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong(reqId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                asyncRes = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                nodeQryId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                reqId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

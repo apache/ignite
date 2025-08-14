@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -42,9 +41,6 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     /** Snapshot request message type (value is {@code 178}). */
     public static final short TYPE_CODE = 178;
 
-    /** Serialization version. */
-    private static final long serialVersionUID = 0L;
-
     /** Snapshot operation request ID. */
     private UUID reqId;
 
@@ -59,7 +55,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     private Map<Integer, int[]> parts;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public SnapshotFilesRequestMessage() {
         // No-op.
