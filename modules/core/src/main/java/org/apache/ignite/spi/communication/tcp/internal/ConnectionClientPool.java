@@ -616,11 +616,20 @@ public class ConnectionClientPool {
                 newClients = new GridCommunicationClient[cfg.connectionsPerNode()];
                 newClients[connIdx] = addClient;
 
-                if (clients.putIfAbsent(node.id(), newClients) == null) {
-                    createNodeMetrics(node);
+                curClients = clients.compute(node.id(), (nodeId0, clients0) -> {
+                    if (clients0 == null) {
+                        // Syncs metrics creation on this map.
+                        if (metricsMgr != null)
+                            createNodeMetrics(node);
 
+                        return newClients;
+                    }
+
+                    return clients0;
+                });
+
+                if (curClients != null)
                     break;
-                }
             }
             else {
                 newClients = curClients.clone();
@@ -637,8 +646,7 @@ public class ConnectionClientPool {
 
     /** */
     private void createNodeMetrics(ClusterNode node) {
-        if (metricsMgr == null)
-            return;
+        assert metricsMgr != null;
 
         MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.id()));
 
@@ -661,9 +669,6 @@ public class ConnectionClientPool {
 
         mreg.register(NODE_METRIC_NAME_ACQUIRING_THREADS_CNT, () -> updatedNodeMetrics(node.id()).acquiringThreadsCnt.get(),
             "Number of threads currently acquiring a connection.");
-
-        // Create metrics record.
-        updatedNodeMetrics(node.id());
     }
 
     /** */
@@ -675,6 +680,7 @@ public class ConnectionClientPool {
         if (res == null || (nowNanos - res.updateTs > NODE_METRICS_UPDATE_THRESHOLD && res.canUpdate())) {
             GridCommunicationClient[] nodeClients = clients.get(nodeId);
 
+            // Node might already leave the cluster.
             if (nodeClients != null) {
                 long nowMillis = U.currentTimeMillis();
 
@@ -704,10 +710,11 @@ public class ConnectionClientPool {
 
                 res.maxIdleTime = maxIdleTime;
 
-                res.updateTs = System.nanoTime();
-
                 NodeMetrics res0 = res;
 
+                res.updateTs = System.nanoTime();
+
+                // Node might already leave the cluster. Syncs metrics removal on the clients map.
                 clients.compute(nodeId, (nodeId0, clients) -> {
                     if (clients == null)
                         metrics.remove(nodeId);
@@ -886,7 +893,7 @@ public class ConnectionClientPool {
 
     /** */
     private static final class NodeMetrics {
-        /** */
+        /** Avoids NPEs on metrics getting because nodes leave cluster asynchronously. */
         private static final NodeMetrics EMPTY = new NodeMetrics(null);
 
         /** */
