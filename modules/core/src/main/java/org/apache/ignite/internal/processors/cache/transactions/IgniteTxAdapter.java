@@ -1635,7 +1635,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             CacheObject cacheVal;
 
-            if (txEntry.hasValue())
+            if (txEntry.hasWriteValue())
                 cacheVal = txEntry.value();
             else if (txEntry.hasOldValue())
                 cacheVal = txEntry.oldValue();

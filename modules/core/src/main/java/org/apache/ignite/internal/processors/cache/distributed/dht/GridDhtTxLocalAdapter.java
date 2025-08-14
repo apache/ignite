@@ -479,7 +479,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             if (existing != null) {
                 existing.op(e.op()); // Absolutely must set operation, as default is DELETE.
 
-                existing.value(e.value(), e.hasWriteValue(), e.hasReadValue());
+                existing.value(e.value(), e.hasWriteValue());
                 existing.entryProcessors(e.entryProcessors());
                 existing.ttl(e.ttl());
                 existing.filters(e.filters());
