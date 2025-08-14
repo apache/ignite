@@ -101,7 +101,7 @@ public class ConnectionClientPool {
     public static final String NODE_METRIC_NAME_MAX_IDLE_TIME = "maxIdleTime";
 
     /** */
-    public static final String NODE_METRIC_NAME_MIN_LIFE_TIME = "minLifeTime";
+    public static final String NODE_METRIC_NAME_AVG_LIFE_TIME = "minLifeTime";
 
     /** Clients. */
     private final Map<UUID, GridCommunicationClient[]> clients
@@ -634,12 +634,12 @@ public class ConnectionClientPool {
             "Number of current connections to the remote node.");
 
         mreg.register(NODE_METRIC_NAME_MSG_QUEUE_SIZE, () -> updatedNodeMetrics(node.id()).msgsQueueSize,
-            "Number of pending messages to the remote node.");
+            "Overal number of pending messages to the remote node.");
 
         mreg.register(NODE_METRIC_NAME_MAX_IDLE_TIME, () -> updatedNodeMetrics(node.id()).maxIdleTime,
             "Maximal idle time of sending or receiving data in milliseconds.");
 
-        mreg.register(NODE_METRIC_NAME_MIN_LIFE_TIME, () -> updatedNodeMetrics(node.id()).avgLifetime,
+        mreg.register(NODE_METRIC_NAME_AVG_LIFE_TIME, () -> updatedNodeMetrics(node.id()).avgLifetime,
             "Average connection lifetime in milliseconds.");
 
         mreg.register(NODE_METRIC_NAME_REMOVED_CNT, () -> updatedNodeMetrics(node.id()).removedConnectionsCnt.get(),

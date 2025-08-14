@@ -60,7 +60,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_CUR_CNT;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_MAX_IDLE_TIME;
-import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_MIN_LIFE_TIME;
+import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_AVG_LIFE_TIME;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_MSG_QUEUE_SIZE;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_REMOVED_CNT;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.nodeMetricsRegName;
@@ -145,7 +145,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
                     if (im == null || connsPerNode != im.value())
                         return false;
 
-                    LongMetric lm = mreg.findMetric(NODE_METRIC_NAME_MIN_LIFE_TIME);
+                    LongMetric lm = mreg.findMetric(NODE_METRIC_NAME_AVG_LIFE_TIME);
 
                     return lm != null && lm.value() != 0;
                 },
@@ -169,7 +169,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             assertTrue(waitForCondition(() -> mreg.<IntMetric>findMetric(NODE_METRIC_NAME_REMOVED_CNT).value() >= connsPerNode,
                 getTestTimeout()));
 
-            assertTrue(mreg.<LongMetric>findMetric(NODE_METRIC_NAME_MIN_LIFE_TIME).value() >=
+            assertTrue(mreg.<LongMetric>findMetric(NODE_METRIC_NAME_AVG_LIFE_TIME).value() >=
                 mreg.<LongMetric>findMetric(NODE_METRIC_NAME_MAX_IDLE_TIME).value());
         }
 
@@ -218,7 +218,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             assertTrue(waitForCondition(() -> connsPerNode == mreg.<IntMetric>findMetric(NODE_METRIC_NAME_CUR_CNT).value(),
                 getTestTimeout(), checkPeriod));
 
-            assertTrue(mreg.<LongMetric>findMetric(NODE_METRIC_NAME_MIN_LIFE_TIME).value() >=
+            assertTrue(mreg.<LongMetric>findMetric(NODE_METRIC_NAME_AVG_LIFE_TIME).value() >=
                 mreg.<LongMetric>findMetric(NODE_METRIC_NAME_MAX_IDLE_TIME).value());
 
             assertTrue(waitForCondition(() -> mreg.<LongMetric>findMetric(NODE_METRIC_NAME_MAX_IDLE_TIME).value() < 50,
