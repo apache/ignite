@@ -2389,13 +2389,6 @@ public class JdbcThinConnection implements Connection {
         }
 
         /** {@inheritDoc} */
-        @Deprecated
-        @Override public boolean registerClassName(byte platformId, int typeId,
-            String clsName) throws IgniteCheckedException {
-            return registerClassName(platformId, typeId, clsName, false);
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean registerClassNameLocally(byte platformId, int typeId, String clsName) {
             throw new UnsupportedOperationException("registerClassNameLocally not supported by " + this.getClass().getSimpleName());
         }
