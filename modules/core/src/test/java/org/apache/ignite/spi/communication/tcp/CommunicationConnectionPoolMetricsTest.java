@@ -48,7 +48,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -74,7 +73,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 @RunWith(Parameterized.class)
 public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTest {
     /** */
-    private volatile long idleTimeout = TcpCommunicationSpi.DFLT_IDLE_CONN_TIMEOUT;
+    private volatile long maxConnIdleTimeout = TcpCommunicationSpi.DFLT_IDLE_CONN_TIMEOUT;
 
     /** */
     private volatile int createClientDelay;
@@ -85,7 +84,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
     /** */
     @Parameterized.Parameter(1)
-    public boolean pairedConnections;
+    public boolean pairedConns;
 
     /** */
     @Parameterized.Parameter(2)
@@ -110,7 +109,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CommunicationSpi<?> communicationSpi = new TcpCommunicationSpi() {
+        TcpCommunicationSpi communicationSpi = new TcpCommunicationSpi() {
             @Override protected GridCommunicationClient createTcpClient(ClusterNode node,
                 int connIdx) throws IgniteCheckedException {
                 if (createClientDelay > 0)
@@ -118,15 +117,16 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
                 return super.createTcpClient(node, connIdx);
             }
-        }
-            .setConnectionsPerNode(connsPerNode)
-            .setUsePairedConnections(pairedConnections)
-            .setIdleConnectionTimeout(idleTimeout)
+        };
+
+        communicationSpi.setConnectionsPerNode(connsPerNode)
+            .setUsePairedConnections(pairedConns)
+            .setIdleConnectionTimeout(maxConnIdleTimeout)
             .setMessageQueueLimit(msgQueueLimit);
 
         cfg.setCommunicationSpi(communicationSpi);
 
-        cfg.setPluginProviders(new TestPluginProvider());
+        cfg.setPluginProviders(new TestCommunicationMessagePluginProvider());
 
         return cfg;
     }
@@ -134,7 +134,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     /** */
     @Test
     public void testRemovedConnectionMetrics() throws Exception {
-        idleTimeout = 500;
+        maxConnIdleTimeout = 500;
 
         Ignite server = startGridsMultiThreaded(2);
         Ignite client = startClientGrid(G.allGrids().size());
@@ -194,7 +194,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
     /** */
     @Test
-    public void testMetrics() throws Exception {
+    public void testMetricsBasics() throws Exception {
         int preloadCnt = 300;
         int srvrCnt = 3;
 
@@ -207,7 +207,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         MetricRegistryImpl mreg0 = metricsMgr.registry(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME);
 
         assertEquals(connsPerNode, mreg0.<IntMetric>findMetric(ConnectionClientPool.METRIC_POOL_SIZE_NAME).value());
-        assertEquals(pairedConnections, mreg0.<BooleanGauge>findMetric(ConnectionClientPool.METRIC_NAME_PAIRED_CONNS).value());
+        assertEquals(pairedConns, mreg0.<BooleanGauge>findMetric(ConnectionClientPool.METRIC_NAME_PAIRED_CONNS).value());
 
         AtomicBoolean runFlag = new AtomicBoolean(true);
         AtomicLong loadCnt = new AtomicLong(preloadCnt);
@@ -273,13 +273,14 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         runFlag.set(false);
         loadFut.get(getTestTimeout());
 
+        // Ensure that all the possible nodes are stopped.
         assertTrue(waitForCondition(() -> ldr.cluster().nodes().size() == (clientLdr ? 2 : 1), getTestTimeout()));
     }
 
     /** */
     @Test
     public void testAcquiringThreadsMetric() throws Exception {
-        idleTimeout = 5;
+        maxConnIdleTimeout = 5;
         createClientDelay = 100;
 
         Ignite server = startGridsMultiThreaded(2);
@@ -308,7 +309,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             }
         });
 
-        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> new TestMessage((int)idleTimeout * 3), null);
+        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> new TestMessage((int)maxConnIdleTimeout * 3), null);
 
         monFut.get(getTestTimeout());
 
@@ -444,7 +445,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     }
 
     /** */
-    public static class TestPluginProvider extends AbstractTestPluginProvider {
+    public static class TestCommunicationMessagePluginProvider extends AbstractTestPluginProvider {
         /** {@inheritDoc} */
         @Override public String name() {
             return "TEST_PLUGIN";

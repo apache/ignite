@@ -717,7 +717,7 @@ public class ConnectionClientPool {
                 // Node might already leave the cluster. Syncs metrics removal on the clients map.
                 clients.compute(nodeId, (nodeId0, clients) -> {
                     if (clients == null)
-                        metrics.remove(nodeId);
+                        removeNodeMetrics(nodeId);
                     else
                         metrics.put(nodeId, res0);
 
@@ -725,7 +725,7 @@ public class ConnectionClientPool {
                 });
             }
             else {
-                metrics.remove(nodeId);
+                removeNodeMetrics(nodeId);
 
                 res = null;
             }
