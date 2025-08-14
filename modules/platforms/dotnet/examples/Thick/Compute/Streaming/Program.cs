@@ -92,7 +92,7 @@ internal class ContinuousMapperTask : ComputeTaskAdapter<string, int, int>
 
     public override ComputeJobResultPolicy OnResult(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
     {
-        // Fail-over to another node ff there is an error
+        // Fail-over to another node if there is an error
         if (res.Exception != null)
         {
             return base.OnResult(res, rcvd);

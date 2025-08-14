@@ -123,6 +123,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
         /** Handles for jobs which are not serialized right away. */
         private volatile List<long> _jobHandles;
+        private readonly object _jobHandlesLock = new object();
 
         /// <summary>
         /// Constructor.
@@ -379,13 +380,16 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <inheritdoc />
         public void AddJobs(ICollection<long> jobHandles)
         {
-            if (_jobHandles != null)
+            lock (_jobHandlesLock)
             {
-                _jobHandles.AddRange(jobHandles);
-            }
-            else
-            {
-                _jobHandles = new List<long>(jobHandles);
+                if (_jobHandles != null)
+                {
+                    _jobHandles.AddRange(jobHandles);
+                }
+                else
+                {
+                    _jobHandles = new List<long>(jobHandles);
+                }
             }
         }
 
@@ -489,103 +493,6 @@ namespace Apache.Ignite.Core.Impl.Compute
                     handleRegistry.Release(handle, true);
 
             handleRegistry.Release(taskHandle, true);
-        }
-    }
-
-    /// <summary>
-    /// Shared compute task utilities.
-    /// </summary>
-    internal static class ComputeTaskUtils
-    {
-        /// <summary>
-        /// Writes job map.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="map">Map</param>
-        /// <returns>Job handle list.</returns>
-        internal static List<long> WriteJobs<T>(BinaryWriter writer, IDictionary<IComputeJob<T>, IClusterNode> map)
-        {
-            Debug.Assert(writer != null && map != null);
-
-            writer.WriteInt(map.Count); // Amount of mapped jobs.
-
-            var jobHandles = new List<long>(map.Count);
-            var ignite = writer.Marshaller.Ignite;
-
-            try
-            {
-                foreach (KeyValuePair<IComputeJob<T>, IClusterNode> mapEntry in map)
-                {
-                    var job = new ComputeJobHolder(ignite, mapEntry.Key.ToNonGeneric());
-
-                    IClusterNode node = mapEntry.Value;
-
-                    var jobHandle = ignite.HandleRegistry.Allocate(job);
-
-                    jobHandles.Add(jobHandle);
-
-                    writer.WriteLong(jobHandle);
-
-                    if (node.IsLocal)
-                        writer.WriteBoolean(false); // Job is not serialized.
-                    else
-                    {
-                        writer.WriteBoolean(true); // Job is serialized.
-                        writer.WriteObject(job);
-                    }
-
-                    writer.WriteGuid(node.Id);
-                }
-            }
-            catch (Exception)
-            {
-                foreach (var handle in jobHandles)
-                    ignite.HandleRegistry.Release(handle);
-
-                throw;
-            }
-
-            return jobHandles;
-        }
-        
-        /// <summary>
-        /// Writes job collection.
-        /// </summary>
-        /// <returns>Job handle list</returns>
-        internal static List<long> WriteJobs<T>(BinaryWriter writer, ICollection<IComputeJob<T>> list)
-        {
-            Debug.Assert(writer != null && list != null);
-
-            writer.WriteInt(list.Count);
-
-            var jobHandles = new List<long>(list.Count);
-            var ignite = writer.Marshaller.Ignite;
-
-            try
-            {
-                foreach (var entry in list)
-                {
-                    var job = new ComputeJobHolder(ignite, entry.ToNonGeneric());
-
-                    var jobHandle = ignite.HandleRegistry.Allocate(job);
-
-                    jobHandles.Add(jobHandle);
-
-                    writer.WriteLong(jobHandle);
-                    writer.WriteObject(job);
-                }
-            }
-            catch (Exception)
-            {
-                foreach (var handle in jobHandles)
-                {
-                    ignite.HandleRegistry.Release(handle);
-                }
-
-                throw;
-            }
-
-            return jobHandles;
         }
     }
 }

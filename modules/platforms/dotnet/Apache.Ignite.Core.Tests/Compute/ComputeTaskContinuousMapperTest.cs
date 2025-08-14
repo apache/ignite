@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             public override ComputeJobResultPolicy OnResult(
                 IComputeJobResult<string> res, IList<IComputeJobResult<string>> rcvd)
             {
-                // No need to synchronize access to the counter since the jobs are submitted continuously on by one
+                // No need to synchronize accessing the counter since the jobs are submitted continuously one by one
                 if (--_counter == 0)
                 {
                     return ComputeJobResultPolicy.Reduce;
