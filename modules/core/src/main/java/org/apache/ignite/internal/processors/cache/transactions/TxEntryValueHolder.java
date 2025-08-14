@@ -29,7 +29,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
  * Auxiliary class to hold value, value-has-been-set flag, value update operation, value bytes.
@@ -49,6 +53,34 @@ public class TxEntryValueHolder implements Message {
     @Order(value = 2, method = "hasWriteValue")
     @GridToStringExclude
     private boolean hasWriteVal;
+
+    /** Flag indicating that value has been set for read. */
+    @GridToStringExclude
+    private boolean hasReadVal;
+
+    /**
+     * @param op Cache operation.
+     * @param val Value.
+     * @param hasWriteVal Write value presence flag.
+     * @param hasReadVal Read value presence flag.
+     */
+    public void value(GridCacheOperation op, CacheObject val, boolean hasWriteVal, boolean hasReadVal) {
+        if (hasReadVal && this.hasWriteVal)
+            return;
+
+        this.op = op;
+        this.val = val;
+
+        this.hasWriteVal = hasWriteVal || op == CREATE || op == UPDATE || op == DELETE;
+        this.hasReadVal = hasReadVal || op == READ;
+    }
+
+    /**
+     * @return {@code True} if has read or write value.
+     */
+    public boolean hasValue() {
+        return hasWriteVal || hasReadVal;
+    }
 
     /**
      * Gets stored value.
@@ -112,6 +144,13 @@ public class TxEntryValueHolder implements Message {
      */
     public void hasWriteValue(boolean hasWriteVal) {
         this.hasWriteVal = hasWriteVal;
+    }
+
+    /**
+     * @return {@code True} if read value was set.
+     */
+    public boolean hasReadValue() {
+        return hasReadVal;
     }
 
     /**

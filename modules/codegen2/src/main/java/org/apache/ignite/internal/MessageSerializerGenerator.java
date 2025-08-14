@@ -48,6 +48,7 @@ import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
+
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
@@ -365,11 +366,8 @@ class MessageSerializerGenerator {
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
-            else if (isEnum(type)) {
-                imports.add(type.toString());
-
+            else if (isEnum(type))
                 returnFalseIfEnumWriteFailed(write, "writer.writeByte", getExpr);
-            }
 
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
@@ -463,7 +461,7 @@ class MessageSerializerGenerator {
             }
 
             if (componentType.getKind() == TypeKind.DECLARED) {
-                String cls = simpleName(arrType.getComponentType());
+                String cls = ((DeclaredType)arrType.getComponentType()).asElement().getSimpleName().toString();
 
                 returnFalseIfReadFailed(name, "reader.readObjectArray",
                     "MessageCollectionItemType." + messageCollectionItemType(componentType),
@@ -502,7 +500,7 @@ class MessageSerializerGenerator {
             }
 
             else if (isEnum(type)) {
-                String mtd = simpleName(type) + ".fromOrdinal(reader.readByte";
+                String mtd = type + ".fromOrdinal(reader.readByte";
 
                 returnFalseIfReadFailed(name, mtd, ")");
             }
@@ -514,6 +512,10 @@ class MessageSerializerGenerator {
         }
 
         throw new IllegalArgumentException("Unsupported type kind: " + type.getKind());
+    }
+
+    private boolean isEnum(TypeMirror type) {
+        return ((DeclaredType)type).asElement().getKind() == ElementKind.ENUM;
     }
 
     /**
@@ -585,22 +587,6 @@ class MessageSerializerGenerator {
         catch (IllegalArgumentException e) {
             return null;
         }
-    }
-
-    /**
-     * @param type Type.
-     * @return <code>true<code/> if specified type represents enum.
-     */
-    private boolean isEnum(TypeMirror type) {
-        return ((DeclaredType)type).asElement().getKind() == ElementKind.ENUM;
-    }
-
-    /**
-     * @param type Type.
-     * @return Simple name of class, represented by a specified type mirror.
-     */
-    private String simpleName(TypeMirror type) {
-        return ((DeclaredType)type).asElement().getSimpleName().toString();
     }
 
     /**
