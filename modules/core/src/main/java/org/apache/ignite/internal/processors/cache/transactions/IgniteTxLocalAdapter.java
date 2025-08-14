@@ -681,7 +681,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     explicitVer = null;
 
                                 if (conflictNeedResolve) {
-                                    txEntry.value(val, true);
+                                    txEntry.value(val, true, false);
                                     txEntry.op(op);
                                     txEntry.entryProcessors(null);
                                     txEntry.conflictVersion(explicitVer);
@@ -1401,7 +1401,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert old.op() != TRANSFORM;
 
                 old.op(op);
-                old.value(val, op == CREATE || op == UPDATE || op == DELETE);
+                old.value(val, op == CREATE || op == UPDATE || op == DELETE, op == READ);
             }
 
             // Keep old ttl value.
