@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -35,6 +37,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.BooleanGauge;
+import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -58,9 +61,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_ACQUIRING_THREADS_CNT;
+import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_AVG_LIFE_TIME;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_CUR_CNT;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_MAX_IDLE_TIME;
-import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_AVG_LIFE_TIME;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_MSG_QUEUE_SIZE;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.NODE_METRIC_NAME_REMOVED_CNT;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.nodeMetricsRegName;
@@ -70,7 +74,10 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 @RunWith(Parameterized.class)
 public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTest {
     /** */
-    private long idleTimeout = TcpCommunicationSpi.DFLT_IDLE_CONN_TIMEOUT;
+    private volatile long idleTimeout = TcpCommunicationSpi.DFLT_IDLE_CONN_TIMEOUT;
+
+    /** */
+    private volatile int createClientDelay;
 
     /** */
     @Parameterized.Parameter(0)
@@ -103,7 +110,15 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CommunicationSpi<?> communicationSpi = new TcpCommunicationSpi()
+        CommunicationSpi<?> communicationSpi = new TcpCommunicationSpi() {
+            @Override protected GridCommunicationClient createTcpClient(ClusterNode node,
+                int connIdx) throws IgniteCheckedException {
+                if (createClientDelay > 0)
+                    U.sleep(createClientDelay);
+
+                return super.createTcpClient(node, connIdx);
+            }
+        }
             .setConnectionsPerNode(connsPerNode)
             .setUsePairedConnections(pairedConnections)
             .setIdleConnectionTimeout(idleTimeout)
@@ -128,8 +143,9 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
         AtomicBoolean runFlag = new AtomicBoolean(true);
+        TestMessage msg = new TestMessage();
 
-        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, TestMessage::new, null);
+        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> msg, null);
 
         // Wait until all connections are created and used.
         for (Ignite node : G.allGrids()) {
@@ -178,7 +194,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
     /** */
     @Test
-    public void testMetricsUnderLoad() throws Exception {
+    public void testMetrics() throws Exception {
         int preloadCnt = 300;
         int srvrCnt = 3;
 
@@ -195,8 +211,9 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         AtomicBoolean runFlag = new AtomicBoolean(true);
         AtomicLong loadCnt = new AtomicLong(preloadCnt);
+        TestMessage msg = new TestMessage();
 
-        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, TestMessage::new, loadCnt);
+        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> msg, loadCnt);
 
         assertTrue(waitForCondition(() -> loadCnt.get() <= 0 || !runFlag.get(), getTestTimeout(), 25));
 
@@ -218,11 +235,11 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             assertTrue(waitForCondition(() -> connsPerNode == mreg.<IntMetric>findMetric(NODE_METRIC_NAME_CUR_CNT).value(),
                 getTestTimeout(), checkPeriod));
 
-            assertTrue(mreg.<LongMetric>findMetric(NODE_METRIC_NAME_AVG_LIFE_TIME).value() >=
-                mreg.<LongMetric>findMetric(NODE_METRIC_NAME_MAX_IDLE_TIME).value());
-
             assertTrue(waitForCondition(() -> mreg.<LongMetric>findMetric(NODE_METRIC_NAME_MAX_IDLE_TIME).value() < 50,
                 getTestTimeout(), checkPeriod));
+
+            assertTrue(mreg.<LongMetric>findMetric(NODE_METRIC_NAME_AVG_LIFE_TIME).value() >=
+                mreg.<LongMetric>findMetric(NODE_METRIC_NAME_MAX_IDLE_TIME).value());
 
             // Default connection idle and write timeouts are large enough. Connections should not be failed/deleted.
             assertEquals(0, mreg.<IntMetric>findMetric(NODE_METRIC_NAME_REMOVED_CNT).value());
@@ -257,6 +274,47 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         loadFut.get(getTestTimeout());
 
         assertTrue(waitForCondition(() -> ldr.cluster().nodes().size() == (clientLdr ? 2 : 1), getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testAcquiringThreadsMetric() throws Exception {
+        idleTimeout = 5;
+        createClientDelay = 100;
+
+        Ignite server = startGridsMultiThreaded(2);
+        Ignite client = startClientGrid(G.allGrids().size());
+
+        Ignite ldr = clientLdr ? client : server;
+
+        GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
+        AtomicBoolean runFlag = new AtomicBoolean(true);
+
+        IgniteInternalFuture<?> monFut = GridTestUtils.runAsync(() -> {
+            while (runFlag.get()) {
+                for (Ignite node : G.allGrids()) {
+                    if (node == ldr)
+                        continue;
+
+                    MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.cluster().localNode().id()));
+
+                    IntMetric m = mreg.findMetric(NODE_METRIC_NAME_ACQUIRING_THREADS_CNT);
+
+                    if (m != null && m.value() > 1)
+                        runFlag.set(false);
+                }
+
+                U.sleep(1);
+            }
+        });
+
+        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> new TestMessage((int)idleTimeout * 3), null);
+
+        monFut.get(getTestTimeout());
+
+        createClientDelay = 0;
+
+        loadFut.get(getTestTimeout());
     }
 
     /** */
