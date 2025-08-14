@@ -23,7 +23,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
-import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,9 +33,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Listener on discovery events.
  */
 public class CommunicationDiscoveryEventListener implements GridLocalEventListener, HighPriorityListener {
-    /** NIO server. */
-    private final GridNioServer<?> nioSrv;
-
     /** Client pool. */
     private final ConnectionClientPool clientPool;
 
@@ -45,16 +41,13 @@ public class CommunicationDiscoveryEventListener implements GridLocalEventListen
     private volatile TcpCommunicationMetricsListener metricsLsnr;
 
     /**
-     * @param nioSrv NIO server.
      * @param clientPool Client pool.
      * @param metricsLsnr Metrics listener.
      */
     public CommunicationDiscoveryEventListener(
-        GridNioServer<?> nioSrv,
         ConnectionClientPool clientPool,
         TcpCommunicationMetricsListener metricsLsnr
     ) {
-        this.nioSrv = nioSrv;
         this.clientPool = clientPool;
         this.metricsLsnr = metricsLsnr;
     }
@@ -84,8 +77,6 @@ public class CommunicationDiscoveryEventListener implements GridLocalEventListen
         metricsLsnr.onNodeLeft(consistentId);
 
         clientPool.onNodeLeft(nodeId);
-
-        nioSrv.onNodeLeft(nodeId);
     }
 
     /**

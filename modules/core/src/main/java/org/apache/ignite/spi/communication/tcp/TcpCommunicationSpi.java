@@ -689,6 +689,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         nioSrvWrapper.clientPool(clientPool);
 
+        discoLsnr = new CommunicationDiscoveryEventListener(clientPool, metricsLsnr);
+
         try {
             // This method potentially resets local port to the value
             // local node was bound to.
@@ -697,8 +699,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to initialize TCP server: " + cfg.localHost(), e);
         }
-
-        discoLsnr = new CommunicationDiscoveryEventListener(nioSrvWrapper.nio(), clientPool, metricsLsnr);
 
         boolean forceClientToSrvConnections = forceClientToServerConnections() || cfg.localPort() == -1;
 

@@ -254,6 +254,11 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
+    @Override public int messagesQueueSize() {
+        return active() ? 1 : 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> T meta(int key) {
         assert key < meta.length;
 
@@ -320,8 +325,10 @@ public class GridNioSessionImpl implements GridNioSession {
      * @param cnt Number of bytes sent.
      */
     public void bytesSent(int cnt) {
-        bytesSent.add(cnt);
-        bytesSent0.add(cnt);
+        if (cnt != 0) {
+            bytesSent.add(cnt);
+            bytesSent0.add(cnt);
+        }
 
         lastSndTime = U.currentTimeMillis();
     }

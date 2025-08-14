@@ -94,6 +94,13 @@ public interface GridNioSession {
     public boolean active();
 
     /**
+     * Returns number of pending messages.
+     *
+     * @return Number of pending messages.
+     */
+    public int messagesQueueSize();
+
+    /**
      * Returns time when last send was scheduled on this session.
      *
      * @return Last send schedule time.

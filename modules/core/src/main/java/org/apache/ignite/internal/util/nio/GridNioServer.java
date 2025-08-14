@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
@@ -59,7 +58,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
@@ -88,7 +86,6 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,7 +96,6 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATI
 import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
 
 /**
  * TCP NIO server. Due to asynchronous nature of connections processing
@@ -155,15 +151,7 @@ public class GridNioServer<T> {
 
     /** */
     public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
-        = "Total number of messages waiting to be sent over all communication connections";
-
-    /** */
-    public static final String MESSAGES_TO_NODE_QUEUE_SIZE_METRIC_NAME_PREFIX
-        = MetricUtils.metricName(OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME, "node");
-
-    /** */
-    public static final String MESSAGES_TO_NODE_QUEUE_SIZE_METRIC_DESC
-        = "Number of messages waiting to be sent to a certain remote node";
+        = "Total number of messages waiting to be sent over all connections";
 
     /** */
     public static final String RECEIVED_BYTES_METRIC_NAME = "receivedBytes";
@@ -818,17 +806,6 @@ public class GridNioServer<T> {
         impl.offerStateChange(fut);
 
         return fut;
-    }
-
-    /** */
-    private @Nullable LongAdderMetric messagesToNodeQueueSizeMetric(@Nullable MetricRegistryImpl mreg, UUID nodeId) {
-        if (mreg == null)
-            return null;
-
-        return mreg.longAdderMetric(
-            MetricUtils.metricName(MESSAGES_TO_NODE_QUEUE_SIZE_METRIC_NAME_PREFIX, nodeId.toString()),
-            MESSAGES_TO_NODE_QUEUE_SIZE_METRIC_DESC
-        );
     }
 
     /**
@@ -1876,11 +1853,6 @@ public class GridNioServer<T> {
             lsnr.onMessageSent(ses, (T)msg);
     }
 
-    /** */
-    public void onNodeLeft(UUID nodeId) {
-        mreg.remove(messagesToNodeQueueSizeMetric(mreg, nodeId).name());
-    }
-
     /**
      * Thread performing only read operations from the channel.
      */
@@ -2494,7 +2466,7 @@ public class GridNioServer<T> {
                         .append(", bytesRcvd0=").append(ses.bytesReceived0())
                         .append(", bytesSent=").append(ses.bytesSent())
                         .append(", bytesSent0=").append(ses.bytesSent0())
-                        .append(", opQueueSize=").append(ses.writeQueueSize());
+                        .append(", opQueueSize=").append(ses.messagesQueueSize());
 
                     if (!shortInfo) {
                         MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
@@ -2733,10 +2705,6 @@ public class GridNioServer<T> {
                     readBuf.order(order);
                 }
 
-                Map<Integer, ?> meta = fut.meta();
-
-                ConnectionKey connectionKey = meta == null ? null : (ConnectionKey)meta.get(CONN_IDX_META);
-
                 final GridSelectorNioSessionImpl ses = new GridSelectorNioSessionImpl(
                     log,
                     this,
@@ -2745,11 +2713,11 @@ public class GridNioServer<T> {
                     (InetSocketAddress)sockCh.getRemoteAddress(),
                     fut.accepted(),
                     sndQueueLimit,
+                    mreg,
                     writeBuf,
-                    readBuf,
-                    outboundMessagesQueueSizeMetric,
-                    connectionKey == null ? null : messagesToNodeQueueSizeMetric(mreg, connectionKey.nodeId())
-                );
+                    readBuf);
+
+                Map<Integer, ?> meta = fut.meta();
 
                 if (meta != null) {
                     for (Entry<Integer, ?> e : meta.entrySet())

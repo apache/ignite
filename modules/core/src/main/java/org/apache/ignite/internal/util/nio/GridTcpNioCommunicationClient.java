@@ -153,6 +153,11 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
+    @Override public int messagesQueueSize() {
+        return ses.messagesQueueSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTcpNioCommunicationClient.class, this, super.toString());
     }
