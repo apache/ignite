@@ -26,6 +26,7 @@ import org.apache.ignite.compatibility.persistence.IgnitePKIndexesMigrationToUnw
 import org.apache.ignite.compatibility.persistence.IndexTypesCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.InlineJavaObjectCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.MetaStorageCompatibilityTest;
+import org.apache.ignite.compatibility.persistence.MetricConfigurationCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.MigratingToWalV2SerializerWithCompactionTest;
 import org.apache.ignite.compatibility.persistence.MoveBinaryMetadataCompatibility;
 import org.apache.ignite.compatibility.persistence.PersistenceBasicCompatibilityTest;
@@ -50,7 +51,8 @@ import org.junit.runners.Suite;
     JavaThinCompatibilityStoragePathTest.class,
     IgnitePKIndexesMigrationToUnwrapPkTest.class,
     CompoundIndexCompatibilityTest.class,
-    SnapshotCompatibilityTest.class
+    SnapshotCompatibilityTest.class,
+    MetricConfigurationCompatibilityTest.class,
 })
 public class IgniteCompatibilityBasicTestSuite {
 }

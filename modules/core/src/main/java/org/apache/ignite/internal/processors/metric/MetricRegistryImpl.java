@@ -27,6 +27,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.metric.impl.AbstractIntervalMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanGauge;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
+import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -47,7 +49,7 @@ import org.apache.ignite.spi.metric.Metric;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metric.impl.HitRateMetric.DFLT_SIZE;
+import static org.apache.ignite.internal.processors.metric.impl.AbstractIntervalMetric.DFLT_SIZE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.customMetric;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -57,31 +59,35 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class MetricRegistryImpl implements MetricRegistry {
     /** Registry name. */
-    private String regName;
+    private final String regName;
 
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Registered metrics. */
     private final ConcurrentHashMap<String, Metric> metrics = new ConcurrentHashMap<>();
 
-    /** HitRate config provider. */
-    private final Function<String, Long> hitRateCfgProvider;
+    /** Interval metric config provider. */
+    private final Function<String, Long> intervalMetricCfgProvider;
 
     /** Histogram config provider. */
     private final Function<String, long[]> histogramCfgProvider;
 
     /**
      * @param regName Registry name.
-     * @param hitRateCfgProvider HitRate config provider.
+     * @param intervalMetricCfgProvider Interval metric config provider.
      * @param histogramCfgProvider Histogram config provider.
      * @param log Logger.
      */
-    public MetricRegistryImpl(String regName, Function<String, Long> hitRateCfgProvider,
-        Function<String, long[]> histogramCfgProvider, IgniteLogger log) {
+    public MetricRegistryImpl(
+        String regName,
+        Function<String, Long> intervalMetricCfgProvider,
+        Function<String, long[]> histogramCfgProvider,
+        IgniteLogger log
+    ) {
         this.regName = regName;
         this.log = log;
-        this.hitRateCfgProvider = hitRateCfgProvider;
+        this.intervalMetricCfgProvider = intervalMetricCfgProvider;
         this.histogramCfgProvider = histogramCfgProvider;
     }
 
@@ -235,6 +241,21 @@ public class MetricRegistryImpl implements MetricRegistry {
     }
 
     /**
+     * Creates and register metric for max value during certain time interval.
+     *
+     * It will accumulates approximate max value statistics.
+     * Calculates max value in last timeInterval milliseconds.
+     *
+     * @param timeInterval Time interval.
+     * @param size Array size for underlying calculations (buckets count).
+     * @return {@link MaxValueMetric}
+     * @see MaxValueMetric
+     */
+    public MaxValueMetric maxValueMetric(String name, @Nullable String desc, long timeInterval, int size) {
+        return addMetric(name, new MaxValueMetric(metricName(regName, name), desc, timeInterval, size));
+    }
+
+    /**
      * Creates and register named gauge.
      * Returned instance are thread safe.
      *
@@ -299,11 +320,14 @@ public class MetricRegistryImpl implements MetricRegistry {
             if (cfgBounds != null)
                 ((HistogramMetricImpl)metric).reset(cfgBounds);
         }
-        else if (metric instanceof HitRateMetric) {
-            Long cfgRateTimeInterval = hitRateCfgProvider.apply(metric.name());
+        else if (metric instanceof AbstractIntervalMetric) {
+            if (intervalMetricCfgProvider == null)
+                return;
 
-            if (cfgRateTimeInterval != null)
-                ((HitRateMetric)metric).reset(cfgRateTimeInterval, DFLT_SIZE);
+            Long cfgTimeInterval = intervalMetricCfgProvider.apply(metric.name());
+
+            if (cfgTimeInterval != null)
+                ((AbstractIntervalMetric)metric).reset(cfgTimeInterval, DFLT_SIZE);
         }
     }
 

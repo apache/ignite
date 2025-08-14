@@ -19,61 +19,67 @@ package org.apache.ignite.internal.processors.metric.impl;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Accumulates approximate hit rate statistics.
- * Calculates number of hits in last {@code rateTimeInterval} milliseconds.
+ * Accumulates approximate maximum value statistics.
+ * Calculates maximum value in last {@code timeInterval} milliseconds.
  *
  * @see AbstractIntervalMetric for implementation details.
  */
-public class HitRateMetric extends AbstractIntervalMetric {
+public class MaxValueMetric extends AbstractIntervalMetric {
     /**
      * @param name Name.
      * @param desc Description.
-     * @param rateTimeInterval Rate time interval in milliseconds.
-     * @param size Counters array size.
+     * @param timeInterval Time interval in milliseconds.
+     * @param size Values array size (number of buckets).
      */
-    public HitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
-        super(name, desc, rateTimeInterval, size);
+    public MaxValueMetric(String name, @Nullable String desc, long timeInterval, int size) {
+        super(name, desc, timeInterval, size);
     }
 
     /** {@inheritDoc} */
     @Override protected AbstractIntervalMetricImpl createImpl(long timeInterval, int size) {
-        return new HitRateMetricImpl(timeInterval, size);
+        return new MaxValueMetricImpl(timeInterval, size);
     }
 
     /**
-     * Adds x to the metric.
+     * Accumulate x value to the metric.
      *
-     * @param x Value to be added.
+     * @param x Value to be accumulate.
      */
-    public void add(long x) {
+    public void update(long x) {
         cntr.update(x);
-    }
-
-    /** Adds 1 to the metric. */
-    public void increment() {
-        add(1);
     }
 
     /**
      * Actual metric.
      */
-    private static class HitRateMetricImpl extends AbstractIntervalMetricImpl {
+    private static class MaxValueMetricImpl extends AbstractIntervalMetricImpl {
         /**
          * @param timeInterval Time interval.
          * @param size Buckets count.
          */
-        public HitRateMetricImpl(long timeInterval, int size) {
+        public MaxValueMetricImpl(long timeInterval, int size) {
             super(timeInterval, size);
         }
 
         /** {@inheritDoc} */
         @Override protected long accumulate(long res, long val) {
-            return res + val;
+            return Math.max(res, val);
         }
 
         /** {@inheritDoc} */
         @Override protected void accumulateBucket(int bucket, long val) {
-            taggedVals.addAndGet(bucket, val);
+            long oldVal;
+            long val0;
+
+            do {
+                oldVal = taggedVals.get(bucket);
+
+                val0 = (val & NO_TAG_MASK) | (oldVal & TAG_MASK);
+
+                if (val0 <= oldVal)
+                    return;
+            }
+            while (!taggedVals.compareAndSet(bucket, oldVal, val0));
         }
     }
 }

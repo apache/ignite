@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -34,6 +36,8 @@ import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
+import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -354,12 +358,88 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(0, metric.value());
 
-        assertEquals(rateTimeInterval, metric.rateTimeInterval());
+        assertEquals(rateTimeInterval, metric.timeInterval());
 
         metric.reset(rateTimeInterval * 2, 10);
 
-        assertEquals(rateTimeInterval * 2, metric.rateTimeInterval());
+        assertEquals(rateTimeInterval * 2, metric.timeInterval());
     }
+
+    /** */
+    @Test
+    public void testMaxValueMetric() {
+        try {
+            long timeInterval = 500;
+
+            MaxValueMetric metric = mreg.maxValueMetric("testMaxVal", null, timeInterval, 5);
+
+            assertEquals(0, metric.value());
+
+            long startTs = U.currentTimeMillis();
+
+            updateMaxValMetric(metric, startTs + 40, 5);
+            updateMaxValMetric(metric, startTs + 50, 10);
+            updateMaxValMetric(metric, startTs + 60, 5);
+
+            assertEquals(10, metric.value());
+
+            updateMaxValMetric(metric, startTs + 140, 10);
+            updateMaxValMetric(metric, startTs + 150, 20);
+            updateMaxValMetric(metric, startTs + 160, 10);
+
+            assertEquals(20, metric.value());
+
+            updateMaxValMetric(metric, startTs + 240, 10);
+            updateMaxValMetric(metric, startTs + 250, 15);
+            updateMaxValMetric(metric, startTs + 260, 10);
+
+            assertEquals(20, metric.value());
+
+            GridTestClockTimer.timeSupplier(() -> startTs + 650);
+            GridTestClockTimer.update();
+
+            assertEquals(15, metric.value());
+
+            GridTestClockTimer.timeSupplier(() -> startTs + 750);
+            GridTestClockTimer.update();
+
+            assertEquals(0, metric.value());
+        }
+        finally {
+            GridTestClockTimer.timeSupplier(GridTestClockTimer.DFLT_TIME_SUPPLIER);
+        }
+    }
+
+    /** */
+    @Test
+    public void testMaxValueMetricMultithreaded() throws Exception {
+        long timeInterval = 500;
+        long maxVal = 100;
+        AtomicInteger threadId = new AtomicInteger();
+
+        MaxValueMetric metric = mreg.maxValueMetric("testMaxVal", null, timeInterval, 500);
+
+        assertEquals(0, metric.value());
+
+        long startTs = U.currentTimeMillis();
+
+        GridTestUtils.runMultiThreaded(() -> {
+            int id = threadId.getAndIncrement();
+
+            while (U.currentTimeMillis() < startTs + timeInterval)
+                metric.update(id == 0 ? maxVal : ThreadLocalRandom.current().nextLong(maxVal));
+        }, 10, "metric-update");
+
+        assertEquals(maxVal, metric.value());
+    }
+
+    /** */
+    private void updateMaxValMetric(MaxValueMetric metric, long ts, long val) {
+        GridTestClockTimer.timeSupplier(() -> ts);
+        GridTestClockTimer.update();
+        metric.update(val);
+    }
+
 
     /** */
     @Test

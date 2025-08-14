@@ -83,6 +83,11 @@ public class MetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?
 
                     return null;
                 }
+                else if (arg instanceof MetricConfigureIntervalCommandArg) {
+                    mmgr.configureIntervalMetric(arg.name(), ((MetricConfigureIntervalCommandArg)arg).newTimeInterval());
+
+                    return null;
+                }
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
