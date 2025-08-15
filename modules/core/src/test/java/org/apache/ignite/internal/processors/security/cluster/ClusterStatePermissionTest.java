@@ -33,18 +33,11 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.junit.Test;
@@ -231,8 +224,6 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
             cause = ClientAuthorizationException.class;
             errMsg = "Client is not authorized to perform this operation [errMsg=" + errMsg;
         }
-        else if (Initiator.REMOTE_CONTROL == initiator)
-            cause = GridClientException.class;
 
         assertThrowsAnyCause(
             null,
@@ -275,28 +266,6 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
                 };
             }
 
-            case REMOTE_CONTROL: {
-                GridClientConfiguration cfg = new GridClientConfiguration();
-
-                cfg.setServers(asList("127.0.0.1:11211"));
-
-                cfg.setSecurityCredentialsProvider(
-                    new SecurityCredentialsBasicProvider(new SecurityCredentials("client", "")));
-
-                return new Consumer<ClusterState>() {
-                    @Override public void accept(ClusterState state) {
-                        try (GridClient gridClient = GridClientFactory.start(cfg)) {
-                            assert gridClient.connected();
-
-                            gridClient.state().state(state, true);
-                        }
-                        catch (GridClientException e) {
-                            throw new IgniteException(e.getMessage(), e);
-                        }
-                    }
-                };
-            }
-
             default:
                 throw new IllegalArgumentException("Unsupported operation initiator: " + initiator);
         }
@@ -326,14 +295,6 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
          *
          * @see ClientCluster#state(ClusterState)
          */
-        THIN_CLIENT,
-
-        /**
-         * Call from a remote control like control.sh of the REST API.
-         *
-         * @see GridClient
-         * @see GridRestCommand#CLUSTER_SET_STATE
-         */
-        REMOTE_CONTROL
+        THIN_CLIENT
     }
 }

@@ -188,7 +188,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -200,7 +199,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
-import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -236,6 +234,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -252,7 +251,6 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
 
 import static java.util.Objects.isNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_HOSTNAME_VERIFIER;
@@ -314,9 +312,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
     /** @see IgniteSystemProperties#IGNITE_MBEAN_APPEND_CLASS_LOADER_ID */
     public static final boolean DFLT_MBEAN_APPEND_CLASS_LOADER_ID = true;
-
-    /** {@code True} if {@code unsafe} should be used for array copy. */
-    private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
 
     /** All grid event names. */
     private static final Map<Integer, String> GRID_EVT_NAMES = new HashMap<>();
@@ -430,17 +425,8 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Supplier of network interfaces. Could be used for tests purposes, must not be changed in production code. */
     public static InterfaceSupplier INTERFACE_SUPPLIER = NetworkInterface::getNetworkInterfaces;
 
-    /** */
-    static volatile long curTimeMillis = System.currentTimeMillis();
-
-    /** Primitive class map. */
-    private static final Map<String, Class<?>> primitiveMap = new HashMap<>(16, .5f);
-
     /** Boxed class map. */
     private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
-
-    /** Class loader used to load Ignite. */
-    private static final ClassLoader gridClassLoader = IgniteUtils.class.getClassLoader();
 
     /** MAC OS invalid argument socket error message. */
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
@@ -458,15 +444,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Random is used to get random server node to authentication from client node. */
     private static final Random RND = new Random(System.currentTimeMillis());
 
-    /** Clock timer. */
-    private static Thread timer;
-
-    /** Grid counter. */
-    static int gridCnt;
-
-    /** Mutex. */
-    static final Object mux = new Object();
-
     /** Exception converters. */
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
         exceptionConverters;
@@ -477,10 +454,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** */
     private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddrAllHostNames;
 
-    /** */
-    private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
-        new ConcurrentHashMap<>();
-
     /** Object.hashCode() */
     private static Method hashCodeMtd;
 
@@ -489,16 +462,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
     /** Object.toString() */
     private static Method toStringMtd;
-
-    /** Empty local Ignite name. */
-    public static final String LOC_IGNITE_NAME_EMPTY = new String();
-
-    /** Local Ignite name thread local. */
-    private static final ThreadLocal<String> LOC_IGNITE_NAME = new ThreadLocal<String>() {
-        @Override protected String initialValue() {
-            return LOC_IGNITE_NAME_EMPTY;
-        }
-    };
 
     /** Ignite MBeans disabled flag. */
     public static boolean IGNITE_MBEANS_DISABLED =
@@ -620,16 +583,6 @@ public abstract class IgniteUtils extends CommonUtils {
         IgniteUtils.jvmImplName = jvmImplName;
 
         jvm32Bit = "32".equals(jvmArchDataModel);
-
-        primitiveMap.put("byte", byte.class);
-        primitiveMap.put("short", short.class);
-        primitiveMap.put("int", int.class);
-        primitiveMap.put("long", long.class);
-        primitiveMap.put("float", float.class);
-        primitiveMap.put("double", double.class);
-        primitiveMap.put("char", char.class);
-        primitiveMap.put("boolean", boolean.class);
-        primitiveMap.put("void", void.class);
 
         boxedClsMap.put(byte.class, Byte.class);
         boxedClsMap.put(short.class, Short.class);
@@ -934,13 +887,6 @@ public abstract class IgniteUtils extends CommonUtils {
             return (IgniteException)e.getCause();
 
         return new IgniteException(e.getMessage(), e);
-    }
-
-    /**
-     * @return System time approximated by 10 ms.
-     */
-    public static long currentTimeMillis() {
-        return curTimeMillis;
     }
 
     /**
@@ -1277,45 +1223,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
         for (LockInfo info : syncs)
             sb.a(NL).a("        ").a(info);
-    }
-
-    /**
-     * Gets class for the given name if it can be loaded or default given class.
-     *
-     * @param cls Class.
-     * @param dflt Default class to return.
-     * @return Class or default given class if it can't be found.
-     */
-    @Nullable public static Class<?> classForName(@Nullable String cls, @Nullable Class<?> dflt) {
-        return classForName(cls, dflt, false);
-    }
-
-    /**
-     * Gets class for the given name if it can be loaded or default given class.
-     *
-     * @param cls Class.
-     * @param dflt Default class to return.
-     * @param includePrimitiveTypes Whether class resolution should include primitive types
-     *                              (i.e. "int" will resolve to int.class if flag is set)
-     * @return Class or default given class if it can't be found.
-     */
-    @Nullable public static Class<?> classForName(
-        @Nullable String cls,
-        @Nullable Class<?> dflt,
-        boolean includePrimitiveTypes
-    ) {
-        Class<?> clazz;
-        if (cls == null)
-            clazz = dflt;
-        else if (!includePrimitiveTypes || cls.length() > 7 || (clazz = primitiveMap.get(cls)) == null) {
-            try {
-                clazz = Class.forName(cls);
-            }
-            catch (ClassNotFoundException ignore) {
-                clazz = dflt;
-            }
-        }
-        return clazz;
     }
 
     /**
@@ -2047,13 +1954,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * @return Class loader used to load Ignite itself.
-     */
-    public static ClassLoader gridClassLoader() {
-        return gridClassLoader;
-    }
-
-    /**
      * @return ClassLoader at IgniteConfiguration in case it is not null or
      * ClassLoader used to start Ignite.
      */
@@ -2070,19 +1970,6 @@ public abstract class IgniteUtils extends CommonUtils {
         assert cfg != null;
 
         return resolveClassLoader(ldr, cfg.getClassLoader());
-    }
-
-    /**
-     * @param ldr Custom class loader.
-     * @param cfgLdr Class loader from config.
-     * @return ClassLoader passed as param in case it is not null or cfgLdr  in case it is not null or ClassLoader used to start Ignite.
-     */
-    public static ClassLoader resolveClassLoader(@Nullable ClassLoader ldr, @Nullable ClassLoader cfgLdr) {
-        return (ldr != null && ldr != gridClassLoader)
-            ? ldr
-            : cfgLdr != null
-                ? cfgLdr
-                : gridClassLoader;
     }
 
     /**
@@ -2174,7 +2061,7 @@ public abstract class IgniteUtils extends CommonUtils {
         byte[] res = new byte[size];
         int position = 0;
         for (byte[] buf : bufs) {
-            arrayCopy(buf, 0, res, position, buf.length);
+            GridUnsafe.arrayCopy(buf, 0, res, position, buf.length);
             position += buf.length;
         }
 
@@ -2756,65 +2643,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
                     out.close();
                 }
-            }
-        }
-    }
-
-    /**
-     * Starts clock timer if grid is first.
-     */
-    public static void onGridStart() {
-        synchronized (mux) {
-            if (gridCnt == 0) {
-                assert timer == null;
-
-                timer = new Thread(new Runnable() {
-                    @SuppressWarnings({"BusyWait"})
-                    @Override public void run() {
-                        while (true) {
-                            curTimeMillis = System.currentTimeMillis();
-
-                            try {
-                                Thread.sleep(10);
-                            }
-                            catch (InterruptedException ignored) {
-                                break;
-                            }
-                        }
-                    }
-                }, "ignite-clock");
-
-                timer.setDaemon(true);
-
-                timer.setPriority(10);
-
-                timer.start();
-            }
-
-            ++gridCnt;
-        }
-    }
-
-    /**
-     * Stops clock timer if all nodes into JVM were stopped.
-     * @throws InterruptedException If interrupted.
-     */
-    public static void onGridStop() throws InterruptedException {
-        synchronized (mux) {
-            // Grid start may fail and onGridStart() does not get called.
-            if (gridCnt == 0)
-                return;
-
-            --gridCnt;
-
-            Thread timer0 = timer;
-
-            if (gridCnt == 0 && timer0 != null) {
-                timer = null;
-
-                timer0.interrupt();
-
-                timer0.join();
             }
         }
     }
@@ -4419,44 +4247,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Writes UUID to output stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
-     *
-     * @param out Output stream.
-     * @param uid UUID to write.
-     * @throws IOException If write failed.
-     */
-    public static void writeUuid(DataOutput out, UUID uid) throws IOException {
-        // Write null flag.
-        out.writeBoolean(uid == null);
-
-        if (uid != null) {
-            out.writeLong(uid.getMostSignificantBits());
-            out.writeLong(uid.getLeastSignificantBits());
-        }
-    }
-
-    /**
-     * Reads UUID from input stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
-     *
-     * @param in Input stream.
-     * @return Read UUID.
-     * @throws IOException If read failed.
-     */
-    @Nullable public static UUID readUuid(DataInput in) throws IOException {
-        // If UUID is not null.
-        if (!in.readBoolean()) {
-            long most = in.readLong();
-            long least = in.readLong();
-
-            return IgniteUuidCache.onIgniteUuidRead(new UUID(most, least));
-        }
-
-        return null;
-    }
-
-    /**
      * Writes {@link org.apache.ignite.lang.IgniteUuid} to output stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
@@ -5195,32 +4985,6 @@ public abstract class IgniteUtils extends CommonUtils {
             return ((GridPeerDeployAware)obj).classLoader();
 
         return detectClassLoader(obj.getClass());
-    }
-
-    /**
-     * Tests whether or not given class is loadable provided class loader.
-     *
-     * @param clsName Class name to test.
-     * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead.
-     *      If System class loader is not set - this method will return {@code false}.
-     * @return {@code True} if class is loadable, {@code false} otherwise.
-     */
-    public static boolean isLoadableBy(String clsName, @Nullable ClassLoader ldr) {
-        assert clsName != null;
-
-        if (ldr == null)
-            ldr = gridClassLoader;
-
-        String lambdaParent = lambdaEnclosingClassName(clsName);
-
-        try {
-            ldr.loadClass(lambdaParent == null ? clsName : lambdaParent);
-
-            return true;
-        }
-        catch (ClassNotFoundException ignore) {
-            return false;
-        }
     }
 
     /**
@@ -7043,7 +6807,7 @@ public abstract class IgniteUtils extends CommonUtils {
      * @throws ClassNotFoundException If class not found.
      */
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
-        return forName(clsName, ldr, null, GridBinaryMarshaller.USE_CACHE.get());
+        return forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
     }
 
     /**
@@ -7059,106 +6823,7 @@ public abstract class IgniteUtils extends CommonUtils {
         @Nullable ClassLoader ldr,
         IgnitePredicate<String> clsFilter
     ) throws ClassNotFoundException {
-        return forName(clsName, ldr, clsFilter, GridBinaryMarshaller.USE_CACHE.get());
-    }
-
-    /**
-     * Gets class for provided name. Accepts primitive types names.
-     *
-     * @param clsName Class name.
-     * @param ldr Class loader.
-     * @param useCache If true class loader and result should be cached internally, false otherwise.
-     * @return Class.
-     * @throws ClassNotFoundException If class not found.
-     */
-    public static Class<?> forName(
-        String clsName,
-        @Nullable ClassLoader ldr,
-        IgnitePredicate<String> clsFilter,
-        boolean useCache
-    ) throws ClassNotFoundException {
-        assert clsName != null;
-
-        Class<?> cls = primitiveMap.get(clsName);
-
-        if (cls != null)
-            return cls;
-
-        if (ldr != null) {
-            if (ldr instanceof ClassCache)
-                return ((ClassCache)ldr).getFromCache(clsName);
-            else if (!useCache) {
-                cls = Class.forName(clsName, true, ldr);
-
-                return cls;
-            }
-        }
-        else
-            ldr = gridClassLoader;
-
-        if (!useCache) {
-            cls = Class.forName(clsName, true, ldr);
-
-            return cls;
-        }
-
-        ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
-
-        if (ldrMap == null) {
-            ConcurrentMap<String, Class> old = classCache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap<>());
-
-            if (old != null)
-                ldrMap = old;
-        }
-
-        cls = ldrMap.get(clsName);
-
-        if (cls == null) {
-            if (clsFilter != null && !clsFilter.apply(clsName))
-                throw new ClassNotFoundException("Deserialization of class " + clsName + " is disallowed.");
-
-            // Avoid class caching inside Class.forName
-            if (ldr instanceof CacheClassLoaderMarker)
-                cls = ldr.loadClass(clsName);
-            else
-                cls = Class.forName(clsName, true, ldr);
-
-            Class old = ldrMap.putIfAbsent(clsName, cls);
-
-            if (old != null)
-                cls = old;
-        }
-
-        return cls;
-    }
-
-    /**
-     * Clears class associated with provided class loader from class cache.
-     *
-     * @param ldr Class loader.
-     * @param clsName Class name of clearing class.
-     */
-    public static void clearClassFromClassCache(ClassLoader ldr, String clsName) {
-        ConcurrentMap<String, Class> map = classCache.get(ldr);
-
-        if (map != null)
-            map.remove(clsName);
-    }
-
-    /**
-     * Clears class cache for provided loader.
-     *
-     * @param ldr Class loader.
-     */
-    public static void clearClassCache(ClassLoader ldr) {
-        classCache.remove(ldr);
-    }
-
-    /**
-     * Completely clears class cache.
-     */
-    public static void clearClassCache() {
-        classCache.clear();
+        return forName(clsName, ldr, clsFilter, Marshallers.USE_CACHE.get());
     }
 
     /**
@@ -7237,47 +6902,6 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     public static List<String> jvmArgs() {
         return ManagementFactory.getRuntimeMXBean().getInputArguments();
-    }
-
-    /**
-     * As long as array copying uses JVM-private API, which is not guaranteed
-     * to be available on all JVM, this method should be called to ensure
-     * logic could work properly.
-     *
-     * @return {@code True} if unsafe copying can work on the current JVM or
-     *      {@code false} if it can't.
-     */
-    @SuppressWarnings("TypeParameterExtendsFinalClass")
-    private static boolean unsafeByteArrayCopyAvailable() {
-        try {
-            Class<? extends Unsafe> unsafeCls = Unsafe.class;
-
-            unsafeCls.getMethod("copyMemory", Object.class, long.class, Object.class, long.class, long.class);
-
-            return true;
-        }
-        catch (Exception ignored) {
-            return false;
-        }
-    }
-
-    /**
-     * @param src Buffer to copy from (length included).
-     * @param off Offset in source buffer.
-     * @param resBuf Result buffer.
-     * @param resOff Result offset.
-     * @param len Length.
-     * @return Number of bytes overwritten in {@code bytes} array.
-     */
-    public static int arrayCopy(byte[] src, int off, byte[] resBuf, int resOff, int len) {
-        assert resBuf.length >= resOff + len;
-
-        if (UNSAFE_BYTE_ARR_CP)
-            GridUnsafe.copyMemory(src, GridUnsafe.BYTE_ARR_OFF + off, resBuf, GridUnsafe.BYTE_ARR_OFF + resOff, len);
-        else
-            System.arraycopy(src, off, resBuf, resOff, len);
-
-        return resOff + len;
     }
 
     /**
@@ -7808,23 +7432,6 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         return e;
-    }
-
-    /**
-     * Extracts full name of enclosing class from JDK8 lambda class name.
-     *
-     * @param clsName JDK8 lambda class name.
-     * @return Full name of enclosing class for JDK8 lambda class name or
-     *      {@code null} if passed in name is not related to lambda.
-     */
-    @Nullable public static String lambdaEnclosingClassName(String clsName) {
-        int idx0 = clsName.indexOf("$$Lambda$"); // Java 8+
-        int idx1 = clsName.indexOf("$$Lambda/"); // Java 21+
-
-        if (idx0 == idx1)
-            return null;
-
-        return clsName.substring(0, idx0 >= 0 ? idx0 : idx1);
     }
 
     /**
@@ -8506,54 +8113,6 @@ public abstract class IgniteUtils extends CommonUtils {
         assert ctx != null;
 
         return marshal(ctx.marshaller(), obj);
-    }
-
-    /**
-     * Get current Ignite name.
-     *
-     * @return Current Ignite name.
-     */
-    @Nullable public static String getCurrentIgniteName() {
-        return LOC_IGNITE_NAME.get();
-    }
-
-    /**
-     * Check if current Ignite name is set.
-     *
-     * @param name Name to check.
-     * @return {@code True} if set.
-     */
-    @SuppressWarnings("StringEquality")
-    public static boolean isCurrentIgniteNameSet(@Nullable String name) {
-        return name != LOC_IGNITE_NAME_EMPTY;
-    }
-
-    /**
-     * Set current Ignite name.
-     *
-     * @param newName New name.
-     * @return Old name.
-     */
-    @SuppressWarnings("StringEquality")
-    @Nullable public static String setCurrentIgniteName(@Nullable String newName) {
-        String oldName = LOC_IGNITE_NAME.get();
-
-        if (oldName != newName)
-            LOC_IGNITE_NAME.set(newName);
-
-        return oldName;
-    }
-
-    /**
-     * Restore old Ignite name.
-     *
-     * @param oldName Old name.
-     * @param curName Current name.
-     */
-    @SuppressWarnings("StringEquality")
-    public static void restoreOldIgniteName(@Nullable String oldName, @Nullable String curName) {
-        if (oldName != curName)
-            LOC_IGNITE_NAME.set(oldName);
     }
 
     /**
