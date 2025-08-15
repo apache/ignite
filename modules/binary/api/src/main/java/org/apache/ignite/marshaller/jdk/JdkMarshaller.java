@@ -15,30 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.marshaller.jdk;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.Marshallers;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Base externalizable test class.
+ * Implementation of {@link org.apache.ignite.marshaller.Marshaller} based on JDK serialization mechanism.
  */
-public class IgniteExternalizableAbstractTest extends GridCommonAbstractTest {
-    /**
-     * @return Marshallers.
-     */
-    protected List<Marshaller> getMarshallers() throws IgniteCheckedException {
-        List<Marshaller> marshallers = new ArrayList<>();
-
-        BinaryMarshaller bin = createStandaloneBinaryMarshaller();
-
-        marshallers.add(Marshallers.jdk());
-        marshallers.add(bin);
-
-        return marshallers;
-    }
+public interface JdkMarshaller extends Marshaller {
 }

@@ -71,6 +71,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -727,7 +728,7 @@ public class BinaryContext {
         Class cls;
 
         try {
-            if (GridBinaryMarshaller.USE_CACHE.get()) {
+            if (Marshallers.USE_CACHE.get()) {
                 cls = marshCtx.getClass(typeId, ldr);
 
                 desc = descByCls.get(cls);
@@ -823,7 +824,7 @@ public class BinaryContext {
         else {
             BinaryClassDescriptor regDesc = desc.makeRegistered();
 
-            if (GridBinaryMarshaller.USE_CACHE.get()) {
+            if (Marshallers.USE_CACHE.get()) {
                 BinaryClassDescriptor old = descByCls.putIfAbsent(desc.describedClass(), regDesc);
 
                 if (old != null)

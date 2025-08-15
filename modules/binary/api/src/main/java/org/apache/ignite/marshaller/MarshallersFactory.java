@@ -15,30 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.marshaller;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.Marshallers;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import java.util.ServiceLoader;
+import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Base externalizable test class.
+ * Marshallers factory.
+ * Implementation loaded via {@link ServiceLoader} mechanism.
+ *
+ * @see CommonUtils#loadService(Class)
+ * @see JdkMarshaller
  */
-public class IgniteExternalizableAbstractTest extends GridCommonAbstractTest {
+public interface MarshallersFactory {
+    /** @return Default instance of {@link JdkMarshaller}. */
+    public JdkMarshaller jdk();
+
     /**
-     * @return Marshallers.
+     * @param clsFilter Class filter.
+     * @return Filtered instance of {@link JdkMarshaller}.
      */
-    protected List<Marshaller> getMarshallers() throws IgniteCheckedException {
-        List<Marshaller> marshallers = new ArrayList<>();
-
-        BinaryMarshaller bin = createStandaloneBinaryMarshaller();
-
-        marshallers.add(Marshallers.jdk());
-        marshallers.add(bin);
-
-        return marshallers;
-    }
+    public JdkMarshaller jdk(@Nullable IgnitePredicate<String> clsFilter);
 }

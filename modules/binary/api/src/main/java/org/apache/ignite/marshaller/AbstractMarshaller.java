@@ -17,18 +17,14 @@
 
 package org.apache.ignite.marshaller;
 
-import org.apache.ignite.internal.util.GridByteArrayList;
-import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
-import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
-
 /**
  * Base class for marshallers. Provides default implementations of methods
- * that work with byte array or {@link GridByteArrayList}. These implementations
- * use {@link GridByteArrayInputStream} or {@link GridByteArrayOutputStream}
+ * that work with byte array or {@code GridByteArrayList}. These implementations
+ * use {@code GridByteArrayInputStream} or {@code GridByteArrayOutputStream}
  * to marshal and unmarshal objects.
  */
 public abstract class AbstractMarshaller implements Marshaller {
-    /** Default initial buffer size for the {@link GridByteArrayOutputStream}. */
+    /** Default initial buffer size for the {@code GridByteArrayOutputStream}. */
     public static final int DFLT_BUFFER_SIZE = 512;
 
     /** Context. */

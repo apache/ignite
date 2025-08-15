@@ -45,12 +45,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.Marshallers;
 
 import static java.lang.reflect.Modifier.isFinal;
 import static java.lang.reflect.Modifier.isPrivate;
@@ -725,7 +724,7 @@ class OptimizedClassDescriptor {
             case OBJ_ARR:
                 OptimizedClassDescriptor compDesc = OptimizedMarshallerUtils.classDescriptor(clsMap,
                     obj.getClass().getComponentType(),
-                    GridBinaryMarshaller.USE_CACHE.get(),
+                    Marshallers.USE_CACHE.get(),
                     ctx,
                     mapper);
 
@@ -787,7 +786,7 @@ class OptimizedClassDescriptor {
 
             case CLS:
                 OptimizedClassDescriptor clsDesc = OptimizedMarshallerUtils.classDescriptor(
-                    clsMap, (Class<?>)obj, GridBinaryMarshaller.USE_CACHE.get(), ctx, mapper);
+                    clsMap, (Class<?>)obj, Marshallers.USE_CACHE.get(), ctx, mapper);
 
                 clsDesc.writeTypeData(out);
 
@@ -798,7 +797,7 @@ class OptimizedClassDescriptor {
 
                 for (Class<?> intf : proxyIntfs) {
                     OptimizedClassDescriptor intfDesc = OptimizedMarshallerUtils.classDescriptor(
-                        clsMap, intf, GridBinaryMarshaller.USE_CACHE.get(), ctx, mapper);
+                        clsMap, intf, Marshallers.USE_CACHE.get(), ctx, mapper);
 
                     intfDesc.writeTypeData(out);
                 }
