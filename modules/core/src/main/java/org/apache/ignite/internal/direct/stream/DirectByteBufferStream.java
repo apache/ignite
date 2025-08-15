@@ -40,6 +40,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+import static org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl.DEFAULT_SERIALIZER;
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
 import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
@@ -761,7 +762,8 @@ public class DirectByteBufferStream {
                 try {
                     writer.beforeInnerMessageWrite();
 
-                    lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, buf, writer);
+                    lastFinished = DEFAULT_SERIALIZER.writeTo(msg, buf, writer);
+//                    lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, buf, writer);
                 }
                 finally {
                     writer.afterInnerMessageWrite(lastFinished);
@@ -1336,7 +1338,8 @@ public class DirectByteBufferStream {
             try {
                 reader.beforeInnerMessageRead();
 
-                lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, buf, reader);
+                lastFinished = DEFAULT_SERIALIZER.readFrom(msg, buf, reader);
+//                lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, buf, reader);
             }
             finally {
                 reader.afterInnerMessageRead(lastFinished);

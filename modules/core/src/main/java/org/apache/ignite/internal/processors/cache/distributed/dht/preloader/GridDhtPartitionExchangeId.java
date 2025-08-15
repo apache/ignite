@@ -21,15 +21,19 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.codegen.GridDhtPartitionExchangeIdSerializer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -59,6 +63,9 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
 
     /** */
     private DiscoveryEvent discoEvt;
+
+    /** */
+    private static final GridDhtPartitionExchangeIdSerializer serializer = new GridDhtPartitionExchangeIdSerializer();
 
     /**
      * @param nodeId Node ID.
@@ -190,6 +197,16 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
      */
     public boolean isLeft() {
         return evt == EVT_NODE_LEFT || evt == EVT_NODE_FAILED;
+    }
+
+    /** */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        return serializer.writeTo(this, buf, writer);
+    }
+
+    /** */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        return serializer.readFrom(this, buf, reader);
     }
 
     /** {@inheritDoc} */

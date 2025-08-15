@@ -16,9 +16,13 @@
  */
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.codegen.LatchAckMessageSerializer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Message is used to send acks for {@link Latch} instances management.
@@ -35,6 +39,9 @@ public class LatchAckMessage implements Message {
     /** Flag indicates that ack is final. */
     @Order(2)
     private boolean isFinal;
+
+    /** */
+    private static final LatchAckMessageSerializer serializer = new LatchAckMessageSerializer();
 
     /**
      * Constructor.
@@ -100,6 +107,16 @@ public class LatchAckMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 135;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        return serializer.writeTo(this, buf, writer);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        return serializer.readFrom(this, buf, reader);
     }
 
     /** {@inheritDoc} */
