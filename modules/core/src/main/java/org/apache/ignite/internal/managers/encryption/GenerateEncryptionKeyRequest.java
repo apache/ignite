@@ -41,9 +41,9 @@ public class GenerateEncryptionKeyRequest implements Message {
     /**
      * @param keyCnt Count of encryption key to generate.
      */
-    public GenerateEncryptionKeyRequest(IgniteUuid id, int keyCnt) {
-        this.id = id;
+    public GenerateEncryptionKeyRequest(int keyCnt) {
         this.keyCnt = keyCnt;
+        id = IgniteUuid.randomUuid();
     }
 
     /**
