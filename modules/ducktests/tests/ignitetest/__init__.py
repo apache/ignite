@@ -19,4 +19,4 @@
 # due to python version naming restrictions, which are enforced by python packaging tools
 # (see  https://www.python.org/dev/peps/pep-0440/)
 #
-__version__ = '17.6.0.0-beta2'
+__version__ = '17.6.0.0'
