@@ -288,7 +288,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         excluded.add("indexing");
 
         // Exclude all modules necessary to compile the current version of core module to avoid conflicts with previous versions.
-        excluded.addAll(Set.of("binary", "codegen2", "commons", "unsafe"));
+        excluded.addAll(Set.of("binary", "commons", "unsafe"));
 
         return excluded;
     }
