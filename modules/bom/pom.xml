@@ -23,7 +23,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.sbt.ignite</groupId>
+        <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
         <version>${revision}</version>
         <relativePath>../../parent/pom.xml</relativePath>

@@ -44,7 +44,7 @@
         </repository>
     </repositories>
 
-    <groupId>com.sbt.ignite</groupId>
+    <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-examples</artifactId>
     <version>to_be_replaced_by_ignite_version</version>
 
