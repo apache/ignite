@@ -100,10 +100,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
         if (closed())
             throw new IgniteCheckedException("Client was closed: " + this);
 
-        GridNioFuture<?> fut = ses.send(data);
-
-        if (fut.isDone())
-            fut.get();
+        ses.send(data);
     }
 
     /** {@inheritDoc} */
@@ -143,6 +140,16 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
         // Session can be used for receiving and sending.
         return Math.min(Math.min(now - ses.lastReceiveTime(), now - ses.lastSendScheduleTime()),
             now - ses.lastSendTime());
+    }
+
+    /** {@inheritDoc} */
+    @Override public long creationTime() {
+        return ses.createTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int messagesQueueSize() {
+        return ses.messagesQueueSize();
     }
 
     /** {@inheritDoc} */

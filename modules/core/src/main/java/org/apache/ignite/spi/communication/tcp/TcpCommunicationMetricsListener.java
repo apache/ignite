@@ -37,6 +37,7 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.IgniteSpiContext;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -148,7 +149,8 @@ public class TcpCommunicationMetricsListener {
 
         spiCtx.addMetricRegistryCreationListener(mreg -> {
             // Metrics for the specific nodes.
-            if (!mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR))
+            if (!mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR)
+                || mreg.name().startsWith(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME))
                 return;
 
             ((MetricRegistryImpl)mreg).longAdderMetric(

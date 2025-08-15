@@ -597,7 +597,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         }
 
         if (cfg.connectionsPerNode() > 1)
-            connPlc = new RoundRobinConnectionPolicy(cfg);
+            connPlc = new RoundRobinConnectionPolicy(cfg.connectionsPerNode());
         else
             connPlc = new FirstConnectionPolicy();
 
@@ -612,7 +612,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             connectGate,
             failureProcSupplier,
             attributeNames,
-            metricsLsnr,
             nioSrvWrapper,
             ctxInitLatch,
             client,
@@ -676,15 +675,14 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             cfg,
             attributeNames,
             log,
-            metricsLsnr,
             locNodeSupplier,
             nodeGetter,
-            null,
             getWorkersRegistry(ignite),
             this,
             stateProvider,
             nioSrvWrapper,
-            getName()
+            getName(),
+            ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().metric() : null
         ));
 
         this.srvLsnr.setClientPool(clientPool);
@@ -803,7 +801,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         );
 
         srvLsnr.metricsListener(metricsLsnr);
-        clientPool.metricsListener(metricsLsnr);
         ((CommunicationDiscoveryEventListener)discoLsnr).metricsListener(metricsLsnr);
 
         ctxInitLatch.countDown();

@@ -69,11 +69,25 @@ public interface GridCommunicationClient {
     public void release();
 
     /**
-     * Gets idle time of this client.
+     * Provides idle time of this client.
      *
      * @return Idle time of this client.
      */
     public long getIdleTime();
+
+    /**
+     * Provides creation time of this client.
+     *
+     * @return Creation time of this client.
+     */
+    public long creationTime();
+
+    /**
+     * Provides number of pending messages.
+     *
+     * @return Number of pending messages.
+     */
+    public int messagesQueueSize();
 
     /**
      * @param data Data to send.
