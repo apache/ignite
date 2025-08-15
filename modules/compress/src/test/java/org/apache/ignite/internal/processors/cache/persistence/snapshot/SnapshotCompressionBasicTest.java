@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -152,6 +153,10 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
             return;
 
         stopAllGrids();
+
+        log.info("************** CLEANING PERSISTENCE DIR AFTER TEST **************");
+
+        cleanPersistenceDir(true);
     }
 
     /** {@inheritDoc} */
@@ -164,6 +169,10 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testRestoreFullSnapshot() throws Exception {
+        log.info("************** CLEANING PERSISTENCE DIR INSIDE TEST **************");
+
+        cleanPersistenceDir(true);
+
         testRestoreFullSnapshot(DFLT_GRIDS_CNT);
     }
 
@@ -290,10 +299,22 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
                 NodeFileTree ft = nodeFileTree(dir.toString());
 
+                log.info("************** START");
+                log.info("************** BEFORE");
+                log.info("Dir: " + dir);
+                log.info("Dir db path: " + ft.db().getPath());
+                logDirectoryContent(ft.db(), "", 0, null);
+                log.info("**************");
+
                 U.delete(ft.checkpoint());
                 U.delete(ft.db());
                 U.delete(ft.marshaller());
                 U.delete(ft.binaryMetaRoot());
+
+                log.info("************** AFTER:" + Arrays.toString(ft.db().listFiles()));
+                log.info("Dir db path: " + ft.db().getPath());
+                logDirectoryContent(ft.db(), "", 0, null);
+                log.info("**************");
             }
         }
         catch (IOException e) {
@@ -496,6 +517,55 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(name);
+        }
+    }
+
+    /** */
+    private static void logDirectoryContent(File curDir, String prevSpaces, int level, Map<Integer, Boolean> tree) {
+        Map<Integer, Boolean> treeLevels = new HashMap<>();
+        if (tree != null) treeLevels = tree;
+        treeLevels.put(level, true);
+        ++level;
+        log.info(prevSpaces + "Directory: " + curDir.getName());
+        String spaces = "";
+        for (int i = 0; i < level; i++) {
+            if (i == level - 1) {
+                spaces += "├── ";
+            }
+            else {
+                if (treeLevels.get(i)) spaces += "│   ";
+                else spaces += "    ";
+            }
+        }
+        File[] filesList = curDir.listFiles();
+        try {
+            if (filesList == null) {
+                log.info("Directory: " + curDir.getPath() + " is empty");
+                return;
+            }
+            for (int i = 0; i < filesList.length; i++) {
+                File f = filesList[i];
+                if (f.isDirectory()) {
+                    if (i == filesList.length - 1) {
+                        String closeSpaces = spaces.substring(0, spaces.length() - 4);
+                        closeSpaces += "└── ";
+                        treeLevels.put(level - 1, false);
+                        logDirectoryContent(f, closeSpaces, level, treeLevels);
+                        continue;
+                    }
+                    logDirectoryContent(f, spaces, level, treeLevels);
+                    continue;
+                }
+                if (i == filesList.length - 1) {
+                    spaces = spaces.substring(0, spaces.length() - 4);
+                    spaces += "└── ";
+                }
+                log.info(spaces + "File:      " + f.getName());
+
+            }
+        }
+        catch (Exception e) {
+            log.info("========================");
         }
     }
 }
