@@ -45,8 +45,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.Marshallers;
@@ -89,7 +89,7 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.STR;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.UUID;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.computeSerialVersionUid;
-import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
+import static org.apache.ignite.internal.util.CommonUtils.isLambda;
 
 /**
  * Class descriptor.
@@ -1000,7 +1000,7 @@ class OptimizedClassDescriptor {
         ClassFields(List<FieldInfo> fields) {
             this.fields = fields;
 
-            nameToIndex = U.newHashMap(fields.size());
+            nameToIndex = CommonUtils.newHashMap(fields.size());
 
             for (int i = 0; i < fields.size(); ++i)
                 nameToIndex.put(fields.get(i).name(), i);
