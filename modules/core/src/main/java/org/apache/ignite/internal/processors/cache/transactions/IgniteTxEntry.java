@@ -58,8 +58,11 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
  * Transaction entry. Note that it is essential that this class does not override
@@ -237,7 +240,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param ctx Cache registry.
      * @param tx Owning transaction.
      * @param op Operation.
-     * @param val Value.
+     * @param cacheVal Value.
      * @param ttl Time to live.
      * @param conflictExpireTime DR expire time.
      * @param entry Cache entry.
@@ -247,7 +250,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
         IgniteInternalTx tx,
         GridCacheOperation op,
-        CacheObject val,
+        CacheObject cacheVal,
         long ttl,
         long conflictExpireTime,
         GridCacheEntryEx entry,
@@ -262,7 +265,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         this.ctx = ctx;
         this.tx = tx;
-        this.val.value(op, val, false, false);
+
+        updateValue(op, cacheVal, false, false);
+
         this.entry = entry;
         this.ttl = ttl;
         this.conflictExpireTime = conflictExpireTime;
@@ -282,7 +287,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param ctx Cache registry.
      * @param tx Owning transaction.
      * @param op Operation.
-     * @param val Value.
+     * @param cacheVal Value.
      * @param entryProcessor Entry processor.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param ttl Time to live.
@@ -295,7 +300,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
         IgniteInternalTx tx,
         GridCacheOperation op,
-        CacheObject val,
+        CacheObject cacheVal,
         EntryProcessor<Object, Object, Object> entryProcessor,
         Object[] invokeArgs,
         long ttl,
@@ -313,7 +318,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         this.ctx = ctx;
         this.tx = tx;
-        this.val.value(op, val, false, false);
+
+        updateValue(op, cacheVal, false, false);
+
         this.entry = entry;
         this.ttl = ttl;
         this.filters = filters;
@@ -373,7 +380,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         cp.val = new TxEntryValueHolder();
 
         cp.filters = filters;
-        cp.val.value(val.op(), val.value(), val.hasWriteValue(), val.hasReadValue());
+
+        cp.updateValue(val.op(), val.value(), val.hasWriteValue(), val.hasReadValue());
+
         cp.entryProcessorsCol = entryProcessorsCol;
         cp.ttl = ttl;
         cp.conflictExpireTime = conflictExpireTime;
@@ -466,7 +475,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param hasWriteVal Has write value flag.
      */
     void setAndMarkValid(GridCacheOperation op, CacheObject val, boolean hasWriteVal, boolean hasReadVal) {
-        this.val.value(op, val, hasWriteVal, hasReadVal);
+        updateValue(op, val, hasWriteVal, hasReadVal);
 
         markValid();
     }
@@ -476,7 +485,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * to further peek operations.
      */
     public void markValid() {
-        prevVal.value(val.op(), val.value(), val.hasWriteValue(), val.hasReadValue());
+        updateValue(prevVal, val.op(), val.value(), val.hasWriteValue(), val.hasReadValue());
     }
 
     /**
@@ -640,13 +649,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
-     * @param oldVal Old value.
+     * @param oldCacheVal Old value.
      */
-    public void oldValue(CacheObject oldVal) {
-        if (this.oldVal == null)
-            this.oldVal = new TxEntryValueHolder();
+    public void oldValue(CacheObject oldCacheVal) {
+        if (oldVal == null)
+            oldVal = new TxEntryValueHolder();
 
-        this.oldVal.value(op(), oldVal, true, true);
+        updateValue(oldVal, op(), oldCacheVal, true, true);
     }
 
     /**
@@ -699,6 +708,34 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
+     * @param op Cache operation.
+     * @param cacheVal Cache value.
+     * @param hasWriteVal Write value presence flag.
+     * @param hasReadVal Read value presence flag.
+     */
+    public void updateValue(GridCacheOperation op, CacheObject cacheVal, boolean hasWriteVal, boolean hasReadVal) {
+        updateValue(val, op, cacheVal, hasWriteVal, hasReadVal);
+    }
+
+    /**
+     * @param hld Tx entry value holder.
+     * @param op Cache operation.
+     * @param cacheVal Cache value.
+     * @param hasWriteVal Write value presence flag.
+     * @param hasReadVal Read value presence flag.
+     */
+    public void updateValue(TxEntryValueHolder hld, GridCacheOperation op, CacheObject cacheVal, boolean hasWriteVal, boolean hasReadVal) {
+        if (hasReadVal && hld.hasWriteValue())
+            return;
+
+        hld.op(op);
+        hld.value(cacheVal);
+
+        hld.hasWriteValue(hasWriteVal || op == CREATE || op == UPDATE || op == DELETE);
+        hld.hasReadValue(hasReadVal || op == READ);
+    }
+
+    /**
      * @return Time to live.
      */
     public long ttl() {
@@ -727,21 +764,21 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
-     * @param val Entry value.
+     * @param cacheVal Entry value.
      * @param writeVal Write value flag.
      * @param readVal Read value flag.
      */
-    public void value(@Nullable CacheObject val, boolean writeVal, boolean readVal) {
-        this.val.value(this.val.op(), val, writeVal, readVal);
+    public void value(@Nullable CacheObject cacheVal, boolean writeVal, boolean readVal) {
+        updateValue(val.op(), cacheVal, writeVal, readVal);
     }
 
     /**
      * Sets read value if this tx entry does not have write value yet.
      *
-     * @param val Read value to set.
+     * @param cacheVal Read value to set.
      */
-    public void readValue(@Nullable CacheObject val) {
-        this.val.value(this.val.op(), val, false, true);
+    public void readValue(@Nullable CacheObject cacheVal) {
+        updateValue(val.op(), cacheVal, false, true);
     }
 
     /**
