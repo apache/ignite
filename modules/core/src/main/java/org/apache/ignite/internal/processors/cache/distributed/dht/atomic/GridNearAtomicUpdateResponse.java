@@ -23,8 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -49,42 +48,46 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Node ID this reply should be sent to. */
-    @GridDirectTransient
     private UUID nodeId;
 
     /** Future ID. */
+    @Order(value = 4, method = "futureId")
     private long futId;
 
     /** */
+    @Order(value = 5, method = "errors")
     private UpdateErrors errs;
 
     /** Return value. */
     @GridToStringInclude
+    @Order(value = 6, method = "returnValue")
     private GridCacheReturn ret;
 
     /** */
+    @Order(value = 7, method = "remapTopologyVersion")
     private AffinityTopologyVersion remapTopVer;
 
     /** Data for near cache update. */
+    @Order(8)
     private NearCacheUpdates nearUpdates;
 
     /** Partition ID. */
-    private int partId = -1;
+    @Order(value = 9, method = "partition")
+    private int partId;
 
     /** */
-    @GridDirectCollection(UUID.class)
     @GridToStringInclude
+    @Order(value = 10, method = "mapping")
     private List<UUID> mapping;
 
     /** */
-    @GridDirectTransient
     private boolean nodeLeft;
 
     /**
      * Empty constructor.
      */
     public GridNearAtomicUpdateResponse() {
-        // No-op.
+        partId = -1;
     }
 
     /**
@@ -157,6 +160,27 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     }
 
     /**
+     * @param futId New future ID.
+     */
+    public void futureId(long futId) {
+        this.futId = futId;
+    }
+
+    /**
+     * @return Errs.
+     */
+    public UpdateErrors errors() {
+        return errs;
+    }
+
+    /**
+     * @param errs New errs.
+     */
+    public void errors(UpdateErrors errs) {
+        this.errs = errs;
+    }
+
+    /**
      * Sets update error.
      *
      * @param err Error.
@@ -197,14 +221,14 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     /**
      * @param remapTopVer Topology version to remap update.
      */
-    void remapTopologyVersion(AffinityTopologyVersion remapTopVer) {
+    public void remapTopologyVersion(AffinityTopologyVersion remapTopVer) {
         this.remapTopVer = remapTopVer;
     }
 
     /**
      * @return Topology version if update should be remapped.
      */
-    @Nullable AffinityTopologyVersion remapTopologyVersion() {
+    @Nullable public AffinityTopologyVersion remapTopologyVersion() {
         return remapTopVer;
     }
 
@@ -369,9 +393,30 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
             ret.finishUnmarshal(cctx, ldr);
     }
 
+    /**
+     * @return Data for near cache update.
+     */
+    public NearCacheUpdates nearUpdates() {
+        return nearUpdates;
+    }
+
+    /**
+     * @param nearUpdates New data for near cache update.
+     */
+    public void nearUpdates(NearCacheUpdates nearUpdates) {
+        this.nearUpdates = nearUpdates;
+    }
+
     /** {@inheritDoc} */
     @Override public int partition() {
         return partId;
+    }
+
+    /**
+     * @param partId New partition ID.
+     */
+    public void partition(int partId) {
+        this.partId = partId;
     }
 
     /** {@inheritDoc} */
