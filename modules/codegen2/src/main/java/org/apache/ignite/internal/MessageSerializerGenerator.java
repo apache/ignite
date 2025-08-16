@@ -690,11 +690,6 @@ class MessageSerializerGenerator {
     }
 
     /** */
-    private TypeMirror erasedType(String clazz) {
-        return env.getTypeUtils().erasure(type(clazz));
-    }
-
-    /** */
     private TypeMirror erasedType(TypeMirror type) {
         return env.getTypeUtils().erasure(type);
     }
