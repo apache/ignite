@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -34,18 +35,14 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -60,7 +57,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.util.TestTcpCommunicationSpi;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
@@ -144,37 +140,75 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         return cfg;
     }
 
+    /**
+     *
+     */
     @Test
     public void testSingleMessageErrorWarnings() throws Exception {
-        long waitingTimeout = 5_000;
+        final long waitingTimeout = 5_000;
 
         LogListener logListener = LogListener.matches("Failed to send local partitions").atLeast(1).build();
-
         testLog = new ListeningTestLogger(log, logListener);
 
-        spiFactory = TestRecordingCommunicationSpi::new;
+        final CountDownLatch beforeSend = new CountDownLatch(1);
+        final CountDownLatch proceed = new CountDownLatch(1);
+
+        final AtomicReference<UUID> crdIdRef = new AtomicReference<>();
+
+        spiFactory = () -> new TcpCommunicationSpi() {
+            @Override public void sendMessage(
+                    ClusterNode node,
+                    Message msg,
+                    IgniteInClosure<IgniteException> ackC
+            ) throws IgniteSpiException {
+                boolean isSingleMsg = ((GridIoMessage)msg).message() instanceof GridDhtPartitionsSingleMessage;
+                UUID crdId = crdIdRef.get();
+
+                if (isSingleMsg && node != null && crdId != null && crdId.equals(node.id()) ) {
+                    beforeSend.countDown();
+
+                    try {
+                        if (!proceed.await(waitingTimeout, TimeUnit.MILLISECONDS))
+                            throw new IgniteSpiException("Test timeout waiting to proceed");
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IgniteSpiException("Interrupted while waiting to proceed", e);
+                    }
+                }
+
+                super.sendMessage(node, msg, ackC);
+            }
+        };
 
         IgniteEx crd = startGrid(0);
-
         IgniteEx node1 = startGrid(1);
-
         awaitPartitionMapExchange();
 
-        TestRecordingCommunicationSpi.spi(node1).blockMessages(GridDhtPartitionsSingleMessage.class, crd.name());
+        crdIdRef.set(crd.localNode().id());
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-            node1.context().cache().context().exchange().refreshPartitions(); // works if breakpoint + step over
+            node1.context().cache().context().exchange().refreshPartitions();
         });
 
-        TestRecordingCommunicationSpi.spi(grid(1)).waitForBlocked();
+        boolean entered = false;
+        try {
+            assertTrue("Did not enter sendMessage() in time",
+                    entered = beforeSend.await(waitingTimeout, TimeUnit.MILLISECONDS));
 
-        stopGrid(0);
+            stopGrid(0);
 
-        TestRecordingCommunicationSpi.spi(grid(1)).stopBlock();
+            proceed.countDown();
 
-        assertTrue("Expected log not found",
-                GridTestUtils.waitForCondition(logListener::check, 3000));
+            fut.get(waitingTimeout);
 
+            assertTrue("Expected log not found",
+                    GridTestUtils.waitForCondition(logListener::check, waitingTimeout));
+        }
+        finally {
+            proceed.countDown();
+            if (!entered) beforeSend.countDown();
+        }
     }
 
     /**
