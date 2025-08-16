@@ -178,6 +178,12 @@ public class TestMapMessageSerializer implements MessageSerializer {
 
                 writer.incrementState();
 
+            case 22:
+                if (!writer.writeMap(msg.linkedMap(), MessageCollectionItemType.LONG, MessageCollectionItemType.LONG))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -360,6 +366,14 @@ public class TestMapMessageSerializer implements MessageSerializer {
 
             case 21:
                 msg.messageMap(reader.readMap(MessageCollectionItemType.MSG, MessageCollectionItemType.MSG, false));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 22:
+                msg.linkedMap(reader.readMap(MessageCollectionItemType.LONG, MessageCollectionItemType.LONG, true));
 
                 if (!reader.isLastRead())
                     return false;

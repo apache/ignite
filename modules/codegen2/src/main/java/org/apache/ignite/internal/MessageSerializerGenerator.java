@@ -483,7 +483,7 @@ class MessageSerializerGenerator {
 
                 assert typeArgs.size() == 2;
 
-                boolean linked = sameType(type, LinkedHashMap.class);
+                boolean linked = sameErasedType(type, LinkedHashMap.class);
 
                 returnFalseIfReadFailed(name, "reader.readMap",
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
@@ -673,6 +673,11 @@ class MessageSerializerGenerator {
     /** */
     private boolean sameType(TypeMirror type, Class<?> cls) {
         return env.getTypeUtils().isSameType(type, type(cls.getCanonicalName()));
+    }
+
+    /** */
+    private boolean sameErasedType(TypeMirror type, Class<?> cls) {
+        return env.getTypeUtils().isSameType(erasedType(type), erasedType(type(cls.getCanonicalName())));
     }
 
     /** */

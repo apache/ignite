@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.util.BitSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -91,6 +92,9 @@ public class TestMapMessage implements Message {
 
     @Order(21)
     private Map<GridCacheVersion, GridCacheVersion> messageMap;
+
+    @Order(22)
+    private LinkedHashMap<Long, Long> linkedMap;
 
     public Map<boolean[], boolean[]> booleanArrayMap() {
         return booleanArrayMap;
@@ -266,6 +270,14 @@ public class TestMapMessage implements Message {
 
     public void messageMap(Map<GridCacheVersion, GridCacheVersion> messageMap) {
         messageMap = messageMap;
+    }
+
+    public LinkedHashMap<Long, Long> linkedMap() {
+        return linkedMap;
+    }
+
+    public void linkedMap(LinkedHashMap<Long, Long> linkedMap) {
+        this.linkedMap = linkedMap;
     }
 
     public short directType() {
