@@ -34,7 +34,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     private static final long serialVersionUID = 0L;
 
     /** */
-    private int part = -1;
+    private int part;
 
     /**
      *
