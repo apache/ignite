@@ -38,6 +38,7 @@ import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicCheckUpdateRequestSerializer;
+import org.apache.ignite.internal.codegen.GridNearAtomicUpdateResponseSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillResponseSerializer;
 import org.apache.ignite.internal.codegen.GridQueryNextPageRequestSerializer;
@@ -265,7 +266,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)38, GridDhtAtomicUpdateRequest::new);
         factory.register((short)39, GridDhtAtomicUpdateResponse::new);
         factory.register((short)40, GridNearAtomicFullUpdateRequest::new);
-        factory.register((short)41, GridNearAtomicUpdateResponse::new);
+        factory.register((short)41, GridNearAtomicUpdateResponse::new, new GridNearAtomicUpdateResponseSerializer());
         factory.register((short)42, GridDhtForceKeysRequest::new);
         factory.register((short)43, GridDhtForceKeysResponse::new);
         factory.register((short)45, GridDhtPartitionDemandMessage::new);
