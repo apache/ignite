@@ -27,10 +27,10 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
@@ -222,7 +222,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** {@inheritDoc} */
     @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
-        return unmarshal0(in, clsLdr, GridBinaryMarshaller.USE_CACHE.get());
+        return unmarshal0(in, clsLdr, Marshallers.USE_CACHE.get());
     }
 
     /**
@@ -278,7 +278,7 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
             objIn = registry.in();
 
             objIn.context(clsMap, ctx, mapper,
-                clsLdr != null ? clsLdr : dfltClsLdr, GridBinaryMarshaller.USE_CACHE.get());
+                clsLdr != null ? clsLdr : dfltClsLdr, Marshallers.USE_CACHE.get());
 
             objIn.in().bytes(arr, arr.length);
 

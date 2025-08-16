@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -110,8 +111,8 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
 
         byte[] arr2 = new byte[8];
 
-        U.arrayCopy(U.intToBytes(num), 0, arr2, 0, 4);
-        U.arrayCopy(U.intToBytes(num3), 0, arr2, 4, 4);
+        GridUnsafe.arrayCopy(U.intToBytes(num), 0, arr2, 0, 4);
+        GridUnsafe.arrayCopy(U.intToBytes(num3), 0, arr2, 4, 4);
 
         assert Arrays.equals(list.array(), arr2);
 

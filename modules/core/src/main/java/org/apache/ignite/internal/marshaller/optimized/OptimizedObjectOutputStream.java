@@ -39,13 +39,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.GridHandleTable;
 import org.apache.ignite.internal.util.io.GridDataOutput;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.HANDLE;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK;
@@ -202,7 +202,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
                 OptimizedClassDescriptor desc = classDescriptor(
                     clsMap,
                     obj instanceof Object[] ? Object[].class : obj.getClass(),
-                    GridBinaryMarshaller.USE_CACHE.get(),
+                    Marshallers.USE_CACHE.get(),
                     ctx,
                     mapper);
 
@@ -230,7 +230,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
 
                     desc = classDescriptor(clsMap,
                         obj instanceof Object[] ? Object[].class : obj.getClass(),
-                        GridBinaryMarshaller.USE_CACHE.get(),
+                        Marshallers.USE_CACHE.get(),
                         ctx,
                         mapper);
                 }
