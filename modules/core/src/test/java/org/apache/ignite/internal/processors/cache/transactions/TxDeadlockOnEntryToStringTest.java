@@ -198,6 +198,7 @@ public class TxDeadlockOnEntryToStringTest extends GridCommonAbstractTest {
                 null,
                 null,
                 null,
+                null,
                 false,
                 null,
                 null

@@ -612,6 +612,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             connectGate,
             failureProcSupplier,
             attributeNames,
+            metricsLsnr,
             nioSrvWrapper,
             ctxInitLatch,
             client,
@@ -675,8 +676,10 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             cfg,
             attributeNames,
             log,
+            metricsLsnr,
             locNodeSupplier,
             nodeGetter,
+            null,
             getWorkersRegistry(ignite),
             this,
             stateProvider,
@@ -801,6 +804,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         );
 
         srvLsnr.metricsListener(metricsLsnr);
+        clientPool.metricsListener(metricsLsnr);
         ((CommunicationDiscoveryEventListener)discoLsnr).metricsListener(metricsLsnr);
 
         ctxInitLatch.countDown();

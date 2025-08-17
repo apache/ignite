@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util.nio;
 import java.net.InetSocketAddress;
 import java.security.cert.Certificate;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAdder;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -53,16 +52,16 @@ public class GridNioSessionImpl implements GridNioSession {
     private final AtomicLong closeTime = new AtomicLong();
 
     /** Sent bytes counter. */
-    private final LongAdder bytesSent = new LongAdder();
+    private volatile long bytesSent;
 
     /** Received bytes counter. */
-    private final LongAdder bytesRcvd = new LongAdder();
+    private volatile long bytesRcvd;
 
     /** Sent bytes since last NIO sessions balancing. */
-    private final LongAdder bytesSent0 = new LongAdder();
+    private volatile long bytesSent0;
 
     /** Received bytes since last NIO sessions balancing. */
-    private final LongAdder bytesRcvd0 = new LongAdder();
+    private volatile long bytesRcvd0;
 
     /** Last send schedule timestamp. */
     private volatile long sndSchedTime;
@@ -81,6 +80,9 @@ public class GridNioSessionImpl implements GridNioSession {
 
     /** Accepted flag. */
     private final boolean accepted;
+
+    /** For debug purposes. */
+    private volatile boolean markedForClose;
 
     /**
      * @param filterChain Chain.
@@ -122,7 +124,8 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void sendNoFuture(Object msg, IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
+    @Override public void sendNoFuture(Object msg, IgniteInClosure<IgniteException> ackC)
+        throws IgniteCheckedException {
         try {
             chain().onSessionWrite(this, msg, false, ackC);
         }
@@ -160,6 +163,8 @@ public class GridNioSessionImpl implements GridNioSession {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridNioFuture<Boolean> close() {
+        markedForClose = true;
+
         try {
             return filterChain.onSessionClose(this);
         }
@@ -180,34 +185,34 @@ public class GridNioSessionImpl implements GridNioSession {
 
     /** {@inheritDoc} */
     @Override public long bytesSent() {
-        return bytesSent.sum();
+        return bytesSent;
     }
 
     /** {@inheritDoc} */
     @Override public long bytesReceived() {
-        return bytesRcvd.sum();
+        return bytesRcvd;
     }
 
     /**
      * @return Sent bytes since last NIO sessions balancing.
      */
     public long bytesSent0() {
-        return bytesSent0.sum();
+        return bytesSent0;
     }
 
     /**
      * @return Received bytes since last NIO sessions balancing.
      */
     public long bytesReceived0() {
-        return bytesRcvd0.sum();
+        return bytesRcvd0;
     }
 
     /**
      *
      */
     public void reset0() {
-        bytesSent0.reset();
-        bytesRcvd0.reset();
+        bytesSent0 = 0;
+        bytesRcvd0 = 0;
     }
 
     /** {@inheritDoc} */
@@ -307,10 +312,8 @@ public class GridNioSessionImpl implements GridNioSession {
      * @param cnt Number of bytes sent.
      */
     public void bytesSent(int cnt) {
-        if (cnt != 0) {
-            bytesSent.add(cnt);
-            bytesSent0.add(cnt);
-        }
+        bytesSent += cnt;
+        bytesSent0 += cnt;
 
         lastSndTime = U.currentTimeMillis();
     }
@@ -323,8 +326,8 @@ public class GridNioSessionImpl implements GridNioSession {
      * @param cnt Number of bytes received.
      */
     public void bytesReceived(int cnt) {
-        bytesRcvd.add(cnt);
-        bytesRcvd0.add(cnt);
+        bytesRcvd += cnt;
+        bytesRcvd0 += cnt;
 
         lastRcvTime = U.currentTimeMillis();
     }

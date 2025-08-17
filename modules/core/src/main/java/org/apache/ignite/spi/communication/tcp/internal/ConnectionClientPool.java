@@ -48,8 +48,10 @@ import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
+import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.AttributeNames;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.thread.IgniteThreadFactory;
@@ -70,14 +72,14 @@ public class ConnectionClientPool {
     private static final int CONNECTION_ESTABLISH_THRESHOLD_MS = 100;
 
     /** */
-    public static final long NODE_METRICS_UPDATE_THRESHOLD = U.millisToNanos(200);
+    public static final long METRICS_UPDATE_THRESHOLD = U.millisToNanos(200);
 
     /** */
     public static final String SHARED_METRICS_REGISTRY_NAME = metricName(TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME,
         "connection", "pool");
 
     /** */
-    public static final String METRIC_POOL_SIZE_NAME = "poolSize";
+    public static final String METRIC_NAME_POOL_SIZE = "poolSize";
 
     /** */
     public static final String METRIC_NAME_PAIRED_CONNS = "pairedConnections";
@@ -107,8 +109,7 @@ public class ConnectionClientPool {
     public static final String NODE_METRIC_NAME_ACQUIRING_THREADS_CNT = "acquiringThreadsCnt";
 
     /** Clients. */
-    private final Map<UUID, GridCommunicationClient[]> clients
-        = new ConcurrentHashMap<>(64, 0.75f, Math.max(16, Runtime.getRuntime().availableProcessors()));
+    private final ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridConcurrentFactory.newMap();
 
     /** Metrics for each remote node. */
     private final Map<UUID, NodeMetrics> metrics;
@@ -122,11 +123,18 @@ public class ConnectionClientPool {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Statistics. */
+    @Nullable
+    private volatile TcpCommunicationMetricsListener metricsLsnr;
+
     /** Local node supplier. */
     private final Supplier<ClusterNode> locNodeSupplier;
 
     /** Node getter. */
     private final Function<UUID, ClusterNode> nodeGetter;
+
+    /** Message formatter supplier. */
+    private final Supplier<MessageFormatter> msgFormatterSupplier;
 
     /** Workers registry. */
     private final WorkersRegistry registry;
@@ -164,21 +172,25 @@ public class ConnectionClientPool {
      * @param cfg Config.
      * @param attrs Attributes.
      * @param log Logger.
+     * @param metricsLsnr Metrics listener.
      * @param locNodeSupplier Local node supplier.
      * @param nodeGetter Node getter.
+     * @param msgFormatterSupplier Message formatter supplier.
      * @param registry Registry.
      * @param tcpCommSpi Tcp communication spi.
      * @param clusterStateProvider Cluster state provider.
      * @param nioSrvWrapper Nio server wrapper.
      * @param igniteInstanceName Ignite instance name.
-     * @param metricsMgr Metrics manager. If {@code null}, metrics are not created.
+     * @param metricsMgr Metrics manager. If {@code null}, no metrics are created.
      */
     public ConnectionClientPool(
         TcpCommunicationConfiguration cfg,
         AttributeNames attrs,
         IgniteLogger log,
+        TcpCommunicationMetricsListener metricsLsnr,
         Supplier<ClusterNode> locNodeSupplier,
         Function<UUID, ClusterNode> nodeGetter,
+        Supplier<MessageFormatter> msgFormatterSupplier,
         WorkersRegistry registry,
         TcpCommunicationSpi tcpCommSpi,
         ClusterStateProvider clusterStateProvider,
@@ -189,7 +201,9 @@ public class ConnectionClientPool {
         this.cfg = cfg;
         this.attrs = attrs;
         this.log = log;
+        this.metricsLsnr = metricsLsnr;
         this.locNodeSupplier = locNodeSupplier;
+        this.msgFormatterSupplier = msgFormatterSupplier;
         this.registry = registry;
         this.tcpCommSpi = tcpCommSpi;
         this.clusterStateProvider = clusterStateProvider;
@@ -214,7 +228,7 @@ public class ConnectionClientPool {
         if (metricsMgr != null) {
             MetricRegistryImpl mreg = metricsMgr.registry(SHARED_METRICS_REGISTRY_NAME);
 
-            mreg.register(METRIC_POOL_SIZE_NAME, () -> cfg.connectionsPerNode(), "Maximal connections number to a remote node.");
+            mreg.register(METRIC_NAME_POOL_SIZE, () -> cfg.connectionsPerNode(), "Maximal connections number to a remote node.");
             mreg.register(METRIC_NAME_PAIRED_CONNS, () -> cfg.usePairedConnections(), "Paired connections flag.");
 
             metrics = new ConcurrentHashMap<>(64, 0.75f, Math.max(16, Runtime.getRuntime().availableProcessors()));
@@ -232,7 +246,7 @@ public class ConnectionClientPool {
         if (metricsMgr != null) {
             metricsMgr.remove(SHARED_METRICS_REGISTRY_NAME);
 
-            clients.keySet().forEach(nodeId -> metricsMgr.remove(nodeMetricsRegName(nodeId)));
+            clients.keySet().forEach(nodeId -> removeNodeMetrics(nodeId));
         }
 
         for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values()) {
@@ -677,7 +691,7 @@ public class ConnectionClientPool {
 
         NodeMetrics res = metrics.get(nodeId);
 
-        if (res == null || (nowNanos - res.updateTs > NODE_METRICS_UPDATE_THRESHOLD && res.canUpdate())) {
+        if (res == null || (nowNanos - res.updateTs > METRICS_UPDATE_THRESHOLD && res.canUpdate())) {
             GridCommunicationClient[] nodeClients = clients.get(nodeId);
 
             // Node might already leave the cluster.
@@ -889,6 +903,13 @@ public class ConnectionClientPool {
     public void completeFutures(IgniteClientDisconnectedCheckedException err) {
         for (GridFutureAdapter<GridCommunicationClient> clientFut : clientFuts.values())
             clientFut.onDone(err);
+    }
+
+    /**
+     * @param metricsLsnr New statistics.
+     */
+    public void metricsListener(@Nullable TcpCommunicationMetricsListener metricsLsnr) {
+        this.metricsLsnr = metricsLsnr;
     }
 
     /** */

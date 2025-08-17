@@ -206,7 +206,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
         MetricRegistryImpl mreg0 = metricsMgr.registry(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME);
 
-        assertEquals(connsPerNode, mreg0.<IntMetric>findMetric(ConnectionClientPool.METRIC_POOL_SIZE_NAME).value());
+        assertEquals(connsPerNode, mreg0.<IntMetric>findMetric(ConnectionClientPool.METRIC_NAME_POOL_SIZE).value());
         assertEquals(pairedConns, mreg0.<BooleanGauge>findMetric(ConnectionClientPool.METRIC_NAME_PAIRED_CONNS).value());
 
         AtomicBoolean runFlag = new AtomicBoolean(true);
@@ -220,7 +220,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         // Ensure that preloaded without a failure.
         assertTrue(runFlag.get());
 
-        long checkPeriod = U.nanosToMillis(ConnectionClientPool.NODE_METRICS_UPDATE_THRESHOLD / 3);
+        long checkPeriod = U.nanosToMillis(ConnectionClientPool.METRICS_UPDATE_THRESHOLD / 3);
 
         // Check metrics.
         for (Ignite node : G.allGrids()) {
@@ -248,8 +248,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         // Current connection implementations are async.
         assertEquals(true, mreg0.<BooleanGauge>findMetric(ConnectionClientPool.METRIC_NAME_ASYNC_CONNS).value());
 
-        if (log.isInfoEnabled())
-            dumpMetrics(ldr);
+        dumpMetrics(ldr);
 
         // Check node metrics are cleared if a node stops.
         for (Ignite node : G.allGrids()) {
@@ -349,7 +348,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         // Will delay message queue processing but not network i/o.
         writeDelay.set(50);
 
-        long checkPeriod = U.nanosToMillis(ConnectionClientPool.NODE_METRICS_UPDATE_THRESHOLD / 3);
+        long checkPeriod = U.nanosToMillis(ConnectionClientPool.METRICS_UPDATE_THRESHOLD / 3);
 
         // Check metrics.
         for (Ignite node : G.allGrids()) {
@@ -366,8 +365,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         writeDelay.set(0);
 
-        if (log.isInfoEnabled())
-            dumpMetrics(ldr);
+        dumpMetrics(ldr);
 
         runFlag.set(false);
         loadFut.get(getTestTimeout());
@@ -409,6 +407,9 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
     /** */
     private static void dumpMetrics(Ignite ldr) {
+        if (!log.isInfoEnabled())
+            return;
+
         GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
 
         for (Ignite node : G.allGrids()) {

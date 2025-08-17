@@ -19,11 +19,15 @@ package org.apache.ignite.internal.util.nio;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Implements basic lifecycle for communication clients.
  */
 public abstract class GridAbstractCommunicationClient implements GridCommunicationClient {
+    /** Time when this client was last used. */
+    private volatile long lastUsed = U.currentTimeMillis();
+
     /** Reservations. */
     private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -65,6 +69,18 @@ public abstract class GridAbstractCommunicationClient implements GridCommunicati
     /** {@inheritDoc} */
     @Override public void release() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIdleTime() {
+        return U.currentTimeMillis() - lastUsed;
+    }
+
+    /**
+     * Updates used time.
+     */
+    protected void markUsed() {
+        lastUsed = U.currentTimeMillis();
     }
 
     /** {@inheritDoc} */

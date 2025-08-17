@@ -141,6 +141,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
      * @param connectGate Connect gate.
      * @param failureProcessorSupplier Failure processor supplier.
      * @param attributeNames Attribute names.
+     * @param metricsLsnr Metrics listener.
      * @param nioSrvWrapper Nio server wrapper.
      * @param ctxInitLatch Context initialize latch.
      * @param client Client.
@@ -158,6 +159,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         ConnectGateway connectGate,
         Supplier<FailureProcessor> failureProcessorSupplier,
         AttributeNames attributeNames,
+        TcpCommunicationMetricsListener metricsLsnr,
         GridNioServerWrapper nioSrvWrapper,
         CountDownLatch ctxInitLatch,
         boolean client,
@@ -174,6 +176,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         this.connectGate = connectGate;
         this.failureProcessorSupplier = failureProcessorSupplier;
         this.attributeNames = attributeNames;
+        this.metricsLsnr = metricsLsnr;
         this.nioSrvWrapper = nioSrvWrapper;
         this.ctxInitLatch = ctxInitLatch;
         this.client = client;

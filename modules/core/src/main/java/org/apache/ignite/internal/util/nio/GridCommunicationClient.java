@@ -69,7 +69,7 @@ public interface GridCommunicationClient {
     public void release();
 
     /**
-     * Provides idle time of this client.
+     * Gets idle time of this client.
      *
      * @return Idle time of this client.
      */
