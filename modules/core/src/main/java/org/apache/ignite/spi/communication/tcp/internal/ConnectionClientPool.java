@@ -29,6 +29,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
@@ -91,22 +92,22 @@ public class ConnectionClientPool {
     private static final String NODE_METRICS_REGISTRY_NAME_PREFIX = metricName(SHARED_METRICS_REGISTRY_NAME, "node");
 
     /** */
-    public static final String NODE_METRIC_NAME_CUR_CNT = "currentCnt";
+    public static final String METRIC_NAME_CUR_CNT = "currentCnt";
 
     /** */
-    public static final String NODE_METRIC_NAME_MSG_QUEUE_SIZE = "messagesQueueSize";
+    public static final String METRIC_NAME_MSG_QUEUE_SIZE = "messagesQueueSize";
 
     /** */
-    public static final String NODE_METRIC_NAME_REMOVED_CNT = "removedCnt";
+    public static final String METRIC_NAME_REMOVED_CNT = "removedCnt";
 
     /** */
-    public static final String NODE_METRIC_NAME_MAX_IDLE_TIME = "maxIdleTime";
+    public static final String METRIC_NAME_MAX_NET_IDLE_TIME = "maxNetworkIdleTime";
 
     /** */
-    public static final String NODE_METRIC_NAME_AVG_LIFE_TIME = "minLifeTime";
+    public static final String METRIC_NAME_AVG_LIFE_TIME = "avgLifeTime";
 
     /** */
-    public static final String NODE_METRIC_NAME_ACQUIRING_THREADS_CNT = "acquiringThreadsCnt";
+    public static final String METRIC_NAME_ACQUIRING_THREADS_CNT = "acquiringThreadsCnt";
 
     /** Clients. */
     private final ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridConcurrentFactory.newMap();
@@ -246,7 +247,7 @@ public class ConnectionClientPool {
         if (metricsMgr != null) {
             metricsMgr.remove(SHARED_METRICS_REGISTRY_NAME);
 
-            clients.keySet().forEach(nodeId -> removeNodeMetrics(nodeId));
+            clients.keySet().forEach(this::removeNodeMetrics);
         }
 
         for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values()) {
@@ -666,22 +667,22 @@ public class ConnectionClientPool {
 
         assert !mreg.iterator().hasNext() : "Node connection pools metrics aren't empty.";
 
-        mreg.register(NODE_METRIC_NAME_CUR_CNT, () -> updatedNodeMetrics(node.id()).connsCnt,
+        mreg.register(METRIC_NAME_CUR_CNT, () -> updatedNodeMetrics(node.id()).connsCnt,
             "Number of current connections to the remote node.");
 
-        mreg.register(NODE_METRIC_NAME_MSG_QUEUE_SIZE, () -> updatedNodeMetrics(node.id()).msgsQueueSize,
+        mreg.register(METRIC_NAME_MSG_QUEUE_SIZE, () -> updatedNodeMetrics(node.id()).msgsQueueSize,
             "Overal number of pending messages to the remote node.");
 
-        mreg.register(NODE_METRIC_NAME_MAX_IDLE_TIME, () -> updatedNodeMetrics(node.id()).maxIdleTime,
-            "Maximal idle time of sending or receiving data in milliseconds.");
+        mreg.register(METRIC_NAME_MAX_NET_IDLE_TIME, () -> updatedNodeMetrics(node.id()).maxIdleTime,
+            "Maximal idle time of physical sending or receiving data in milliseconds.");
 
-        mreg.register(NODE_METRIC_NAME_AVG_LIFE_TIME, () -> updatedNodeMetrics(node.id()).avgLifetime,
+        mreg.register(METRIC_NAME_AVG_LIFE_TIME, () -> updatedNodeMetrics(node.id()).avgLifetime,
             "Average connection lifetime in milliseconds.");
 
-        mreg.register(NODE_METRIC_NAME_REMOVED_CNT, () -> updatedNodeMetrics(node.id()).removedConnectionsCnt.get(),
+        mreg.register(METRIC_NAME_REMOVED_CNT, () -> updatedNodeMetrics(node.id()).removedConnectionsCnt.get(),
             "Total number of removed connections.");
 
-        mreg.register(NODE_METRIC_NAME_ACQUIRING_THREADS_CNT, () -> updatedNodeMetrics(node.id()).acquiringThreadsCnt.get(),
+        mreg.register(METRIC_NAME_ACQUIRING_THREADS_CNT, () -> updatedNodeMetrics(node.id()).acquiringThreadsCnt.get(),
             "Number of threads currently acquiring a connection.");
     }
 
@@ -936,14 +937,14 @@ public class ConnectionClientPool {
         private long avgLifetime;
 
         /** */
-        private final AtomicInteger removedConnectionsCnt;
+        private final AtomicLong removedConnectionsCnt;
 
         /** */
         private final AtomicInteger acquiringThreadsCnt;
 
         /** */
         private NodeMetrics(@Nullable NodeMetrics prev) {
-            this.removedConnectionsCnt = prev == null ? new AtomicInteger() : prev.removedConnectionsCnt;
+            this.removedConnectionsCnt = prev == null ? new AtomicLong() : prev.removedConnectionsCnt;
             this.acquiringThreadsCnt = prev == null ? new AtomicInteger() : prev.acquiringThreadsCnt;
             this.avgLifetime = prev == null ? 0 : prev.avgLifetime;
             this.maxIdleTime = prev == null ? 0 : prev.maxIdleTime;
