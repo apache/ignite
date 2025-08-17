@@ -159,9 +159,9 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
             assertTrue(waitForCondition(
                 () -> {
-                    IntMetric im = mreg.findMetric(METRIC_NAME_CUR_CNT);
+                    IntMetric m = mreg.findMetric(METRIC_NAME_CUR_CNT);
 
-                    return im != null && im.value() == connsPerNode;
+                    return m != null && m.value() == connsPerNode;
                 },
                 getTestTimeout())
             );
@@ -273,7 +273,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(nodeId));
 
             // We assume that entire pool was used at least once.
-            assertTrue(waitForCondition(() -> connsPerNode == mreg.<LongMetric>findMetric(METRIC_NAME_CUR_CNT).value(),
+            assertTrue(waitForCondition(() -> connsPerNode == mreg.<IntMetric>findMetric(METRIC_NAME_CUR_CNT).value(),
                 getTestTimeout(), checkPeriod));
 
             // Connections should not be idle under a heavy load.
@@ -284,7 +284,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
                 getTestTimeout(), checkPeriod));
 
             // Default connection idle and write timeouts are large enough. Connections should not be failed/deleted.
-            assertEquals(0, mreg.<IntMetric>findMetric(METRIC_NAME_REMOVED_CNT).value());
+            assertEquals(0, mreg.<LongMetric>findMetric(METRIC_NAME_REMOVED_CNT).value());
         }
 
         // Current connection implementations are async.
@@ -451,7 +451,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
                 // No-op.
                 keepLoadingFlag.set(false);
             }
-        }, Math.max(MIN_LOAD_THREADS, connsPerNode), "testLoader");
+        }, Math.max(MIN_LOAD_THREADS, connsPerNode + connsPerNode / 2), "testLoader");
     }
 
     /** */
