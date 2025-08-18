@@ -58,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
@@ -320,7 +321,7 @@ public class DumpReader implements Runnable {
      * @return List of snapshot metadata saved in {@code #dumpDir}.
      */
     public static List<SnapshotMetadata> metadata(File dumpDir) {
-        JdkMarshaller marsh = new JdkMarshaller();
+        JdkMarshaller marsh = Marshallers.jdk();
 
         ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
 

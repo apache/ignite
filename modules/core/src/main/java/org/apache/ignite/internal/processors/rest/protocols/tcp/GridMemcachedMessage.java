@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -150,7 +151,7 @@ public class GridMemcachedMessage implements GridClientMessage {
         opCode = req.opCode;
 
         opaque = new byte[req.opaque.length];
-        U.arrayCopy(req.opaque, 0, opaque, 0, req.opaque.length);
+        GridUnsafe.arrayCopy(req.opaque, 0, opaque, 0, req.opaque.length);
     }
 
     /** {@inheritDoc} */

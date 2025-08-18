@@ -1,7 +1,3 @@
-#!/bin/php
-
-<?php
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,52 +15,27 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.marshaller;
+
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshallerImpl;
+import org.jetbrains.annotations.Nullable;
+
 /**
- * PHP client API.
+ * Marshallers factory implementation.
  */
-interface GridClientNode {
-    /**
-     * @abstract
-     * @return string
-     */
-    public function id();
+public class MarshallersFactoryImpl implements MarshallersFactory {
+    /** Singleton instance. */
+    private static final JdkMarshaller INSTANCE = new JdkMarshallerImpl();
 
-    /**
-     * @abstract
-     * @return array
-     */
-    public function internalAddresses();
+    /** {@inheritDoc} */
+    @Override public JdkMarshaller jdk() {
+        return INSTANCE;
+    }
 
-    /**
-     * @abstract
-     * @return array
-     */
-    public function externalAddresses();
-
-    /**
-     * @abstract
-     * @return int
-     */
-    public function port();
-
-    /**
-     * @abstract
-     * @return array
-     */
-    public function attributes();
-
-    /**
-     * @abstract
-     * @param string $name
-     * @return mixed
-     */
-    public function attribute(string $name);
-
-    /**
-     * @abstract
-     * @return array
-     */
-    public function metrics();
+    /** {@inheritDoc} */
+    @Override public JdkMarshaller jdk(@Nullable IgnitePredicate<String> clsFilter) {
+        return clsFilter == null ? INSTANCE : new JdkMarshallerImpl(clsFilter);
+    }
 }
-
-?>

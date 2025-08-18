@@ -38,6 +38,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
@@ -127,7 +128,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
             List<CacheConfiguration> toCreate = new ArrayList<>();
 
             for (int i = 0; i < caches - 1; i++) {
-                JdkMarshaller marsh = new JdkMarshaller();
+                JdkMarshaller marsh = Marshallers.jdk();
 
                 CacheConfiguration ccfg0 = marsh.unmarshal(marsh.marshal(ccfg), null);
 

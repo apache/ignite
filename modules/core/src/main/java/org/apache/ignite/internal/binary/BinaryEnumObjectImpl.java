@@ -33,9 +33,11 @@ import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -108,7 +110,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
 
             valBytes[0] = GridBinaryMarshaller.ENUM;
 
-            U.arrayCopy(arr, 1, valBytes, 1, arr.length - 1);
+            GridUnsafe.arrayCopy(arr, 1, valBytes, 1, arr.length - 1);
         }
 
         this.ctx = ctx;
@@ -176,7 +178,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
         ClassLoader resolveLdr = ldr == null ? ctx.classLoader() : ldr;
 
         if (ldr != null)
-            GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
+            Marshallers.USE_CACHE.set(Boolean.FALSE);
 
         try {
             Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, resolveLdr, false);
@@ -184,7 +186,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
             return (T)(ldr == null ? BinaryEnumCache.get(cls, ord) : uncachedValue(cls));
         }
         finally {
-            GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
+            Marshallers.USE_CACHE.set(Boolean.TRUE);
         }
 
     }
@@ -197,7 +199,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     private <T> T uncachedValue(Class<?> cls) throws BinaryObjectException {
         assert cls != null;
 
-        assert !GridBinaryMarshaller.USE_CACHE.get();
+        assert !Marshallers.USE_CACHE.get();
 
         if (ord >= 0) {
             Object[] vals = cls.getEnumConstants();

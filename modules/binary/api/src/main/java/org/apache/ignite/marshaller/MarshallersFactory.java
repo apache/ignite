@@ -1,7 +1,3 @@
-#!/bin/php
-
-<?php
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,16 +15,28 @@
  * limitations under the License.
  */
 
-/**
- * PHP client API.
- */
-interface GridClientNodeFilter {
-    /**
-     * @abstract
-     * @param GridClientNode $node
-     * @return boolean
-     */
-    public function accept(GridClientNode $node);
-}
+package org.apache.ignite.marshaller;
 
-?>
+import java.util.ServiceLoader;
+import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Marshallers factory.
+ * Implementation loaded via {@link ServiceLoader} mechanism.
+ *
+ * @see CommonUtils#loadService(Class)
+ * @see JdkMarshaller
+ */
+public interface MarshallersFactory {
+    /** @return Default instance of {@link JdkMarshaller}. */
+    public JdkMarshaller jdk();
+
+    /**
+     * @param clsFilter Class filter.
+     * @return Filtered instance of {@link JdkMarshaller}.
+     */
+    public JdkMarshaller jdk(@Nullable IgnitePredicate<String> clsFilter);
+}

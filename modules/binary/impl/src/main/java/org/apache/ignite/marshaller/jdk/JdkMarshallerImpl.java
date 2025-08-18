@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
@@ -38,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * This marshaller has no mandatory configuration parameters.
  * <h2 class="header">Java Example</h2>
  * {@code JdkMarshaller} needs to be explicitly configured to override default <b>binary marshaller</b> -
- * see {@link IgniteBinary}.
+ * see {@code IgniteBinary}.
  * <pre name="code" class="java">
  * JdkMarshaller marshaller = new JdkMarshaller();
  *
@@ -56,7 +55,7 @@ import org.jetbrains.annotations.Nullable;
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.apache.ignite.marshaller.jdk.JdkMarshaller"/&gt;
+ *         &lt;bean class="org.apache.ignite.marshaller.MarshallersFactory"/&gt;
  *     &lt;/property&gt;
  *     ...
  * &lt;/bean&gt;
@@ -66,7 +65,7 @@ import org.jetbrains.annotations.Nullable;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
+public class JdkMarshallerImpl extends AbstractNodeNameAwareMarshaller implements JdkMarshaller {
     /** Class name filter. */
     private final IgnitePredicate<String> clsFilter;
 
@@ -75,14 +74,14 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
      * Use this constructor with caution. It creates a JdkMarshaller instance that has class filtering DISABLED. Therefore,
      * if it will be used on the server side to unmarshal user data received from the network, it may lead to security breaches.
      */
-    public JdkMarshaller() {
+    public JdkMarshallerImpl() {
         this(null);
     }
 
     /**
      * @param clsFilter Class name filter.
      */
-    public JdkMarshaller(IgnitePredicate<String> clsFilter) {
+    public JdkMarshallerImpl(@Nullable IgnitePredicate<String> clsFilter) {
         this.clsFilter = clsFilter;
     }
 
@@ -146,6 +145,6 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdkMarshaller.class, this);
+        return S.toString(JdkMarshallerImpl.class, this);
     }
 }

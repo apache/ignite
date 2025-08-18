@@ -1,7 +1,3 @@
-#!/bin/php
-
-<?php
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,22 +15,12 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.marshaller.jdk;
+
+import org.apache.ignite.marshaller.Marshaller;
+
 /**
- * PHP client API.
+ * Implementation of {@link org.apache.ignite.marshaller.Marshaller} based on JDK serialization mechanism.
  */
-interface GridClient {
-    /**
-     * @abstract
-     * @param string|null $cacheName
-     * @return GridClientData
-     */
-    public function data(string $cacheName = null);
-
-    /**
-     * @abstract
-     * @return GridClientCompute
-     */
-    public function compute();
+public interface JdkMarshaller extends Marshaller {
 }
-
-?>

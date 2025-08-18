@@ -19,8 +19,8 @@ package org.apache.ignite.internal.util.io;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * This class defines input stream backed by byte array.
@@ -114,7 +114,7 @@ public class GridByteArrayInputStream extends InputStream {
         if (len <= 0)
             return 0;
 
-        U.arrayCopy(buf, pos, b, off, len);
+        GridUnsafe.arrayCopy(buf, pos, b, off, len);
 
         pos += len;
 

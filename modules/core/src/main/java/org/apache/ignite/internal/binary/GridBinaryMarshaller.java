@@ -42,9 +42,6 @@ public class GridBinaryMarshaller {
     private static final ThreadLocal<BinaryContextHolder> BINARY_CTX =
         ThreadLocal.withInitial(BinaryContextHolder::new);
 
-    /** Flag whether class caching should be used by the current thread. */
-    public static final ThreadLocal<Boolean> USE_CACHE = ThreadLocal.withInitial(() -> Boolean.TRUE);
-
     /** */
     public static final byte TRANSFORMED = -3;
 

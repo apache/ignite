@@ -121,7 +121,7 @@ public class GridByteArrayList implements Message, Externalizable {
     public byte[] array() {
         byte[] res = new byte[size];
 
-        U.arrayCopy(data, 0, res, 0, size);
+        GridUnsafe.arrayCopy(data, 0, res, 0, size);
 
         return res;
     }
@@ -304,7 +304,7 @@ public class GridByteArrayList implements Message, Externalizable {
     public void add(byte[] bytes, int off, int len) {
         requestFreeSize(len);
 
-        U.arrayCopy(bytes, off, data, size, len);
+        GridUnsafe.arrayCopy(bytes, off, data, size, len);
 
         size += len;
     }
