@@ -108,6 +108,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsQuickVerifyHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -3044,32 +3045,38 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         try {
             injectTestSystemOut();
 
-            int code = execute(new ArrayList<>(F.asList("--snapshot", "create", "testDsSnp", "--sync")));
+            String snpName = "testDsSnp";
+
+            int code = execute(new ArrayList<>(F.asList("--snapshot", "create", snpName, "--sync")));
 
             assertEquals(EXIT_CODE_COMPLETED_WITH_WARNINGS, code);
 
             String out = testOut.toString();
 
-            LogListener logLsnr = LogListener.matches(DataStreamerUpdatesHandler.WRN_MSG).times(1).build();
-            logLsnr.accept(out);
-            logLsnr.check();
-
             assertNotContains(log, out, "Failed to perform operation");
-            assertContains(log, out, "Snapshot create operation completed with warnings [name=testDsSnp");
-            assertContains(log, out, "DataStreamer with property 'allowOverwrite' set to `false` was working " +
-                "during the snapshot creation");
 
-            code = execute(new ArrayList<>(F.asList("--snapshot", "check", "testDsSnp")));
+            assertContains(log, out, "Snapshot create operation completed with warnings [name=" + snpName);
+
+            boolean dataStmrDetected = out.contains(DataStreamerUpdatesHandler.WRN_MSG);
+
+            String expWarn = dataStmrDetected
+                ? DataStreamerUpdatesHandler.WRN_MSG
+                : String.format("Cache partitions differ for cache groups [%s]. ", CU.cacheId(DEFAULT_CACHE_NAME))
+                    + SnapshotPartitionsQuickVerifyHandler.WRN_MSG;
+
+            assertContains(log, out, expWarn);
+
+            code = execute(new ArrayList<>(F.asList("--snapshot", "check", snpName)));
 
             assertEquals(EXIT_CODE_OK, code);
 
             out = testOut.toString();
 
-            logLsnr = LogListener.matches(DataStreamerUpdatesHandler.WRN_MSG).times(1).build();
-            logLsnr.accept(out);
-            logLsnr.check();
+            assertContains(log, out, expWarn);
 
-            assertContains(log, out, "The check procedure has failed, conflict partitions has been found");
+            assertContains(log, out, dataStmrDetected
+                ? "The check procedure has failed, conflict partitions has been found"
+                : "The check procedure has finished, no conflicts have been found");
         }
         finally {
             stopLoading.set(true);

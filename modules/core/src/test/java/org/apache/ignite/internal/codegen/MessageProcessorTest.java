@@ -28,6 +28,7 @@ import com.google.testing.compile.JavaFileObjects;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.junit.Test;
 
@@ -49,6 +50,20 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.codegen.TestMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testCollectionsMessage() {
+        Compilation compilation = compile("TestCollectionsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.codegen.TestCollectionsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestCollectionsMessageSerializer.java"));
     }
 
     /** */
@@ -141,9 +156,10 @@ public class MessageProcessorTest {
 
         File igniteCoreJar = jarForClass(Message.class);
         File igniteCodegenJar = jarForClass(Order.class);
+        File igniteBinaryApiJar = jarForClass(IgniteUuid.class);
 
         return Compiler.javac()
-            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar))
+            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar))
             .withProcessors(new MessageProcessor())
             .compile(input);
     }

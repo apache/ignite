@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Message indicating that user operation is finished locally on the node.
@@ -30,9 +28,11 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class UserManagementOperationFinishedMessage implements Message {
     /** Operation Id. */
+    @Order(value = 0, method = "operationId")
     private IgniteUuid opId;
 
     /** Error message. */
+    @Order(value = 1, method = "errorMessage")
     private String errorMsg;
 
     /**
@@ -52,10 +52,17 @@ public class UserManagementOperationFinishedMessage implements Message {
     }
 
     /**
-     * @return Operation ID,
+     * @return Operation ID.
      */
     public IgniteUuid operationId() {
         return opId;
+    }
+
+    /**
+     * @param opId New operation ID.
+     */
+    public void operationId(IgniteUuid opId) {
+        this.opId = opId;
     }
 
     /**
@@ -72,59 +79,11 @@ public class UserManagementOperationFinishedMessage implements Message {
         return errorMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString(errorMsg))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeIgniteUuid(opId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                errorMsg = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                opId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+    /**
+     * @param errorMsg New error message.
+     */
+    public void errorMessage(String errorMsg) {
+        this.errorMsg = errorMsg;
     }
 
     /** {@inheritDoc} */

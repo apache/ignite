@@ -130,7 +130,7 @@ public abstract class GridUnsafe {
     private static final boolean HAS_JAVA_NIO_ACCESS_MEMORY_SEGMENT_PARAM = majorJavaVersion(jdkVersion()) >= 19;
 
     /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
-    private static final DirectBufferCleaner DIRECT_BUF_CLEANER = new UnsafeDirectBufferCleaner();
+    private static final UnsafeDirectBufferCleaner DIRECT_BUF_CLEANER = new UnsafeDirectBufferCleaner();
 
     /** JavaNioAccess object. If {@code null} then {@link #NEW_DIRECT_BUF_CONSTRUCTOR} should be available. */
     @Nullable private static final Object JAVA_NIO_ACCESS_OBJ;
@@ -1571,6 +1571,19 @@ public abstract class GridUnsafe {
     /** Calculate size with alignment. */
     public static long align(long size) {
         return (size + (OBJ_ALIGN - 1L)) & (-OBJ_ALIGN);
+    }
+
+    /**
+     * @param src Buffer to copy from (length included).
+     * @param off Offset in source buffer.
+     * @param resBuf Result buffer.
+     * @param resOff Result offset.
+     * @param len Number of bytes to copy from src to resBuf.
+     */
+    public static void arrayCopy(byte[] src, int off, byte[] resBuf, int resOff, int len) {
+        assert resBuf.length >= resOff + len;
+
+        copyMemory(src, BYTE_ARR_OFF + off, resBuf, BYTE_ARR_OFF + resOff, len);
     }
 
     /**

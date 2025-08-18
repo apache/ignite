@@ -899,7 +899,7 @@ public class GridMapQueryExecutor {
                         res.lockTables();
                         res.checkTablesVersions();
 
-                        Boolean dataPageScanEnabled = isDataPageScanEnabled(req.getFlags());
+                        Boolean dataPageScanEnabled = isDataPageScanEnabled(req.flags());
 
                         GridQueryNextPageResponse msg = h2.executeWithResumableTimeTracking(
                             () -> prepareNextPage(

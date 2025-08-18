@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -199,7 +199,7 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
      * @throws IgniteCheckedException If fails.
      */
     private void storeTmpCacheData(DynamicCacheDescriptor cacheDescr) throws Exception {
-        Marshaller marshaller = new JdkMarshaller();
+        Marshaller marshaller = Marshallers.jdk();
 
         for (int i = 0; i < NODES; i++) {
             IgniteEx ig = grid(i);
