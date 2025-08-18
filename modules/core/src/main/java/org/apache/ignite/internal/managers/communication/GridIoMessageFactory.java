@@ -32,6 +32,7 @@ import org.apache.ignite.internal.codegen.GenerateEncryptionKeyRequestSerializer
 import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionExSerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionSerializer;
+import org.apache.ignite.internal.codegen.GridCheckpointRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionExchangeIdSerializer;
 import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
@@ -233,7 +234,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)4, GridJobSiblingsResponse::new);
         factory.register((short)5, GridTaskCancelRequest::new, new GridTaskCancelRequestSerializer());
         factory.register((short)6, GridTaskSessionRequest::new);
-        factory.register((short)7, GridCheckpointRequest::new);
+        factory.register((short)7, GridCheckpointRequest::new, new GridCheckpointRequestSerializer());
         factory.register((short)8, GridIoMessage::new);
         factory.register((short)9, GridIoUserMessage::new);
         factory.register((short)10, GridDeploymentInfoBean::new);
