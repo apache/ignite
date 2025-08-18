@@ -62,6 +62,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_ACQUIRING_THREADS_CNT;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_AVG_LIFE_TIME;
+import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_CONSIST_ID;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_CUR_CNT;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_MAX_NET_IDLE_TIME;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_MSG_QUEUE_SIZE;
@@ -285,6 +286,8 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
             // Default connection idle and write timeouts are large enough. Connections should not be failed/deleted.
             assertEquals(0, mreg.<LongMetric>findMetric(METRIC_NAME_REMOVED_CNT).value());
+
+            assertEquals(node.cluster().localNode().consistentId().toString(), mreg.findMetric(METRIC_NAME_CONSIST_ID).getAsString());
         }
 
         // Current connection implementations are async.

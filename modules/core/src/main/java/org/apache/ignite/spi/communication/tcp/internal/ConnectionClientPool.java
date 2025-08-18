@@ -80,31 +80,31 @@ public class ConnectionClientPool {
         "connectionPool");
 
     /** */
-    public static final String METRIC_NAME_POOL_SIZE = "poolSize";
+    public static final String METRIC_NAME_POOL_SIZE = "maxConnectionsCnt";
 
     /** */
-    public static final String METRIC_NAME_PAIRED_CONNS = "pairedConnections";
+    public static final String METRIC_NAME_PAIRED_CONNS = "isPaired";
 
     /** */
-    public static final String METRIC_NAME_ASYNC_CONNS = "asyncConnections";
+    public static final String METRIC_NAME_ASYNC_CONNS = "isAsync";
+
+    /** It is handy for a user to see consistent id of a problematic node. */
+    public static final String METRIC_NAME_CONSIST_ID = "consistentId";
 
     /** */
-    private static final String NODE_METRICS_REGISTRY_NAME_PREFIX = metricName(SHARED_METRICS_REGISTRY_NAME, "toNode");
+    public static final String METRIC_NAME_CUR_CNT = "currentConnectionsCnt";
 
     /** */
-    public static final String METRIC_NAME_CUR_CNT = "currentCnt";
+    public static final String METRIC_NAME_MSG_QUEUE_SIZE = "outboundMessagesQueueSize";
 
     /** */
-    public static final String METRIC_NAME_MSG_QUEUE_SIZE = "messagesQueueSize";
-
-    /** */
-    public static final String METRIC_NAME_REMOVED_CNT = "removedCnt";
+    public static final String METRIC_NAME_REMOVED_CNT = "removedConnectionsCnt";
 
     /** */
     public static final String METRIC_NAME_MAX_NET_IDLE_TIME = "maxNetworkIdleTime";
 
     /** */
-    public static final String METRIC_NAME_AVG_LIFE_TIME = "avgLifeTime";
+    public static final String METRIC_NAME_AVG_LIFE_TIME = "avgConnectionLifetime";
 
     /** */
     public static final String METRIC_NAME_ACQUIRING_THREADS_CNT = "acquiringThreadsCnt";
@@ -667,6 +667,9 @@ public class ConnectionClientPool {
 
         assert !mreg.iterator().hasNext() : "Node connection pools metrics aren't empty.";
 
+        mreg.register(METRIC_NAME_CONSIST_ID, () -> node.consistentId().toString(), String.class,
+            "Consistent id of the remote node as string.");
+
         mreg.register(METRIC_NAME_CUR_CNT, () -> updatedNodeMetrics(node.id()).connsCnt,
             "Number of current connections to the remote node.");
 
@@ -751,7 +754,7 @@ public class ConnectionClientPool {
 
     /** */
     public static String nodeMetricsRegName(UUID nodeId) {
-        return metricName(NODE_METRICS_REGISTRY_NAME_PREFIX, nodeId.toString());
+        return metricName(SHARED_METRICS_REGISTRY_NAME, nodeId.toString());
     }
 
     /**
