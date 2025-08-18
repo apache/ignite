@@ -30,6 +30,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +59,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.direct.DirectMessageReader;
+import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -75,6 +78,11 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -455,6 +463,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** */
     private IgniteDiscoverySpiInternalListener internalLsnr;
+
+    /** */
+    private MessageFactory msgFactory;
 
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
@@ -1814,9 +1825,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         IgniteCheckedException err = null;
 
         try {
-            U.marshal(marshaller(), msg, out);
+            MessageIoSession.session(msgFactory, sock).writeMessage(msg, out, marshaller());
         }
         catch (IgniteCheckedException e) {
+            MessageIoSession.clear();
+
             SSLException sslEx = checkSslException(sock, e);
 
             err = sslEx == null ? e : new IgniteCheckedException(sslEx);
@@ -1902,12 +1915,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         try {
             sock.setSoTimeout((int)timeout);
 
-            T res = U.unmarshal(marshaller(), in == null ? sock.getInputStream() : in,
-                U.resolveClassLoader(ignite.configuration()));
-
-            return res;
+            return MessageIoSession.session(msgFactory, sock)
+                .readMessage(in == null ? sock.getInputStream() : in, marshaller(), ignite);
         }
         catch (IOException | IgniteCheckedException e) {
+            MessageIoSession.clear();
+
             if (X.hasCause(e, SocketTimeoutException.class))
                 LT.warn(log, "Timed out waiting for message to be read (most probably, the reason is " +
                     "long GC pauses on remote node) [curTimeout=" + timeout +
@@ -1940,6 +1953,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 // No-op.
             }
         }
+    }
+
+    /** */
+    @Override public void setMessageFactory(MessageFactory msgFactory) {
+        this.msgFactory = msgFactory;
     }
 
     /**
@@ -2815,6 +2833,169 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         /** {@inheritDoc} */
         @Override public void dumpRingStructure() {
             impl.dumpRingStructure(log);
+        }
+    }
+
+    /** Thread-local session for message input/output operations. */
+    private static class MessageIoSession {
+        /** */
+        private static final byte[] JAVA_SERIALIZATION = new byte[] { 0 };
+
+        /** */
+        private static final byte[] MESSAGE_SERIALIZATION = new byte[] { 1 };
+
+        /** */
+        private static final ThreadLocal<MessageIoSession> locSes = new ThreadLocal<>();
+
+        /** */
+        private final MessageWriter msgWriter;
+
+        /** */
+        private final MessageReader msgReader;
+
+        /** */
+        private final ByteBuffer buf;
+
+        /** */
+        private final MessageFactory msgFactory;
+
+        /** */
+        static MessageIoSession session(MessageFactory msgFactory, Socket sock) throws SocketException {
+            MessageIoSession ses = locSes.get();
+
+            if (ses == null)
+                locSes.set(ses = new MessageIoSession(msgFactory, sock));
+
+            return ses;
+        }
+
+        /** Clears thread-local session. */
+        static void clear() {
+            locSes.remove();
+        }
+
+        /** */
+        MessageIoSession(MessageFactory msgFactory, Socket sock) throws SocketException {
+            this.msgFactory = msgFactory;
+
+            msgWriter = new DirectMessageWriter(msgFactory);
+            msgReader = new DirectMessageReader(msgFactory);
+
+            buf = ByteBuffer.allocate(sock.getSendBufferSize());
+        }
+
+        /** */
+        void writeMessage(Object msg, OutputStream out, Marshaller marshaller) throws IgniteCheckedException {
+            try {
+                if (!(msg instanceof Message)) {
+                    out.write(JAVA_SERIALIZATION);
+
+                    U.marshal(marshaller, msg, out);
+
+                    return;
+                }
+
+                out.write(MESSAGE_SERIALIZATION);
+
+                Message m = (Message)msg;
+                MessageSerializer msgSer = msgFactory.serializer(m.directType());
+                msgWriter.reset();
+
+                boolean finish;
+
+                do {
+                    buf.clear();
+
+                    finish = msgSer.writeTo(m, buf, msgWriter);
+
+                    out.write(buf.array(), 0, buf.position());
+                }
+                while (!finish);
+
+                out.flush();
+            }
+            catch (Exception e) {
+                // Keep logic similar to `U.marshal(...)`.
+                if (e instanceof IgniteCheckedException)
+                    throw (IgniteCheckedException)e;
+
+                throw new IgniteCheckedException(e);
+            }
+        }
+
+        /** */
+        <T> T readMessage(InputStream in, Marshaller marshaller, Ignite ign) throws IgniteCheckedException {
+            try {
+                buf.clear();
+
+                readNBytes(in, 1);
+
+                byte serMode = buf.array()[0];
+
+                if (JAVA_SERIALIZATION[0] == serMode)
+                    return U.unmarshal(marshaller, in, U.resolveClassLoader(ign.configuration()));
+
+                else if (MESSAGE_SERIALIZATION[0] == serMode) {
+                    readNBytes(in, 2);
+
+                    msgReader.reset();
+                    msgReader.setBuffer(buf);
+
+                    short msgType = msgReader.readShort();
+
+                    MessageSerializer msgSer = msgFactory.serializer(msgType);
+                    Message msg = msgFactory.create(msgType);
+
+                    boolean finish;
+
+                    do {
+                        readNBytes(in, 1);
+
+                        buf.position(0);
+                        buf.limit(1);
+
+                        finish = msgSer.readFrom(msg, buf, msgReader);
+                    } while (!finish);
+
+                    return (T)msg;
+                }
+
+                detectSslAlert(serMode, in);
+
+                throw new EOFException();
+            }
+            catch (Exception e) {
+                // Keep logic similar to `U.marshal(...)`.
+                if (e instanceof IgniteCheckedException)
+                    throw (IgniteCheckedException)e;
+
+                throw new IgniteCheckedException(e);
+            }
+        }
+
+        /** */
+        private void readNBytes(InputStream in, int nbytes) throws IOException {
+            if (in.readNBytes(buf.array(), 0, nbytes) < nbytes)
+                throw new EOFException();
+        }
+
+        /**
+         * Checks wheter input stream contains SSL alert.
+         * See handling {@code StreamCorruptedException} in {@link #readMessage(Socket, InputStream, long)}.
+         * Keeps logic similar to {@link java.io.ObjectInputStream#readStreamHeader}.
+         */
+        private void detectSslAlert(byte firstByte, InputStream in) throws IOException {
+            byte[] hdr = new byte[4];
+            hdr[0] = firstByte;
+            int read = in.readNBytes(hdr, 1, 3);
+
+            if (read < 3)
+                throw new EOFException();
+
+            String hex = String.format("%02x%02x%02x%02x", hdr[0], hdr[1], hdr[2], hdr[3]);
+
+            if (hex.matches("15....00"))
+                throw new StreamCorruptedException("invalid stream header: " + hex);
         }
     }
 }
