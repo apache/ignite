@@ -366,7 +366,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
     /** */
     @Test
-    public void testDelayedConnectionsMetric() throws Exception {
+    public void testPendingMessagesMetric() throws Exception {
         int preloadCnt = 500;
 
         Ignite server = startGridsMultiThreaded(2);
