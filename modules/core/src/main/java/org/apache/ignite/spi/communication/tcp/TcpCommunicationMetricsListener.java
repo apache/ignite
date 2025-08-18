@@ -37,7 +37,6 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.IgniteSpiContext;
-import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -148,9 +147,8 @@ public class TcpCommunicationMetricsListener {
         rcvdMsgsMetric = mreg.longAdderMetric(RECEIVED_MESSAGES_METRIC_NAME, RECEIVED_MESSAGES_METRIC_DESC);
 
         spiCtx.addMetricRegistryCreationListener(mreg -> {
-            // Metrics for the specific nodes.
-            if (!mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR)
-                || mreg.name().startsWith(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME))
+            // Metrics for the specific nodes or other communication metrics.
+            if (!TcpCommunicationSpi.isCommunicationMetrics(mreg.name()))
                 return;
 
             ((MetricRegistryImpl)mreg).longAdderMetric(
@@ -382,7 +380,7 @@ public class TcpCommunicationMetricsListener {
         }
 
         for (ReadOnlyMetricRegistry mreg : spiCtx.metricRegistries()) {
-            if (mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR)) {
+            if (TcpCommunicationSpi.isCommunicationMetrics(mreg.name())) {
                 mreg.findMetric(SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME).reset();
 
                 mreg.findMetric(RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME).reset();

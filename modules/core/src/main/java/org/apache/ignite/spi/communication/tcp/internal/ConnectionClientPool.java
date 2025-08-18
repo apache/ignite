@@ -77,7 +77,7 @@ public class ConnectionClientPool {
 
     /** */
     public static final String SHARED_METRICS_REGISTRY_NAME = metricName(TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME,
-        "connection", "pool");
+        "connectionPool");
 
     /** */
     public static final String METRIC_NAME_POOL_SIZE = "poolSize";
@@ -89,7 +89,7 @@ public class ConnectionClientPool {
     public static final String METRIC_NAME_ASYNC_CONNS = "asyncConnections";
 
     /** */
-    private static final String NODE_METRICS_REGISTRY_NAME_PREFIX = metricName(SHARED_METRICS_REGISTRY_NAME, "node");
+    private static final String NODE_METRICS_REGISTRY_NAME_PREFIX = metricName(SHARED_METRICS_REGISTRY_NAME, "toNode");
 
     /** */
     public static final String METRIC_NAME_CUR_CNT = "currentCnt";
@@ -819,9 +819,9 @@ public class ConnectionClientPool {
      * @param nodeId Node id.
      */
     public void onNodeLeft(UUID nodeId) {
-        removeNodeMetrics(nodeId);
-
         GridCommunicationClient[] clients0 = clients.remove(nodeId);
+
+        removeNodeMetrics(nodeId);
 
         if (clients0 != null) {
             for (GridCommunicationClient client : clients0) {
