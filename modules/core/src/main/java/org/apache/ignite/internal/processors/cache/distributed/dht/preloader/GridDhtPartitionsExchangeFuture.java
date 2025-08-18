@@ -2155,7 +2155,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.io().send(node, msg, SYSTEM_POOL);
             }
             catch (ClusterTopologyCheckedException e) {
-
                 long retryDelay = cctx.gridConfig().getNetworkSendRetryDelay();
 
                 log.warning(
