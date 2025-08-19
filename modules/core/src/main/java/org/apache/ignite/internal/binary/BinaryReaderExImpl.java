@@ -35,7 +35,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1703,13 +1702,13 @@ class BinaryReaderExImpl implements BinaryReaderEx {
     /** {@inheritDoc} */
     @Override public @Nullable Object deserialize() throws BinaryObjectException {
         String newName = ctx.igniteInstanceName();
-        String oldName = IgniteUtils.setCurrentIgniteName(newName);
+        String oldName = U.setCurrentIgniteName(newName);
 
         try {
             return deserialize0();
         }
         finally {
-            IgniteUtils.restoreOldIgniteName(oldName, newName);
+            U.restoreOldIgniteName(oldName, newName);
         }
     }
 
