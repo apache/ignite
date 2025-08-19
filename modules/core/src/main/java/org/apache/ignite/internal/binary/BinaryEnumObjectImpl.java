@@ -333,7 +333,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
         if (valBytes != null)
             return valBytes;
 
-        valBytes = U.marshal(ctx.marshaller(), this);
+        valBytes = Marshallers.marshal(ctx.marshaller(), this);
 
         return valBytes;
     }
@@ -470,7 +470,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     @Override public int size() {
         if (valBytes == null) {
             try {
-                valBytes = U.marshal(ctx.marshaller(), this);
+                valBytes = Marshallers.marshal(ctx.marshaller(), this);
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);

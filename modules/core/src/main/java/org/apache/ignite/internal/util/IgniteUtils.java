@@ -7322,17 +7322,7 @@ public abstract class IgniteUtils extends CommonUtils {
      * @throws IgniteCheckedException If marshalling failed.
      */
     public static byte[] marshal(Marshaller marsh, Object obj) throws IgniteCheckedException {
-        assert marsh != null;
-
-        try {
-            return marsh.marshal(obj);
-        }
-        catch (IgniteCheckedException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException(e);
-        }
+        return Marshallers.marshal(marsh, obj);
     }
 
     /**
@@ -7347,17 +7337,7 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     public static void marshal(Marshaller marsh, @Nullable Object obj, OutputStream out)
         throws IgniteCheckedException {
-        assert marsh != null;
-
-        try {
-            marsh.marshal(obj, out);
-        }
-        catch (IgniteCheckedException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException(e);
-        }
+        Marshallers.marshal(marsh, obj, out);
     }
 
     /**
