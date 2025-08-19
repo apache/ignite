@@ -1205,7 +1205,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         ClusterNode leaving = grid(nodeToStopIdx).cluster().localNode();
 
-        boolean requiredLeft = originatorIdx == nodeToStopIdx || grid(nodeToStopIdx).cluster().currentBaselineTopology()
+        boolean requiredLeft = grid(nodeToStopIdx).cluster().currentBaselineTopology()
             .stream()
             .anyMatch(bl -> bl.consistentId().equals(leaving.consistentId()));
 
@@ -1220,7 +1220,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             // Wait for all nodes complete checking.
             assertTrue(
                 "Node " + i + " hasn't stopped the check",
-                waitForCondition(() -> !snp(g).isSnapshotChecking(SNAPSHOT_NAME), 10_000));
+                waitForCondition(() -> !snp(g).isSnapshotChecking(SNAPSHOT_NAME), 10_000)
+            );
 
             if (U.isLocalNodeCoordinator(g.context().discovery()))
                 coordIdx = i;
@@ -1289,7 +1290,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 // Wait for all nodes complete checking.
                 assertTrue(
                     "Node " + i + " hasn't stopped the check",
-                    waitForCondition(() -> !snp(g).isSnapshotChecking(SNAPSHOT_NAME), 10_000));
+                    waitForCondition(() -> !snp(g).isSnapshotChecking(SNAPSHOT_NAME), 10_000)
+                );
 
                 if (chkAgainIdx == -1)
                     chkAgainIdx = i;

@@ -1406,7 +1406,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if checking snapshot with specified name is in progress.
      */
     public boolean isSnapshotChecking(String snpName) {
-        return checkSnpProc.snapshotIsChecking(snpName);
+        return checkSnpProc.isSnapshotChecking(snpName);
     }
 
     /**
@@ -1737,8 +1737,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (log.isInfoEnabled()) {
                 Throwable err = lsnr.error();
 
-                log.info("The check snapshot procedure finished [success=" + (err == null) + ", snpName=" + name + ", snpPath=" + snpPath
-                    + ", incIdx=" + incIdx + ", grps=" + grps + (err == null ? "" : ", err=" + err.getMessage()) + ']');
+                boolean success = err == null;
+
+                log.info("The check snapshot procedure finished [snpName=" + name + ", success=" + success + ", snpPath=" + snpPath
+                    + ", incIdx=" + incIdx + ", grps=" + grps + (success ? "" : ", err=" + err.getMessage()) + ']');
             }
         });
 

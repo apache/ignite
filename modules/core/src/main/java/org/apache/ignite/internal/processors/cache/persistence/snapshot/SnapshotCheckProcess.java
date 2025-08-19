@@ -527,7 +527,7 @@ public class SnapshotCheckProcess {
                 contexts.remove(ctx.req.snapshotName());
 
                 if (log.isInfoEnabled())
-                    log.info("Finished snapshot validation with error [req=" + ctx.req + ", err=" + th.getMessage() + ']');
+                    log.info("Finished snapshot validation [req=" + ctx.req + ", err=" + th.getMessage() + ']');
             }
 
             if (clusterOpFut != null)
@@ -625,7 +625,7 @@ public class SnapshotCheckProcess {
             clusterOpFuts.remove(reqId);
 
             if (log.isInfoEnabled())
-                log.info("Finished snapshot validation process [req=" + req + ']');
+                log.info("Finished snapshot validation [req=" + req + ']');
         });
 
         clusterOpFuts.put(reqId, clusterOpFut);
@@ -636,7 +636,7 @@ public class SnapshotCheckProcess {
     }
 
     /** @return {@code True} if snapshot with specified name is checking. */
-    boolean snapshotIsChecking(String snpName) {
+    boolean isSnapshotChecking(String snpName) {
         return contexts.get(snpName) != null;
     }
 
@@ -649,10 +649,10 @@ public class SnapshotCheckProcess {
 
     /**
      * @param reqNodes Set of required topology nodes.
-     * @param respNodes Set of responding topology nodes.
-     * @return Error, if no response was received from the required topology node.
+     * @param respNodes Set of responded topology nodes.
+     * @return Error, if no response was received from a required topology node.
      */
-    private @Nullable ClusterTopologyCheckedException checkNodeLeft(Collection<UUID> reqNodes, Set<UUID> respNodes) {
+    private static @Nullable ClusterTopologyCheckedException checkNodeLeft(Collection<UUID> reqNodes, Set<UUID> respNodes) {
         if (!respNodes.containsAll(reqNodes)) {
             Set<UUID> leftNodes = new HashSet<>(reqNodes);
 
