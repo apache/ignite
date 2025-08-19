@@ -138,6 +138,46 @@ class BinaryClassDescriptor {
      * @param serializer Serializer.
      * @param metaDataEnabled Metadata enabled flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
+     * @throws BinaryObjectException In case of error.
+     */
+    BinaryClassDescriptor(
+        BinaryContext ctx,
+        Class<?> cls,
+        boolean userType,
+        int typeId,
+        String typeName,
+        @Nullable String affKeyFieldName,
+        @Nullable BinaryInternalMapper mapper,
+        @Nullable BinarySerializer serializer,
+        boolean metaDataEnabled,
+        boolean registered
+    ) throws BinaryObjectException {
+        this(
+            ctx,
+            cls,
+            userType,
+            typeId,
+            typeName,
+            affKeyFieldName,
+            mapper,
+            serializer,
+            metaDataEnabled,
+            registered,
+            MarshallerExclusions.isExcluded(cls)
+        );
+    }
+
+    /**
+     * @param ctx Context.
+     * @param cls Class.
+     * @param userType User type flag.
+     * @param typeId Type ID.
+     * @param typeName Type name.
+     * @param affKeyFieldName Affinity key field name.
+     * @param mapper Mapper.
+     * @param serializer Serializer.
+     * @param metaDataEnabled Metadata enabled flag.
+     * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
      * @param excluded If true class values are explicitly excluded from marshalling, otherwise false.
      * @throws BinaryObjectException In case of error.
      */
