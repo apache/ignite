@@ -111,7 +111,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      */
     @Test
-    public void tesTwoCompatibleVersions() throws Exception {
+    public void testTwoCompatibleVersions() throws Exception {
         testCompatibleVersions("2.18.0", "2.17.0", false);
         testCompatibleVersions("2.19.0", "2.20.6", false);
         testCompatibleVersions("2.20.0", "2.20.2", false);
@@ -121,7 +121,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      */
     @Test
-    public void tesThreeCompatibleVersions() throws Exception {
+    public void testThreeCompatibleVersions() throws Exception {
         testCompatibleVersions("2.18.0", "2.18.2", "2.17.0", false);
         testCompatibleVersions("2.18.0", "2.18.3", "2.19.0", false);
 
@@ -137,7 +137,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      */
     @Test
-    public void tesTwoCompatibleVersionsWithClient() throws Exception {
+    public void testTwoCompatibleVersionsWithClient() throws Exception {
         testCompatibleVersions("2.18.0", "2.17.0", true);
         testCompatibleVersions("2.19.0", "2.20.6", true);
         testCompatibleVersions("2.20.0", "2.20.2", true);
@@ -147,7 +147,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      */
     @Test
-    public void tesThreeCompatibleVersionsWithClients() throws Exception {
+    public void testThreeCompatibleVersionsWithClients() throws Exception {
         testCompatibleVersions("2.18.0", "2.18.2", "2.17.0", true);
         testCompatibleVersions("2.18.0", "2.18.3", "2.19.0", true);
 
