@@ -25,6 +25,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.DatagramSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -37,7 +38,13 @@ import java.security.PrivilegedAction;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.UUID;
@@ -815,6 +822,66 @@ public abstract class CommonUtils {
     }
 
     /**
+     * Creates new {@link LinkedHashMap} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <K> Type of map keys.
+     * @param <V> Type of map values.
+     * @return New map.
+     */
+    public static <K, V> LinkedHashMap<K, V> newLinkedHashMap(int expSize) {
+        return new LinkedHashMap<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link HashSet} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <T> Type of elements.
+     * @return New set.
+     */
+    public static <T> HashSet<T> newHashSet(int expSize) {
+        return new HashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link LinkedHashSet} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <T> Type of elements.
+     * @return New set.
+     */
+    public static <T> LinkedHashSet<T> newLinkedHashSet(int expSize) {
+        return new LinkedHashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new map that limited by size.
+     *
+     * @param limit Limit for size.
+     */
+    public static <K, V> Map<K, V> limitedMap(int limit) {
+        if (limit == 0)
+            return Collections.emptyMap();
+
+        if (limit < 5)
+            return new GridLeanMap<>(limit);
+
+        return new HashMap<>(capacity(limit), 0.75f);
+    }
+
+    /**
+     * @param col non-null collection with one element
+     * @return a SingletonList containing the element in the original collection
+     */
+    public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
+        if (col.size() != 1) {
+            throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
+        }
+        return Collections.singletonList(col.iterator().next());
+    }
+
+    /**
      * Closes given resource logging possible checked exception.
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
@@ -1214,5 +1281,107 @@ public abstract class CommonUtils {
         Class sCls = cls.getSuperclass();
 
         return sCls != null && sCls.isEnum();
+    }
+
+    /**
+     * Returns a first non-null value in a given array, if such is present.
+     *
+     * @param vals Input array.
+     * @return First non-null value, or {@code null}, if array is empty or contains
+     *      only nulls.
+     */
+    @Nullable public static <T> T firstNotNull(@Nullable T... vals) {
+        if (vals == null)
+            return null;
+
+        for (T val : vals) {
+            if (val != null)
+                return val;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param cls Class to check.
+     * @return {@code True} if class is final.
+     */
+    public static boolean isFinal(Class<?> cls) {
+        return Modifier.isFinal(cls.getModifiers());
+    }
+
+    /**
+     * Checks if given class is of {@code Ignite} type.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if given class is of {@code Ignite} type.
+     */
+    public static boolean isIgnite(Class<?> cls) {
+        String name = cls.getName();
+
+        return name.startsWith("org.apache.ignite") || name.startsWith("org.jsr166");
+    }
+
+    /**
+     * Checks if given class is of {@code Grid} type.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if given class is of {@code Grid} type.
+     */
+    public static boolean isGrid(Class<?> cls) {
+        return cls.getName().startsWith("org.apache.ignite.internal");
+    }
+
+    /**
+     * Check if given class is of JDK type.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if object is JDK type.
+     */
+    public static boolean isJdk(Class<?> cls) {
+        if (cls.isPrimitive())
+            return true;
+
+        String s = cls.getName();
+
+        return s.startsWith("java.") || s.startsWith("javax.");
+    }
+
+    /**
+     * Calculate a hashCode for an array.
+     *
+     * @param obj Object.
+     */
+    public static int hashCode(Object obj) {
+        if (obj == null)
+            return 0;
+
+        if (obj.getClass().isArray()) {
+            if (obj instanceof byte[])
+                return Arrays.hashCode((byte[])obj);
+            if (obj instanceof short[])
+                return Arrays.hashCode((short[])obj);
+            if (obj instanceof int[])
+                return Arrays.hashCode((int[])obj);
+            if (obj instanceof long[])
+                return Arrays.hashCode((long[])obj);
+            if (obj instanceof float[])
+                return Arrays.hashCode((float[])obj);
+            if (obj instanceof double[])
+                return Arrays.hashCode((double[])obj);
+            if (obj instanceof char[])
+                return Arrays.hashCode((char[])obj);
+            if (obj instanceof boolean[])
+                return Arrays.hashCode((boolean[])obj);
+
+            int result = 1;
+
+            for (Object element : (Object[])obj)
+                result = 31 * result + hashCode(element);
+
+            return result;
+        }
+        else
+            return obj.hashCode();
     }
 }

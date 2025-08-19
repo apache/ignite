@@ -75,6 +75,7 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -584,7 +585,7 @@ public class BinaryUtils {
         if (type != null)
             return type;
 
-        if (U.isEnum(cls))
+        if (CommonUtils.isEnum(cls))
             return GridBinaryMarshaller.ENUM;
 
         if (cls.isArray())
@@ -642,9 +643,9 @@ public class BinaryUtils {
         Class<?> cls = map == null ? null : map.getClass();
 
         if (cls == HashMap.class)
-            return U.newHashMap(((Map)map).size());
+            return CommonUtils.newHashMap(((Map)map).size());
         else if (cls == LinkedHashMap.class)
-            return U.newLinkedHashMap(((Map)map).size());
+            return CommonUtils.newLinkedHashMap(((Map)map).size());
         else if (cls == ConcurrentHashMap.class)
             return new ConcurrentHashMap<>(((Map)map).size());
 
@@ -660,13 +661,13 @@ public class BinaryUtils {
      */
     public static <K, V> Map<K, V> newMap(Map<K, V> map) {
         if (map instanceof LinkedHashMap)
-            return U.newLinkedHashMap(map.size());
+            return CommonUtils.newLinkedHashMap(map.size());
         else if (map instanceof TreeMap)
             return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
         else if (map instanceof ConcurrentHashMap)
             return new ConcurrentHashMap<>(map.size());
 
-        return U.newHashMap(map.size());
+        return CommonUtils.newHashMap(map.size());
     }
 
     /**
@@ -710,9 +711,9 @@ public class BinaryUtils {
         Class<?> cls = col == null ? null : col.getClass();
 
         if (cls == HashSet.class)
-            return U.newHashSet(((Collection)col).size());
+            return CommonUtils.newHashSet(((Collection)col).size());
         else if (cls == LinkedHashSet.class)
-            return U.newLinkedHashSet(((Collection)col).size());
+            return CommonUtils.newLinkedHashSet(((Collection)col).size());
         else if (cls == ConcurrentSkipListSet.class)
             return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)col).comparator());
         else if (cls == ArrayList.class)
@@ -1123,7 +1124,7 @@ public class BinaryUtils {
             return BinaryWriteMode.COL;
         else if (isSpecialMap(cls))
             return BinaryWriteMode.MAP;
-        else if (U.isEnum(cls))
+        else if (CommonUtils.isEnum(cls))
             return BinaryWriteMode.ENUM;
         else if (cls == BinaryEnumObjectImpl.class)
             return BinaryWriteMode.BINARY_ENUM;
@@ -1545,7 +1546,7 @@ public class BinaryUtils {
 
         InvocationHandler ih = (InvocationHandler)doReadObject(in, ctx, ldr, handles);
 
-        return Proxy.newProxyInstance(ldr != null ? ldr : U.gridClassLoader(), intfs, ih);
+        return Proxy.newProxyInstance(ldr != null ? ldr : CommonUtils.gridClassLoader(), intfs, ih);
     }
 
     /**
@@ -1598,7 +1599,7 @@ public class BinaryUtils {
             boolean useCache = Marshallers.USE_CACHE.get();
 
             try {
-                cls = U.forName(clsName, ldr, null);
+                cls = CommonUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
@@ -1629,7 +1630,7 @@ public class BinaryUtils {
             cls = ctx.descriptorForTypeId(true, typeId, ldr, registerMeta).describedClass();
         else {
             try {
-                cls = U.forName(clsName, ldr, null);
+                cls = CommonUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
@@ -1806,7 +1807,7 @@ public class BinaryUtils {
         ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
         try {
-            return ctx.optimizedMarsh().unmarshal(input, U.resolveClassLoader(clsLdr, ctx.classLoader()));
+            return ctx.optimizedMarsh().unmarshal(input, CommonUtils.resolveClassLoader(clsLdr, ctx.classLoader()));
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);
@@ -2254,17 +2255,17 @@ public class BinaryUtils {
                     break;
 
                 case GridBinaryMarshaller.HASH_SET:
-                    col = U.newHashSet(size);
+                    col = CommonUtils.newHashSet(size);
 
                     break;
 
                 case GridBinaryMarshaller.LINKED_HASH_SET:
-                    col = U.newLinkedHashSet(size);
+                    col = CommonUtils.newLinkedHashSet(size);
 
                     break;
 
                 case GridBinaryMarshaller.USER_SET:
-                    col = U.newHashSet(size);
+                    col = CommonUtils.newHashSet(size);
 
                     break;
 
@@ -2283,7 +2284,7 @@ public class BinaryUtils {
         for (int i = 0; i < size; i++)
             col.add(deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize));
 
-        return colType == GridBinaryMarshaller.SINGLETON_LIST ? U.convertToSingletonList(col) : col;
+        return colType == GridBinaryMarshaller.SINGLETON_LIST ? CommonUtils.convertToSingletonList(col) : col;
     }
 
     /**
@@ -2311,17 +2312,17 @@ public class BinaryUtils {
         else {
             switch (mapType) {
                 case GridBinaryMarshaller.HASH_MAP:
-                    map = U.newHashMap(size);
+                    map = CommonUtils.newHashMap(size);
 
                     break;
 
                 case GridBinaryMarshaller.LINKED_HASH_MAP:
-                    map = U.newLinkedHashMap(size);
+                    map = CommonUtils.newLinkedHashMap(size);
 
                     break;
 
                 case GridBinaryMarshaller.USER_COL:
-                    map = U.newHashMap(size);
+                    map = CommonUtils.newHashMap(size);
 
                     break;
 

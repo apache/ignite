@@ -64,6 +64,7 @@ import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -82,7 +83,7 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
  */
 public class BinaryContext {
     /** System loader. */
-    private static final ClassLoader sysLdr = U.gridClassLoader();
+    private static final ClassLoader sysLdr = CommonUtils.gridClassLoader();
 
     /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
@@ -272,8 +273,8 @@ public class BinaryContext {
 
         // IDs range [200..1000] is used by Ignite internal APIs.
 
-        if (U.sunReflectionFactory() == null) {
-            U.warn(log, "ReflectionFactory not found, deserialization of binary objects for classes without " +
+        if (CommonUtils.sunReflectionFactory() == null) {
+            CommonUtils.warn(log, "ReflectionFactory not found, deserialization of binary objects for classes without " +
                 "default constructor is not possible");
         }
 
@@ -359,9 +360,9 @@ public class BinaryContext {
                     throw new BinaryObjectException("Class name is required for binary type configuration.");
 
                 // Resolve mapper.
-                BinaryIdMapper idMapper = U.firstNotNull(typeCfg.getIdMapper(), globalIdMapper);
-                BinaryNameMapper nameMapper = U.firstNotNull(typeCfg.getNameMapper(), globalNameMapper);
-                BinarySerializer serializer = U.firstNotNull(typeCfg.getSerializer(), globalSerializer);
+                BinaryIdMapper idMapper = CommonUtils.firstNotNull(typeCfg.getIdMapper(), globalIdMapper);
+                BinaryNameMapper nameMapper = CommonUtils.firstNotNull(typeCfg.getNameMapper(), globalNameMapper);
+                BinarySerializer serializer = CommonUtils.firstNotNull(typeCfg.getSerializer(), globalSerializer);
                 BinaryIdentityResolver identity = BinaryArrayIdentityResolver.instance();
 
                 BinaryInternalMapper mapper = resolveMapper(nameMapper, idMapper);
@@ -373,7 +374,7 @@ public class BinaryContext {
                         String affField = affFields.remove(clsName0);
 
                         if (affField == null) {
-                            Class<?> cls = U.classForName(clsName0, null);
+                            Class<?> cls = CommonUtils.classForName(clsName0, null);
 
                             if (cls != null)
                                 affField = affFldNameProvider.apply(cls);
@@ -387,7 +388,7 @@ public class BinaryContext {
                     String affField = affFields.remove(clsName);
 
                     if (affField == null) {
-                        Class<?> cls = U.classForName(clsName, null);
+                        Class<?> cls = CommonUtils.classForName(clsName, null);
 
                         if (cls != null)
                             affField = affFldNameProvider.apply(cls);
@@ -471,7 +472,7 @@ public class BinaryContext {
 
         Collection<String> clsNames = new ArrayList<>();
 
-        ClassLoader ldr = U.gridClassLoader();
+        ClassLoader ldr = CommonUtils.gridClassLoader();
 
         String pkgPath = pkgName.replaceAll("\\.", "/");
 
@@ -739,7 +740,7 @@ public class BinaryContext {
                 if (clsName == null)
                     throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-                cls = U.forName(clsName, ldr, null);
+                cls = CommonUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
 
                 desc = descByCls.get(cls);
 
@@ -1116,7 +1117,7 @@ public class BinaryContext {
         Class<?> cls = null;
 
         try {
-            cls = U.resolveClassLoader(null, classLoader()).loadClass(clsName);
+            cls = CommonUtils.resolveClassLoader(null, classLoader()).loadClass(clsName);
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
             // No-op.
@@ -1495,7 +1496,7 @@ public class BinaryContext {
 
         optmMarsh.onUndeploy(ldr);
 
-        U.clearClassCache(ldr);
+        CommonUtils.clearClassCache(ldr);
     }
 
     /**

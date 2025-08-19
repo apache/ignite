@@ -46,6 +46,7 @@ import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -55,7 +56,7 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
-import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
+import static org.apache.ignite.internal.util.CommonUtils.isLambda;
 
 /**
  * Binary class descriptor.
@@ -233,8 +234,8 @@ class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) && !QueryUtils.isGeometryClass(cls)) {
-            U.warnDevOnly(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
+        if (useOptMarshaller && userType && !CommonUtils.isIgnite(cls) && !CommonUtils.isJdk(cls) && !QueryUtils.isGeometryClass(cls)) {
+            CommonUtils.warnDevOnly(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
                 "used instead and class instances will be deserialized on the server. Please ensure that all nodes " +
@@ -904,7 +905,7 @@ class BinaryClassDescriptor {
             else
                 msg = "Failed to serialize object [typeId=" + typeId + ']';
 
-            U.error(ctx.log(), msg, e);
+            CommonUtils.error(ctx.log(), msg, e);
 
             throw new BinaryObjectException(msg, e);
         }
@@ -978,7 +979,7 @@ class BinaryClassDescriptor {
             else
                 msg = "Failed to deserialize object [typeId=" + typeId + ']';
 
-            U.error(ctx.log(), msg, e);
+            CommonUtils.error(ctx.log(), msg, e);
 
             throw new BinaryObjectException(msg, e);
         }
@@ -1099,7 +1100,7 @@ class BinaryClassDescriptor {
         assert cls != null;
 
         try {
-            Constructor<?> ctor = U.forceEmptyConstructor(cls);
+            Constructor<?> ctor = CommonUtils.forceEmptyConstructor(cls);
 
             if (ctor == null)
                 throw new BinaryObjectException("Failed to find empty constructor for class: " + cls.getName());

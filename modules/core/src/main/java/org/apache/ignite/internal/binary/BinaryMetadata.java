@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -122,7 +123,7 @@ public class BinaryMetadata implements Externalizable {
         this.schemas = schemas;
 
         if (schemas != null) {
-            schemaIds = U.newHashSet(schemas.size());
+            schemaIds = CommonUtils.newHashSet(schemas.size());
 
             for (BinarySchema schema : schemas)
                 schemaIds.add(schema.schemaId());
@@ -328,7 +329,7 @@ public class BinaryMetadata implements Externalizable {
         else {
             schemas = new ArrayList<>();
 
-            schemaIds = U.newHashSet(schemasSize);
+            schemaIds = CommonUtils.newHashSet(schemasSize);
 
             for (int i = 0; i < schemasSize; i++) {
                 BinarySchema schema = new BinarySchema();
