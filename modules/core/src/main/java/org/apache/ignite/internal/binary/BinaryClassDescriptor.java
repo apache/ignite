@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
 import static org.apache.ignite.internal.util.CommonUtils.isLambda;
 
 /**

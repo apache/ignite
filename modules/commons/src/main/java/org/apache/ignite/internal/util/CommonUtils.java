@@ -976,6 +976,17 @@ public abstract class CommonUtils {
     }
 
     /**
+     * @param col non-null collection with one element
+     * @return a SingletonList containing the element in the original collection
+     */
+    public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
+        if (col.size() != 1) {
+            throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
+        }
+        return Collections.singletonList(col.iterator().next());
+    }
+
+    /**
      * Closes given resource logging possible checked exception.
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
@@ -1402,17 +1413,6 @@ public abstract class CommonUtils {
      */
     public static boolean isFinal(Class<?> cls) {
         return Modifier.isFinal(cls.getModifiers());
-    }
-
-    /**
-     * @param col non-null collection with one element
-     * @return a SingletonList containing the element in the original collection
-     */
-    public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
-        if (col.size() != 1) {
-            throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
-        }
-        return Collections.singletonList(col.iterator().next());
     }
 
     /**
