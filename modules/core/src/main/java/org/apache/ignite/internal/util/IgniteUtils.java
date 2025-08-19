@@ -5846,7 +5846,7 @@ public abstract class IgniteUtils extends CommonUtils {
     public static Class<?> forName(
         String clsName,
         @Nullable ClassLoader ldr,
-        IgnitePredicate<String> clsFilter
+        @Nullable IgnitePredicate<String> clsFilter
     ) throws ClassNotFoundException {
         return forName(clsName, ldr, clsFilter, Marshallers.USE_CACHE.get());
     }

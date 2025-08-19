@@ -703,7 +703,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Tests whether or not given class is loadable provided class loader.
+     * Tests whether given class is loadable with provided class loader.
      *
      * @param clsName Class name to test.
      * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead.
