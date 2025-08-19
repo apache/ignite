@@ -1770,7 +1770,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 log.debug("Register handler: [nodeId=" + nodeId + ", routineId=" + routineId + ", info=" + info + ']');
 
             if (interval > 0) {
-                IgniteThread checker = new IgniteThread(new GridWorker(ctx.igniteInstanceName(), "continuous-buffer-checker", log) {
+                IgniteThread checker =  U.newThread(new GridWorker(ctx.igniteInstanceName(), "continuous-buffer-checker", log) {
                     @Override protected void body() {
                         long interval0 = interval;
 

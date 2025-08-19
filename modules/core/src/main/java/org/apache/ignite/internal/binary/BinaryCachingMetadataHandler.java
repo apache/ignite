@@ -51,12 +51,12 @@ class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
         BinaryType oldType = metas.put(typeId, type);
 
         if (oldType != null) {
-            BinaryMetadata oldMeta = ((BinaryTypeImpl)oldType).metadata();
-            BinaryMetadata newMeta = ((BinaryTypeImpl)type).metadata();
+            BinaryMetadata oldMeta = ((BinaryTypeEx)oldType).metadata();
+            BinaryMetadata newMeta = ((BinaryTypeEx)type).metadata();
 
             BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta);
 
-            BinaryType mergedType = mergedMeta.wrap(((BinaryTypeImpl)oldType).context());
+            BinaryType mergedType = mergedMeta.wrap(((BinaryTypeEx)oldType).context());
 
             metas.put(typeId, mergedType);
         }
@@ -75,14 +75,14 @@ class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
 
     /** {@inheritDoc} */
     @Override public synchronized BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
-        BinaryTypeImpl type = (BinaryTypeImpl)metas.get(typeId);
+        BinaryTypeEx type = (BinaryTypeEx)metas.get(typeId);
 
         return type != null ? type.metadata() : null;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-        BinaryTypeImpl type = (BinaryTypeImpl)metas.get(typeId);
+        BinaryTypeEx type = (BinaryTypeEx)metas.get(typeId);
         return type != null && type.metadata().hasSchema(schemaId) ? type : null;
     }
 

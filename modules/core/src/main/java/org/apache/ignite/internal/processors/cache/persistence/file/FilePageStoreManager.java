@@ -963,7 +963,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             workers.add(worker);
 
-            Thread asyncTask = new IgniteThread(worker);
+            Thread asyncTask = U.newThread(worker);
 
             asyncTask.start();
         }

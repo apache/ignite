@@ -416,7 +416,7 @@ public class GridNioServer<T> {
 
             clientWorkers.add(worker);
 
-            clientThreads[i] = new IgniteThread(worker);
+            clientThreads[i] = U.newThread(worker);
 
             clientThreads[i].setDaemon(daemon);
         }
@@ -504,7 +504,7 @@ public class GridNioServer<T> {
         filterChain.start();
 
         if (acceptWorker != null)
-            new IgniteThread(acceptWorker).start();
+            U.newThread(acceptWorker).start();
 
         for (IgniteThread thread : clientThreads)
             thread.start();

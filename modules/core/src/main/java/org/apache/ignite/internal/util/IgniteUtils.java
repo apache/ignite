@@ -38,7 +38,6 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringWriter;
-import java.io.UTFDataFormatException;
 import java.lang.annotation.Annotation;
 import java.lang.management.CompilationMXBean;
 import java.lang.management.LockInfo;
@@ -62,10 +61,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileLock;
@@ -74,7 +70,6 @@ import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.ProtectionDomain;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -151,8 +146,10 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
@@ -194,6 +191,8 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -204,7 +203,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
-import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -237,6 +235,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
@@ -246,7 +245,6 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Objects.isNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_HOSTNAME_VERIFIER;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME;
@@ -281,15 +279,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 public abstract class IgniteUtils extends CommonUtils {
     /** Logger. */
     private static final Logger log = Logger.getLogger(IgniteUtils.class.getName());
-
-    /** */
-    public static final long KB = 1024L;
-
-    /** */
-    public static final long MB = 1024L * 1024;
-
-    /** */
-    public static final long GB = 1024L * 1024 * 1024;
 
     /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE = GB / 4;
@@ -347,26 +336,11 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Length of numbered file name. */
     public static final int NUMBER_FILE_NAME_LENGTH = 16;
 
-    /** Project home directory. */
-    private static volatile GridTuple<String> ggHome;
-
     /** OS string. */
     private static final String osStr;
 
     /** JDK string. */
     private static String jdkStr;
-
-    /** Indicates whether current OS is some version of Windows. */
-    private static boolean win;
-
-    /** Indicates whether current OS is UNIX flavor. */
-    private static boolean unix;
-
-    /** Indicates whether current OS is Linux flavor. */
-    private static boolean linux;
-
-    /** Indicates whether current OS is Mac OS. */
-    private static boolean mac;
 
     /** Name of the JDK. */
     private static String jdkName;
@@ -427,10 +401,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Random is used to get random server node to authentication from client node. */
     private static final Random RND = new Random(System.currentTimeMillis());
 
-    /** Exception converters. */
-    private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
-        exceptionConverters;
-
     /** */
     private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
 
@@ -460,27 +430,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
     /** */
     private static final boolean assertionsEnabled;
-
-    /** Empty URL array. */
-    private static final URL[] EMPTY_URL_ARR = new URL[0];
-
-    /** Builtin class loader class.
-     *
-     * Note: needs for compatibility with Java 9.
-     */
-    private static final Class bltClsLdrCls = defaultClassLoaderClass();
-
-    /** Url class loader field.
-     *
-     * Note: needs for compatibility with Java 9.
-     */
-    private static final Field urlClsLdrField = urlClassLoaderField();
-
-    /** JDK9: jdk.internal.loader.URLClassPath. */
-    private static Class clsURLClassPath;
-
-    /** JDK9: URLClassPath#getURLs. */
-    private static Method mthdURLClassPathGetUrls;
 
     /** Byte count prefixes. */
     private static final String BYTE_CNT_PREFIXES = " KMGTPE";
@@ -517,27 +466,6 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         String osName = System.getProperty("os.name");
-
-        String osLow = osName.toLowerCase();
-
-        // OS type detection.
-        if (osLow.contains("win"))
-            win = true;
-        else if (osLow.contains("mac os"))
-            mac = true;
-        else {
-            // UNIXs flavors tokens.
-            for (CharSequence os : new String[] {"ix", "inux", "olaris", "un", "ux", "sco", "bsd", "att"})
-                if (osLow.contains(os)) {
-                    unix = true;
-
-                    break;
-                }
-
-            if (osLow.contains("inux"))
-                linux = true;
-        }
-
         String osArch = System.getProperty("os.arch");
 
         String javaRtName = System.getProperty("java.runtime.name");
@@ -648,7 +576,7 @@ public abstract class IgniteUtils extends CommonUtils {
             }
         }
 
-        exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
+        exceptionConverters.putAll(exceptionConverters());
 
         // Set the http.strictPostRedirect property to prevent redirected POST from being mapped to a GET.
         System.setProperty("http.strictPostRedirect", "true");
@@ -661,25 +589,6 @@ public abstract class IgniteUtils extends CommonUtils {
             else if ("toString".equals(mtd.getName()))
                 toStringMtd = mtd;
         }
-
-        try {
-            clsURLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
-            mthdURLClassPathGetUrls = clsURLClassPath.getMethod("getURLs");
-        }
-        catch (ReflectiveOperationException e) {
-            clsURLClassPath = null;
-            mthdURLClassPathGetUrls = null;
-        }
-    }
-
-    /**
-     * Gets IgniteClosure for an IgniteCheckedException class.
-     *
-     * @param clazz Class.
-     * @return The IgniteClosure mapped to this exception class, or null if none.
-     */
-    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
-        return exceptionConverters.get(clazz);
     }
 
     /**
@@ -814,58 +723,6 @@ public abstract class IgniteUtils extends CommonUtils {
             includeClsPath ?
                 allPluginProviders() :
                 Collections.emptyList();
-    }
-
-    /**
-     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
-     * does not wrap passed in exception if none suitable converter found.
-     *
-     * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
-     */
-    public static Exception convertExceptionNoWrap(IgniteCheckedException e) {
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
-
-        if (converter != null)
-            return converter.apply(e);
-
-        if (e.getCause() instanceof IgniteException)
-            return (Exception)e.getCause();
-
-        return e;
-    }
-
-    /**
-     * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
-     */
-    public static IgniteException convertException(IgniteCheckedException e) {
-        IgniteClientDisconnectedException e0 = e.getCause(IgniteClientDisconnectedException.class);
-
-        if (e0 != null) {
-            assert e0.reconnectFuture() != null : e0;
-
-            throw e0;
-        }
-
-        IgniteClientDisconnectedCheckedException disconnectedErr =
-            e.getCause(IgniteClientDisconnectedCheckedException.class);
-
-        if (disconnectedErr != null) {
-            assert disconnectedErr.reconnectFuture() != null : disconnectedErr;
-
-            e = disconnectedErr;
-        }
-
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
-
-        if (converter != null)
-            return converter.apply(e);
-
-        if (e.getCause() instanceof IgniteException)
-            return (IgniteException)e.getCause();
-
-        return new IgniteException(e.getMessage(), e);
     }
 
     /**
@@ -2786,179 +2643,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Resolve project home directory based on source code base.
-     *
-     * @return Project home directory (or {@code null} if it cannot be resolved).
-     */
-    @Nullable private static String resolveProjectHome() {
-        assert Thread.holdsLock(IgniteUtils.class);
-
-        // Resolve Ignite home via environment variables.
-        String ggHome0 = IgniteSystemProperties.getString(IGNITE_HOME);
-
-        if (!F.isEmpty(ggHome0))
-            return ggHome0;
-
-        String appWorkDir = System.getProperty("user.dir");
-
-        if (appWorkDir != null) {
-            ggHome0 = findProjectHome(new File(appWorkDir));
-
-            if (ggHome0 != null)
-                return ggHome0;
-        }
-
-        URI classesUri;
-
-        Class<IgniteUtils> cls = IgniteUtils.class;
-
-        try {
-            ProtectionDomain domain = cls.getProtectionDomain();
-
-            // Should not happen, but to make sure our code is not broken.
-            if (domain == null || domain.getCodeSource() == null || domain.getCodeSource().getLocation() == null) {
-                logResolveFailed(cls, null);
-
-                return null;
-            }
-
-            // Resolve path to class-file.
-            classesUri = domain.getCodeSource().getLocation().toURI();
-
-            // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
-            if (isWindows() && classesUri.getAuthority() != null)
-                classesUri = new URI(classesUri.toString().replace("file://", "file:/"));
-        }
-        catch (URISyntaxException | SecurityException e) {
-            logResolveFailed(cls, e);
-
-            return null;
-        }
-
-        File classesFile;
-
-        try {
-            classesFile = new File(classesUri);
-        }
-        catch (IllegalArgumentException e) {
-            logResolveFailed(cls, e);
-
-            return null;
-        }
-
-        return findProjectHome(classesFile);
-    }
-
-    /**
-     * Tries to find project home starting from specified directory and moving to root.
-     *
-     * @param startDir First directory in search hierarchy.
-     * @return Project home path or {@code null} if it wasn't found.
-     */
-    private static String findProjectHome(File startDir) {
-        for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
-            // Check 'cur' is project home directory.
-            if (!new File(cur, "bin").isDirectory() ||
-                !new File(cur, "config").isDirectory())
-                continue;
-
-            return cur.getPath();
-        }
-
-        return null;
-    }
-
-    /**
-     * @param cls Class.
-     * @param e Exception.
-     */
-    private static void logResolveFailed(Class cls, Exception e) {
-        warn(null, "Failed to resolve IGNITE_HOME automatically for class codebase " +
-            "[class=" + cls + (e == null ? "" : ", e=" + e.getMessage()) + ']');
-    }
-
-    /**
-     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system
-     * properties or from environment in that order.
-     *
-     * @return {@code IGNITE_HOME} property.
-     */
-    @Nullable public static String getIgniteHome() {
-        GridTuple<String> ggHomeTup = ggHome;
-
-        String ggHome0;
-
-        if (ggHomeTup == null) {
-            synchronized (IgniteUtils.class) {
-                // Double check.
-                ggHomeTup = ggHome;
-
-                if (ggHomeTup == null) {
-                    // Resolve Ignite installation home directory.
-                    ggHome = F.t(ggHome0 = resolveProjectHome());
-
-                    if (ggHome0 != null)
-                        System.setProperty(IGNITE_HOME, ggHome0);
-                }
-                else
-                    ggHome0 = ggHomeTup.get();
-            }
-        }
-        else
-            ggHome0 = ggHomeTup.get();
-
-        return ggHome0;
-    }
-
-    /**
-     * @param path Ignite home. May be {@code null}.
-     */
-    public static void setIgniteHome(@Nullable String path) {
-        GridTuple<String> ggHomeTup = ggHome;
-
-        String ggHome0;
-
-        if (ggHomeTup == null) {
-            synchronized (IgniteUtils.class) {
-                // Double check.
-                ggHomeTup = ggHome;
-
-                if (ggHomeTup == null) {
-                    if (F.isEmpty(path))
-                        System.clearProperty(IGNITE_HOME);
-                    else
-                        System.setProperty(IGNITE_HOME, path);
-
-                    ggHome = F.t(path);
-
-                    return;
-                }
-                else
-                    ggHome0 = ggHomeTup.get();
-            }
-        }
-        else
-            ggHome0 = ggHomeTup.get();
-
-        if (ggHome0 != null && !ggHome0.equals(path)) {
-            try {
-                Path path0 = new File(ggHome0).toPath();
-
-                Path path1 = new File(path).toPath();
-
-                if (!Files.isSameFile(path0, path1))
-                    throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
-                        "[igniteHome=" + path0 + ", newIgniteHome=" + path1 + ']');
-            }
-            catch (IOException ignore) {
-                // Throw an exception if failed to follow symlinks.
-                throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
-                    "[igniteHome=" + ggHome0 + ", newIgniteHome=" + path + ']');
-            }
-        }
-    }
-
-    /**
      * Gets file associated with path.
      * <p>
      * First check if path is relative to {@code IGNITE_HOME}.
@@ -4014,44 +3698,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Calculate a hashCode for an array.
-     *
-     * @param obj Object.
-     */
-    public static int hashCode(Object obj) {
-        if (obj == null)
-            return 0;
-
-        if (obj.getClass().isArray()) {
-            if (obj instanceof byte[])
-                return Arrays.hashCode((byte[])obj);
-            if (obj instanceof short[])
-                return Arrays.hashCode((short[])obj);
-            if (obj instanceof int[])
-                return Arrays.hashCode((int[])obj);
-            if (obj instanceof long[])
-                return Arrays.hashCode((long[])obj);
-            if (obj instanceof float[])
-                return Arrays.hashCode((float[])obj);
-            if (obj instanceof double[])
-                return Arrays.hashCode((double[])obj);
-            if (obj instanceof char[])
-                return Arrays.hashCode((char[])obj);
-            if (obj instanceof boolean[])
-                return Arrays.hashCode((boolean[])obj);
-
-            int result = 1;
-
-            for (Object element : (Object[])obj)
-                result = 31 * result + hashCode(element);
-
-            return result;
-        }
-        else
-            return obj.hashCode();
-    }
-
-    /**
      * @param in Input.
      * @return Read map.
      * @throws IOException If de-serialization failed.
@@ -4182,51 +3828,6 @@ public abstract class IgniteUtils extends CommonUtils {
             set.add((E)in.readObject());
 
         return set;
-    }
-
-    /**
-     * Writes string to output stream accounting for {@code null} values.
-     * <p>
-     * Limitation for max string lenght of <code>65535</code> bytes is caused by {@link DataOutput#writeUTF}
-     * used under the hood to perform an actual write.
-     * </p>
-     * <p>
-     * If longer string is passes a {@link UTFDataFormatException} exception will be thrown.
-     * </p>
-     * <p>
-     * To write longer strings use {@link #writeLongString(DataOutput, String)} writes string as is converting it into binary array of UTF-8
-     * encoded characters.
-     * To read the value back {@link #readLongString(DataInput)} should be used.
-     * </p>
-     *
-     * @param out Output stream to write to.
-     * @param s String to write, possibly {@code null}.
-     * @throws IOException If write failed.
-     */
-    public static void writeString(DataOutput out, String s) throws IOException {
-        // Write null flag.
-        out.writeBoolean(s == null);
-
-        if (s != null)
-            out.writeUTF(s);
-    }
-
-    /**
-     * Reads string from input stream accounting for {@code null} values.
-     *
-     * Method enables to read strings shorter than <code>65535</code> bytes in UTF-8 otherwise an exception will be thrown.
-     *
-     * Strings written by {@link #writeString(DataOutput, String)} can be read by this method.
-     *
-     * @see #writeString(DataOutput, String) for more information about writing strings.
-     *
-     * @param in Stream to read from.
-     * @return Read string, possibly {@code null}.
-     * @throws IOException If read failed.
-     */
-    @Nullable public static String readString(DataInput in) throws IOException {
-        // If value is not null, then read it. Otherwise return null.
-        return !in.readBoolean() ? in.readUTF() : null;
     }
 
     /**
@@ -4890,43 +4491,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Checks if given class is of {@code Ignite} type.
-     *
-     * @param cls Class to check.
-     * @return {@code True} if given class is of {@code Ignite} type.
-     */
-    public static boolean isIgnite(Class<?> cls) {
-        String name = cls.getName();
-
-        return name.startsWith("org.apache.ignite") || name.startsWith("org.jsr166");
-    }
-
-    /**
-     * Checks if given class is of {@code Grid} type.
-     *
-     * @param cls Class to check.
-     * @return {@code True} if given class is of {@code Grid} type.
-     */
-    public static boolean isGrid(Class<?> cls) {
-        return cls.getName().startsWith("org.apache.ignite.internal");
-    }
-
-    /**
-     * Check if given class is of JDK type.
-     *
-     * @param cls Class to check.
-     * @return {@code True} if object is JDK type.
-     */
-    public static boolean isJdk(Class<?> cls) {
-        if (cls.isPrimitive())
-            return true;
-
-        String s = cls.getName();
-
-        return s.startsWith("java.") || s.startsWith("javax.");
-    }
-
-    /**
      * Converts {@link InterruptedException} to {@link IgniteCheckedException}.
      *
      * @param mux Mux to wait on.
@@ -5017,42 +4581,6 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     public static String jdkString() {
         return jdkStr;
-    }
-
-    /**
-     * Indicates whether current OS is Linux flavor.
-     *
-     * @return {@code true} if current OS is Linux - {@code false} otherwise.
-     */
-    public static boolean isLinux() {
-        return linux;
-    }
-
-    /**
-     * Indicates whether current OS is Mac OS.
-     *
-     * @return {@code true} if current OS is Mac OS - {@code false} otherwise.
-     */
-    public static boolean isMacOs() {
-        return mac;
-    }
-
-    /**
-     * Indicates whether current OS is UNIX flavor.
-     *
-     * @return {@code true} if current OS is UNIX - {@code false} otherwise.
-     */
-    public static boolean isUnix() {
-        return unix;
-    }
-
-    /**
-     * Indicates whether current OS is Windows.
-     *
-     * @return {@code true} if current OS is Windows (any versions) - {@code false} otherwise.
-     */
-    public static boolean isWindows() {
-        return win;
     }
 
     /**
@@ -5754,74 +5282,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Returns URLs of class loader
-     *
-     * @param clsLdr Class loader.
-     */
-    public static URL[] classLoaderUrls(ClassLoader clsLdr) {
-        if (clsLdr == null)
-            return EMPTY_URL_ARR;
-        else if (clsLdr instanceof URLClassLoader)
-            return ((URLClassLoader)clsLdr).getURLs();
-        else if (bltClsLdrCls != null && urlClsLdrField != null && bltClsLdrCls.isAssignableFrom(clsLdr.getClass())) {
-            try {
-                synchronized (urlClsLdrField) {
-                    // Backup accessible field state.
-                    boolean accessible = urlClsLdrField.isAccessible();
-
-                    try {
-                        if (!accessible)
-                            urlClsLdrField.setAccessible(true);
-
-                        Object ucp = urlClsLdrField.get(clsLdr);
-
-                        if (ucp instanceof URLClassLoader)
-                            return ((URLClassLoader)ucp).getURLs();
-                        else if (clsURLClassPath != null && clsURLClassPath.isInstance(ucp))
-                            return (URL[])mthdURLClassPathGetUrls.invoke(ucp);
-                        else
-                            throw new RuntimeException("Unknown classloader: " + clsLdr.getClass());
-                    }
-                    finally {
-                        // Recover accessible field state.
-                        if (!accessible)
-                            urlClsLdrField.setAccessible(false);
-                    }
-                }
-            }
-            catch (InvocationTargetException | IllegalAccessException e) {
-                e.printStackTrace(System.err);
-
-                return EMPTY_URL_ARR;
-            }
-        }
-        else
-            return EMPTY_URL_ARR;
-    }
-
-    /** */
-    @Nullable private static Class defaultClassLoaderClass() {
-        try {
-            return Class.forName("jdk.internal.loader.BuiltinClassLoader");
-        }
-        catch (ClassNotFoundException e) {
-            return null;
-        }
-    }
-
-    /** */
-    @Nullable private static Field urlClassLoaderField() {
-        try {
-            Class cls = defaultClassLoaderClass();
-
-            return cls == null ? null : cls.getDeclaredField("ucp");
-        }
-        catch (NoSuchFieldException e) {
-            return null;
-        }
-    }
-
-    /**
      * Sleeps for given number of milliseconds.
      *
      * @param ms Time to sleep.
@@ -6051,14 +5511,6 @@ public abstract class IgniteUtils extends CommonUtils {
         catch (IgniteException e) {
             return false;
         }
-    }
-
-    /**
-     * @param cls Class to check.
-     * @return {@code True} if class is final.
-     */
-    public static boolean isFinal(Class<?> cls) {
-        return Modifier.isFinal(cls.getModifiers());
     }
 
     /**
@@ -6542,25 +5994,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Returns a first non-null value in a given array, if such is present.
-     *
-     * @param vals Input array.
-     * @return First non-null value, or {@code null}, if array is empty or contains
-     *      only nulls.
-     */
-    @Nullable public static <T> T firstNotNull(@Nullable T... vals) {
-        if (vals == null)
-            return null;
-
-        for (T val : vals) {
-            if (val != null)
-                return val;
-        }
-
-        return null;
-    }
-
-    /**
      * For each object provided by the given {@link Iterable} checks if it implements
      * {@link LifecycleAware} interface and executes {@link LifecycleAware#start} method.
      *
@@ -6910,13 +6343,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Nullifies Ignite home directory. For test purposes only.
-     */
-    public static void nullifyHomeDirectory() {
-        ggHome = null;
-    }
-
-    /**
      * Resolves work directory.
      *
      * @param workDir Work directory.
@@ -7073,79 +6499,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * @param ptr Address.
-     * @param size Size.
-     * @return Bytes.
-     */
-    public static byte[] copyMemory(long ptr, int size) {
-        byte[] res = new byte[size];
-
-        GridUnsafe.copyMemory(null, ptr, res, GridUnsafe.BYTE_ARR_OFF, size);
-
-        return res;
-    }
-
-    /**
-     * Creates new {@link LinkedHashMap} with expected size.
-     *
-     * @param expSize Expected size of created map.
-     * @param <K> Type of map keys.
-     * @param <V> Type of map values.
-     * @return New map.
-     */
-    public static <K, V> LinkedHashMap<K, V> newLinkedHashMap(int expSize) {
-        return new LinkedHashMap<>(capacity(expSize));
-    }
-
-    /**
-     * Creates new {@link HashSet} with expected size.
-     *
-     * @param expSize Expected size of created map.
-     * @param <T> Type of elements.
-     * @return New set.
-     */
-    public static <T> HashSet<T> newHashSet(int expSize) {
-        return new HashSet<>(capacity(expSize));
-    }
-
-    /**
-     * Creates new {@link LinkedHashSet} with expected size.
-     *
-     * @param expSize Expected size of created map.
-     * @param <T> Type of elements.
-     * @return New set.
-     */
-    public static <T> LinkedHashSet<T> newLinkedHashSet(int expSize) {
-        return new LinkedHashSet<>(capacity(expSize));
-    }
-
-    /**
-     * Creates new map that limited by size.
-     *
-     * @param limit Limit for size.
-     */
-    public static <K, V> Map<K, V> limitedMap(int limit) {
-        if (limit == 0)
-            return Collections.emptyMap();
-
-        if (limit < 5)
-            return new GridLeanMap<>(limit);
-
-        return new HashMap<>(capacity(limit), 0.75f);
-    }
-
-    /**
-     * @param col non-null collection with one element
-     * @return a SingletonList containing the element in the original collection
-     */
-    public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
-        if (col.size() != 1) {
-            throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
-        }
-        return Collections.singletonList(col.iterator().next());
-    }
-
-    /**
      * Returns comparator that sorts remote node addresses. If remote node resides on the same host, then put
      * loopback addresses first, last otherwise.
      *
@@ -7222,64 +6575,6 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         return null;
-    }
-
-    /**
-     * Finds a non-static and non-abstract method from the class it parents.
-     *
-     * Method.getMethod() does not return non-public method.
-     *
-     * @param cls Target class.
-     * @param name Name of the method.
-     * @param paramTypes Method parameters.
-     * @return Method or {@code null}.
-     */
-    @Nullable public static Method findInheritableMethod(Class<?> cls, String name, Class<?>... paramTypes) {
-        Method mtd = null;
-
-        Class<?> cls0 = cls;
-
-        while (cls0 != null) {
-            try {
-                mtd = cls0.getDeclaredMethod(name, paramTypes);
-
-                break;
-            }
-            catch (NoSuchMethodException e) {
-                cls0 = cls0.getSuperclass();
-            }
-        }
-
-        if (mtd == null)
-            return null;
-
-        mtd.setAccessible(true);
-
-        int mods = mtd.getModifiers();
-
-        if ((mods & (Modifier.STATIC | Modifier.ABSTRACT)) != 0)
-            return null;
-        else if ((mods & (Modifier.PUBLIC | Modifier.PROTECTED)) != 0)
-            return mtd;
-        else if ((mods & Modifier.PRIVATE) != 0)
-            return cls == cls0 ? mtd : null;
-        else {
-            ClassLoader clsLdr = cls.getClassLoader();
-
-            ClassLoader clsLdr0 = cls0.getClassLoader();
-
-            return clsLdr == clsLdr0 && packageName(cls).equals(packageName(cls0)) ? mtd : null;
-        }
-    }
-
-    /**
-     * @param cls Class.
-     * @return Package name.
-     */
-    public static String packageName(Class<?> cls) {
-        Package pkg = cls.getPackage();
-
-        return pkg == null ? "" : pkg.getName();
     }
 
     /**
@@ -8476,130 +7771,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Writes string to output stream accounting for {@code null} values. <br/>
-     *
-     * This method can write string of any length, limit of <code>65535</code> is not applied.
-     *
-     * @param out Output stream to write to.
-     * @param s String to write, possibly {@code null}.
-     * @throws IOException If write failed.
-     */
-    public static void writeLongString(DataOutput out, @Nullable String s) throws IOException {
-        // Write null flag.
-        out.writeBoolean(isNull(s));
-
-        if (isNull(s))
-            return;
-
-        int sLen = s.length();
-
-        // Write string length.
-        out.writeInt(sLen);
-
-        // Write byte array.
-        for (int i = 0; i < sLen; i++) {
-            char c = s.charAt(i);
-            int utfBytes = utfBytes(c);
-
-            if (utfBytes == 1)
-                out.writeByte((byte)c);
-            else if (utfBytes == 3) {
-                out.writeByte((byte)(0xE0 | (c >> 12) & 0x0F));
-                out.writeByte((byte)(0x80 | (c >> 6) & 0x3F));
-                out.writeByte((byte)(0x80 | (c & 0x3F)));
-            }
-            else {
-                out.writeByte((byte)(0xC0 | ((c >> 6) & 0x1F)));
-                out.writeByte((byte)(0x80 | (c & 0x3F)));
-            }
-        }
-    }
-
-    /**
-     * Reads string from input stream accounting for {@code null} values. <br/>
-     *
-     * This method can read string of any length, limit of <code>65535</code> is not applied.
-     *
-     * @param in Stream to read from.
-     * @return Read string, possibly {@code null}.
-     * @throws IOException If read failed.
-     */
-    @Nullable public static String readLongString(DataInput in) throws IOException {
-        // Check null value.
-        if (in.readBoolean())
-            return null;
-
-        // Read string length.
-        int sLen = in.readInt();
-
-        StringBuilder strBuilder = new StringBuilder(sLen);
-
-        // Read byte array.
-        for (int i = 0, b0, b1, b2; i < sLen; i++) {
-            b0 = in.readByte() & 0xff;
-
-            switch (b0 >> 4) {
-                case 0:
-                case 1:
-                case 2:
-                case 3:
-                case 4:
-                case 5:
-                case 6:
-                case 7:   // 1 byte format: 0xxxxxxx
-                    strBuilder.append((char)b0);
-                    break;
-
-                case 12:
-                case 13:  // 2 byte format: 110xxxxx 10xxxxxx
-                    b1 = in.readByte();
-
-                    if ((b1 & 0xC0) != 0x80)
-                        throw new UTFDataFormatException();
-
-                    strBuilder.append((char)(((b0 & 0x1F) << 6) | (b1 & 0x3F)));
-                    break;
-
-                case 14:  // 3 byte format: 1110xxxx 10xxxxxx 10xxxxxx
-                    b1 = in.readByte();
-                    b2 = in.readByte();
-
-                    if ((b1 & 0xC0) != 0x80 || (b2 & 0xC0) != 0x80)
-                        throw new UTFDataFormatException();
-
-                    strBuilder.append((char)(((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F)));
-                    break;
-
-                default:  // 10xx xxxx, 1111 xxxx
-                    throw new UTFDataFormatException();
-            }
-        }
-
-        return strBuilder.toString();
-    }
-
-    /**
-     * Get number of bytes for {@link DataOutput#writeUTF},
-     * depending on character: <br/>
-     *
-     * One byte - If a character <code>c</code> is in the range
-     * <code>&#92;u0001</code> through <code>&#92;u007f</code>.<br/>
-     *
-     * Two bytes - If a character <code>c</code> is <code>&#92;u0000</code> or
-     * is in the range <code>&#92;u0080</code> through <code>&#92;u07ff</code>.
-     * <br/>
-     *
-     * Three bytes - If a character <code>c</code> is in the range
-     * <code>&#92;u0800</code> through <code>uffff</code>.
-     *
-     * @param c Character.
-     * @return Number of bytes.
-     */
-    public static int utfBytes(char c) {
-        return (c >= 0x0001 && c <= 0x007F) ? 1 : (c > 0x07FF) ? 3 : 2;
-    }
-
-    /**
      * Reads string-to-string map written by {@link #writeStringMap(DataOutput, Map)}.
      *
      * @param in Data input.
@@ -9034,6 +8205,15 @@ public abstract class IgniteUtils extends CommonUtils {
         return null;
     }
 
+    /**
+     * Creates thread with given worker.
+     *
+     * @param worker Runnable to create thread with.
+     */
+    public static IgniteThread newThread(GridWorker worker) {
+        return new IgniteThread(worker.igniteInstanceName(), worker.name(), worker);
+    }
+
     /** */
     @SuppressWarnings("PublicInnerClass")
     public static class TestBinaryContext extends BinaryContext {
@@ -9122,6 +8302,27 @@ public abstract class IgniteUtils extends CommonUtils {
         public void clearAllListener() {
             if (listeners != null)
                 listeners.clear();
+        }
+    }
+
+    /**
+     * Prepare affinity field for builder (if possible).
+     *
+     * @param builder Builder.
+     */
+    public static void prepareAffinityField(BinaryObjectBuilder builder, CacheObjectContext cacheObjCtx) {
+        if (cacheObjCtx.customAffinityMapper())
+            return;
+
+        CacheDefaultBinaryAffinityKeyMapper mapper =
+            (CacheDefaultBinaryAffinityKeyMapper)cacheObjCtx.defaultAffMapper();
+
+        BinaryField field = mapper.affinityKeyField(builder.typeId());
+
+        if (field != null) {
+            String fieldName = field.name();
+
+            builder.affinityFieldName(fieldName);
         }
     }
 }

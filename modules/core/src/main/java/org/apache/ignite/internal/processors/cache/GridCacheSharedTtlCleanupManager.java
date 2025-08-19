@@ -112,7 +112,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
 
             cleanupWorker = new CleanupWorker();
 
-            new IgniteThread(cleanupWorker).start();
+            U.newThread(cleanupWorker).start();
         }
         finally {
             lock.unlock();
