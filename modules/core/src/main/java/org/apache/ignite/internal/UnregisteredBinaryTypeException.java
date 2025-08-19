@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
  * Exception thrown during serialization if binary metadata isn't registered and it's registration isn't allowed.
@@ -37,7 +38,7 @@ public class UnregisteredBinaryTypeException extends IgniteException {
         "dev-list. Debug info [typeId=%d, binaryMetadata=%s, fut=%s]";
 
     /** */
-    private static String createMessage(int typeId, BinaryMetadata binaryMetadata, IgniteInternalFuture<?> fut) {
+    private static String createMessage(int typeId, BinaryMetadata binaryMetadata, GridFutureAdapter<?> fut) {
         return String.format(MESSAGE, typeId, binaryMetadata, fut);
     }
 
@@ -48,7 +49,7 @@ public class UnregisteredBinaryTypeException extends IgniteException {
     private final BinaryMetadata binaryMetadata;
 
     /** */
-    private final IgniteInternalFuture<?> fut;
+    private final GridFutureAdapter<?> fut;
 
     /**
      * @param typeId Type ID.
@@ -62,7 +63,7 @@ public class UnregisteredBinaryTypeException extends IgniteException {
      * @param typeId Type ID.
      * @param fut Future to wait in handler.
      */
-    public UnregisteredBinaryTypeException(int typeId, IgniteInternalFuture<?> fut) {
+    public UnregisteredBinaryTypeException(int typeId, GridFutureAdapter<?> fut) {
         this(typeId, null, fut);
     }
 
@@ -71,7 +72,7 @@ public class UnregisteredBinaryTypeException extends IgniteException {
      * @param binaryMetadata Binary metadata.
      * @param fut Future to wait in handler.
      */
-    private UnregisteredBinaryTypeException(int typeId, BinaryMetadata binaryMetadata, IgniteInternalFuture<?> fut) {
+    private UnregisteredBinaryTypeException(int typeId, BinaryMetadata binaryMetadata, GridFutureAdapter<?> fut) {
         super(createMessage(typeId, binaryMetadata, fut));
 
         this.typeId = typeId;
@@ -96,7 +97,7 @@ public class UnregisteredBinaryTypeException extends IgniteException {
     /**
      * @return Future to wait in handler.
      */
-    public IgniteInternalFuture<?> future() {
+    public GridFutureAdapter<?> future() {
         return fut;
     }
 }
