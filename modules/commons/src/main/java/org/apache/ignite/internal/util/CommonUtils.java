@@ -591,7 +591,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Tests whether or not given class is loadable provided class loader.
+     * Tests whether given class is loadable with provided class loader.
      *
      * @param clsName Class name to test.
      * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead.
@@ -667,7 +667,7 @@ public abstract class CommonUtils {
     public static Class<?> forName(
         String clsName,
         @Nullable ClassLoader ldr,
-        IgnitePredicate<String> clsFilter,
+        @Nullable IgnitePredicate<String> clsFilter,
         boolean useCache
     ) throws ClassNotFoundException {
         assert clsName != null;
@@ -924,7 +924,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log WARN message. If {@code log} is {@code null}
      * or in QUIET mode it will add {@code (wrn)} prefix to the message.
      *
@@ -940,7 +940,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log WARN message. If {@code log} is {@code null}
      * or in QUIET mode it will add {@code (wrn)} prefix to the message.
      *
@@ -1003,7 +1003,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log ERROR message. If {@code log} is {@code null}
      * or in QUIET mode it will add {@code (err)} prefix to the message.
      *
@@ -1026,7 +1026,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log WARN message with {@link IgniteLogger#DEV_ONLY DEV_ONLY} marker.
      * If {@code log} is {@code null} or in QUIET mode it will add {@code (wrn)} prefix to the message.
      * If property {@link IgniteCommonsSystemProperties#IGNITE_DEV_ONLY_LOGGING_DISABLED IGNITE_DEV_ONLY_LOGGING_DISABLED}
@@ -1050,7 +1050,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log INFO message.
      * <p>
      * <b>NOTE:</b> unlike the normal logging when INFO level may not be enabled and
@@ -1076,7 +1076,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log INF0 message.
      * <p>
      * <b>NOTE:</b> unlike the normal logging when INFO level may not be enabled and
@@ -1097,7 +1097,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log ERROR message. If {@code log} is {@code null}
      * or in QUIET mode it will add {@code (err)} prefix to the message.
      *
