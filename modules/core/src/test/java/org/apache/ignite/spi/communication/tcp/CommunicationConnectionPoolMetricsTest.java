@@ -138,7 +138,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     /** */
     @Test
     public void testRemovedConnectionMetrics() throws Exception {
-        maxConnIdleTimeout = 1000;
+        maxConnIdleTimeout = 500;
 
         Ignite srvr = startGridsMultiThreaded(2);
         Ignite cli = startClientGrid(G.allGrids().size());
