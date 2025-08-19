@@ -17,21 +17,21 @@
 
 package org.apache.ignite.internal.managers.encryption;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Generate encryption key request.
  */
 public class GenerateEncryptionKeyRequest implements Message {
     /** Request ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    private IgniteUuid id;
 
     /** */
+    @Order(value = 1, method = "keyCount")
     private int keyCnt;
 
     /** */
@@ -43,6 +43,7 @@ public class GenerateEncryptionKeyRequest implements Message {
      */
     public GenerateEncryptionKeyRequest(int keyCnt) {
         this.keyCnt = keyCnt;
+        id = IgniteUuid.randomUuid();
     }
 
     /**
@@ -53,65 +54,24 @@ public class GenerateEncryptionKeyRequest implements Message {
     }
 
     /**
+     * @param id New request ID.
+     */
+    public void id(IgniteUuid id) {
+        this.id = id;
+    }
+
+    /**
      * @return Count of encryption key to generate.
      */
     public int keyCount() {
         return keyCnt;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIgniteUuid(id))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeInt(keyCnt))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                id = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                keyCnt = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+    /**
+     * @param keyCnt New key count.
+     */
+    public void keyCount(int keyCnt) {
+        this.keyCnt = keyCnt;
     }
 
     /** {@inheritDoc} */
