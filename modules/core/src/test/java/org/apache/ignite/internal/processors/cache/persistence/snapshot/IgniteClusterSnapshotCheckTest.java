@@ -1217,14 +1217,11 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
             final IgniteEx g = grid(i);
 
-            // Wait for all nodes complete checking.
-            assertTrue(
-                "Node " + i + " hasn't stopped the check",
-                waitForCondition(() -> !snp(g).isSnapshotChecking(SNAPSHOT_NAME), 10_000)
-            );
-
-            if (U.isLocalNodeCoordinator(g.context().discovery()))
+            if (U.isLocalNodeCoordinator(g.context().discovery())) {
                 coordIdx = i;
+
+                break;
+            }
         }
 
         try {
@@ -1278,6 +1275,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 discoSpi(grid(coordIdx)).unblock();
         }
 
+        waitClusterFinishedSnapshotCheck(stopped);
+
         if (requiredLeft) {
             int chkAgainIdx = -1;
 
@@ -1285,21 +1284,16 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 if (stopped.contains(i))
                     continue;
 
-                final IgniteEx g = grid(i);
+                chkAgainIdx = i;
 
-                // Wait for all nodes complete checking.
-                assertTrue(
-                    "Node " + i + " hasn't stopped the check",
-                    waitForCondition(() -> !snp(g).isSnapshotChecking(SNAPSHOT_NAME), 10_000)
-                );
-
-                if (chkAgainIdx == -1)
-                    chkAgainIdx = i;
+                break;
             }
 
             assert chkAgainIdx >= 0;
 
             snp(grid(chkAgainIdx)).checkSnapshot(SNAPSHOT_NAME, null, null, false, 0, true).get(getTestTimeout());
+
+            waitClusterFinishedSnapshotCheck(stopped);
         }
     }
 
@@ -1327,6 +1321,21 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         SnapshotPartitionsVerifyTaskResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get(timeout);
 
         assertFalse(res.idleVerifyResult().hasConflicts());
+    }
+
+    /** */
+    private void waitClusterFinishedSnapshotCheck(Set<Integer> stopped) throws Exception {
+        for (int i = 0; i < G.allGrids().size(); ++i) {
+            if (stopped.contains(i))
+                continue;
+
+            final IgniteEx g = grid(i);
+
+            assertTrue(
+                "Node " + i + " hasn't stopped the check",
+                waitForCondition(() -> !snp(g).isSnapshotChecking(SNAPSHOT_NAME), 10_000)
+            );
+        }
     }
 
     /**
