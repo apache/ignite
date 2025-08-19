@@ -17,6 +17,8 @@
 
 package org.apache.ignite.marshaller;
 
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerImpl;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshallerImpl;
@@ -37,5 +39,15 @@ public class MarshallersFactoryImpl implements MarshallersFactory {
     /** {@inheritDoc} */
     @Override public JdkMarshaller jdk(@Nullable IgnitePredicate<String> clsFilter) {
         return clsFilter == null ? INSTANCE : new JdkMarshallerImpl(clsFilter);
+    }
+
+    /** {@inheritDoc} */
+    @Override public OptimizedMarshaller optimized() {
+        return new OptimizedMarshallerImpl();
+    }
+
+    /** {@inheritDoc} */
+    @Override public OptimizedMarshaller optimized(boolean requireSer) {
+        return new OptimizedMarshallerImpl(requireSer);
     }
 }
