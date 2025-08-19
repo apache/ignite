@@ -17,12 +17,9 @@
 
 package org.apache.ignite.marshaller;
 
-import java.io.Serializable;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.Iterator;
-import org.apache.ignite.IgniteCommonsSystemProperties;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
