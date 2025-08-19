@@ -20,30 +20,22 @@ package org.apache.ignite.internal.util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.Externalizable;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UTFDataFormatException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.DatagramSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.security.ProtectionDomain;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -61,30 +53,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
-import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.isNull;
-import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_HOME;
 
 /**
  * Collection of utility methods used in 'ignite-commons' and throughout the system.
@@ -136,9 +116,6 @@ public abstract class CommonUtils {
     /** Version of the JDK. */
     static String jdkVer;
 
-    /** Project home directory. */
-    private static volatile GridTuple<String> ggHome;
-
     /** */
     static volatile long curTimeMillis = System.currentTimeMillis();
 
@@ -147,39 +124,6 @@ public abstract class CommonUtils {
 
     /** Grid counter. */
     static int gridCnt;
-
-    /** Indicates whether current OS is some version of Windows. */
-    private static boolean win;
-
-    /** Indicates whether current OS is UNIX flavor. */
-    private static boolean unix;
-
-    /** Indicates whether current OS is Linux flavor. */
-    private static boolean linux;
-
-    /** Indicates whether current OS is Mac OS. */
-    private static boolean mac;
-
-    /** Empty URL array. */
-    private static final URL[] EMPTY_URL_ARR = new URL[0];
-
-    /** Builtin class loader class.
-     *
-     * Note: needs for compatibility with Java 9.
-     */
-    private static final Class bltClsLdrCls = defaultClassLoaderClass();
-
-    /** Url class loader field.
-     *
-     * Note: needs for compatibility with Java 9.
-     */
-    private static final Field urlClsLdrField = urlClassLoaderField();
-
-    /** JDK9: jdk.internal.loader.URLClassPath. */
-    private static Class clsURLClassPath;
-
-    /** JDK9: URLClassPath#getURLs. */
-    private static Method mthdURLClassPathGetUrls;
 
     /** Mutex. */
     static final Object mux = new Object();
@@ -214,10 +158,6 @@ public abstract class CommonUtils {
     /** */
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
         new ConcurrentHashMap<>();
-
-    /** Exception converters. */
-    protected static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
-        exceptionConverters;
 
     static {
         primitiveMap.put("byte", byte.class);
@@ -256,40 +196,7 @@ public abstract class CommonUtils {
         CTOR_FACTORY = ctorFac;
         SUN_REFLECT_FACTORY = refFac;
 
-        jdkVer = System.getProperty("java.specification.version");
-
-        String osName = System.getProperty("os.name");
-
-        String osLow = osName.toLowerCase();
-
-        // OS type detection.
-        if (osLow.contains("win"))
-            win = true;
-        else if (osLow.contains("mac os"))
-            mac = true;
-        else {
-            // UNIXs flavors tokens.
-            for (CharSequence os : new String[] {"ix", "inux", "olaris", "un", "ux", "sco", "bsd", "att"})
-                if (osLow.contains(os)) {
-                    unix = true;
-
-                    break;
-                }
-
-            if (osLow.contains("inux"))
-                linux = true;
-        }
-
-        exceptionConverters = exceptionConverters();
-
-        try {
-            clsURLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
-            mthdURLClassPathGetUrls = clsURLClassPath.getMethod("getURLs");
-        }
-        catch (ReflectiveOperationException e) {
-            clsURLClassPath = null;
-            mthdURLClassPathGetUrls = null;
-        }
+        CommonUtils.jdkVer = System.getProperty("java.specification.version");
     }
 
     /**
@@ -1677,381 +1584,6 @@ public abstract class CommonUtils {
      */
     public static int utfBytes(char c) {
         return (c >= 0x0001 && c <= 0x007F) ? 1 : (c > 0x07FF) ? 3 : 2;
-    }
-
-    /**
-     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system
-     * properties or from environment in that order.
-     *
-     * @return {@code IGNITE_HOME} property.
-     */
-    @Nullable public static String getIgniteHome() {
-        GridTuple<String> ggHomeTup = ggHome;
-
-        String ggHome0;
-
-        if (ggHomeTup == null) {
-            synchronized (CommonUtils.class) {
-                // Double check.
-                ggHomeTup = ggHome;
-
-                if (ggHomeTup == null) {
-                    // Resolve Ignite installation home directory.
-                    ggHome = F.t(ggHome0 = resolveProjectHome());
-
-                    if (ggHome0 != null)
-                        System.setProperty(IGNITE_HOME, ggHome0);
-                }
-                else
-                    ggHome0 = ggHomeTup.get();
-            }
-        }
-        else
-            ggHome0 = ggHomeTup.get();
-
-        return ggHome0;
-    }
-
-    /**
-     * Resolve project home directory based on source code base.
-     *
-     * @return Project home directory (or {@code null} if it cannot be resolved).
-     */
-    @Nullable private static String resolveProjectHome() {
-        assert Thread.holdsLock(CommonUtils.class);
-
-        // Resolve Ignite home via environment variables.
-        String ggHome0 = IgniteCommonsSystemProperties.getString(IGNITE_HOME);
-
-        if (!F.isEmpty(ggHome0))
-            return ggHome0;
-
-        String appWorkDir = System.getProperty("user.dir");
-
-        if (appWorkDir != null) {
-            ggHome0 = findProjectHome(new File(appWorkDir));
-
-            if (ggHome0 != null)
-                return ggHome0;
-        }
-
-        URI classesUri;
-
-        Class<CommonUtils> cls = CommonUtils.class;
-
-        try {
-            ProtectionDomain domain = cls.getProtectionDomain();
-
-            // Should not happen, but to make sure our code is not broken.
-            if (domain == null || domain.getCodeSource() == null || domain.getCodeSource().getLocation() == null) {
-                logResolveFailed(cls, null);
-
-                return null;
-            }
-
-            // Resolve path to class-file.
-            classesUri = domain.getCodeSource().getLocation().toURI();
-
-            // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
-            if (isWindows() && classesUri.getAuthority() != null)
-                classesUri = new URI(classesUri.toString().replace("file://", "file:/"));
-        }
-        catch (URISyntaxException | SecurityException e) {
-            logResolveFailed(cls, e);
-
-            return null;
-        }
-
-        File classesFile;
-
-        try {
-            classesFile = new File(classesUri);
-        }
-        catch (IllegalArgumentException e) {
-            logResolveFailed(cls, e);
-
-            return null;
-        }
-
-        return findProjectHome(classesFile);
-    }
-
-    /**
-     * Tries to find project home starting from specified directory and moving to root.
-     *
-     * @param startDir First directory in search hierarchy.
-     * @return Project home path or {@code null} if it wasn't found.
-     */
-    private static String findProjectHome(File startDir) {
-        for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
-            // Check 'cur' is project home directory.
-            if (!new File(cur, "bin").isDirectory() ||
-                !new File(cur, "config").isDirectory())
-                continue;
-
-            return cur.getPath();
-        }
-
-        return null;
-    }
-
-    /**
-     * @param cls Class.
-     * @param e Exception.
-     */
-    private static void logResolveFailed(Class cls, Exception e) {
-        warn(null, "Failed to resolve IGNITE_HOME automatically for class codebase " +
-            "[class=" + cls + (e == null ? "" : ", e=" + e.getMessage()) + ']');
-    }
-
-    /**
-     * @param path Ignite home. May be {@code null}.
-     */
-    public static void setIgniteHome(@Nullable String path) {
-        GridTuple<String> ggHomeTup = ggHome;
-
-        String ggHome0;
-
-        if (ggHomeTup == null) {
-            synchronized (CommonUtils.class) {
-                // Double check.
-                ggHomeTup = ggHome;
-
-                if (ggHomeTup == null) {
-                    if (F.isEmpty(path))
-                        System.clearProperty(IGNITE_HOME);
-                    else
-                        System.setProperty(IGNITE_HOME, path);
-
-                    ggHome = F.t(path);
-
-                    return;
-                }
-                else
-                    ggHome0 = ggHomeTup.get();
-            }
-        }
-        else
-            ggHome0 = ggHomeTup.get();
-
-        if (ggHome0 != null && !ggHome0.equals(path)) {
-            try {
-                Path path0 = new File(ggHome0).toPath();
-
-                Path path1 = new File(path).toPath();
-
-                if (!Files.isSameFile(path0, path1))
-                    throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
-                        "[igniteHome=" + path0 + ", newIgniteHome=" + path1 + ']');
-            }
-            catch (IOException ignore) {
-                // Throw an exception if failed to follow symlinks.
-                throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
-                    "[igniteHome=" + ggHome0 + ", newIgniteHome=" + path + ']');
-            }
-        }
-    }
-
-    /**
-     * Nullifies Ignite home directory. For test purposes only.
-     */
-    public static void nullifyHomeDirectory() {
-        ggHome = null;
-    }
-
-    /**
-     * Indicates whether current OS is Linux flavor.
-     *
-     * @return {@code true} if current OS is Linux - {@code false} otherwise.
-     */
-    public static boolean isLinux() {
-        return linux;
-    }
-
-    /**
-     * Indicates whether current OS is Mac OS.
-     *
-     * @return {@code true} if current OS is Mac OS - {@code false} otherwise.
-     */
-    public static boolean isMacOs() {
-        return mac;
-    }
-
-    /**
-     * Indicates whether current OS is UNIX flavor.
-     *
-     * @return {@code true} if current OS is UNIX - {@code false} otherwise.
-     */
-    public static boolean isUnix() {
-        return unix;
-    }
-
-    /**
-     * Indicates whether current OS is Windows.
-     *
-     * @return {@code true} if current OS is Windows (any versions) - {@code false} otherwise.
-     */
-    public static boolean isWindows() {
-        return win;
-    }
-
-    /**
-     * Returns URLs of class loader
-     *
-     * @param clsLdr Class loader.
-     */
-    public static URL[] classLoaderUrls(ClassLoader clsLdr) {
-        if (clsLdr == null)
-            return EMPTY_URL_ARR;
-        else if (clsLdr instanceof URLClassLoader)
-            return ((URLClassLoader)clsLdr).getURLs();
-        else if (bltClsLdrCls != null && urlClsLdrField != null && bltClsLdrCls.isAssignableFrom(clsLdr.getClass())) {
-            try {
-                synchronized (urlClsLdrField) {
-                    // Backup accessible field state.
-                    boolean accessible = urlClsLdrField.isAccessible();
-
-                    try {
-                        if (!accessible)
-                            urlClsLdrField.setAccessible(true);
-
-                        Object ucp = urlClsLdrField.get(clsLdr);
-
-                        if (ucp instanceof URLClassLoader)
-                            return ((URLClassLoader)ucp).getURLs();
-                        else if (clsURLClassPath != null && clsURLClassPath.isInstance(ucp))
-                            return (URL[])mthdURLClassPathGetUrls.invoke(ucp);
-                        else
-                            throw new RuntimeException("Unknown classloader: " + clsLdr.getClass());
-                    }
-                    finally {
-                        // Recover accessible field state.
-                        if (!accessible)
-                            urlClsLdrField.setAccessible(false);
-                    }
-                }
-            }
-            catch (InvocationTargetException | IllegalAccessException e) {
-                e.printStackTrace(System.err);
-
-                return EMPTY_URL_ARR;
-            }
-        }
-        else
-            return EMPTY_URL_ARR;
-    }
-
-    /** */
-    @Nullable private static Class defaultClassLoaderClass() {
-        try {
-            return Class.forName("jdk.internal.loader.BuiltinClassLoader");
-        }
-        catch (ClassNotFoundException e) {
-            return null;
-        }
-    }
-
-    /** */
-    @Nullable private static Field urlClassLoaderField() {
-        try {
-            Class cls = defaultClassLoaderClass();
-
-            return cls == null ? null : cls.getDeclaredField("ucp");
-        }
-        catch (NoSuchFieldException e) {
-            return null;
-        }
-    }
-
-    /**
-     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
-     * does not wrap passed in exception if none suitable converter found.
-     *
-     * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
-     */
-    public static Exception convertExceptionNoWrap(IgniteCheckedException e) {
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
-
-        if (converter != null)
-            return converter.apply(e);
-
-        if (e.getCause() instanceof IgniteException)
-            return (Exception)e.getCause();
-
-        return e;
-    }
-
-    /**
-     * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
-     */
-    public static IgniteException convertException(IgniteCheckedException e) {
-        IgniteClientDisconnectedException e0 = e.getCause(IgniteClientDisconnectedException.class);
-
-        if (e0 != null) {
-            assert e0.reconnectFuture() != null : e0;
-
-            throw e0;
-        }
-
-        IgniteClientDisconnectedCheckedException disconnectedErr =
-            e.getCause(IgniteClientDisconnectedCheckedException.class);
-
-        if (disconnectedErr != null) {
-            assert disconnectedErr.reconnectFuture() != null : disconnectedErr;
-
-            e = disconnectedErr;
-        }
-
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
-
-        if (converter != null)
-            return converter.apply(e);
-
-        if (e.getCause() instanceof IgniteException)
-            return (IgniteException)e.getCause();
-
-        return new IgniteException(e.getMessage(), e);
-    }
-
-    /**
-     * Gets IgniteClosure for an IgniteCheckedException class.
-     *
-     * @param clazz Class.
-     * @return The IgniteClosure mapped to this exception class, or null if none.
-     */
-    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
-        return exceptionConverters.get(clazz);
-    }
-
-    /**
-     * Gets map with converters to convert internal checked exceptions to public API unchecked exceptions.
-     *
-     * @return Exception converters.
-     */
-    private static Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> exceptionConverters() {
-        Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> m = new HashMap<>();
-
-        m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteInterruptedException(e.getMessage(), (InterruptedException)e.getCause());
-            }
-        });
-
-        m.put(IgniteFutureCancelledCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteFutureCancelledException(e.getMessage(), e);
-            }
-        });
-
-        m.put(IgniteFutureTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteFutureTimeoutException(e.getMessage(), e);
-            }
-        });
-
-        return m;
     }
 
     /**

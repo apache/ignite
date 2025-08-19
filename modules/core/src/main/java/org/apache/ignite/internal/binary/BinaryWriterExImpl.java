@@ -36,7 +36,7 @@ import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.marshaller.Marshallers;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -174,7 +174,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             out.writeByte(GridBinaryMarshaller.OPTM_MARSH);
 
             try {
-                byte[] arr = Marshallers.marshal(ctx.optimizedMarsh(), obj);
+                byte[] arr = U.marshal(ctx.optimizedMarsh(), obj);
 
                 writeInt(arr.length);
 

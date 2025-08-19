@@ -68,6 +68,7 @@ import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -475,7 +476,7 @@ public class BinaryContext {
 
         String pkgPath = pkgName.replaceAll("\\.", "/");
 
-        URL[] urls = CommonUtils.classLoaderUrls(ldr);
+        URL[] urls = U.classLoaderUrls(ldr);
 
         for (URL url : urls) {
             String proto = url.getProtocol().toLowerCase();
@@ -1200,7 +1201,7 @@ public class BinaryContext {
      *
      * @param typeId Type ID.
      * @param clsName Class Name.
-     * @param failIfUnregistered If {@code true} then throw {@link UnregisteredBinaryTypeException} with {@code
+     * @param failIfUnregistered If {@code true} then throw {@link UnregisteredBinaryTypeException} with {@link
      * org.apache.ignite.internal.processors.marshaller.MappingExchangeResult} future instead of synchronously awaiting
      * for its completion.
      * @param onlyLocReg Whether to register only on the current node.

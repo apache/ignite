@@ -109,10 +109,6 @@ public class IgniteCommonsSystemProperties {
         defaults = "" + DFLT_LOG_THROTTLE_CAPACITY)
     public static final String IGNITE_LOG_THROTTLE_CAPACITY = "IGNITE_LOG_THROTTLE_CAPACITY";
 
-    /** Defines Ignite installation folder. */
-    @SystemProperty(value = "Defines Ignite installation folder", type = String.class, defaults = "")
-    public static final String IGNITE_HOME = "IGNITE_HOME";
-
     /**
      * @param enumCls Enum type.
      * @param name Name of the system property or environment variable.

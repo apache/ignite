@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
 import static org.apache.ignite.internal.util.CommonUtils.isLambda;
 
 /**
@@ -201,7 +202,7 @@ class BinaryClassDescriptor {
         initialSerializer = serializer;
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
-        useOptMarshaller = serializer == null || QueryUtils.isGeometryClass(cls);
+        useOptMarshaller = serializer == null || isGeometryClass(cls);
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
         if (serializer instanceof BinaryReflectiveSerializer)
@@ -999,8 +1000,7 @@ class BinaryClassDescriptor {
                 mapper,
                 initialSerializer,
                 stableFieldsMeta != null,
-                true,
-                MarshallerExclusions.isExcluded(cls));
+                true);
     }
 
     /**

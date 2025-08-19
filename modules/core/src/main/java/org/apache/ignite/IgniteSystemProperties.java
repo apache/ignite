@@ -175,6 +175,10 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         type = Integer.class, defaults = "0")
     public static final String IGNITE_RESTART_CODE = "IGNITE_RESTART_CODE";
 
+    /** Defines Ignite installation folder. */
+    @SystemProperty(value = "Defines Ignite installation folder", type = String.class, defaults = "")
+    public static final String IGNITE_HOME = "IGNITE_HOME";
+
     /** If this system property is set to {@code true} - no shutdown hook will be set. */
     @SystemProperty("If true then no shutdown hook will be set")
     public static final String IGNITE_NO_SHUTDOWN_HOOK = "IGNITE_NO_SHUTDOWN_HOOK";
