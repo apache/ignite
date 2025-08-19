@@ -237,6 +237,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
@@ -9032,6 +9033,15 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Creates thread with given worker.
+     *
+     * @param worker Runnable to create thread with.
+     */
+    public static IgniteThread newThread(GridWorker worker) {
+        return new IgniteThread(worker.igniteInstanceName(), worker.name(), worker);
     }
 
     /** */

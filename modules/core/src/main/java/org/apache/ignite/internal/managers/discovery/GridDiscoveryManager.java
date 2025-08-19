@@ -1078,7 +1078,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         if (hasRslvrs && segChkFreq > 0) {
             segChkWrk = new SegmentCheckWorker();
 
-            segChkThread = new IgniteThread(segChkWrk);
+            segChkThread = U.newThread(segChkWrk);
 
             segChkThread.setUncaughtExceptionHandler(new OomExceptionHandler(ctx));
 
@@ -1090,7 +1090,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         checkAttributes(discoCache().remoteNodes());
 
         // Start discovery worker.
-        new IgniteThread(discoWrk).start();
+        U.newThread(discoWrk).start();
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -2785,7 +2785,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /** {@inheritDoc} */
         public DiscoveryMessageNotifierThread(GridWorker worker) {
-            super(worker);
+            super(worker.igniteInstanceName(), worker.name(), worker);
 
             this.worker = worker;
         }
