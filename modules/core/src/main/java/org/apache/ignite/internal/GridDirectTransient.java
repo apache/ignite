@@ -24,7 +24,7 @@ import java.lang.annotation.Target;
 
 /**
  * Annotates transient fields.
- * Deprecated, see {@code Order} and {@code MessageProcessor} for details.
+ * Deprecated, see {@link Order} and {@link MessageProcessor} for details.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

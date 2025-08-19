@@ -20,30 +20,21 @@ package org.apache.ignite.internal.util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.Externalizable;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.UTFDataFormatException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.DatagramSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.security.ProtectionDomain;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -61,44 +52,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
-import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
-
-import static java.util.Objects.isNull;
-import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_HOME;
 
 /**
  * Collection of utility methods used in 'ignite-commons' and throughout the system.
  */
 public abstract class CommonUtils {
-    /** */
-    public static final long KB = 1024L;
-
-    /** */
-    public static final long MB = 1024L * 1024;
-
-    /** */
-    public static final long GB = 1024L * 1024 * 1024;
-
     /** Dev only logging disabled. */
     private static final boolean devOnlyLogDisabled =
         IgniteCommonsSystemProperties.getBoolean(IgniteCommonsSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
@@ -136,9 +104,6 @@ public abstract class CommonUtils {
     /** Version of the JDK. */
     static String jdkVer;
 
-    /** Project home directory. */
-    private static volatile GridTuple<String> ggHome;
-
     /** */
     static volatile long curTimeMillis = System.currentTimeMillis();
 
@@ -147,39 +112,6 @@ public abstract class CommonUtils {
 
     /** Grid counter. */
     static int gridCnt;
-
-    /** Indicates whether current OS is some version of Windows. */
-    private static boolean win;
-
-    /** Indicates whether current OS is UNIX flavor. */
-    private static boolean unix;
-
-    /** Indicates whether current OS is Linux flavor. */
-    private static boolean linux;
-
-    /** Indicates whether current OS is Mac OS. */
-    private static boolean mac;
-
-    /** Empty URL array. */
-    private static final URL[] EMPTY_URL_ARR = new URL[0];
-
-    /** Builtin class loader class.
-     *
-     * Note: needs for compatibility with Java 9.
-     */
-    private static final Class bltClsLdrCls = defaultClassLoaderClass();
-
-    /** Url class loader field.
-     *
-     * Note: needs for compatibility with Java 9.
-     */
-    private static final Field urlClsLdrField = urlClassLoaderField();
-
-    /** JDK9: jdk.internal.loader.URLClassPath. */
-    private static Class clsURLClassPath;
-
-    /** JDK9: URLClassPath#getURLs. */
-    private static Method mthdURLClassPathGetUrls;
 
     /** Mutex. */
     static final Object mux = new Object();
@@ -214,10 +146,6 @@ public abstract class CommonUtils {
     /** */
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
         new ConcurrentHashMap<>();
-
-    /** Exception converters. */
-    protected static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
-        exceptionConverters;
 
     static {
         primitiveMap.put("byte", byte.class);
@@ -256,40 +184,7 @@ public abstract class CommonUtils {
         CTOR_FACTORY = ctorFac;
         SUN_REFLECT_FACTORY = refFac;
 
-        jdkVer = System.getProperty("java.specification.version");
-
-        String osName = System.getProperty("os.name");
-
-        String osLow = osName.toLowerCase();
-
-        // OS type detection.
-        if (osLow.contains("win"))
-            win = true;
-        else if (osLow.contains("mac os"))
-            mac = true;
-        else {
-            // UNIXs flavors tokens.
-            for (CharSequence os : new String[] {"ix", "inux", "olaris", "un", "ux", "sco", "bsd", "att"})
-                if (osLow.contains(os)) {
-                    unix = true;
-
-                    break;
-                }
-
-            if (osLow.contains("inux"))
-                linux = true;
-        }
-
-        exceptionConverters = exceptionConverters();
-
-        try {
-            clsURLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
-            mthdURLClassPathGetUrls = clsURLClassPath.getMethod("getURLs");
-        }
-        catch (ReflectiveOperationException e) {
-            clsURLClassPath = null;
-            mthdURLClassPathGetUrls = null;
-        }
+        CommonUtils.jdkVer = System.getProperty("java.specification.version");
     }
 
     /**
@@ -779,7 +674,7 @@ public abstract class CommonUtils {
     public static Class<?> forName(
         String clsName,
         @Nullable ClassLoader ldr,
-        IgnitePredicate<String> clsFilter,
+        @Nullable IgnitePredicate<String> clsFilter,
         boolean useCache
     ) throws ClassNotFoundException {
         assert clsName != null;
@@ -976,6 +871,17 @@ public abstract class CommonUtils {
     }
 
     /**
+     * @param col non-null collection with one element
+     * @return a SingletonList containing the element in the original collection
+     */
+    public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
+        if (col.size() != 1) {
+            throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
+        }
+        return Collections.singletonList(col.iterator().next());
+    }
+
+    /**
      * Closes given resource logging possible checked exception.
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
@@ -1085,7 +991,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log WARN message. If {@code log} is {@code null}
      * or in QUIET mode it will add {@code (wrn)} prefix to the message.
      *
@@ -1101,7 +1007,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log WARN message. If {@code log} is {@code null}
      * or in QUIET mode it will add {@code (wrn)} prefix to the message.
      *
@@ -1164,7 +1070,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log ERROR message. If {@code log} is {@code null}
      * or in QUIET mode it will add {@code (err)} prefix to the message.
      *
@@ -1187,7 +1093,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log WARN message with {@link IgniteLogger#DEV_ONLY DEV_ONLY} marker.
      * If {@code log} is {@code null} or in QUIET mode it will add {@code (wrn)} prefix to the message.
      * If property {@link IgniteCommonsSystemProperties#IGNITE_DEV_ONLY_LOGGING_DISABLED IGNITE_DEV_ONLY_LOGGING_DISABLED}
@@ -1211,7 +1117,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log INFO message.
      * <p>
      * <b>NOTE:</b> unlike the normal logging when INFO level may not be enabled and
@@ -1237,7 +1143,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log INF0 message.
      * <p>
      * <b>NOTE:</b> unlike the normal logging when INFO level may not be enabled and
@@ -1258,7 +1164,7 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * Depending on whether log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log ERROR message. If {@code log} is {@code null}
      * or in QUIET mode it will add {@code (err)} prefix to the message.
      *
@@ -1405,17 +1311,6 @@ public abstract class CommonUtils {
     }
 
     /**
-     * @param col non-null collection with one element
-     * @return a SingletonList containing the element in the original collection
-     */
-    public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
-        if (col.size() != 1) {
-            throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
-        }
-        return Collections.singletonList(col.iterator().next());
-    }
-
-    /**
      * Checks if given class is of {@code Ignite} type.
      *
      * @param cls Class to check.
@@ -1450,608 +1345,6 @@ public abstract class CommonUtils {
         String s = cls.getName();
 
         return s.startsWith("java.") || s.startsWith("javax.");
-    }
-
-    /**
-     * Finds a non-static and non-abstract method from the class it parents.
-     *
-     * Method.getMethod() does not return non-public method.
-     *
-     * @param cls Target class.
-     * @param name Name of the method.
-     * @param paramTypes Method parameters.
-     * @return Method or {@code null}.
-     */
-    @Nullable public static Method findInheritableMethod(Class<?> cls, String name, Class<?>... paramTypes) {
-        Method mtd = null;
-
-        Class<?> cls0 = cls;
-
-        while (cls0 != null) {
-            try {
-                mtd = cls0.getDeclaredMethod(name, paramTypes);
-
-                break;
-            }
-            catch (NoSuchMethodException e) {
-                cls0 = cls0.getSuperclass();
-            }
-        }
-
-        if (mtd == null)
-            return null;
-
-        mtd.setAccessible(true);
-
-        int mods = mtd.getModifiers();
-
-        if ((mods & (Modifier.STATIC | Modifier.ABSTRACT)) != 0)
-            return null;
-        else if ((mods & (Modifier.PUBLIC | Modifier.PROTECTED)) != 0)
-            return mtd;
-        else if ((mods & Modifier.PRIVATE) != 0)
-            return cls == cls0 ? mtd : null;
-        else {
-            ClassLoader clsLdr = cls.getClassLoader();
-
-            ClassLoader clsLdr0 = cls0.getClassLoader();
-
-            return clsLdr == clsLdr0 && packageName(cls).equals(packageName(cls0)) ? mtd : null;
-        }
-    }
-
-    /**
-     * @param cls Class.
-     * @return Package name.
-     */
-    public static String packageName(Class<?> cls) {
-        Package pkg = cls.getPackage();
-
-        return pkg == null ? "" : pkg.getName();
-    }
-
-    /**
-     * Writes string to output stream accounting for {@code null} values.
-     * <p>
-     * Limitation for max string lenght of <code>65535</code> bytes is caused by {@link DataOutput#writeUTF}
-     * used under the hood to perform an actual write.
-     * </p>
-     * <p>
-     * If longer string is passes a {@link UTFDataFormatException} exception will be thrown.
-     * </p>
-     * <p>
-     * To write longer strings use {@link #writeLongString(DataOutput, String)} writes string as is converting it into binary array of UTF-8
-     * encoded characters.
-     * To read the value back {@link #readLongString(DataInput)} should be used.
-     * </p>
-     *
-     * @param out Output stream to write to.
-     * @param s String to write, possibly {@code null}.
-     * @throws IOException If write failed.
-     */
-    public static void writeString(DataOutput out, String s) throws IOException {
-        // Write null flag.
-        out.writeBoolean(s == null);
-
-        if (s != null)
-            out.writeUTF(s);
-    }
-
-    /**
-     * Reads string from input stream accounting for {@code null} values.
-     *
-     * Method enables to read strings shorter than <code>65535</code> bytes in UTF-8 otherwise an exception will be thrown.
-     *
-     * Strings written by {@link #writeString(DataOutput, String)} can be read by this method.
-     *
-     * @see #writeString(DataOutput, String) for more information about writing strings.
-     *
-     * @param in Stream to read from.
-     * @return Read string, possibly {@code null}.
-     * @throws IOException If read failed.
-     */
-    @Nullable public static String readString(DataInput in) throws IOException {
-        // If value is not null, then read it. Otherwise return null.
-        return !in.readBoolean() ? in.readUTF() : null;
-    }
-
-    /**
-     * Writes string to output stream accounting for {@code null} values. <br/>
-     *
-     * This method can write string of any length, limit of <code>65535</code> is not applied.
-     *
-     * @param out Output stream to write to.
-     * @param s String to write, possibly {@code null}.
-     * @throws IOException If write failed.
-     */
-    public static void writeLongString(DataOutput out, @Nullable String s) throws IOException {
-        // Write null flag.
-        out.writeBoolean(isNull(s));
-
-        if (isNull(s))
-            return;
-
-        int sLen = s.length();
-
-        // Write string length.
-        out.writeInt(sLen);
-
-        // Write byte array.
-        for (int i = 0; i < sLen; i++) {
-            char c = s.charAt(i);
-            int utfBytes = utfBytes(c);
-
-            if (utfBytes == 1)
-                out.writeByte((byte)c);
-            else if (utfBytes == 3) {
-                out.writeByte((byte)(0xE0 | (c >> 12) & 0x0F));
-                out.writeByte((byte)(0x80 | (c >> 6) & 0x3F));
-                out.writeByte((byte)(0x80 | (c & 0x3F)));
-            }
-            else {
-                out.writeByte((byte)(0xC0 | ((c >> 6) & 0x1F)));
-                out.writeByte((byte)(0x80 | (c & 0x3F)));
-            }
-        }
-    }
-
-    /**
-     * Reads string from input stream accounting for {@code null} values. <br/>
-     *
-     * This method can read string of any length, limit of <code>65535</code> is not applied.
-     *
-     * @param in Stream to read from.
-     * @return Read string, possibly {@code null}.
-     * @throws IOException If read failed.
-     */
-    @Nullable public static String readLongString(DataInput in) throws IOException {
-        // Check null value.
-        if (in.readBoolean())
-            return null;
-
-        // Read string length.
-        int sLen = in.readInt();
-
-        StringBuilder strBuilder = new StringBuilder(sLen);
-
-        // Read byte array.
-        for (int i = 0, b0, b1, b2; i < sLen; i++) {
-            b0 = in.readByte() & 0xff;
-
-            switch (b0 >> 4) {
-                case 0:
-                case 1:
-                case 2:
-                case 3:
-                case 4:
-                case 5:
-                case 6:
-                case 7:   // 1 byte format: 0xxxxxxx
-                    strBuilder.append((char)b0);
-                    break;
-
-                case 12:
-                case 13:  // 2 byte format: 110xxxxx 10xxxxxx
-                    b1 = in.readByte();
-
-                    if ((b1 & 0xC0) != 0x80)
-                        throw new UTFDataFormatException();
-
-                    strBuilder.append((char)(((b0 & 0x1F) << 6) | (b1 & 0x3F)));
-                    break;
-
-                case 14:  // 3 byte format: 1110xxxx 10xxxxxx 10xxxxxx
-                    b1 = in.readByte();
-                    b2 = in.readByte();
-
-                    if ((b1 & 0xC0) != 0x80 || (b2 & 0xC0) != 0x80)
-                        throw new UTFDataFormatException();
-
-                    strBuilder.append((char)(((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F)));
-                    break;
-
-                default:  // 10xx xxxx, 1111 xxxx
-                    throw new UTFDataFormatException();
-            }
-        }
-
-        return strBuilder.toString();
-    }
-
-    /**
-     * Get number of bytes for {@link DataOutput#writeUTF},
-     * depending on character: <br/>
-     *
-     * One byte - If a character <code>c</code> is in the range
-     * <code>&#92;u0001</code> through <code>&#92;u007f</code>.<br/>
-     *
-     * Two bytes - If a character <code>c</code> is <code>&#92;u0000</code> or
-     * is in the range <code>&#92;u0080</code> through <code>&#92;u07ff</code>.
-     * <br/>
-     *
-     * Three bytes - If a character <code>c</code> is in the range
-     * <code>&#92;u0800</code> through <code>uffff</code>.
-     *
-     * @param c Character.
-     * @return Number of bytes.
-     */
-    public static int utfBytes(char c) {
-        return (c >= 0x0001 && c <= 0x007F) ? 1 : (c > 0x07FF) ? 3 : 2;
-    }
-
-    /**
-     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system
-     * properties or from environment in that order.
-     *
-     * @return {@code IGNITE_HOME} property.
-     */
-    @Nullable public static String getIgniteHome() {
-        GridTuple<String> ggHomeTup = ggHome;
-
-        String ggHome0;
-
-        if (ggHomeTup == null) {
-            synchronized (CommonUtils.class) {
-                // Double check.
-                ggHomeTup = ggHome;
-
-                if (ggHomeTup == null) {
-                    // Resolve Ignite installation home directory.
-                    ggHome = F.t(ggHome0 = resolveProjectHome());
-
-                    if (ggHome0 != null)
-                        System.setProperty(IGNITE_HOME, ggHome0);
-                }
-                else
-                    ggHome0 = ggHomeTup.get();
-            }
-        }
-        else
-            ggHome0 = ggHomeTup.get();
-
-        return ggHome0;
-    }
-
-    /**
-     * Resolve project home directory based on source code base.
-     *
-     * @return Project home directory (or {@code null} if it cannot be resolved).
-     */
-    @Nullable private static String resolveProjectHome() {
-        assert Thread.holdsLock(CommonUtils.class);
-
-        // Resolve Ignite home via environment variables.
-        String ggHome0 = IgniteCommonsSystemProperties.getString(IGNITE_HOME);
-
-        if (!F.isEmpty(ggHome0))
-            return ggHome0;
-
-        String appWorkDir = System.getProperty("user.dir");
-
-        if (appWorkDir != null) {
-            ggHome0 = findProjectHome(new File(appWorkDir));
-
-            if (ggHome0 != null)
-                return ggHome0;
-        }
-
-        URI classesUri;
-
-        Class<CommonUtils> cls = CommonUtils.class;
-
-        try {
-            ProtectionDomain domain = cls.getProtectionDomain();
-
-            // Should not happen, but to make sure our code is not broken.
-            if (domain == null || domain.getCodeSource() == null || domain.getCodeSource().getLocation() == null) {
-                logResolveFailed(cls, null);
-
-                return null;
-            }
-
-            // Resolve path to class-file.
-            classesUri = domain.getCodeSource().getLocation().toURI();
-
-            // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
-            if (isWindows() && classesUri.getAuthority() != null)
-                classesUri = new URI(classesUri.toString().replace("file://", "file:/"));
-        }
-        catch (URISyntaxException | SecurityException e) {
-            logResolveFailed(cls, e);
-
-            return null;
-        }
-
-        File classesFile;
-
-        try {
-            classesFile = new File(classesUri);
-        }
-        catch (IllegalArgumentException e) {
-            logResolveFailed(cls, e);
-
-            return null;
-        }
-
-        return findProjectHome(classesFile);
-    }
-
-    /**
-     * Tries to find project home starting from specified directory and moving to root.
-     *
-     * @param startDir First directory in search hierarchy.
-     * @return Project home path or {@code null} if it wasn't found.
-     */
-    private static String findProjectHome(File startDir) {
-        for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
-            // Check 'cur' is project home directory.
-            if (!new File(cur, "bin").isDirectory() ||
-                !new File(cur, "config").isDirectory())
-                continue;
-
-            return cur.getPath();
-        }
-
-        return null;
-    }
-
-    /**
-     * @param cls Class.
-     * @param e Exception.
-     */
-    private static void logResolveFailed(Class cls, Exception e) {
-        warn(null, "Failed to resolve IGNITE_HOME automatically for class codebase " +
-            "[class=" + cls + (e == null ? "" : ", e=" + e.getMessage()) + ']');
-    }
-
-    /**
-     * @param path Ignite home. May be {@code null}.
-     */
-    public static void setIgniteHome(@Nullable String path) {
-        GridTuple<String> ggHomeTup = ggHome;
-
-        String ggHome0;
-
-        if (ggHomeTup == null) {
-            synchronized (CommonUtils.class) {
-                // Double check.
-                ggHomeTup = ggHome;
-
-                if (ggHomeTup == null) {
-                    if (F.isEmpty(path))
-                        System.clearProperty(IGNITE_HOME);
-                    else
-                        System.setProperty(IGNITE_HOME, path);
-
-                    ggHome = F.t(path);
-
-                    return;
-                }
-                else
-                    ggHome0 = ggHomeTup.get();
-            }
-        }
-        else
-            ggHome0 = ggHomeTup.get();
-
-        if (ggHome0 != null && !ggHome0.equals(path)) {
-            try {
-                Path path0 = new File(ggHome0).toPath();
-
-                Path path1 = new File(path).toPath();
-
-                if (!Files.isSameFile(path0, path1))
-                    throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
-                        "[igniteHome=" + path0 + ", newIgniteHome=" + path1 + ']');
-            }
-            catch (IOException ignore) {
-                // Throw an exception if failed to follow symlinks.
-                throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
-                    "[igniteHome=" + ggHome0 + ", newIgniteHome=" + path + ']');
-            }
-        }
-    }
-
-    /**
-     * Nullifies Ignite home directory. For test purposes only.
-     */
-    public static void nullifyHomeDirectory() {
-        ggHome = null;
-    }
-
-    /**
-     * Indicates whether current OS is Linux flavor.
-     *
-     * @return {@code true} if current OS is Linux - {@code false} otherwise.
-     */
-    public static boolean isLinux() {
-        return linux;
-    }
-
-    /**
-     * Indicates whether current OS is Mac OS.
-     *
-     * @return {@code true} if current OS is Mac OS - {@code false} otherwise.
-     */
-    public static boolean isMacOs() {
-        return mac;
-    }
-
-    /**
-     * Indicates whether current OS is UNIX flavor.
-     *
-     * @return {@code true} if current OS is UNIX - {@code false} otherwise.
-     */
-    public static boolean isUnix() {
-        return unix;
-    }
-
-    /**
-     * Indicates whether current OS is Windows.
-     *
-     * @return {@code true} if current OS is Windows (any versions) - {@code false} otherwise.
-     */
-    public static boolean isWindows() {
-        return win;
-    }
-
-    /**
-     * Returns URLs of class loader
-     *
-     * @param clsLdr Class loader.
-     */
-    public static URL[] classLoaderUrls(ClassLoader clsLdr) {
-        if (clsLdr == null)
-            return EMPTY_URL_ARR;
-        else if (clsLdr instanceof URLClassLoader)
-            return ((URLClassLoader)clsLdr).getURLs();
-        else if (bltClsLdrCls != null && urlClsLdrField != null && bltClsLdrCls.isAssignableFrom(clsLdr.getClass())) {
-            try {
-                synchronized (urlClsLdrField) {
-                    // Backup accessible field state.
-                    boolean accessible = urlClsLdrField.isAccessible();
-
-                    try {
-                        if (!accessible)
-                            urlClsLdrField.setAccessible(true);
-
-                        Object ucp = urlClsLdrField.get(clsLdr);
-
-                        if (ucp instanceof URLClassLoader)
-                            return ((URLClassLoader)ucp).getURLs();
-                        else if (clsURLClassPath != null && clsURLClassPath.isInstance(ucp))
-                            return (URL[])mthdURLClassPathGetUrls.invoke(ucp);
-                        else
-                            throw new RuntimeException("Unknown classloader: " + clsLdr.getClass());
-                    }
-                    finally {
-                        // Recover accessible field state.
-                        if (!accessible)
-                            urlClsLdrField.setAccessible(false);
-                    }
-                }
-            }
-            catch (InvocationTargetException | IllegalAccessException e) {
-                e.printStackTrace(System.err);
-
-                return EMPTY_URL_ARR;
-            }
-        }
-        else
-            return EMPTY_URL_ARR;
-    }
-
-    /** */
-    @Nullable private static Class defaultClassLoaderClass() {
-        try {
-            return Class.forName("jdk.internal.loader.BuiltinClassLoader");
-        }
-        catch (ClassNotFoundException e) {
-            return null;
-        }
-    }
-
-    /** */
-    @Nullable private static Field urlClassLoaderField() {
-        try {
-            Class cls = defaultClassLoaderClass();
-
-            return cls == null ? null : cls.getDeclaredField("ucp");
-        }
-        catch (NoSuchFieldException e) {
-            return null;
-        }
-    }
-
-    /**
-     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
-     * does not wrap passed in exception if none suitable converter found.
-     *
-     * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
-     */
-    public static Exception convertExceptionNoWrap(IgniteCheckedException e) {
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
-
-        if (converter != null)
-            return converter.apply(e);
-
-        if (e.getCause() instanceof IgniteException)
-            return (Exception)e.getCause();
-
-        return e;
-    }
-
-    /**
-     * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
-     */
-    public static IgniteException convertException(IgniteCheckedException e) {
-        IgniteClientDisconnectedException e0 = e.getCause(IgniteClientDisconnectedException.class);
-
-        if (e0 != null) {
-            assert e0.reconnectFuture() != null : e0;
-
-            throw e0;
-        }
-
-        IgniteClientDisconnectedCheckedException disconnectedErr =
-            e.getCause(IgniteClientDisconnectedCheckedException.class);
-
-        if (disconnectedErr != null) {
-            assert disconnectedErr.reconnectFuture() != null : disconnectedErr;
-
-            e = disconnectedErr;
-        }
-
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
-
-        if (converter != null)
-            return converter.apply(e);
-
-        if (e.getCause() instanceof IgniteException)
-            return (IgniteException)e.getCause();
-
-        return new IgniteException(e.getMessage(), e);
-    }
-
-    /**
-     * Gets IgniteClosure for an IgniteCheckedException class.
-     *
-     * @param clazz Class.
-     * @return The IgniteClosure mapped to this exception class, or null if none.
-     */
-    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
-        return exceptionConverters.get(clazz);
-    }
-
-    /**
-     * Gets map with converters to convert internal checked exceptions to public API unchecked exceptions.
-     *
-     * @return Exception converters.
-     */
-    private static Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> exceptionConverters() {
-        Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> m = new HashMap<>();
-
-        m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteInterruptedException(e.getMessage(), (InterruptedException)e.getCause());
-            }
-        });
-
-        m.put(IgniteFutureCancelledCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteFutureCancelledException(e.getMessage(), e);
-            }
-        });
-
-        m.put(IgniteFutureTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteFutureTimeoutException(e.getMessage(), e);
-            }
-        });
-
-        return m;
     }
 
     /**

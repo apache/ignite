@@ -51,9 +51,11 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
 import static org.apache.ignite.internal.util.CommonUtils.isLambda;
 
 /**
@@ -201,7 +203,7 @@ class BinaryClassDescriptor {
         initialSerializer = serializer;
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
-        useOptMarshaller = serializer == null || QueryUtils.isGeometryClass(cls);
+        useOptMarshaller = serializer == null || isGeometryClass(cls);
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
         if (serializer instanceof BinaryReflectiveSerializer)
@@ -400,9 +402,9 @@ class BinaryClassDescriptor {
         Method writeReplaceMthd;
 
         if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) {
-            readResolveMtd = CommonUtils.findInheritableMethod(cls, "readResolve");
+            readResolveMtd = U.findInheritableMethod(cls, "readResolve");
 
-            writeReplaceMthd = CommonUtils.findInheritableMethod(cls, "writeReplace");
+            writeReplaceMthd = U.findInheritableMethod(cls, "writeReplace");
         }
         else {
             readResolveMtd = null;
@@ -999,8 +1001,7 @@ class BinaryClassDescriptor {
                 mapper,
                 initialSerializer,
                 stableFieldsMeta != null,
-                true,
-                MarshallerExclusions.isExcluded(cls));
+                true);
     }
 
     /**
