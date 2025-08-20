@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -473,7 +474,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
                 valBytes = Marshallers.marshal(ctx.marshaller(), this);
             }
             catch (IgniteCheckedException e) {
-                throw CommonUtils.convertException(e);
+                throw U.convertException(e);
             }
         }
 

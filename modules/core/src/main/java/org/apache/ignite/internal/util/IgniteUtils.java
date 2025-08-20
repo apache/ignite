@@ -397,6 +397,10 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Random is used to get random server node to authentication from client node. */
     private static final Random RND = new Random(System.currentTimeMillis());
 
+    /** Exception converters. */
+    private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
+        exceptionConverters;
+
     /** */
     private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
 
@@ -572,7 +576,7 @@ public abstract class IgniteUtils extends CommonUtils {
             }
         }
 
-        exceptionConverters.putAll(exceptionConverters());
+        exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
 
         // Set the http.strictPostRedirect property to prevent redirected POST from being mapped to a GET.
         System.setProperty("http.strictPostRedirect", "true");
@@ -585,6 +589,16 @@ public abstract class IgniteUtils extends CommonUtils {
             else if ("toString".equals(mtd.getName()))
                 toStringMtd = mtd;
         }
+    }
+
+    /**
+     * Gets IgniteClosure for an IgniteCheckedException class.
+     *
+     * @param clazz Class.
+     * @return The IgniteClosure mapped to this exception class, or null if none.
+     */
+    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
+        return exceptionConverters.get(clazz);
     }
 
     /**
@@ -719,6 +733,58 @@ public abstract class IgniteUtils extends CommonUtils {
             includeClsPath ?
                 allPluginProviders() :
                 Collections.emptyList();
+    }
+
+    /**
+     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
+     * does not wrap passed in exception if none suitable converter found.
+     *
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static Exception convertExceptionNoWrap(IgniteCheckedException e) {
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        if (converter != null)
+            return converter.apply(e);
+
+        if (e.getCause() instanceof IgniteException)
+            return (Exception)e.getCause();
+
+        return e;
+    }
+
+    /**
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static IgniteException convertException(IgniteCheckedException e) {
+        IgniteClientDisconnectedException e0 = e.getCause(IgniteClientDisconnectedException.class);
+
+        if (e0 != null) {
+            assert e0.reconnectFuture() != null : e0;
+
+            throw e0;
+        }
+
+        IgniteClientDisconnectedCheckedException disconnectedErr =
+            e.getCause(IgniteClientDisconnectedCheckedException.class);
+
+        if (disconnectedErr != null) {
+            assert disconnectedErr.reconnectFuture() != null : disconnectedErr;
+
+            e = disconnectedErr;
+        }
+
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        if (converter != null)
+            return converter.apply(e);
+
+        if (e.getCause() instanceof IgniteException)
+            return (IgniteException)e.getCause();
+
+        return new IgniteException(e.getMessage(), e);
     }
 
     /**

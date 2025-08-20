@@ -61,25 +61,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -215,10 +206,6 @@ public abstract class CommonUtils {
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
         new ConcurrentHashMap<>();
 
-    /** Exception converters. */
-    protected static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
-        exceptionConverters;
-
     static {
         primitiveMap.put("byte", byte.class);
         primitiveMap.put("short", short.class);
@@ -279,8 +266,6 @@ public abstract class CommonUtils {
             if (osLow.contains("inux"))
                 linux = true;
         }
-
-        exceptionConverters = exceptionConverters();
 
         try {
             clsURLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
@@ -1961,97 +1946,6 @@ public abstract class CommonUtils {
         catch (NoSuchFieldException e) {
             return null;
         }
-    }
-
-    /**
-     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
-     * does not wrap passed in exception if none suitable converter found.
-     *
-     * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
-     */
-    public static Exception convertExceptionNoWrap(IgniteCheckedException e) {
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
-
-        if (converter != null)
-            return converter.apply(e);
-
-        if (e.getCause() instanceof IgniteException)
-            return (Exception)e.getCause();
-
-        return e;
-    }
-
-    /**
-     * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
-     */
-    public static IgniteException convertException(IgniteCheckedException e) {
-        IgniteClientDisconnectedException e0 = e.getCause(IgniteClientDisconnectedException.class);
-
-        if (e0 != null) {
-            assert e0.reconnectFuture() != null : e0;
-
-            throw e0;
-        }
-
-        IgniteClientDisconnectedCheckedException disconnectedErr =
-            e.getCause(IgniteClientDisconnectedCheckedException.class);
-
-        if (disconnectedErr != null) {
-            assert disconnectedErr.reconnectFuture() != null : disconnectedErr;
-
-            e = disconnectedErr;
-        }
-
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
-
-        if (converter != null)
-            return converter.apply(e);
-
-        if (e.getCause() instanceof IgniteException)
-            return (IgniteException)e.getCause();
-
-        return new IgniteException(e.getMessage(), e);
-    }
-
-    /**
-     * Gets IgniteClosure for an IgniteCheckedException class.
-     *
-     * @param clazz Class.
-     * @return The IgniteClosure mapped to this exception class, or null if none.
-     */
-    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
-        return exceptionConverters.get(clazz);
-    }
-
-    /**
-     * Gets map with converters to convert internal checked exceptions to public API unchecked exceptions.
-     *
-     * @return Exception converters.
-     */
-    private static Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> exceptionConverters() {
-        Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> m = new HashMap<>();
-
-        m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteInterruptedException(e.getMessage(), (InterruptedException)e.getCause());
-            }
-        });
-
-        m.put(IgniteFutureCancelledCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteFutureCancelledException(e.getMessage(), e);
-            }
-        });
-
-        m.put(IgniteFutureTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
-            @Override public IgniteException apply(IgniteCheckedException e) {
-                return new IgniteFutureTimeoutException(e.getMessage(), e);
-            }
-        });
-
-        return m;
     }
 
     /**
