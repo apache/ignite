@@ -43,8 +43,9 @@ import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -309,7 +310,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
 
         byte[] detachedData = new byte[len];
 
-        U.arrayCopy(arr, start, detachedData, 0, len);
+        GridUnsafe.arrayCopy(arr, start, detachedData, 0, len);
 
         return new BinaryObjectImpl(ctx, detachedData, 0);
     }
@@ -728,13 +729,13 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
         if (ldr == null)
             return deserialize();
 
-        GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
+        Marshallers.USE_CACHE.set(Boolean.FALSE);
 
         try {
             return (T)reader(null, ldr, true).deserialize();
         }
         finally {
-            GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
+            Marshallers.USE_CACHE.set(Boolean.TRUE);
         }
     }
 

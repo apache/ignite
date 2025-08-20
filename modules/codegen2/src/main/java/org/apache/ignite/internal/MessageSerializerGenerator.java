@@ -39,6 +39,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
@@ -353,6 +354,17 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
 
+            else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+                assert typeArgs.size() == 1;
+
+                imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
+
+                returnFalseIfWriteFailed(write, "writer.writeCollection", getExpr,
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+            }
+
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
 
@@ -455,6 +467,15 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfReadFailed(name, "reader.readMessage");
 
+            else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+                assert typeArgs.size() == 1;
+
+                returnFalseIfReadFailed(name, "reader.readCollection",
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+            }
+
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
 
@@ -502,6 +523,11 @@ class MessageSerializerGenerator {
 
             if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 return "AFFINITY_TOPOLOGY_VERSION";
+
+            PrimitiveType primitiveType = unboxedType(type);
+
+            if (primitiveType != null)
+                return primitiveType.getKind().toString();
         }
 
         if (!assignableFrom(type, type(MESSAGE_INTERFACE)))
@@ -512,6 +538,22 @@ class MessageSerializerGenerator {
         imports.add(cls);
 
         return "MSG";
+    }
+
+    /**
+     * Returns the type (a primitive type) of unboxed values of a given type.
+     * That is, <i>unboxing conversion</i> is applied.
+     *
+     * @param type  the type to be unboxed
+     * @return the type of unboxed value of type {@code type} or null if the given type has no unboxing conversion
+     */
+    private PrimitiveType unboxedType(TypeMirror type) {
+        try {
+            return env.getTypeUtils().unboxedType(type);
+        }
+        catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     /**
@@ -618,6 +660,11 @@ class MessageSerializerGenerator {
         TypeElement typeElement = elementUtils.getTypeElement(clazz);
 
         return typeElement != null ? typeElement.asType() : null;
+    }
+
+    /** */
+    private TypeMirror erasedType(TypeMirror type) {
+        return env.getTypeUtils().erasure(type);
     }
 
     /** Converts string "BYTE" to string "Byte", with first capital latter. */

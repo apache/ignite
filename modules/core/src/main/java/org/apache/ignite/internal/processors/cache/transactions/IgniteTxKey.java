@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
@@ -33,10 +31,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class IgniteTxKey implements Message {
     /** Key. */
+    @Order(0)
     @GridToStringInclude(sensitive = true)
     private KeyCacheObject key;
 
     /** Cache ID. */
+    @Order(1)
     private int cacheId;
 
     /**
@@ -63,10 +63,24 @@ public class IgniteTxKey implements Message {
     }
 
     /**
+     * @param key New key.
+     */
+    public void key(KeyCacheObject key) {
+        this.key = key;
+    }
+
+    /**
      * @return Cache ID.
      */
     public int cacheId() {
         return cacheId;
+    }
+
+    /**
+     * @param cacheId New cache ID.
+     */
+    public void cacheId(int cacheId) {
+        this.cacheId = cacheId;
     }
 
     /**
@@ -113,61 +127,6 @@ public class IgniteTxKey implements Message {
         res = 31 * res + cacheId;
 
         return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeMessage(key))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cacheId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                key = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

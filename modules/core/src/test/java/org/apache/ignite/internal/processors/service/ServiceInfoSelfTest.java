@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -141,7 +142,7 @@ public class ServiceInfoSelfTest {
     /** */
     private ServiceInfo serviceInfo(ServiceConfiguration cfg) {
         try {
-            JdkMarshaller marsh = new JdkMarshaller();
+            JdkMarshaller marsh = Marshallers.jdk();
 
             byte[] srvcBytes = U.marshal(marsh, cfg.getService());
             byte[] nodeFilterBytes = U.marshal(marsh, cfg.getNodeFilter());

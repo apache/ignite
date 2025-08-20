@@ -109,7 +109,7 @@ public final class HeavyQueriesTracker {
 
         timeout = ctx.config().getSqlConfiguration().getLongQueryWarningTimeout();
 
-        IgniteThread thread = new IgniteThread(checkWorker);
+        IgniteThread thread = U.newThread(checkWorker);
 
         thread.setDaemon(true);
         thread.start();

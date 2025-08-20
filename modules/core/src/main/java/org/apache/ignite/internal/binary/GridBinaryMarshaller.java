@@ -30,8 +30,8 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -41,9 +41,6 @@ public class GridBinaryMarshaller {
     /** Binary context in TLS store. */
     private static final ThreadLocal<BinaryContextHolder> BINARY_CTX =
         ThreadLocal.withInitial(BinaryContextHolder::new);
-
-    /** Flag whether class caching should be used by the current thread. */
-    public static final ThreadLocal<Boolean> USE_CACHE = ThreadLocal.withInitial(() -> Boolean.TRUE);
 
     /** */
     public static final byte TRANSFORMED = -3;
@@ -341,7 +338,7 @@ public class GridBinaryMarshaller {
         for (Object obj0 : col)
             col0.add(unwrapBinary(obj0, hnds, null));
 
-        return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
+        return (col0 instanceof MutableSingletonList) ? CommonUtils.convertToSingletonList(col0) : col0;
     }
 
     /**

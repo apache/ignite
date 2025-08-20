@@ -30,9 +30,7 @@ public class BinaryContextPredefinedTypesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDefaultConstructor() {
-        BinaryContext binCtx = U.emptyBinaryContext();
-
-        for (BinaryClassDescriptor desc : binCtx.predefinedTypes()) {
+        for (BinaryClassDescriptor desc : U.binaryContext(null).predefinedTypes()) {
             if (!desc.isBinary())
                 continue;
 

@@ -67,7 +67,6 @@ import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -1025,7 +1024,7 @@ public class Checkpointer extends GridWorker {
 
         assert runner() == null : "Checkpointer is running.";
 
-        new IgniteThread(this).start();
+        U.newThread(this).start();
     }
 
     /**

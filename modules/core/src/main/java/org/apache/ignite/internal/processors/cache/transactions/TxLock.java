@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Corresponds to one {@link GridCacheMvccCandidate} from local MVCC candidates queue.
@@ -42,15 +40,19 @@ public class TxLock implements Message {
     static final byte OWNERSHIP_REQUESTED = 3;
 
     /** Near node ID. */
+    @Order(0)
     private UUID nearNodeId;
 
     /** Tx ID. */
+    @Order(1)
     private GridCacheVersion txId;
 
     /** Thread ID. */
+    @Order(2)
     private long threadId;
 
     /** Ownership. */
+    @Order(3)
     private byte ownership;
 
     /**
@@ -81,6 +83,13 @@ public class TxLock implements Message {
     }
 
     /**
+     * @param nearNodeId  Near node ID.
+     */
+    public void nearNodeId(UUID nearNodeId) {
+        this.nearNodeId = nearNodeId;
+    }
+
+    /**
      * @return Transaction ID.
      */
     public GridCacheVersion txId() {
@@ -88,10 +97,38 @@ public class TxLock implements Message {
     }
 
     /**
+     * @param txId  Transaction ID.
+     */
+    public void txId(GridCacheVersion txId) {
+        this.txId = txId;
+    }
+
+    /**
      * @return Thread ID.
      */
     public long threadId() {
         return threadId;
+    }
+
+    /**
+     * @param threadId  Thread ID.
+     */
+    public void threadId(long threadId) {
+        this.threadId = threadId;
+    }
+
+    /**
+     * @return Ownership.
+     */
+    public byte ownership() {
+        return ownership;
+    }
+
+    /**
+     * @param ownership Ownership.
+     */
+    public void ownership(byte ownership) {
+        this.ownership = ownership;
     }
 
     /**
@@ -119,89 +156,6 @@ public class TxLock implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TxLock.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeUuid(nearNodeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByte(ownership))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong(threadId))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeMessage(txId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                nearNodeId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                ownership = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                threadId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                txId = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

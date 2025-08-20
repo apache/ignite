@@ -34,8 +34,6 @@ import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -43,7 +41,6 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
@@ -135,7 +132,6 @@ import static org.apache.ignite.internal.processors.query.schema.SchemaIndexCach
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TIMEOUT;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TOKEN_INVALIDATE_INTERVAL;
 import static org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler.DFLT_MAX_TASK_RESULTS;
-import static org.apache.ignite.internal.util.GridLogThrottle.DFLT_LOG_THROTTLE_CAPACITY;
 import static org.apache.ignite.internal.util.GridReflectionCache.DFLT_REFLECTION_CACHE_SIZE;
 import static org.apache.ignite.internal.util.IgniteExceptionRegistry.DEFAULT_QUEUE_SIZE;
 import static org.apache.ignite.internal.util.IgniteUtils.DFLT_MBEAN_APPEND_CLASS_LOADER_ID;
@@ -178,10 +174,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "Exit code to pass to loader when Ignite instance is being restarted",
         type = Integer.class, defaults = "0")
     public static final String IGNITE_RESTART_CODE = "IGNITE_RESTART_CODE";
-
-    /** Defines Ignite installation folder. */
-    @SystemProperty(value = "Defines Ignite installation folder", type = String.class, defaults = "")
-    public static final String IGNITE_HOME = "IGNITE_HOME";
 
     /** If this system property is set to {@code true} - no shutdown hook will be set. */
     @SystemProperty("If true then no shutdown hook will be set")
@@ -836,15 +828,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     public static final String IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY = "IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY";
 
     /**
-     * Manages {@link OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
-     * {@link Serializable} classes.
-     */
-    @SystemProperty("Manages OptimizedMarshaller behavior of serialVersionUID computation " +
-        "for Serializable classes")
-    public static final String IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID =
-        "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
-
-    /**
      * Manages type of serialization mechanism for {@link String} that is marshalled/unmarshalled by BinaryMarshaller.
      * Should be used for cases when a String contains a surrogate symbol without its pair one. This is frequently used
      * in algorithms that encrypts data in String format.
@@ -1163,11 +1146,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         defaults = "" + DFLT_USE_ASYNC_FILE_IO_FACTORY)
     public static final String IGNITE_USE_ASYNC_FILE_IO_FACTORY = "IGNITE_USE_ASYNC_FILE_IO_FACTORY";
 
-    /** Max amount of remembered errors for {@link GridLogThrottle}. */
-    @SystemProperty(value = "Max amount of remembered errors for GridLogThrottle", type = Integer.class,
-        defaults = "" + DFLT_LOG_THROTTLE_CAPACITY)
-    public static final String IGNITE_LOG_THROTTLE_CAPACITY = "IGNITE_LOG_THROTTLE_CAPACITY";
-
     /**
      * If this property is set, {@link DataStorageConfiguration#setWriteThrottlingEnabled(boolean)}
      * will be overridden to {@code true} regardless the initial value in the configuration.
@@ -1259,12 +1237,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     public static final String IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE = "IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE";
 
     /**
-     * If this property is set to {@code true} enable logging in {@link GridClient}.
-     */
-    @SystemProperty("Enables logging in GridClient")
-    public static final String IGNITE_GRID_CLIENT_LOG_ENABLED = "IGNITE_GRID_CLIENT_LOG_ENABLED";
-
-    /**
      * When set to {@code true}, direct IO may be enabled. Direct IO enabled only if JAR file with corresponding
      * feature is available in classpath and OS and filesystem settings allows to enable this mode.
      * Default is {@code true}.
@@ -1273,13 +1245,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         "file with corresponding feature is available in classpath and OS and filesystem settings allows to enable " +
         "this mode", defaults = "true")
     public static final String IGNITE_DIRECT_IO_ENABLED = "IGNITE_DIRECT_IO_ENABLED";
-
-    /**
-     * When set to {@code true}, warnings that are intended for development environments and not for production
-     * (such as coding mistakes in code using Ignite) will not be logged.
-     */
-    @SystemProperty("Enables development environments warnings")
-    public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
 
     /**
      * When set to {@code true} (default), pages are written to page store without holding segment lock (with delay).

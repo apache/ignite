@@ -45,6 +45,7 @@ import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -952,6 +953,16 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         return partId;
+    }
+
+    /** @param ctx Binary context. */
+    public void onBinaryContextCreated(BinaryContext ctx) {
+        ctx.registerBinarilizableSystemClass(C1.class);
+        ctx.registerBinarilizableSystemClass(C1MLA.class);
+        ctx.registerBinarilizableSystemClass(C2.class);
+        ctx.registerBinarilizableSystemClass(C2MLA.class);
+        ctx.registerBinarilizableSystemClass(C4.class);
+        ctx.registerBinarilizableSystemClass(C4MLA.class);
     }
 
     /**
