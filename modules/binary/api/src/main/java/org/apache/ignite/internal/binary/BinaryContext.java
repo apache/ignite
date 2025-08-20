@@ -1285,7 +1285,9 @@ public class BinaryContext {
      * @throws BinaryObjectException In case of error.
      */
     @Nullable public BinaryType binaryType(int typeId) throws BinaryObjectException {
-        return metaHnd != null ? metaHnd.metadata(typeId).wrap(this) : null;
+        BinaryMetadata metadata = metaHnd != null ? metaHnd.metadata(typeId) : null;
+
+        return metadata != null ? metadata.wrap(this) : null;
     }
 
     /**
