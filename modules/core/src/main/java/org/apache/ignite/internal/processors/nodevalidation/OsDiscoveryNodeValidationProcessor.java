@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.nodevalidation;
 
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -33,6 +35,10 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
  * Node validation.
  */
 public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
+    /** Enables version check for rolling upgrade. */
+    @SystemProperty(value = "Enables version check for rolling upgrade.")
+    public static final String IGNITE_ROLLING_UPGRADE_VERSION_CHECK = "IGNITE.ROLLING.UPGRADE.VERSION.CHECK";
+
     /** */
     private static final int MAX_MINOR_DIFF = 1;
 
@@ -107,6 +113,11 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
     private boolean isRollingUpgradeEligible(IgniteProductVersion locVer, IgniteProductVersion rmtVer) {
         if (locVer.major() == rmtVer.major() && locVer.minor() == rmtVer.minor())
             return true;
+
+        boolean enableCheck = IgniteSystemProperties.getBoolean(IGNITE_ROLLING_UPGRADE_VERSION_CHECK);
+
+        if (!enableCheck)
+            return false;
 
         boolean isEligible = locVer.major() == rmtVer.major() && Math.abs(locVer.minor() - rmtVer.minor()) <= MAX_MINOR_DIFF;
 
