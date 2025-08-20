@@ -39,7 +39,8 @@ import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -89,7 +90,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
      * @return Heap-based copy.
      */
     public BinaryObject heapCopy() {
-        return new BinaryObjectImpl(ctx, U.copyMemory(ptr, size), start);
+        return new BinaryObjectImpl(ctx, GridUnsafe.copyMemory(ptr, size), start);
     }
 
     /** {@inheritDoc} */
@@ -416,13 +417,13 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
         if (ldr == null)
             return deserialize();
 
-        GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
+        Marshallers.USE_CACHE.set(Boolean.FALSE);
 
         try {
             return (T)reader(null, ldr, true).deserialize();
         }
         finally {
-            GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
+            Marshallers.USE_CACHE.set(Boolean.TRUE);
         }
     }
 

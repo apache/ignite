@@ -45,7 +45,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
@@ -76,7 +75,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.Nullable;
 
@@ -882,15 +880,11 @@ public class PlatformUtils {
      * @return Marshaller.
      */
     public static GridBinaryMarshaller marshaller() {
-        BinaryContext ctx = new BinaryContext(NullLogger.INSTANCE);
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        ctx.configure(marsh);
-
-        return new GridBinaryMarshaller(ctx);
+        return new GridBinaryMarshaller(U.binaryContext(BinaryUtils.noopMetadataHandler(), marsh));
     }
 
     /**

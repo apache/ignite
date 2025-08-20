@@ -52,10 +52,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -2032,7 +2032,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 qryEntities.add(newEntity);
 
             // Set key configuration if needed.
-            String affFieldName = BinaryContext.affinityFieldName(keyCls);
+            String affFieldName = CU.affinityFieldName(keyCls);
 
             if (affFieldName != null) {
                 CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(newEntity.getKeyType(), affFieldName);

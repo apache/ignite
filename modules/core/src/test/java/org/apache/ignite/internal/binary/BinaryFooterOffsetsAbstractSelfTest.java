@@ -47,23 +47,18 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ctx = U.emptyBinaryContext();
-
         marsh = new BinaryMarshaller();
-
-        IgniteConfiguration iCfg = new IgniteConfiguration();
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(TestObject.class.getName())));
-
         bCfg.setCompactFooter(compactFooter());
-
-        iCfg.setBinaryConfiguration(bCfg);
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        marsh.setBinaryContext(ctx, iCfg);
+        ctx = U.binaryContext(marsh, new IgniteConfiguration().setBinaryConfiguration(bCfg));
+
+        marsh.setBinaryContext(ctx);
     }
 
     /**

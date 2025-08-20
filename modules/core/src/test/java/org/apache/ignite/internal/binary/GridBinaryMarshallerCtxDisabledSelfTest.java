@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -46,10 +47,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
     public void testObjectExchange() throws Exception {
         BinaryMarshaller marsh = new BinaryMarshaller();
         marsh.setContext(new MarshallerContextWithNoStorage());
-
-        BinaryContext ctx = U.emptyBinaryContext();
-
-        marsh.setBinaryContext(ctx, new IgniteConfiguration());
+        marsh.setBinaryContext(U.binaryContext(marsh, new IgniteConfiguration()));
 
         SimpleObject simpleObj = new SimpleObject();
 
@@ -131,7 +129,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return new JdkMarshaller();
+            return Marshallers.jdk();
         }
     }
 

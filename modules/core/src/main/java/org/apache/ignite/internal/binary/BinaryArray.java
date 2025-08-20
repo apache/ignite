@@ -30,11 +30,12 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -106,7 +107,7 @@ class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryAr
         ClassLoader resolveLdr = ldr == null ? ctx.classLoader() : ldr;
 
         if (ldr != null)
-            GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
+            Marshallers.USE_CACHE.set(Boolean.FALSE);
 
         try {
             Class<?> compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, resolveLdr, false);
@@ -130,7 +131,7 @@ class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryAr
             return (T)deserialized;
         }
         finally {
-            GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
+            Marshallers.USE_CACHE.set(Boolean.TRUE);
         }
     }
 
@@ -219,7 +220,7 @@ class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryAr
     @Override public int hashCode() {
         int result = 31 * Objects.hash(componentTypeId());
 
-        result = 31 * result + IgniteUtils.hashCode(arr);
+        result = 31 * result + CommonUtils.hashCode(arr);
 
         return result;
     }

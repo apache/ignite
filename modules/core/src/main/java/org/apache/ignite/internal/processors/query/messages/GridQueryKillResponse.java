@@ -18,11 +18,9 @@
 
 package org.apache.ignite.internal.processors.query.messages;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Query kill response.
@@ -32,9 +30,11 @@ public class GridQueryKillResponse implements Message {
     public static final short TYPE_CODE = 173;
 
     /** Error text. */
+    @Order(value = 0, method = "error")
     private String errMsg;
 
     /** Request id.*/
+    @Order(value = 1, method = "requestId")
     private long reqId;
 
     /**
@@ -61,71 +61,29 @@ public class GridQueryKillResponse implements Message {
     }
 
     /**
+     * @param reqId New request id.
+     */
+    public void requestId(long reqId) {
+        this.reqId = reqId;
+    }
+
+    /**
      * @return Error text or {@code null} if no error.
      */
     public String error() {
         return errMsg;
     }
 
+    /**
+     * @param errMsg New error text.
+     */
+    public void error(String errMsg) {
+        this.errMsg = errMsg;
+    }
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString(errMsg))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong(reqId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                errMsg = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                reqId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
