@@ -17,11 +17,12 @@
 
 package org.apache.ignite.compatibility.clients;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
@@ -402,7 +403,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
             ClientCache<Object, Object> cache = client.getOrCreateCache("testContinuousQueries");
 
-            List<CacheEntryEvent<?, ?>> allEvts = new ArrayList<>();
+            Queue<CacheEntryEvent<?, ?>> allEvts = new ConcurrentLinkedQueue<>();
 
             cache.query(new ContinuousQuery<>().setLocalListener(evts -> evts.forEach(allEvts::add)));
 
