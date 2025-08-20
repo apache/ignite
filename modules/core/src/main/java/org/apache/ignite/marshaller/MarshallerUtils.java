@@ -67,17 +67,6 @@ public class MarshallerUtils {
     private static final Object MUX = new Object();
 
     /**
-     * Set node name to marshaller context if possible.
-     *
-     * @param marsh Marshaller instance.
-     * @param nodeName Node name.
-     */
-    public static void setNodeName(Marshaller marsh, @Nullable String nodeName) {
-        if (marsh instanceof AbstractNodeNameAwareMarshaller)
-            ((AbstractNodeNameAwareMarshaller)marsh).nodeName(nodeName);
-    }
-
-    /**
      * Private constructor.
      */
     private MarshallerUtils() {

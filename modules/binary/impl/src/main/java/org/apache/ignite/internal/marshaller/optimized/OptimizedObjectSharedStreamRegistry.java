@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.marshaller.optimized;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 
 /**
  *
@@ -38,7 +38,7 @@ public class OptimizedObjectSharedStreamRegistry extends OptimizedObjectStreamRe
 
     /** {@inheritDoc} */
     @Override void closeOut(OptimizedObjectOutputStream out) {
-        U.close(out, null);
+        CommonUtils.close(out, null);
 
         StreamHolder holder = holders.get();
 
@@ -48,7 +48,7 @@ public class OptimizedObjectSharedStreamRegistry extends OptimizedObjectStreamRe
 
     /** {@inheritDoc} */
     @Override void closeIn(OptimizedObjectInputStream in) {
-        U.close(in, null);
+        CommonUtils.close(in, null);
 
         StreamHolder holder = holders.get();
 
@@ -62,7 +62,7 @@ public class OptimizedObjectSharedStreamRegistry extends OptimizedObjectStreamRe
      * @param in Object input stream.
      */
     void closeNotCachedIn(OptimizedObjectInputStream in) {
-        U.close(in, null);
+        CommonUtils.close(in, null);
 
         StreamHolder holder = holders.get();
 

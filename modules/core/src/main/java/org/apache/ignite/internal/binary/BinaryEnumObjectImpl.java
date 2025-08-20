@@ -33,10 +33,10 @@ import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -333,7 +333,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
         if (valBytes != null)
             return valBytes;
 
-        valBytes = U.marshal(ctx.marshaller(), this);
+        valBytes = Marshallers.marshal(ctx.marshaller(), this);
 
         return valBytes;
     }
@@ -470,10 +470,10 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     @Override public int size() {
         if (valBytes == null) {
             try {
-                valBytes = U.marshal(ctx.marshaller(), this);
+                valBytes = Marshallers.marshal(ctx.marshaller(), this);
             }
             catch (IgniteCheckedException e) {
-                throw U.convertException(e);
+                throw CommonUtils.convertException(e);
             }
         }
 

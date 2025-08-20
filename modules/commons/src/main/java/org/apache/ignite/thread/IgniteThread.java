@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.worker.GridWorker;
 
 /**
  * This class adds some necessary plumbing on top of the {@link Thread} class.
@@ -58,15 +57,6 @@ public class IgniteThread extends Thread {
 
     /** */
     private boolean forbiddenToRequestBinaryMetadata;
-
-    /**
-     * Creates thread with given worker.
-     *
-     * @param worker Runnable to create thread with.
-     */
-    public IgniteThread(GridWorker worker) {
-        this(worker.igniteInstanceName(), worker.name(), worker, GRP_IDX_UNASSIGNED, -1, GridIoPolicy.UNDEFINED);
-    }
 
     /**
      * Creates grid thread with given name for a given Ignite instance.
