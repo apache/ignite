@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.function.ThrowableSupplier;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -35,6 +36,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Test Rolling Upgrade release types.
  */
+@WithSystemProperty(key = "IGNITE.ROLLING.UPGRADE.VERSION.CHECK", value = "true")
 public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     private String nodeVer;
