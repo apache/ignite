@@ -5007,24 +5007,24 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                if (node.internalOrder() <= ring.maxInternalOrder()) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node added message since new node's order is less than " +
-                            "max order in ring [ring=" + ring + ", node=" + node + ", locNode=" + locNode +
-                            ", msg=" + msg + ']');
-
-                    if (debugMode)
-                        debugLog(msg, "Discarding node added message since new node's order is less than " +
-                            "max order in ring [ring=" + ring + ", node=" + node + ", locNode=" + locNode +
-                            ", msg=" + msg + ']');
-
-                    msg.spanContainer().span()
-                        .addLog(() -> "Discarded")
-                        .setStatus(SpanStatus.ABORTED)
-                        .end();
-
-                    return;
-                }
+//                if (node.internalOrder() <= ring.maxInternalOrder()) {
+//                    if (log.isDebugEnabled())
+//                        log.debug("Discarding node added message since new node's order is less than " +
+//                            "max order in ring [ring=" + ring + ", node=" + node + ", locNode=" + locNode +
+//                            ", msg=" + msg + ']');
+//
+//                    if (debugMode)
+//                        debugLog(msg, "Discarding node added message since new node's order is less than " +
+//                            "max order in ring [ring=" + ring + ", node=" + node + ", locNode=" + locNode +
+//                            ", msg=" + msg + ']');
+//
+//                    msg.spanContainer().span()
+//                        .addLog(() -> "Discarded")
+//                        .setStatus(SpanStatus.ABORTED)
+//                        .end();
+//
+//                    return;
+//                }
 
                 synchronized (mux) {
                     joiningNodes.add(node.id());
