@@ -68,7 +68,6 @@ import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -476,7 +475,7 @@ public class BinaryContext {
 
         String pkgPath = pkgName.replaceAll("\\.", "/");
 
-        URL[] urls = U.classLoaderUrls(ldr);
+        URL[] urls = CommonUtils.classLoaderUrls(ldr);
 
         for (URL url : urls) {
             String proto = url.getProtocol().toLowerCase();
