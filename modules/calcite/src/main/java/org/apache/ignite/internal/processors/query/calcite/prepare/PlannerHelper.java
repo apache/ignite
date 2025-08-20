@@ -150,7 +150,7 @@ public class PlannerHelper {
             IgniteRel igniteRel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             if (!root.isRefTrivial()) {
-                LogicalProject project = (LogicalProject) root.project();
+                LogicalProject project = (LogicalProject)root.project();
 
                 igniteRel = new IgniteProject(igniteRel.getCluster(), desired, igniteRel, project.getProjects(), project.getRowType());
             }
