@@ -952,11 +952,13 @@ public class QueryUtils {
     public static GridQueryProperty buildProperty(Class<?> keyCls, Class<?> valCls, String keyFieldName,
         String valueFieldName, String pathStr, Class<?> resType, Map<String, String> aliases, boolean notNull,
         CacheObjectContext coCtx) throws IgniteCheckedException {
+        String alias = aliases.get(pathStr);
+
         if (pathStr.equals(keyFieldName))
-            return new KeyOrValProperty(true, pathStr, keyCls);
+            return new KeyOrValProperty(true, pathStr, keyCls, alias);
 
         if (pathStr.equals(valueFieldName))
-            return new KeyOrValProperty(false, pathStr, valCls);
+            return new KeyOrValProperty(false, pathStr, valCls, alias);
 
         return buildClassProperty(keyCls,
                 valCls,
@@ -1801,10 +1803,14 @@ public class QueryUtils {
         Class<?> cls;
 
         /** */
-        public KeyOrValProperty(boolean key, String name, Class<?> cls) {
+        String alias;
+
+        /** */
+        public KeyOrValProperty(boolean key, String name, Class<?> cls, String alias) {
             this.isKey = key;
             this.name = name;
             this.cls = cls;
+            this.alias = alias;
         }
 
         /** {@inheritDoc} */
@@ -1819,7 +1825,7 @@ public class QueryUtils {
 
         /** {@inheritDoc} */
         @Override public String name() {
-            return name;
+            return alias == null ? name : alias;
         }
 
         /** {@inheritDoc} */
