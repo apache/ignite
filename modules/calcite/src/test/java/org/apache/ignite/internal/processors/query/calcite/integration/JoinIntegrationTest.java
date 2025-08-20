@@ -65,6 +65,13 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
         // NO-OP
     }
 
+    /** */
+    @Test public void testIsNotDistinctWithEquiConditionFrom() {
+        assertQuery("select t1.c1, t2.c1 from t1 join t2 on t1.c2 is not distinct from t2.c2 and t1.c3 = t2.c3 - 1")
+            .returns(2, 3)
+            .check();
+    }
+
     /**
      * Test verifies result of inner join with different ordering.
      */
