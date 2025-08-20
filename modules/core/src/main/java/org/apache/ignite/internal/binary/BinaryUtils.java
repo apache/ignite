@@ -80,7 +80,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.platform.PlatformType;
@@ -2922,7 +2921,7 @@ public class BinaryUtils {
     public static BinaryWriterEx writer(BinaryContext ctx) {
         BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
 
-        return new BinaryWriterExImpl(ctx, BinaryStreams.outputStream((int)U.KB, locCtx.chunk()), locCtx.schemaHolder(), null);
+        return new BinaryWriterExImpl(ctx, BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()), locCtx.schemaHolder(), null);
     }
 
     /**

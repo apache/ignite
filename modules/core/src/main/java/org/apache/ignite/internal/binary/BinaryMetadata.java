@@ -33,7 +33,6 @@ import java.util.Set;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -240,7 +239,7 @@ public class BinaryMetadata implements Externalizable {
         out.writeByte(VERSION);
         out.writeInt(typeId);
 
-        U.writeString(out, typeName);
+        CommonUtils.writeString(out, typeName);
 
         if (fields == null)
             out.writeInt(-1);
@@ -248,12 +247,12 @@ public class BinaryMetadata implements Externalizable {
             out.writeInt(fields.size());
 
             for (Map.Entry<String, BinaryFieldMetadata> fieldEntry : fields.entrySet()) {
-                U.writeString(out, fieldEntry.getKey());
+                CommonUtils.writeString(out, fieldEntry.getKey());
                 fieldEntry.getValue().writeTo(out);
             }
         }
 
-        U.writeString(out, affKeyFieldName);
+        CommonUtils.writeString(out, affKeyFieldName);
 
         if (schemas == null)
             out.writeInt(-1);
@@ -272,7 +271,7 @@ public class BinaryMetadata implements Externalizable {
             out.writeInt(map.size());
 
             for (Map.Entry<String, Integer> e : map.entrySet()) {
-                U.writeString(out, e.getKey());
+                CommonUtils.writeString(out, e.getKey());
 
                 out.writeInt(e.getValue());
             }
@@ -298,7 +297,7 @@ public class BinaryMetadata implements Externalizable {
         in.readByte(); //skip version
 
         typeId = in.readInt();
-        typeName = U.readString(in);
+        typeName = CommonUtils.readString(in);
 
         int fieldsSize = in.readInt();
 
@@ -308,7 +307,7 @@ public class BinaryMetadata implements Externalizable {
             fields = new HashMap<>();
 
             for (int i = 0; i < fieldsSize; i++) {
-                String fieldName = U.readString(in);
+                String fieldName = CommonUtils.readString(in);
 
                 BinaryFieldMetadata fieldMeta = new BinaryFieldMetadata();
                 fieldMeta.readFrom(in);
@@ -317,7 +316,7 @@ public class BinaryMetadata implements Externalizable {
             }
         }
 
-        affKeyFieldName = U.readString(in);
+        affKeyFieldName = CommonUtils.readString(in);
 
         int schemasSize = in.readInt();
 
@@ -352,7 +351,7 @@ public class BinaryMetadata implements Externalizable {
                 nameToOrdinal = new LinkedHashMap<>(size);
 
                 for (int idx = 0; idx < size; idx++) {
-                    String name = U.readString(in);
+                    String name = CommonUtils.readString(in);
 
                     int ord = in.readInt();
 

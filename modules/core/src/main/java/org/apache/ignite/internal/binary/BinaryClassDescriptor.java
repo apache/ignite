@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
@@ -402,9 +401,9 @@ class BinaryClassDescriptor {
         Method writeReplaceMthd;
 
         if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) {
-            readResolveMtd = U.findInheritableMethod(cls, "readResolve");
+            readResolveMtd = CommonUtils.findInheritableMethod(cls, "readResolve");
 
-            writeReplaceMthd = U.findInheritableMethod(cls, "writeReplace");
+            writeReplaceMthd = CommonUtils.findInheritableMethod(cls, "writeReplace");
         }
         else {
             readResolveMtd = null;
