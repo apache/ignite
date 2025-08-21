@@ -62,7 +62,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -206,9 +205,6 @@ public class ZookeeperDiscoveryImpl {
     private final Object stateMux = new Object();
 
     /** */
-    public volatile IgniteDiscoverySpiInternalListener internalLsnr;
-
-    /** */
     private final ConcurrentHashMap<Long, PingFuture> pingFuts = new ConcurrentHashMap<>();
 
     /** */
@@ -228,7 +224,6 @@ public class ZookeeperDiscoveryImpl {
      * @param locNode Local node instance.
      * @param lsnr Discovery events listener.
      * @param exchange Discovery data exchange.
-     * @param internalLsnr Internal listener (used for testing only).
      * @param stats Zookeeper DiscoverySpi statistics collector.
      * @param marsh Marshaller.
      */
@@ -240,7 +235,6 @@ public class ZookeeperDiscoveryImpl {
         ZookeeperClusterNode locNode,
         DiscoverySpiListener lsnr,
         DiscoverySpiDataExchange exchange,
-        IgniteDiscoverySpiInternalListener internalLsnr,
         ZookeeperDiscoveryStatistics stats,
         JdkMarshaller marsh
     ) {
@@ -266,9 +260,6 @@ public class ZookeeperDiscoveryImpl {
             evtsAckThreshold = 1;
 
         this.evtsAckThreshold = evtsAckThreshold;
-
-        if (internalLsnr != null)
-            this.internalLsnr = internalLsnr;
 
         this.stats = stats;
     }
@@ -791,11 +782,6 @@ public class ZookeeperDiscoveryImpl {
         try {
             // Need fire EVT_CLIENT_NODE_RECONNECTED event if reconnect after already joined.
             boolean reconnect = locNode.isClient() && prevState != null && (prevState.joined || prevState.reconnect);
-
-            IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
-
-            if (internalLsnr != null)
-                internalLsnr.beforeJoin(locNode, log);
 
             if (reconnect)
                 locNode.setAttributes(spi.getLocNodeAttrs());

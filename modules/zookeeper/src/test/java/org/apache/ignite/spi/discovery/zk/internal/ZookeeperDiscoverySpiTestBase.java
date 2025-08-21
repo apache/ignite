@@ -379,7 +379,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (!dfltConsistenId)
             cfg.setConsistentId(igniteInstanceName);
 
-        ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
+        TestZookeeperDiscoverySpi zkSpi = new TestZookeeperDiscoverySpi();
 
         if (joinTimeout != 0)
             zkSpi.setJoinTimeout(joinTimeout);
@@ -392,15 +392,11 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (auth != null) {
             zkSpi.setAuthenticator(auth.apply());
 
+            zkSpi.getNodeAttributes().put(ATTR_SECURITY_CREDENTIALS, new SecurityCredentials(null, null, igniteInstanceName));
+
             zkSpi.setInternalListener(new IgniteDiscoverySpiInternalListener() {
                 @Override public void beforeJoin(ClusterNode locNode, IgniteLogger log) {
-                    ZookeeperClusterNode locNode0 = (ZookeeperClusterNode)locNode;
-
-                    Map<String, Object> attrs = new HashMap<>(locNode0.getAttributes());
-
-                    attrs.put(ATTR_SECURITY_CREDENTIALS, new SecurityCredentials(null, null, igniteInstanceName));
-
-                    locNode0.setAttributes(attrs);
+                    // No-op.
                 }
 
                 @Override public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg) {
@@ -939,5 +935,27 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
             return false;
         }
+    }
+
+    /** */
+    private static class TestZookeeperDiscoverySpi extends ZookeeperDiscoverySpi {
+        /** */
+        private volatile IgniteDiscoverySpiInternalListener internalLsnr;
+
+        /** {@inheritDoc} */
+        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
+            if (internalLsnr != null) {
+                if (!internalLsnr.beforeSendCustomEvent(this, log, msg))
+                    return;
+            }
+
+            super.sendCustomEvent(msg);
+        }
+
+        /** */
+        public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
+            internalLsnr = lsnr;
+        }
+
     }
 }

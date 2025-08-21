@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -137,9 +136,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     @LoggerResource
     @GridToStringExclude
     private IgniteLogger log;
-
-    /** */
-    private IgniteDiscoverySpiInternalListener internalLsnr;
 
     /** */
     private final ZookeeperDiscoveryStatistics stats = new ZookeeperDiscoveryStatistics();
@@ -408,13 +404,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
-        IgniteDiscoverySpiInternalListener internalLsnr = impl.internalLsnr;
-
-        if (internalLsnr != null) {
-            if (!internalLsnr.beforeSendCustomEvent(this, log, msg))
-                return;
-        }
-
         impl.sendCustomMessage(msg);
     }
 
@@ -469,7 +458,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
             locNode,
             lsnr,
             exchange,
-            internalLsnr,
             stats,
             ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller());
 
@@ -494,14 +482,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
         stats.registerMetrics(discoReg);
 
         discoReg.register("Coordinator", () -> impl.getCoordinator(), UUID.class, "Coordinator ID");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
-        if (impl != null)
-            impl.internalLsnr = lsnr;
-        else
-            internalLsnr = lsnr;
     }
 
     /** {@inheritDoc} */
