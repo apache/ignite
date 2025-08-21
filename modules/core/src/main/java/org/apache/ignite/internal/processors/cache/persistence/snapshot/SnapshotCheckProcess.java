@@ -147,7 +147,7 @@ public class SnapshotCheckProcess {
         }
 
         if (ctx.req.incrementalIndex() > 0) {
-            SnapshotFileTree sft = ctx.locFileTree == null ? null : ctx.locFileTree.get(kctx.config().getConsistentId());
+            SnapshotFileTree sft = ctx.locFileTree == null ? null : ctx.locFileTree.get(kctx.config().getConsistentId().toString());
 
             reduceIncrementalResults(sft, ctx.req.incrementalIndex(), ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
         }
