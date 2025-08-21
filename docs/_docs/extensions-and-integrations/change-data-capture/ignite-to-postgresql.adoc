@@ -61,7 +61,7 @@ The following settings can be used to configure the behavior of `IgniteToPostgre
 | `dataSource` | JDBC `DataSource` used to connect to the target PostgreSQL database. Must be provided by the user. | _Required_
 | `caches` | Set of Ignite cache names to replicate. Must be provided by the user. | _Required_
 | `onlyPrimary` | If `true`, replicates only events originating from the primary node. Useful to avoid duplicate updates in replicated clusters. | `true`
-| `maxBatchSize`  | Maximum number of statements per batch submitted to PostgreSQL. Affects how many rows are commited in a single `executeBatch()` call. | `1024` |
+| `maxBatchSize`  | Maximum number of statements per batch submitted to PostgreSQL. Affects how many rows are commited in a single `executeBatch()` call. | `1024`
 | `createTables`| If `true`, missing target tables in PostgreSQL will be created automatically during startup.| `false`
 |===
 
@@ -71,6 +71,7 @@ We use `PreparedStatement` for batching with `autoCommit` set to `false`, commit
 [WARNING]
 ====
 Choosing the `dataSource` is the user's responsibility. Consider:
+
 - Required delivery guarantees (e.g., retry logic)
 - High-availability PostgreSQL setup (replicas, failover, etc.)
 ====
@@ -210,8 +211,6 @@ DELETE FROM test_table WHERE id = 1;
 
 == Java → PostgreSQL Type Mapping
 
-== Java → PostgreSQL Type Mapping
-
 |===
 | Java Type | PostgreSQL Type | Precision/Scale
 | `java.lang.String` | `VARCHAR(precision)` | Precision only
@@ -247,5 +246,3 @@ DELETE FROM test_table WHERE id = 1;
 - Only BinaryObject and primitive fields are supported
 - `keepBinary` must be set to `true`
 - Schema evolution is not supported — run with `createTables=true` at startup
-
-
