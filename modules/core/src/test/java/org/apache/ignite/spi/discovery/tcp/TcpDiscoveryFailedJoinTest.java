@@ -26,7 +26,6 @@ import java.net.SocketException;
 import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.DummyQueryIndexing;
@@ -204,13 +203,6 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
             long timeout) throws IOException, IgniteCheckedException {
             if (sock.getPort() != FAIL_PORT)
                 super.writeToSocket(sock, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(ClusterNode node, Socket sock, OutputStream out,
-            TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
-            if (sock.getPort() != FAIL_PORT)
-                super.writeToSocket(node, sock, out, msg, timeout);
         }
 
         /** {@inheritDoc} */
