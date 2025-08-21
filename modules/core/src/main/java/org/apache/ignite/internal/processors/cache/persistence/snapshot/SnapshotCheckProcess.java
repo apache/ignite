@@ -136,20 +136,25 @@ public class SnapshotCheckProcess {
         if (clusterOpFut == null)
             return new GridFinishedFuture<>();
 
-        ClusterTopologyCheckedException ex = checkNodeLeft(ctx.req.nodes(), results.keySet());
+        if (F.isEmpty(errors)) {
+            ClusterTopologyCheckedException ex = checkNodeLeft(ctx.req.nodes(), results.keySet());
 
-        if (ex != null)
-            clusterOpFut.onDone(ex);
-        else {
+            if (ex != null) {
+                clusterOpFut.onDone(ex);
+
+                return new GridFinishedFuture<>();
+            }
+        }
+
+        if (ctx.req.incrementalIndex() > 0) {
             SnapshotFileTree sft = ctx.locFileTree == null ? null : ctx.locFileTree.get(kctx.config().getConsistentId());
 
-            if (ctx.req.incrementalIndex() > 0)
-                reduceIncrementalResults(sft, ctx.req.incrementalIndex(), ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
-            else if (ctx.req.allRestoreHandlers())
-                reduceCustomHandlersResults(ctx, results, errors, clusterOpFut);
-            else
-                reducePartitionsHashesResults(ctx.clusterMetas, results, errors, clusterOpFut);
+            reduceIncrementalResults(sft, ctx.req.incrementalIndex(), ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
         }
+        else if (ctx.req.allRestoreHandlers())
+            reduceCustomHandlersResults(ctx, results, errors, clusterOpFut);
+        else
+            reducePartitionsHashesResults(ctx.clusterMetas, results, errors, clusterOpFut);
 
         return new GridFinishedFuture<>();
     }
