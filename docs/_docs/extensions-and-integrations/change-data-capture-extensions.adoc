@@ -534,26 +534,36 @@ DELETE FROM test_table WHERE id = 1;
 
 == Java → PostgreSQL Type Mapping
 
-|===
-| Java Type | PostgreSQL Type
+== Java → PostgreSQL Type Mapping
 
-| java.lang.String | VARCHAR
-| java.lang.Integer / int | INT
-| java.lang.Long / long | BIGINT
-| java.lang.Boolean / boolean | BOOLEAN
-| java.lang.Double / double | DOUBLE PRECISION
-| java.lang.Float / float | REAL
-| java.math.BigDecimal | DECIMAL
-| java.lang.Short / short | SMALLINT
-| java.lang.Byte / byte | SMALLINT
-| java.util.UUID | UUID
-| byte[] (`[B`) | BYTEA
-| java.lang.Object | OTHER
+|===
+| Java Type | PostgreSQL Type | Precision/Scale
+| `java.lang.String` | `VARCHAR(precision)` | Precision only
+| `java.lang.Integer` / `int` | `INT` | None
+| `java.lang.Long` / `long` | `BIGINT` | None
+| `java.lang.Boolean` / `boolean` | `BOOL` | None
+| `java.lang.Double` / `double` | `NUMERIC(precision, scale)` | Precision & scale
+| `java.lang.Float` / `float` | `NUMERIC(precision, scale)` | Precision & scale
+| `java.math.BigDecimal` | `NUMERIC(precision, scale)` | Precision & scale
+| `java.lang.Short` / `short` | `SMALLINT` | None
+| `java.lang.Byte` / `byte` | `SMALLINT` | None
+| `java.sql.Date` | `DATE` | None
+| `java.sql.Time` | `TIME(precision)` | Precision only
+| `java.sql.Timestamp` | `TIMESTAMP(precision)` | Precision only
+| `java.util.Date` | `TIMESTAMP(precision)` | Precision only
+| `java.util.UUID` | `UUID` | None
+| `java.time.LocalDate` | `DATE` | None
+| `java.time.LocalTime` | `TIME(precision)` | Precision only
+| `java.time.LocalDateTime` | `TIMESTAMP(precision)` | Precision only
+| `java.time.OffsetTime` | `VARCHAR(precision)` | Precision only
+| `java.time.OffsetDateTime` | `TIMESTAMP WITH TIME ZONE` | None
+| `byte[]` | `BYTEA` | None
 |===
 
 [NOTE]
 ====
-`OTHER` is used as fallback if type is not recognized.
+- Precision and scale values provided in the mapping configuration will be processed and applied to the generated SQL types where supported.
+- If the Java type is not recognized in the predefined mapping, an exception will be thrown.
 ====
 
 == Limitations
