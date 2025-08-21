@@ -2480,8 +2480,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     for (TcpDiscoveryNode n0 : allNodes) {
                         assert n0.internalOrder() > 0 : n0;
 
-                        if (n0.internalOrder() < node.internalOrder())
-                            top.add(n0);
+                        top.add(n0);
                     }
 
                     addedMsg.clientTopology(top);
@@ -4919,20 +4918,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                 .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
                     () -> node.consistentId().toString());
 
-            if (node.internalOrder() < locNode.internalOrder()) {
-                if (!locNode.id().equals(node.id())) {
-                    U.warn(log, "Discarding node added message since local node's order is greater " +
-                            "[node=" + node + ", ring=" + ring + ", msg=" + msg + ']');
-
-                    return;
-                }
-                else {
-                    // TODO IGNITE-11272
-                    if (log.isDebugEnabled())
-                        log.debug("Received node added message with node order smaller than local node order " +
-                            "(will appy) [node=" + node + ", ring=" + ring + ", msg=" + msg + ']');
-                }
-            }
+//            if (node.internalOrder() < locNode.internalOrder()) {
+//                if (!locNode.id().equals(node.id())) {
+//                    U.warn(log, "Discarding node added message since local node's order is greater " +
+//                            "[node=" + node + ", ring=" + ring + ", msg=" + msg + ']');
+//
+//                    return;
+//                }
+//                else {
+//                    // TODO IGNITE-11272
+//                    if (log.isDebugEnabled())
+//                        log.debug("Received node added message with node order smaller than local node order " +
+//                            "(will appy) [node=" + node + ", ring=" + ring + ", msg=" + msg + ']');
+//                }
+//            }
 
             UUID locNodeId = getLocalNodeId();
 
@@ -5006,25 +5005,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     return;
                 }
-
-//                if (node.internalOrder() <= ring.maxInternalOrder()) {
-//                    if (log.isDebugEnabled())
-//                        log.debug("Discarding node added message since new node's order is less than " +
-//                            "max order in ring [ring=" + ring + ", node=" + node + ", locNode=" + locNode +
-//                            ", msg=" + msg + ']');
-//
-//                    if (debugMode)
-//                        debugLog(msg, "Discarding node added message since new node's order is less than " +
-//                            "max order in ring [ring=" + ring + ", node=" + node + ", locNode=" + locNode +
-//                            ", msg=" + msg + ']');
-//
-//                    msg.spanContainer().span()
-//                        .addLog(() -> "Discarded")
-//                        .setStatus(SpanStatus.ABORTED)
-//                        .end();
-//
-//                    return;
-//                }
 
                 synchronized (mux) {
                     joiningNodes.add(node.id());
@@ -5649,14 +5629,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             UUID failedNodeId = msg.failedNodeId();
 
             TcpDiscoveryNode failedNode = ring.node(failedNodeId);
-
-            if (failedNode != null && failedNode.internalOrder() != msg.internalOrder()) {
-                if (log.isDebugEnabled())
-                    log.debug("Ignoring node failed message since node internal order does not match " +
-                        "[msg=" + msg + ", node=" + failedNode + ']');
-
-                return;
-            }
 
             if (failedNode != null) {
                 assert !failedNode.isLocal() || !msg.verified() : msg;
