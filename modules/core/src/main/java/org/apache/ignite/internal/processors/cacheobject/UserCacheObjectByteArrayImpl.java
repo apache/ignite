@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cacheobject;
 import java.util.Arrays;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,7 +55,7 @@ public class UserCacheObjectByteArrayImpl extends CacheObjectByteArrayImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         byte[] valCpy = Arrays.copyOf(val, val.length);
 
         return new CacheObjectByteArrayImpl(valCpy);

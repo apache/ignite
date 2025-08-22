@@ -73,7 +73,7 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -1703,7 +1703,7 @@ public class BinaryUtils {
     }
 
     /** */
-    public static BinaryObject binaryObject(BinaryContext ctx, byte[] valBytes, CacheObjectContext coCtx) {
+    public static BinaryObject binaryObject(BinaryContext ctx, byte[] valBytes, CacheObjectValueContext coCtx) {
         return new BinaryObjectImpl(ctx, valBytes, coCtx);
     }
 
