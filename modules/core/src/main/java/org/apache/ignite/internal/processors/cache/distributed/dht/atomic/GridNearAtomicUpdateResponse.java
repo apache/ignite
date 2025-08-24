@@ -83,7 +83,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
      * Empty constructor.
      */
     public GridNearAtomicUpdateResponse() {
-        partId = -1;
+        // No-op.
     }
 
     /**
@@ -106,6 +106,8 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         this.partId = partId;
         this.nodeLeft = nodeLeft;
         this.addDepInfo = addDepInfo;
+
+        assert partId >= 0;
     }
 
     /**
