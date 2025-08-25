@@ -783,6 +783,8 @@ public class ZookeeperDiscoveryImpl {
             // Need fire EVT_CLIENT_NODE_RECONNECTED event if reconnect after already joined.
             boolean reconnect = locNode.isClient() && prevState != null && (prevState.joined || prevState.reconnect);
 
+            spi.beforeJoinTopology(locNode);
+
             if (reconnect)
                 locNode.setAttributes(spi.getLocNodeAttrs());
 

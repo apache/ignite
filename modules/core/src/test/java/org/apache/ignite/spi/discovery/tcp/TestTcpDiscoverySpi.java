@@ -37,7 +37,7 @@ import static org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListener
 /**
  *
  */
-public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
+public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscoverySpiInternalListenerSupport {
     /** */
     public boolean ignorePingResponse;
 
@@ -87,7 +87,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     }
 
     /** */
-    public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
+    @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
         internalLsnr = lsnr;
     }
 

@@ -135,7 +135,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     /** */
     @LoggerResource
     @GridToStringExclude
-    private IgniteLogger log;
+    protected IgniteLogger log;
 
     /** */
     private final ZookeeperDiscoveryStatistics stats = new ZookeeperDiscoveryStatistics();
@@ -502,6 +502,14 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
      */
     public Map<String, Object> getLocNodeAttrs() {
         return locNodeAttrs;
+    }
+
+    /**
+     * Callback before join topology.
+     * @param locNode Local node.
+     */
+    public void beforeJoinTopology(ClusterNode locNode) {
+        // No-op.
     }
 
     /**
