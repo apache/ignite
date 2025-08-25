@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.marshaller.Marshallers;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -47,8 +48,9 @@ import static org.apache.ignite.internal.processors.cache.CacheObjectAdapter.obj
 
 /**
  * Binary enum object.
+ * TODO: test
  */
-class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObject {
+class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObject, Message {
     /** */
     private static final long serialVersionUID = 0L;
 

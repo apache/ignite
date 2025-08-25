@@ -97,7 +97,7 @@ public class GridH2CacheObject extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage(obj))
+                if (!writer.writeCacheObject(obj))
                     return false;
 
                 writer.incrementState();

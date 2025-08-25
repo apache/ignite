@@ -241,13 +241,13 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
         switch (writer.state()) {
             case 10:
-                if (!writer.writeMessage(key))
+                if (!writer.writeKeyCacheObject(key))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage(val))
+                if (!writer.writeCacheObject(val))
                     return false;
 
                 writer.incrementState();
