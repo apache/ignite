@@ -288,17 +288,10 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
             Socket sock,
-            TcpDiscoveryAbstractMessage msg,
             byte[] data,
             long timeout
         ) throws IOException {
-            if (isDrop(msg)) {
-                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
-                // connRecoveryTimeout.
-                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
-            }
-
-            super.writeToSocket(sock, msg, data, timeout);
+            super.writeToSocket(sock, data, timeout);
         }
 
         /** {@inheritDoc} */
