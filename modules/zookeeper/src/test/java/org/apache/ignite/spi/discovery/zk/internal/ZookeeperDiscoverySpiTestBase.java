@@ -41,7 +41,6 @@ import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
@@ -73,10 +71,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
@@ -379,7 +376,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (!dfltConsistenId)
             cfg.setConsistentId(igniteInstanceName);
 
-        TestZookeeperDiscoverySpi zkSpi = new TestZookeeperDiscoverySpi();
+        ZookeeperDiscoverySpi zkSpi = auth != null ? new TestAuthZookeeperDiscoverySpi() : new ZookeeperDiscoverySpi();
 
         if (joinTimeout != 0)
             zkSpi.setJoinTimeout(joinTimeout);
@@ -389,21 +386,8 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         zkSpi.setClientReconnectDisabled(clientReconnectDisabled);
 
         // Set authenticator for basic sanity tests.
-        if (auth != null) {
+        if (auth != null)
             zkSpi.setAuthenticator(auth.apply());
-
-            zkSpi.getNodeAttributes().put(ATTR_SECURITY_CREDENTIALS, new SecurityCredentials(null, null, igniteInstanceName));
-
-            zkSpi.setInternalListener(new IgniteDiscoverySpiInternalListener() {
-                @Override public void beforeJoin(ClusterNode locNode, IgniteLogger log) {
-                    // No-op.
-                }
-
-                @Override public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg) {
-                    return false;
-                }
-            });
-        }
 
         spis.put(igniteInstanceName, zkSpi);
 
@@ -938,24 +922,14 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestZookeeperDiscoverySpi extends ZookeeperDiscoverySpi {
+    private static class TestAuthZookeeperDiscoverySpi extends ZookeeperDiscoverySpi {
         /** */
-        private volatile IgniteDiscoverySpiInternalListener internalLsnr;
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+            ((IgniteEx)ignite).context().addNodeAttribute(
+                ATTR_SECURITY_CREDENTIALS,
+                new SecurityCredentials(null, null, igniteInstanceName));
 
-        /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
-            if (internalLsnr != null) {
-                if (!internalLsnr.beforeSendCustomEvent(this, log, msg))
-                    return;
-            }
-
-            super.sendCustomEvent(msg);
+            super.spiStart(igniteInstanceName);
         }
-
-        /** */
-        public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
-            internalLsnr = lsnr;
-        }
-
     }
 }
