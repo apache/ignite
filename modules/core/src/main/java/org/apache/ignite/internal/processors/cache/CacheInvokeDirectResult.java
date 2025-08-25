@@ -206,13 +206,13 @@ public class CacheInvokeDirectResult implements Message, Serializable {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage(key))
+                if (!writer.writeKeyCacheObject(key))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage(res))
+                if (!writer.writeCacheObject(res))
                     return false;
 
                 writer.incrementState();

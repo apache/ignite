@@ -26,6 +26,9 @@ import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -299,6 +302,28 @@ public class DirectMessageReader implements MessageReader {
         DirectByteBufferStream stream = state.item().stream;
 
         T msg = stream.readMessage(this);
+
+        lastRead = stream.lastFinished();
+
+        return msg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject readCacheObject() {
+        DirectByteBufferStream stream = state.item().stream;
+
+        byte[] msg = stream.readByteArray();
+
+        lastRead = stream.lastFinished();
+
+        return new CacheObjectImpl(null, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject readKeyCacheObject() {
+        DirectByteBufferStream stream = state.item().stream;
+
+        KeyCacheObject msg = stream.readKeyCacheObject();
 
         lastRead = stream.lastFinished();
 

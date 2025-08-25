@@ -1145,7 +1145,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage(key))
+                if (!writer.writeKeyCacheObject(key))
                     return false;
 
                 writer.incrementState();

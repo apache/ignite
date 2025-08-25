@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -240,6 +242,22 @@ public interface MessageWriter {
      * @return Whether value was fully written.
      */
     public boolean writeMessage(Message val);
+
+    /**
+     * Writes {@link CacheObject}.
+     *
+     * @param obj Cache object.
+     * @return Whether value was fully written.
+     */
+    public boolean writeCacheObject(CacheObject obj);
+
+    /**
+     * Writes {@link KeyCacheObject}.
+     *
+     * @param obj Key cache object.
+     * @return Whether value was fully written.
+     */
+    public boolean writeKeyCacheObject(KeyCacheObject obj);
 
     /**
      * Writes array of objects.

@@ -113,13 +113,13 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage(key))
+                if (!writer.writeKeyCacheObject(key))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage(val))
+                if (!writer.writeCacheObject(val))
                     return false;
 
                 writer.incrementState();

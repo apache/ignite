@@ -65,6 +65,12 @@ public class TestMessage implements Message {
     @Order(value = 11, method = "overridenFieldMethod")
     private String field;
 
+    @Order(value = 12)
+    private KeyCacheObject keyCacheObject;
+
+    @Order(value = 13)
+    private CacheObject cacheObject;
+
     public int id() {
         return id;
     }
@@ -159,6 +165,22 @@ public class TestMessage implements Message {
 
     public void overridenFieldMethod(String field) {
         this.field = field;
+    }
+
+    public KeyCacheObject keyCacheObject() {
+        return keyCacheObject;
+    }
+
+    public void keyCacheObject(KeyCacheObject keyCacheObject) {
+        this.keyCacheObject = keyCacheObject;
+    }
+
+    public CacheObject cacheObject() {
+        return cacheObject;
+    }
+
+    public void cacheObject(CacheObject cacheObject) {
+        this.cacheObject = cacheObject;
     }
 
     public short directType() {

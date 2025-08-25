@@ -370,13 +370,13 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
         switch (writer.state()) {
             case 12:
-                if (!writer.writeMessage(key))
+                if (!writer.writeKeyCacheObject(key))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeMessage(prevVal))
+                if (!writer.writeCacheObject(prevVal))
                     return false;
 
                 writer.incrementState();
@@ -388,7 +388,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeMessage(val))
+                if (!writer.writeCacheObject(val))
                     return false;
 
                 writer.incrementState();

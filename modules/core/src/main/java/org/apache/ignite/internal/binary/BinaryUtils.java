@@ -1688,7 +1688,6 @@ public class BinaryUtils {
      * @param register Register method.
      */
     public static void registerMessages(BiConsumer<Short, Supplier<Message>> register) {
-        register.accept((short)113, BinaryObjectImpl::new);
         register.accept((short)119, BinaryEnumObjectImpl::new);
     }
 

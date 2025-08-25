@@ -137,13 +137,13 @@ public class QueryTxEntry implements CalciteMessage {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage(key))
+                if (!writer.writeKeyCacheObject(key))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage(val))
+                if (!writer.writeCacheObject(val))
                     return false;
 
                 writer.incrementState();

@@ -27,8 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -311,6 +315,15 @@ public class DirectByteBufferStream {
 
     /** */
     private int topVerMinor;
+
+    /** */
+    private int keyCacheObjectState;
+
+    /** */
+    private byte[] ketCacheObjectArr;
+
+    /** */
+    private int ketCacheObjectPart;
 
     /**
      * @param msgFactory Message factory.
@@ -749,6 +762,38 @@ public class DirectByteBufferStream {
         }
         else
             writeInt(-1);
+    }
+
+    /**
+     * @param keyObj Key cache object.
+     */
+    public void writeKeyCacheObject(KeyCacheObject keyObj) {
+        try {
+            if (keyObj != null) {
+                switch (keyCacheObjectState) {
+                    case 0:
+                        writeByteArray(keyObj.valueBytes(null));
+
+                        if (!lastFinished)
+                            return;
+
+                        keyCacheObjectState++;
+
+                    case 1:
+                        writeInt(keyObj.partition());
+
+                        if (!lastFinished)
+                            return;
+
+                        keyCacheObjectState = 0;
+                }
+            }
+            else
+                writeInt(-1);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -1314,6 +1359,31 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * @return Value.
+     */
+    public KeyCacheObject readKeyCacheObject() {
+        switch (keyCacheObjectState) {
+            case 0:
+                ketCacheObjectArr = readByteArray();
+
+                if (!lastFinished)
+                    return null;
+
+                keyCacheObjectState++;
+
+            case 1:
+                ketCacheObjectPart = readInt();
+
+                if (!lastFinished)
+                    return null;
+
+                keyCacheObjectState = 0;
+        }
+
+        return new KeyCacheObjectImpl(null, ketCacheObjectArr, ketCacheObjectPart);
+    }
+
+    /**
      * @param reader Reader.
      * @return Message.
      */
@@ -1862,6 +1932,22 @@ public class DirectByteBufferStream {
                 writeAffinityTopologyVersion((AffinityTopologyVersion)val);
 
                 break;
+
+            case KEY_CACHE_OBJECT:
+                writeKeyCacheObject((KeyCacheObject)val);
+
+                break;
+
+            case CACHE_OBJECT:
+                try {
+                    writeByteArray(((CacheObject)val).valueBytes(null));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+
+                break;
+
             case MSG:
                 try {
                     if (val != null)
@@ -1950,6 +2036,12 @@ public class DirectByteBufferStream {
 
             case AFFINITY_TOPOLOGY_VERSION:
                 return readAffinityTopologyVersion();
+
+            case KEY_CACHE_OBJECT:
+                return readKeyCacheObject();
+
+            case CACHE_OBJECT:
+                return readByteArray();
 
             case MSG:
                 return readMessage(reader);
