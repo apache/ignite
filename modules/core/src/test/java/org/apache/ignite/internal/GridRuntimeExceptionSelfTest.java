@@ -186,7 +186,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
         ComputeTaskFuture<?> fut =
-            executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
+            executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.REDUCE);
 
         try {
             fut.get();
