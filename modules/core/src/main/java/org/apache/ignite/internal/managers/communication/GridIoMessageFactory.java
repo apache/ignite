@@ -361,7 +361,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)181, TransactionAttributesAwareRequest::new);
 
         // Incremental snapshot.
-        factory.register(IncrementalSnapshotAwareMessage.TYPE_CODE, IncrementalSnapshotAwareMessage::new, new IncrementalSnapshotAwareMessageSerializer());
+        factory.register(IncrementalSnapshotAwareMessage.TYPE_CODE, IncrementalSnapshotAwareMessage::new,
+            new IncrementalSnapshotAwareMessageSerializer());
 
         // Index statistics.
         factory.register(StatisticsKeyMessage.TYPE_CODE, StatisticsKeyMessage::new);
