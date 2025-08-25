@@ -49,6 +49,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
@@ -267,7 +268,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
             blockLsnrs.add(lsnr);
 
-            ((TestTcpDiscoverySpi)spi0(client)).setInternalListener(lsnr);
+            ((org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi)spi0(client)).setInternalListener(lsnr);
         }
 
         IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
