@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiPredicate;
@@ -27,6 +28,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -37,6 +39,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.mapping.IntPair;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -114,10 +117,9 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
-import static org.apache.calcite.sql.SqlKind.IS_DISTINCT_FROM;
-import static org.apache.calcite.sql.SqlKind.IS_NOT_DISTINCT_FROM;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
 
 /**
@@ -298,13 +300,58 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rightType = rel.getRight().getRowType();
         JoinRelType joinType = rel.getJoinType();
 
-        int pairsCnt = rel.analyzeCondition().pairs().size();
+        List<IntPair> joinPairs = rel.analyzeCondition().pairs();
+        int pairsCnt = joinPairs.size();
+        int matchingNullsCnt = rel.matchingNulls().isEmpty() ? 0 : rel.matchingNulls().cardinality();
 
-        Comparator<Row> comp = expressionFactory.comparator(
-            rel.leftCollation().getFieldCollations().subList(0, pairsCnt),
-            rel.rightCollation().getFieldCollations().subList(0, pairsCnt),
-            rel.getCondition().getKind() == IS_NOT_DISTINCT_FROM || rel.getCondition().getKind() == IS_DISTINCT_FROM
-        );
+        Comparator<Row> comp;
+
+        List<RelFieldCollation> leftCollations = rel.leftCollation().getFieldCollations().subList(0, pairsCnt);
+        List<RelFieldCollation> rightCollations = rel.rightCollation().getFieldCollations().subList(0, pairsCnt);
+
+        // No conditions like 'IS NOT DISTINCT' or all the conditions are.
+        if (matchingNullsCnt == 0 || matchingNullsCnt == pairsCnt) {
+            boolean nullsMatch = !rel.matchingNulls().isEmpty();
+
+            comp = expressionFactory.comparator(
+                leftCollations,
+                rightCollations,
+                matchingNullsCnt == 0 ? null : (lidx, ridx) -> nullsMatch
+            );
+        }
+        else {
+            // Maps collations order on join info's pairs order.
+            Map<IntPair, Integer> collsToPairIdxMap = U.newHashMap(pairsCnt);
+
+            for (int c = 0; c < pairsCnt; ++c) {
+                RelFieldCollation leftColl = leftCollations.get(c);
+                RelFieldCollation rightColl = rightCollations.get(c);
+
+                for (int p = 0; p < pairsCnt; ++p) {
+                    IntPair pair = joinPairs.get(p);
+
+                    if (pair.source == leftColl.getFieldIndex() && pair.target == rightColl.getFieldIndex()) {
+                        collsToPairIdxMap.put(pair, p);
+
+                        break;
+                    }
+                }
+            }
+
+            assert collsToPairIdxMap.size() == pairsCnt;
+
+            comp = expressionFactory.comparator(
+                leftCollations,
+                rightCollations,
+                (lidx, ridx) -> {
+                    Integer pairIdx = collsToPairIdxMap.get(new IntPair(lidx, ridx));
+
+                    assert pairIdx != null;
+
+                    return rel.matchingNulls().get(pairIdx);
+                }
+            );
+        }
 
         Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp, hasExchange(rel));
 
