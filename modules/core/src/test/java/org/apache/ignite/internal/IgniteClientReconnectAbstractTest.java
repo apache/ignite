@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -51,8 +47,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -268,7 +262,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
             blockLsnrs.add(lsnr);
 
-            ((org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi)spi0(client)).setInternalListener(lsnr);
+            ((TestTcpDiscoverySpi)spi0(client)).setInternalListener(lsnr);
         }
 
         IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
@@ -396,30 +390,6 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         assertNotNull(e.reconnectFuture());
 
         e.reconnectFuture().get();
-    }
-
-    /**
-     *
-     */
-    public static class TestTcpDiscoverySpi extends org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi {
-        /** */
-        volatile CountDownLatch writeLatch;
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout)
-            throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryJoinRequestMessage) {
-                CountDownLatch writeLatch0 = writeLatch;
-
-                if (writeLatch0 != null) {
-                    log.info("Block join request send: " + msg);
-
-                    U.await(writeLatch0);
-                }
-            }
-
-            super.writeToSocket(sock, out, msg, timeout);
-        }
     }
 
     /**
