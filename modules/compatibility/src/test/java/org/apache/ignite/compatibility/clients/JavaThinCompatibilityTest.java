@@ -21,11 +21,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
-import javax.cache.event.CacheEntryEvent;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.ignite.Ignite;
@@ -73,7 +71,6 @@ import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
@@ -403,15 +400,15 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
             ClientCache<Object, Object> cache = client.getOrCreateCache("testContinuousQueries");
 
-            Queue<CacheEntryEvent<?, ?>> allEvts = new ConcurrentLinkedQueue<>();
+            CountDownLatch latch = new CountDownLatch(3);
 
-            cache.query(new ContinuousQuery<>().setLocalListener(evts -> evts.forEach(allEvts::add)));
+            cache.query(new ContinuousQuery<>().setLocalListener(evnts -> evnts.forEach(event -> latch.countDown())));
 
             cache.put(0, 0);
             cache.put(0, 1);
             cache.remove(0);
 
-            assertTrue(GridTestUtils.waitForCondition(() -> allEvts.size() == 3, 10_000L));
+            assertTrue(latch.await(10_000L, TimeUnit.MILLISECONDS));
         }
     }
 
