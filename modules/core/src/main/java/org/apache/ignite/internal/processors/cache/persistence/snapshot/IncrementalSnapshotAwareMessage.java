@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,15 +32,19 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     public static final short TYPE_CODE = 400;
 
     /** Original transaction message. */
+    @Order(3)
     private GridCacheMessage payload;
 
     /** Incremental snapshot ID. */
+    @Order(4)
     private UUID id;
 
     /** ID of the latest incremental snapshot after which this transaction committed. */
+    @Order(value = 5, method = "txInrementalSnapshotId")
     private @Nullable UUID txSnpId;
 
     /** Incremental snapshot topology version. */
+    @Order(value = 6, method = "snapshotTopologyVersion")
     private long topVer;
 
     /** */
@@ -67,9 +69,23 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
         return id;
     }
 
+    /**
+     * @param id Incremental snapshot ID.
+     */
+    public void id(UUID id) {
+        this.id = id;
+    }
+
     /** ID of the latest incremental snapshot after which this transaction committed. */
     public UUID txInrementalSnapshotId() {
         return txSnpId;
+    }
+
+    /**
+     * @param txSnpId ID of the latest incremental snapshot after which this transaction committed.
+     */
+    public void txInrementalSnapshotId(UUID txSnpId) {
+        this.txSnpId = txSnpId;
     }
 
     /** */
@@ -77,9 +93,23 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
         return payload;
     }
 
+    /**
+     * @param payload Original transaction message.
+     */
+    public void payload(GridCacheMessage payload) {
+        this.payload = payload;
+    }
+
     /** @return Incremental snapshot topology version. */
     public long snapshotTopologyVersion() {
         return topVer;
+    }
+
+    /**
+     * @param topVer Incremental snapshot topology version.
+     */
+    public void snapshotTopologyVersion(long topVer) {
+        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */
@@ -90,95 +120,6 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         payload.finishUnmarshal(ctx, ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 3:
-                if (!writer.writeUuid(id))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeMessage(payload))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeLong(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeUuid(txSnpId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 3:
-                id = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                payload = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                topVer = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                txSnpId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
