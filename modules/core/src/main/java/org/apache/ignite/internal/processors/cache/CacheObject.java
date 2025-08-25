@@ -66,7 +66,7 @@ public interface CacheObject {
      * @return Size required to store this value object.
      * @throws IgniteCheckedException If failed.
      */
-    public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException;
+    public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException;
 
     /**
      * @param buf Buffer to write value to.
@@ -113,7 +113,7 @@ public interface CacheObject {
      * @param ctx Cache context.
      * @return Instance to store in cache.
      */
-    public CacheObject prepareForCache(CacheObjectContext ctx);
+    public CacheObject prepareForCache(CacheObjectValueContext ctx);
 
     /**
      * @param ctx Context.

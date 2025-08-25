@@ -18,12 +18,9 @@
 package org.apache.ignite.internal.binary.builder;
 
 import java.util.Iterator;
-import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -45,31 +42,6 @@ public class BinaryObjectBuilders {
      */
     public static BinaryObjectBuilder builder(BinaryContext binaryCtx, String clsName) {
         return new BinaryObjectBuilderImpl(binaryCtx, clsName);
-    }
-
-    /**
-     * Prepare affinity field for builder (if possible).
-     *
-     * @param builder Builder.
-     */
-    public static void prepareAffinityField(BinaryObjectBuilder builder, CacheObjectContext cacheObjCtx) {
-        if (cacheObjCtx.customAffinityMapper())
-            return;
-
-        assert builder instanceof BinaryObjectBuilderImpl;
-
-        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)builder;
-
-        CacheDefaultBinaryAffinityKeyMapper mapper =
-            (CacheDefaultBinaryAffinityKeyMapper)cacheObjCtx.defaultAffMapper();
-
-        BinaryField field = mapper.affinityKeyField(builder0.typeId());
-
-        if (field != null) {
-            String fieldName = field.name();
-
-            builder0.affinityFieldName(fieldName);
-        }
     }
 
     /**
