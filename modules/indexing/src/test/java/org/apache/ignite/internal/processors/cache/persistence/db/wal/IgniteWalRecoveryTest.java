@@ -64,7 +64,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -118,6 +117,7 @@ import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.loadtests.colocation.GridTestLifecycleBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -597,7 +597,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         final IgniteConfiguration onJoinCfg = optimize(getConfiguration(ig2Name));
 
         // Check restore beeing called before PME and joining node to cluster.
-        ((IgniteDiscoverySpi)onJoinCfg.getDiscoverySpi())
+        ((TestTcpDiscoverySpi)onJoinCfg.getDiscoverySpi())
             .setInternalListener(new DiscoverySpiTestListener() {
                 @Override public void beforeJoin(ClusterNode locNode, IgniteLogger log) {
                     String nodeName = locNode.attribute(ATTR_IGNITE_INSTANCE_NAME);

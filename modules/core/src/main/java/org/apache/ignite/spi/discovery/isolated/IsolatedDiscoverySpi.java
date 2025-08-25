@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
@@ -265,11 +264,6 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
 
     /** {@inheritDoc} */
     @Override public void simulateNodeFailure() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
         // No-op.
     }
 
