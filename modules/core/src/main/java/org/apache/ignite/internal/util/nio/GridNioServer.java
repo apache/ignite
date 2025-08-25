@@ -149,7 +149,8 @@ public class GridNioServer<T> {
     public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME = "outboundMessagesQueueSize";
 
     /** */
-    public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC = "Number of messages waiting to be sent";
+    public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
+        = "Total number of messages waiting to be sent over all connections";
 
     /** */
     public static final String RECEIVED_BYTES_METRIC_NAME = "receivedBytes";
@@ -2447,7 +2448,7 @@ public class GridNioServer<T> {
                         .append(", bytesRcvd0=").append(ses.bytesReceived0())
                         .append(", bytesSent=").append(ses.bytesSent())
                         .append(", bytesSent0=").append(ses.bytesSent0())
-                        .append(", opQueueSize=").append(ses.writeQueueSize());
+                        .append(", opQueueSize=").append(ses.messagesQueueSize());
 
                     if (!shortInfo) {
                         MessageWriter writer = ses.meta(MSG_WRITER.ordinal());

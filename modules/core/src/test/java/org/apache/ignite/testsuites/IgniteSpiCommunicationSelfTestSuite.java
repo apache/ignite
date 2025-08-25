@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.util.nio.TcpCommunicationSpiSslVolatilePayloadTest;
 import org.apache.ignite.spi.communication.tcp.ClientExceptionsUtilsTest;
+import org.apache.ignite.spi.communication.tcp.CommunicationConnectionPoolMetricsTest;
 import org.apache.ignite.spi.communication.tcp.GridCacheDhtLockBackupSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridSandboxedClientWithoutNetworkTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationInverseConnectionEstablishingTest;
@@ -99,6 +100,8 @@ import org.junit.runners.Suite;
     GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest.class,
 
     TcpCommunicationStatisticsTest.class,
+
+    CommunicationConnectionPoolMetricsTest.class,
 
     IgniteTcpCommunicationHandshakeWaitTest.class,
     IgniteTcpCommunicationHandshakeWaitSslTest.class,
