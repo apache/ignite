@@ -67,8 +67,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -157,7 +157,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     public void testReconnect() throws Exception {
         IgniteEx client = startClientGrid(SRV_CNT);
 
-        final TestTcpDiscoverySpi clientSpi = (TestTcpDiscoverySpi)spi0(client);
+        final IgniteDiscoverySpiInternalListenerSupport clientSpi = (IgniteDiscoverySpiInternalListenerSupport)spi0(client);
 
         Ignite srv = ignite(0);
 
@@ -461,7 +461,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         throws Exception {
         Ignite srv = ignite(0);
 
-        final TestTcpDiscoverySpi clientSpi = (TestTcpDiscoverySpi)spi0(client);
+        final IgniteDiscoverySpiInternalListenerSupport clientSpi = (IgniteDiscoverySpiInternalListenerSupport)spi0(client);
         final DiscoverySpi srvSpi = spi0(srv);
 
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
