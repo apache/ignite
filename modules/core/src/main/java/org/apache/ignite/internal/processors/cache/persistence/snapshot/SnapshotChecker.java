@@ -101,13 +101,13 @@ public class SnapshotChecker {
     public CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> invokeCustomHandlers(
         SnapshotMetadata meta,
         SnapshotFileTree sft,
-        @Nullable Collection<String> groups,
+        @Nullable Collection<String> grps,
         boolean check
     ) {
-        // The handlers use or may use the same snapshot pool. If it configured with 1 thread, launching waiting task in
+        // The handlers use or may use the same snapshot pool. If it is configured with 1 thread, launching waiting task in
         // the same pool might block it.
         return CompletableFuture.supplyAsync(() ->
-            new SnapshotHandlerRestoreTask(kctx.grid(), log, sft, groups, check).execute()
+            new SnapshotHandlerRestoreTask(kctx.grid(), log, sft, grps, check).execute()
         );
     }
 
@@ -115,14 +115,14 @@ public class SnapshotChecker {
     public CompletableFuture<Map<PartitionKey, PartitionHashRecord>> checkPartitions(
         SnapshotMetadata meta,
         SnapshotFileTree sft,
-        @Nullable Collection<String> groups,
+        @Nullable Collection<String> grps,
         boolean forCreation,
         boolean checkParts
     ) {
         // Await in the default executor to avoid blocking the snapshot executor if it has just one thread.
         return CompletableFuture.supplyAsync(() -> {
             SnapshotHandlerContext hctx = new SnapshotHandlerContext(
-                meta, groups, kctx.cluster().get().localNode(), sft, false, checkParts);
+                meta, grps, kctx.cluster().get().localNode(), sft, false, checkParts);
 
             try {
                 return new SnapshotPartitionsVerifyHandler(kctx.cache().context()).invoke(hctx);

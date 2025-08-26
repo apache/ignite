@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 
-/** Distributed process of snapshot checking (with the partition hashes). */
+/** Distributed process of snapshot checking. */
 public class SnapshotCheckProcess {
     /** */
     private final IgniteLogger log;
@@ -110,8 +110,6 @@ public class SnapshotCheckProcess {
             nodeStopping = true;
         }
 
-        contexts.forEach((snpName, ctx) -> ctx.locProcFut.onDone(err));
-
         clusterOpFuts.forEach((reqId, fut) -> fut.onDone(err));
     }
 
@@ -147,14 +145,9 @@ public class SnapshotCheckProcess {
         }
 
         if (ctx.req.incrementalIndex() > 0) {
-            SnapshotFileTree sft;
-
-            if (ctx.locFileTree == null)
-                sft = null;
-            else if (kctx.config().getConsistentId() == null)
-                sft = null;
-            else
-                sft = ctx.locFileTree.get(kctx.config().getConsistentId().toString());
+            SnapshotFileTree sft = ctx.locFileTree == null || kctx.config().getConsistentId() == null
+                ? null
+                : ctx.locFileTree.get(kctx.config().getConsistentId().toString());
 
             reduceIncrementalResults(sft, ctx.req.incrementalIndex(), ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
         }
@@ -176,7 +169,7 @@ public class SnapshotCheckProcess {
         Map<UUID, Throwable> errors,
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> fut
     ) {
-        Map<ClusterNode, IncrementalSnapshotVerificationTaskResult> perNodeResults = new HashMap<>();
+        Map<ClusterNode, IncrementalSnapshotVerificationTaskResult> perNodeResults = new HashMap<>(results.size(), 1.0f);
 
         for (Map.Entry<UUID, SnapshotCheckResponse> resEntry : results.entrySet()) {
             UUID nodeId = resEntry.getKey();
@@ -211,7 +204,7 @@ public class SnapshotCheckProcess {
                 throw F.firstValue(errors);
 
             // Check responses: checking node -> snapshot part's consistent id -> handler name -> handler result.
-            Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> reduced = new HashMap<>();
+            Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> reduced = new HashMap<>(results.size(), 1.0f);
 
             for (Map.Entry<UUID, SnapshotCheckResponse> respEntry : results.entrySet()) {
                 SnapshotCheckResponse nodeResp = respEntry.getValue();
@@ -295,29 +288,26 @@ public class SnapshotCheckProcess {
         if (F.isEmpty(ctx.metas))
             return new GridFinishedFuture<>();
 
-        GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFuture();
+        GridFutureAdapter<SnapshotCheckResponse> phaseFut = new GridFutureAdapter<>();
 
-        // Might be already finished by asynchronous leave of a required node.
-        if (!phaseFut.isDone()) {
-            CompletableFuture<SnapshotCheckResponse> workingFut;
+        CompletableFuture<SnapshotCheckResponse> workingFut;
 
-            if (req.incrementalIndex() > 0) {
-                assert !req.allRestoreHandlers() : "Snapshot handlers aren't supported for incremental snapshot.";
+        if (req.incrementalIndex() > 0) {
+            assert !req.allRestoreHandlers() : "Snapshot handlers aren't supported for incremental snapshot.";
 
-                workingFut = incrementalFuture(ctx);
-            }
-            else if (req.allRestoreHandlers())
-                workingFut = allHandlersFuture(ctx);
-            else
-                workingFut = partitionsHashesFuture(ctx);
-
-            workingFut.whenComplete((res, err) -> {
-                if (err != null)
-                    phaseFut.onDone(err);
-                else
-                    phaseFut.onDone(res);
-            });
+            workingFut = incrementalFuture(ctx);
         }
+        else if (req.allRestoreHandlers())
+            workingFut = allHandlersFuture(ctx);
+        else
+            workingFut = partitionsHashesFuture(ctx);
+
+        workingFut.whenComplete((res, err) -> {
+            if (err != null)
+                phaseFut.onDone(err);
+            else
+                phaseFut.onDone(res);
+        });
 
         return phaseFut;
     }
@@ -418,7 +408,7 @@ public class SnapshotCheckProcess {
     /**
      * @param snpName Snapshot name. If {@code null}, ignored.
      * @param reqId If {@code ctxId} is {@code null}, is used to find the operation context.
-     * @return Current snapshot checking context by {@code ctxId} or {@code reqId}.
+     * @return Current snapshot checking context by {@code snpName} or {@code reqId}.
      */
     private @Nullable SnapshotCheckContext context(@Nullable String snpName, UUID reqId) {
         return snpName == null
@@ -451,21 +441,18 @@ public class SnapshotCheckProcess {
 
         Collection<Integer> grpIds = F.isEmpty(req.groups()) ? null : F.viewReadOnly(req.groups(), CU::cacheId);
 
-        GridFutureAdapter<SnapshotCheckResponse> phaseFut = ctx.phaseFuture();
+        GridFutureAdapter<SnapshotCheckResponse> phaseFut = new GridFutureAdapter<>();
 
-        // Might be already finished by asynchronous leave of a required node.
-        if (!phaseFut.isDone()) {
-            snpChecker.checkLocalMetas(
-                new SnapshotFileTree(kctx, req.snapshotName(), req.snapshotPath()),
-                req.incrementalIndex(),
-                grpIds
-            ).whenComplete((locMetas, err) -> {
-                if (err != null)
-                    phaseFut.onDone(err);
-                else
-                    phaseFut.onDone(new SnapshotCheckResponse(locMetas, null));
-            });
-        }
+        snpChecker.checkLocalMetas(
+            new SnapshotFileTree(kctx, req.snapshotName(), req.snapshotPath()),
+            req.incrementalIndex(),
+            grpIds
+        ).whenComplete((locMetas, err) -> {
+            if (err != null)
+                phaseFut.onDone(err);
+            else
+                phaseFut.onDone(new SnapshotCheckResponse(locMetas, null));
+        });
 
         return phaseFut;
     }
@@ -496,7 +483,7 @@ public class SnapshotCheckProcess {
             if ((ex = checkNodeLeft(ctx.req.nodes(), results.keySet())) != null)
                 throw ex;
 
-            Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
+            Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>(results.size(), 1.0f);
 
             results.forEach((nodeId, nodeRes) -> {
                 // A node might be not required. It gives null result. But a required node might have invalid empty result
@@ -508,13 +495,13 @@ public class SnapshotCheckProcess {
                 }
             });
 
-            Map<ClusterNode, Exception> metasCheck = snpChecker.reduceMetasResults(
+            Map<ClusterNode, Exception> metasCheckErrors = snpChecker.reduceMetasResults(
                 new SnapshotFileTree(kctx, ctx.req.snapshotName(), ctx.req.snapshotPath()), metas);
 
-            if (!metasCheck.isEmpty())
-                throw new IgniteSnapshotVerifyException(metasCheck);
+            if (!metasCheckErrors.isEmpty())
+                throw new IgniteSnapshotVerifyException(metasCheckErrors);
 
-            // If the topology is lesser that the snapshot's, we have to check another partitions parts.
+            // If the topology is lesser that the snapshot's, we have to check partitions of another nodes.
             ctx.metas = assingMetas(metas);
 
             if (!F.isEmpty(ctx.metas)) {
@@ -598,7 +585,7 @@ public class SnapshotCheckProcess {
      *
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
-     * @param grpNames List of cache group names.
+     * @param grpNames Collection of cache group names.
      * @param fullCheck If {@code true}, additionally calculates partition hashes. Otherwise, checks only snapshot integrity
      *                  and partition counters.
      * @param incIdx Incremental snapshot index. If not positive, snapshot is not considered as incremental.
@@ -683,9 +670,6 @@ public class SnapshotCheckProcess {
         @GridToStringInclude
         private final SnapshotCheckProcessRequest req;
 
-        /** Current process' future. Listens error, stop requests, etc. */
-        private final GridFutureAdapter<SnapshotCheckResponse> locProcFut = new GridFutureAdapter<>();
-
         /**
          * Metadatas to process on this node. Also indicates the snapshot parts to check on this node.
          * @see #partitionsHashesFuture(SnapshotCheckContext)
@@ -704,15 +688,6 @@ public class SnapshotCheckProcess {
             this.req = req;
         }
 
-        /** Gives a future for current process phase. The future can be stopped by asynchronous leave of a required node. */
-        private <T> GridFutureAdapter<T> phaseFuture() {
-            GridFutureAdapter<T> fut = new GridFutureAdapter<>();
-
-            locProcFut.listen(f -> fut.onDone(f.error()));
-
-            return fut;
-        }
-
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SnapshotCheckContext.class, this);
@@ -724,10 +699,10 @@ public class SnapshotCheckProcess {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** The result. Is usually a collection or a map of hashes, metast, etc. */
+        /** The result. Is usually a collection or a map of hashes, metas, etc. */
         private final Object result;
 
-        /** Exceptions per snapshot part's consistent id. */
+        /** Exceptions per consistent id. */
         @Nullable private final Map<String, Throwable> exceptions;
 
         /** */

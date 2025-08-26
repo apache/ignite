@@ -70,7 +70,7 @@ public class SnapshotHandlerRestoreTask {
         Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
         Collection<UUID> execNodes = new ArrayList<>(results.size());
 
-        // Checking node -> Map by snapshot part's consistend id.
+        // Checking node -> Map by consistend id.
         for (Map.Entry<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> nodeRes : results.entrySet()) {
             // Consistent id -> Map by handler name.
             for (Map.Entry<Object, Map<String, SnapshotHandlerResult<?>>> res : nodeRes.getValue().entrySet()) {

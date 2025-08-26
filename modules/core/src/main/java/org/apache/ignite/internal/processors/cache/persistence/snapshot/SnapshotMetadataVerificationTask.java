@@ -49,10 +49,10 @@ public class SnapshotMetadataVerificationTask {
         IgniteEx ignite,
         IgniteLogger log,
         SnapshotFileTree sft,
-        int incrementIndex,
+        int incrementIdx,
         Collection<Integer> grpIds
     ) {
-        job = new MetadataVerificationJob(ignite, log, sft, incrementIndex, grpIds);
+        job = new MetadataVerificationJob(ignite, log, sft, incrementIdx, grpIds);
     }
 
     /** */

@@ -112,6 +112,8 @@ public class IncrementalSnapshotVerificationTask {
         private LongAdder procEntriesCnt;
 
         /**
+         * @param ignite Ignite instance.
+         * @param log Ignite logger.
          * @param sft Snapshot file tree
          * @param incIdx Incremental snapshot index.
          */

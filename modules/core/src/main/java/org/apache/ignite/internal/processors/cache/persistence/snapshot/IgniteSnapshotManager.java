@@ -339,7 +339,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Take snapshot operation procedure. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startSnpProc;
 
-    /** Snapshot full validation distributed process. */
+    /** Snapshot validation distributed process. */
     private final SnapshotCheckProcess checkSnpProc;
 
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
@@ -1403,7 +1403,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @return {@code True} if checking snapshot with specified name is in progress.
+     * @return {@code True} if checking of a snapshot with specified name is in progress.
      */
     public boolean isSnapshotChecking(String snpName) {
         return checkSnpProc.isSnapshotChecking(snpName);

@@ -46,7 +46,7 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
     @GridToStringInclude
     private final String snpPath;
 
-    /** List of cache group names. */
+    /** Collection of cache group names. */
     @GridToStringInclude
     private final Collection<String> grps;
 
@@ -62,7 +62,7 @@ abstract class AbstractSnapshotOperationRequest implements Serializable {
      * @param reqId Request ID.
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
-     * @param grps List of cache group names.
+     * @param grps Collection of cache group names.
      * @param incIdx Incremental snapshot index.
      * @param nodes IDs of the nodes that must be alive to complete the operation.
      */
