@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -87,6 +90,18 @@ public class CachePartitionFullCountersMap implements Serializable {
      */
     public void updateCounter(int p, long updCntr) {
         updCntrs[p] = updCntr;
+    }
+
+    /** */
+    public Set<Integer> zeroUpdateCounterPartitions() {
+        Set<Integer> res = new HashSet<>();
+
+        for (int p = 0; p < updCntrs.length; p++) {
+            if (updCntrs[p] == 0)
+                res.add(p);
+        }
+
+        return res.isEmpty() ? Collections.emptySet() : Collections.unmodifiableSet(res);
     }
 
     /**
