@@ -3329,7 +3329,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (exchFut == null)
             return false;
 
-        ExchangeActions exchangeActions = exchFut == null ? null : exchFut.exchangeActions();
+        ExchangeActions exchangeActions = exchFut.exchangeActions();
 
         return exchangeActions != null && exchangeActions.deactivate();
     }
