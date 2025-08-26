@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.datastructures.DataStructuresProces
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -79,7 +80,7 @@ class GridCacheQuerySqlMetadataJobV2 implements IgniteCallable<Collection<GridCa
                 Collection<String> names = U.newHashSet(types.size());
                 Map<String, String> keyClasses = U.newHashMap(types.size());
                 Map<String, String> valClasses = U.newHashMap(types.size());
-                Map<String, Map<String, String>> fields = U.newHashMap(types.size());
+                Map<String, Map<String, IgnitePair<String>>> fields = U.newHashMap(types.size());
                 Map<String, Collection<GridCacheSqlIndexMetadata>> indexes = U.newHashMap(types.size());
                 Map<String, Set<String>> notNullFields = U.newHashMap(types.size());
 
@@ -95,22 +96,28 @@ class GridCacheQuerySqlMetadataJobV2 implements IgniteCallable<Collection<GridCa
 
                     int size = type.fields().isEmpty() ? NO_FIELDS_COLUMNS_COUNT : type.fields().size();
 
-                    Map<String, String> fieldsMap = U.newLinkedHashMap(size);
+                    Map<String, IgnitePair<String>> fieldsMap = U.newLinkedHashMap(size);
                     HashSet<String> notNullFieldsSet = U.newHashSet(1);
 
                     // _KEY and _VAL are not included in GridIndexingTypeDescriptor.valueFields
                     if (type.fields().isEmpty()) {
-                        fieldsMap.put("_KEY", type.keyClass().getName());
-                        fieldsMap.put("_VAL", type.valueClass().getName());
+                        fieldsMap.put("_KEY", new IgnitePair<>(type.keyClass().getName(), null));
+                        fieldsMap.put("_VAL", new IgnitePair<>(type.valueClass().getName(), null));
                     }
+                    else {
+                        for (Map.Entry<String, IgnitePair<Class<?>>> e : type.fields().entrySet()) {
+                            String fieldName = e.getKey();
 
-                    for (Map.Entry<String, Class<?>> e : type.fields().entrySet()) {
-                        String fieldName = e.getKey();
+                            if (e.getValue().getValue() == null)
+                                fieldsMap.put(fieldName.toUpperCase(), new IgnitePair<>(e.getValue().getKey().getName(), null));
+                            else {
+                                fieldsMap.put(fieldName.toUpperCase(),
+                                    new IgnitePair<>(e.getValue().getKey().getName(), e.getValue().getValue().getName()));
+                            }
 
-                        fieldsMap.put(fieldName.toUpperCase(), e.getValue().getName());
-
-                        if (type.property(fieldName).notNull())
-                            notNullFieldsSet.add(fieldName.toUpperCase());
+                            if (type.property(fieldName).notNull())
+                                notNullFieldsSet.add(fieldName.toUpperCase());
+                        }
                     }
 
                     fields.put(type.name(), fieldsMap);

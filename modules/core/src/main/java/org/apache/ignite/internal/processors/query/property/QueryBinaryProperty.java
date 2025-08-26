@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.property;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
@@ -27,7 +31,9 @@ import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary property.
@@ -47,6 +53,9 @@ public class QueryBinaryProperty implements GridQueryProperty {
 
     /** Result class. */
     private Class<?> type;
+
+    /** Component type if {@link #type} is a connection. */
+    @Nullable private Class<?> componentType;
 
     /** Defines where value should be extracted from : cache entry's key or value. */
     private final boolean isKeyProp;
@@ -75,7 +84,8 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param ctx Kernal context.
      * @param propName Property name.
      * @param parent Parent property.
-     * @param type Result type.
+     * @param type Result type. Can be a collection type with element type.
+     * @param componentType Component type if {@code type} is a connection.
      * @param key {@code true} if key property, {@code false} otherwise.
      * @param alias Field alias.
      * @param notNull {@code true} if null value is not allowed.
@@ -84,13 +94,16 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param scale Scale.
      */
     public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
-        Class<?> type, boolean key, String alias, boolean notNull, Object defaultValue,
+        Class<?> type, @Nullable Class<?> componentType, boolean key, String alias, boolean notNull, Object defaultValue,
         int precision, int scale) {
+        assert componentType == null || Collection.class.isAssignableFrom(type);
+
         this.ctx = ctx;
         this.propName = propName;
         this.alias = F.isEmpty(alias) ? propName : alias;
         this.parent = parent;
         this.type = type;
+        this.componentType = componentType;
         this.notNull = notNull;
         this.isKeyProp = key;
         this.defaultValue = defaultValue;
@@ -163,15 +176,18 @@ public class QueryBinaryProperty implements GridQueryProperty {
         if (!(obj instanceof BinaryObjectBuilder))
             throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
 
-        setValue0((BinaryObjectBuilder)obj, propName, propVal, type());
+        setValue0((BinaryObjectBuilder)obj, propName, propVal, type(), componentType());
 
         if (needsBuild) {
             obj = ((BinaryObjectBuilder)obj).build();
 
             assert parent != null;
 
+            assert !(obj instanceof Collection);
+            assert !(obj instanceof Map);
+
             // And now let's set this newly constructed object to parent
-            setValue0((BinaryObjectBuilder)srcObj, parent.propName, obj, obj.getClass());
+            setValue0((BinaryObjectBuilder)srcObj, parent.propName, obj, obj.getClass(), null);
         }
     }
 
@@ -179,11 +195,17 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param builder Object builder.
      * @param field Field name.
      * @param val Value to set.
-     * @param valType Type of {@code val}.
+     * @param valType Type of {@code val}. Can be a collection type with element type.
+     * @param componentType Component type if {@code val} is a collection.
      * @param <T> Value type.
      */
-    private <T> void setValue0(BinaryObjectBuilder builder, String field, Object val, Class<T> valType) {
+    private <T> void setValue0(BinaryObjectBuilder builder, String field, Object val, Class<T> valType, @Nullable Class<?> componentType) {
         builder.setField(field, (T)val, valType);
+
+        if (componentType != null){
+            // TODO: implement
+            throw new UnsupportedOperationException("");
+        }
     }
 
     /**
@@ -239,6 +261,11 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** {@inheritDoc} */
     @Override public Class<?> type() {
         return type;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Class<?> componentType() {
+        return componentType;
     }
 
     /** {@inheritDoc} */

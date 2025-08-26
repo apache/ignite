@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -56,11 +58,11 @@ public interface GridQueryTypeDescriptor {
     public String tableName();
 
     /**
-     * Gets mapping from field name to its type.
+     * Gets mapping from field name to its type. Field type can be a collection type with an element type.
      *
      * @return Fields that can be indexed, participate in queries and can be queried using method.
      */
-    public Map<String, Class<?>> fields();
+    public Map<String, IgnitePair<Class<?>>> fields();
 
     /**
      * Gets field value for given key and value.

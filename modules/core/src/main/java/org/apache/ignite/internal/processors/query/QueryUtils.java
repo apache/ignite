@@ -28,6 +28,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.processors.query.property.QueryMethodsAccessor
 import org.apache.ignite.internal.processors.query.property.QueryPropertyAccessor;
 import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -659,7 +661,6 @@ public class QueryUtils {
         // value.
         for (Map.Entry<String, String> entry : fields.entrySet()) {
             String fieldName = entry.getKey();
-            String fieldType = entry.getValue();
 
             boolean isKeyField;
 
@@ -673,11 +674,17 @@ public class QueryUtils {
 
             Object dfltVal = dlftVals != null ? dlftVals.get(fieldName) : null;
 
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, fieldName,
-                U.classForName(fieldType, Object.class, true),
+            IgnitePair<Class<?>> fldType = parseFieldType(entry.getValue());
+
+            QueryBinaryProperty prop = buildBinaryProperty(
+                ctx,
+                fieldName,
+                fldType.get1(),
+                fldType.get2(),
                 d.aliases(), isKeyField, notNull, dfltVal,
                 precision == null ? -1 : precision.getOrDefault(fieldName, -1),
-                scale == null ? -1 : scale.getOrDefault(fieldName, -1));
+                scale == null ? -1 : scale.getOrDefault(fieldName, -1)
+            );
 
             d.addProperty(prop, false);
         }
@@ -700,6 +707,25 @@ public class QueryUtils {
         processIndexes(qryEntity, d);
     }
 
+    /** */
+    public static IgnitePair<Class<?>> parseFieldType(String typeStr) {
+        int idx = typeStr.indexOf(':');
+
+        if (idx < 0)
+            return new IgnitePair<>(U.classForName(typeStr, Object.class, true), null);
+
+        String componentTypeName = typeStr.substring(idx + 1, typeStr.length());
+
+        typeStr = typeStr.substring(0, idx);
+
+        assert typeStr.indexOf(':') < 0 : "Only one cmponent type is suported.";
+
+        return new IgnitePair<>(
+            U.classForName(typeStr, Object.class, true),
+            U.classForName(componentTypeName, Object.class, true)
+        );
+    }
+
     /**
      * Add validate property to QueryTypeDescriptor.
      *
@@ -720,10 +746,13 @@ public class QueryUtils {
 
         Object dfltVal = dfltVals.get(name);
 
+        IgnitePair<Class<?>> fldType = parseFieldType(typeName);
+
         QueryBinaryProperty prop = buildBinaryProperty(
             ctx,
             name,
-            U.classForName(typeName, Object.class, true),
+            fldType.get1(),
+            fldType.get2(),
             d.aliases(),
             isKey,
             true,
@@ -865,6 +894,7 @@ public class QueryUtils {
      * @param pathStr String representing path to the property. May contains dots '.' to identify
      *      nested fields.
      * @param resType Result type.
+     * @param componentType Component type if {@code resType} is a collection.
      * @param aliases Aliases.
      * @param isKeyField Key ownership flag, {@code true} if this property is a field of the key object. Note that key
      * not a field of itself.
@@ -878,6 +908,7 @@ public class QueryUtils {
         GridKernalContext ctx,
         String pathStr,
         Class<?> resType,
+        Class<?> componentType,
         Map<String, String> aliases,
         boolean isKeyField,
         boolean notNull,
@@ -900,7 +931,7 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
+            res = new QueryBinaryProperty(ctx, prop, res, resType, componentType, isKeyField, alias, notNull, dlftVal,
                 precision, scale);
         }
 
@@ -1831,6 +1862,15 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public Class<?> type() {
             return cls;
+        }
+
+        //TODO: check if ARRAY IDX
+        /** {@inheritDoc} */
+        @Override public @Nullable Class<?> componentType() {
+            assert !Collection.class.isAssignableFrom(cls);
+            assert !Map.class.isAssignableFrom(cls);
+
+            return null;
         }
 
         /** {@inheritDoc} */

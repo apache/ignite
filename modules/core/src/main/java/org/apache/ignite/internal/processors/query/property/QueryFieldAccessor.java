@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.property;
 
 import java.lang.reflect.Field;
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Accessor that deals with fields.
@@ -62,5 +63,11 @@ public class QueryFieldAccessor implements QueryPropertyAccessor {
     /** {@inheritDoc} */
     @Override public Class<?> getType() {
         return fld.getType();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Class<?> getComponentType() {
+        // TODO: check
+        return null;
     }
 }

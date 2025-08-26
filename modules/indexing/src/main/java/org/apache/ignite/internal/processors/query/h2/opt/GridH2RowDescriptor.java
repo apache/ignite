@@ -22,6 +22,7 @@ import java.util.Set;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,14 +65,14 @@ public class GridH2RowDescriptor implements GridQueryRowDescriptor {
 
     /** */
     private void updateFieldTypes() {
-        Collection<Class<?>> classes = delegate.type().fields().values();
+        Collection<IgnitePair<Class<?>>> types = delegate.type().fields().values();
 
-        fieldTypes = new int[classes.size()];
+        fieldTypes = new int[types.size()];
 
         int fieldIdx = 0;
 
-        for (Class<?> cls : classes)
-            fieldTypes[fieldIdx++] = DataType.getTypeFromClass(cls);
+        for (IgnitePair<Class<?>> t : types)
+            fieldTypes[fieldIdx++] = DataType.getTypeFromClass(t.getKey());
     }
 
     /** {@inheritDoc} */

@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMes
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -187,13 +189,13 @@ public class H2Utils {
 
         sql.a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr).a(keyValVisibility);
 
-        for (Map.Entry<String, Class<?>> e : tbl.type().fields().entrySet()) {
+        for (Map.Entry<String, IgnitePair<Class<?>>> e : tbl.type().fields().entrySet()) {
             GridQueryProperty prop = tbl.type().property(e.getKey());
 
             sql.a(',')
                 .a(withQuotes(e.getKey()))
                 .a(' ')
-                .a(dbTypeFromClass(e.getValue(), prop.precision(), prop.scale()))
+                .a(dbTypeFromClass(e.getValue().getKey(), prop.precision(), prop.scale()))
                 .a(prop.notNull() ? " NOT NULL" : "");
         }
 

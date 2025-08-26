@@ -140,6 +140,18 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         return v;
     }
 
+    /** */
+    @Test
+    public void testArrays() {
+        sql("CREATE TABLE t(val INT, arrn INTEGER ARRAY, arrnn INTEGER ARRAY NOT NULL, arrarr INTEGER ARRAY ARRAY) WITH " + atomicity());
+
+        sql("INSERT INTO t VALUES (1, null, ARRAY[1,2,3], ARRAY[ARRAY[9,10], ARRAY[11,12]]), (2, ARRAY[4,5,6], ARRAY[7,8,9], null)");
+
+        assertQuery("SELECT ARRAY_CONCAT_AGG(a) from (select arrn from t union all select NULL) T(a)")
+            .returns(F.asList(1, 2, 3, 4, 5, 6))
+            .check();
+    }
+
     /** Tests Other type. */
     @Test
     public void testOtherType() {

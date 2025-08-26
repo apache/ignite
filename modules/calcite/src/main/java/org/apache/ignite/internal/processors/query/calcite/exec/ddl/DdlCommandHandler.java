@@ -28,8 +28,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
+import org.apache.calcite.sql.type.ArraySqlType;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -325,9 +328,7 @@ public class DdlCommandHandler {
         for (ColumnDefinition col : cmd.columns()) {
             String name = col.name();
 
-            Type javaType = tf.getResultClass(col.type());
-
-            String typeName = javaType instanceof Class ? ((Class<?>)javaType).getName() : javaType.getTypeName();
+            String typeName = typeName(tf, col.type());
 
             res.addQueryField(name, typeName, null);
 
@@ -398,5 +399,24 @@ public class DdlCommandHandler {
         }
 
         return res;
+    }
+
+    /** */
+    private String typeName(IgniteTypeFactory tf, RelDataType type) {
+        Type javaType = tf.getJavaClass(type);
+
+        String typeName = javaType instanceof Class ? ((Class<?>)javaType).getName() : javaType.getTypeName();
+
+        // TODO: check MAP
+        // TODO: check ARRAY of ARRAY
+        if (SqlTypeUtil.isArray(type)){
+            assert type instanceof ArraySqlType;
+
+            typeName += ':';
+
+            typeName += typeName(tf, type.getComponentType());
+        }
+
+        return typeName;
     }
 }

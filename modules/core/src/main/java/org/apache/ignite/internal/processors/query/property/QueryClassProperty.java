@@ -120,6 +120,11 @@ public class QueryClassProperty implements GridQueryProperty {
         return accessor.getType();
     }
 
+    /** {@inheritDoc} */
+    @Override public @Nullable Class<?> componentType() {
+        return accessor.getComponentType();
+    }
+
     /**
      * @param parent Parent property if this is embeddable element.
      */

@@ -34,6 +34,7 @@ import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 
 /**
  * JSON deserializer into the Ignite binary object.
@@ -68,10 +69,11 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
         ObjectCodec mapper = parser.getCodec();
 
         Map<String, BinaryFieldMetadata> binFields = binaryFields(type);
-        Map<String, Class<?>> qryFields = queryFields(cacheName, type);
+        Map<String, IgnitePair<Class<?>>> qryFields = queryFields(cacheName, type);
 
         BinaryObjectBuilder builder = ctx.cacheObjects().builder(type);
         Iterator<Map.Entry<String, JsonNode>> itr = tree.fields();
+        IgnitePair<Class<?>> dfltType = new IgnitePair<>(Object.class, null);
 
         while (itr.hasNext()) {
             Map.Entry<String, JsonNode> entry = itr.next();
@@ -83,8 +85,9 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
 
             Class<?> fieldCls = meta != null ? BinaryUtils.FLAG_TO_CLASS.get((byte)meta.typeId()) : null;
 
+            // TODO: implement
             if (fieldCls == null)
-                fieldCls = qryFields.getOrDefault(QueryUtils.normalizeObjectName(field, true), Object.class);
+                fieldCls = qryFields.getOrDefault(QueryUtils.normalizeObjectName(field, true), dfltType).getKey();
 
             builder.setField(field, mapper.treeToValue(node, fieldCls));
         }
@@ -97,7 +100,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
      * @param type Type name.
      * @return Mapping from field name to its type.
      */
-    private Map<String, Class<?>> queryFields(String cacheName, String type) {
+    private Map<String, IgnitePair<Class<?>>> queryFields(String cacheName, String type) {
         if (ctx.query().moduleEnabled()) {
             GridQueryTypeDescriptor desc = ctx.query().typeDescriptor(cacheName, type);
 

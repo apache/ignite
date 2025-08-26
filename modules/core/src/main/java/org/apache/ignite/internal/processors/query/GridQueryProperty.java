@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Description and access method for query entity field.
@@ -52,6 +53,11 @@ public interface GridQueryProperty {
      * @return Class member type.
      */
     public Class<?> type();
+
+    /**
+     * @return Component type if {@link #type()} is a collection.
+     */
+    public @Nullable Class<?> componentType();
 
     /**
      * Property ownership flag.

@@ -139,6 +139,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPlainOutClosure;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -3631,22 +3632,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         List<GridQueryProperty> props = new ArrayList<>(cols.size());
 
         for (QueryField col : cols) {
-            try {
-                props.add(new QueryBinaryProperty(
-                    ctx,
-                    col.name(),
-                    null,
-                    Class.forName(col.typeName()),
-                    false,
-                    null,
-                    !col.isNullable(),
-                    null,
-                    col.precision(),
-                    col.scale()));
-            }
-            catch (ClassNotFoundException e) {
-                throw new SchemaOperationException("Class not found for new property: " + col.typeName());
-            }
+            // TODO: implement test for dynamic column adding.
+            IgnitePair<Class<?>> fldType = QueryUtils.parseFieldType(col.typeName());
+
+            props.add(new QueryBinaryProperty(
+                ctx,
+                col.name(),
+                null,
+                fldType.get1(),
+                fldType.get2(),
+                false,
+                null,
+                !col.isNullable(),
+                null,
+                col.precision(),
+                col.scale()));
         }
 
         for (GridQueryProperty p : props)

@@ -1255,15 +1255,16 @@ public class SchemaManager {
                 GridQueryTypeDescriptor d = tbl.type();
 
                 // Add default columns if fields not specified explicitely.
+                // TODO: check can be a collection?
                 if (F.isEmpty(d.fields())) {
                     if (matches(KEY_FIELD_NAME, colNamePtrn)) {
                         infos.add(new ColumnInformation(cnt.getAndIncrement(), d.schemaName(), d.tableName(),
-                            KEY_FIELD_NAME, d.keyClass(), false, null, -1, -1, false));
+                            KEY_FIELD_NAME, d.keyClass(), null, false, null, -1, -1, false));
                     }
 
                     if (matches(VAL_FIELD_NAME, colNamePtrn)) {
                         infos.add(new ColumnInformation(cnt.getAndIncrement(), d.schemaName(), d.tableName(),
-                            VAL_FIELD_NAME, d.valueClass(), false, null, -1, -1, false));
+                            VAL_FIELD_NAME, d.valueClass(), null, false, null, -1, -1, false));
                     }
                 }
                 else {
@@ -1278,6 +1279,7 @@ public class SchemaManager {
                                 d.tableName(),
                                 field,
                                 prop.type(),
+                                prop.componentType(),
                                 !prop.notNull(),
                                 prop.defaultValue(),
                                 prop.precision(),
@@ -1304,6 +1306,7 @@ public class SchemaManager {
                                 MetricUtils.toSqlName(view.name()),
                                 MetricUtils.toSqlName(c.getKey()),
                                 c.getValue(),
+                                null,
                                 true,
                                 null,
                                 -1,

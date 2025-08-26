@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Information about table column.
@@ -39,6 +40,9 @@ public class ColumnInformation {
 
     /** */
     private final Class<?> fieldCls;
+
+    /** */
+    @Nullable private final Class<?> fieldComponentCls;
 
     /** */
     private final boolean nullable;
@@ -61,18 +65,20 @@ public class ColumnInformation {
      * @param tblName Table name.
      * @param colName Column name.
      * @param fieldCls Field class.
+     * @param fieldComponentCls Field component class if {@code fieldCls} is a collection.
      * @param nullable Nullable.
      * @param dfltVal Default value.
      * @param precision Precision for a column or -1 if not applicable.
      * @param scale Scale for a column or -1 if not applicable.
      */
     public ColumnInformation(int ordinalPosition, String schemaName, String tblName, String colName, Class<?> fieldCls,
-        boolean nullable, Object dfltVal, int precision, int scale, boolean affinityCol) {
+        @Nullable Class<?> fieldComponentCls, boolean nullable, Object dfltVal, int precision, int scale, boolean affinityCol) {
         this.ordinalPosition = ordinalPosition;
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.colName = colName;
         this.fieldCls = fieldCls;
+        this.fieldComponentCls = fieldComponentCls;
         this.nullable = nullable;
         this.dfltVal = dfltVal;
         this.precision = precision;
@@ -113,6 +119,13 @@ public class ColumnInformation {
      */
     public Class<?> fieldClass() {
         return fieldCls;
+    }
+
+    /**
+     * @return Component class of column type if {@link #fieldCls} is a collection.
+     */
+    @Nullable public Class<?> componentClass() {
+        return fieldComponentCls;
     }
 
     /**

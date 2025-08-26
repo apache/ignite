@@ -36,6 +36,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -70,9 +71,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private String tblName;
 
-    /** Value field names and types with preserved order. */
+    /** Value field names and types with preserved order. Field type can be a collection type with element type. */
     @GridToStringInclude
-    private final LinkedHashMap<String, Class<?>> fields = new LinkedHashMap<>();
+    private final Map<String, IgnitePair<Class<?>>> fields = new LinkedHashMap<>();
 
     /** */
     @GridToStringExclude
@@ -208,7 +209,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public LinkedHashMap<String, Class<?>> fields() {
+    @Override public Map<String, IgnitePair<Class<?>>> fields() {
         return fields;
     }
 
@@ -458,7 +459,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         }
 
         if (isField)
-            fields.put(name, prop.type());
+            fields.put(name, new IgnitePair<>(prop.type(), prop.componentType()));
     }
 
     /**
@@ -681,28 +682,29 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 GridQueryProperty prop = props.get(idxField);
 
                 Object propVal;
-                Class<?> propType;
+                IgnitePair<Class<?>> propType;
 
                 if (Objects.equals(idxField, keyFieldAlias()) || Objects.equals(idxField, KEY_FIELD_NAME)) {
                     propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
 
-                    propType = propVal == null ? null : propVal.getClass();
+                    propType = propVal == null ? null : new IgnitePair<>(propVal.getClass(), null);
                 }
                 else if (Objects.equals(idxField, valueFieldAlias()) || Objects.equals(idxField, VAL_FIELD_NAME)) {
                     propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
 
-                    propType = propVal == null ? null : propVal.getClass();
+                    propType = propVal == null ? null : new IgnitePair<>(propVal.getClass(), null);
                 }
                 else {
                     propVal = prop.value(key, val);
 
-                    propType = prop.type();
+                    propType = new IgnitePair<>(prop.type(), prop.componentType());
                 }
 
                 if (propVal == null)
                     continue;
 
-                if (!isCompatibleWithPropertyType(propVal, propType)) {
+                // TODO: check component type?
+                if (!isCompatibleWithPropertyType(propVal, propType.getKey())) {
                     throw new IgniteSQLException("Type for a column '" + idxField + "' is not compatible with index definition." +
                         " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
                 }
