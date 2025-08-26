@@ -337,7 +337,7 @@ public interface GridDhtPartitionTopology {
      */
     public void applyUpdateCounters();
 
-    /** */
+    /** Restores cache group data after node restart if PDS is enabled. Called on coordinator. */
     public void applyRecoveryData(CacheGroupRecoveryState grpState);
 
     /**

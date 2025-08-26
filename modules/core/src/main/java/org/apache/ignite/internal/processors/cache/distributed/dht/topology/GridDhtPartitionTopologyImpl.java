@@ -3264,9 +3264,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         detectedLostParts.forEach(this::addLostPartition);
 
         if (!detectedLostParts.isEmpty()) {
-            U.warn(log, "Partition data loss detected. Partitions with the following IDs were not restored from the PDS " +
-                "during cluster activation, but were present during previous cluster deactivation [partIds="
-                + S.toStringSortedDistinct(detectedLostParts) + ']');
+            U.warn(log, "Partition data loss detected. Partitions with the following IDs were not restored from the PDS" +
+                " during cluster activation, but were present at the time when the cluster was previously deactivated." +
+                " [partIds=" + S.toStringSortedDistinct(detectedLostParts) + ']');
         }
     }
 
