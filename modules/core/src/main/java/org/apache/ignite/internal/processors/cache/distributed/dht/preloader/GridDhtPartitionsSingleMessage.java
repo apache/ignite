@@ -203,6 +203,11 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         partCntrs.put(grpId, cntrMap);
     }
 
+    /** */
+    public Map<Integer, CachePartitionPartialCountersMap> partitionUpdateCounters() {
+        return partCntrs == null ? Collections.emptyMap() : Collections.unmodifiableMap(partCntrs);
+    }
+
     /**
      * @param grpId Cache group ID.
      * @return Partition update counters.

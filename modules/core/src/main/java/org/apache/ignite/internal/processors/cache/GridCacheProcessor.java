@@ -102,6 +102,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCluster
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.FinishPreloadingTask;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionDefferedDeleteQueueCleanupTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
@@ -228,6 +229,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
+    /** */
+    public static final String METASTORAGE_CLUSTER_CACHE_GROUP_RECOVERY_DATA_KEY = "org.apache.ignite.cluster.cache.group.recovery";
+
     /** */
     public static final String CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT =
         "Failed to perform %s operation (cluster is in read-only mode) [cacheGrp=%s, cache=%s]";
@@ -2905,9 +2909,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 
-    /**
-     * @param grpToStop Group for which listener shuold be removed.
-     */
+    /** @param grpToStop Group for which listener should be removed. */
     private void removeOffheapCheckpointListener(List<IgniteBiTuple<CacheGroupContext, Boolean>> grpToStop) {
         sharedCtx.database().checkpointReadLock();
         try {
@@ -2929,15 +2931,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Callback invoked when first exchange future for dynamic cache is completed.
      *
-     * @param cacheStartVer Started caches version to create proxy for.
-     * @param exchActions Change requests.
      * @param err Error.
      */
-    public void onExchangeDone(
-        AffinityTopologyVersion cacheStartVer,
-        @Nullable ExchangeActions exchActions,
-        @Nullable Throwable err
-    ) {
+    public void onExchangeDone(GridDhtPartitionsExchangeFuture fut, @Nullable Throwable err) throws IgniteCheckedException {
+        AffinityTopologyVersion cacheStartVer = fut.initialVersion();
+        ExchangeActions exchActions = fut.exchangeActions();
+
         initCacheProxies(cacheStartVer, err);
 
         if (exchActions == null)
@@ -2946,8 +2945,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (exchActions.systemCachesStarting() && exchActions.stateChangeRequest() == null)
             ctx.dataStructures().restoreStructuresState(ctx);
 
-        if (err == null)
+        if (err == null) {
+            processCacheGroupRecoveryDataOnExchangeDone(fut);
+
             processCacheStopRequestOnExchangeDone(cacheStartVer, exchActions);
+        }
     }
 
     /**
@@ -3018,7 +3020,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Shared context.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private GridCacheSharedContext createSharedContext(
         GridKernalContext kernalCtx,
         Collection<CacheStoreSessionListener> storeSesLsnrs
@@ -5365,6 +5366,82 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             true)));
     }
 
+    /** */
+    @Nullable private ClusterCacheGroupRecoveryData restoreClusterCacheGroupRecoveryData(
+        ReadOnlyMetastorage metastorage
+    ) throws IgniteCheckedException {
+        return (ClusterCacheGroupRecoveryData)metastorage.read(METASTORAGE_CLUSTER_CACHE_GROUP_RECOVERY_DATA_KEY);
+    }
+
+    /** */
+    private void processCacheGroupRecoveryDataOnExchangeDone(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+        if (sharedCtx.kernalContext().clientNode())
+            return;
+
+        if (fut.deactivateCluster())
+            persistClusterCacheGroupRecoveryData();
+        else if (fut.activateCluster() || fut.localJoinExchange())
+            clearClusterCacheGroupRecoveryData();
+    }
+
+    /** */
+    private void persistClusterCacheGroupRecoveryData() throws IgniteCheckedException {
+        List<CacheGroupContext> persistenceEnabledGrps = ctx.cache().cacheGroups().stream()
+            .filter(CacheGroupContext::persistenceEnabled)
+            .collect(Collectors.toList());
+
+        if (persistenceEnabledGrps.isEmpty())
+            return;
+
+        ClusterCacheGroupRecoveryData recData = new ClusterCacheGroupRecoveryData(
+            ctx.state().clusterState().baselineTopology().version(),
+            persistenceEnabledGrps
+        );
+
+        sharedCtx.database().checkpointReadLock();
+
+        try {
+            sharedCtx.database().metaStorage().write(METASTORAGE_CLUSTER_CACHE_GROUP_RECOVERY_DATA_KEY, recData);
+        }
+        finally {
+            sharedCtx.database().checkpointReadUnlock();
+        }
+
+        cachesInfo.clusterCacheGroupRecoveryData(recData);
+    }
+
+    /** */
+    private void clearClusterCacheGroupRecoveryData() throws IgniteCheckedException {
+        if (cachesInfo.clusterCacheGroupRecoveryData() == null)
+            return;
+
+        sharedCtx.database().checkpointReadLock();
+
+        try {
+            sharedCtx.database().metaStorage().remove(METASTORAGE_CLUSTER_CACHE_GROUP_RECOVERY_DATA_KEY);
+        }
+        finally {
+            sharedCtx.database().checkpointReadUnlock();
+        }
+
+        cachesInfo.clusterCacheGroupRecoveryData(null);
+    }
+
+    /** */
+    public void applyCacheGroupRecoveryData() {
+        ClusterCacheGroupRecoveryData grpRecoveyData = cachesInfo.clusterCacheGroupRecoveryData();
+
+        if (grpRecoveyData == null)
+            return;
+
+        for (CacheGroupContext grp : cacheGrps.values()) {
+            CacheGroupRecoveryState grpState = grpRecoveyData.cacheGroupRecoveryState(grp.groupId());
+
+            if (grpState != null)
+                grp.applyRecoveryData(grpState);
+        }
+    }
+
     /**
      * Filter map by key.
      *
@@ -5431,6 +5508,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
             CacheJoinNodeDiscoveryData data = locCfgMgr.restoreCacheConfigurations();
+
+            data.clusterCacheGroupRecoveryData(restoreClusterCacheGroupRecoveryData(metastorage));
 
             cachesInfo.onStart(data);
         }
