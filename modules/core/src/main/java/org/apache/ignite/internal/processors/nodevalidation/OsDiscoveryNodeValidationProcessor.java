@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.nodevalidation;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cluster.ClusterNode;
@@ -41,9 +42,6 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
 
     /** */
     private static final int MAX_MINOR_DIFF = 1;
-
-    /** */
-    private final AtomicReference<IgniteProductVersion> rmtVerAllowedRef = new AtomicReference<>();
 
     /**
      * @param ctx Kernal context.
@@ -76,14 +74,9 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
                 + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
                 + "  - Node ID     : " + locNode.id() + "\n"
                 + "Allowed versions for joining:\n"
-                + "  - " + locVer.major() + '.' + locVer.minor() + ".X";
-
-            IgniteProductVersion curRmtVerAllowed = rmtVerAllowedRef.get();
-
-            if (curRmtVerAllowed == null) {
-                errMsg += "\n  - " + locVer.major() + '.' + (locVer.minor() + 1) + ".X";
-                errMsg += "\n  - " + locVer.major() + '.' + (locVer.minor() - 1) + ".X";
-            }
+                + "  - " + locVer.major() + '.' + locVer.minor() + ".X\n"
+                + "  - " + locVer.major() + '.' + (locVer.minor() + 1) + ".X\n"
+                + "  - " + locVer.major() + '.' + (locVer.minor() - 1) + ".X";
 
             LT.warn(log, errMsg);
 
@@ -104,7 +97,6 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
      *   <li>It exactly matches the local version; or</li>
      *   <li>It has the same major version as the local node and the difference in minor versions is within {@link #MAX_MINOR_DIFF}.</li>
      * </ul>
-     * If the version is deemed eligible, this method attempts to store the remote version for future validation.
      *
      * @param locVer Local node's Ignite product version.
      * @param rmtVer Remote node's Ignite product version.
@@ -115,38 +107,17 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
             return true;
 
         boolean enableCheck = IgniteSystemProperties.getBoolean(IGNITE_ROLLING_UPGRADE_VERSION_CHECK);
-
         if (!enableCheck)
             return false;
 
-        boolean isEligible = locVer.major() == rmtVer.major() && Math.abs(locVer.minor() - rmtVer.minor()) <= MAX_MINOR_DIFF;
+        Set<Object> versions = ctx.discovery().allNodes().stream().map(node -> IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER)).minor()).collect(Collectors.toSet());
 
-        if (isEligible)
-            return updateEligibleRemoteVersion(rmtVer);
+        if (versions.contains(rmtVer.minor()))
+            return true;
 
-        return false;
-    }
+        if (versions.size() > 1)
+            return false;
 
-    /**
-     * Atomically updates the allowed remote version for rolling upgrade, if not already set.
-     * <p>
-     * This method ensures that only one remote version is accepted as eligible across multiple threads.
-     * If the reference is already set, it checks whether the incoming version matches the stored one.
-     *
-     * @param rmtVer Remote node's Ignite product version to check or set.
-     * @return {@code true} if the version was successfully set or matches the already accepted version;
-     *         {@code false} if the version conflicts with an already accepted different version.
-     */
-    private boolean updateEligibleRemoteVersion(IgniteProductVersion rmtVer) {
-        while (true) {
-            IgniteProductVersion curRmtVerAllowed = rmtVerAllowedRef.get();
-
-            if (curRmtVerAllowed == null) {
-                if (rmtVerAllowedRef.compareAndSet(null, rmtVer))
-                    return true;
-            }
-            else
-                return curRmtVerAllowed.major() == rmtVer.major() && curRmtVerAllowed.minor() == rmtVer.minor();
-        }
+        return locVer.major() == rmtVer.major() && Math.abs(locVer.minor() - rmtVer.minor()) <= MAX_MINOR_DIFF;
     }
 }
