@@ -43,6 +43,7 @@ import org.apache.ignite.internal.codegen.GridQueryNextPageRequestSerializer;
 import org.apache.ignite.internal.codegen.GridTaskCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridTaskResultRequestSerializer;
 import org.apache.ignite.internal.codegen.IgniteTxKeySerializer;
+import org.apache.ignite.internal.codegen.IncrementalSnapshotAwareMessageSerializer;
 import org.apache.ignite.internal.codegen.JobStealingRequestSerializer;
 import org.apache.ignite.internal.codegen.LatchAckMessageSerializer;
 import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer;
@@ -360,7 +361,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)181, TransactionAttributesAwareRequest::new);
 
         // Incremental snapshot.
-        factory.register(IncrementalSnapshotAwareMessage.TYPE_CODE, IncrementalSnapshotAwareMessage::new);
+        factory.register(IncrementalSnapshotAwareMessage.TYPE_CODE, IncrementalSnapshotAwareMessage::new,
+            new IncrementalSnapshotAwareMessageSerializer());
 
         // Index statistics.
         factory.register(StatisticsKeyMessage.TYPE_CODE, StatisticsKeyMessage::new);
