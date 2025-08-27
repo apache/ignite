@@ -52,7 +52,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -764,7 +764,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
         throws Exception {
         assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
-        final TestTcpDiscoverySpi clientSpi = (TestTcpDiscoverySpi)spi0(client);
+        final IgniteDiscoverySpiInternalListenerSupport clientSpi = (IgniteDiscoverySpiInternalListenerSupport)spi0(client);
 
         Ignite srv = clientRouter(client);
 

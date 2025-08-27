@@ -48,7 +48,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -1028,7 +1028,8 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     public void testAsyncOld() throws Exception {
         final AtomicInteger msgCnt = new AtomicInteger();
 
-        TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)ignite2.configuration().getDiscoverySpi();
+        IgniteDiscoverySpiInternalListenerSupport discoSpi =
+            (IgniteDiscoverySpiInternalListenerSupport)ignite2.configuration().getDiscoverySpi();
 
         DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
 
@@ -1141,7 +1142,8 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     public void testAsync() throws Exception {
         final AtomicInteger msgCnt = new AtomicInteger();
 
-        TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)ignite2.configuration().getDiscoverySpi();
+        IgniteDiscoverySpiInternalListenerSupport discoSpi =
+            (IgniteDiscoverySpiInternalListenerSupport)ignite2.configuration().getDiscoverySpi();
 
         DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
 

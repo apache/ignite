@@ -89,6 +89,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -1397,7 +1398,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
 
-        ((TestTcpDiscoverySpi)ignite0.configuration().getDiscoverySpi()).setInternalListener(lsnr);
+        ((IgniteDiscoverySpiInternalListenerSupport)ignite0.configuration().getDiscoverySpi()).setInternalListener(lsnr);
 
         TestRecordingCommunicationSpi commSpi0 =
             (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
