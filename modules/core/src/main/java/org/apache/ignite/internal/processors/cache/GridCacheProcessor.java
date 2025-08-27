@@ -5367,6 +5367,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** */
+    @Nullable private ClusterCacheGroupRecoveryData restoreClusterCacheGroupRecoveryData(
+        ReadOnlyMetastorage metastorage
+    ) throws IgniteCheckedException {
+        return (ClusterCacheGroupRecoveryData)metastorage.read(METASTORAGE_CLUSTER_CACHE_GROUP_RECOVERY_DATA_KEY);
+    }
+
+    /** */
+    private void processCacheGroupRecoveryDataOnExchangeDone(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+        if (sharedCtx.kernalContext().clientNode())
+            return;
+
+        if (fut.deactivateCluster())
+            persistClusterCacheGroupRecoveryData();
+        else if (fut.activateCluster() || fut.localJoinExchange())
+            clearClusterCacheGroupRecoveryData();
+    }
+
+    /** */
     private void persistClusterCacheGroupRecoveryData() throws IgniteCheckedException {
         List<CacheGroupContext> persistenceEnabledGrps = ctx.cache().cacheGroups().stream()
             .filter(CacheGroupContext::persistenceEnabled)
@@ -5390,24 +5408,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         cachesInfo.registerClusterCacheGroupRecoveryData(recData);
-    }
-
-    /** */
-    @Nullable private ClusterCacheGroupRecoveryData restoreClusterCacheGroupRecoveryData(
-        ReadOnlyMetastorage metastorage
-    ) throws IgniteCheckedException {
-        return (ClusterCacheGroupRecoveryData)metastorage.read(METASTORAGE_CLUSTER_CACHE_GROUP_RECOVERY_DATA_KEY);
-    }
-
-    /** */
-    private void processCacheGroupRecoveryDataOnExchangeDone(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
-        if (sharedCtx.kernalContext().clientNode())
-            return;
-
-        if (fut.deactivateCluster())
-            persistClusterCacheGroupRecoveryData();
-        else if (fut.activateCluster() || fut.localJoinExchange())
-            clearClusterCacheGroupRecoveryData();
     }
 
     /** */

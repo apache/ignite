@@ -63,10 +63,10 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     private static final int CACHE_KEYS_CNT = 100;
     
     /** */
-    private static final String CACHE_0 = "partitioned-0";
+    private static final String SERVER_CACHE = "server-partitioned";
 
     /** */
-    private static final String CACHE_1 = "partitioned-1";
+    private static final String CLIENT_CACHE = "client-partitioned";
 
     /** */
     private final ListeningTestLogger listeningLogger = new ListeningTestLogger(log);
@@ -80,9 +80,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
             .setUserAttributes(singletonMap("CELL", "CELL" + (getTestIgniteInstanceIndex(igniteInstanceName)) % 2))
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setGridLogger(listeningLogger)
-            .setCacheConfiguration(
-                createCacheConfiguration(CACHE_0),
-                createCacheConfiguration(CACHE_1))
+            .setCacheConfiguration(createCacheConfiguration(SERVER_CACHE))
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true))
@@ -116,10 +114,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testPartitionLossDetectionOnActivation() throws Exception {
-        startGrids(SERVER_NODES_CNT);
-        startClientGrid(SERVER_NODES_CNT);
-
-        grid(0).cluster().state(ACTIVE);
+        prepareCluster();
 
         fillCaches();
 
@@ -143,13 +138,13 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
 
         logLsnr.check(getTestTimeout());
 
-        Collection<Integer> lostParts0 = checkCacheLostParitionedDetected(CACHE_0);
-        Collection<Integer> lostParts1 = checkCacheLostParitionedDetected(CACHE_1);
+        Collection<Integer> srcCacheLostParts = checkCacheLostParitionedDetected(SERVER_CACHE);
+        Collection<Integer> cliCacheLostParts = checkCacheLostParitionedDetected(CLIENT_CACHE);
 
         grid(0).resetLostPartitions(grid(0).cacheNames());
 
-        checkKeysAvailableAfterLostPartitionsReset(CACHE_0, lostParts0);
-        checkKeysAvailableAfterLostPartitionsReset(CACHE_1, lostParts1);
+        checkKeysAvailableAfterLostPartitionsReset(SERVER_CACHE, srcCacheLostParts);
+        checkKeysAvailableAfterLostPartitionsReset(CLIENT_CACHE, cliCacheLostParts);
 
         grid(0).cluster().state(INACTIVE);
     }
@@ -157,10 +152,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testLostPartitionsRestoredOnActivation() throws Exception {
-        startGrids(SERVER_NODES_CNT);
-        startClientGrid(SERVER_NODES_CNT);
-
-        grid(0).cluster().state(ACTIVE);
+        prepareCluster();
 
         fillCaches();
 
@@ -189,10 +181,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testNodeJoinAfterActivation() throws Exception {
-        startGrids(SERVER_NODES_CNT);
-        startClientGrid(SERVER_NODES_CNT);
-
-        grid(0).cluster().state(ACTIVE);
+        prepareCluster();
 
         fillCaches();
 
@@ -215,22 +204,19 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
 
         grid(0).resetLostPartitions(grid(0).cacheNames());
 
-        Collection<Integer> lostParts0 = checkCacheLostParitionedDetected(CACHE_0);
-        Collection<Integer> lostParts1 = checkCacheLostParitionedDetected(CACHE_1);
+        Collection<Integer> srcCacheLostParts = checkCacheLostParitionedDetected(SERVER_CACHE);
+        Collection<Integer> cliCacheLostParts = checkCacheLostParitionedDetected(CLIENT_CACHE);
 
         grid(0).resetLostPartitions(grid(0).cacheNames());
 
-        checkKeysAvailableAfterLostPartitionsReset(CACHE_0, lostParts0);
-        checkKeysAvailableAfterLostPartitionsReset(CACHE_1, lostParts1);
+        checkKeysAvailableAfterLostPartitionsReset(SERVER_CACHE, srcCacheLostParts);
+        checkKeysAvailableAfterLostPartitionsReset(CLIENT_CACHE, cliCacheLostParts);
     }
 
     /** */
     @Test
-    public void testNodeJoinDuringActivationStateTransition() throws Exception {
-        startGrids(SERVER_NODES_CNT);
-        startClientGrid(SERVER_NODES_CNT);
-
-        grid(0).cluster().state(ACTIVE);
+    public void testNodeJoinDuringClusterStateTransition() throws Exception {
+        prepareCluster();
 
         fillCaches();
 
@@ -272,28 +258,25 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
 
         grid(0).resetLostPartitions(grid(0).cacheNames());
 
-        Collection<Integer> lostParts0 = checkCacheLostParitionedDetected(CACHE_0);
-        Collection<Integer> lostParts1 = checkCacheLostParitionedDetected(CACHE_1);
+        Collection<Integer> srvCacheLostParts = checkCacheLostParitionedDetected(SERVER_CACHE);
+        Collection<Integer> cliCacheLostParts = checkCacheLostParitionedDetected(CLIENT_CACHE);
 
         grid(0).resetLostPartitions(grid(0).cacheNames());
 
-        checkKeysAvailableAfterLostPartitionsReset(CACHE_0, lostParts0);
-        checkKeysAvailableAfterLostPartitionsReset(CACHE_1, lostParts1);
+        checkKeysAvailableAfterLostPartitionsReset(SERVER_CACHE, srvCacheLostParts);
+        checkKeysAvailableAfterLostPartitionsReset(CLIENT_CACHE, cliCacheLostParts);
     }
 
     /** */
     @Test
     public void testClusterRestartWthEmptyPartitions() throws Exception {
-        startGrids(SERVER_NODES_CNT);
-        startClientGrid(SERVER_NODES_CNT);
+        prepareCluster();
 
-        grid(0).cluster().state(ACTIVE);
+        writeKeyToParition(SERVER_CACHE, 0);
+        writeKeyToParition(SERVER_CACHE, 2);
 
-        writeKeyToParition(0, CACHE_0, 0);
-        writeKeyToParition(0, CACHE_0, 2);
-
-        writeKeyToParition(0, CACHE_1, 1);
-        writeKeyToParition(0, CACHE_1, 3);
+        writeKeyToParition(CLIENT_CACHE, 1);
+        writeKeyToParition(CLIENT_CACHE, 3);
 
         forceCheckpoint();
 
@@ -312,10 +295,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testNodeJoinWithStaleCacheGroupRecoveryData() throws Exception {
-        startGrids(SERVER_NODES_CNT);
-        startClientGrid(SERVER_NODES_CNT);
-
-        grid(0).cluster().state(ACTIVE);
+        prepareCluster();
 
         fillCaches();
 
@@ -344,11 +324,8 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCoordinatorWithEmptyCacheGroupRecoveryData() throws Exception {
-        startGrids(SERVER_NODES_CNT);
-        startClientGrid(SERVER_NODES_CNT);
-
-        grid(0).cluster().state(ACTIVE);
+    public void testCoordinatorWithMissingCacheGroupRecoveryData() throws Exception {
+        prepareCluster();
 
         fillCaches();
 
@@ -366,8 +343,8 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
 
         grid(0).cluster().state(ACTIVE);
 
-        checkCacheLostParitionedDetected(CACHE_0);
-        checkCacheLostParitionedDetected(CACHE_1);
+        checkCacheLostParitionedDetected(SERVER_CACHE);
+        checkCacheLostParitionedDetected(CLIENT_CACHE);
 
         grid(0).resetLostPartitions(grid(0).cacheNames());
 
@@ -378,10 +355,20 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private void prepareCluster() throws Exception {
+        startGrids(SERVER_NODES_CNT);
+        startClientGrid(SERVER_NODES_CNT);
+
+        grid(0).cluster().state(ACTIVE);
+
+        grid(SERVER_NODES_CNT).createCache(createCacheConfiguration(CLIENT_CACHE));
+    }
+
+    /** */
     private void checkNoLostPartitions() {
         for (int nodeIdx = 0; nodeIdx < SERVER_NODES_CNT + 1; nodeIdx++) {
             for (String cacheName : grid(nodeIdx).cacheNames())
-                assertTrue(F.isEmpty(grid(nodeIdx).context().cache().cache(cacheName).lostPartitions()));
+                assertTrue(F.isEmpty(grid(nodeIdx).cache(cacheName).lostPartitions()));
         }
     }
 
@@ -398,7 +385,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
         List<Collection<Integer>> nodeLostParts = new ArrayList<>();
 
         for (int i = 0; i < SERVER_NODES_CNT + 1; i++)
-            nodeLostParts.add(grid(i).context().cache().cache(cacheName).lostPartitions());
+            nodeLostParts.add(grid(i).cache(cacheName).lostPartitions());
 
         assertFalse(F.isEmpty(nodeLostParts));
 
@@ -435,10 +422,10 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void writeKeyToParition(int nodeIdx, String cacheName, int part) {
+    private void writeKeyToParition(String cacheName, int part) {
         for (int key = 0; key < CACHE_KEYS_CNT; key++) {
             if (grid(0).affinity(cacheName).partition(key) == part) {
-                grid(nodeIdx).<Integer, Integer>cache(cacheName).put(key, key);
+                grid(0).<Integer, Integer>cache(cacheName).put(key, key);
 
                 return;
             }
@@ -458,10 +445,10 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void startNodeWithPdsCleared(int idx) throws Exception {
-        U.delete(workDirectory(idx));
+    private void startNodeWithPdsCleared(int nodeIdx) throws Exception {
+        U.delete(workDirectory(nodeIdx));
 
-        startGrid(idx);
+        startGrid(nodeIdx);
     }
 
     /** */
@@ -475,7 +462,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private File workDirectory(int idx) {
-        return new File(getIgniteHome() + "/work_" + getTestIgniteInstanceName(idx));
+    private File workDirectory(int nodeIdx) {
+        return new File(getIgniteHome() + "/work_" + getTestIgniteInstanceName(nodeIdx));
     }
 }
