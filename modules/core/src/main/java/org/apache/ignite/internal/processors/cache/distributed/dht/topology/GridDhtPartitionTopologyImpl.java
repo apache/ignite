@@ -1858,8 +1858,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             restoreLostPartitions(grpState);
 
             detectPartitionLossDuringInactivity(grpState);
-
-            recordPartitionLossEvents(topReadyFut, lostParts, isParitionLossIgnored());
         }
         finally {
             lock.writeLock().unlock();
@@ -2212,7 +2210,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 // Calculate how data loss is handled.
                 boolean isLossIgnored = isParitionLossIgnored();
 
-                Set<Integer> recentlyLost = fut.activateCluster() && !F.isEmpty(lostParts) ? new HashSet<>(lostParts) : new HashSet<>();
+                Set<Integer> recentlyLost = fut.activateCluster() && !F.isEmpty(lostParts)
+                    ? new HashSet<>(lostParts)
+                    : new HashSet<>();
 
                 boolean changed = false;
 
