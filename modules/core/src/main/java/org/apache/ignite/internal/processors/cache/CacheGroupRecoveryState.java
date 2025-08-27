@@ -21,8 +21,10 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -32,10 +34,10 @@ public class CacheGroupRecoveryState implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private Set<Integer> zeroParts;
+    private Set<Integer> lostParts;
 
     /** */
-    private Set<Integer> lostParts;
+    private Set<Integer> zeroParts;
 
     /** */
     public CacheGroupRecoveryState() {
@@ -62,13 +64,18 @@ public class CacheGroupRecoveryState implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeCollection(out, zeroParts);
-        U.writeCollection(out, lostParts);
+        U.writeIntArray(out, lostParts.stream().mapToInt(Number::intValue).toArray());
+        U.writeIntArray(out, zeroParts.stream().mapToInt(Number::intValue).toArray());
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        zeroParts = U.readSet(in);
-        lostParts = U.readSet(in);
+        int[] lostParts = U.readIntArray(in);
+
+        this.lostParts = lostParts.length == 0 ? Collections.emptySet() : Arrays.stream(lostParts).boxed().collect(Collectors.toSet());
+
+        int[] zeroParts = U.readIntArray(in);
+
+        this.zeroParts = zeroParts.length == 0 ? Collections.emptySet() : Arrays.stream(zeroParts).boxed().collect(Collectors.toSet());
     }
 }

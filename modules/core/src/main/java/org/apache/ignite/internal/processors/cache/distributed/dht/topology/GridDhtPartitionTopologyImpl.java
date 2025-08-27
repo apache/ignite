@@ -2235,7 +2235,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             lost = true;
 
                             if (!isLossIgnored) {
-                                addLostPartition(part);
+                                registerLostPartition(part);
 
                                 recentlyLost.add(part);
                             }
@@ -3247,7 +3247,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** */
     private void restoreLostPartitions(CacheGroupRecoveryState grpState) {
-        grpState.lostParititons().forEach(this::addLostPartition);
+        grpState.lostParititons().forEach(this::registerLostPartition);
     }
 
     /** */
@@ -3256,12 +3256,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         Set<Integer> detectedLostParts = new HashSet<>();
 
-        for (int part : cntrMap.zeroUpdateCounterPartitions()) {
-            if (!recoveryZeroParts.contains(part))
-                detectedLostParts.add(part);
+        for (int zeroPart : cntrMap.zeroUpdateCounterPartitions()) {
+            if (!recoveryZeroParts.contains(zeroPart))
+                detectedLostParts.add(zeroPart);
         }
 
-        detectedLostParts.forEach(this::addLostPartition);
+        detectedLostParts.forEach(this::registerLostPartition);
 
         if (!detectedLostParts.isEmpty()) {
             U.warn(log, "Cache group partitions were not restored from the PDS during cluster activation, but were" +
@@ -3271,7 +3271,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** */
-    private boolean addLostPartition(int partId) {
+    private boolean registerLostPartition(int partId) {
         assert lock.isWriteLockedByCurrentThread();
 
         if (lostParts == null)

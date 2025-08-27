@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,7 +51,6 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
-import static org.apache.ignite.internal.util.CommonUtils.getIgniteHome;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -75,9 +75,9 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setConsistentId(igniteInstanceName)
-            .setWorkDirectory(workDirectory(getTestIgniteInstanceIndex(igniteInstanceName)).getAbsolutePath())
+            .setWorkDirectory(workDirectory(getTestIgniteInstanceIndex(igniteInstanceName)).toString())
             .setClusterStateOnStart(INACTIVE)
-            .setUserAttributes(singletonMap("CELL", "CELL" + (getTestIgniteInstanceIndex(igniteInstanceName)) % 2))
+            .setUserAttributes(singletonMap("CELL", "CELL-" + (getTestIgniteInstanceIndex(igniteInstanceName)) % 2))
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setGridLogger(listeningLogger)
             .setCacheConfiguration(createCacheConfiguration(SERVER_CACHE))
@@ -95,7 +95,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        for (int i = 0; i < SERVER_NODES_CNT; i++)
+        for (int i = 0; i < SERVER_NODES_CNT + 1; i++)
             U.delete(workDirectory(i));
     }
 
@@ -105,7 +105,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        for (int i = 0; i < SERVER_NODES_CNT; i++)
+        for (int i = 0; i < SERVER_NODES_CNT + 1; i++)
             U.delete(workDirectory(i));
 
         super.afterTest();
@@ -138,13 +138,13 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
 
         logLsnr.check(getTestTimeout());
 
-        Collection<Integer> srcCacheLostParts = checkCacheLostParitionedDetected(SERVER_CACHE);
+        Collection<Integer> srvCacheLostParts = checkCacheLostParitionedDetected(SERVER_CACHE);
         Collection<Integer> cliCacheLostParts = checkCacheLostParitionedDetected(CLIENT_CACHE);
 
         grid(0).resetLostPartitions(grid(0).cacheNames());
 
-        checkKeysAvailableAfterLostPartitionsReset(SERVER_CACHE, srcCacheLostParts);
-        checkKeysAvailableAfterLostPartitionsReset(CLIENT_CACHE, cliCacheLostParts);
+        checkLostPartitionsRead(SERVER_CACHE, srvCacheLostParts);
+        checkLostPartitionsRead(CLIENT_CACHE, cliCacheLostParts);
 
         grid(0).cluster().state(INACTIVE);
     }
@@ -204,13 +204,13 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
 
         grid(0).resetLostPartitions(grid(0).cacheNames());
 
-        Collection<Integer> srcCacheLostParts = checkCacheLostParitionedDetected(SERVER_CACHE);
+        Collection<Integer> srvCacheLostParts = checkCacheLostParitionedDetected(SERVER_CACHE);
         Collection<Integer> cliCacheLostParts = checkCacheLostParitionedDetected(CLIENT_CACHE);
 
         grid(0).resetLostPartitions(grid(0).cacheNames());
 
-        checkKeysAvailableAfterLostPartitionsReset(SERVER_CACHE, srcCacheLostParts);
-        checkKeysAvailableAfterLostPartitionsReset(CLIENT_CACHE, cliCacheLostParts);
+        checkLostPartitionsRead(SERVER_CACHE, srvCacheLostParts);
+        checkLostPartitionsRead(CLIENT_CACHE, cliCacheLostParts);
     }
 
     /** */
@@ -263,8 +263,8 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
 
         grid(0).resetLostPartitions(grid(0).cacheNames());
 
-        checkKeysAvailableAfterLostPartitionsReset(SERVER_CACHE, srvCacheLostParts);
-        checkKeysAvailableAfterLostPartitionsReset(CLIENT_CACHE, cliCacheLostParts);
+        checkLostPartitionsRead(SERVER_CACHE, srvCacheLostParts);
+        checkLostPartitionsRead(CLIENT_CACHE, cliCacheLostParts);
     }
 
     /** */
@@ -373,7 +373,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkKeysAvailableAfterLostPartitionsReset(String cacheName, Collection<Integer> parts) {
+    private void checkLostPartitionsRead(String cacheName, Collection<Integer> parts) {
         for (int nodeIdx = 0; nodeIdx < SERVER_NODES_CNT + 1; nodeIdx++) {
             for (Integer part : parts)
                 assertNull(readKeyFromPartition(nodeIdx, cacheName, part));
@@ -418,7 +418,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
             .setBackups(1)
             .setAffinity(new RendezvousAffinityFunction()
                 .setAffinityBackupFilter(new ClusterNodeAttributeColocatedBackupFilter("CELL"))
-                .setPartitions(4));
+                .setPartitions(10));
     }
 
     /** */
@@ -462,7 +462,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private File workDirectory(int nodeIdx) {
-        return new File(getIgniteHome() + "/work_" + getTestIgniteInstanceName(nodeIdx));
+    private Path workDirectory(int nodeIdx) throws Exception {
+        return Paths.get(U.defaultWorkDirectory(), U.maskForFileName(getTestIgniteInstanceName(nodeIdx)));
     }
 }
