@@ -124,39 +124,42 @@ public class SnapshotCheckProcess {
         if (ctx == null)
             return new GridFinishedFuture<>();
 
-        contexts.remove(ctx.req.snapshotName());
+        try {
+            contexts.remove(ctx.req.snapshotName());
 
-        if (log.isInfoEnabled())
-            log.info("Finished snapshot validation [req=" + ctx.req + ']');
+            GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = clusterOpFuts.get(reqId);
-
-        if (clusterOpFut == null)
-            return new GridFinishedFuture<>();
-
-        if (F.isEmpty(errors)) {
-            ClusterTopologyCheckedException ex = checkNodeLeft(ctx.req.nodes(), results.keySet());
-
-            if (ex != null) {
-                clusterOpFut.onDone(ex);
-
+            if (clusterOpFut == null)
                 return new GridFinishedFuture<>();
+
+            if (F.isEmpty(errors)) {
+                ClusterTopologyCheckedException ex = checkNodeLeft(ctx.req.nodes(), results.keySet());
+
+                if (ex != null) {
+                    clusterOpFut.onDone(ex);
+
+                    return new GridFinishedFuture<>();
+                }
             }
+
+            if (ctx.req.incrementalIndex() > 0) {
+                SnapshotFileTree sft = ctx.locFileTree == null || kctx.config().getConsistentId() == null
+                    ? null
+                    : ctx.locFileTree.get(kctx.config().getConsistentId().toString());
+
+                reduceIncrementalResults(sft, ctx.req.incrementalIndex(), ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
+            }
+            else if (ctx.req.allRestoreHandlers())
+                reduceCustomHandlersResults(ctx, results, errors, clusterOpFut);
+            else
+                reducePartitionsHashesResults(ctx.clusterMetas, results, errors, clusterOpFut);
+
+            return new GridFinishedFuture<>();
         }
-
-        if (ctx.req.incrementalIndex() > 0) {
-            SnapshotFileTree sft = ctx.locFileTree == null || kctx.config().getConsistentId() == null
-                ? null
-                : ctx.locFileTree.get(kctx.config().getConsistentId().toString());
-
-            reduceIncrementalResults(sft, ctx.req.incrementalIndex(), ctx.req.nodes(), ctx.clusterMetas, results, errors, clusterOpFut);
+        finally {
+            if (log.isInfoEnabled())
+                log.info("Finished snapshot validation [req=" + ctx.req + ']');
         }
-        else if (ctx.req.allRestoreHandlers())
-            reduceCustomHandlersResults(ctx, results, errors, clusterOpFut);
-        else
-            reducePartitionsHashesResults(ctx.clusterMetas, results, errors, clusterOpFut);
-
-        return new GridFinishedFuture<>();
     }
 
     /** */
@@ -526,7 +529,7 @@ public class SnapshotCheckProcess {
                 contexts.remove(ctx.req.snapshotName());
 
                 if (log.isInfoEnabled())
-                    log.info("Finished snapshot validation [req=" + ctx.req + ", err=" + th.getMessage() + ']');
+                    log.info("Finished snapshot validation [req=" + ctx.req + ']');
             }
 
             if (clusterOpFut != null)
@@ -620,12 +623,7 @@ public class SnapshotCheckProcess {
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = new GridFutureAdapter<>();
 
-        clusterOpFut.listen(fut -> {
-            clusterOpFuts.remove(reqId);
-
-            if (log.isInfoEnabled())
-                log.info("Finished snapshot validation [req=" + req + ']');
-        });
+        clusterOpFut.listen(fut -> clusterOpFuts.remove(reqId));
 
         clusterOpFuts.put(reqId, clusterOpFut);
 
