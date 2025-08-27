@@ -222,6 +222,38 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testCoordinatorChange() throws Exception {
+        IgniteEx ign0 = startGrid(0, "2.18.0", false);
+        IgniteEx ign1 = startGrid(1, "2.18.0", false);
+        IgniteEx ign2 = startGrid(2, "2.18.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+
+        ign2.close();
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+
+        ign2 = startGrid(2, "2.19.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+
+        ign0.close();
+        ign1.close();
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 1, getTestTimeout()));
+
+        ign0 = startGrid(0, "2.19.0", false);
+        ign1 = startGrid(1, "2.19.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+
+        IgniteEx ign3 = startGrid(3, "2.20.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 4, getTestTimeout()));
+    }
+
+    /** */
     private void testConflictVersions(String acceptedVer, String rejVer, boolean withClient) {
         ThrowableSupplier<IgniteEx, Exception> sup = () -> {
             IgniteEx ign = startGrid(0, acceptedVer, false);
