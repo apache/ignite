@@ -3992,7 +3992,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return SchemaOperationException or null.
      */
     @Nullable private SchemaOperationException schemaError(SchemaOperationStatusMessage msg) {
-        return msg.errorMessage() != null ? new SchemaOperationException(msg.errorCode(), msg.errorMessage()) : null;
+        if (msg.errorMessage() == null)
+            return null;
+
+        SchemaOperationException e = new SchemaOperationException(msg.errorMessage());
+
+        if (msg.errorCode() != SchemaOperationException.CODE_GENERIC)
+            e.code(msg.errorCode());
+
+        return e;
     }
 
     /**

@@ -64,7 +64,7 @@ public class SchemaOperationException extends IgniteCheckedException {
     public static final int CODE_SCHEMA_NOT_FOUND = 11;
 
     /** Error code. */
-    private final int code;
+    private int code;
 
     /**
      * Constructor for specific error type.
@@ -104,6 +104,13 @@ public class SchemaOperationException extends IgniteCheckedException {
      */
     public int code() {
         return code;
+    }
+
+    /**
+     * @param code Error code.
+     */
+    public void code(int code) {
+        this.code = code;
     }
 
     /** {@inheritDoc} */
