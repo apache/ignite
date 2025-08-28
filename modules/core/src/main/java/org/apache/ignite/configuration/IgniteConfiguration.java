@@ -71,6 +71,7 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
+import org.apache.ignite.spi.discovery.datacenter.DataCenterResolver;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
@@ -198,6 +199,13 @@ public class IgniteConfiguration {
 
     /** Default segmentation policy. */
     public static final SegmentationPolicy DFLT_SEG_PLC = USE_FAILURE_HANDLER;
+
+    /** */
+    public static final DataCenterResolver DFLT_DATA_CENTER_RESOLVER = new DataCenterResolver() {
+        @Override public String resolveDataCenterId() {
+            return "";
+        }
+    };
 
     /** Default value for wait for segment on startup flag. */
     public static final boolean DFLT_WAIT_FOR_SEG_ON_START = true;
@@ -369,6 +377,9 @@ public class IgniteConfiguration {
 
     /** Discovery SPI. */
     private DiscoverySpi discoSpi;
+
+    /** */
+    private DataCenterResolver dcResolver = DFLT_DATA_CENTER_RESOLVER;
 
     /** Segmentation policy. */
     private SegmentationPolicy segPlc = DFLT_SEG_PLC;
@@ -664,6 +675,7 @@ public class IgniteConfiguration {
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
+        dcResolver = cfg.getDataCenterResolver();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execCfgs = cfg.getExecutorConfiguration();
@@ -1949,6 +1961,26 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setSegmentationPolicy(SegmentationPolicy segPlc) {
         this.segPlc = segPlc;
+
+        return this;
+    }
+
+    /**
+     * Returns data center resolver configured for this node or {@code null} if none is configured.
+     *
+     * @return {@link DataCenterResolver} instance.
+     */
+    public @Nullable DataCenterResolver getDataCenterResolver() {
+        return dcResolver;
+    }
+
+    /**
+     * @param dcResolver Instance of {@link DataCenterResolver} to obtain local node's Data Center ID.
+     *
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDataCenterResolver(DataCenterResolver dcResolver) {
+        this.dcResolver = dcResolver;
 
         return this;
     }
