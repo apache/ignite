@@ -188,7 +188,6 @@ import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeployment
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.GridMessageCollection;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -330,7 +329,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         BinaryUtils.registerMessages(factory::register);
 
         // [120..123] - DR
-        factory.register((short)124, GridMessageCollection::new);
         factory.register((short)125, GridNearAtomicSingleUpdateRequest::new);
         factory.register((short)126, GridNearAtomicSingleUpdateInvokeRequest::new);
         factory.register((short)127, GridNearAtomicSingleUpdateFilterRequest::new);
