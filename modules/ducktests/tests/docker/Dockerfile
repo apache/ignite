@@ -69,6 +69,22 @@ RUN cd /opt && curl -O $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELE
  && tar xvf $ZOOKEEPER_RELEASE_ARTIFACT && rm $ZOOKEEPER_RELEASE_ARTIFACT
 RUN mv /opt/$ZOOKEEPER_RELEASE_NAME /opt/$ZOOKEEPER_NAME
 
+# Install PostgreSQL 15.4 binaries
+ARG POSTGRES_VERSION="15.4"
+ARG POSTGRES_BASE_URL="https://ftp.postgresql.org/pub/source/v${POSTGRES_VERSION}"
+ARG POSTGRES_TAR="postgresql-${POSTGRES_VERSION}.tar.gz"
+
+RUN cd /opt \
+    && curl -O ${POSTGRES_BASE_URL}/${POSTGRES_TAR} \
+    && tar -xzf ${POSTGRES_TAR} \
+    && rm ${POSTGRES_TAR} \
+    && cd postgresql-${POSTGRES_VERSION} \
+    && ./configure --prefix=/opt/postgres-${POSTGRES_VERSION} \
+    && make -j$(nproc) \
+    && make install \
+    && cd /opt \
+    && rm -rf postgresql-${POSTGRES_VERSION}
+
 # The version of Kibosh to use for testing.
 # If you update this, also update vagrant/base.sh
 ARG KIBOSH_VERSION="8841dd392e6fbf02986e2fb1f1ebf04df344b65a"
