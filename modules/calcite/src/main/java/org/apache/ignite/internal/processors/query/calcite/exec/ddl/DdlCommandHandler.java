@@ -402,13 +402,11 @@ public class DdlCommandHandler {
     }
 
     /** */
-    private String typeName(IgniteTypeFactory tf, RelDataType type) {
+    private static String typeName(IgniteTypeFactory tf, RelDataType type) {
         Type javaType = tf.getJavaClass(type);
 
         String typeName = javaType instanceof Class ? ((Class<?>)javaType).getName() : javaType.getTypeName();
 
-        // TODO: check MAP
-        // TODO: check ARRAY of ARRAY
         if (SqlTypeUtil.isArray(type)){
             assert type instanceof ArraySqlType;
 

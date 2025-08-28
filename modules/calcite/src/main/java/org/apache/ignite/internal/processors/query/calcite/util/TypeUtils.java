@@ -203,30 +203,29 @@ public class TypeUtils {
     /** */
     public static RelDataType sqlType(
         IgniteTypeFactory typeFactory,
-        List<Class<?>> cls,
+        List<Class<?>> typeDefs,
         int precision,
         int scale,
         boolean nullability
     ) {
-        assert !F.isEmpty(cls) : "Type classes must not be empty";
+        assert !F.isEmpty(typeDefs) : "Type classes must not be empty";
 
-        RelDataType javaType = typeFactory.createJavaType(cls.get(0));
+        RelDataType javaType = typeFactory.createJavaType(typeDefs.get(0));
 
-        // Only array is currently supported.
-        // TODO: implement for map
+        // Only array component type is currently supported.
         if (SqlTypeUtil.isArray(javaType)) {
-            assert cls.size() > 1 : "Type '" + javaType + "' is a collection or a map but has no element type.";
+            assert typeDefs.size() > 1 : "Type '" + javaType + "' is a collection or a map but has no element types.";
             assert !javaType.getSqlTypeName().allowsPrecScale(true, true);
 
             RelDataType elementType = null;
 
-            for (int et = cls.size() - 1; et > 0; --et) {
-                RelDataType curElemType = typeFactory.createJavaType(cls.get(et));
+            for (int et = typeDefs.size() - 1; et > 0; --et) {
+                RelDataType curElemType = typeFactory.createJavaType(typeDefs.get(et));
 
                 boolean isArr = SqlTypeUtil.isArray(curElemType);
 
-                assert isArr || et == cls.size() - 1 : "Last element type must not be collection or map.";
-                assert !isArr || et != cls.size() - 1 : "Only last element type can be not a collection or not a map.";
+                assert isArr || et == typeDefs.size() - 1 : "Last element type must not be collection or map.";
+                assert !isArr || et != typeDefs.size() - 1 : "Only last element type can be not a collection or not a map.";
 
                 if (!isArr)
                     elementType = sqlType0(typeFactory, curElemType, RelDataType.PRECISION_NOT_SPECIFIED, RelDataType.SCALE_NOT_SPECIFIED, true);
@@ -250,7 +249,7 @@ public class TypeUtils {
                 return typeFactory.createTypeWithNullability(javaType, nullability);
             }
         }
-        else if (cls.size() > 1)
+        else if (typeDefs.size() > 1)
             throw new IllegalArgumentException("Type '" + javaType + "' is not a collection or a map but has an element type.");
 
         return sqlType0(typeFactory, javaType, precision, scale, nullability);

@@ -699,13 +699,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         private final GridQueryProperty desc;
 
         /** */
-        private final Object dfltVal;
-
-        /** */
         private final int fieldIdx;
-
-        /** */
-        private final List<Class<?>> storageType;
 
         /** */
         private volatile RelDataType logicalType;
@@ -716,9 +710,6 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
             this.desc = desc;
             this.fieldIdx = fieldIdx;
-
-            dfltVal = desc.defaultValue();
-            storageType = desc.type();
         }
 
         /** {@inheritDoc} */
@@ -733,12 +724,12 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public boolean hasDefaultValue() {
-            return dfltVal != null;
+            return desc.defaultValue() != null;
         }
 
         /** {@inheritDoc} */
         @Override public Object defaultValue() {
-            return dfltVal;
+            return desc.defaultValue();
         }
 
         /** {@inheritDoc} */
@@ -754,7 +745,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
             if (logicalType == null) {
-                logicalType = TypeUtils.sqlType(f, storageType,
+                logicalType = TypeUtils.sqlType(f, desc.type(),
                     desc.precision() == -1 ? PRECISION_NOT_SPECIFIED : desc.precision(),
                     desc.scale() == -1 ? SCALE_NOT_SPECIFIED : desc.scale(),
                     !desc.notNull()
@@ -766,7 +757,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public Class<?> storageType() {
-            return storageType.get(0);
+            return desc.type().get(0);
         }
 
         /** {@inheritDoc} */

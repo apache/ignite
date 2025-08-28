@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,7 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.VALUE_SCALE_OUT_OF_RANGE;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.isConvertibleTypes;
 
 /**
  * Descriptor of type.
@@ -637,7 +639,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     isKey ? NULL_KEY : NULL_VALUE);
             }
 
-            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.type().get(0))) {
+            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.type())) {
                 throw new IgniteSQLException("Type for a column '" + prop.name() + "' is not compatible with table definition." +
                     " Expected '" + prop.type().get(0).getSimpleName() + "', actual type '" + typeName(propVal) + "'");
             }
@@ -704,8 +706,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 if (propVal == null)
                     continue;
 
-                // TODO: check component type?
-                if (!isCompatibleWithPropertyType(propVal, propType.get(0))) {
+                if (!isCompatibleWithPropertyType(propVal, propType)) {
                     throw new IgniteSQLException("Type for a column '" + idxField + "' is not compatible with index definition." +
                         " Expected '" + prop.type().get(0).getSimpleName() + "', actual type '" + typeName(propVal) + "'");
                 }
@@ -717,28 +718,63 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * Checks if the specified object is compatible with the type of the column through which this object will be accessed.
      *
      * @param val Object to check.
-     * @param expColType Type of the column based on Query Property info.
+     * @param expColType Type of the column based on Query Property info. Can be a collection with component type.
      */
-    private boolean isCompatibleWithPropertyType(Object val, Class<?> expColType) {
-        if (!(val instanceof BinaryObject) || BinaryUtils.isBinaryArray(val)) {
-            if (U.box(expColType).isAssignableFrom(U.box(val.getClass())))
-                return true;
+    private boolean isCompatibleWithPropertyType(Object val, List<Class<?>> expColType) {
+        if (F.isEmpty(expColType))
+            return false;
 
-            if (QueryUtils.isConvertibleTypes(val, expColType))
-                return true;
+        Class<?> expType = expColType.get(0);
 
-            return expColType.isArray()
-                && BinaryUtils.isObjectArray(val.getClass())
-                && Arrays.stream(BinaryUtils.rawArrayFromBinary(val))
-                    .allMatch(x -> x == null || U.box(expColType.getComponentType()).isAssignableFrom(U.box(x.getClass())));
-        }
-        else if (coCtx.kernalContext().cacheObjects().typeId(expColType.getName()) != ((BinaryObject)val).type().typeId()) {
-            final Class<?> cls = U.classForName(((BinaryObject)val).type().typeName(), null, true);
+        if (!checkType(val, expType))
+            return false;
 
-            return (cls == null && expColType == Object.class) || (cls != null && expColType.isAssignableFrom(cls));
+        boolean collectionType = Collection.class.isAssignableFrom(expType);
+        boolean mapType = Map.class.isAssignableFrom(expType);
+
+        if (collectionType && val != null && !(val instanceof Collection))
+            return false;
+        if (mapType && val != null && !(val instanceof Map))
+            return false;
+
+        // Map is not currently supported.
+        if (collectionType) {
+            Collection<Object> coll = (Collection<Object>)val;
+            expColType = expColType.subList(1, expColType.size());
+
+            for (Object val0 : coll) {
+                if (val0 == null)
+                    continue;
+
+                if (!isCompatibleWithPropertyType(val0, expColType))
+                    return false;
+            }
         }
 
         return true;
+    }
+
+    /** */
+    private boolean checkType(Object val, Class<?> expType) {
+        if (!(val instanceof BinaryObject) || BinaryUtils.isBinaryArray(val)) {
+            if (U.box(expType).isAssignableFrom(U.box(val.getClass())))
+                return true;
+
+            if (QueryUtils.isConvertibleTypes(val, expType))
+                return true;
+
+            return expType.isArray()
+                && BinaryUtils.isObjectArray(val.getClass())
+                && Arrays.stream(BinaryUtils.rawArrayFromBinary(val))
+                .allMatch(x -> x == null || U.box(expType.getComponentType()).isAssignableFrom(U.box(x.getClass())));
+        }
+        else if (coCtx.kernalContext().cacheObjects().typeId(expType.getName()) != ((BinaryObject)val).type().typeId()) {
+            Class<?> cls = U.classForName(((BinaryObject)val).type().typeName(), null, true);
+
+            return (cls == null && expType == Object.class) || (cls != null && expType.isAssignableFrom(cls));
+        }
+
+            return true;
     }
 
     /** {@inheritDoc} */
