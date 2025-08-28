@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jackson;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
@@ -34,7 +35,6 @@ import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 
 /**
  * JSON deserializer into the Ignite binary object.
@@ -69,11 +69,11 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
         ObjectCodec mapper = parser.getCodec();
 
         Map<String, BinaryFieldMetadata> binFields = binaryFields(type);
-        Map<String, IgnitePair<Class<?>>> qryFields = queryFields(cacheName, type);
+        Map<String, List<Class<?>>> qryFields = queryFields(cacheName, type);
 
         BinaryObjectBuilder builder = ctx.cacheObjects().builder(type);
         Iterator<Map.Entry<String, JsonNode>> itr = tree.fields();
-        IgnitePair<Class<?>> dfltType = new IgnitePair<>(Object.class, null);
+        List<Class<?>> dfltType = Collections.singletonList(Object.class);
 
         while (itr.hasNext()) {
             Map.Entry<String, JsonNode> entry = itr.next();
@@ -87,7 +87,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
 
             // TODO: implement
             if (fieldCls == null)
-                fieldCls = qryFields.getOrDefault(QueryUtils.normalizeObjectName(field, true), dfltType).getKey();
+                fieldCls = qryFields.getOrDefault(QueryUtils.normalizeObjectName(field, true), dfltType).get(0);
 
             builder.setField(field, mapper.treeToValue(node, fieldCls));
         }
@@ -100,7 +100,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
      * @param type Type name.
      * @return Mapping from field name to its type.
      */
-    private Map<String, IgnitePair<Class<?>>> queryFields(String cacheName, String type) {
+    private Map<String, List<Class<?>>> queryFields(String cacheName, String type) {
         if (ctx.query().moduleEnabled()) {
             GridQueryTypeDescriptor desc = ctx.query().typeDescriptor(cacheName, type);
 

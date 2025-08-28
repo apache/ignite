@@ -73,7 +73,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** Value field names and types with preserved order. Field type can be a collection type with element type. */
     @GridToStringInclude
-    private final Map<String, IgnitePair<Class<?>>> fields = new LinkedHashMap<>();
+    private final Map<String, List<Class<?>>> fields = new LinkedHashMap<>();
 
     /** */
     @GridToStringExclude
@@ -209,7 +209,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, IgnitePair<Class<?>>> fields() {
+    @Override public Map<String, List<Class<?>>> fields() {
         return fields;
     }
 
@@ -458,8 +458,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             propsWithDefaultValue.add(prop);
         }
 
+        // TODO: check for element type
         if (isField)
-            fields.put(name, new IgnitePair<>(prop.type(), prop.componentType()));
+            fields.put(name, prop.type());
     }
 
     /**
@@ -636,9 +637,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     isKey ? NULL_KEY : NULL_VALUE);
             }
 
-            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.type())) {
+            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.type().get(0))) {
                 throw new IgniteSQLException("Type for a column '" + prop.name() + "' is not compatible with table definition." +
-                    " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
+                    " Expected '" + prop.type().get(0).getSimpleName() + "', actual type '" + typeName(propVal) + "'");
             }
 
             if (propVal == null || prop.precision() == -1)
@@ -682,31 +683,31 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 GridQueryProperty prop = props.get(idxField);
 
                 Object propVal;
-                IgnitePair<Class<?>> propType;
+                List<Class<?>> propType;
 
                 if (Objects.equals(idxField, keyFieldAlias()) || Objects.equals(idxField, KEY_FIELD_NAME)) {
                     propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
 
-                    propType = propVal == null ? null : new IgnitePair<>(propVal.getClass(), null);
+                    propType = propVal == null ? null : Collections.singletonList(propVal.getClass());
                 }
                 else if (Objects.equals(idxField, valueFieldAlias()) || Objects.equals(idxField, VAL_FIELD_NAME)) {
                     propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
 
-                    propType = propVal == null ? null : new IgnitePair<>(propVal.getClass(), null);
+                    propType = propVal == null ? null : Collections.singletonList(propVal.getClass());
                 }
                 else {
                     propVal = prop.value(key, val);
 
-                    propType = new IgnitePair<>(prop.type(), prop.componentType());
+                    propType = prop.type();
                 }
 
                 if (propVal == null)
                     continue;
 
                 // TODO: check component type?
-                if (!isCompatibleWithPropertyType(propVal, propType.getKey())) {
+                if (!isCompatibleWithPropertyType(propVal, propType.get(0))) {
                     throw new IgniteSQLException("Type for a column '" + idxField + "' is not compatible with index definition." +
-                        " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
+                        " Expected '" + prop.type().get(0).getSimpleName() + "', actual type '" + typeName(propVal) + "'");
                 }
             }
         }

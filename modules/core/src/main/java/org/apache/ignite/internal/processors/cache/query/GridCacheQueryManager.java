@@ -103,7 +103,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -2102,7 +2101,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     Collection<String> names = U.newHashSet(types.size());
                     Map<String, String> keyClasses = U.newHashMap(types.size());
                     Map<String, String> valClasses = U.newHashMap(types.size());
-                    Map<String, Map<String, IgnitePair<String>>> fields = U.newHashMap(types.size());
+                    Map<String, Map<String, String>> fields = U.newHashMap(types.size());
                     Map<String, Collection<GridCacheSqlIndexMetadata>> indexes = U.newHashMap(types.size());
 
                     for (GridQueryTypeDescriptor type : types) {
@@ -2117,21 +2116,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         int size = type.fields().isEmpty() ? NO_FIELDS_COLUMNS_COUNT : type.fields().size();
 
-                        Map<String, IgnitePair<String>> fieldsMap = U.newLinkedHashMap(size);
+                        Map<String, String> fieldsMap = U.newLinkedHashMap(size);
 
                         // _KEY and _VAL are not included in GridIndexingTypeDescriptor.valueFields
                         if (type.fields().isEmpty()) {
-                            fieldsMap.put("_KEY", new IgnitePair<>(type.keyClass().getName(), null));
-                            fieldsMap.put("_VAL", new IgnitePair<>(type.valueClass().getName(), null));
+                            fieldsMap.put("_KEY", type.keyClass().getName());
+                            fieldsMap.put("_VAL", type.valueClass().getName());
                         }
                         else {
-                            for (Map.Entry<String, IgnitePair<Class<?>>> e : type.fields().entrySet()) {
-                                fieldsMap.compute(e.getKey().toUpperCase(), (fldName, fldType) -> {
-                                    return e.getValue().getValue() == null
-                                        ? new IgnitePair<>(e.getValue().getKey().getName(), null)
-                                        : new IgnitePair<>(e.getValue().getKey().getName(), e.getValue().getValue().getName());
-                                });
-                            }
+                            for (Map.Entry<String, List<Class<?>>> e : type.fields().entrySet())
+                                fieldsMap.put(e.getKey().toUpperCase(), e.getValue().get(0).getName());
                         }
 
                         fields.put(type.name(), fieldsMap);
@@ -2191,7 +2185,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private Map<String, String> valClasses;
 
         /** */
-        private Map<String, Map<String, IgnitePair<String>>> fields;
+        private Map<String, Map<String, String>> fields;
 
         /** */
         private Map<String, Collection<GridCacheSqlIndexMetadata>> indexes;
@@ -2208,11 +2202,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param types Types.
          * @param keyClasses Key classes map.
          * @param valClasses Value classes map.
-         * @param fields Fields maps. Field type can be a collection type with element type.
+         * @param fields Fields maps.
          * @param indexes Indexes.
          */
         CacheSqlMetadata(@Nullable String cacheName, Collection<String> types, Map<String, String> keyClasses,
-            Map<String, String> valClasses, Map<String, Map<String, IgnitePair<String>>> fields,
+            Map<String, String> valClasses, Map<String, Map<String, String>> fields,
             Map<String, Collection<GridCacheSqlIndexMetadata>> indexes) {
             assert types != null;
             assert keyClasses != null;
@@ -2273,7 +2267,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, IgnitePair<String>> fields(String type) {
+        @Override public Map<String, String> fields(String type) {
             return fields.get(type);
         }
 
@@ -2293,7 +2287,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Map<String, IgnitePair<String>>> fields() {
+        @Override public Map<String, Map<String, String>> fields() {
             return fields;
         }
 

@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.io.Externalizable;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -72,12 +70,12 @@ public interface GridCacheSqlMetadata extends Externalizable {
     @Nullable public String valueClass(String type);
 
     /**
-     * Gets fields and their class names for provided type. Field type can be a collection type with element type.
+     * Gets fields and their class names for provided type.
      *
      * @param type Type name.
      * @return Fields map or {@code null} if type name is unknown.
      */
-    @Nullable public Map<String, IgnitePair<String>> fields(String type);
+    @Nullable public Map<String, String> fields(String type);
 
     /**
      * Gets not null fields.
@@ -98,11 +96,9 @@ public interface GridCacheSqlMetadata extends Externalizable {
     public Map<String, String> valClasses();
 
     /**
-     * Provides field types. Field type can be a collection type with element type.
-     *
-     * @return Field types.
+     * @return Fields.
      */
-    public Map<String, Map<String, IgnitePair<String>>> fields();
+    public Map<String, Map<String, String>> fields();
 
     /**
      * @return Indexes.

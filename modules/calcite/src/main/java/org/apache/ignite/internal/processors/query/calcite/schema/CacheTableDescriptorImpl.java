@@ -629,7 +629,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             this.fieldIdx = fieldIdx;
             this.desc = desc;
 
-            storageType = desc.type();
+            storageType = desc.type().get(0);
         }
 
         /** {@inheritDoc} */
@@ -705,13 +705,15 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         private final int fieldIdx;
 
         /** */
-        private final Class<?> storageType;
+        private final List<Class<?>> storageType;
 
         /** */
         private volatile RelDataType logicalType;
 
         /** */
         private FieldDescriptor(GridQueryProperty desc, int fieldIdx) {
+            assert !F.isEmpty(desc.type());
+
             this.desc = desc;
             this.fieldIdx = fieldIdx;
 
@@ -764,7 +766,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public Class<?> storageType() {
-            return storageType;
+            return storageType.get(0);
         }
 
         /** {@inheritDoc} */

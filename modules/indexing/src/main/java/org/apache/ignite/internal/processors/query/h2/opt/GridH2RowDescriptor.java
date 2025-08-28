@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
@@ -65,14 +65,14 @@ public class GridH2RowDescriptor implements GridQueryRowDescriptor {
 
     /** */
     private void updateFieldTypes() {
-        Collection<IgnitePair<Class<?>>> types = delegate.type().fields().values();
+        Collection<List<Class<?>>> types = delegate.type().fields().values();
 
         fieldTypes = new int[types.size()];
 
         int fieldIdx = 0;
 
-        for (IgnitePair<Class<?>> t : types)
-            fieldTypes[fieldIdx++] = DataType.getTypeFromClass(t.getKey());
+        for (List<Class<?>> t : types)
+            fieldTypes[fieldIdx++] = DataType.getTypeFromClass(t.get(0));
     }
 
     /** {@inheritDoc} */

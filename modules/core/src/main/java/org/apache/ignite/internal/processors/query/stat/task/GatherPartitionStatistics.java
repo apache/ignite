@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsReposito
 import org.apache.ignite.internal.processors.query.stat.LocalStatisticsGatheringContext;
 import org.apache.ignite.internal.processors.query.stat.ObjectPartitionStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -250,9 +249,9 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                 String colName = col.getValue();
 
                 long colCfgVer = colsToCollect.get(colName).version();
-                IgnitePair<Class<?>> colCls = tbl.fields().get(colName);
+                List<Class<?>> colCls = tbl.fields().get(colName);
 
-                collectors.add(new ColumnStatisticsCollector(colId, colName, colCls.getKey(), colCfgVer));
+                collectors.add(new ColumnStatisticsCollector(colId, colName, colCls.get(0), colCfgVer));
             }
 
             try {

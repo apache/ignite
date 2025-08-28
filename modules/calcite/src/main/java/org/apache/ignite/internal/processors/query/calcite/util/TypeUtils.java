@@ -30,6 +30,7 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -196,15 +197,74 @@ public class TypeUtils {
         int scale,
         boolean nullability
     ) {
-        RelDataType javaType = typeFactory.createJavaType(cls);
+       return sqlType(typeFactory, Collections.singletonList(cls), precision, scale, nullability);
+    }
 
-        if (javaType.getSqlTypeName().allowsPrecScale(true, true) &&
+    /** */
+    public static RelDataType sqlType(
+        IgniteTypeFactory typeFactory,
+        List<Class<?>> cls,
+        int precision,
+        int scale,
+        boolean nullability
+    ) {
+        assert !F.isEmpty(cls) : "Type classes must not be empty";
+
+        RelDataType javaType = typeFactory.createJavaType(cls.get(0));
+
+        // Only array is currently supported.
+        // TODO: implement for map
+        if (SqlTypeUtil.isArray(javaType)) {
+            assert cls.size() > 1 : "Type '" + javaType + "' is a collection or a map but has no element type.";
+            assert !javaType.getSqlTypeName().allowsPrecScale(true, true);
+
+            RelDataType elementType = null;
+
+            for (int et = cls.size() - 1; et > 0; --et) {
+                RelDataType curElemType = typeFactory.createJavaType(cls.get(et));
+
+                boolean isArr = SqlTypeUtil.isArray(curElemType);
+
+                assert isArr || et == cls.size() - 1 : "Last element type must not be collection or map.";
+                assert !isArr || et != cls.size() - 1 : "Only last element type can be not a collection or not a map.";
+
+                if (!isArr)
+                    elementType = sqlType0(typeFactory, curElemType, RelDataType.PRECISION_NOT_SPECIFIED, RelDataType.SCALE_NOT_SPECIFIED, true);
+                else if (SqlTypeUtil.isArray(curElemType)) {
+                    assert elementType != null;
+
+                    elementType = typeFactory.createArrayType(elementType, -1);
+
+                    elementType = typeFactory.createTypeWithNullability(elementType, true);
+                }
+                else {
+                    elementType = null;
+
+                    break;
+                }
+            }
+
+            if (elementType != null) {
+                javaType = typeFactory.createArrayType(elementType, -1);
+
+                return typeFactory.createTypeWithNullability(javaType, nullability);
+            }
+        }
+        else if (cls.size() > 1)
+            throw new IllegalArgumentException("Type '" + javaType + "' is not a collection or a map but has an element type.");
+
+        return sqlType0(typeFactory, javaType, precision, scale, nullability);
+    }
+
+    /** */
+    private static RelDataType sqlType0(IgniteTypeFactory tf, RelDataType type, int precision, int scale, boolean nulls) {
+        if (type.getSqlTypeName().allowsPrecScale(true, true) &&
             (precision != RelDataType.PRECISION_NOT_SPECIFIED || scale != RelDataType.SCALE_NOT_SPECIFIED)) {
-            return typeFactory.createTypeWithNullability(
-                typeFactory.createSqlType(javaType.getSqlTypeName(), precision, scale), nullability);
+            return tf.createTypeWithNullability(
+                tf.createSqlType(type.getSqlTypeName(), precision, scale), nulls);
         }
 
-        return typeFactory.createTypeWithNullability(sqlType(typeFactory, javaType), nullability);
+        return tf.createTypeWithNullability(sqlType(tf, type), nulls);
     }
 
     /** */

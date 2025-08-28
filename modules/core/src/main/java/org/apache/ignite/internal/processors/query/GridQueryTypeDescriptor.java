@@ -62,7 +62,7 @@ public interface GridQueryTypeDescriptor {
      *
      * @return Fields that can be indexed, participate in queries and can be queried using method.
      */
-    public Map<String, IgnitePair<Class<?>>> fields();
+    public Map<String, List<Class<?>>> fields();
 
     /**
      * Gets field value for given key and value.

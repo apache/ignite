@@ -55,7 +55,7 @@ public abstract class AbstractIndexDescriptorFactory implements IndexDescriptorF
             prop = typeDesc.property(typeDesc.keyFieldName());
 
         Class<?> fieldType = Objects.equals(field, QueryUtils.KEY_FIELD_NAME) ? typeDesc.keyClass() :
-            Objects.equals(field, QueryUtils.VAL_FIELD_NAME) ? typeDesc.valueClass() : prop.type();
+            Objects.equals(field, QueryUtils.VAL_FIELD_NAME) ? typeDesc.valueClass() : prop.type().get(0);
 
         int fieldPrecision = prop != null ? prop.precision() : -1;
 

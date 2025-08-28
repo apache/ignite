@@ -1259,12 +1259,12 @@ public class SchemaManager {
                 if (F.isEmpty(d.fields())) {
                     if (matches(KEY_FIELD_NAME, colNamePtrn)) {
                         infos.add(new ColumnInformation(cnt.getAndIncrement(), d.schemaName(), d.tableName(),
-                            KEY_FIELD_NAME, d.keyClass(), null, false, null, -1, -1, false));
+                            KEY_FIELD_NAME, Collections.singletonList(d.keyClass()), false, null, -1, -1, false));
                     }
 
                     if (matches(VAL_FIELD_NAME, colNamePtrn)) {
                         infos.add(new ColumnInformation(cnt.getAndIncrement(), d.schemaName(), d.tableName(),
-                            VAL_FIELD_NAME, d.valueClass(), null, false, null, -1, -1, false));
+                            VAL_FIELD_NAME, Collections.singletonList(d.valueClass()), false, null, -1, -1, false));
                     }
                 }
                 else {
@@ -1279,7 +1279,6 @@ public class SchemaManager {
                                 d.tableName(),
                                 field,
                                 prop.type(),
-                                prop.componentType(),
                                 !prop.notNull(),
                                 prop.defaultValue(),
                                 prop.precision(),
@@ -1305,8 +1304,7 @@ public class SchemaManager {
                                 QueryUtils.SCHEMA_SYS,
                                 MetricUtils.toSqlName(view.name()),
                                 MetricUtils.toSqlName(c.getKey()),
-                                c.getValue(),
-                                null,
+                                Collections.singletonList(c.getValue()),
                                 true,
                                 null,
                                 -1,

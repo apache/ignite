@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,7 +55,7 @@ public class GridCacheQuerySqlMetadataV2 extends GridCacheQueryManager.CacheSqlM
      * @param notNullFields Not null fields.
      */
     GridCacheQuerySqlMetadataV2(@Nullable String cacheName, Collection<String> types, Map<String, String> keyClasses,
-        Map<String, String> valClasses, Map<String, Map<String, IgnitePair<String>>> fields,
+        Map<String, String> valClasses, Map<String, Map<String, String>> fields,
         Map<String, Collection<GridCacheSqlIndexMetadata>> indexes, Map<String, Set<String>> notNullFields) {
         super(cacheName, types, keyClasses, valClasses, fields, indexes);
 

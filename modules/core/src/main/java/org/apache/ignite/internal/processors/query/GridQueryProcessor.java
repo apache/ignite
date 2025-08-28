@@ -3632,15 +3632,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         List<GridQueryProperty> props = new ArrayList<>(cols.size());
 
         for (QueryField col : cols) {
-            // TODO: implement test for dynamic column adding.
-            IgnitePair<Class<?>> fldType = QueryUtils.parseFieldType(col.typeName());
+            List<Class<?>> fldType = QueryUtils.parseFieldType(col.typeName());
 
             props.add(new QueryBinaryProperty(
                 ctx,
                 col.name(),
                 null,
-                fldType.get1(),
-                fldType.get2(),
+                fldType,
                 false,
                 null,
                 !col.isNullable(),

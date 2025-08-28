@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -668,14 +667,14 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                         !matches(table.tableName(), tablePattern))
                         continue;
 
-                    for (Map.Entry<String, IgnitePair<Class<?>>> field : table.fields().entrySet()) {
+                    for (Map.Entry<String, List<Class<?>>> field : table.fields().entrySet()) {
                         if (!matches(field.getKey(), req.columnPattern()))
                             continue;
 
                         GridQueryProperty prop = table.property(field.getKey());
 
                         OdbcColumnMeta columnMeta = new OdbcColumnMeta(table.schemaName(), table.tableName(),
-                            field.getKey(), field.getValue().getKey(), prop.precision(), prop.scale(),
+                            field.getKey(), field.getValue().get(0), prop.precision(), prop.scale(),
                             prop.notNull() ? columnNoNulls : columnNullable);
 
                         if (!meta.contains(columnMeta))

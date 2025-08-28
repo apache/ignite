@@ -260,6 +260,7 @@ public class SystemViewTableDescriptorImpl<ViewRow> extends NullInitializerExpre
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
+            // TODO: check
             if (logicalType == null)
                 logicalType = TypeUtils.sqlType(f, type, PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED, true);
 

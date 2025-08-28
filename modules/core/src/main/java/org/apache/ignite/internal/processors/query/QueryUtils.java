@@ -40,6 +40,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -68,7 +69,6 @@ import org.apache.ignite.internal.processors.query.property.QueryMethodsAccessor
 import org.apache.ignite.internal.processors.query.property.QueryPropertyAccessor;
 import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -674,13 +674,12 @@ public class QueryUtils {
 
             Object dfltVal = dlftVals != null ? dlftVals.get(fieldName) : null;
 
-            IgnitePair<Class<?>> fldType = parseFieldType(entry.getValue());
+            List<Class<?>> fldType = parseFieldType(entry.getValue());
 
             QueryBinaryProperty prop = buildBinaryProperty(
                 ctx,
                 fieldName,
-                fldType.get1(),
-                fldType.get2(),
+                fldType,
                 d.aliases(), isKeyField, notNull, dfltVal,
                 precision == null ? -1 : precision.getOrDefault(fieldName, -1),
                 scale == null ? -1 : scale.getOrDefault(fieldName, -1)
@@ -708,22 +707,35 @@ public class QueryUtils {
     }
 
     /** */
-    public static IgnitePair<Class<?>> parseFieldType(String typeStr) {
-        int idx = typeStr.indexOf(':');
+    public static List<Class<?>> parseFieldType(String typeStr) {
+        int idx;
+        List<String> res = null;
 
-        if (idx < 0)
-            return new IgnitePair<>(U.classForName(typeStr, Object.class, true), null);
+        do {
+            idx = typeStr.indexOf(':');
 
-        String componentTypeName = typeStr.substring(idx + 1, typeStr.length());
+            if (idx < 0) {
+                if (res == null)
+                    res = Collections.singletonList(typeStr);
+                else
+                    res.add(typeStr);
+            }
+            else {
+                String clsName = typeStr.substring(0, idx);
 
-        typeStr = typeStr.substring(0, idx);
+                if (res == null)
+                    res = new ArrayList<>();
 
-        assert typeStr.indexOf(':') < 0 : "Only one cmponent type is suported.";
+                res.add(clsName);
 
-        return new IgnitePair<>(
-            U.classForName(typeStr, Object.class, true),
-            U.classForName(componentTypeName, Object.class, true)
-        );
+                typeStr = typeStr.substring(idx + 1);
+            }
+
+        }
+        while (idx >= 0);
+
+        return res.stream().map(clsName -> U.classForName(clsName, Object.class, true))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -746,13 +758,12 @@ public class QueryUtils {
 
         Object dfltVal = dfltVals.get(name);
 
-        IgnitePair<Class<?>> fldType = parseFieldType(typeName);
+        List<Class<?>> fldType = parseFieldType(typeName);
 
         QueryBinaryProperty prop = buildBinaryProperty(
             ctx,
             name,
-            fldType.get1(),
-            fldType.get2(),
+            fldType,
             d.aliases(),
             isKey,
             true,
@@ -893,8 +904,7 @@ public class QueryUtils {
      * @param ctx Kernal context.
      * @param pathStr String representing path to the property. May contains dots '.' to identify
      *      nested fields.
-     * @param resType Result type.
-     * @param componentType Component type if {@code resType} is a collection.
+     * @param resType Result type. Can be a collection with element types.
      * @param aliases Aliases.
      * @param isKeyField Key ownership flag, {@code true} if this property is a field of the key object. Note that key
      * not a field of itself.
@@ -907,8 +917,7 @@ public class QueryUtils {
     public static QueryBinaryProperty buildBinaryProperty(
         GridKernalContext ctx,
         String pathStr,
-        Class<?> resType,
-        Class<?> componentType,
+        List<Class<?>> resType,
         Map<String, String> aliases,
         boolean isKeyField,
         boolean notNull,
@@ -931,7 +940,7 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, prop, res, resType, componentType, isKeyField, alias, notNull, dlftVal,
+            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
                 precision, scale);
         }
 
@@ -1046,12 +1055,14 @@ public class QueryUtils {
 
             tmp.parent(res);
 
-            cls = tmp.type();
+            // TODO: check
+            cls = tmp.type().get(0);
 
             res = tmp;
         }
 
-        if (!U.box(resType).isAssignableFrom(U.box(res.type())))
+        // TODO: check
+        if (!U.box(resType).isAssignableFrom(U.box(res.type().get(0))))
             return null;
 
         return res;
@@ -1860,17 +1871,8 @@ public class QueryUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public Class<?> type() {
-            return cls;
-        }
-
-        //TODO: check if ARRAY IDX
-        /** {@inheritDoc} */
-        @Override public @Nullable Class<?> componentType() {
-            assert !Collection.class.isAssignableFrom(cls);
-            assert !Map.class.isAssignableFrom(cls);
-
-            return null;
+        @Override public List<Class<?>> type() {
+            return Collections.singletonList(cls);
         }
 
         /** {@inheritDoc} */
