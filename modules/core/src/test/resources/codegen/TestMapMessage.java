@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.util.BitSet;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -28,256 +27,245 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 
 public class TestMapMessage implements Message {
     @Order(0)
-    private Map<boolean[], boolean[]> booleanArrayMap;
+    private Map<boolean[], Long> booleanArrayBoxedLongMap;
 
     @Order(1)
-    private Map<byte[], byte[]> byteArrayMap;
+    private Map<byte[], boolean[]> byteArrayBooleanArrayMap;
 
     @Order(2)
-    private Map<short[], short[]> shortArrayMap;
+    private Map<short[], byte[]> shortArrayByteArrayMap;
 
     @Order(3)
-    private Map<int[], int[]> intArrayMap;
+    private Map<int[], short[]> intArrayShortArrayMap;
 
     @Order(4)
-    private Map<long[], long[]> longArrayMap;
+    private Map<long[], int[]> longArrayIntArrayMap;
 
     @Order(5)
-    private Map<char[], char[]> charArrayMap;
+    private Map<char[], long[]> charArrayLongArrayMap;
 
     @Order(6)
-    private Map<float[], float[]> floatArrayMap;
+    private Map<float[], char[]> floatArrayCharArrayMap;
 
     @Order(7)
-    private Map<double[], double[]> doubleArrayMap;
+    private Map<double[], float[]> doubleArrayFloatArrayMap;
 
     @Order(8)
-    private Map<String, String> stringMap;
+    private Map<String, double[]> stringDoubleArrayMap;
 
     @Order(9)
-    private Map<UUID, UUID> uuidMap;
+    private Map<UUID, String> uuidStringMap;
 
     @Order(10)
-    private Map<BitSet, BitSet> bitSetMap;
+    private Map<BitSet, UUID> bitSetUuidMap;
 
     @Order(11)
-    private Map<IgniteUuid, IgniteUuid> igniteUuidMap;
+    private Map<IgniteUuid, BitSet> igniteUuidBitSetMap;
 
     @Order(12)
-    private Map<AffinityTopologyVersion, AffinityTopologyVersion> affTopVersionMap;
+    private Map<AffinityTopologyVersion, IgniteUuid> affTopVersionIgniteUuidMap;
 
     @Order(13)
-    private Map<Boolean, Boolean> boxedBooleanMap;
+    private Map<Boolean, AffinityTopologyVersion> boxedBooleanAffTopVersionMap;
 
     @Order(14)
-    private Map<Byte, Byte> boxedByteMap;
+    private Map<Byte, Boolean> boxedByteBoxedBooleanMap;
 
     @Order(15)
-    private Map<Short, Short> boxedShortMap;
+    private Map<Short, Byte> boxedShortBoxedByteMap;
 
     @Order(16)
-    private Map<Integer, Integer> boxedIntMap;
+    private Map<Integer, Short> boxedIntBoxedShortMap;
 
     @Order(17)
-    private Map<Long, Long> boxedLongMap;
+    private Map<Long, Integer> boxedLongBoxedIntMap;
 
     @Order(18)
-    private Map<Character, Character> boxedCharMap;
+    private Map<Character, Long> boxedCharBoxedLongMap;
 
     @Order(19)
-    private Map<Float, Float> boxedFloatMap;
+    private Map<Float, Character> boxedFloatBoxedCharMap;
 
     @Order(20)
-    private Map<Double, Double> boxedDoubleMap;
+    private Map<Double, Float> boxedDoubleBoxedFloatMap;
 
     @Order(21)
-    private Map<GridCacheVersion, GridCacheVersion> messageMap;
+    private Map<GridCacheVersion, Double> messageBoxedDoubleMap;
 
-    @Order(22)
-    private LinkedHashMap<Long, Long> linkedMap;
-
-    public Map<boolean[], boolean[]> booleanArrayMap() {
-        return booleanArrayMap;
+    public Map<boolean[], Long> booleanArrayBoxedLongMap() {
+        return booleanArrayBoxedLongMap;
     }
 
-    public void booleanArrayMap(Map<boolean[], boolean[]> booleanArrayMap) {
-        this.booleanArrayMap = booleanArrayMap;
+    public void booleanArrayBoxedLongMap(Map<boolean[], Long> booleanArrayBoxedLongMap) {
+        this.booleanArrayBoxedLongMap = booleanArrayBoxedLongMap;
     }
 
-    public Map<byte[], byte[]> byteArrayMap() {
-        return byteArrayMap;
+    public Map<byte[], boolean[]> byteArrayBooleanArrayMap() {
+        return byteArrayBooleanArrayMap;
     }
 
-    public void byteArrayMap(Map<byte[], byte[]> byteArrayMap) {
-        this.byteArrayMap = byteArrayMap;
+    public void byteArrayBooleanArrayMap(Map<byte[], boolean[]> byteArrayBooleanArrayMap) {
+        this.byteArrayBooleanArrayMap = byteArrayBooleanArrayMap;
     }
 
-    public Map<short[], short[]> shortArrayMap() {
-        return shortArrayMap;
+    public Map<short[], byte[]> shortArrayByteArrayMap() {
+        return shortArrayByteArrayMap;
     }
 
-    public void shortArrayMap(Map<short[], short[]> shortArrayMap) {
-        this.shortArrayMap = shortArrayMap;
+    public void shortArrayByteArrayMap(Map<short[], byte[]> shortArrayByteArrayMap) {
+        this.shortArrayByteArrayMap = shortArrayByteArrayMap;
     }
 
-    public Map<int[], int[]> intArrayMap() {
-        return intArrayMap;
+    public Map<int[], short[]> intArrayShortArrayMap() {
+        return intArrayShortArrayMap;
     }
 
-    public void intArrayMap(Map<int[], int[]> intArrayMap) {
-        this.intArrayMap = intArrayMap;
+    public void intArrayShortArrayMap(Map<int[], short[]> intArrayShortArrayMap) {
+        this.intArrayShortArrayMap = intArrayShortArrayMap;
     }
 
-    public Map<long[], long[]> longArrayMap() {
-        return longArrayMap;
+    public Map<long[], int[]> longArrayIntArrayMap() {
+        return longArrayIntArrayMap;
     }
 
-    public void longArrayMap(Map<long[], long[]> longArrayMap) {
-        this.longArrayMap = longArrayMap;
+    public void longArrayIntArrayMap(Map<long[], int[]> longArrayIntArrayMap) {
+        this.longArrayIntArrayMap = longArrayIntArrayMap;
     }
 
-    public Map<char[], char[]> charArrayMap() {
-        return charArrayMap;
+    public Map<char[], long[]> charArrayLongArrayMap() {
+        return charArrayLongArrayMap;
     }
 
-    public void charArrayMap(Map<char[], char[]> charArrayMap) {
-        this.charArrayMap = charArrayMap;
+    public void charArrayLongArrayMap(Map<char[], long[]> charArrayLongArrayMap) {
+        this.charArrayLongArrayMap = charArrayLongArrayMap;
     }
 
-    public Map<float[], float[]> floatArrayMap() {
-        return floatArrayMap;
+    public Map<float[], char[]> floatArrayCharArrayMap() {
+        return floatArrayCharArrayMap;
     }
 
-    public void floatArrayMap(Map<float[], float[]> floatArrayMap) {
-        this.floatArrayMap = floatArrayMap;
+    public void floatArrayCharArrayMap(Map<float[], char[]> floatArrayCharArrayMap) {
+        this.floatArrayCharArrayMap = floatArrayCharArrayMap;
     }
 
-    public Map<double[], double[]> doubleArrayMap() {
-        return doubleArrayMap;
+    public Map<double[], float[]> doubleArrayFloatArrayMap() {
+        return doubleArrayFloatArrayMap;
     }
 
-    public void doubleArrayMap(Map<double[], double[]> doubleArrayMap) {
-        this.doubleArrayMap = doubleArrayMap;
+    public void doubleArrayFloatArrayMap(Map<double[], float[]> doubleArrayFloatArrayMap) {
+        this.doubleArrayFloatArrayMap = doubleArrayFloatArrayMap;
     }
 
-    public Map<String, String> stringMap() {
-        return stringMap;
+    public Map<String, double[]> stringDoubleArrayMap() {
+        return stringDoubleArrayMap;
     }
 
-    public void stringMap(Map<String, String> stringMap) {
-        this.stringMap = stringMap;
+    public void stringDoubleArrayMap(Map<String, double[]> stringDoubleArrayMap) {
+        this.stringDoubleArrayMap = stringDoubleArrayMap;
     }
 
-    public Map<UUID, UUID> uuidMap() {
-        return uuidMap;
+    public Map<UUID, String> uuidStringMap() {
+        return uuidStringMap;
     }
 
-    public void uuidMap(Map<UUID, UUID> uuidMap) {
-        this.uuidMap = uuidMap;
+    public void uuidStringMap(Map<UUID, String> uuidStringMap) {
+        this.uuidStringMap = uuidStringMap;
     }
 
-    public Map<BitSet, BitSet> bitSetMap() {
-        return bitSetMap;
+    public Map<BitSet, UUID> bitSetUuidMap() {
+        return bitSetUuidMap;
     }
 
-    public void bitSetMap(Map<BitSet, BitSet> bitSetMap) {
-        this.bitSetMap = bitSetMap;
+    public void bitSetUuidMap(Map<BitSet, UUID> bitSetUuidMap) {
+        this.bitSetUuidMap = bitSetUuidMap;
     }
 
-    public Map<IgniteUuid, IgniteUuid> igniteUuidMap() {
-        return igniteUuidMap;
+    public Map<IgniteUuid, BitSet> igniteUuidBitSetMap() {
+        return igniteUuidBitSetMap;
     }
 
-    public void igniteUuidMap(Map<IgniteUuid, IgniteUuid> igniteUuidMap) {
-        this.igniteUuidMap = igniteUuidMap;
+    public void igniteUuidBitSetMap(Map<IgniteUuid, BitSet> igniteUuidBitSetMap) {
+        this.igniteUuidBitSetMap = igniteUuidBitSetMap;
     }
 
-    public Map<AffinityTopologyVersion, AffinityTopologyVersion> affTopVersionMap() {
-        return affTopVersionMap;
+    public Map<AffinityTopologyVersion, IgniteUuid> affTopVersionIgniteUuidMap() {
+        return affTopVersionIgniteUuidMap;
     }
 
-    public void affTopVersionMap(Map<AffinityTopologyVersion, AffinityTopologyVersion> affTopVersionMap) {
-        affTopVersionMap = affTopVersionMap;
+    public void affTopVersionIgniteUuidMap(Map<AffinityTopologyVersion, IgniteUuid> affTopVersionIgniteUuidMap) {
+        affTopVersionIgniteUuidMap = affTopVersionIgniteUuidMap;
     }
 
-    public Map<Boolean, Boolean> boxedBooleanMap() {
-        return boxedBooleanMap;
+    public Map<Boolean, AffinityTopologyVersion> boxedBooleanAffTopVersionMap() {
+        return boxedBooleanAffTopVersionMap;
     }
 
-    public void boxedBooleanMap(Map<Boolean, Boolean> boxedBooleanMap) {
-        this.boxedBooleanMap = boxedBooleanMap;
+    public void boxedBooleanAffTopVersionMap(Map<Boolean, AffinityTopologyVersion> boxedBooleanAffTopVersionMap) {
+        this.boxedBooleanAffTopVersionMap = boxedBooleanAffTopVersionMap;
     }
 
-    public Map<Byte, Byte> boxedByteMap() {
-        return boxedByteMap;
+    public Map<Byte, Boolean> boxedByteBoxedBooleanMap() {
+        return boxedByteBoxedBooleanMap;
     }
 
-    public void boxedByteMap(Map<Byte, Byte> boxedByteMap) {
-        this.boxedByteMap = boxedByteMap;
+    public void boxedByteBoxedBooleanMap(Map<Byte, Boolean> boxedByteBoxedBooleanMap) {
+        this.boxedByteBoxedBooleanMap = boxedByteBoxedBooleanMap;
     }
 
-    public Map<Short, Short> boxedShortMap() {
-        return boxedShortMap;
+    public Map<Short, Byte> boxedShortBoxedByteMap() {
+        return boxedShortBoxedByteMap;
     }
 
-    public void boxedShortMap(Map<Short, Short> boxedShortMap) {
-        this.boxedShortMap = boxedShortMap;
+    public void boxedShortBoxedByteMap(Map<Short, Byte> boxedShortBoxedByteMap) {
+        this.boxedShortBoxedByteMap = boxedShortBoxedByteMap;
     }
 
-    public Map<Integer, Integer> boxedIntMap() {
-        return boxedIntMap;
+    public Map<Integer, Short> boxedIntBoxedShortMap() {
+        return boxedIntBoxedShortMap;
     }
 
-    public void boxedIntMap(Map<Integer, Integer> boxedIntMap) {
-        this.boxedIntMap = boxedIntMap;
+    public void boxedIntBoxedShortMap(Map<Integer, Short> boxedIntBoxedShortMap) {
+        this.boxedIntBoxedShortMap = boxedIntBoxedShortMap;
     }
 
-    public Map<Long, Long> boxedLongMap() {
-        return boxedLongMap;
+    public Map<Long, Integer> boxedLongBoxedIntMap() {
+        return boxedLongBoxedIntMap;
     }
 
-    public void boxedLongMap(Map<Long, Long> boxedLongMap) {
-        this.boxedLongMap = boxedLongMap;
+    public void boxedLongBoxedIntMap(Map<Long, Integer> boxedLongBoxedIntMap) {
+        this.boxedLongBoxedIntMap = boxedLongBoxedIntMap;
     }
 
-    public Map<Character, Character> boxedCharMap() {
-        return boxedCharMap;
+    public Map<Character, Long> boxedCharBoxedLongMap() {
+        return boxedCharBoxedLongMap;
     }
 
-    public void boxedCharMap(Map<Character, Character> boxedCharMap) {
-        this.boxedCharMap = boxedCharMap;
+    public void boxedCharBoxedLongMap(Map<Character, Long> boxedCharBoxedLongMap) {
+        this.boxedCharBoxedLongMap = boxedCharBoxedLongMap;
     }
 
-    public Map<Float, Float> boxedFloatMap() {
-        return boxedFloatMap;
+    public Map<Float, Character> boxedFloatBoxedCharMap() {
+        return boxedFloatBoxedCharMap;
     }
 
-    public void boxedFloatMap(Map<Float, Float> boxedFloatMap) {
-        this.boxedFloatMap = boxedFloatMap;
+    public void boxedFloatBoxedCharMap(Map<Float, Character> boxedFloatBoxedCharMap) {
+        this.boxedFloatBoxedCharMap = boxedFloatBoxedCharMap;
     }
 
-    public Map<Double, Double> boxedDoubleMap() {
-        return boxedDoubleMap;
+    public Map<Double, Float> boxedDoubleBoxedFloatMap() {
+        return boxedDoubleBoxedFloatMap;
     }
 
-    public void boxedDoubleMap(Map<Double, Double> boxedDoubleMap) {
-        this.boxedDoubleMap = boxedDoubleMap;
+    public void boxedDoubleBoxedFloatMap(Map<Double, Float> boxedDoubleBoxedFloatMap) {
+        this.boxedDoubleBoxedFloatMap = boxedDoubleBoxedFloatMap;
     }
 
-    public Map<GridCacheVersion, GridCacheVersion> messageMap() {
-        return messageMap;
+    public Map<GridCacheVersion, Double> messageBoxedDoubleMap() {
+        return messageBoxedDoubleMap;
     }
 
-    public void messageMap(Map<GridCacheVersion, GridCacheVersion> messageMap) {
-        messageMap = messageMap;
-    }
-
-    public LinkedHashMap<Long, Long> linkedMap() {
-        return linkedMap;
-    }
-
-    public void linkedMap(LinkedHashMap<Long, Long> linkedMap) {
-        this.linkedMap = linkedMap;
+    public void messageBoxedDoubleMap(Map<GridCacheVersion, Double> messageBoxedDoubleMap) {
+        messageBoxedDoubleMap = messageBoxedDoubleMap;
     }
 
     public short directType() {
