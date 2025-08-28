@@ -1709,7 +1709,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             );
 
             if (!Objects.equals(node.attribute(ATTR_BUILD_VER), locNode.attribute(ATTR_BUILD_VER)))
-              fut.get();
+                fut.get();
 
             return true;
         }
