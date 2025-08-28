@@ -110,7 +110,9 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         if (!enableCheck)
             return false;
 
-        Set<Object> versions = ctx.discovery().allNodes().stream().map(node -> IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER)).minor()).collect(Collectors.toSet());
+        Set<Object> versions = ctx.discovery().allNodes().stream()
+            .map(node -> IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER)).minor())
+            .collect(Collectors.toSet());
 
         if (versions.contains(rmtVer.minor()))
             return true;
