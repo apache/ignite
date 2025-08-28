@@ -753,6 +753,10 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         defaults = "" + DFLT_DISCOVERY_HISTORY_SIZE)
     public static final String IGNITE_DISCOVERY_HISTORY_SIZE = "IGNITE_DISCOVERY_HISTORY_SIZE";
 
+    /** Human-readable ID of a data center a node belongs to. */
+    @SystemProperty(value = "Data center ID", type = String.class)
+    public static final String IGNITE_DATA_CENTER_ID = "IGNITE_DATA_CENTER_ID";
+
     /** Maximum number of discovery message history used to support client reconnect. */
     @SystemProperty(value = "Maximum number of discovery message history used to support client reconnect",
         type = Integer.class, defaults = "" + DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE)
