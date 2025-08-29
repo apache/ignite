@@ -248,10 +248,16 @@ public class SchemaManager {
         Collection<GridQueryProperty> props = typeDesc.properties().values();
 
         if (!tblDesc.type().properties().containsKey(KEY_FIELD_NAME))
-            props = F.concat(false, new KeyOrValProperty(true, KEY_FIELD_NAME, typeDesc.keyClass()), props);
+            props = F.concat(false,
+                new KeyOrValProperty(true, KEY_FIELD_NAME, typeDesc.keyClass(), null),
+                props
+            );
 
         if (!tblDesc.type().properties().containsKey(VAL_FIELD_NAME))
-            props = F.concat(false, new KeyOrValProperty(false, VAL_FIELD_NAME, typeDesc.valueClass()), props);
+            props = F.concat(false,
+                new KeyOrValProperty(false, VAL_FIELD_NAME, typeDesc.valueClass(), null),
+                props
+            );
 
         return props;
     }
