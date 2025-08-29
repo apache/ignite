@@ -77,14 +77,10 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
     /** {@inheritDoc} */
     @Override protected void writeToSocket(
         Socket sock,
-        TcpDiscoveryAbstractMessage msg,
         byte[] data,
         long timeout
     ) throws IOException {
-        if (spiCtx != null)
-            apply(spiCtx.localNode(), msg);
-
-        super.writeToSocket(sock, msg, data, timeout);
+        super.writeToSocket(sock, data, timeout);
     }
 
     /** {@inheritDoc} */
