@@ -169,6 +169,7 @@ Register name: `tx`
 |totalNodeUserTime   |long|    Total transactions user time on node.
 |txCommits   |integer| Number of transaction commits.
 |txRollbacks |integer| Number of transaction rollbacks.
+|txDeadlocks |integer| Number of transaction deadlocks.
 |===
 
 
