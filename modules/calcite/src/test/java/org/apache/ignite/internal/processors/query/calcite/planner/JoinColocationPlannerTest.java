@@ -208,9 +208,9 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
     @Test
     public void joinBroadcastAggregateRehash() throws Exception {
         IgniteSchema schema = createSchema(
-            createTable("AFF_TBL", IgniteDistributions.affinity(0, "default", "hash"),
+            createTable("AFF_TBL", 1000, IgniteDistributions.affinity(0, "default", "hash"),
                 "ID", Integer.class, "VAL", String.class),
-            createTable("BROADCAST_TBL", IgniteDistributions.broadcast(), "ID", Integer.class)
+            createTable("BROADCAST_TBL", 10, IgniteDistributions.broadcast(), "ID", Integer.class)
         );
 
         assertPlan("SELECT * FROM aff_tbl WHERE id IN (SELECT id FROM broadcast_tbl)", schema,
