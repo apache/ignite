@@ -1533,10 +1533,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         BinaryMetadata meta = platformCtx.getBinaryType(clsName);
 
         if (meta != null)
-            binProc.binaryContext().registerClassLocally(
-                    meta.wrap(binProc.binaryContext()),
-                    false,
-                    platformCtx.getMarshallerPlatformId());
+            binProc.binaryContext().registerClassLocally(meta, false, platformCtx.getMarshallerPlatformId());
     }
 
     /**
@@ -1722,7 +1719,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert nonNull(qryField);
 
         try {
-            BinaryType binaryType = ctx.cacheObjects().metadata(typeId);
+            BinaryType binaryType = ctx.cacheObjects().binaryType(typeId);
             String binaryFieldType = nonNull(binaryType) ? binaryType.fieldTypeName(qryField.name()) : null;
 
             return isNull(binaryFieldType) ||
