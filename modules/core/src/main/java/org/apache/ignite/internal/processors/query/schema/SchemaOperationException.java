@@ -64,7 +64,7 @@ public class SchemaOperationException extends IgniteCheckedException {
     public static final int CODE_SCHEMA_NOT_FOUND = 11;
 
     /** Error code. */
-    private int code;
+    private final int code;
 
     /**
      * Constructor for specific error type.
@@ -74,6 +74,18 @@ public class SchemaOperationException extends IgniteCheckedException {
      */
     public SchemaOperationException(int code, String objName) {
         super(message(code, objName));
+
+        this.code = code;
+    }
+
+    /**
+     * Constructor for specific error type.
+     *
+     * @param msg Message.
+     * @param code Code.
+     */
+    public SchemaOperationException(String msg, int code) {
+        super(msg);
 
         this.code = code;
     }
@@ -104,13 +116,6 @@ public class SchemaOperationException extends IgniteCheckedException {
      */
     public int code() {
         return code;
-    }
-
-    /**
-     * @param code Error code.
-     */
-    public void code(int code) {
-        this.code = code;
     }
 
     /** {@inheritDoc} */
