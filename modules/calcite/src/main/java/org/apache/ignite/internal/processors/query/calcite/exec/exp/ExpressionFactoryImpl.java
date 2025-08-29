@@ -79,6 +79,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implements rex expression into a function object. Uses JaninoRexCompiler under the hood.
@@ -197,7 +199,11 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right, boolean nullsEqual) {
+    @Override public Comparator<Row> comparator(
+        List<RelFieldCollation> left,
+        List<RelFieldCollation> right,
+        @Nullable IgniteBiPredicate<Integer, Integer> nullsMatch
+    ) {
         if (F.isEmpty(left) || F.isEmpty(right) || left.size() != right.size())
             throw new IllegalArgumentException("Both inputs should be non-empty and have the same size: left="
                 + (left != null ? left.size() : "null") + ", right=" + (right != null ? right.size() : "null"));
@@ -213,8 +219,10 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         return new Comparator<Row>() {
             @Override public int compare(Row o1, Row o2) {
-                boolean hasNulls = false;
                 RowHandler<Row> hnd = ctx.rowHandler();
+
+                boolean hasNulls = false;
+                boolean nullsMatched = nullsMatch != null;
 
                 for (int i = 0; i < left.size(); i++) {
                     RelFieldCollation leftField = left.get(i);
@@ -228,6 +236,10 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
                     if (c1 == null && c2 == null) {
                         hasNulls = true;
+
+                        if (nullsMatched && nullsMatch != null && !nullsMatch.apply(lIdx, rIdx))
+                            nullsMatched = false;
+
                         continue;
                     }
 
@@ -243,7 +255,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
                 // If compared rows contain NULLs, they shouldn't be treated as equals, since NULL <> NULL in SQL.
                 // Except cases with IS DISTINCT / IS NOT DISTINCT.
-                return hasNulls && !nullsEqual ? 1 : 0;
+                return !hasNulls || nullsMatched ? 0 : 1;
             }
         };
     }
