@@ -415,7 +415,7 @@ public class GridCacheReturn implements Externalizable, Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage(cacheObj))
+                if (!writer.writeCacheObject(cacheObj))
                     return false;
 
                 writer.incrementState();
@@ -457,7 +457,7 @@ public class GridCacheReturn implements Externalizable, Message {
                 reader.incrementState();
 
             case 1:
-                cacheObj = reader.readMessage();
+                cacheObj = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;

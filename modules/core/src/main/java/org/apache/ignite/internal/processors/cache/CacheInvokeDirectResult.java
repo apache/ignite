@@ -206,13 +206,13 @@ public class CacheInvokeDirectResult implements Message, Serializable {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage(key))
+                if (!writer.writeKeyCacheObject(key))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage(res))
+                if (!writer.writeCacheObject(res))
                     return false;
 
                 writer.incrementState();
@@ -236,7 +236,7 @@ public class CacheInvokeDirectResult implements Message, Serializable {
                 reader.incrementState();
 
             case 1:
-                key = reader.readMessage();
+                key = reader.readKeyCacheObject();
 
                 if (!reader.isLastRead())
                     return false;
@@ -244,7 +244,7 @@ public class CacheInvokeDirectResult implements Message, Serializable {
                 reader.incrementState();
 
             case 2:
-                res = reader.readMessage();
+                res = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;

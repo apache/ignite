@@ -118,6 +118,18 @@ public class TestMessageSerializer implements MessageSerializer {
 
                 writer.incrementState();
 
+            case 12:
+                if (!writer.writeKeyCacheObject(msg.keyCacheObject()))
+                    return false;
+
+                writer.incrementState();
+
+            case 13:
+                if (!writer.writeCacheObject(msg.cacheObject()))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -226,6 +238,21 @@ public class TestMessageSerializer implements MessageSerializer {
 
                 reader.incrementState();
 
+            case 12:
+                msg.keyCacheObject(reader.readKeyCacheObject());
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 13:
+                msg.cacheObject(reader.readCacheObject());
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return true;

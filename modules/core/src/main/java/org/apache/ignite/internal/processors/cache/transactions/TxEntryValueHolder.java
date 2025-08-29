@@ -188,7 +188,7 @@ public class TxEntryValueHolder implements Message {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage(hasWriteVal ? val : null))
+                if (!writer.writeCacheObject(hasWriteVal ? val : null))
                     return false;
 
                 writer.incrementState();
@@ -224,7 +224,7 @@ public class TxEntryValueHolder implements Message {
                 reader.incrementState();
 
             case 2:
-                val = reader.readMessage();
+                val = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;

@@ -51,7 +51,7 @@ public class GridMessageCollectionTest {
      * @return Writer.
      */
     protected MessageReader reader(MessageFactory msgFactory) {
-        return new DirectMessageReader(msgFactory);
+        return new DirectMessageReader(msgFactory, null);
     }
 
     /**

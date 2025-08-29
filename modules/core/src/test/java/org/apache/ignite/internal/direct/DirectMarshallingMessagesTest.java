@@ -77,7 +77,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
         T resMsg = (T)msgFactory.create(type);
 
         boolean fullyRead = loopBuffer(buf, buf.position(),
-            buf0 -> resMsg.readFrom(buf0, new DirectMessageReader(msgFactory)));
+            buf0 -> resMsg.readFrom(buf0, new DirectMessageReader(msgFactory, null)));
         assertTrue("The message was not read completely.", fullyRead);
 
         return resMsg;
