@@ -22,13 +22,13 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -53,10 +53,10 @@ public class DirectMessageReader implements MessageReader {
     /**
      * @param msgFactory Message factory.
      */
-    public DirectMessageReader(final MessageFactory msgFactory, GridKernalContext kctx) {
+    public DirectMessageReader(final MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
-                return new StateItem(msgFactory, kctx);
+                return new StateItem(msgFactory, cacheObjProc);
             }
         });
     }
@@ -411,8 +411,8 @@ public class DirectMessageReader implements MessageReader {
         /**
          * @param msgFactory Message factory.
          */
-        public StateItem(MessageFactory msgFactory, GridKernalContext kctx) {
-            stream = new DirectByteBufferStream(msgFactory, kctx);
+        public StateItem(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
+            stream = new DirectByteBufferStream(msgFactory, cacheObjProc);
         }
 
         /** {@inheritDoc} */

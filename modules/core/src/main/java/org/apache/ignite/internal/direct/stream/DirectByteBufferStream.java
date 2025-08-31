@@ -29,7 +29,6 @@ import java.util.RandomAccess;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -336,11 +335,9 @@ public class DirectByteBufferStream {
     /**
      * @param msgFactory Message factory.
      */
-    public DirectByteBufferStream(MessageFactory msgFactory, GridKernalContext kctx) {
+    public DirectByteBufferStream(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
         this.msgFactory = msgFactory;
-
-        // TODO: accept it.
-        cacheObjProc = kctx.cacheObjects();
+        this.cacheObjProc = cacheObjProc;
     }
 
     /**
