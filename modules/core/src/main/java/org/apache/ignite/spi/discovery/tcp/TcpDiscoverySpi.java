@@ -1674,18 +1674,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param timeout Socket write timeout.
      * @throws IOException If IO failed or write timed out.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
         assert sock != null;
         assert data != null;
 
-        SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
-
-        addTimeoutObject(obj);
-
-        IOException err = null;
-
-        try {
+        try (SocketTimer ignored = new SocketTimer(sock, timeout)) {
             OutputStream out = sock.getOutputStream();
 
             out.write(data);
@@ -1695,20 +1688,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         catch (IOException e) {
             SSLException sslEx = checkSslException(sock, e);
 
-            err = sslEx == null ? e : sslEx;
-        }
-        finally {
-            boolean cancelled = obj.cancel();
-
-            if (cancelled)
-                removeTimeoutObject(obj);
-
-            // Throw original exception.
-            if (err != null)
-                throw err;
-
-            if (!cancelled)
-                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
+            throw sslEx == null ? e : sslEx;
         }
     }
 
@@ -1758,41 +1738,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @throws IOException If IO failed or write timed out.
      * @throws IgniteCheckedException If marshalling failed.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     protected void writeToSocket(Socket sock,
         OutputStream out,
         TcpDiscoveryAbstractMessage msg,
         long timeout) throws IOException, IgniteCheckedException {
         assert sock != null;
         assert msg != null;
-        assert out != null;
 
-        SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
-
-        addTimeoutObject(obj);
-
-        IgniteCheckedException err = null;
-
-        try {
+        try (SocketTimer ignored = new SocketTimer(sock, timeout)) {
             U.marshal(marshaller(), msg, out);
         }
         catch (IgniteCheckedException e) {
             SSLException sslEx = checkSslException(sock, e);
 
-            err = sslEx == null ? e : new IgniteCheckedException(sslEx);
-        }
-        finally {
-            boolean cancelled = obj.cancel();
-
-            if (cancelled)
-                removeTimeoutObject(obj);
-
-            // Throw original exception.
-            if (err != null)
-                throw err;
-
-            if (!cancelled)
-                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
+            throw sslEx == null ? e : new IgniteCheckedException(sslEx);
         }
     }
 
@@ -1805,20 +1764,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param timeout Socket timeout.
      * @throws IOException If IO failed or write timed out.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout)
         throws IOException {
         assert sock != null;
 
-        SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
+        try (SocketTimer ignored = new SocketTimer(sock, timeout)) {
+            OutputStream out = sock.getOutputStream();
 
-        addTimeoutObject(obj);
-
-        OutputStream out = sock.getOutputStream();
-
-        IOException err = null;
-
-        try {
             out.write(res);
 
             out.flush();
@@ -1826,20 +1778,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         catch (IOException e) {
             SSLException sslEx = checkSslException(sock, e);
 
-            err = sslEx == null ? e : sslEx;
-        }
-        finally {
-            boolean cancelled = obj.cancel();
-
-            if (cancelled)
-                removeTimeoutObject(obj);
-
-            // Throw original exception.
-            if (err != null)
-                throw err;
-
-            if (!cancelled)
-                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
+            throw (sslEx == null) ? e : sslEx;
         }
     }
 
@@ -2567,6 +2506,27 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SocketTimeoutObject.class, this);
+        }
+    }
+
+    /** Handles a socket timeout. */
+    private final class SocketTimer implements AutoCloseable {
+        /** */
+        private final SocketTimeoutObject obj;
+
+        /** */
+        SocketTimer(Socket sock, long timeout) {
+            obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
+
+            addTimeoutObject(obj);
+        }
+
+        /** */
+        @Override public void close() throws SocketTimeoutException {
+            if (obj.cancel())
+                removeTimeoutObject(obj);
+            else
+                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
         }
     }
 
