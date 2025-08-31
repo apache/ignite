@@ -32,8 +32,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -219,11 +219,7 @@ public class DirectByteBufferStream {
 
     /** */
     @GridToStringExclude
-    private final GridKernalContext kctx;
-
-    /** */
-    @GridToStringExclude
-    private final CacheObjectContext coCtx;
+    private final IgniteCacheObjectProcessor cacheObjProc;
 
     /** */
     @GridToStringExclude
@@ -342,9 +338,9 @@ public class DirectByteBufferStream {
      */
     public DirectByteBufferStream(MessageFactory msgFactory, GridKernalContext kctx) {
         this.msgFactory = msgFactory;
-        this.kctx = kctx;
 
-        coCtx = new CacheObjectContext(kctx, null, null, false, false, false, false, false);
+        // TODO: accept it.
+        cacheObjProc = kctx.cacheObjects();
     }
 
     /**
@@ -1444,7 +1440,7 @@ public class DirectByteBufferStream {
         }
 
         try {
-            KeyCacheObject key = kctx.cacheObjects().toKeyCacheObject(coCtx, cacheObjType, cacheObjArr);
+            KeyCacheObject key = cacheObjProc.toKeyCacheObject(null, cacheObjType, cacheObjArr);
 
             if (keyCacheObjPart != -1)
                 key.partition(keyCacheObjPart);
@@ -1478,8 +1474,7 @@ public class DirectByteBufferStream {
                 cacheObjState = 0;
         }
 
-//            CacheObjectContext coCtx = sharedCtx.cacheObjectContext(cacheObjId);
-        return kctx.cacheObjects().toCacheObject(coCtx, cacheObjType, cacheObjArr);
+        return cacheObjProc.toCacheObject(null, cacheObjType, cacheObjArr);
     }
 
     /**

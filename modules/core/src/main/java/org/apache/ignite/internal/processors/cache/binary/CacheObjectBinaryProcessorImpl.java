@@ -1293,10 +1293,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
+    @Override public CacheObject toCacheObject(@Nullable CacheObjectContext ctx, byte type, byte[] bytes) {
         switch (type) {
             case CacheObject.TYPE_BINARY:
-                return (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, ctx);
+                return ctx == null
+                    ? (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes)
+                    : (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, ctx);
 
             case CacheObject.TYPE_BINARY_ENUM:
                 return (CacheObject)BinaryUtils.binaryEnum(binaryContext(), bytes);
@@ -1312,7 +1314,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes)
+    @Override public KeyCacheObject toKeyCacheObject(@Nullable CacheObjectContext ctx, byte type, byte[] bytes)
         throws IgniteCheckedException {
         switch (type) {
             case CacheObject.TYPE_BINARY:
@@ -1322,7 +1324,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
 
             case CacheObject.TYPE_REGULAR:
-                return new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);
+                return ctx == null
+                    ? new KeyCacheObjectImpl(null, bytes, -1)
+                    : new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);
