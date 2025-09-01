@@ -20,20 +20,20 @@ This module contains classes and utilities to start PostgreSql cluster for testi
 import os.path
 from distutils.version import LooseVersion
 
+from ducktape.utils.util import wait_until
+
 from ignitetest.services.utils.ducktests_service import DucktestsService
-from ignitetest.services.utils.path_aware import PathAware
-from ignitetest.services.utils.wait import wait_until
-from ignitetest.services.utils.logs import monitor_log
+from ignitetest.services.utils.log_utils import monitor_log
+from ignitetest.services.utils.path import PathAware
 
 
 class PostgresSettings:
     """
     Settings for PostgreSQL nodes.
     """
+
     def __init__(self, **kwargs):
         self.port = kwargs.get("port", 5432)
-        self.data_dir = kwargs.get("data_dir", "/tmp/pgdata")
-        self.log_filename = kwargs.get("log_filename", "postgresql.log")
 
         version = kwargs.get("version")
         if version:
@@ -65,8 +65,17 @@ class PostgresService(DucktestsService, PathAware):
         return self.context.globals
 
     @property
-    def log_file(self):
-        return path.join(self.log_dir, self.LOG_FILENAME)
+    def log_config_file(self):
+        raise RuntimeError("Not implemented!")
+
+    @property
+    def config_file(self):
+        return os.path.join(self.work_dir, "postgresql.conf")
+
+    def init_persistent(self, node):
+        _PERMISSIONS = int('750', 8)
+
+        node.account.mkdirs(f"{self.persistent_root} {self.work_dir} {self.log_dir}",_PERMISSIONS)
 
     def start(self, **kwargs):
         self.start_async(**kwargs)
@@ -84,23 +93,39 @@ class PostgresService(DucktestsService, PathAware):
         self.logger.info("PostgreSQL cluster is up.")
 
     def start_node(self, node, **kwargs):
-        idx = self.idx(node)
-        self.logger.info("Starting PostgreSQL node %d on %s", idx, node.account.hostname)
+        self.logger.info(f"Initializing PostgreSQL data directory {self.work_dir}")
 
-        # Init database if not already
-        node.account.ssh(f"rm -rf {self.settings.data_dir}; "
-                         f"/opt/postgres-{self.settings.version}/bin/initdb -D {self.settings.data_dir}")
+        self.init_persistent(node)
 
-        # Start postgres
+        node.account.ssh(f"/opt/postgres-{self.settings.version}/bin/initdb -D {self.work_dir}")
+
+        config_file = self.render('postgresql.conf.j2', settings=self.settings, log_dir=self.log_dir,
+                                  data_dir=self.work_dir)
+        node.account.create_file(self.config_file, config_file)
+        self.logger.info(f"PostgreSQL config {config_file}")
+
+        self.logger.info(f"Starting PostgreSQL node {self.idx(node)} on {node.account.hostname}")
+
         start_cmd = (
             f"nohup /opt/postgres-{self.settings.version}/bin/postgres "
-            f"-D {self.settings.data_dir} "
+            f"-D {self.work_dir} "
             f"-p {self.settings.port} "
             f"> {self.log_file} 2>&1 &"
         )
+
         node.account.ssh(start_cmd)
 
+    def wait_node(self, node, timeout_sec=20):
+        wait_until(lambda: not self.alive(node), timeout_sec=timeout_sec)
+
+        return not self.alive(node)
+
     def await_ready(self, node, timeout):
+        """
+        Await PostgreSQL nodes
+        :param node:  PostgreSQL service node.
+        :param timeout: Wait timeout.
+        """
         with monitor_log(node, self.log_file, from_the_beginning=True) as monitor:
             monitor.wait_until(
                 "database system is ready to accept connections",
@@ -108,9 +133,13 @@ class PostgresService(DucktestsService, PathAware):
                 err_msg=f"PostgreSQL not ready on {node.account.hostname}"
             )
 
+    @property
+    def log_file(self):
+        return os.path.join(self.log_dir, self.LOG_FILENAME)
+
     def pids(self, node):
         return node.account.ssh_capture(
-            f"pgrep -f '/opt/postgres-{self.settings.version}/bin/postgres.*-D {self.settings.data_dir}'",
+            f"pgrep -f '/opt/postgres-{self.settings.version}/bin/postgres.*-D {self.work_dir}'",
             allow_fail=True
         )
 
@@ -118,16 +147,13 @@ class PostgresService(DucktestsService, PathAware):
         return len(self.pids(node)) > 0
 
     def stop_node(self, node, force_stop=False, **kwargs):
-        idx = self.idx(node)
-        self.logger.info("Stopping PostgreSQL node %d on %s", idx, node.account.hostname)
-        if force_stop:
-            node.account.kill_process("postgres", allow_fail=True)
-        else:
-            node.account.ssh(f"/opt/postgres-{self.settings.version}/bin/pg_ctl "
-                             f"-D {self.settings.data_dir} -m fast stop")
+        self.logger.info(f"Stopping PostgreSQL node {self.idx(node)} on {node.account.hostname}")
+
+        node.account.kill_process(f"/opt/postgres-{self.settings.version}/bin/postgres", clean_shutdown=not force_stop, allow_fail=False)
 
     def clean_node(self, node, **kwargs):
         super().clean_node(node, **kwargs)
 
-        self.logger.info("Cleaning PostgreSQL node %d on %s", self.idx(node), node.account.hostname)
-        node.account.ssh(f"rm -rf -- {self.settings.data_dir}", allow_fail=False)
+        self.logger.info(f"Cleaning PostgreSQL node {self.idx(node)} on {node.account.hostname}")
+
+        node.account.ssh(f"rm -rf -- {self.persistent_root}", allow_fail=False)
