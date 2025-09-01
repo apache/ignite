@@ -34,7 +34,16 @@ LABEL ducker.creator=$ducker_creator
 
 # Update Linux and install necessary utilities.
 RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
-RUN apt update && apt install -y sudo netcat-traditional iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python3-pip python3-dev python3-venv libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc git && apt-get -y clean
+RUN apt update && apt install -y sudo netcat-traditional iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python3-pip python3-dev python3-venv python3-setuptools libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc git && apt-get -y clean
+
+# Download and build Python 3.8.5
+RUN cd /opt && \
+    wget https://www.python.org/ftp/python/3.8.5/Python-3.8.5.tgz && \
+    tar -xzf Python-3.8.5.tgz && \
+    cd Python-3.8.5 && \
+    ./configure --enable-optimizations --with-ensurepip=install && \
+    make -j$(nproc) && make altinstall && \
+    cd /opt && rm -rf Python-3.8.5 Python-3.8.5.tgz
 
 # Make Python 3.8 the default python3 and pip3
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8 1 && \
