@@ -180,6 +180,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** Cached affinity key field names. */
     private final ConcurrentHashMap<Integer, T1<BinaryField>> affKeyFields = new ConcurrentHashMap<>();
 
+    /** */
+    private CacheObjectValueContext fakeCacheObjCtx;
+
     /*
      * Static initializer
      */
@@ -326,6 +329,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         if (!ctx.clientNode())
             metadataFileStore.restoreMetadata();
+
+        fakeCacheObjCtx = new CacheObjectContext(ctx, null, null, false, false, false, false, false);
     }
 
     /** {@inheritDoc} */
@@ -1296,9 +1301,16 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public CacheObject toCacheObject(@Nullable CacheObjectContext ctx, byte type, byte[] bytes) {
         switch (type) {
             case CacheObject.TYPE_BINARY:
-                return ctx == null
+                CacheObjectValueContext coctx = ctx;
+
+                // CacheObjectContext is actually required only if transformation is enabled.
+                // In this case CacheObjectContext#kernalContext is used only.
+                if (coctx == null && this.ctx.transformer() != null)
+                    coctx = fakeCacheObjCtx;
+
+                return coctx == null
                     ? (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes)
-                    : (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, ctx);
+                    : (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, coctx);
 
             case CacheObject.TYPE_BINARY_ENUM:
                 return (CacheObject)BinaryUtils.binaryEnum(binaryContext(), bytes);
