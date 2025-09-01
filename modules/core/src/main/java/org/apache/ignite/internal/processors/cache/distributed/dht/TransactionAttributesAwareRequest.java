@@ -114,7 +114,7 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
-                appAttrs = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
+                appAttrs = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.STRING);
 
                 if (!reader.isLastRead())
                     return false;

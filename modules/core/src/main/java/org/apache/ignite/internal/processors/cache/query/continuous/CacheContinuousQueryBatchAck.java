@@ -121,7 +121,7 @@ public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 5:
-                updateCntrs = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
+                updateCntrs = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.LONG);
 
                 if (!reader.isLastRead())
                     return false;

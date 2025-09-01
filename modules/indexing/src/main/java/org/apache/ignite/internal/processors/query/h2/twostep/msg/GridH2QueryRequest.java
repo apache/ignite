@@ -675,7 +675,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 4:
-                parts = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR, false);
+                parts = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.INT_ARR);
 
                 if (!reader.isLastRead())
                     return false;

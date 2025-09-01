@@ -295,7 +295,7 @@ public class CacheGroupAffinityMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                assignsDiff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+                assignsDiff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

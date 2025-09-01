@@ -174,7 +174,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
         switch (reader.state()) {
             case 1:
-                parts = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
+                parts = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR);
 
                 if (!reader.isLastRead())
                     return false;

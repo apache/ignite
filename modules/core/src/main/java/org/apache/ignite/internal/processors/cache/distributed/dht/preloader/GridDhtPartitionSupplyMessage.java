@@ -369,7 +369,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
                 reader.incrementState();
 
             case 6:
-                infos = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+                infos = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -377,7 +377,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
                 reader.incrementState();
 
             case 7:
-                keysPerCache = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
+                keysPerCache = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.LONG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -385,7 +385,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
                 reader.incrementState();
 
             case 8:
-                last = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
+                last = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.LONG);
 
                 if (!reader.isLastRead())
                     return false;

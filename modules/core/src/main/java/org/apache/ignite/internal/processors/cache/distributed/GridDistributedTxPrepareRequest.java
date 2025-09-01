@@ -661,7 +661,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 17:
-                txNodesMsg = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.MSG, false);
+                txNodesMsg = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
