@@ -59,7 +59,6 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -74,7 +73,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -108,10 +106,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
@@ -453,9 +449,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** */
     protected IgniteSpiContext spiCtx;
 
-    /** */
-    private IgniteDiscoverySpiInternalListener internalLsnr;
-
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
 
@@ -528,13 +521,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-        IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
-
-        if (internalLsnr != null) {
-            if (!internalLsnr.beforeSendCustomEvent(this, log, msg))
-                return;
-        }
-
         impl.sendCustomEvent(msg);
     }
 
@@ -1763,24 +1749,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * @param node Target node.
-     * @param sock Socket.
-     * @param out Stream to write to.
-     * @param msg Message.
-     * @param timeout Timeout.
-     * @throws IOException If IO failed or write timed out.
-     * @throws IgniteCheckedException If marshalling failed.
-     */
-    protected void writeToSocket(
-        ClusterNode node,
-        Socket sock,
-        OutputStream out,
-        TcpDiscoveryAbstractMessage msg,
-        long timeout) throws IOException, IgniteCheckedException {
-        writeToSocket(sock, out, msg, timeout);
-    }
-
-    /**
      * Writes message to the socket.
      *
      * @param sock Socket.
@@ -1795,14 +1763,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         OutputStream out,
         TcpDiscoveryAbstractMessage msg,
         long timeout) throws IOException, IgniteCheckedException {
-        if (internalLsnr != null) {
-            if (msg instanceof TcpDiscoveryJoinRequestMessage)
-                internalLsnr.beforeJoin(locNode, log);
-
-            if (msg instanceof TcpDiscoveryClientReconnectMessage)
-                internalLsnr.beforeReconnect(locNode, log);
-        }
-
         assert sock != null;
         assert msg != null;
         assert out != null;
@@ -2455,11 +2415,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         sndMsgLsnrs.add(lsnr);
     }
 
-    /** {@inheritDoc} */
-    @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
-        this.internalLsnr = lsnr;
-    }
-
     /**
      * <strong>FOR TEST ONLY!!!</strong>
      *
@@ -2531,7 +2486,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @return Marshaller.
      */
     protected Marshaller marshaller() {
-        MarshallerUtils.setNodeName(marsh, igniteInstanceName);
+        marsh.nodeName(igniteInstanceName);
 
         return marsh;
     }

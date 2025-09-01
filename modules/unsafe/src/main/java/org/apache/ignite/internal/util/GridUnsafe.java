@@ -1354,6 +1354,19 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * @param ptr Address.
+     * @param size Size.
+     * @return Bytes.
+     */
+    public static byte[] copyMemory(long ptr, int size) {
+        byte[] res = new byte[size];
+
+        copyMemory(null, ptr, res, BYTE_ARR_OFF, size);
+
+        return res;
+    }
+
+    /**
      * Frees memory.
      *
      * @param addr Address.

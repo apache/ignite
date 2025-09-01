@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -125,7 +124,7 @@ class BinaryMetadataFileStore {
 
         writer = new BinaryMetadataAsyncWriter();
 
-        new IgniteThread(writer).start();
+        U.newThread(writer).start();
     }
 
     /**

@@ -3800,7 +3800,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been written to socket: " + msg.id());
 
-                                spi.writeToSocket(newNextNode ? newNext : next,
+                                spi.writeToSocket(
                                     sock,
                                     out,
                                     msg,

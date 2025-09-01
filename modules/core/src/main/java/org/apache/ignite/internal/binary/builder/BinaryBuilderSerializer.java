@@ -25,7 +25,7 @@ import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.CommonUtils;
 
 /**
  *
@@ -123,7 +123,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (IgniteUtils.isEnum(val.getClass())) {
+        if (CommonUtils.isEnum(val.getClass())) {
             String clsName = ((Enum)val).getDeclaringClass().getName();
 
             int typeId = writer.context().typeId(clsName);

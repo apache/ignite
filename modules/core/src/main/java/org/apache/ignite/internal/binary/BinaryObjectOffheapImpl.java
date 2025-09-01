@@ -37,9 +37,8 @@ import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -90,7 +89,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
      * @return Heap-based copy.
      */
     public BinaryObject heapCopy() {
-        return new BinaryObjectImpl(ctx, U.copyMemory(ptr, size), start);
+        return new BinaryObjectImpl(ctx, GridUnsafe.copyMemory(ptr, size), start);
     }
 
     /** {@inheritDoc} */
@@ -162,7 +161,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /** {@inheritDoc} */
-    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException {
         throw new UnsupportedOperationException("TODO implement");
     }
 
@@ -468,7 +467,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         throw new UnsupportedOperationException();
     }
 

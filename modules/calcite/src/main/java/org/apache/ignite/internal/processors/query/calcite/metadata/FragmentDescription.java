@@ -17,41 +17,37 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /** */
 public class FragmentDescription implements MarshalableMessage {
     /** */
+    @Order(0)
     private long fragmentId;
 
     /** */
+    @Order(1)
     private FragmentMapping mapping;
 
     /** */
+    @Order(2) // TODO: Remove this field (and MarshallableMessage interface) once IGNITE-26133 is completed
+    private Map<Long, UUIDCollectionMessage> remoteSources0;
+
+    /** */
+    @Order(3)
     private ColocationGroup target;
 
     /** */
-    @GridDirectTransient
     private Map<Long, List<UUID>> remoteSources;
-
-    /** */
-    @GridDirectMap(keyType = Long.class, valueType = Message.class)
-    private Map<Long, UUIDCollectionMessage> remoteSources0;
 
     /** */
     public FragmentDescription() {
@@ -72,6 +68,11 @@ public class FragmentDescription implements MarshalableMessage {
     }
 
     /** */
+    public void fragmentId(long fragmentId) {
+        this.fragmentId = fragmentId;
+    }
+
+    /** */
     public List<UUID> nodeIds() {
         return mapping.nodeIds();
     }
@@ -79,6 +80,11 @@ public class FragmentDescription implements MarshalableMessage {
     /** */
     public ColocationGroup target() {
         return target;
+    }
+
+    /** */
+    public void target(ColocationGroup target) {
+        this.target = target;
     }
 
     /** */
@@ -91,92 +97,24 @@ public class FragmentDescription implements MarshalableMessage {
         return mapping;
     }
 
+    /** */
+    public void mapping(FragmentMapping mapping) {
+        this.mapping = mapping;
+    }
+
+    /** */
+    public Map<Long, UUIDCollectionMessage> remoteSources0() {
+        return remoteSources0;
+    }
+
+    /** */
+    public void remoteSources0(Map<Long, UUIDCollectionMessage> remoteSources0) {
+        this.remoteSources0 = remoteSources0;
+    }
+
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.FRAGMENT_DESCRIPTION;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeLong(fragmentId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeMessage(mapping))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeMap(remoteSources0, MessageCollectionItemType.LONG, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeMessage(target))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                fragmentId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                mapping = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                remoteSources0 = reader.readMap(MessageCollectionItemType.LONG, MessageCollectionItemType.MSG, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                target = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

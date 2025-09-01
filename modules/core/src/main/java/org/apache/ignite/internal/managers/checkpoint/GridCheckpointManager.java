@@ -463,10 +463,10 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
             if (!enabled())
                 return;
 
-            IgniteUuid sesId = req.getSessionId();
+            IgniteUuid sesId = req.sessionId();
 
             if (closedSess.contains(sesId)) {
-                getSpi(req.getCheckpointSpi()).removeCheckpoint(req.getKey());
+                getSpi(req.checkpointSpi()).removeCheckpoint(req.key());
 
                 return;
             }
@@ -477,7 +477,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                 GridTaskSessionImpl ses = ctx.session().getSession(sesId);
 
                 if (ses == null) {
-                    getSpi(req.getCheckpointSpi()).removeCheckpoint(req.getKey());
+                    getSpi(req.checkpointSpi()).removeCheckpoint(req.key());
 
                     return;
                 }
@@ -488,13 +488,13 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                     keys = old;
             }
 
-            keys.add(req.getKey());
+            keys.add(req.key());
 
             // Double check.
             if (closedSess.contains(sesId)) {
                 keyMap.remove(sesId, keys);
 
-                getSpi(req.getCheckpointSpi()).removeCheckpoint(req.getKey());
+                getSpi(req.checkpointSpi()).removeCheckpoint(req.key());
             }
         }
     }

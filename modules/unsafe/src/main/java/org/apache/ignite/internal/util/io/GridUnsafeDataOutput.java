@@ -20,11 +20,11 @@ package org.apache.ignite.internal.util.io;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
+import org.apache.ignite.IgniteCommonsSystemProperties;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
@@ -41,7 +41,8 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  */
 public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput {
     /** */
-    private static final long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
+    private static final long CHECK_FREQ =
+        Long.getLong(IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
 
     /** Length of char buffer (for writing strings). */
     private static final int CHAR_BUF_SIZE = 256;
@@ -62,7 +63,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     private int maxOff;
 
     /** Last length check timestamp. */
-    private long lastCheck = U.currentTimeMillis();
+    private long lastCheck = CommonUtils.currentTimeMillis();
 
     /**
      *
@@ -132,7 +133,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
         maxOff = Math.max(maxOff, size);
 
-        long now = U.currentTimeMillis();
+        long now = CommonUtils.currentTimeMillis();
 
         if (size > bytes.length) {
             int newSize = size << 1;
@@ -156,7 +157,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /**
      * @param size Size of potential byte array to check.
      * @return true if {@code new byte[size]} won't throw {@link OutOfMemoryError} given enough heap space.
-     * @see U#MAX_ARRAY_SIZE
+     * @see CommonUtils#MAX_ARRAY_SIZE
      */
     private boolean canBeAllocated(long size) {
         return 0 <= size && size <= MAX_ARRAY_SIZE;

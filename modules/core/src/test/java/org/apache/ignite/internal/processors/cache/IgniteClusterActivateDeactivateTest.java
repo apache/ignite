@@ -58,6 +58,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -109,7 +110,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (testReconnectSpi) {
-            TcpDiscoverySpi spi = new IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi();
+            TcpDiscoverySpi spi = new TestTcpDiscoverySpi();
 
             cfg.setDiscoverySpi(spi);
 

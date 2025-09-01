@@ -434,7 +434,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             return binaryMarsh.unmarshal(in);
         }
         else
-            return U.copyMemory(ptr, size);
+            return GridUnsafe.copyMemory(ptr, size);
     }
 
     /** {@inheritDoc} */
