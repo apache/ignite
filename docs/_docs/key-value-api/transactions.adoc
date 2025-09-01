@@ -87,7 +87,7 @@ include::code-snippets/cpp/src/transactions.cpp[tag=transactions-execution,inden
 
 [WARNING]
 ====
-It is critical that an Ignite Transaction should be `closed` regardless of its commit state or ocurred exceptions. `try-with-resources` is recommended approach, but you also can explicitly call `rollback` when catching exceptions. Clling of `close`, `commit` or `rollback` ensures that all resources are released and the transaction is no longer bound to the current thread.
+It is critical that an Ignite Transaction should be `closed` regardless of its commit state or ocurred exceptions. `try-with-resources` is recommended approach, but you also can explicitly call `rollback` when catching exceptions. Calling of `close`, `commit` or `rollback` ensures that all resources are released and the transaction is no longer bound to the current thread.
 ====
 
 ////
