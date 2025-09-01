@@ -36,6 +36,10 @@ LABEL ducker.creator=$ducker_creator
 RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
 RUN apt update && apt install -y sudo netcat-traditional iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python3-pip python3-dev python3-venv libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc git && apt-get -y clean
 
+# Make Python 3.8 the default python3 and pip3
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8 1 && \
+    update-alternatives --install /usr/bin/pip3 pip3 /usr/local/bin/pip3.8 1
+
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 COPY ./requirements.txt /root/requirements.txt
@@ -89,7 +93,7 @@ RUN cd /opt \
     && tar -xzf ${POSTGRES_TAR} \
     && rm ${POSTGRES_TAR} \
     && cd postgresql-${POSTGRES_VERSION} \
-    && ./configure --prefix=/opt/postgres-${POSTGRES_VERSION} \
+    && ./configure --prefix=/opt/postgres-${POSTGRES_VERSION} --without-readline \
     && make -j$(nproc) \
     && make install \
     && cd /opt \

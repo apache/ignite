@@ -20,6 +20,7 @@ This module contains smoke tests that checks that services work
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.kafka.kafka import KafkaService, KafkaSettings
+from ignitetest.services.postgresql.postgresql import PostgresService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.zk.zookeeper import ZookeeperService
@@ -92,3 +93,13 @@ class SmokeServicesTest(IgniteTest):
 
         kafka.stop()
         zookeeper.stop()
+
+    @cluster(num_nodes=3)
+    def test_postgresql_start_stop(self):
+        """
+        Test that PostgresService correctly start and stop
+        """
+        postgres = PostgresService(self.test_context, num_nodes=3)
+
+        postgres.start()
+        postgres.stop()
