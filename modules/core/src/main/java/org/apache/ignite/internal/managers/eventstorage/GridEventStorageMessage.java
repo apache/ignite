@@ -397,7 +397,7 @@ public class GridEventStorageMessage implements Message {
                 reader.incrementState();
 
             case 6:
-                ldrParties = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
+                ldrParties = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;

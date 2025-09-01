@@ -190,7 +190,7 @@ public class StatisticsObjectData implements Message, Serializable {
 
         switch (reader.state()) {
             case 0:
-                data = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.MSG, false);
+                data = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

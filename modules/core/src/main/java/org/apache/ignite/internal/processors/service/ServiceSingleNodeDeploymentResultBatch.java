@@ -116,7 +116,7 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
                 reader.incrementState();
 
             case 1:
-                results = reader.readMap(IGNITE_UUID, MSG, false);
+                results = reader.readMap(IGNITE_UUID, MSG);
 
                 if (!reader.isLastRead())
                     return false;

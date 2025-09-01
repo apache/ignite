@@ -114,7 +114,7 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
 
         switch (reader.state()) {
             case 4:
-                appAttrs = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
+                appAttrs = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.STRING);
 
                 if (!reader.isLastRead())
                     return false;

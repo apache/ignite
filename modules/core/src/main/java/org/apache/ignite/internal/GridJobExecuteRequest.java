@@ -757,7 +757,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 11:
-                ldrParticipants = reader.readMap(MessageCollectionItemType.UUID, IGNITE_UUID, false);
+                ldrParticipants = reader.readMap(MessageCollectionItemType.UUID, IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;

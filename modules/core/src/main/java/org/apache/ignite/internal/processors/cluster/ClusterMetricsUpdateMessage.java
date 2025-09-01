@@ -112,7 +112,7 @@ public class ClusterMetricsUpdateMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                allNodesMetrics = reader.readMap(MessageCollectionItemType.UUID, BYTE_ARR, false);
+                allNodesMetrics = reader.readMap(MessageCollectionItemType.UUID, BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
