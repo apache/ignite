@@ -1678,7 +1678,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         assert sock != null;
         assert data != null;
 
-        try (SocketTimer ignored = new SocketTimer(sock, timeout)) {
+        try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
             OutputStream out = sock.getOutputStream();
 
             out.write(data);
@@ -1745,7 +1745,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         assert sock != null;
         assert msg != null;
 
-        try (SocketTimer ignored = new SocketTimer(sock, timeout)) {
+        try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
             U.marshal(marshaller(), msg, out);
         }
         catch (IgniteCheckedException e) {
@@ -1768,7 +1768,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         throws IOException {
         assert sock != null;
 
-        try (SocketTimer ignored = new SocketTimer(sock, timeout)) {
+        try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
             OutputStream out = sock.getOutputStream();
 
             out.write(res);
@@ -2442,10 +2442,19 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         return S.toString(TcpDiscoverySpi.class, this);
     }
 
+    /** Starts a timer for a socket operation. */
+    private SocketTimeoutObject startTimer(Socket sock, long endTime) {
+        SocketTimeoutObject obj = new SocketTimeoutObject(sock, endTime);
+
+        addTimeoutObject(obj);
+
+        return obj;
+    }
+
     /**
      * Socket timeout object.
      */
-    private class SocketTimeoutObject implements IgniteSpiTimeoutObject {
+    private class SocketTimeoutObject implements IgniteSpiTimeoutObject, AutoCloseable {
         /** */
         private final IgniteUuid id = IgniteUuid.randomUuid();
 
@@ -2503,30 +2512,17 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return id;
         }
 
+        /** */
+        @Override public void close() throws SocketTimeoutException {
+            if (cancel())
+                removeTimeoutObject(this);
+            else
+                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
+        }
+
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SocketTimeoutObject.class, this);
-        }
-    }
-
-    /** Handles a socket timeout. */
-    private final class SocketTimer implements AutoCloseable {
-        /** */
-        private final SocketTimeoutObject obj;
-
-        /** */
-        SocketTimer(Socket sock, long timeout) {
-            obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
-
-            addTimeoutObject(obj);
-        }
-
-        /** */
-        @Override public void close() throws SocketTimeoutException {
-            if (obj.cancel())
-                removeTimeoutObject(obj);
-            else
-                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
         }
     }
 
