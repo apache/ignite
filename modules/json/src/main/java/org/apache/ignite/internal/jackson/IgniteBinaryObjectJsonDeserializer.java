@@ -20,7 +20,6 @@ package org.apache.ignite.internal.jackson;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
@@ -69,11 +68,10 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
         ObjectCodec mapper = parser.getCodec();
 
         Map<String, BinaryFieldMetadata> binFields = binaryFields(type);
-        Map<String, List<Class<?>>> qryFields = queryFields(cacheName, type);
+        Map<String, Class<?>> qryFields = queryFields(cacheName, type);
 
         BinaryObjectBuilder builder = ctx.cacheObjects().builder(type);
         Iterator<Map.Entry<String, JsonNode>> itr = tree.fields();
-        List<Class<?>> dfltType = Collections.singletonList(Object.class);
 
         while (itr.hasNext()) {
             Map.Entry<String, JsonNode> entry = itr.next();
@@ -85,9 +83,8 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
 
             Class<?> fieldCls = meta != null ? BinaryUtils.FLAG_TO_CLASS.get((byte)meta.typeId()) : null;
 
-            // TODO: implement
             if (fieldCls == null)
-                fieldCls = qryFields.getOrDefault(QueryUtils.normalizeObjectName(field, true), dfltType).get(0);
+                fieldCls = qryFields.getOrDefault(QueryUtils.normalizeObjectName(field, true), Object.class);
 
             builder.setField(field, mapper.treeToValue(node, fieldCls));
         }
@@ -100,7 +97,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
      * @param type Type name.
      * @return Mapping from field name to its type.
      */
-    private Map<String, List<Class<?>>> queryFields(String cacheName, String type) {
+    private Map<String, Class<?>> queryFields(String cacheName, String type) {
         if (ctx.query().moduleEnabled()) {
             GridQueryTypeDescriptor desc = ctx.query().typeDescriptor(cacheName, type);
 

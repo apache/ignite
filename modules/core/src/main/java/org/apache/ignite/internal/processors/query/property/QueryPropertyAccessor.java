@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.property;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Way of accessing a property - either via field or getter and setter methods.
@@ -51,9 +50,4 @@ public interface QueryPropertyAccessor {
      * @return Type of the value of this property.
      */
     public Class<?> getType();
-
-    /**
-     * @return Component type if {@link #getType()} is a collection.
-     */
-    @Nullable public Class<?> getComponentType();
 }

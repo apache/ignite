@@ -31,9 +31,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
@@ -45,6 +47,15 @@ import org.junit.Test;
 
 /** */
 public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.getSqlConfiguration().setValidationEnabled(true);
+
+        return cfg;
+    }
+
     /**
      * Test verifies that already inserted by the current query data
      * is not processed by this query again.
@@ -655,6 +666,52 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
         assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00a00a00')", errType, errDate);
         assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00/00/00')", errType, errDate);
         assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00-00-00')", errType, errDate);
+    }
+
+    /** */
+    @Test
+    public void testTableWithArrayPkAndIndex() {
+        sql("create table my_table (arr1 INTEGER ARRAY primary key, arr2 VARCHAR ARRAY, arrarr INTEGER ARRAY ARRAY) " +
+            "WITH " + atomicity());
+        sql("create index testIdx on my_table (arr2)");
+
+        assertThrows(
+            "insert into my_table values (ARRAY[1,'str',3], null, null)",
+            SqlValidatorException.class,
+            "Parameters must be of the same type"
+        );
+        assertThrows(
+            "insert into my_table values (?, null, null)",
+            IgniteSQLException.class,
+            "Type for a column 'ARR1' is not compatible with index definition. Expected: List:Integer.",
+            F.asList(1, "str", 3)
+        );
+        assertThrows(
+            "insert into my_table values (ARRAY['wrongValType'], null, null)",
+            IgniteSQLException.class,
+            "Type for a column 'ARR1' is not compatible with index definition. Expected: List:Integer"
+        );
+        assertThrows(
+            "insert into my_table values (ARRAY[1,2], ARRAY[1,2], null)",
+            IgniteSQLException.class,
+            "Type for a column 'ARR2' is not compatible with index definition. Expected: List:String"
+        );
+        assertThrows(
+            "insert into my_table values (ARRAY[1,2], null, ARRAY[1,2])",
+            SqlValidatorException.class,
+            "Cannot assign to target field 'ARRARR' of type INTEGER ARRAY ARRAY"
+        );
+
+        sql("insert into my_table values (ARRAY[1,2,3], ?, ?)", F.asList("str1", "str2"),
+            F.asList(F.asList(0, null), null, F.asList(10, 20)));
+        sql("insert into my_table values (?, null, null)", F.asList(4, 5, 6));
+        sql("insert into my_table values (ARRAY[7,8,9], ARRAY['a','b','c'], ARRAY[ ARRAY[30], ARRAY[50,null], null ])");
+
+        assertQuery("select * from my_table order by arr1, arrarr")
+            .returns(F.asList(1, 2, 3), F.asList("str1", "str2"), F.asList(F.asList(0, null), null, F.asList(10, 20)))
+            .returns(F.asList(4, 5, 6), null, null)
+            .returns(F.asList(7, 8, 9), F.asList("a", "b", "c"), F.asList(F.asList(30), F.asList(50, null), null))
+            .check();
     }
 
     /** */

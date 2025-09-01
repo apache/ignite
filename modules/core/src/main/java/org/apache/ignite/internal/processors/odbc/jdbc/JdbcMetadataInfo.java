@@ -186,20 +186,19 @@ public class JdbcMetadataInfo {
 
                 if (useNewest || protoVer.compareTo(VER_2_7_0) >= 0) {
                     colMeta = new JdbcColumnMetaV4(info.schemaName(), info.tableName(), info.columnName(),
-                        info.fieldClass().get(0), info.nullable(), info.defaultValue(), info.precision(), info.scale());
+                        info.fieldClass(), info.nullable(), info.defaultValue(), info.precision(), info.scale());
                 }
                 else if (protoVer.compareTo(VER_2_4_0) >= 0) {
                     colMeta = new JdbcColumnMetaV3(info.schemaName(), info.tableName(), info.columnName(),
-                        info.fieldClass().get(0), info.nullable(), info.defaultValue());
+                        info.fieldClass(), info.nullable(), info.defaultValue());
                 }
                 else if (protoVer.compareTo(VER_2_3_0) >= 0) {
                     colMeta = new JdbcColumnMetaV2(info.schemaName(), info.tableName(), info.columnName(),
-                        info.fieldClass().get(0), info.nullable());
+                        info.fieldClass(), info.nullable());
                 }
-                else {
+                else
                     colMeta = new JdbcColumnMeta(info.schemaName(), info.tableName(), info.columnName(),
-                        info.fieldClass().get(0));
-                }
+                        info.fieldClass());
 
                 if (!metas.contains(colMeta))
                     metas.add(colMeta);

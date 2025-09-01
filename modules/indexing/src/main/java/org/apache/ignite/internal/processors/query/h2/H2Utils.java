@@ -187,13 +187,13 @@ public class H2Utils {
 
         sql.a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr).a(keyValVisibility);
 
-        for (Map.Entry<String, List<Class<?>>> e : tbl.type().fields().entrySet()) {
+        for (Map.Entry<String, Class<?>> e : tbl.type().fields().entrySet()) {
             GridQueryProperty prop = tbl.type().property(e.getKey());
 
             sql.a(',')
                 .a(withQuotes(e.getKey()))
                 .a(' ')
-                .a(dbTypeFromClass(e.getValue().get(0), prop.precision(), prop.scale()))
+                .a(dbTypeFromClass(e.getValue(), prop.precision(), prop.scale()))
                 .a(prop.notNull() ? " NOT NULL" : "");
         }
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
@@ -65,14 +64,14 @@ public class GridH2RowDescriptor implements GridQueryRowDescriptor {
 
     /** */
     private void updateFieldTypes() {
-        Collection<List<Class<?>>> types = delegate.type().fields().values();
+        Collection<Class<?>> classes = delegate.type().fields().values();
 
-        fieldTypes = new int[types.size()];
+        fieldTypes = new int[classes.size()];
 
         int fieldIdx = 0;
 
-        for (List<Class<?>> t : types)
-            fieldTypes[fieldIdx++] = DataType.getTypeFromClass(t.get(0));
+        for (Class<?> cls : classes)
+            fieldTypes[fieldIdx++] = DataType.getTypeFromClass(cls);
     }
 
     /** {@inheritDoc} */

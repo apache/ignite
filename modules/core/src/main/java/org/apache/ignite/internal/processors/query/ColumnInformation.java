@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -39,7 +38,7 @@ public class ColumnInformation {
     private final String colName;
 
     /** */
-    private final List<Class<?>> fieldCls;
+    private final Class<?> fieldCls;
 
     /** */
     private final boolean nullable;
@@ -61,13 +60,13 @@ public class ColumnInformation {
      * @param schemaName Schema name.
      * @param tblName Table name.
      * @param colName Column name.
-     * @param fieldCls Field class. Can be a collection with element types.
+     * @param fieldCls Field class.
      * @param nullable Nullable.
      * @param dfltVal Default value.
      * @param precision Precision for a column or -1 if not applicable.
      * @param scale Scale for a column or -1 if not applicable.
      */
-    public ColumnInformation(int ordinalPosition, String schemaName, String tblName, String colName, List<Class<?>> fieldCls,
+    public ColumnInformation(int ordinalPosition, String schemaName, String tblName, String colName, Class<?> fieldCls,
         boolean nullable, Object dfltVal, int precision, int scale, boolean affinityCol) {
         this.ordinalPosition = ordinalPosition;
         this.schemaName = schemaName;
@@ -110,9 +109,9 @@ public class ColumnInformation {
     }
 
     /**
-     * @return Class of column type. Can be a collection with element types.
+     * @return Class of column type.
      */
-    public List<Class<?>> fieldClass() {
+    public Class<?> fieldClass() {
         return fieldCls;
     }
 

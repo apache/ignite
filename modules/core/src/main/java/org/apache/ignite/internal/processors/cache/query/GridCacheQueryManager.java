@@ -2123,10 +2123,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             fieldsMap.put("_KEY", type.keyClass().getName());
                             fieldsMap.put("_VAL", type.valueClass().getName());
                         }
-                        else {
-                            for (Map.Entry<String, List<Class<?>>> e : type.fields().entrySet())
-                                fieldsMap.put(e.getKey().toUpperCase(), e.getValue().get(0).getName());
-                        }
+
+                        for (Map.Entry<String, Class<?>> e : type.fields().entrySet())
+                            fieldsMap.put(e.getKey().toUpperCase(), e.getValue().getName());
 
                         fields.put(type.name(), fieldsMap);
 

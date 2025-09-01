@@ -185,7 +185,8 @@ public class QueryUtils {
             LocalDateTime.class,
             String.class,
             UUID.class,
-            byte[].class
+            byte[].class,
+            List.class // ARRAY
         ));
 
         return sqlClasses;
@@ -490,8 +491,10 @@ public class QueryUtils {
         // We need that to set correct types for _key and _val columns.
         // We better box these types - otherwise, if user provides, say, raw 'byte' for
         // key or value (which they could), we'll deem key or value as Object which clearly is not right.
-        Class<?> keyCls = U.box(U.classForName(qryEntity.findKeyType(), null, true));
+        List<Class<?>> keyFullCls = parseFieldType(qryEntity.findKeyType(), null, true, true);
         Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
+
+        Class<?> keyCls = keyFullCls.get(0);
 
         // If local node has the classes and they are externalizable, we must use reflection properties.
         boolean keyMustDeserialize = mustDeserializeBinary(ctx, keyCls);
@@ -499,7 +502,7 @@ public class QueryUtils {
 
         boolean keyOrValMustDeserialize = keyMustDeserialize || valMustDeserialize;
 
-        if (keyCls == null)
+        if (F.isEmpty(keyFullCls))
             keyCls = Object.class;
 
         String simpleValType = ((valCls == null) ? typeName(qryEntity.findValueType()) : typeName(valCls));
@@ -516,9 +519,9 @@ public class QueryUtils {
                 desc.valueClass(Object.class);
 
             if (isSqlType(keyCls))
-                desc.keyClass(keyCls);
+                desc.keyClass(keyFullCls);
             else
-                desc.keyClass(Object.class);
+                desc.keyClass(Collections.singletonList(Object.class));
         }
         else {
             if (valCls == null)
@@ -526,7 +529,7 @@ public class QueryUtils {
                     "(use default marshaller to enable binary objects) : " + qryEntity.findValueType());
 
             desc.valueClass(valCls);
-            desc.keyClass(keyCls);
+            desc.keyClass(keyFullCls);
         }
 
         desc.keyTypeName(qryEntity.findKeyType());
@@ -661,6 +664,7 @@ public class QueryUtils {
         // value.
         for (Map.Entry<String, String> entry : fields.entrySet()) {
             String fieldName = entry.getKey();
+            List<Class<?>> fieldType = parseFieldType(entry.getValue(), Object.class, true, false);
 
             boolean isKeyField;
 
@@ -674,12 +678,10 @@ public class QueryUtils {
 
             Object dfltVal = dlftVals != null ? dlftVals.get(fieldName) : null;
 
-            List<Class<?>> fldType = parseFieldType(entry.getValue());
-
             QueryBinaryProperty prop = buildBinaryProperty(
                 ctx,
                 fieldName,
-                fldType,
+                fieldType,
                 d.aliases(), isKeyField, notNull, dfltVal,
                 precision == null ? -1 : precision.getOrDefault(fieldName, -1),
                 scale == null ? -1 : scale.getOrDefault(fieldName, -1)
@@ -706,8 +708,13 @@ public class QueryUtils {
         processIndexes(qryEntity, d);
     }
 
-    /** */
-    public static List<Class<?>> parseFieldType(String typeStr) {
+    /** Extracts type from {@code typeStr} including component types if the type is a collection or a map. */
+    public static List<Class<?>> parseFieldType(
+        String typeStr,
+        @Nullable Class<?> dfltType,
+        boolean includePrimitives,
+        boolean box
+    ) {
         int idx;
         List<String> res = null;
 
@@ -734,7 +741,12 @@ public class QueryUtils {
         }
         while (idx >= 0);
 
-        return res.stream().map(clsName -> U.classForName(clsName, Object.class, true))
+        if (box) {
+            return res.stream().map(clsName -> U.box(U.classForName(clsName, Object.class, includePrimitives)))
+                .collect(Collectors.toList());
+        }
+
+        return res.stream().map(clsName -> U.classForName(clsName, Object.class, includePrimitives))
             .collect(Collectors.toList());
     }
 
@@ -758,12 +770,10 @@ public class QueryUtils {
 
         Object dfltVal = dfltVals.get(name);
 
-        List<Class<?>> fldType = parseFieldType(typeName);
-
         QueryBinaryProperty prop = buildBinaryProperty(
             ctx,
             name,
-            fldType,
+            parseFieldType(typeName, Object.class, true, false),
             d.aliases(),
             isKey,
             true,
@@ -904,7 +914,7 @@ public class QueryUtils {
      * @param ctx Kernal context.
      * @param pathStr String representing path to the property. May contains dots '.' to identify
      *      nested fields.
-     * @param resType Result type. Can be a collection with element types.
+     * @param resType Result type with component types if the type is a collection or a map.
      * @param aliases Aliases.
      * @param isKeyField Key ownership flag, {@code true} if this property is a field of the key object. Note that key
      * not a field of itself.
@@ -1055,13 +1065,11 @@ public class QueryUtils {
 
             tmp.parent(res);
 
-            // TODO: check
             cls = tmp.type().get(0);
 
             res = tmp;
         }
 
-        // TODO: check
         if (!U.box(resType).isAssignableFrom(U.box(res.type().get(0))))
             return null;
 

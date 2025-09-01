@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.Ignite;
@@ -104,15 +103,14 @@ class GridCacheQuerySqlMetadataJobV2 implements IgniteCallable<Collection<GridCa
                         fieldsMap.put("_KEY", type.keyClass().getName());
                         fieldsMap.put("_VAL", type.valueClass().getName());
                     }
-                    else {
-                        for (Map.Entry<String, List<Class<?>>> e : type.fields().entrySet()) {
-                            String fieldName = e.getKey();
 
-                            fieldsMap.put(fieldName.toUpperCase(), e.getValue().get(0).getName());
+                    for (Map.Entry<String, Class<?>> e : type.fields().entrySet()) {
+                        String fieldName = e.getKey();
 
-                            if (type.property(fieldName).notNull())
-                                notNullFieldsSet.add(fieldName.toUpperCase());
-                        }
+                        fieldsMap.put(fieldName.toUpperCase(), e.getValue().getName());
+
+                        if (type.property(fieldName).notNull())
+                            notNullFieldsSet.add(fieldName.toUpperCase());
                     }
 
                     fields.put(type.name(), fieldsMap);

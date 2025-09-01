@@ -667,14 +667,14 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                         !matches(table.tableName(), tablePattern))
                         continue;
 
-                    for (Map.Entry<String, List<Class<?>>> field : table.fields().entrySet()) {
+                    for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
                         if (!matches(field.getKey(), req.columnPattern()))
                             continue;
 
                         GridQueryProperty prop = table.property(field.getKey());
 
                         OdbcColumnMeta columnMeta = new OdbcColumnMeta(table.schemaName(), table.tableName(),
-                            field.getKey(), field.getValue().get(0), prop.precision(), prop.scale(),
+                            field.getKey(), field.getValue(), prop.precision(), prop.scale(),
                             prop.notNull() ? columnNoNulls : columnNullable);
 
                         if (!meta.contains(columnMeta))

@@ -20,14 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
@@ -38,14 +35,6 @@ import org.junit.Test;
  *
  */
 public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.getSqlConfiguration().setValidationEnabled(true);
-
-        return cfg;
-    }
-
     /** */
     @Test
     public void testMinMaxWithTable() {
@@ -130,22 +119,13 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
     /** */
     @Test
     public void testArrayConcatAgg() {
-        sql("CREATE TABLE TBL(VAL INT PRIMARY KEY, ARR_NULL INTEGER ARRAY, ARR_NOTNULL INTEGER ARRAY NOT NULL, ARRARR INTEGER ARRAY ARRAY) " +
-            "WITH " + atomicity());
+        sql("CREATE TABLE TBL(VAL INT PRIMARY KEY, ARR_NULL INTEGER ARRAY, ARR_NOTNULL INTEGER ARRAY NOT NULL, " +
+            "ARRARR INTEGER ARRAY ARRAY) WITH " + atomicity());
 
         sql("CREATE INDEX idx1 on tbl(arr_null)");
 
-        // TODO: check dynamic param on insert
-        sql("INSERT INTO TBL VALUES (1, null, ARRAY[NULL,8,9], ARRAY[ARRAY[31,32],ARRAY[33,34,35]])");
-        sql("INSERT INTO TBL VALUES (2, ARRAY[4,5,6], ARRAY[10,11,NULL], ARRAY[ARRAY[51,NULL,53],NULL,ARRAY[NULL,NULL]])");
-
-        assertThrows("INSERT INTO TBL VALUES (3, null, ARRAY[8,'str'], null)", SqlValidatorException.class,
-            "Parameters must be of the same type");
-
-        assertThrows("INSERT INTO TBL VALUES (3, null, ARRAY['str'], null)", IgniteSQLException.class,
-            "Type for a column 'ARR_NOTNULL' is not compatible with table definition.");
-        assertThrows("INSERT INTO TBL VALUES (3, null, ARRAY[31.0,35.0], null)", IgniteSQLException.class,
-            "Type for a column 'ARR_NOTNULL' is not compatible with table definition.");
+        sql("INSERT INTO TBL VALUES (1, NULL, ?, ARRAY[ ARRAY[31,32], ARRAY[33,34,35] ])", F.asList(null, 8, 9));
+        sql("INSERT INTO TBL VALUES (2, ARRAY[4,5,6], ARRAY[10,11,NULL], ARRAY[ ARRAY[51,NULL,53], NULL, ARRAY[NULL,NULL] ])");
 
         assertQuery("select ARRAY_CONCAT_AGG(arr_null) from TBL").returns(F.asList(4, 5, 6)).check();
 

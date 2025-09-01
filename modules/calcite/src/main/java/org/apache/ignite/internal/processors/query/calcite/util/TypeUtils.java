@@ -197,7 +197,7 @@ public class TypeUtils {
         int scale,
         boolean nullability
     ) {
-       return sqlType(typeFactory, Collections.singletonList(cls), precision, scale, nullability);
+        return sqlType(typeFactory, Collections.singletonList(cls), precision, scale, nullability);
     }
 
     /** */
@@ -212,9 +212,8 @@ public class TypeUtils {
 
         RelDataType javaType = typeFactory.createJavaType(typeDefs.get(0));
 
-        // Only array component type is currently supported.
+        // Only array is currently supported.
         if (SqlTypeUtil.isArray(javaType)) {
-            assert typeDefs.size() > 1 : "Type '" + javaType + "' is a collection or a map but has no element types.";
             assert !javaType.getSqlTypeName().allowsPrecScale(true, true);
 
             RelDataType elementType = null;
@@ -227,8 +226,10 @@ public class TypeUtils {
                 assert isArr || et == typeDefs.size() - 1 : "Last element type must not be collection or map.";
                 assert !isArr || et != typeDefs.size() - 1 : "Only last element type can be not a collection or not a map.";
 
-                if (!isArr)
-                    elementType = sqlType0(typeFactory, curElemType, RelDataType.PRECISION_NOT_SPECIFIED, RelDataType.SCALE_NOT_SPECIFIED, true);
+                if (!isArr) {
+                    elementType = sqlType0(typeFactory, curElemType, RelDataType.PRECISION_NOT_SPECIFIED,
+                        RelDataType.SCALE_NOT_SPECIFIED, true);
+                }
                 else if (SqlTypeUtil.isArray(curElemType)) {
                     assert elementType != null;
 
@@ -256,14 +257,14 @@ public class TypeUtils {
     }
 
     /** */
-    private static RelDataType sqlType0(IgniteTypeFactory tf, RelDataType type, int precision, int scale, boolean nulls) {
+    private static RelDataType sqlType0(IgniteTypeFactory typeFactory, RelDataType type, int precision, int scale, boolean nulls) {
         if (type.getSqlTypeName().allowsPrecScale(true, true) &&
             (precision != RelDataType.PRECISION_NOT_SPECIFIED || scale != RelDataType.SCALE_NOT_SPECIFIED)) {
-            return tf.createTypeWithNullability(
-                tf.createSqlType(type.getSqlTypeName(), precision, scale), nulls);
+            return typeFactory.createTypeWithNullability(
+                typeFactory.createSqlType(type.getSqlTypeName(), precision, scale), nulls);
         }
 
-        return tf.createTypeWithNullability(sqlType(tf, type), nulls);
+        return typeFactory.createTypeWithNullability(sqlType(typeFactory, type), nulls);
     }
 
     /** */

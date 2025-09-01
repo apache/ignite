@@ -50,7 +50,7 @@ public interface GridQueryProperty {
     public String name();
 
     /**
-     * @return Class member type. Can be a collection with element types.
+     * @return Class member type with component types if the type is a collection or a map.
      */
     public List<Class<?>> type();
 

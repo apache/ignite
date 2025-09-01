@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.property;
 
 import java.lang.reflect.Method;
 import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Accessor with getter only.
@@ -67,11 +66,5 @@ public class QueryReadOnlyMethodsAccessor implements QueryPropertyAccessor {
     /** {@inheritDoc} */
     @Override public Class<?> getType() {
         return getter.getReturnType();
-    }
-
-    /** {@inheritDoc} */
-    // TODO: check
-    @Override public @Nullable Class<?> getComponentType() {
-        return null;
     }
 }

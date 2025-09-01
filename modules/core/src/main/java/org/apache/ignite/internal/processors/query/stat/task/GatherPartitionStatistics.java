@@ -249,9 +249,9 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                 String colName = col.getValue();
 
                 long colCfgVer = colsToCollect.get(colName).version();
-                List<Class<?>> colCls = tbl.fields().get(colName);
+                Class<?> colCls = tbl.fields().get(colName);
 
-                collectors.add(new ColumnStatisticsCollector(colId, colName, colCls.get(0), colCfgVer));
+                collectors.add(new ColumnStatisticsCollector(colId, colName, colCls, colCfgVer));
             }
 
             try {

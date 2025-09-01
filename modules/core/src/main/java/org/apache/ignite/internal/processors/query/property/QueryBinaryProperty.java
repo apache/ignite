@@ -46,7 +46,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** Parent property. */
     private QueryBinaryProperty parent;
 
-    /** Result class. Can be a collection with component tyle. */
+    /** Result class with component classes if the type is a collection or a map. */
     private List<Class<?>> type;
 
     /** Defines where value should be extracted from : cache entry's key or value. */
@@ -76,7 +76,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param ctx Kernal context.
      * @param propName Property name.
      * @param parent Parent property.
-     * @param type Result type. Can be a collection type with element type.
+     * @param type Result type with component types if the type is a collection or a map.
      * @param key {@code true} if key property, {@code false} otherwise.
      * @param alias Field alias.
      * @param notNull {@code true} if null value is not allowed.
@@ -180,7 +180,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param builder Object builder.
      * @param field Field name.
      * @param val Value to set.
-     * @param valType Type of {@code val}. If collection, type of collection without element type.
+     * @param valType Type of {@code val}.
      * @param <T> Value type.
      */
     private <T> void setValue0(BinaryObjectBuilder builder, String field, Object val, Class<T> valType) {

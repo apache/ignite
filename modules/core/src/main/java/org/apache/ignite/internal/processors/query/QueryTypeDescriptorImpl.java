@@ -23,12 +23,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
@@ -37,7 +37,6 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -55,7 +54,6 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.VALUE_SCALE_OUT_OF_RANGE;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.QueryUtils.isConvertibleTypes;
 
 /**
  * Descriptor of type.
@@ -73,9 +71,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private String tblName;
 
-    /** Value field names and types with preserved order. Field type can be a collection type with element type. */
+    /** Value field names and types, component types with preserved order. If field is not a collection or a map, has single type. */
     @GridToStringInclude
     private final Map<String, List<Class<?>>> fields = new LinkedHashMap<>();
+
+    /** Value field names and types without component types with preserved order. */
+    @GridToStringInclude
+    private volatile Map<String, Class<?>> fieldsSimplified;
 
     /** */
     @GridToStringExclude
@@ -97,8 +99,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private QueryIndexDescriptorImpl fullTextIdx;
 
-    /** */
-    private Class<?> keyCls;
+    /** Key type with compinent types if key is a collection. Single value if key is not a collection. */
+    private List<Class<?>> keyCls;
 
     /** */
     private Class<?> valCls;
@@ -211,8 +213,26 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, List<Class<?>>> fields() {
-        return fields;
+    @Override public Map<String, Class<?>> fields() {
+        Map<String, Class<?>> res = fieldsSimplified;
+
+        if (res == null) {
+            synchronized (fields) {
+                res = fieldsSimplified;
+
+                if (res == null) {
+                    fieldsSimplified = new LinkedHashMap<>(fields.size(), 1.0f);
+
+                    fields.forEach((fldName, fldFullType) -> fieldsSimplified.put(fldName, fldFullType.get(0)));
+
+                    fieldsSimplified = Collections.unmodifiableMap(fieldsSimplified);
+
+                    res = fieldsSimplified;
+                }
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -376,15 +396,20 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** {@inheritDoc} */
     @Override public Class<?> keyClass() {
-        return keyCls;
+        return keyCls.get(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Class<?>> keyComponentClasses() {
+        return keyCls.size() > 1 ? keyCls.subList(1, keyCls.size()) : Collections.emptyList();
     }
 
     /**
-     * Set key class.
+     * Set key class with compinent types if key is a collection. Single value if key is not a collection.
      *
      * @param keyCls Key class.
      */
-    public void keyClass(Class<?> keyCls) {
+    public void keyClass(List<Class<?>> keyCls) {
         this.keyCls = keyCls;
     }
 
@@ -460,9 +485,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             propsWithDefaultValue.add(prop);
         }
 
-        // TODO: check for element type
-        if (isField)
+        if (isField) {
             fields.put(name, prop.type());
+
+            fieldsSimplified = null;
+        }
     }
 
     /**
@@ -482,6 +509,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         uppercaseProps.remove(name.toUpperCase());
 
         fields.remove(name);
+
+        fieldsSimplified = null;
     }
 
     /**
@@ -609,6 +638,22 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         validateIndexes(key, val);
     }
 
+    /** */
+    private void throwWrongColumnValueType(String colName, Object val, List<Class<?>> type) throws IgniteSQLException {
+        if (type.size() == 1) {
+            throw new IgniteSQLException("Type for a column '" + colName + "' is not compatible with index definition." +
+                " Expected '" + type.get(0).getSimpleName() + "', actual type '" + typeName(val) + "'");
+        }
+        else {
+            assert !F.isEmpty(type);
+
+            throw new IgniteSQLException("Type for a column '" + colName + "' is not compatible with index definition." +
+                " Expected: " +
+                type.stream().map(t -> t == null ? "null" : t.getSimpleName()).collect(Collectors.joining(":")) + '.'
+            );
+        }
+    }
+
     /** Validate properties. */
     private void validateProps(Object key, Object val) throws IgniteCheckedException {
         if (F.isEmpty(validateProps))
@@ -639,10 +684,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     isKey ? NULL_KEY : NULL_VALUE);
             }
 
-            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.type())) {
-                throw new IgniteSQLException("Type for a column '" + prop.name() + "' is not compatible with table definition." +
-                    " Expected '" + prop.type().get(0).getSimpleName() + "', actual type '" + typeName(propVal) + "'");
-            }
+            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.type()))
+                throwWrongColumnValueType(prop.name(), propVal, prop.type());
 
             if (propVal == null || prop.precision() == -1)
                 continue;
@@ -706,10 +749,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 if (propVal == null)
                     continue;
 
-                if (!isCompatibleWithPropertyType(propVal, propType)) {
-                    throw new IgniteSQLException("Type for a column '" + idxField + "' is not compatible with index definition." +
-                        " Expected '" + prop.type().get(0).getSimpleName() + "', actual type '" + typeName(propVal) + "'");
-                }
+                if (!isCompatibleWithPropertyType(propVal, propType))
+                    throwWrongColumnValueType(idxField, propVal, propType);
             }
         }
     }
@@ -718,7 +759,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * Checks if the specified object is compatible with the type of the column through which this object will be accessed.
      *
      * @param val Object to check.
-     * @param expColType Type of the column based on Query Property info. Can be a collection with component type.
+     * @param expColType Type of the column based on Query Property info with component types if the type is a collection or a map.
      */
     private boolean isCompatibleWithPropertyType(Object val, List<Class<?>> expColType) {
         if (F.isEmpty(expColType))
@@ -726,7 +767,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
         Class<?> expType = expColType.get(0);
 
-        if (!checkType(val, expType))
+        if (!checkValueType(val, expType))
             return false;
 
         boolean collectionType = Collection.class.isAssignableFrom(expType);
@@ -755,26 +796,26 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** */
-    private boolean checkType(Object val, Class<?> expType) {
+    private boolean checkValueType(Object val, Class<?> expColType) {
         if (!(val instanceof BinaryObject) || BinaryUtils.isBinaryArray(val)) {
-            if (U.box(expType).isAssignableFrom(U.box(val.getClass())))
+            if (U.box(expColType).isAssignableFrom(U.box(val.getClass())))
                 return true;
 
-            if (QueryUtils.isConvertibleTypes(val, expType))
+            if (QueryUtils.isConvertibleTypes(val, expColType))
                 return true;
 
-            return expType.isArray()
+            return expColType.isArray()
                 && BinaryUtils.isObjectArray(val.getClass())
                 && Arrays.stream(BinaryUtils.rawArrayFromBinary(val))
-                .allMatch(x -> x == null || U.box(expType.getComponentType()).isAssignableFrom(U.box(x.getClass())));
+                    .allMatch(x -> x == null || U.box(expColType.getComponentType()).isAssignableFrom(U.box(x.getClass())));
         }
-        else if (coCtx.kernalContext().cacheObjects().typeId(expType.getName()) != ((BinaryObject)val).type().typeId()) {
-            Class<?> cls = U.classForName(((BinaryObject)val).type().typeName(), null, true);
+        else if (coCtx.kernalContext().cacheObjects().typeId(expColType.getName()) != ((BinaryObject)val).type().typeId()) {
+            final Class<?> cls = U.classForName(((BinaryObject)val).type().typeName(), null, true);
 
-            return (cls == null && expType == Object.class) || (cls != null && expType.isAssignableFrom(cls));
+            return (cls == null && expColType == Object.class) || (cls != null && expColType.isAssignableFrom(cls));
         }
 
-            return true;
+        return true;
     }
 
     /** {@inheritDoc} */

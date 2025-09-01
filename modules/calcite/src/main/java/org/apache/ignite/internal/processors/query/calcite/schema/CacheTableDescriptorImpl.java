@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
@@ -139,8 +140,15 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             virtualFields.set(0);
         }
         else {
-            descriptors.add(
-                new KeyValDescriptor(QueryUtils.KEY_FIELD_NAME, typeDesc.keyClass(), true, QueryUtils.KEY_COL));
+            List<Class<?>> keyComponents = typeDesc.keyComponentClasses();
+            List<Class<?>> keyFullType = F.isEmpty(keyComponents)
+                ? Collections.singletonList(typeDesc.keyClass())
+                : Stream.concat(Stream.of(typeDesc.keyClass()), keyComponents.stream()).collect(Collectors.toList());
+
+            assert keyFullType.size() < 2 || Collection.class.isAssignableFrom(keyFullType.get(0))
+                || Map.class.isAssignableFrom(keyFullType.get(0));
+
+            descriptors.add(new KeyValDescriptor(QueryUtils.KEY_FIELD_NAME, keyFullType, true, QueryUtils.KEY_COL));
         }
 
         descriptors.add(
@@ -607,13 +615,21 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         private final int fieldIdx;
 
         /** */
-        private final Class<?> storageType;
+        private final List<Class<?>> storageType;
 
         /** */
         private volatile RelDataType logicalType;
 
         /** */
         private KeyValDescriptor(String name, Class<?> type, boolean isKey, int fieldIdx) {
+            this(name, Collections.singletonList(type), isKey, fieldIdx);
+
+            assert !Collections.class.isAssignableFrom(type) && !Map.class.isAssignableFrom(type)
+                : "Component types should be set for collection types";
+        }
+
+        /** */
+        private KeyValDescriptor(String name, List<Class<?>> type, boolean isKey, int fieldIdx) {
             this.name = name;
             this.isKey = isKey;
             this.fieldIdx = fieldIdx;
@@ -629,7 +645,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             this.fieldIdx = fieldIdx;
             this.desc = desc;
 
-            storageType = desc.type().get(0);
+            storageType = desc.type();
         }
 
         /** {@inheritDoc} */
@@ -679,7 +695,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public Class<?> storageType() {
-            return storageType;
+            return storageType.get(0);
         }
 
         /** {@inheritDoc} */
@@ -706,8 +722,6 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** */
         private FieldDescriptor(GridQueryProperty desc, int fieldIdx) {
-            assert !F.isEmpty(desc.type());
-
             this.desc = desc;
             this.fieldIdx = fieldIdx;
         }

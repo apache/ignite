@@ -139,7 +139,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPlainOutClosure;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -3632,7 +3631,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         List<GridQueryProperty> props = new ArrayList<>(cols.size());
 
         for (QueryField col : cols) {
-            List<Class<?>> fldType = QueryUtils.parseFieldType(col.typeName());
+            List<Class<?>> fldType = QueryUtils.parseFieldType(col.typeName(), Object.class, true, false);
 
             props.add(new QueryBinaryProperty(
                 ctx,

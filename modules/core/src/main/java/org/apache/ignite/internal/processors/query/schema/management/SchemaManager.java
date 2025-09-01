@@ -1255,16 +1255,15 @@ public class SchemaManager {
                 GridQueryTypeDescriptor d = tbl.type();
 
                 // Add default columns if fields not specified explicitely.
-                // TODO: check can be a collection?
                 if (F.isEmpty(d.fields())) {
                     if (matches(KEY_FIELD_NAME, colNamePtrn)) {
                         infos.add(new ColumnInformation(cnt.getAndIncrement(), d.schemaName(), d.tableName(),
-                            KEY_FIELD_NAME, Collections.singletonList(d.keyClass()), false, null, -1, -1, false));
+                            KEY_FIELD_NAME, d.keyClass(), false, null, -1, -1, false));
                     }
 
                     if (matches(VAL_FIELD_NAME, colNamePtrn)) {
                         infos.add(new ColumnInformation(cnt.getAndIncrement(), d.schemaName(), d.tableName(),
-                            VAL_FIELD_NAME, Collections.singletonList(d.valueClass()), false, null, -1, -1, false));
+                            VAL_FIELD_NAME, d.valueClass(), false, null, -1, -1, false));
                     }
                 }
                 else {
@@ -1278,7 +1277,7 @@ public class SchemaManager {
                                 d.schemaName(),
                                 d.tableName(),
                                 field,
-                                prop.type(),
+                                prop.type().get(0),
                                 !prop.notNull(),
                                 prop.defaultValue(),
                                 prop.precision(),
@@ -1304,7 +1303,7 @@ public class SchemaManager {
                                 QueryUtils.SCHEMA_SYS,
                                 MetricUtils.toSqlName(view.name()),
                                 MetricUtils.toSqlName(c.getKey()),
-                                Collections.singletonList(c.getValue()),
+                                c.getValue(),
                                 true,
                                 null,
                                 -1,
