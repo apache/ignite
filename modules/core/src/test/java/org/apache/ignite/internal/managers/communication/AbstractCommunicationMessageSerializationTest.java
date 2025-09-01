@@ -574,6 +574,14 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
+        @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
+            MessageCollectionItemType valType) {
+            readField(Map.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean isLastRead() {
             if (position <= capacity)
                 return true;

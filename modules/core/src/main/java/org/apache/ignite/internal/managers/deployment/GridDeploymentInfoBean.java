@@ -217,7 +217,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
                 reader.incrementState();
 
             case 3:
-                participants = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
+                participants = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;

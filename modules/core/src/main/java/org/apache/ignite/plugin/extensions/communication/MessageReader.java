@@ -246,9 +246,19 @@ public interface MessageReader {
      * @param <M> Type of the red map.
      * @return Map.
      */
-    // TODO: IGNITE-26329 — switch to the new readMap method without the flag parameter
+    @Deprecated
     public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
         MessageCollectionItemType valType, boolean linked);
+
+    /**
+     * Reads map.
+     *
+     * @param keyType Map key type.
+     * @param valType Map value type.
+     * @param <M> Type of the red map.
+     * @return Map.
+     */
+    public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType);
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}

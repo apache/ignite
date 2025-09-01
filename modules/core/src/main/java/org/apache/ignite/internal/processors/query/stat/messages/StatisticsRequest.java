@@ -208,7 +208,7 @@ public class StatisticsRequest implements Message {
                 reader.incrementState();
 
             case 4:
-                versions = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.LONG, false);
+                versions = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.LONG);
 
                 if (!reader.isLastRead())
                     return false;

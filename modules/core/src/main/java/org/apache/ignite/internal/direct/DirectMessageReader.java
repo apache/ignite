@@ -378,6 +378,18 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
+    @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
+        MessageCollectionItemType valType) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        M map = stream.readMap(keyType, valType, false, this);
+
+        lastRead = stream.lastFinished();
+
+        return map;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isLastRead() {
         return lastRead;
     }

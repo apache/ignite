@@ -503,7 +503,7 @@ class MessageSerializerGenerator {
 
                 returnFalseIfReadFailed(name, "reader.readMap",
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
-                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)), "false");
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
             }
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
