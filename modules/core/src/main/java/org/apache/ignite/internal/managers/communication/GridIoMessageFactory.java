@@ -360,8 +360,10 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(SessionChannelMessage.TYPE_CODE, SessionChannelMessage::new, new SessionChannelMessageSerializer());
         factory.register(SingleNodeMessage.TYPE_CODE, SingleNodeMessage::new);
         factory.register((short)177, TcpInverseConnectionResponseMessage::new, new TcpInverseConnectionResponseMessageSerializer());
-        factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new, new SnapshotFilesRequestMessageSerializer());
-        factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new, new SnapshotFilesFailureMessageSerializer());
+        factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new,
+            new SnapshotFilesRequestMessageSerializer());
+        factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new,
+            new SnapshotFilesFailureMessageSerializer());
         factory.register((short)180, AtomicApplicationAttributesAwareRequest::new);
         factory.register((short)181, TransactionAttributesAwareRequest::new);
 
