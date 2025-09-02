@@ -1707,20 +1707,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Writes message to the socket.
-     *
-     * @param sock Socket.
-     * @param msg Message.
-     * @param timeout Socket write timeout.
-     * @throws IOException If IO failed or write timed out.
-     * @throws IgniteCheckedException If marshalling failed.
-     */
-    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
-        IgniteCheckedException {
-        writeToSocket(sock, socketStream(sock), msg, timeout);
-    }
-
-    /**
      * @param msg Message.
      */
     @TestOnly
