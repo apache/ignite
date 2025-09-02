@@ -73,7 +73,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
     /** */
     @GridToStringInclude
-    @Order(value = 10, method = "mapping")
+    @Order(10)
     private List<UUID> mapping;
 
     /** */
