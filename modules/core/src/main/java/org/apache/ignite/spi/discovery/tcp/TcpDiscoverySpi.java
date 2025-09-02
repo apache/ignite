@@ -2430,7 +2430,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** Starts a timer for a socket operation. */
     private SocketTimeoutObject startTimer(Socket sock, long endTime) {
-        SocketTimeoutObject obj = new SocketTimeoutObject(sock, endTime);
+        SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + endTime);
 
         addTimeoutObject(obj);
 
