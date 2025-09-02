@@ -623,9 +623,9 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        GridTestUtils.assertThrows(log,
+        GridTestUtils.assertThrowsAnyCause(log,
             () -> grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(),
-            IgniteException.class, "Failed to execute job due to unexpected runtime exception");
+            RuntimeException.class, "Force to fail snapshot restore.");
 
         awaitPartitionMapExchange();
 
