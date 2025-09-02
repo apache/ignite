@@ -210,17 +210,6 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
             Socket sock,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout
-        ) throws IOException, IgniteCheckedException {
-            awaitLatch();
-
-            super.writeToSocket(sock, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
             OutputStream out,
             TcpDiscoveryAbstractMessage msg,
             long timeout
