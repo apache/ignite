@@ -1277,7 +1277,7 @@ public class SchemaManager {
                                 d.schemaName(),
                                 d.tableName(),
                                 field,
-                                prop.type().get(0),
+                                prop.type(),
                                 !prop.notNull(),
                                 prop.defaultValue(),
                                 prop.precision(),

@@ -1879,8 +1879,8 @@ public class QueryUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public List<Class<?>> type() {
-            return Collections.singletonList(cls);
+        @Override public Class<?> type() {
+            return cls;
         }
 
         /** {@inheritDoc} */

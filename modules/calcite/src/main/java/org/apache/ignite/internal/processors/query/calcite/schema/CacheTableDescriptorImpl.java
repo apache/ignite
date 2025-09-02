@@ -140,13 +140,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             virtualFields.set(0);
         }
         else {
-            List<Class<?>> keyComponents = typeDesc.keyComponentClasses();
-            List<Class<?>> keyFullType = F.isEmpty(keyComponents)
-                ? Collections.singletonList(typeDesc.keyClass())
-                : Stream.concat(Stream.of(typeDesc.keyClass()), keyComponents.stream()).collect(Collectors.toList());
-
-            assert keyFullType.size() < 2 || Collection.class.isAssignableFrom(keyFullType.get(0))
-                || Map.class.isAssignableFrom(keyFullType.get(0));
+            List<Class<?>> keyFullType = TypeUtils.fullType(typeDesc.keyClass(), typeDesc.keyComponentClasses());
 
             descriptors.add(new KeyValDescriptor(QueryUtils.KEY_FIELD_NAME, keyFullType, true, QueryUtils.KEY_COL));
         }

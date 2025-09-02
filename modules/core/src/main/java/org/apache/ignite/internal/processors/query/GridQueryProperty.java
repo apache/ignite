@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 
@@ -50,9 +51,16 @@ public interface GridQueryProperty {
     public String name();
 
     /**
-     * @return Class member type with component types if the type is a collection or a map.
+     * @return Class member type.
      */
-    public List<Class<?>> type();
+    public Class<?> type();
+
+    /**
+     * @return component types of {@link #type()} if the type is a collection or a map.
+     */
+    public default List<Class<?>> componentTypes() {
+        return Collections.emptyList();
+    }
 
     /**
      * Property ownership flag.

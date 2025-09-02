@@ -47,7 +47,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
     private QueryBinaryProperty parent;
 
     /** Result class with component classes if the type is a collection or a map. */
-    private List<Class<?>> type;
+    private Class<?> type;
 
     /** Defines where value should be extracted from : cache entry's key or value. */
     private final boolean isKeyProp;
@@ -164,7 +164,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
         if (!(obj instanceof BinaryObjectBuilder))
             throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
 
-        setValue0((BinaryObjectBuilder)obj, propName, propVal, type().get(0));
+        setValue0((BinaryObjectBuilder)obj, propName, propVal, type());
 
         if (needsBuild) {
             obj = ((BinaryObjectBuilder)obj).build();
@@ -238,7 +238,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Class<?>> type() {
+    @Override public Class<?> type() {
         return type;
     }
 
