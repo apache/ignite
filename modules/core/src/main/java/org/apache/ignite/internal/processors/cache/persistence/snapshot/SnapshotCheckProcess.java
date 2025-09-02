@@ -525,12 +525,8 @@ public class SnapshotCheckProcess {
                 phase2PartsHashes.start(reqId, ctx.req);
         }
         catch (Throwable th) {
-            if (ctx != null) {
+            if (ctx != null)
                 contexts.remove(ctx.req.snapshotName());
-
-                if (log.isInfoEnabled())
-                    log.info("Finished snapshot validation [req=" + ctx.req + ']');
-            }
 
             if (clusterOpFut != null)
                 clusterOpFut.onDone(th);
