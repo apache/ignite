@@ -1714,7 +1714,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
             IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
-            if (locVer.minor() != rmtVer.minor() || locVer.major() != rmtVer.major())
+            if (locVer == null || rmtVer == null)
+                fut.get();
+            else if (locVer.minor() != rmtVer.minor() || locVer.major() != rmtVer.major())
                 fut.get();
 
             return true;
