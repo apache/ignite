@@ -119,10 +119,8 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
     /** */
     @Test
     public void testArrayConcatAgg() {
-        sql("CREATE TABLE tarr(val INT PRIMARY KEY, arrn INTEGER ARRAY, arrnn INTEGER ARRAY NOT NULL, " +
-            "ARRARR INTEGER ARRAY ARRAY) WITH " + atomicity());
-
-        sql("CREATE INDEX idx1 on tarr(arrn)");
+        sql("CREATE TABLE tarr(val INT primary key, arrn INTEGER ARRAY, arrnn INTEGER ARRAY NOT NULL, arrarr INTEGER ARRAY ARRAY) " +
+            "WITH " + atomicity());
 
         sql("INSERT INTO tarr VALUES (1, NULL, ?, ARRAY[ ARRAY[31,32], ARRAY[33,34,35] ])", F.asList(null, 8, 9));
         sql("INSERT INTO tarr VALUES (2, ARRAY[4,5,6], ARRAY[10,11,NULL], ARRAY[ ARRAY[51,NULL,53], NULL, ARRAY[NULL,NULL] ])");
@@ -144,15 +142,15 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
             "(select val, arrnn a from tarr union all select val, arrn a from tarr) as A")
             .returns(F.asList(10, 11, null, 4, 5, 6, null, 8, 9)).check();
 
-        assertQuery("select ARRAY_CONCAT_AGG(ARRARR order by val) from tarr WHERE val=2")
+        assertQuery("select ARRAY_CONCAT_AGG(arrarr order by val) from tarr WHERE val=2")
             .returns(F.asList(F.asList(51, null, 53), null, F.asList( null, null)))
             .check();
 
-        assertQuery("select ARRAY_CONCAT_AGG(ARRARR order by val desc) from tarr WHERE val<3")
+        assertQuery("select ARRAY_CONCAT_AGG(arrarr order by val desc) from tarr WHERE val<3")
             .returns(F.asList(
-                F.asList(51, null, 53), null, F.asList( null, null),
-                F.asList(31, 32), F.asList(33, 34, 35)
-            )).check();
+                F.asList(51, null, 53), null, F.asList(null, null),
+                F.asList(31, 32), F.asList(33, 34, 35))
+            ).check();
     }
 
     /** */

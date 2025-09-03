@@ -619,12 +619,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         @Nullable List<Class<?>> componentTypes
     ) throws IgniteSQLException {
         if (F.isEmpty(componentTypes)) {
-            throw new IgniteSQLException("Type for a column '" + colName + "' is not compatible with index definition." +
+            throw new IgniteSQLException("Type for a column '" + colName + "' is not compatible with the definition." +
                 " Expected '" + type + "', actual type '" + typeName(val) + "'");
         }
         else {
-            throw new IgniteSQLException("Type for a column '" + colName + "' is not compatible with index definition." +
-                " Expected collection type " + type.getSimpleName() + ", component types: " +
+            throw new IgniteSQLException("Type for a column '" + colName + "' is not compatible with the definition." +
+                " Expected collection type: " + type.getSimpleName() + ", expected component types: " +
                 componentTypes.stream().map(t -> t == null ? "null" : t.getSimpleName()).collect(Collectors.joining(":")) + '.'
             );
         }
@@ -735,7 +735,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      *
      * @param val Object to check.
      * @param expColType Type of the column based on Query Property info.
-     * @param componentTypes Component types if the type is a collection or a map.
+     * @param componentTypes Expected component types if the expected type is a collection or a map.
      */
     private boolean isCompatibleWithPropertyType(Object val, Class<?> expColType, @Nullable List<Class<?>> componentTypes) {
         if (expColType == null)
@@ -754,6 +754,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
         // Map is not currently supported.
         if (collectionType && componentTypes != null) {
+            if (componentTypes.isEmpty())
+                return false;
+
             Collection<Object> coll = (Collection<Object>)val;
             expColType = componentTypes.get(0);
             componentTypes = componentTypes.subList(1, componentTypes.size());

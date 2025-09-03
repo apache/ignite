@@ -670,7 +670,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
 
     /** */
     @Test
-    public void testTableWithArrayPkAndIndex() {
+    public void testTableWithArrayTypes() {
         sql("create table my_table (arr1 INTEGER ARRAY primary key, arr2 VARCHAR ARRAY, arrarr INTEGER ARRAY ARRAY) " +
             "WITH " + atomicity());
         sql("create index testIdx on my_table (arr2)");

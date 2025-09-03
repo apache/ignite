@@ -401,7 +401,7 @@ public class DdlCommandHandler {
         return res;
     }
 
-    /** Creates type name. Includes component types if {@code type} is a collection or map. */
+    /** Creates type name. Includes component types if the type is a collection. */
     private static String typeName(IgniteTypeFactory tf, RelDataType type) {
         Type javaType = tf.getResultClass(type);
 

@@ -98,7 +98,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
         this.alias = F.isEmpty(alias) ? propName : alias;
         this.parent = parent;
         this.type = type;
-        this.componentTypes = Collections.unmodifiableList(F.isEmpty(componentTypes) ? Collections.emptyList() : componentTypes);
+        this.componentTypes = F.isEmpty(componentTypes) ? Collections.emptyList() : Collections.unmodifiableList(componentTypes);
         this.notNull = notNull;
         this.isKeyProp = key;
         this.dfltVal = dfltVal;

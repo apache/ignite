@@ -494,7 +494,7 @@ public class QueryUtils {
         List<Class<?>> keyFullCls = parseFieldType(qryEntity.findKeyType(), null, true, true);
         Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
 
-        Class<?> keyCls = keyFullCls.get(0);
+        Class<?> keyCls = F.isEmpty(keyFullCls) ? null : keyFullCls.get(0);
 
         // If local node has the classes and they are externalizable, we must use reflection properties.
         boolean keyMustDeserialize = mustDeserializeBinary(ctx, keyCls);
@@ -502,7 +502,7 @@ public class QueryUtils {
 
         boolean keyOrValMustDeserialize = keyMustDeserialize || valMustDeserialize;
 
-        if (F.isEmpty(keyFullCls))
+        if (keyCls == null)
             keyCls = Object.class;
 
         String simpleValType = ((valCls == null) ? typeName(qryEntity.findValueType()) : typeName(valCls));
@@ -708,7 +708,7 @@ public class QueryUtils {
         processIndexes(qryEntity, d);
     }
 
-    /** Extracts type from {@code typeStr} including component types if the type is a collection or a map. */
+    /** Extracts type from {@code typeStr} including component types if the type is a collection or a map. Splits with ':'. */
     public static List<Class<?>> parseFieldType(
         String typeStr,
         @Nullable Class<?> dfltType,

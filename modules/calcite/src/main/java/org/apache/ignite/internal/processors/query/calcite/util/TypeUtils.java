@@ -224,8 +224,8 @@ public class TypeUtils {
 
                 boolean isArr = SqlTypeUtil.isArray(curElemType);
 
-                assert isArr || et == componentTypes.size() - 1 : "Last element type must not be collection or map.";
-                assert !isArr || et != componentTypes.size() - 1 : "Only last element type can be not a collection or not a map.";
+                assert isArr || et == componentTypes.size() - 1 : "Last component type must not be a collection or a map.";
+                assert !isArr || et != componentTypes.size() - 1 : "Only last component type can be not a collection or not a map.";
 
                 if (!isArr) {
                     elementType = sqlType0(typeFactory, curElemType, RelDataType.PRECISION_NOT_SPECIFIED,

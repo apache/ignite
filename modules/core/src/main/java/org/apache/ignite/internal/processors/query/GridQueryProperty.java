@@ -56,7 +56,7 @@ public interface GridQueryProperty {
     public Class<?> type();
 
     /**
-     * @return Component types if the type is a collection or a map.
+     * @return Component types of the type if it is a collection or a map.
      */
     public default List<Class<?>> componentTypes() {
         return Collections.emptyList();
