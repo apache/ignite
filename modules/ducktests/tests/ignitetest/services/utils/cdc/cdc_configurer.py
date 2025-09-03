@@ -42,11 +42,11 @@ class CdcParams(NamedTuple):
     cdc_caches: list
     cdc_max_batch_size: int = None
     cdc_only_primary: bool = None
-    cdc_kafka_to_ignite_threads: int = None
-    cdc_kafka_partitions: int = 8
-    cdc_kafka_to_ignite_nodes: int = 1
+    cdc_kafka_to_ignite_threads: int = 8
+    cdc_kafka_partitions: int = 16
+    cdc_kafka_to_ignite_nodes: int = 2
     cdc_kafka_retention_ms: int = None
-    cdc_kafka_nodes: int = 1
+    cdc_kafka_nodes: int = 2
     cdc_keep_binary: bool = None
     # wal_force_archive_timeout: int = None
 

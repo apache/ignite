@@ -42,18 +42,16 @@ class CdcExtTest(CdcExtBaseTest):
     """
     CDC extensions tests.
     """
-    @cluster(num_nodes=5)
-    # @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @ignite_versions(str(DEV_BRANCH))
+    @cluster(num_nodes=6)
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(wal_force_archive_timeout=[100], duration_sec=[10], pds=[True, False])
     def cdc_ignite_to_ignite_test(self, ignite_version, wal_force_archive_timeout, duration_sec, pds):
         cdc_configurer = CdcIgniteToIgniteConfigurer()
 
         return self.run(ignite_version, wal_force_archive_timeout, duration_sec, pds, cdc_configurer)
 
-    @cluster(num_nodes=5)
-    # @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @ignite_versions(str(DEV_BRANCH))
+    @cluster(num_nodes=6)
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(wal_force_archive_timeout=[100], duration_sec=[10], pds=[True, False])
     def cdc_ignite_to_ignite_client_test(self, ignite_version, wal_force_archive_timeout, duration_sec, pds):
         cdc_configurer = CdcIgniteToIgniteClientConfigurer()
@@ -61,8 +59,7 @@ class CdcExtTest(CdcExtBaseTest):
         return self.run(ignite_version, wal_force_archive_timeout, duration_sec, pds, cdc_configurer)
 
     @cluster(num_nodes=12)
-    # @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @ignite_versions(str(DEV_BRANCH))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(wal_force_archive_timeout=[100], duration_sec=[10], pds=[True, False])
     def cdc_ignite_to_kafka_to_ignite_test(self, ignite_version, wal_force_archive_timeout, duration_sec, pds):
         cdc_configurer = CdcIgniteToKafkaToIgniteConfigurer()
@@ -70,8 +67,7 @@ class CdcExtTest(CdcExtBaseTest):
         return self.run(ignite_version, wal_force_archive_timeout, duration_sec, pds, cdc_configurer)
 
     @cluster(num_nodes=12)
-    # @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @ignite_versions(str(DEV_BRANCH))
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(wal_force_archive_timeout=[100], duration_sec=[10], pds=[True, False])
     def cdc_ignite_to_kafka_to_ignite_client_test(self, ignite_version, wal_force_archive_timeout, duration_sec, pds):
         cdc_configurer = CdcIgniteToKafkaToIgniteClientConfigurer()
@@ -109,8 +105,8 @@ class CdcExtTest(CdcExtBaseTest):
         )
 
         client = IgniteApplicationService(self.test_context, client_cfg,
-            java_class_name=JAVA_CLIENT_CLASS_NAME, num_nodes=1,
-            params={"cacheName": CACHE_NAME})
+            java_class_name=JAVA_CLIENT_CLASS_NAME, num_nodes=2,
+            params={"cacheName": CACHE_NAME, "pacing": 10})
 
         client.start()
 
