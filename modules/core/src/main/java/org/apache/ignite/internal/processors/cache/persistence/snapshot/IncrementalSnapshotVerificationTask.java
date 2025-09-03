@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -33,110 +34,114 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.managers.discovery.ConsistentIdMapper.ALL_NODES;
 
 /** */
-public class IncrementalSnapshotVerificationTask {
-    /** */
-    private final VerifyIncrementalSnapshotJob job;
+@GridInternal
+public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerificationTask {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
 
-    /** */
-    private final IgniteLogger log;
-
-    /** */
-    public IncrementalSnapshotVerificationTask(IgniteEx ignite, IgniteLogger log, SnapshotFileTree sft, int incrementalIdx) {
-        job = new VerifyIncrementalSnapshotJob(ignite, log, sft, incrementalIdx);
-        this.log = log;
-    }
-
-    /** */
-    public IdleVerifyResult reduce(Map<ClusterNode, IncrementalSnapshotVerificationTaskResult> results) throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        for (Map.Entry<ClusterNode, IncrementalSnapshotVerificationTaskResult> nodeRes: results.entrySet()) {
-            IncrementalSnapshotVerificationTaskResult res = nodeRes.getValue();
+        for (ComputeJobResult nodeRes: results) {
+            if (nodeRes.getException() != null) {
+                bldr.addException(nodeRes.getNode(), nodeRes.getException());
+
+                continue;
+            }
+
+            IncrementalSnapshotVerificationTaskResult res = nodeRes.getData();
+
+            if (!F.isEmpty(res.exceptions())) {
+                bldr.addException(nodeRes.getNode(), F.first(res.exceptions()));
+
+                continue;
+            }
 
             if (!F.isEmpty(res.partiallyCommittedTxs()))
-                bldr.addPartiallyCommited(nodeRes.getKey(), res.partiallyCommittedTxs());
+                bldr.addPartiallyCommited(nodeRes.getNode(), res.partiallyCommittedTxs());
 
             bldr.addPartitionHashes(res.partHashRes());
 
             if (log.isDebugEnabled())
-                log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + nodeRes.getKey() + ", taskRes=" + res + ']');
+                log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + nodeRes.getNode() + ", taskRes=" + res + ']');
 
-            bldr.addIncrementalHashRecords(nodeRes.getKey(), res.txHashRes());
+            bldr.addIncrementalHashRecords(nodeRes.getNode(), res.txHashRes());
         }
 
-        return bldr.build();
+        return new SnapshotPartitionsVerifyTaskResult(metas, bldr.build());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected VerifyIncrementalSnapshotJob createJob(
+        String name,
+        String folderName,
+        String consId,
+        SnapshotPartitionsVerifyTaskArg args
+    ) {
+        return new VerifyIncrementalSnapshotJob(name, args.snapshotPath(), args.incrementIndex(), folderName, consId);
     }
 
     /** */
-    public IncrementalSnapshotVerificationTaskResult execute() {
-        return job.execute0();
-    }
+    private static class VerifyIncrementalSnapshotJob extends AbstractSnapshotVerificationJob {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
 
-    /** */
-    private static class VerifyIncrementalSnapshotJob {
-        /** */
-        private final IgniteEx ignite;
-
-        /** */
-        private final IgniteLogger log;
-
-        /** */
-        private final SnapshotFileTree sft;
-
-        /** */
+        /** Incremental snapshot index. */
         private final int incIdx;
 
         /** */
         private LongAdder procEntriesCnt;
 
         /**
-         * @param ignite Ignite instance.
-         * @param log Ignite logger.
-         * @param sft Snapshot file tree
+         * @param snpName Snapshot name.
+         * @param snpPath Snapshot directory path.
+         * @param folderName Folder name for snapshot.
          * @param incIdx Incremental snapshot index.
+         * @param folderName Folder name for snapshot.
+         * @param consId Consistent id of the related node.
          */
-        private VerifyIncrementalSnapshotJob(
-            IgniteEx ignite,
-            IgniteLogger log,
-            SnapshotFileTree sft,
-            int incIdx
+        public VerifyIncrementalSnapshotJob(
+            String snpName,
+            @Nullable String snpPath,
+            int incIdx,
+            String folderName,
+            String consId
         ) {
-            this.ignite = ignite;
-            this.log = log;
-            this.sft = sft;
+            super(snpName, snpPath, folderName, consId, null, true);
+
             this.incIdx = incIdx;
         }
 
         /**
          * @return Map containing calculated transactions hash for every remote node in the cluster.
          */
-        public IncrementalSnapshotVerificationTaskResult execute0() throws IgniteException {
+        @Override public IncrementalSnapshotVerificationTaskResult execute0() throws IgniteException {
             try {
                 if (log.isInfoEnabled()) {
                     log.info("Verify incremental snapshot procedure has been initiated " +
-                        "[snpName=" + sft.name() + ", incrementIndex=" + incIdx + ", consId=" + sft.consistentId() + ']');
+                        "[snpName=" + snpName + ", incrementIndex=" + incIdx + ", consId=" + consId + ']');
                 }
 
                 if (incIdx <= 0)
@@ -169,7 +174,7 @@ public class IncrementalSnapshotVerificationTask {
                     }
                 };
 
-                short locNodeId = cstIdsMap.get(sft.consistentId());
+                short locNodeId = cstIdsMap.get(consId);
 
                 Set<GridCacheVersion> activeDhtTxs = new HashSet<>();
                 Map<GridCacheVersion, Set<Short>> txPrimParticipatingNodes = new HashMap<>();
@@ -287,7 +292,7 @@ public class IncrementalSnapshotVerificationTask {
 
                 Map<Object, TransactionsHashRecord> txHashRes = nodesTxHash.entrySet().stream()
                     .map(e -> new TransactionsHashRecord(
-                        sft.consistentId(),
+                        consId,
                         blt.compactIdMapping().get(e.getKey()),
                         e.getValue().hash
                     ))
@@ -302,7 +307,7 @@ public class IncrementalSnapshotVerificationTask {
                         e -> new PartitionHashRecord(
                             e.getKey(),
                             false,
-                            sft.consistentId(),
+                            consId,
                             null,
                             0,
                             null,
@@ -312,7 +317,7 @@ public class IncrementalSnapshotVerificationTask {
 
                 if (log.isInfoEnabled()) {
                     log.info("Verify incremental snapshot procedure finished " +
-                        "[snpName=" + sft.name() + ", incrementIndex=" + incIdx + ", consId=" + sft.consistentId() +
+                        "[snpName=" + snpName + ", incrementIndex=" + incIdx + ", consId=" + consId +
                         ", txCnt=" + procTxCnt.sum() + ", dataEntries=" + procEntriesCnt.sum() +
                         ", walSegments=" + procSegCnt.get() + ']');
                 }
@@ -349,6 +354,25 @@ public class IncrementalSnapshotVerificationTask {
                 .values().stream()
                 .filter(data -> data.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
                 .collect(Collectors.toMap(StoredCacheData::cacheId, Function.identity()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            VerifyIncrementalSnapshotJob job = (VerifyIncrementalSnapshotJob)o;
+
+            return snpName.equals(job.snpName) && Objects.equals(incIdx, job.incIdx) && Objects.equals(snpPath, job.snpPath)
+                && consId.equals(job.consId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(snpName, incIdx, snpPath, consId);
         }
     }
 

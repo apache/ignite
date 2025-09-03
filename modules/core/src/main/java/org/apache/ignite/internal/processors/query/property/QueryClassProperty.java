@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.property;
 
-import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -118,8 +116,8 @@ public class QueryClassProperty implements GridQueryProperty {
     }
 
     /** {@inheritDoc} */
-    @Override public List<Class<?>> type() {
-        return Collections.singletonList(accessor.getType());
+    @Override public Class<?> type() {
+        return accessor.getType();
     }
 
     /**

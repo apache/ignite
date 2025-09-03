@@ -48,7 +48,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataVerificationTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.PublicAccessJob;
@@ -108,7 +108,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     private static final IgniteClosure SYSTEM_CLOSURE = new ToStringClosure<>();
 
     /** */
-    private static final ComputeTask SYSTEM_TASK = new VerifyBackupPartitionsTask();
+    private static final ComputeTask SYSTEM_TASK = new SnapshotMetadataVerificationTask();
 
     /** */
     private static final AtomicInteger EXECUTED_TASK_CNTR = new AtomicInteger();
@@ -363,10 +363,10 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         checkCallable(c -> executorService(initiator, executor).invokeAll(singletonList(c)).forEach(ComputePermissionCheckTest::getQuiet));
         checkCallable(c ->
             executorService(initiator, executor).invokeAll(
-                    singletonList(c),
-                    getTestTimeout(),
-                    MILLISECONDS
-                ).forEach(ComputePermissionCheckTest::getQuiet)
+                singletonList(c),
+                getTestTimeout(),
+                MILLISECONDS
+            ).forEach(ComputePermissionCheckTest::getQuiet)
         );
 
         checkCallable(c -> executorService(initiator, executor).invokeAny(singletonList(c)));
@@ -537,8 +537,8 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
             if (e instanceof IgniteException) {
                 assertTrue(
                     e.getMessage().contains("Authorization failed") ||
-                    e.getMessage().contains("Access to Ignite Internal tasks is restricted") ||
-                    e.getMessage().contains("Failed to get any task completion")
+                        e.getMessage().contains("Access to Ignite Internal tasks is restricted") ||
+                        e.getMessage().contains("Failed to get any task completion")
                 );
 
                 return;

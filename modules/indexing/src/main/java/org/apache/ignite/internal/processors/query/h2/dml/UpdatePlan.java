@@ -250,7 +250,7 @@ public final class UpdatePlan {
 
             assert prop != null;
 
-            Class<?> expCls = prop.type().get(0);
+            Class<?> expCls = prop.type();
 
             newColVals.put(colName, DmlUtils.convert(row.get(i), rowDesc, expCls, colTypes[i], colNames[i]));
         }
@@ -323,7 +323,7 @@ public final class UpdatePlan {
 
             assert prop != null : "Unknown property: " + colNames[i];
 
-            newColVals.put(colNames[i], DmlUtils.convert(row.get(i + 2), rowDesc, prop.type().get(0), colTypes[i], colNames[i]));
+            newColVals.put(colNames[i], DmlUtils.convert(row.get(i + 2), rowDesc, prop.type(), colTypes[i], colNames[i]));
         }
 
         newVal = valSupplier.apply(row);

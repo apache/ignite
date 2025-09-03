@@ -26,68 +26,52 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot restore operation handling task.
  */
-public class SnapshotHandlerRestoreTask {
-    /** */
-    private final IgniteEx ignite;
+public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
 
-    /** */
-    private final IgniteLogger log;
-
-    /** */
-    private final SnapshotHandlerRestoreJob job;
-
-    /** */
-    SnapshotHandlerRestoreTask(
-        IgniteEx ignite,
-        IgniteLogger log,
-        SnapshotFileTree sft,
-        Collection<String> grps,
-        boolean check
+    /** {@inheritDoc} */
+    @Override protected SnapshotHandlerRestoreJob createJob(
+        String name,
+        String folderName,
+        String consId,
+        SnapshotPartitionsVerifyTaskArg args
     ) {
-        job = new SnapshotHandlerRestoreJob(ignite, sft, grps, check);
-        this.ignite = ignite;
-        this.log = log;
+        return new SnapshotHandlerRestoreJob(name, args.snapshotPath(), folderName, consId, args.cacheGroupNames(), args.check());
     }
 
-    /** */
-    public Map<String, SnapshotHandlerResult<Object>> execute() {
-        return job.execute0();
-    }
-
-    /** */
-    public void reduce(
-        String snapshotName,
-        Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> results
-    ) {
+    /** {@inheritDoc} */
+    @SuppressWarnings("rawtypes")
+    @Nullable @Override public SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) {
         Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
         Collection<UUID> execNodes = new ArrayList<>(results.size());
 
-        // Checking node -> Map by consistend id.
-        for (Map.Entry<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> nodeRes : results.entrySet()) {
-            // Consistent id -> Map by handler name.
-            for (Map.Entry<Object, Map<String, SnapshotHandlerResult<?>>> res : nodeRes.getValue().entrySet()) {
-                // Depending on the job mapping, we can get several different results from one node.
-                execNodes.add(nodeRes.getKey().id());
+        for (ComputeJobResult res : results) {
+            if (res.getException() != null)
+                throw res.getException();
 
-                Map<String, SnapshotHandlerResult<?>> nodeDataMap = res.getValue();
+            // Depending on the job mapping, we can get several different results from one node.
+            execNodes.add(res.getNode().id());
 
-                assert nodeDataMap != null : "At least the default snapshot restore handler should have been executed ";
+            Map<String, SnapshotHandlerResult> nodeDataMap = res.getData();
 
-                for (Map.Entry<String, SnapshotHandlerResult<?>> entry : nodeDataMap.entrySet()) {
-                    String hndName = entry.getKey();
+            assert nodeDataMap != null : "At least the default snapshot restore handler should have been executed ";
 
-                    clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(entry.getValue());
-                }
+            for (Map.Entry<String, SnapshotHandlerResult> entry : nodeDataMap.entrySet()) {
+                String hndName = entry.getKey();
+
+                clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(entry.getValue());
             }
         }
+
+        String snapshotName = F.first(F.first(metas.values())).snapshotName();
 
         try {
             ignite.context().cache().context().snapshotMgr().handlers().completeAll(
@@ -98,40 +82,36 @@ public class SnapshotHandlerRestoreTask {
 
             throw new IgniteException(e);
         }
+
+        return new SnapshotPartitionsVerifyTaskResult(metas, null);
     }
 
     /** Invokes all {@link SnapshotHandlerType#RESTORE} handlers locally. */
-    private static class SnapshotHandlerRestoreJob {
-        /** */
-        private final IgniteEx ignite;
-
-        /** */
-        private final SnapshotFileTree sft;
-
-        /** */
-        private final Collection<String> rqGrps;
-
-        /** */
-        private final boolean check;
+    private static class SnapshotHandlerRestoreJob extends AbstractSnapshotVerificationJob {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
 
         /**
+         * @param snpName Snapshot name.
+         * @param snpPath Snapshot directory path.
+         * @param folderName Folder name for snapshot.
+         * @param consId Consistent id of the related node.
          * @param grps Cache group names.
          * @param check If {@code true} check snapshot before restore.
          */
-        SnapshotHandlerRestoreJob(
-            IgniteEx ignite,
-            SnapshotFileTree sft,
+        public SnapshotHandlerRestoreJob(
+            String snpName,
+            @Nullable String snpPath,
+            String folderName,
+            String consId,
             Collection<String> grps,
             boolean check
         ) {
-            this.ignite = ignite;
-            this.sft = sft;
-            this.rqGrps = grps;
-            this.check = check;
+            super(snpName, snpPath, folderName, consId, grps, check);
         }
 
-        /** */
-        public Map<String, SnapshotHandlerResult<Object>> execute0() {
+        /** {@inheritDoc} */
+        @Override public Map<String, SnapshotHandlerResult<Object>> execute0() {
             try {
                 IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
                 SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.meta());

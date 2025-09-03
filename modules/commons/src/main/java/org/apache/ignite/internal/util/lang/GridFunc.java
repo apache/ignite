@@ -1664,7 +1664,7 @@ public class GridFunc {
     }
 
     /**
-     * Creates read-only list with given values.
+     * Creates list with given values.
      *
      * @param t Mandatory element.
      * @param optionals Optional element.

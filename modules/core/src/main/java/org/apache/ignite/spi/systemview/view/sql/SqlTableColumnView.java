@@ -63,7 +63,7 @@ public class SqlTableColumnView {
 
     /** @return Field data type. */
     public Class<?> type() {
-        return prop.type().get(0);
+        return prop.type();
     }
 
     /** @return Field default. */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.property;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryField;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary property.
@@ -38,16 +40,19 @@ public class QueryBinaryProperty implements GridQueryProperty {
     private final GridKernalContext ctx;
 
     /** Property name. */
-    private String propName;
+    private final String propName;
 
     /** */
-    private String alias;
+    private final String alias;
 
     /** Parent property. */
-    private QueryBinaryProperty parent;
+    private final QueryBinaryProperty parent;
 
-    /** Result class with component classes if the type is a collection or a map. */
-    private Class<?> type;
+    /** Result class. */
+    private final Class<?> type;
+
+    /** Component types if the type is a collection or a map. */
+    private final List<Class<?>> componentTypes;
 
     /** Defines where value should be extracted from : cache entry's key or value. */
     private final boolean isKeyProp;
@@ -62,7 +67,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
     private final boolean notNull;
 
     /** */
-    private final Object defaultValue;
+    private final Object dfltVal;
 
     /** */
     private final int precision;
@@ -76,25 +81,27 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param ctx Kernal context.
      * @param propName Property name.
      * @param parent Parent property.
-     * @param type Result type with component types if the type is a collection or a map.
+     * @param type Result type.
+     * @param componentTypes Component types if the type is a collection or a map.
      * @param key {@code true} if key property, {@code false} otherwise.
      * @param alias Field alias.
      * @param notNull {@code true} if null value is not allowed.
-     * @param defaultValue Default value.
+     * @param dfltVal Default value.
      * @param precision Precision.
      * @param scale Scale.
      */
     public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
-        List<Class<?>> type, boolean key, String alias, boolean notNull, Object defaultValue,
+        Class<?> type, @Nullable List<Class<?>> componentTypes, boolean key, String alias, boolean notNull, Object dfltVal,
         int precision, int scale) {
         this.ctx = ctx;
         this.propName = propName;
         this.alias = F.isEmpty(alias) ? propName : alias;
         this.parent = parent;
         this.type = type;
+        this.componentTypes = Collections.unmodifiableList(F.isEmpty(componentTypes) ? Collections.emptyList() : componentTypes);
         this.notNull = notNull;
         this.isKeyProp = key;
-        this.defaultValue = defaultValue;
+        this.dfltVal = dfltVal;
         this.precision = precision;
         this.scale = scale;
     }
@@ -243,6 +250,11 @@ public class QueryBinaryProperty implements GridQueryProperty {
     }
 
     /** {@inheritDoc} */
+    @Override public List<Class<?>> componentTypes() {
+        return componentTypes;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean key() {
         return isKeyProp;
     }
@@ -259,7 +271,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
 
     /** {@inheritDoc} */
     @Override public Object defaultValue() {
-        return defaultValue;
+        return dfltVal;
     }
 
     /** {@inheritDoc} */

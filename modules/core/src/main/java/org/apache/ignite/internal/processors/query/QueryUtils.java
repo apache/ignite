@@ -950,8 +950,8 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
-                precision, scale);
+            res = new QueryBinaryProperty(ctx, prop, res, resType.get(0), resType.size() > 1 ? resType.subList(1, resType.size()) : null,
+                isKeyField, alias, notNull, dlftVal, precision, scale);
         }
 
         return res;
@@ -1065,12 +1065,12 @@ public class QueryUtils {
 
             tmp.parent(res);
 
-            cls = tmp.type().get(0);
+            cls = tmp.type();
 
             res = tmp;
         }
 
-        if (!U.box(resType).isAssignableFrom(U.box(res.type().get(0))))
+        if (!U.box(resType).isAssignableFrom(U.box(res.type())))
             return null;
 
         return res;

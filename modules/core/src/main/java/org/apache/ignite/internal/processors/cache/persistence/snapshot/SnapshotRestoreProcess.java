@@ -1611,10 +1611,10 @@ public class SnapshotRestoreProcess {
 
     /**
      * @param reqNodes Set of required topology nodes.
-     * @param respNodes Set of responded topology nodes.
-     * @return Error, if no response was received from a required topology node.
+     * @param respNodes Set of responding topology nodes.
+     * @return Error, if no response was received from the required topology node.
      */
-    private static ClusterTopologyCheckedException checkNodeLeft(Collection<UUID> reqNodes, Set<UUID> respNodes) {
+    private Exception checkNodeLeft(Collection<UUID> reqNodes, Set<UUID> respNodes) {
         if (!respNodes.containsAll(reqNodes)) {
             Set<UUID> leftNodes = new HashSet<>(reqNodes);
 

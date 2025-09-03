@@ -115,7 +115,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         Map<Integer, Set<Integer>> grps = F.isEmpty(opCtx.groups())
             ? new HashMap<>(meta.partitions())
             : opCtx.groups().stream().map(CU::cacheId)
-                .collect(Collectors.toMap(Function.identity(), grpId -> meta.partitions().getOrDefault(grpId, Collections.emptySet())));
+            .collect(Collectors.toMap(Function.identity(), grpId -> meta.partitions().getOrDefault(grpId, Collections.emptySet())));
 
         if (type() == SnapshotHandlerType.CREATE) {
             grps.entrySet().removeIf(e -> {
@@ -172,12 +172,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         return meta.dump()
             ? checkDumpFiles(opCtx, partFiles)
-            : checkSnapshotFiles(opCtx.snapshotFileTree(), grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
+            : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
     }
 
     /** */
     private Map<PartitionKey, PartitionHashRecord> checkSnapshotFiles(
-        SnapshotFileTree sft,
+        SnapshotHandlerContext opCtx,
         Map<Integer, List<File>> grpDirs,
         SnapshotMetadata meta,
         Set<File> partFiles,
@@ -192,7 +192,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         GridKernalContext snpCtx = new StandaloneGridKernalContext(
             log,
             cctx.kernalContext().compress(),
-            new NodeFileTree(sft.root(), meta.folderName())
+            new NodeFileTree(opCtx.snapshotFileTree().root(), meta.folderName())
         );
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
