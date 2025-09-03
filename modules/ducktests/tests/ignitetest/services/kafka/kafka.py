@@ -89,8 +89,8 @@ class KafkaService(DucktestsService, PathAware):
 
         self.init_persistent(node)
 
-        self.settings.host=node.account.externally_routable_ip
-        self.settings.broker_id=idx
+        self.settings.host = node.account.externally_routable_ip
+        self.settings.broker_id = idx
 
         config_file = self.render('server.properties.j2', settings=self.settings, data_dir=self.work_dir)
         node.account.create_file(self.config_file, config_file)
@@ -100,8 +100,8 @@ class KafkaService(DucktestsService, PathAware):
         node.account.create_file(self.log_config_file, log_config_file)
 
         start_cmd = f"nohup java -Dlog4j.configuration=file:{self.log_config_file} " \
-                    f"-cp {os.path.join(self.home_dir, 'libs')}/*:{self.config_dir} " \
-                    f"kafka.Kafka {self.config_file} >/tmp/log 2>&1 &"
+            f"-cp {os.path.join(self.home_dir, 'libs')}/*:{self.config_dir} " \
+            f"kafka.Kafka {self.config_file} >/tmp/log 2>&1 &"
 
         node.account.ssh(start_cmd)
 
@@ -130,8 +130,8 @@ class KafkaService(DucktestsService, PathAware):
         :param retention_ms: Retention in milliseconds
         """
         create_topic_cmd = f"{os.path.join(self.home_dir, 'bin', 'kafka-topics.sh')} --create " \
-                           f"--topic {name} --bootstrap-server {self.connection_string()} " \
-                           f"--partitions {partitions} --replication-factor {replication_factor}"
+            f"--topic {name} --bootstrap-server {self.connection_string()} " \
+            f"--partitions {partitions} --replication-factor {replication_factor}"
 
         if retention_ms is not None:
             create_topic_cmd = create_topic_cmd + f" --config retention.ms={retention_ms}"
