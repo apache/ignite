@@ -19,6 +19,8 @@
 #
 # Checks wheter SQL Calcite operators can be executed and no missed dependencies.
 #
+set -e
+set -x
 
 M2_HOME=~/.m2/repository
 
