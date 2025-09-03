@@ -19,11 +19,9 @@
 #
 # Checks wheter SQL Calcite operators can be executed and no missed dependencies.
 #
-set -ex
+set -xeuo pipefail
 
 IGNITE_HOME=$PWD/target/release-package-apache-ignite
-
-ls $PWD/modules/calcite/target
 
 USER_LIBS="$IGNITE_HOME/libs/*"
 
