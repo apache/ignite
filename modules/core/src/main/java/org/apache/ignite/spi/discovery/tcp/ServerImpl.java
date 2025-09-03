@@ -1708,7 +1708,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 new DiscoveryNotification(type, topVer, node, top, hist, null, spanContainer)
             );
 
-            if (!Objects.equals(node.attribute(ATTR_BUILD_VER), locNode.attribute(ATTR_BUILD_VER)))
+            String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
+            String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
+
+            IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
+            IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
+
+            if (locVer.minor() != rmtVer.minor() || locVer.major() != rmtVer.major())
                 fut.get();
 
             return true;
