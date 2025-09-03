@@ -194,7 +194,7 @@ def get_kafka_to_ignite_spec(base, kafka_connection_string, service):
 
         def script(self, cmd):
             if self.service.config.version.is_dev:
-                return os.path.join(self.service.spec.extensions_home(), "cdc-ext", "bin", cmd)
+                return os.path.join(self.service.spec.extensions_home(), "modules", "cdc-ext", "bin", cmd)
             else:
                 return self.service.script(cmd)
 
