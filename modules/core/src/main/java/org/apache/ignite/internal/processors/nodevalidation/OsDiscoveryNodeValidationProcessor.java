@@ -57,9 +57,6 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
         String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
-        assert locBuildVer != null : ATTR_BUILD_VER + " is not set on local node!";
-        assert rmtBuildVer != null : ATTR_BUILD_VER + " is not set on remote node!";
-
         IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
         IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
