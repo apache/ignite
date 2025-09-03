@@ -134,6 +134,19 @@ public class JUnitTeamcityReporter extends RunListener {
         catch (XMLStreamException ex) {
             throw new RuntimeException(ex);
         }
+
+        if (curXmlStream == null) {
+            String mName = desc.getMethodName() != null ? desc.getMethodName() : "";
+
+            testStarted(Description.createTestDescription(desc.getClassName(), mName + "Dbg"));
+        }
+
+        try {
+            curXmlStream.writeEndElement();
+        }
+        catch (XMLStreamException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     /** */

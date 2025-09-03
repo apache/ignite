@@ -533,13 +533,13 @@
 
                 <configuration>
                     <forkCount>0</forkCount>
-<!--                    <statelessTestsetInfoReporter implementation="org.apache.ignite.tools.surefire.TestSuiteAwareTestsetReporter"/>-->
-<!--                    <properties>-->
-<!--                        <property>-->
-<!--                            <name>listener</name>-->
-<!--                            <value>org.apache.ignite.tools.junit.JUnitTeamcityReporter</value>-->
-<!--                        </property>-->
-<!--                    </properties>-->
+                    <statelessTestsetInfoReporter implementation="org.apache.ignite.tools.surefire.TestSuiteAwareTestsetReporter"/>
+                    <properties>
+                        <property>
+                            <name>listener</name>
+                            <value>org.apache.ignite.tools.junit.JUnitTeamcityReporter</value>
+                        </property>
+                    </properties>
                     <includes>
                         <!-- Check all classes that may have any test. -->
                         <include>**/*.java</include>
