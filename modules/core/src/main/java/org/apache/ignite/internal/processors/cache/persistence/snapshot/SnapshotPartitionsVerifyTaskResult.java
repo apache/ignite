@@ -57,7 +57,7 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
      * @param metas Map of snapshot metadata information found on each cluster node.
      * @param idleRes Result of cluster nodes partitions comparison.
      */
-    public SnapshotPartitionsVerifyTaskResult(
+    SnapshotPartitionsVerifyTaskResult(
         Map<ClusterNode, List<SnapshotMetadata>> metas,
         @Nullable IdleVerifyResult idleRes
     ) {
