@@ -25,12 +25,14 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.function.ThrowableSupplier;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -226,31 +228,23 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     public void testCoordinatorChange() throws Exception {
         IgniteEx ign0 = startGrid(0, "2.18.0", false);
         IgniteEx ign1 = startGrid(1, "2.18.0", false);
-        IgniteEx ign2 = startGrid(2, "2.18.0", false);
-
-        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
-
-        ign2.close();
-
-        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
-
-        ign2 = startGrid(2, "2.19.0", false);
+        IgniteEx ign2 = startGrid(2, "2.19.0", false);
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
 
         ign0.close();
-        ign1.close();
 
-        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 1, getTestTimeout()));
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
 
-        ign0 = startGrid(0, "2.19.0", false);
-        ign1 = startGrid(1, "2.19.0", false);
+        assertThrowsAnyCause(null, () -> startGrid(3, "2.17.0", false),
+            IgniteSpiException.class, "Remote node rejected due to incompatible version for cluster join.");
+
+        assertThrowsAnyCause(null, () -> startGrid(4, "2.20.0", false),
+            IgniteSpiException.class, "Remote node rejected due to incompatible version for cluster join.");
+
+        startGrid(5, "2.19.0", false);
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
-
-        IgniteEx ign3 = startGrid(3, "2.20.0", false);
-
-        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 4, getTestTimeout()));
     }
 
     /** */
