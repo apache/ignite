@@ -37,18 +37,25 @@ import org.apache.ignite.internal.codegen.GridDhtPartitionExchangeIdSerializer;
 import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;
+import org.apache.ignite.internal.codegen.GridQueryFailResponseSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillResponseSerializer;
 import org.apache.ignite.internal.codegen.GridQueryNextPageRequestSerializer;
+import org.apache.ignite.internal.codegen.GridQueryNextPageResponseSerializer;
 import org.apache.ignite.internal.codegen.GridTaskCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridTaskResultRequestSerializer;
 import org.apache.ignite.internal.codegen.IgniteTxKeySerializer;
+import org.apache.ignite.internal.codegen.IncrementalSnapshotAwareMessageSerializer;
 import org.apache.ignite.internal.codegen.JobStealingRequestSerializer;
 import org.apache.ignite.internal.codegen.LatchAckMessageSerializer;
+import org.apache.ignite.internal.codegen.MetadataRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.MissingMappingResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.NearCacheUpdatesSerializer;
+import org.apache.ignite.internal.codegen.SchemaOperationStatusMessageSerializer;
 import org.apache.ignite.internal.codegen.SessionChannelMessageSerializer;
+import org.apache.ignite.internal.codegen.SnapshotFilesFailureMessageSerializer;
+import org.apache.ignite.internal.codegen.SnapshotFilesRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpInverseConnectionResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.TxLockSerializer;
 import org.apache.ignite.internal.codegen.TxLocksRequestSerializer;
@@ -187,7 +194,6 @@ import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeployment
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.GridMessageCollection;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -209,7 +215,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // -54 is reserved for SQL.
         // -46 ... -51 - snapshot messages.
         factory.register((short)-61, IgniteDiagnosticMessage::new);
-        factory.register((short)-53, SchemaOperationStatusMessage::new);
+        factory.register((short)-53, SchemaOperationStatusMessage::new, new SchemaOperationStatusMessageSerializer());
         factory.register((short)-52, GridIntList::new, new GridIntListSerializer());
         factory.register((short)-51, NearCacheUpdates::new, new NearCacheUpdatesSerializer());
         factory.register((short)-50, GridNearAtomicCheckUpdateRequest::new);
@@ -289,7 +295,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)77, GridTaskResultResponse::new);
         factory.register((short)78, MissingMappingRequestMessage::new, new MissingMappingRequestMessageSerializer());
         factory.register((short)79, MissingMappingResponseMessage::new, new MissingMappingResponseMessageSerializer());
-        factory.register((short)80, MetadataRequestMessage::new);
+        factory.register((short)80, MetadataRequestMessage::new, new MetadataRequestMessageSerializer());
         factory.register((short)81, MetadataResponseMessage::new);
         factory.register((short)82, JobStealingRequest::new, new JobStealingRequestSerializer());
         factory.register((short)84, GridByteArrayList::new);
@@ -315,9 +321,9 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)104, GridCacheVersionEx::new, new GridCacheVersionExSerializer());
         factory.register((short)105, CacheObjectByteArrayImpl::new);
         factory.register((short)106, GridQueryCancelRequest::new);
-        factory.register((short)107, GridQueryFailResponse::new);
+        factory.register((short)107, GridQueryFailResponse::new, new GridQueryFailResponseSerializer());
         factory.register((short)108, GridQueryNextPageRequest::new, new GridQueryNextPageRequestSerializer());
-        factory.register((short)109, GridQueryNextPageResponse::new);
+        factory.register((short)109, GridQueryNextPageResponse::new, new GridQueryNextPageResponseSerializer());
         factory.register((short)112, GridCacheSqlQuery::new);
         // 113 - BinaryObjectImpl
         factory.register((short)114, GridDhtPartitionSupplyMessage::new);
@@ -329,7 +335,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         BinaryUtils.registerMessages(factory::register);
 
         // [120..123] - DR
-        factory.register((short)124, GridMessageCollection::new);
         factory.register((short)125, GridNearAtomicSingleUpdateRequest::new);
         factory.register((short)126, GridNearAtomicSingleUpdateInvokeRequest::new);
         factory.register((short)127, GridNearAtomicSingleUpdateFilterRequest::new);
@@ -354,13 +359,16 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(SessionChannelMessage.TYPE_CODE, SessionChannelMessage::new, new SessionChannelMessageSerializer());
         factory.register(SingleNodeMessage.TYPE_CODE, SingleNodeMessage::new);
         factory.register((short)177, TcpInverseConnectionResponseMessage::new, new TcpInverseConnectionResponseMessageSerializer());
-        factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new);
-        factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new);
+        factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new,
+            new SnapshotFilesRequestMessageSerializer());
+        factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new,
+            new SnapshotFilesFailureMessageSerializer());
         factory.register((short)180, AtomicApplicationAttributesAwareRequest::new);
         factory.register((short)181, TransactionAttributesAwareRequest::new);
 
         // Incremental snapshot.
-        factory.register(IncrementalSnapshotAwareMessage.TYPE_CODE, IncrementalSnapshotAwareMessage::new);
+        factory.register(IncrementalSnapshotAwareMessage.TYPE_CODE, IncrementalSnapshotAwareMessage::new,
+            new IncrementalSnapshotAwareMessageSerializer());
 
         // Index statistics.
         factory.register(StatisticsKeyMessage.TYPE_CODE, StatisticsKeyMessage::new);

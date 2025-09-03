@@ -38,7 +38,6 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -131,7 +130,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
      * @param valBytes Value bytes.
      * @param coCtx Cache object context.
      */
-    BinaryObjectImpl(BinaryContext ctx, byte[] valBytes, CacheObjectContext coCtx) {
+    BinaryObjectImpl(BinaryContext ctx, byte[] valBytes, CacheObjectValueContext coCtx) {
         assert ctx != null;
         assert valBytes != null;
         assert coCtx != null;
@@ -224,12 +223,12 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException {
         return CacheObjectAdapter.objectPutSize(valBytes.length);
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         BinaryObjectImpl res = detached() ? this : detach();
 
         res.prepareMarshal(ctx);

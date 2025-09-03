@@ -115,7 +115,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public int valueBytesLength(final CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public int valueBytesLength(final CacheObjectValueContext ctx) throws IgniteCheckedException {
             return 0;
         }
 
@@ -146,7 +146,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(final CacheObjectContext ctx) {
+        @Override public CacheObject prepareForCache(final CacheObjectValueContext ctx) {
             return null;
         }
 

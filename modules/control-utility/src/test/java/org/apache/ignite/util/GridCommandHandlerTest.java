@@ -187,6 +187,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -3740,7 +3741,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         awaitPartitionMapExchange();
 
-        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage
+            && ((SingleNodeMessage)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
 
         fut = srv.snapshot().restoreSnapshot(snapshotName, F.asList(DEFAULT_CACHE_NAME));
 
@@ -3759,7 +3761,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         awaitPartitionMapExchange();
 
-        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage
+            && ((SingleNodeMessage)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
 
         fut = srv.snapshot().restoreSnapshot(snapshotName, F.asList(DEFAULT_CACHE_NAME), 1);
 
