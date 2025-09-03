@@ -84,9 +84,7 @@ class SmokeServicesTest(IgniteTest):
         zookeeper = ZookeeperService(self.test_context, num_nodes=3)
         zookeeper.start()
 
-        kafka_settings = KafkaSettings(
-            version="2.5.1",
-            zookeeper_connection_string=zookeeper.connection_string())
+        kafka_settings = KafkaSettings(zookeeper_connection_string=zookeeper.connection_string())
         kafka = KafkaService(self.test_context, num_nodes=3, settings=kafka_settings)
         kafka.start()
 
