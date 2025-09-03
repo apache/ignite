@@ -100,14 +100,17 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
      * @return {@code true} if the remote version is compatible and eligible for rolling upgrade, {@code false} otherwise.
      */
     private boolean isRollingUpgradeEligible(IgniteProductVersion locVer, IgniteProductVersion rmtVer) {
-        if (locVer.major() == rmtVer.major() && locVer.minor() == rmtVer.minor())
+        if (locVer.major() != rmtVer.major())
+            return false;
+
+        if (locVer.minor() == rmtVer.minor())
             return true;
 
         boolean enableCheck = IgniteSystemProperties.getBoolean(IGNITE_ROLLING_UPGRADE_VERSION_CHECK);
         if (!enableCheck)
             return false;
 
-        Set<Object> versions = ctx.discovery().allNodes().stream()
+        Set<Byte> versions = ctx.discovery().allNodes().stream()
             .map(node -> IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER)).minor())
             .collect(Collectors.toSet());
 
