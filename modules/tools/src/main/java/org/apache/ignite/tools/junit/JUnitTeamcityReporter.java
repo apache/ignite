@@ -23,6 +23,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -71,6 +73,9 @@ public class JUnitTeamcityReporter extends RunListener {
     }
 
     /** */
+    private final Map<String, String> methods = new HashMap<>();
+
+    /** */
     @Override public synchronized void testAssumptionFailure(Failure failure) {
         if (curXmlStream == null)
             testStarted(failure.getDescription());
@@ -111,6 +116,11 @@ public class JUnitTeamcityReporter extends RunListener {
 
             prevTestCls = desc.getClassName();
 
+            String methodName = methods.get(prevTestCls);
+
+            if (methodName != null && methodName.equals(desc.getMethodName()))
+                return;
+
             curXmlStream.writeStartElement("testcase");
             curXmlStream.writeAttribute("name", desc.getMethodName() != null ? desc.getMethodName() : "");
             curXmlStream.writeAttribute("classname", desc.getClassName());
@@ -118,11 +128,7 @@ public class JUnitTeamcityReporter extends RunListener {
             // Avoid doubling of run time after the surefire-generated full report is ingested:
             curXmlStream.writeAttribute("time", "0");
 
-            curXmlStream.writeEndElement();
-            curXmlStream.writeStartElement("testcase");
-            curXmlStream.writeAttribute("name", (desc.getMethodName() != null ? desc.getMethodName() : "") + "Dbg");
-            curXmlStream.writeAttribute("classname", desc.getClassName());
-            curXmlStream.writeAttribute("time", "0");
+            methods.put(prevTestCls, desc.getMethodName());
         }
         catch (XMLStreamException | FileNotFoundException ex) {
             throw new RuntimeException(ex);
