@@ -401,12 +401,13 @@ public class DdlCommandHandler {
         return res;
     }
 
-    /** Creates type name. Includes component types if the type is a collection. */
+    /** Creates type name. Includes component types if the type is an array. */
     private static String typeName(IgniteTypeFactory tf, RelDataType type) {
         Type javaType = tf.getResultClass(type);
 
         String typeName = javaType instanceof Class ? ((Class<?>)javaType).getName() : javaType.getTypeName();
 
+        // Map is not supported yet.
         if (SqlTypeUtil.isArray(type)) {
             assert type instanceof ArraySqlType;
 
