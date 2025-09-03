@@ -206,7 +206,7 @@ public class JUnitTeamcityReporter extends RunListener {
 
             assert report.exists();
 
-            System.out.println(String.format("##teamcity[importData type='surefire' path='%s']",
+            System.out.println(String.format("##teamcity[importData type='surefire' path='%s' verbose='true']",
                 escapeForTeamcity(report.getAbsolutePath())));
 
             try {
