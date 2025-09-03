@@ -41,6 +41,10 @@ from ignitetest.utils.version import DEV_BRANCH
 
 SHARED_PREPARED_FILE = ".ignite_prepared"
 
+EXTENSIONS_MODULES = [
+    "cdc-ext",
+    "performance-statistics-ext"
+]
 
 def resolve_spec(service, **kwargs):
     """
@@ -205,12 +209,30 @@ class IgniteSpec(metaclass=ABCMeta):
 
         return [os.path.join(project_dir, module_path) for module_path in module_libs]
 
+
+# def __get_extension_module_libs(spec, module_name):
+#     extensions_home_dir = extensions_home(spec)
+#
+#     module_paths = [
+#         os.path.join(module_name, "target"),
+#         os.path.join(module_name, "target", "libs")]
+#
+#     return [os.path.join(extensions_home_dir, module_path) for module_path in module_paths]
+#
+#
+    def extensions_home(self):
+        return os.path.join(self.service.install_root, "ignite-extensions")
+
+
     def _module_libs(self, module_name):
         """
         Get list of paths to be added to classpath for the passed module for current spec.
         """
         if module_name == "ducktests":
             return self.__get_module_libs(self.__home(str(DEV_BRANCH)), module_name, is_dev=True)
+
+        if module_name in EXTENSIONS_MODULES:
+            return self.__get_module_libs(self.extensions_home(), module_name, is_dev=True)
 
         return self.__get_module_libs(self.__home(), module_name, self.service.config.version.is_dev)
 
