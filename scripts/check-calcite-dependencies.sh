@@ -37,7 +37,7 @@ done
 
 # Add *-tests.jar to classpath to include the test to run.
 for testlib in core calcite; do
-    USER_LIBS="$USER_LIBS:$PWD/modules/$testlib/target/*"
+    USER_LIBS="$USER_LIBS:$PWD/modules/$testlib/target/test-classes/"
 done
 
 M2_HOME=~/.m2/repository
