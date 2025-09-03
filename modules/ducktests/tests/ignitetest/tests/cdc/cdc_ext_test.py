@@ -110,7 +110,7 @@ class CdcExtTest(CdcExtBaseTest):
 
         client.start()
 
-        check_topology(ControlUtility(source_cluster), 3)
+        check_topology(ControlUtility(source_cluster), 4)
 
         sleep(duration_sec)
         client.stop()
