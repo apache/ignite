@@ -671,7 +671,8 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             if (logicalType == null) {
                 logicalType = TypeUtils.sqlType(
                     f,
-                    F.asList(storageType, componentTypes),
+                    storageType,
+                    componentTypes,
                     desc != null && desc.precision() != -1 ? desc.precision() : PRECISION_NOT_SPECIFIED,
                     desc != null && desc.scale() != -1 ? desc.scale() : SCALE_NOT_SPECIFIED,
                     desc == null || !desc.notNull()
@@ -747,7 +748,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
             if (logicalType == null) {
-                logicalType = TypeUtils.sqlType(f, F.asList(desc.type(), desc.componentTypes()),
+                logicalType = TypeUtils.sqlType(f, desc.type(), desc.componentTypes(),
                     desc.precision() == -1 ? PRECISION_NOT_SPECIFIED : desc.precision(),
                     desc.scale() == -1 ? SCALE_NOT_SPECIFIED : desc.scale(),
                     !desc.notNull()

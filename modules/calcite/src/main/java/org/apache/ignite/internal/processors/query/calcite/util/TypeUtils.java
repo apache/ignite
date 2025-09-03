@@ -30,7 +30,6 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -197,34 +196,36 @@ public class TypeUtils {
         int scale,
         boolean nullability
     ) {
-        return sqlType(typeFactory, Collections.singletonList(cls), precision, scale, nullability);
+        return sqlType(typeFactory, cls, null, precision, scale, nullability);
     }
 
     /** */
     public static RelDataType sqlType(
         IgniteTypeFactory typeFactory,
-        List<Class<?>> typeDefs,
+        Class<?> cls,
+        @Nullable List<Class<?>> componentTypes,
         int precision,
         int scale,
         boolean nullability
     ) {
-        assert !F.isEmpty(typeDefs) : "Type classes must not be empty";
+        RelDataType javaType = typeFactory.createJavaType(cls);
 
-        RelDataType javaType = typeFactory.createJavaType(typeDefs.get(0));
+        if (!F.isEmpty(componentTypes) && !SqlTypeUtil.isCollection(javaType) && !SqlTypeUtil.isMap(javaType))
+            throw new IllegalArgumentException("Type '" + javaType + "' is not a collection or a map but has an element type.");
 
         // Only array is currently supported.
-        if (SqlTypeUtil.isArray(javaType)) {
+        if (SqlTypeUtil.isArray(javaType) && !F.isEmpty(componentTypes)) {
             assert !javaType.getSqlTypeName().allowsPrecScale(true, true);
 
             RelDataType elementType = null;
 
-            for (int et = typeDefs.size() - 1; et > 0; --et) {
-                RelDataType curElemType = typeFactory.createJavaType(typeDefs.get(et));
+            for (int et = componentTypes.size() - 1; et >= 0; --et) {
+                RelDataType curElemType = typeFactory.createJavaType(componentTypes.get(et));
 
                 boolean isArr = SqlTypeUtil.isArray(curElemType);
 
-                assert isArr || et == typeDefs.size() - 1 : "Last element type must not be collection or map.";
-                assert !isArr || et != typeDefs.size() - 1 : "Only last element type can be not a collection or not a map.";
+                assert isArr || et == componentTypes.size() - 1 : "Last element type must not be collection or map.";
+                assert !isArr || et != componentTypes.size() - 1 : "Only last element type can be not a collection or not a map.";
 
                 if (!isArr) {
                     elementType = sqlType0(typeFactory, curElemType, RelDataType.PRECISION_NOT_SPECIFIED,
@@ -250,8 +251,6 @@ public class TypeUtils {
                 return typeFactory.createTypeWithNullability(javaType, nullability);
             }
         }
-        else if (typeDefs.size() > 1)
-            throw new IllegalArgumentException("Type '" + javaType + "' is not a collection or a map but has an element type.");
 
         return sqlType0(typeFactory, javaType, precision, scale, nullability);
     }

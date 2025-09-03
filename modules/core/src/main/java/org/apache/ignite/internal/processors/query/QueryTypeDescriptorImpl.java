@@ -71,13 +71,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private String tblName;
 
-    /** Value field names and types, component types with preserved order. If field is not a collection or a map, has single type. */
+    /** Value field names and types with preserved order. */
     @GridToStringInclude
-    private final Map<String, List<Class<?>>> fields = new LinkedHashMap<>();
-
-    /** Value field names and types without component types with preserved order. */
-    @GridToStringInclude
-    private volatile Map<String, Class<?>> fieldsSimplified;
+    private final LinkedHashMap<String, Class<?>> fields = new LinkedHashMap<>();
 
     /** */
     @GridToStringExclude
@@ -213,26 +209,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Class<?>> fields() {
-        Map<String, Class<?>> res = fieldsSimplified;
-
-        if (res == null) {
-            synchronized (fields) {
-                res = fieldsSimplified;
-
-                if (res == null) {
-                    fieldsSimplified = new LinkedHashMap<>(fields.size(), 1.0f);
-
-                    fields.forEach((fldName, fldFullType) -> fieldsSimplified.put(fldName, fldFullType.get(0)));
-
-                    fieldsSimplified = Collections.unmodifiableMap(fieldsSimplified);
-
-                    res = fieldsSimplified;
-                }
-            }
-        }
-
-        return res;
+    @Override public LinkedHashMap<String, Class<?>> fields() {
+        return fields;
     }
 
     /** {@inheritDoc} */
@@ -401,7 +379,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** {@inheritDoc} */
     @Override public List<Class<?>> keyComponentClasses() {
-        return keyCls.size() > 1 ? keyCls.subList(1, keyCls.size()) : Collections.emptyList();
+        return keyCls.size() > 1 ? Collections.unmodifiableList(keyCls.subList(1, keyCls.size())) : Collections.emptyList();
     }
 
     /**
@@ -485,11 +463,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             propsWithDefaultValue.add(prop);
         }
 
-        if (isField) {
-            fields.put(name, F.asList(prop.type(), prop.componentTypes()));
-
-            fieldsSimplified = null;
-        }
+        if (isField)
+            fields.put(name, prop.type());
     }
 
     /**
@@ -509,8 +484,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         uppercaseProps.remove(name.toUpperCase());
 
         fields.remove(name);
-
-        fieldsSimplified = null;
     }
 
     /**
@@ -765,9 +738,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @param componentTypes Component types if the type is a collection or a map.
      */
     private boolean isCompatibleWithPropertyType(Object val, Class<?> expColType, @Nullable List<Class<?>> componentTypes) {
-        List<Class<?>> fullType = F.asList(expColType, componentTypes);
-
-        if (F.isEmpty(fullType))
+        if (expColType == null)
             return false;
 
         if (!checkValueType(val, expColType))
@@ -782,7 +753,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             return false;
 
         // Map is not currently supported.
-        if (collectionType) {
+        if (collectionType && componentTypes != null) {
             Collection<Object> coll = (Collection<Object>)val;
             expColType = componentTypes.get(0);
             componentTypes = componentTypes.subList(1, componentTypes.size());

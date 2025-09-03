@@ -683,18 +683,18 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
         assertThrows(
             "insert into my_table values (?, null, null)",
             IgniteSQLException.class,
-            "Type for a column 'ARR1' is not compatible with index definition. Expected: List:Integer.",
+            "Expected collection type List, component types: Integer",
             F.asList(1, "str", 3)
         );
         assertThrows(
             "insert into my_table values (ARRAY['wrongValType'], null, null)",
             IgniteSQLException.class,
-            "Type for a column 'ARR1' is not compatible with index definition. Expected: List:Integer"
+            "Expected collection type List, component types: Integer"
         );
         assertThrows(
             "insert into my_table values (ARRAY[1,2], ARRAY[1,2], null)",
             IgniteSQLException.class,
-            "Type for a column 'ARR2' is not compatible with index definition. Expected: List:String"
+            "Expected collection type List, component types: String"
         );
         assertThrows(
             "insert into my_table values (ARRAY[1,2], null, ARRAY[1,2])",
@@ -704,6 +704,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
 
         sql("insert into my_table values (ARRAY[1,2,3], ?, ?)", F.asList("str1", "str2"),
             F.asList(F.asList(0, null), null, F.asList(10, 20)));
+
         sql("insert into my_table values (?, null, null)", F.asList(4, 5, 6));
         sql("insert into my_table values (ARRAY[7,8,9], ARRAY['a','b','c'], ARRAY[ ARRAY[30], ARRAY[50,null], null ])");
 

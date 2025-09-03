@@ -363,10 +363,10 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         checkCallable(c -> executorService(initiator, executor).invokeAll(singletonList(c)).forEach(ComputePermissionCheckTest::getQuiet));
         checkCallable(c ->
             executorService(initiator, executor).invokeAll(
-                singletonList(c),
-                getTestTimeout(),
-                MILLISECONDS
-            ).forEach(ComputePermissionCheckTest::getQuiet)
+                    singletonList(c),
+                    getTestTimeout(),
+                    MILLISECONDS
+                ).forEach(ComputePermissionCheckTest::getQuiet)
         );
 
         checkCallable(c -> executorService(initiator, executor).invokeAny(singletonList(c)));
@@ -537,8 +537,8 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
             if (e instanceof IgniteException) {
                 assertTrue(
                     e.getMessage().contains("Authorization failed") ||
-                        e.getMessage().contains("Access to Ignite Internal tasks is restricted") ||
-                        e.getMessage().contains("Failed to get any task completion")
+                    e.getMessage().contains("Access to Ignite Internal tasks is restricted") ||
+                    e.getMessage().contains("Failed to get any task completion")
                 );
 
                 return;

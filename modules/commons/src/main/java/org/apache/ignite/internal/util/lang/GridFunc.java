@@ -34,8 +34,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -1661,20 +1659,6 @@ public class GridFunc {
      */
     public static <T> List<T> asList(@Nullable T t) {
         return t == null ? Collections.<T>emptyList() : Collections.singletonList(t);
-    }
-
-    /**
-     * Creates list with given values.
-     *
-     * @param t Mandatory element.
-     * @param optionals Optional element.
-     * @param <T> Element's type.
-     * @return Created list.
-     */
-    public static <T> List<T> asList(T t, @Nullable Collection<T> optionals) {
-        return isEmpty(optionals)
-            ? Collections.singletonList(t)
-            : Stream.concat(Stream.of(t), optionals.stream()).collect(Collectors.toList());
     }
 
     /**
