@@ -117,6 +117,12 @@ public class JUnitTeamcityReporter extends RunListener {
 
             // Avoid doubling of run time after the surefire-generated full report is ingested:
             curXmlStream.writeAttribute("time", "0");
+
+            curXmlStream.writeEndElement();
+            curXmlStream.writeStartElement("testcase");
+            curXmlStream.writeAttribute("name", (desc.getMethodName() != null ? desc.getMethodName() : "") + "Dbg");
+            curXmlStream.writeAttribute("classname", desc.getClassName());
+            curXmlStream.writeAttribute("time", "0");
         }
         catch (XMLStreamException | FileNotFoundException ex) {
             throw new RuntimeException(ex);
@@ -127,19 +133,6 @@ public class JUnitTeamcityReporter extends RunListener {
     @Override public synchronized void testFinished(Description desc) {
         if (curXmlStream == null)
             testStarted(desc);
-
-        try {
-            curXmlStream.writeEndElement();
-        }
-        catch (XMLStreamException ex) {
-            throw new RuntimeException(ex);
-        }
-
-        if (curXmlStream == null) {
-            String mName = desc.getMethodName() != null ? desc.getMethodName() : "";
-
-            testStarted(Description.createTestDescription(desc.getClassName(), mName + "Dbg"));
-        }
 
         try {
             curXmlStream.writeEndElement();
