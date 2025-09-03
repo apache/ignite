@@ -210,8 +210,9 @@ public class JUnitTeamcityReporter extends RunListener {
                 escapeForTeamcity(report.getAbsolutePath())));
 
             try {
-                System.out.println(String.format("##teamcity[importData type='surefire' report='%s']",
-                    Files.readString(report.getAbsoluteFile().toPath())));
+                System.out.printf(">>> reportPath='%s', reportContent='%s'%n",
+                    report.getAbsolutePath(),
+                    Files.readString(report.getAbsoluteFile().toPath()));
             }
             catch (IOException e) {
                 throw new RuntimeException(e);
