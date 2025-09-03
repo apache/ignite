@@ -23,8 +23,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -73,7 +73,7 @@ public class JUnitTeamcityReporter extends RunListener {
     }
 
     /** */
-    private final Map<String, String> methods = new HashMap<>();
+    private final Set<String> methods = new HashSet<>();
 
     /** */
     @Override public synchronized void testAssumptionFailure(Failure failure) {
@@ -116,9 +116,9 @@ public class JUnitTeamcityReporter extends RunListener {
 
             prevTestCls = desc.getClassName();
 
-            String methodName = methods.get(prevTestCls);
+            String method = desc.getClassName() + "#" + (desc.getMethodName() != null ? desc.getMethodName() : "");
 
-            if (methodName != null && methodName.equals(desc.getMethodName()))
+            if (methods.contains(method))
                 return;
 
             curXmlStream.writeStartElement("testcase");
@@ -128,7 +128,7 @@ public class JUnitTeamcityReporter extends RunListener {
             // Avoid doubling of run time after the surefire-generated full report is ingested:
             curXmlStream.writeAttribute("time", "0");
 
-            methods.put(prevTestCls, desc.getMethodName());
+            methods.add(method);
         }
         catch (XMLStreamException | FileNotFoundException ex) {
             throw new RuntimeException(ex);
