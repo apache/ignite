@@ -8,7 +8,6 @@ then
     set -o functrace
 fi
 
-set -x
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more

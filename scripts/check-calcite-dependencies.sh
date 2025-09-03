@@ -19,17 +19,17 @@
 #
 # Checks wheter SQL Calcite operators can be executed and no missed dependencies.
 #
-set -e
-set -x
+set -ex
 
-M2_HOME=~/.m2/repository
+IGNITE_HOME=$PWD/target/release-package-apache-ignite
 
-JUNIT=$M2_HOME/junit/junit/4.13.2/junit-4.13.2.jar
-HAMCREST=$M2_HOME/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar
+ls $PWD/modules/calcite/target
 
-export IGNITE_HOME=$PWD/target/release-package-apache-ignite
+USER_LIBS="$IGNITE_HOME/libs/*"
 
-USER_LIBS=""
+for lib in "$IGNITE_HOME"/libs/ignite-*; do
+    USER_LIBS="$USER_LIBS:$lib/*"
+done
 
 for lib in ignite-log4j2 ignite-calcite; do
     USER_LIBS="$USER_LIBS:$IGNITE_HOME/libs/optional/$lib/*"
@@ -40,6 +40,13 @@ for testlib in core calcite; do
     USER_LIBS="$USER_LIBS:$PWD/modules/$testlib/target/*"
 done
 
-MAIN_CLASS=org.junit.runner.JUnitCore \
-  USER_LIBS=$USER_LIBS:$JUNIT:$HAMCREST \
-  $IGNITE_HOME/bin/ignite.sh org.apache.ignite.internal.processors.query.calcite.integration.StdSqlOperatorsTest
+M2_HOME=~/.m2/repository
+
+JUNIT=$M2_HOME/junit/junit/4.13.2/junit-4.13.2.jar
+HAMCREST=$M2_HOME/org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar
+
+# Runs a test of Calcite SQL operators that require transitive dependencies.
+# If this test fails, than missed dependency must be added to modules/calcite/pom.xml.
+java -cp $USER_LIBS:$JUNIT:$HAMCREST \
+  org.junit.runner.JUnitCore \
+  org.apache.ignite.internal.processors.query.calcite.integration.StdSqlOperatorsTest
