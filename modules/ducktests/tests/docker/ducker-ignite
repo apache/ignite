@@ -304,6 +304,11 @@ docker_run() {
         done
     fi
 
+    local mount_ignite_ext=""
+    if [[ -d "${ignite_dir}/../ignite-extensions" ]]; then
+        mount_ignite_ext="--mount type=bind,source="${ignite_dir}/../ignite-extensions",target=/opt/ignite-extensions,consistency=delegated"
+    fi
+
     # Invoke docker-run. We need privileged mode to be able to run iptables
     # and mount FUSE filesystems inside the container.  We also need it to
     # run iptables inside the container.
@@ -315,6 +320,7 @@ docker_run() {
         --memory=${docker_run_memory_limit} \
         --memory-swappiness=1 \
         --mount type=bind,source="${ignite_dir}",target=/opt/ignite-dev,consistency=delegated \
+        "${mount_ignite_ext}" \
         $DOCKER_OPTIONS \
         --name "${node}" \
         -- "${image_name}"
