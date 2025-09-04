@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -41,10 +40,6 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
     /** Lock or transaction version. */
     @GridToStringInclude
     protected GridCacheVersion ver;
-
-    /** */
-    @GridToStringExclude
-    private byte[] candsByIdxBytes;
 
     /** Committed versions with order higher than one for this message (needed for commit ordering). */
     @GridToStringInclude
@@ -158,24 +153,18 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeByteArray(candsByIdxBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
                 if (!writer.writeCollection(committedVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 5:
                 if (!writer.writeCollection(rolledbackVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 6:
                 if (!writer.writeMessage(ver))
                     return false;
 
@@ -195,14 +184,6 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
 
         switch (reader.state()) {
             case 4:
-                candsByIdxBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
                 committedVers = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -210,7 +191,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
 
                 reader.incrementState();
 
-            case 6:
+            case 5:
                 rolledbackVers = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -218,7 +199,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
 
                 reader.incrementState();
 
-            case 7:
+            case 6:
                 ver = reader.readMessage();
 
                 if (!reader.isLastRead())
