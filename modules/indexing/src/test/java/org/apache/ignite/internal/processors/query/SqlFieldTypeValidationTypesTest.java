@@ -46,7 +46,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest {
     /** */
-    private static final String ERROR = "Type for a column 'NAME' is not compatible with table definition.";
+    private static final String ERROR = "Type for a column 'NAME' is not compatible with the definition.";
 
     /** */
     @Parameterized.Parameter(0)
