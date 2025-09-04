@@ -337,7 +337,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeObjectArray(ownedKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeObjectArray(ownedKeys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -410,7 +410,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 24:
-                ownedKeys = reader.readObjectArray(MessageCollectionItemType.MSG, KeyCacheObject.class);
+                ownedKeys = reader.readObjectArray(MessageCollectionItemType.KEY_CACHE_OBJECT, KeyCacheObject.class);
 
                 if (!reader.isLastRead())
                     return false;
