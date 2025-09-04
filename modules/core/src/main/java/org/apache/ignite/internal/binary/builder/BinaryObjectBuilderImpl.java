@@ -36,16 +36,17 @@ import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
+class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
     /** */
     private static final Object REMOVED_FIELD_MARKER = new Object();
 
@@ -147,7 +148,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             Class cls;
 
             try {
-                cls = U.forName(clsNameToWrite, ctx.classLoader());
+                cls = CommonUtils.forName(clsNameToWrite, ctx.classLoader(), null, Marshallers.USE_CACHE.get());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsNameToWrite, e);
@@ -207,7 +208,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 Map<Integer, Object> assignedFldsById;
 
                 if (assignedVals != null) {
-                    assignedFldsById = U.newHashMap(assignedVals.size());
+                    assignedFldsById = CommonUtils.newHashMap(assignedVals.size());
 
                     for (Map.Entry<String, Object> entry : assignedVals.entrySet()) {
                         String name = entry.getKey();
@@ -591,19 +592,13 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         return start;
     }
 
-    /**
-     * @return Object type id.
-     */
-    public int typeId() {
+    /** {@inheritDoc} */
+    @Override public int typeId() {
         return typeId;
     }
 
-    /**
-     * Set known affinity key field name.
-     *
-     * @param affFieldName Affinity key field name.
-     */
-    public void affinityFieldName(String affFieldName) {
+    /** {@inheritDoc} */
+    @Override public void affinityFieldName(String affFieldName) {
         this.affFieldName = affFieldName;
     }
 }

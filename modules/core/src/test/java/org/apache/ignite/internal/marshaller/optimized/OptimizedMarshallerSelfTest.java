@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
@@ -37,7 +38,7 @@ import org.junit.Test;
 public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller() throws IgniteCheckedException {
-        return initTestMarshallerContext(new OptimizedMarshaller(false));
+        return initTestMarshallerContext(Marshallers.optimized(false));
     }
 
     /**

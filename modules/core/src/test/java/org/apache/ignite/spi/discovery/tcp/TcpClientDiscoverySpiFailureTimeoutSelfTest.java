@@ -498,29 +498,6 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
         /**  */
         @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout
-        ) throws IOException, IgniteCheckedException {
-            if (writeToSocketDelay > 0) {
-                try {
-                    U.dumpStack(log, "Before sleep [msg=" + msg + ']');
-
-                    Thread.sleep(writeToSocketDelay);
-                }
-                catch (InterruptedException ignore) {
-                    // Nothing to do.
-                }
-            }
-
-            if (sock.getSoTimeout() >= writeToSocketDelay)
-                super.writeToSocket(sock, msg, timeout);
-            else
-                throw new SocketTimeoutException("Write to socket delay timeout exception.");
-        }
-
-        /**  */
-        @Override protected void writeToSocket(
             TcpDiscoveryAbstractMessage msg,
             Socket sock,
             int res,

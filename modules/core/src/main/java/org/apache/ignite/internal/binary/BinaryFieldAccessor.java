@@ -28,10 +28,10 @@ import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Field accessor to speedup access.
@@ -116,7 +116,7 @@ abstract class BinaryFieldAccessor {
                 return new DefaultFinalClassAccessor(field, id, mode, false);
 
             default:
-                return new DefaultFinalClassAccessor(field, id, mode, !U.isFinal(field.getType()));
+                return new DefaultFinalClassAccessor(field, id, mode, !CommonUtils.isFinal(field.getType()));
         }
     }
 

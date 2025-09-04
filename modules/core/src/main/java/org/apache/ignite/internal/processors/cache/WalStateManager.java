@@ -601,7 +601,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                                     // not-yet-flushed dirty pages have been logged.
                                     WalStateChangeWorker worker = new WalStateChangeWorker(msg, cpFut);
 
-                                    IgniteThread thread = new IgniteThread(worker);
+                                    IgniteThread thread = U.newThread(worker);
 
                                     thread.setUncaughtExceptionHandler(new OomExceptionHandler(
                                         cctx.kernalContext()));

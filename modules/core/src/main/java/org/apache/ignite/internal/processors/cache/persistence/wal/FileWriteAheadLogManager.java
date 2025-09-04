@@ -128,7 +128,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
@@ -2180,7 +2179,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             isCancelled.set(false);
 
-            new IgniteThread(archiver).start();
+            U.newThread(archiver).start();
         }
 
         /**
@@ -2320,7 +2319,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             isCancelled.set(false);
 
-            new IgniteThread(this).start();
+            U.newThread(this).start();
         }
 
         /**
@@ -2684,7 +2683,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             isCancelled.set(false);
 
-            new IgniteThread(this).start();
+            U.newThread(this).start();
         }
     }
 
@@ -3383,7 +3382,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             isCancelled.set(false);
 
-            new IgniteThread(this).start();
+            U.newThread(this).start();
         }
     }
 

@@ -21,13 +21,13 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UTFDataFormatException;
+import org.apache.ignite.IgniteCommonsSystemProperties;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
@@ -43,7 +43,8 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  */
 public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     /** */
-    private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
+    private static final Long CHECK_FREQ =
+        Long.getLong(IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
 
     /** Maximum data block length. */
     private static final int MAX_BLOCK_SIZE = 1024;
@@ -125,7 +126,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         maxOff = Math.max(maxOff, size);
 
-        long now = U.currentTimeMillis();
+        long now = CommonUtils.currentTimeMillis();
 
         // Increase size of buffer if needed.
         if (size > inBuf.length)

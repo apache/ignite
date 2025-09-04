@@ -21,8 +21,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.jetbrains.annotations.Nullable;
@@ -32,20 +37,31 @@ import static org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListener
 /**
  *
  */
-public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
+public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscoverySpiInternalListenerSupport {
     /** */
     public boolean ignorePingResponse;
 
     /** Interceptor of discovery messages. */
     private DiscoveryHook discoHook;
 
+    /** */
+    private IgniteDiscoverySpiInternalListener internalLsnr;
+
     /** {@inheritDoc} */
     @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
         IgniteCheckedException {
         if (msg instanceof TcpDiscoveryPingResponse && ignorePingResponse)
             return;
-        else
-            super.writeToSocket(sock, out, msg, timeout);
+
+        if (internalLsnr != null) {
+            if (msg instanceof TcpDiscoveryJoinRequestMessage)
+                internalLsnr.beforeJoin(locNode, log);
+
+            if (msg instanceof TcpDiscoveryClientReconnectMessage)
+                internalLsnr.beforeReconnect(locNode, log);
+        }
+
+        super.writeToSocket(sock, out, msg, timeout);
     }
 
     /** {@inheritDoc} */
@@ -56,6 +72,23 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     /** {@inheritDoc} */
     @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
         super.setListener(lsnr == null || discoHook == null ? lsnr : wrap(lsnr, discoHook));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+        IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
+
+        if (internalLsnr != null) {
+            if (!internalLsnr.beforeSendCustomEvent(this, log, msg))
+                return;
+        }
+
+        super.sendCustomEvent(msg);
+    }
+
+    /** */
+    @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
+        internalLsnr = lsnr;
     }
 
     /**

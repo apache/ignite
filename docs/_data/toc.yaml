@@ -553,12 +553,20 @@
           url: extensions-and-integrations/cassandra/usage-examples
         - title: DDL Generator
           url: extensions-and-integrations/cassandra/ddl-generator
+    - title: Change Data Capture
+      items:
+        - title: Overview
+          url: extensions-and-integrations/change-data-capture/overview
+        - title: Ignite to Ignite Replication
+          url: extensions-and-integrations/change-data-capture/ignite-to-ignite
+        - title: Ignite to Kafka Replication
+          url: extensions-and-integrations/change-data-capture/ignite-to-kafka
+        - title: Ignite to PostgreSQL Replication
+          url: extensions-and-integrations/change-data-capture/ignite-to-postgresql
     - title: PHP PDO
       url: extensions-and-integrations/php-pdo
     - title: Performance Statistics
       url: extensions-and-integrations/performance-statistics
-    - title: Change Data Capture
-      url: extensions-and-integrations/change-data-capture-extensions
     - title: ZooKeeper IP Finder
       url: extensions-and-integrations/zookeeper-ip-finder-ext
 - title: Plugins

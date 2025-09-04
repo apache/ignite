@@ -28,8 +28,13 @@ public class CalciteMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override public void registerAll(MessageFactory factory) {
-        for (MessageType type : MessageType.values())
-            factory.register(type.directType(), (Supplier)type.factory());
+        for (MessageType type : MessageType.values()) {
+            // TODO: Temporary check — remove once all inheritors have migrated to the new serialization framework
+            if (type.serializer() != null)
+                factory.register(type.directType(), (Supplier)type.factory(), type.serializer());
+            else
+                factory.register(type.directType(), (Supplier)type.factory());
+        }
     }
 
     /**

@@ -24,9 +24,12 @@ import java.lang.annotation.Target;
 
 /**
  * Annotates map fields.
+ * Deprecated as not needed for new messages. See {@link Order} and {@link MessageProcessor} for details on how message
+ * serialization code is generated.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
+@Deprecated
 public @interface GridDirectMap {
     /**
      * @return Key type.

@@ -47,7 +47,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.stream.StreamReceiver;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,7 +99,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         marshErrBytes = U.marshal(marsh, new IgniteCheckedException("Failed to marshal response error, " +
             "see node log for details."));
 
-        flusher = new IgniteThread(new GridWorker(ctx.igniteInstanceName(), "grid-data-loader-flusher", log) {
+        flusher = U.newThread(new GridWorker(ctx.igniteInstanceName(), "grid-data-loader-flusher", log) {
             @Override protected void body() throws InterruptedException {
                 while (!isCancelled()) {
                     DataStreamerImpl<K, V> ldr = flushQ.take();

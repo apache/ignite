@@ -20,7 +20,8 @@ package org.apache.ignite.internal.binary.builder;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.marshaller.Marshallers;
 
 /**
  *
@@ -49,7 +50,7 @@ class BinaryObjectArrayLazyValue extends BinaryAbstractLazyValue {
             Class cls;
 
             try {
-                cls = U.forName(reader.readString(), reader.binaryContext().classLoader());
+                cls = CommonUtils.forName(reader.readString(), reader.binaryContext().classLoader(), null, Marshallers.USE_CACHE.get());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);

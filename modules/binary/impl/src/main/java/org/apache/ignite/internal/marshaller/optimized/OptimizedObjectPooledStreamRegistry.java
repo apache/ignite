@@ -20,7 +20,7 @@ package org.apache.ignite.internal.marshaller.optimized;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 
 /**
  *
@@ -71,7 +71,7 @@ public class OptimizedObjectPooledStreamRegistry extends OptimizedObjectStreamRe
 
     /** {@inheritDoc} */
     @Override void closeOut(OptimizedObjectOutputStream out) {
-        U.close(out, null);
+        CommonUtils.close(out, null);
 
         boolean b = outPool.offer(out);
 
@@ -80,7 +80,7 @@ public class OptimizedObjectPooledStreamRegistry extends OptimizedObjectStreamRe
 
     /** {@inheritDoc} */
     @Override void closeIn(OptimizedObjectInputStream in) {
-        U.close(in, null);
+        CommonUtils.close(in, null);
 
         boolean b = inPool.offer(in);
 

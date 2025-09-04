@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 
 /**
  *
@@ -81,7 +81,7 @@ class BinaryLazySet extends BinaryAbstractLazyValue {
 
         reader.position(off + 1/* flag */ + 4/* size */ + 1/* col type */);
 
-        Set<Object> res = U.newLinkedHashSet(size);
+        Set<Object> res = CommonUtils.newLinkedHashSet(size);
 
         for (int i = 0; i < size; i++)
             res.add(BinaryObjectBuilders.unwrapLazy(reader.parseValue()));

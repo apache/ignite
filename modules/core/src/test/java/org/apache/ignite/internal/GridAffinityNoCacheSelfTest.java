@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -261,7 +260,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException {
             return 0;
         }
 
@@ -282,7 +281,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+        @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
             throw new UnsupportedOperationException();
         }
 

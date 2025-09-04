@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
@@ -112,7 +111,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
 
             cleanupWorker = new CleanupWorker();
 
-            new IgniteThread(cleanupWorker).start();
+            U.newThread(cleanupWorker).start();
         }
         finally {
             lock.unlock();
