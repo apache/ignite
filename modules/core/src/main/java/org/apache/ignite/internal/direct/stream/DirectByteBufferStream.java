@@ -216,7 +216,7 @@ public class DirectByteBufferStream {
     @GridToStringExclude
     private final MessageFactory msgFactory;
 
-    /** */
+    /** Is required to instantiate {@link CacheObject} while reading messages. */
     @GridToStringExclude
     private final IgniteCacheObjectProcessor cacheObjProc;
 
@@ -321,7 +321,7 @@ public class DirectByteBufferStream {
     private int topVerMinor;
 
     /** */
-    private int cacheObjState;
+    private byte cacheObjState;
 
     /** */
     private byte[] cacheObjArr;
@@ -333,6 +333,21 @@ public class DirectByteBufferStream {
     private byte cacheObjType;
 
     /**
+     * Constructror for stream used for writing messages.
+     *
+     * @param msgFactory Message factory.
+     */
+    public DirectByteBufferStream(MessageFactory msgFactory) {
+        this.msgFactory = msgFactory;
+
+        // Is not used while writing messages.
+        cacheObjProc = null;
+    }
+
+    /**
+     * Constructror for stream used for reading messages.
+     *
+     * @param cacheObjProc Cache object processor.
      * @param msgFactory Message factory.
      */
     public DirectByteBufferStream(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {

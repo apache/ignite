@@ -385,7 +385,7 @@ public class DirectMessageWriter implements MessageWriter {
 
         /** */
         public StateItem(MessageFactory msgFactory) {
-            stream = new DirectByteBufferStream(msgFactory, null);
+            stream = new DirectByteBufferStream(msgFactory);
         }
 
         /** {@inheritDoc} */

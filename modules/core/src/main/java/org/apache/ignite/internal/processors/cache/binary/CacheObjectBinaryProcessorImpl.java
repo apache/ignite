@@ -180,7 +180,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** Cached affinity key field names. */
     private final ConcurrentHashMap<Integer, T1<BinaryField>> affKeyFields = new ConcurrentHashMap<>();
 
-    /** */
+    /** Dummy {@code CacheObjectValueContext} used for mocking. */
     private CacheObjectValueContext fakeCacheObjCtx;
 
     /*

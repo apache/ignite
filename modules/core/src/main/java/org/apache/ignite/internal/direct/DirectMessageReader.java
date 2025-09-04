@@ -323,11 +323,11 @@ public class DirectMessageReader implements MessageReader {
     @Override public KeyCacheObject readKeyCacheObject() {
         DirectByteBufferStream stream = state.item().stream;
 
-        KeyCacheObject msg = stream.readKeyCacheObject();
+        KeyCacheObject key = stream.readKeyCacheObject();
 
         lastRead = stream.lastFinished();
 
-        return msg;
+        return key;
     }
 
     /** {@inheritDoc} */
