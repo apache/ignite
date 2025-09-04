@@ -118,8 +118,13 @@ public class JUnitTeamcityReporter extends RunListener {
 
             String method = desc.getClassName() + "#" + (desc.getMethodName() != null ? desc.getMethodName() : "");
 
-            if (methods.contains(method))
+            System.out.println(">>> CURRENT METHOD: " + method);
+            System.out.println(">>> METHODS: " + methods);
+
+            if (methods.contains(method)) {
+                System.out.println(">>> RETURN");
                 return;
+            }
 
             curXmlStream.writeStartElement("testcase");
             curXmlStream.writeAttribute("name", desc.getMethodName() != null ? desc.getMethodName() : "");
