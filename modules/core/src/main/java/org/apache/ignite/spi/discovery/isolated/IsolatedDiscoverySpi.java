@@ -132,7 +132,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
 
     /** {@inheritDoc} */
     @Override public void setMessageFactory(MessageFactory msgFactory) {
-        // Np-op.
+        // No-op.
     }
 
     /** {@inheritDoc} */

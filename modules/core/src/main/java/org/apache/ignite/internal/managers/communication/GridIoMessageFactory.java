@@ -49,7 +49,6 @@ import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer
 import org.apache.ignite.internal.codegen.MissingMappingResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.NearCacheUpdatesSerializer;
 import org.apache.ignite.internal.codegen.SessionChannelMessageSerializer;
-import org.apache.ignite.internal.codegen.TcpDiscoveryCheckFailedMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpInverseConnectionResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.TxLockSerializer;
 import org.apache.ignite.internal.codegen.TxLocksRequestSerializer;
@@ -200,7 +199,6 @@ import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 
 /**
  * Message factory implementation.
@@ -381,8 +379,5 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // [2048..2053] - Snapshots
         // [-42..-37] - former hadoop.
         // [64..71] - former IGFS.
-
-        // Discovery messages.
-        factory.register((short)-1000, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
     }
 }
