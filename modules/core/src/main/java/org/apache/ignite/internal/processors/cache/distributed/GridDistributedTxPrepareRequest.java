@@ -489,79 +489,79 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         }
 
         switch (writer.state()) {
-            case 8:
+            case 7:
                 if (!writer.writeByte(concurrency != null ? (byte)concurrency.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeCollection(dhtVerKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeCollection(dhtVerVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 10:
                 if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeByte(isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 12:
                 if (!writer.writeByte(plc))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeCollection(reads, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 14:
                 if (!writer.writeLong(threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
+            case 15:
                 if (!writer.writeLong(timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 16:
                 if (!writer.writeMap(txNodesMsg, MessageCollectionItemType.UUID, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 17:
                 if (!writer.writeInt(txSize))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 18:
                 if (!writer.writeMessage(writeVer))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 19:
                 if (!writer.writeCollection(writes, MessageCollectionItemType.MSG))
                     return false;
 
@@ -580,7 +580,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             return false;
 
         switch (reader.state()) {
-            case 8:
+            case 7:
                 byte concurrencyOrd;
 
                 concurrencyOrd = reader.readByte();
@@ -592,7 +592,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 dhtVerKeys = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -600,7 +600,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 dhtVerVals = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -608,7 +608,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 11:
+            case 10:
                 flags = reader.readByte();
 
                 if (!reader.isLastRead())
@@ -616,7 +616,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 byte isolationOrd;
 
                 isolationOrd = reader.readByte();
@@ -628,7 +628,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 13:
+            case 12:
                 plc = reader.readByte();
 
                 if (!reader.isLastRead())
@@ -636,7 +636,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 14:
+            case 13:
                 reads = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -644,7 +644,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 15:
+            case 14:
                 threadId = reader.readLong();
 
                 if (!reader.isLastRead())
@@ -652,7 +652,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 16:
+            case 15:
                 timeout = reader.readLong();
 
                 if (!reader.isLastRead())
@@ -660,7 +660,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 17:
+            case 16:
                 txNodesMsg = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
@@ -668,7 +668,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 18:
+            case 17:
                 txSize = reader.readInt();
 
                 if (!reader.isLastRead())
@@ -676,7 +676,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 19:
+            case 18:
                 writeVer = reader.readMessage();
 
                 if (!reader.isLastRead())
@@ -684,7 +684,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
                 reader.incrementState();
 
-            case 20:
+            case 19:
                 writes = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())

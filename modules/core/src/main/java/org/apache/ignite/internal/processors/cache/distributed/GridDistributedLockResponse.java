@@ -217,19 +217,19 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         }
 
         switch (writer.state()) {
-            case 8:
+            case 7:
                 if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeCollection(vals, MessageCollectionItemType.CACHE_OBJECT))
                     return false;
 
@@ -248,7 +248,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
             return false;
 
         switch (reader.state()) {
-            case 8:
+            case 7:
                 errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
@@ -256,7 +256,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
@@ -264,7 +264,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 vals = reader.readCollection(MessageCollectionItemType.CACHE_OBJECT);
 
                 if (!reader.isLastRead())
