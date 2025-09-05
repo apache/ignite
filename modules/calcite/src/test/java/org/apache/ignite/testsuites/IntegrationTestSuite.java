@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.DdlTransactionCalciteSelfTest;
+import org.apache.ignite.internal.processors.cache.QueryEntityValueColumnAliasTest;
 import org.apache.ignite.internal.processors.cache.SessionContextSqlFunctionTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
@@ -167,6 +168,7 @@ import org.junit.runners.Suite;
     TpchScale100Test.class,
     UnnestIntegrationTest.class,
     CalcitePlanningDumpTest.class,
+    QueryEntityValueColumnAliasTest.class,
 })
 public class IntegrationTestSuite {
 }
