@@ -48,32 +48,32 @@ class CdcExtTest(CdcExtBaseTest):
     CDC extensions tests.
     """
     @cluster(num_nodes=6)
-    @ignite_versions(str(DEV_BRANCH))
-    @defaults(pds=[True])
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @defaults(pds=[True, False])
     def cdc_ignite_to_ignite_test(self, ignite_version, pds):
         return self.run(ignite_version, pds,
                         CdcIgniteToIgniteConfigurer(),
                         CdcParams(caches=[CACHE_NAME]))
 
     @cluster(num_nodes=6)
-    @ignite_versions(str(DEV_BRANCH))
-    @defaults(pds=[True])
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @defaults(pds=[True, False])
     def cdc_ignite_to_ignite_client_test(self, ignite_version, pds):
         return self.run(ignite_version, pds,
                         CdcIgniteToIgniteClientConfigurer(),
                         CdcParams(caches=[CACHE_NAME]))
 
     @cluster(num_nodes=12)
-    @ignite_versions(str(DEV_BRANCH))
-    @defaults(pds=[True])
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @defaults(pds=[True, False])
     def cdc_ignite_to_kafka_to_ignite_test(self, ignite_version, pds):
         return self.run(ignite_version, pds,
                         CdcIgniteToKafkaToIgniteConfigurer(),
                         KafkaCdcParams(caches=[CACHE_NAME]))
 
     @cluster(num_nodes=12)
-    @ignite_versions(str(DEV_BRANCH))
-    @defaults(pds=[True])
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @defaults(pds=[True, False])
     def cdc_ignite_to_kafka_to_ignite_client_test(self, ignite_version, pds):
         return self.run(ignite_version, pds,
                         CdcIgniteToKafkaToIgniteClientConfigurer(),
