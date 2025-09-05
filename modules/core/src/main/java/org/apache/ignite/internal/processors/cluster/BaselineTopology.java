@@ -205,6 +205,11 @@ public class BaselineTopology implements Serializable {
         branchingHist.add(branchingPntHash);
     }
 
+    /** */
+    public long version() {
+        return U.toLong(id, branchingHist.size());
+    }
+
     /**
      * @return id of this BaselineTopology.
      */
