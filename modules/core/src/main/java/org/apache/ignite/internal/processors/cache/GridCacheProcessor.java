@@ -2931,6 +2931,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Callback invoked when first exchange future for dynamic cache is completed.
      *
+     * @param fut Partitions exchage future.
      * @param err Error.
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture fut, @Nullable Throwable err) throws IgniteCheckedException {

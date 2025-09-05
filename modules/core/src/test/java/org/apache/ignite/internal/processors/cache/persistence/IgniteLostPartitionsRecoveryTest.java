@@ -62,7 +62,8 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * during cluster inactivity (either it is deactivated or completly stopped). "Lost" means that the partition data is no
  * longer available after the subsequent cluster activation - more formally, the partition update counter has become
  * zero. Tests use 4 nodes and 2 "cells". Each "cell" nodes store all copies of some paritions. If all nodes in a "cell"
- * lose their data, this will certainly result in data loss for some partitions. */
+ * lose their data, this will certainly result in data loss for some partitions.
+ */
 public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
     /** */
     private static final int SERVER_NODES_CNT = 4;

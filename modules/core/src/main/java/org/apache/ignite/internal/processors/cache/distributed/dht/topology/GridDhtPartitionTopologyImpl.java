@@ -3264,8 +3264,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         detectedLostParts.forEach(this::registerLostPartition);
 
         if (!detectedLostParts.isEmpty()) {
-            U.warn(log, "Cache group partitions were not restored from the PDS during cluster activation, but were" +
-                " present at the time when the cluster was previously deactivated" +
+            U.warn(log, "Some partitions data was not restored from the PDS during cluster activation, but were present" +
+                " at the time of previous cluster deactivation. This may be due to the Ignite PDS folder being" +
+                " cleared/temered on all primary and backup nodes for the specified partitions during cluster inactivity." +
                 " [cacheGroup=" + grp.cacheOrGroupName() + ", partIds=" + S.toStringSortedDistinct(detectedLostParts) + ']');
         }
     }

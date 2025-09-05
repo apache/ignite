@@ -92,7 +92,7 @@ public class CachePartitionFullCountersMap implements Serializable {
         updCntrs[p] = updCntr;
     }
 
-    /** */
+    /** @return Set of partitions which update counter is zero. */
     public Set<Integer> zeroUpdateCounterPartitions() {
         Set<Integer> res = new HashSet<>();
 

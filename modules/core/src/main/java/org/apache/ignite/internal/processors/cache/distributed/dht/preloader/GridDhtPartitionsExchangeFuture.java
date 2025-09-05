@@ -5300,7 +5300,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return true;
     }
 
-    /** */
+    /** @return Partiton topology for the group with specified ID. */
     private GridDhtPartitionTopology partitionTopology(int grpId) {
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
