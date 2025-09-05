@@ -21,17 +21,17 @@ from copy import deepcopy
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils import IgniteServiceType
-from ignitetest.services.utils.cdc.cdc_spec import get_cdc_spec
 from ignitetest.services.utils.cdc.kafka.kafka_properties_template import KafkaPropertiesTemplate
 from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
 from ignitetest.services.utils.ignite_spec import envs_to_exports
+from ignitetest.utils.bean import Bean
 
 
 class KafkaToIgniteService(IgniteService):
     """
     Kafka to Ignite utility (kafka-to-ignite.sh) wrapper.
     """
-    def __init__(self, context, kafka, target_cluster, client_type, num_nodes, streamer_config, parts, jvm_opts=None,
+    def __init__(self, context, kafka, target_cluster, client_type, cdc_params, jvm_opts=None,
                  merge_with_default=True, startup_timeout_sec=60, shutdown_timeout_sec=60, modules=None):
         def add_cdc_ext_module(_modules):
             if _modules:
@@ -41,15 +41,15 @@ class KafkaToIgniteService(IgniteService):
 
             return _modules
 
-        assert num_nodes <= parts, "number of nodes more then kafka topic partitions"
+        assert cdc_params.kafka_to_ignite_nodes <= cdc_params.kafka_partitions, \
+            (f"number of nodes ({cdc_params.kafka_to_ignite_nodes}) more then "
+             f"kafka topic partitions ({cdc_params.kafka_partitions})")
 
         super().__init__(context, self.__get_config(target_cluster, client_type),
-                         num_nodes, jvm_opts, merge_with_default, startup_timeout_sec,
+                         cdc_params.kafka_to_ignite_nodes, jvm_opts, merge_with_default, startup_timeout_sec,
                          shutdown_timeout_sec, add_cdc_ext_module(modules))
 
-        self.streamer_config = streamer_config
-
-        self.parts = parts
+        self.cdc_params = cdc_params
 
         self.main_java_class = "org.apache.ignite.cdc.kafka.KafkaToIgniteCommandLineStartup"
 
@@ -61,14 +61,14 @@ class KafkaToIgniteService(IgniteService):
         self.kafka = kafka
 
     def _prepare_configs(self, node):
-        parts_per_node = round(self.parts / self.num_nodes)
+        parts_per_node = round(self.cdc_params.kafka_partitions / self.num_nodes)
 
         idx = self.idx(node) - 1
 
         parts_from = idx * parts_per_node
 
         if idx == self.num_nodes - 1:
-            parts_to = self.parts
+            parts_to = self.cdc_params.kafka_partitions
         else:
             parts_to = (idx + 1) * parts_per_node
 
@@ -78,7 +78,15 @@ class KafkaToIgniteService(IgniteService):
 
     def __add_kafka_streamer_config(self, parts_from, parts_to):
         ext_beans = [
-            ("bean.j2", self.streamer_config.to_bean(
+            ("bean.j2", Bean("org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration",
+                caches=self.cdc_params.caches,
+                max_batch_size=self.cdc_params.kafka_to_ignite_max_batch_size,
+                kafka_request_timeout=self.cdc_params.kafka_to_ignite_kafka_request_timeout,
+                kafka_consumer_poll_timeout=self.cdc_params.kafka_to_ignite_kafka_consumer_poll_timeout,
+                metadata_consumer_group=self.cdc_params.kafka_to_ignite_metadata_consumer_group,
+                metadata_topic=self.cdc_params.metadata_topic,
+                topic=self.cdc_params.topic,
+                thread_count=self.cdc_params.kafka_to_ignite_thread_count,
                 kafka_parts_to=parts_to,
                 kafka_parts_from=parts_from)),
             ("properties_macro.j2", {
@@ -128,8 +136,8 @@ class KafkaToIgniteService(IgniteService):
                                    f"to consume all events from kafka.")
 
             offsets = self.kafka.offsets([
-                self.streamer_config.topic,
-                self.streamer_config.metadata_topic
+                self.cdc_params.topic,
+                self.cdc_params.metadata_topic
             ])
 
             all_consumed = all(map(lambda o: o.lag == 0, offsets))
@@ -198,4 +206,4 @@ def get_kafka_to_ignite_spec(base, kafka_connection_string, service):
             else:
                 return self.service.script(cmd)
 
-    return get_cdc_spec(KafkaToIgniteSpec, service)
+    return KafkaToIgniteSpec(service, service.spec.jvm_opts, merge_with_default=True)

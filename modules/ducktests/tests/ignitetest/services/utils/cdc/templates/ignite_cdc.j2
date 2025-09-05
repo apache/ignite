@@ -28,12 +28,17 @@
                 </list>
             </property>
         {% endif %}
-        {% if params.check_frequency %}
+
+        {% if params.check_frequency != None %}
             <property name="checkFrequency" value="{{ params.check_frequency }}"/>
         {% endif %}
 
         {% if params.keep_binary != None %}
             <property name="keepBinary" value="{{ params.keep_binary }}"/>
+        {% endif %}
+
+        {% if params.lock_timeout != None %}
+            <property name="lockTimeout" value="{{ params.lock_timeout }}"/>
         {% endif %}
     </bean>
 {% endmacro %}

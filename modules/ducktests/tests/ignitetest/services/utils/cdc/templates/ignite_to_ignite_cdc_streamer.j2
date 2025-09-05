@@ -24,17 +24,17 @@
             {{ ignite_configuration.apply(params.target_cluster_client_config, params.target_cluster) }}
         </property>
 
-        {% if params.max_batch_size != None %}
-        <property name="maxBatchSize" value="{{ params.max_batch_size }}"/>
+        {% if params.cdc.max_batch_size != None %}
+        <property name="maxBatchSize" value="{{ params.cdc.max_batch_size }}"/>
         {% endif %}
 
-        {% if params.only_primary != None %}
-        <property name="onlyPrimary" value="{{ params.only_primary }}"/>
+        {% if params.cdc.only_primary != None %}
+        <property name="onlyPrimary" value="{{ params.cdc.only_primary }}"/>
         {% endif %}
 
         <property name="caches">
             <list>
-                {% for v in params.caches %}
+                {% for v in params.cdc.caches %}
                     <value>{{ v }}</value>
                 {% endfor %}
             </list>
