@@ -152,7 +152,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.session.SessionContext;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -205,9 +204,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
-
-    /** JDK marshaller to serialize errors. */
-    private final JdkMarshaller marsh;
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -360,7 +356,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         idxBuildStatusStorage = new IndexBuildStatusStorage(ctx);
         txAwareQueriesEnabled = U.isTxAwareQueriesEnabled(ctx);
-        marsh = ctx.marshallerContext().jdkMarshaller();
     }
 
     /** {@inheritDoc} */
@@ -3903,15 +3898,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param err Error.
      * @param nop No-op flag.
      */
-    public void sendStatusMessage(UUID destNodeId, UUID opId, SchemaOperationException err, boolean nop) {
+    public void sendStatusMessage(UUID destNodeId, UUID opId, @Nullable SchemaOperationException err, boolean nop) {
         if (log.isDebugEnabled())
             log.debug("Sending schema operation status message [opId=" + opId + ", crdNode=" + destNodeId +
                 ", err=" + err + ", nop=" + nop + ']');
 
         try {
-            byte[] errBytes = marshalSchemaError(opId, err);
-
-            SchemaOperationStatusMessage msg = new SchemaOperationStatusMessage(opId, errBytes, nop);
+            SchemaOperationStatusMessage msg = new SchemaOperationStatusMessage(
+                opId,
+                err != null ? err.code() : -1,
+                err != null ? err.getMessage() : null,
+                nop
+            );
 
             // Messages must go to dedicated schema pool. We cannot push them to query pool because in this case
             // they could be blocked with other query requests.
@@ -3952,7 +3950,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         log.debug("Received status message [opId=" + msg.operationId() +
                             ", sndNodeId=" + msg.senderNodeId() + ']');
 
-                    op.manager().onNodeFinished(msg.senderNodeId(), unmarshalSchemaError(msg.errorBytes()), msg.nop());
+                    op.manager().onNodeFinished(msg.senderNodeId(), schemaError(msg), msg.nop());
 
                     return;
                 }
@@ -3982,7 +3980,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             SchemaOperationStatusMessage msg = it.next();
 
             if (Objects.equals(msg.operationId(), opId)) {
-                mgr.onNodeFinished(msg.senderNodeId(), unmarshalSchemaError(msg.errorBytes()), msg.nop());
+                mgr.onNodeFinished(msg.senderNodeId(), schemaError(msg), msg.nop());
 
                 it.remove();
             }
@@ -3990,50 +3988,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Marshal schema error.
-     *
-     * @param err Error.
-     * @return Error bytes.
+     * @param msg Status message.
+     * @return SchemaOperationException or null.
      */
-    @Nullable private byte[] marshalSchemaError(UUID opId, @Nullable SchemaOperationException err) {
-        if (err == null)
-            return null;
-
-        try {
-            return U.marshal(marsh, err);
-        }
-        catch (Exception e) {
-            U.warn(log, "Failed to marshal schema operation error [opId=" + opId + ", err=" + err + ']', e);
-
-            try {
-                return U.marshal(marsh, new SchemaOperationException("Operation failed, but error cannot be " +
-                    "serialized (see local node log for more details) [opId=" + opId + ", nodeId=" +
-                    ctx.localNodeId() + ']'));
-            }
-            catch (Exception e0) {
-                assert false; // Impossible situation.
-
-                return null;
-            }
-        }
-    }
-
-    /**
-     * Unmarshal schema error.
-     *
-     * @param errBytes Error bytes.
-     * @return Error.
-     */
-    @Nullable private SchemaOperationException unmarshalSchemaError(@Nullable byte[] errBytes) {
-        if (errBytes == null)
-            return null;
-
-        try {
-            return U.unmarshal(marsh, errBytes, U.resolveClassLoader(ctx.config()));
-        }
-        catch (Exception e) {
-            return new SchemaOperationException("Operation failed, but error cannot be deserialized.");
-        }
+    @Nullable private SchemaOperationException schemaError(SchemaOperationStatusMessage msg) {
+        return msg.errorMessage() != null ? new SchemaOperationException(msg.errorMessage(), msg.errorCode()) : null;
     }
 
     /**

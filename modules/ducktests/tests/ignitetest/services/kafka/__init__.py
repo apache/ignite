@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-filelock==3.8.2
-ducktape==0.13.0
-looseversion==1.3.0
+"""
+This module contains classes and utilities to start Kafka cluster.
+"""
