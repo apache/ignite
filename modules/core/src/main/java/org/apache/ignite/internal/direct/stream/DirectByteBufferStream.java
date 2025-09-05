@@ -320,7 +320,10 @@ public class DirectByteBufferStream {
     /** */
     private int topVerMinor;
 
-    /** */
+    /**
+     * This field represents a phase of reading or writing {@code CacheObject} object enabling ser/des mechanism to keep
+     * track of fields that are already read/written.
+     */
     private byte cacheObjState;
 
     /** */
@@ -347,8 +350,8 @@ public class DirectByteBufferStream {
     /**
      * Constructror for stream used for reading messages.
      *
-     * @param cacheObjProc Cache object processor.
      * @param msgFactory Message factory.
+     * @param cacheObjProc Cache object processor.
      */
     public DirectByteBufferStream(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
         this.msgFactory = msgFactory;
