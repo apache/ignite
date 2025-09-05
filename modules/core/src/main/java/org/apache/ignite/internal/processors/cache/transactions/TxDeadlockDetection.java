@@ -309,8 +309,11 @@ public class TxDeadlockDetection {
 
             List<GridCacheVersion> cycle = findCycle(wfg, txId);
 
-            if (cycle != null)
+            if (cycle != null) {
+                cctx.txMetrics().onTxDeadlock();
+
                 onDone(new TxDeadlock(cycle, txs, txLockedKeys, txRequestedKeys));
+            }
             else
                 map(res.keys(), res.txLocks());
         }
