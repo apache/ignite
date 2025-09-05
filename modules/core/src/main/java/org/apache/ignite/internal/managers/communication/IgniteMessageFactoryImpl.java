@@ -41,7 +41,7 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
     private static final int ARR_SIZE = 1 << Short.SIZE;
 
     /** Delegate serialization to {@code Message} methods. */
-    private static final MessageSerializer DEFAULT_SERIALIZER = new MessageSerializer() {
+    public static final MessageSerializer DEFAULT_SERIALIZER = new MessageSerializer() {
         /** {@inheritDoc} */
         @Override public boolean writeTo(Message msg, ByteBuffer buf, MessageWriter writer) {
             return msg.writeTo(buf, writer);
