@@ -25,11 +25,11 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -49,18 +49,20 @@ public class MergeJoinConverterRule extends AbstractIgniteJoinConverterRule {
 
     /** {@inheritDoc} */
     @Override public boolean matchesJoin(RelOptRuleCall call) {
-        LogicalJoin logicalJoin = call.rel(0);
+        LogicalJoin logicaJoin = call.rel(0);
 
-        JoinInfo joinInfo = JoinInfo.of(logicalJoin.getLeft(), logicalJoin.getRight(), logicalJoin.getCondition());
+        IgniteJoinInfo info = IgniteJoinInfo.of(logicaJoin);
 
-        return !F.isEmpty(joinInfo.pairs()) && joinInfo.isEqui();
+        return info.isEqui() && !F.isEmpty(info.pairs());
     }
 
     /** {@inheritDoc} */
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
         RelOptCluster cluster = rel.getCluster();
 
-        JoinInfo joinInfo = JoinInfo.of(rel.getLeft(), rel.getRight(), rel.getCondition());
+        IgniteJoinInfo joinInfo = IgniteJoinInfo.of(rel);
+
+        assert joinInfo.isEqui() && !F.isEmpty(joinInfo.pairs());
 
         RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replace(RelCollations.of(joinInfo.leftKeys));
@@ -71,6 +73,7 @@ public class MergeJoinConverterRule extends AbstractIgniteJoinConverterRule {
         RelNode left = convert(rel.getLeft(), leftInTraits);
         RelNode right = convert(rel.getRight(), rightInTraits);
 
-        return new IgniteMergeJoin(cluster, outTraits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
+        return new IgniteMergeJoin(cluster, outTraits, left, right, rel.getCondition(), joinInfo.matchingNulls(),
+            rel.getVariablesSet(), rel.getJoinType());
     }
 }
