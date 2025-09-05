@@ -127,11 +127,6 @@ public class QueryTable implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public int hashCode() {
         return 31 * (schema != null ? schema.hashCode() : 0) + (tbl != null ? tbl.hashCode() : 0);
     }

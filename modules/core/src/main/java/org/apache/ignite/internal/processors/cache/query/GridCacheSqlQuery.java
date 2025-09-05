@@ -153,11 +153,6 @@ public class GridCacheSqlQuery implements Message, Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheSqlQuery.class, this);
     }

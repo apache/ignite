@@ -211,11 +211,6 @@ public class IgniteDiagnosticMessage implements Message {
         return -61;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
     /**
      *
      */

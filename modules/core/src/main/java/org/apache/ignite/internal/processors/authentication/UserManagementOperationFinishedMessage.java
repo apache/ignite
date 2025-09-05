@@ -92,11 +92,6 @@ public class UserManagementOperationFinishedMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(UserManagementOperationFinishedMessage.class, this);
     }
