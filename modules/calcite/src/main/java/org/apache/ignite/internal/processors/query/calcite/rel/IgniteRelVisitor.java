@@ -186,6 +186,11 @@ public interface IgniteRelVisitor<T> {
     T visit(IgniteUncollect rel);
 
     /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
+    T visit(IgniteWindow rel);
+
+    /**
      * Visits a relational node and calculates a result on the basis of node meta information.
      * @param rel Relational node.
      * @return Visit result.

@@ -127,6 +127,8 @@ public class PlannerHelper {
 
             rel = planner.replaceCorrelatesCollisions(rel);
 
+            rel = planner.transform(PlannerPhase.HEP_WINDOW_SPLIT, rel.getTraitSet(), rel);
+
             rel = planner.extractConjunctionOverDisjunctionCommonPart(rel);
 
             rel = planner.trimUnusedFields(root.withRel(rel)).rel;
