@@ -40,7 +40,7 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     private UUID id;
 
     /** ID of the latest incremental snapshot after which this transaction committed. */
-    @Order(value = 5, method = "txInrementalSnapshotId")
+    @Order(value = 5, method = "txIncrementalSnapshotId")
     private @Nullable UUID txSnpId;
 
     /** Incremental snapshot topology version. */
@@ -77,14 +77,14 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     }
 
     /** ID of the latest incremental snapshot after which this transaction committed. */
-    public UUID txInrementalSnapshotId() {
+    public UUID txIncrementalSnapshotId() {
         return txSnpId;
     }
 
     /**
      * @param txSnpId ID of the latest incremental snapshot after which this transaction committed.
      */
-    public void txInrementalSnapshotId(UUID txSnpId) {
+    public void txIncrementalSnapshotId(UUID txSnpId) {
         this.txSnpId = txSnpId;
     }
 
