@@ -23,6 +23,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -71,6 +73,9 @@ public class JUnitTeamcityReporter extends RunListener {
     }
 
     /** */
+    private final Set<String> methods = new HashSet<>();
+
+    /** */
     @Override public synchronized void testAssumptionFailure(Failure failure) {
         if (curXmlStream == null)
             testStarted(failure.getDescription());
@@ -111,12 +116,24 @@ public class JUnitTeamcityReporter extends RunListener {
 
             prevTestCls = desc.getClassName();
 
+            String method = desc.getClassName() + "#" + (desc.getMethodName() != null ? desc.getMethodName() : "");
+
+            System.out.println(">>> CURRENT METHOD: " + method);
+            System.out.println(">>> METHODS: " + methods);
+
+            if (methods.contains(method)) {
+                System.out.println(">>> RETURN");
+                return;
+            }
+
             curXmlStream.writeStartElement("testcase");
             curXmlStream.writeAttribute("name", desc.getMethodName() != null ? desc.getMethodName() : "");
             curXmlStream.writeAttribute("classname", desc.getClassName());
 
             // Avoid doubling of run time after the surefire-generated full report is ingested:
             curXmlStream.writeAttribute("time", "0");
+
+            methods.add(method);
         }
         catch (XMLStreamException | FileNotFoundException ex) {
             throw new RuntimeException(ex);
@@ -206,8 +223,17 @@ public class JUnitTeamcityReporter extends RunListener {
 
             assert report.exists();
 
-            System.out.println(String.format("##teamcity[importData type='surefire' path='%s']",
+            System.out.println(String.format("##teamcity[importData type='surefire' path='%s' verbose='true']",
                 escapeForTeamcity(report.getAbsolutePath())));
+
+            try {
+                System.out.printf(">>> reportPath='%s', reportContent='%s'%n",
+                    report.getAbsolutePath(),
+                    Files.readString(report.getAbsoluteFile().toPath()));
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
 
             return true;
         }
