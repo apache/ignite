@@ -17,62 +17,62 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.EnumSet;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.JoinInfo;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
-import org.apache.ignite.internal.util.typedef.F;
 
-/**
- * Ignite Join converter.
- */
-public class MergeJoinConverterRule extends AbstractIgniteJoinConverterRule {
+/** Hash join converter rule. */
+public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
     /** */
-    public static final RelOptRule INSTANCE = new MergeJoinConverterRule();
+    public static final RelOptRule INSTANCE = new HashJoinConverterRule();
 
-    /**
-     * Creates a converter.
-     */
-    public MergeJoinConverterRule() {
-        super("MergeJoinConverter", HintDefinition.MERGE_JOIN);
+    /** */
+    private static final EnumSet<JoinRelType> NON_EQ_CONDITIONS_SUPPORT = EnumSet.of(JoinRelType.INNER, JoinRelType.SEMI);
+
+    /** Ctor. */
+    private HashJoinConverterRule() {
+        super("HashJoinConverter", HintDefinition.HASH_JOIN);
     }
 
     /** {@inheritDoc} */
     @Override public boolean matchesJoin(RelOptRuleCall call) {
         LogicalJoin join = call.rel(0);
 
-        IgniteJoinInfo info = IgniteJoinInfo.of(join);
+        IgniteJoinInfo joinInfo = IgniteJoinInfo.of(join);
 
-        // TODO : revise after https://issues.apache.org/jira/browse/IGNITE-26048
-        return !F.isEmpty(info.pairs()) && info.isEqui() && (!info.hasMatchingNulls() || info.matchingNullsCnt() == info.pairs().size());
+        if (joinInfo.pairs().isEmpty())
+            return false;
+
+        // IS NOT DISTINCT is currently not supported simultaneously with equi conditions.
+        if (joinInfo.hasMatchingNulls() && joinInfo.matchingNullsCnt() != joinInfo.pairs().size())
+            return false;
+
+        // Current limitation: unmatched products on left or right part requires special handling of non-equi condition
+        // on execution level.
+        return joinInfo.isEqui() || NON_EQ_CONDITIONS_SUPPORT.contains(join.getJoinType());
     }
 
     /** {@inheritDoc} */
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
         RelOptCluster cluster = rel.getCluster();
-
-        JoinInfo joinInfo = JoinInfo.of(rel.getLeft(), rel.getRight(), rel.getCondition());
-
-        RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replace(RelCollations.of(joinInfo.leftKeys));
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replace(RelCollations.of(joinInfo.rightKeys));
-
+        RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelNode left = convert(rel.getLeft(), leftInTraits);
         RelNode right = convert(rel.getRight(), rightInTraits);
 
-        return new IgniteMergeJoin(cluster, outTraits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
+        return new IgniteHashJoin(cluster, outTraits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
     }
 }
