@@ -13,11 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 
+from typing import NamedTuple
+
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.cdc.cdc_configurer import CdcConfigurer
 from ignitetest.services.utils.cdc.cdc_spec import get_cdc_spec
-from ignitetest.services.utils.cdc.thin.ignite_to_ignite_client_cdc_streamer_params import \
-    IgniteToIgniteClientCdcStreamerParams
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
 
 
@@ -47,16 +48,13 @@ class CdcIgniteToIgniteClientConfigurer(CdcConfigurer):
 
         dummy_client.free()
 
-        params = IgniteToIgniteClientCdcStreamerParams(
+        params = IgniteToIgniteClientCdcStreamerTemplateParams(
             target_cluster,
             target_cluster_client_config,
+            caches=cdc_params.cdc_caches,
             max_batch_size=cdc_params.cdc_max_batch_size,
-            only_primary=cdc_params.cdc_only_primary,
-            caches=cdc_params.cdc_caches
+            only_primary=cdc_params.cdc_only_primary
         )
-
-        if self.class_name:
-            params = params._replace(class_name=self.class_name)
 
         beans.append((
             "ignite_to_ignite_client_cdc_streamer.j2",
@@ -66,3 +64,10 @@ class CdcIgniteToIgniteClientConfigurer(CdcConfigurer):
         return beans
 
 
+class IgniteToIgniteClientCdcStreamerTemplateParams(NamedTuple):
+    target_cluster: IgniteAwareService
+    target_cluster_client_config: IgniteThinClientConfiguration
+    caches: list
+    max_batch_size: int
+    only_primary: bool
+    name: str = "IgniteToIgniteClientCdcStreamerParams"

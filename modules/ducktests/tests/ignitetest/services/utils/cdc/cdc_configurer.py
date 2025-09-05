@@ -18,9 +18,7 @@ This module contains helper classes for CDC configuration with different CDC con
 implemented in ignite extensions.
 """
 
-import math
 import time
-from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 from typing import NamedTuple
 
@@ -48,18 +46,13 @@ class CdcParams(NamedTuple):
     cdc_kafka_retention_ms: int = None
     cdc_kafka_nodes: int = 2
     cdc_keep_binary: bool = None
-    # wal_force_archive_timeout: int = None
 
 
 class CdcConfigurer:
     """
     Base CDC configurer class for different CDC consumer extensions.
     """
-    def __init__(self, class_name=None):
-        """
-        :param class_name Custom CDC consumer java class.
-        """
-        self.class_name = class_name
+    def __init__(self):
         self.ignite_cdc = None
         self.source_cluster = None
 
@@ -71,10 +64,6 @@ class CdcConfigurer:
         :param target_cluster Ignite service representing the target cluster.
         :param cdc_params CDC test params.
         """
-        # wal_force_archive_timeout = source_cluster.config.data_storage.wal_force_archive_timeout
-        # if cdc_params.wal_force_archive_timeout:
-        #     wal_force_archive_timeout = cdc_params.wal_force_archive_timeout
-
         source_cluster.config = source_cluster.config._replace(
             discovery_spi=TcpDiscoverySpi(ip_finder=TcpDiscoveryVmIpFinder()),
             plugins=[*source_cluster.config.plugins,
@@ -84,7 +73,6 @@ class CdcConfigurer:
                            caches=cdc_params.cdc_caches))],
             ext_beans=self.get_cdc_beans(source_cluster, target_cluster, cdc_params),
             data_storage=source_cluster.config.data_storage._replace(
-                # wal_force_archive_timeout=wal_force_archive_timeout,
                 default=source_cluster.config.data_storage.default._replace(cdc_enabled=True)
             )
         )

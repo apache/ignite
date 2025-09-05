@@ -13,10 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 
+from typing import NamedTuple
+
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.cdc.cdc_configurer import CdcConfigurer
 from ignitetest.services.utils.cdc.cdc_spec import get_cdc_spec
-from ignitetest.services.utils.cdc.ignite_to_ignite_cdc_streamer_params import IgniteToIgniteCdcStreamerParams
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.metrics.metrics import OPENCENSUS_TEMPLATE_FILE
 
 
@@ -43,22 +46,18 @@ class CdcIgniteToIgniteConfigurer(CdcConfigurer):
         target_cluster_client_config = dummy_client.spec.extend_config(target_cluster_client_config)
 
         remove_bean_by_template_name(target_cluster_client_config.ext_beans, OPENCENSUS_TEMPLATE_FILE)
-        # remove_bean_by_template_name(target_cluster_client_config.ext_beans, AUDIT_SERVICE_BEANS_TEMPLATE)
 
         target_cluster_client_config = target_cluster_client_config._replace(metric_exporters={})
 
         dummy_client.free()
 
-        params = IgniteToIgniteCdcStreamerParams(
+        params = IgniteToIgniteCdcStreamerTemplateParams(
             target_cluster,
             target_cluster_client_config,
+            caches=cdc_params.cdc_caches,
             max_batch_size=cdc_params.cdc_max_batch_size,
-            only_primary=cdc_params.cdc_only_primary,
-            caches=cdc_params.cdc_caches
+            only_primary=cdc_params.cdc_only_primary
         )
-
-        if self.class_name:
-            params = params._replace(class_name=self.class_name)
 
         beans.append((
             "ignite_to_ignite_cdc_streamer.j2",
@@ -78,3 +77,11 @@ def remove_bean_by_template_name(beans, template_name):
 
     if bean:
         beans.remove(bean)
+
+class IgniteToIgniteCdcStreamerTemplateParams(NamedTuple):
+    target_cluster: IgniteAwareService
+    target_cluster_client_config: IgniteConfiguration
+    caches: list
+    max_batch_size: int
+    only_primary: bool
+    name: str = "IgniteToIgniteCdcStreamerParams"
