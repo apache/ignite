@@ -19,14 +19,14 @@
 #
 # Checks wheter SQL Calcite operators can be executed and no missed dependencies.
 #
-set -xeuo pipefail
+set -euo pipefail
 
 IGNITE_HOME=$PWD/target/release-package-apache-ignite
 
 USER_LIBS="$IGNITE_HOME/libs/*"
 
-for lib in "$IGNITE_HOME"/libs/ignite-*; do
-    USER_LIBS="$USER_LIBS:$lib/*"
+for lib in ignite-core ignite-spring; do
+    USER_LIBS="$USER_LIBS:$IGNITE_HOME/libs/$lib/*"
 done
 
 for lib in ignite-log4j2 ignite-calcite; do

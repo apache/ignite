@@ -70,14 +70,6 @@ jobs:
         run : |
           ./mvnw -DskipTests install -pl modules/tools,modules/codegen2 -B -V && ./mvnw initialize -Pjavadoc -B -V
 
-      - name: Check release.
-        if: startsWith(github.ref_name, 'ignite-')
-        run: |
-          ./mvnw clean install -Pall-java,licenses -DskipTests -B -V \
-            && ./mvnw initialize -Pjavadoc -B -V \
-            && ./mvnw initialize -Prelease -B -V \
-            && ./scripts/check-calcite-dependencies.sh -B -V
-
   check-dotnet:
     name: Сheck .NET code
     runs-on: ubuntu-latest
