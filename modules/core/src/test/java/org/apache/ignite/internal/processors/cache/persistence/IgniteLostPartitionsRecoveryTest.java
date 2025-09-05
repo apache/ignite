@@ -131,7 +131,7 @@ public class IgniteLostPartitionsRecoveryTest extends GridCommonAbstractTest {
 
         restartCellWithDataCleared();
 
-        LogListener logLsnr = LogListener.matches("Cache group partitions were not restored from the PDS during cluster activation")
+        LogListener logLsnr = LogListener.matches("Some partitions data was not restored from the PDS during cluster activation")
             .times(2)
             .build();
 
