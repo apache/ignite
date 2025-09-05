@@ -19,7 +19,7 @@
 {% import 'misc_macro.j2' as misc_utils %}
 
 {% macro apply(config, params) %}
-    <bean id="cdcConsumer" class="{{ params.class_name }}">
+    <bean id="cdcConsumer" class="org.apache.ignite.cdc.IgniteToIgniteCdcStreamer">
         <property name="destinationIgniteConfiguration">
             {{ ignite_configuration.apply(params.target_cluster_client_config, params.target_cluster) }}
         </property>
