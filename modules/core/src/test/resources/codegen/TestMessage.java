@@ -21,6 +21,8 @@ import java.lang.String;
 import java.util.UUID;
 import java.util.BitSet;
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -64,6 +66,12 @@ public class TestMessage implements Message {
 
     @Order(value = 11, method = "overridenFieldMethod")
     private String field;
+
+    @Order(value = 12)
+    private KeyCacheObject keyCacheObject;
+
+    @Order(value = 13)
+    private CacheObject cacheObject;
 
     public int id() {
         return id;
@@ -159,6 +167,22 @@ public class TestMessage implements Message {
 
     public void overridenFieldMethod(String field) {
         this.field = field;
+    }
+
+    public KeyCacheObject keyCacheObject() {
+        return keyCacheObject;
+    }
+
+    public void keyCacheObject(KeyCacheObject keyCacheObject) {
+        this.keyCacheObject = keyCacheObject;
+    }
+
+    public CacheObject cacheObject() {
+        return cacheObject;
+    }
+
+    public void cacheObject(CacheObject cacheObject) {
+        this.cacheObject = cacheObject;
     }
 
     public short directType() {

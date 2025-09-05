@@ -55,9 +55,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -83,7 +81,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.platform.PlatformType;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -1682,14 +1679,6 @@ public class BinaryUtils {
      */
     public static BinaryObjectEx binaryEnum(BinaryContext ctx, byte[] arr) {
         return new BinaryEnumObjectImpl(ctx, arr);
-    }
-
-    /**
-     * @param register Register method.
-     */
-    public static void registerMessages(BiConsumer<Short, Supplier<Message>> register) {
-        register.accept((short)113, BinaryObjectImpl::new);
-        register.accept((short)119, BinaryEnumObjectImpl::new);
     }
 
     /** */

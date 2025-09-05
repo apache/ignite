@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
@@ -158,26 +156,6 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @Override public void prepareMarshal(final CacheObjectValueContext ctx) throws IgniteCheckedException {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(final ByteBuffer buf, final MessageWriter writer) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(final ByteBuffer buf, final MessageReader reader) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
             // No-op
         }
     }

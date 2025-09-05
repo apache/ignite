@@ -158,7 +158,7 @@ public class UpdateErrors implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeCollection(failedKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(failedKeys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -182,7 +182,7 @@ public class UpdateErrors implements Message {
                 reader.incrementState();
 
             case 1:
-                failedKeys = reader.readCollection(MessageCollectionItemType.MSG);
+                failedKeys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;
