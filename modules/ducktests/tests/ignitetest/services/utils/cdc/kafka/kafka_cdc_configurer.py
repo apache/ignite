@@ -14,26 +14,25 @@
 # limitations under the License
 
 import os, time, math
-from copy import deepcopy
 from abc import ABCMeta, abstractmethod
+from typing import NamedTuple
 
 from ignitetest.services.kafka.kafka import KafkaSettings, KafkaService
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.cdc.cdc_configurer import CdcConfigurer
 from ignitetest.services.utils.cdc.cdc_spec import get_cdc_spec
-from ignitetest.services.utils.cdc.kafka.ignite_to_kafka_cdc_streamer_params import IgniteToKafkaCdcStreamerParams
 from ignitetest.services.utils.cdc.kafka.kafka_properties_template import KafkaPropertiesTemplate
 from ignitetest.services.utils.cdc.kafka.kafka_to_ignite import KafkaToIgniteService
-from ignitetest.services.utils.cdc.kafka.kafka_to_ignite_cdc_streamer_params import KafkaToIgniteCdcStreamerParams
 from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
+from ignitetest.utils.bean import BeanRef, Bean
 
 
 class AbstractKafkaCdcConfigurer(CdcConfigurer, metaclass=ABCMeta):
     """
     Abstract base class for IgniteToKafkaCdcStreamer configurer.
     """
-    def __init__(self, class_name=None):
-        super().__init__(class_name)
+    def __init__(self):
+        super().__init__()
 
         self.kafka = None
         self.zk = None
@@ -64,15 +63,11 @@ class AbstractKafkaCdcConfigurer(CdcConfigurer, metaclass=ABCMeta):
         self.kafka = KafkaService(target_cluster.context, cdc_params.cdc_kafka_nodes, settings=kafka_settings)
         self.kafka.start()
 
-        ignite_to_kafka_params = IgniteToKafkaCdcStreamerParams(
+        ignite_to_kafka_params = IgniteToKafkaCdcStreamerTemplateParams(
             caches=cdc_params.cdc_caches,
             max_batch_size=cdc_params.cdc_max_batch_size,
             only_primary=cdc_params.cdc_only_primary
         )
-
-        if self.class_name:
-            ignite_to_kafka_params = ignite_to_kafka_params._replace(
-                class_name=self.class_name)
 
         if cdc_params.cdc_kafka_partitions is not None:
             ignite_to_kafka_params = ignite_to_kafka_params._replace(
@@ -88,7 +83,7 @@ class AbstractKafkaCdcConfigurer(CdcConfigurer, metaclass=ABCMeta):
             target_cluster,
             self.get_client_type(),
             num_nodes=cdc_params.cdc_kafka_to_ignite_nodes,
-            streamer_config=KafkaToIgniteCdcStreamerParams(
+            streamer_config=KafkaToIgniteCdcStreamerTemplateParams(
                 kafka_request_timeout=3_000,
                 thread_count=cdc_params.cdc_kafka_to_ignite_threads if cdc_params.cdc_kafka_to_ignite_threads
                 else math.floor(ignite_to_kafka_params.kafka_partitions /
@@ -155,6 +150,41 @@ def get_ignite_to_kafka_spec(base, kafka_connection_string, service):
             return templates
 
     return get_cdc_spec(IgniteToKafkaSpec, service)
+
+
+class IgniteToKafkaCdcStreamerTemplateParams(NamedTuple):
+    caches: list
+    kafka_partitions: int = 8
+    kafka_request_timeout: int = None
+    metadata_topic: str = "ignite-metadata"
+    max_batch_size: int = None
+    only_primary: bool = None
+    topic: str = "ignite"
+
+    def to_bean(self, **kwargs):
+        filtered = {k: v for k, v in self._asdict().items() if v is not None}
+
+        return Bean("org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer",
+                    bean_id="cdcConsumer",
+                    **filtered,
+                    kafka_properties=BeanRef("kafkaProperties"),
+                    **kwargs)
+
+
+class KafkaToIgniteCdcStreamerTemplateParams(NamedTuple):
+    caches: list = None
+    kafka_request_timeout: int = None
+    max_batch_size: int = None
+    metadata_consumer_group: str = None
+    metadata_topic: str = "ignite-metadata"
+    thread_count: int = None
+    topic: str = "ignite"
+
+    def to_bean(self, **kwargs):
+        filtered = {k: v for k, v in self._asdict().items() if v is not None}
+
+        return Bean("org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration",
+                    **filtered, **kwargs)
 
 
 class CdcIgniteToKafkaToIgniteConfigurer(AbstractKafkaCdcConfigurer):
