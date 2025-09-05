@@ -36,7 +36,7 @@ public class UserAuthenticateRequestMessage implements Message {
 
     /** Request ID. */
     @Order(2)
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    private IgniteUuid id;
 
     /**
      *
@@ -52,6 +52,7 @@ public class UserAuthenticateRequestMessage implements Message {
     public UserAuthenticateRequestMessage(String name, String passwd) {
         this.name = name;
         this.passwd = passwd;
+        id = IgniteUuid.randomUuid();
     }
 
     /**
