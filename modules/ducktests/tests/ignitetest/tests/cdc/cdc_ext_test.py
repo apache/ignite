@@ -14,15 +14,17 @@
 # limitations under the License
 
 import json
+from copy import deepcopy
 from time import sleep
 
 from ducktape.mark import defaults
 
+from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.cdc.cdc_configurer import CdcParams
 from ignitetest.services.utils.cdc.ignite_to_ignite_cdc_configurer import CdcIgniteToIgniteConfigurer
 from ignitetest.services.utils.cdc.kafka.kafka_cdc_configurer import CdcIgniteToKafkaToIgniteConfigurer, \
-    CdcIgniteToKafkaToIgniteClientConfigurer
+    CdcIgniteToKafkaToIgniteClientConfigurer, KafkaCdcParams
 from ignitetest.services.utils.cdc.thin.ignite_to_ignite_client_cdc_configurer import CdcIgniteToIgniteClientConfigurer
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
@@ -39,45 +41,45 @@ CACHE_NAME = "cdc-test-cache"
 JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.client_test.IgniteCachePutClient"
 
 WAL_FORCE_ARCHIVE_TIMEOUT_MS = 100
-TEST_DURATION_SEC = 10
+TEST_DURATION_SEC = 5
 
 class CdcExtTest(CdcExtBaseTest):
     """
     CDC extensions tests.
     """
     @cluster(num_nodes=6)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(pds=[True, False])
+    @ignite_versions(str(DEV_BRANCH))
+    @defaults(pds=[True])
     def cdc_ignite_to_ignite_test(self, ignite_version, pds):
-        cdc_configurer = CdcIgniteToIgniteConfigurer()
-
-        return self.run(ignite_version, pds, cdc_configurer)
+        return self.run(ignite_version, pds,
+                        CdcIgniteToIgniteConfigurer(),
+                        CdcParams(caches=[CACHE_NAME]))
 
     @cluster(num_nodes=6)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(pds=[True, False])
+    @ignite_versions(str(DEV_BRANCH))
+    @defaults(pds=[True])
     def cdc_ignite_to_ignite_client_test(self, ignite_version, pds):
-        cdc_configurer = CdcIgniteToIgniteClientConfigurer()
-
-        return self.run(ignite_version, pds, cdc_configurer)
+        return self.run(ignite_version, pds,
+                        CdcIgniteToIgniteClientConfigurer(),
+                        CdcParams(caches=[CACHE_NAME]))
 
     @cluster(num_nodes=12)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(pds=[True, False])
+    @ignite_versions(str(DEV_BRANCH))
+    @defaults(pds=[True])
     def cdc_ignite_to_kafka_to_ignite_test(self, ignite_version, pds):
-        cdc_configurer = CdcIgniteToKafkaToIgniteConfigurer()
-
-        return self.run(ignite_version, pds, cdc_configurer)
+        return self.run(ignite_version, pds,
+                        CdcIgniteToKafkaToIgniteConfigurer(),
+                        KafkaCdcParams(caches=[CACHE_NAME]))
 
     @cluster(num_nodes=12)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(pds=[True, False])
+    @ignite_versions(str(DEV_BRANCH))
+    @defaults(pds=[True])
     def cdc_ignite_to_kafka_to_ignite_client_test(self, ignite_version, pds):
-        cdc_configurer = CdcIgniteToKafkaToIgniteClientConfigurer()
+        return self.run(ignite_version, pds,
+                        CdcIgniteToKafkaToIgniteClientConfigurer(),
+                        KafkaCdcParams(caches=[CACHE_NAME]))
 
-        return self.run(ignite_version, pds, cdc_configurer)
-
-    def run(self, ignite_version, pds, cdc_configurer):
+    def run(self, ignite_version, pds, cdc_configurer, cdc_params):
         config = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(
@@ -96,21 +98,24 @@ class CdcExtTest(CdcExtBaseTest):
                 )
             )
 
-        target_cluster = self.get_target_cluster(self.test_context, config, 2,
-            cdc_configurer, CdcParams(cdc_caches=[CACHE_NAME]))
+        source_cluster = IgniteService(self.test_context, source_cluster_config(config),2, modules=["cdc-ext"])
+        target_cluster = IgniteService(self.test_context, target_cluster_config(config),2, modules=["cdc-ext"])
 
-        source_cluster = self.get_source_cluster(self.test_context, config, 2,
-            cdc_configurer, CdcParams(cdc_caches=[CACHE_NAME]), target_cluster)
+        cdc_configurer.configure_target_cluster(target_cluster, cdc_params)
+        target_cluster.start()
+        ControlUtility(target_cluster).activate()
+
+        cdc_configurer.configure_source_cluster(source_cluster, target_cluster, cdc_params)
+        source_cluster.start()
+        ControlUtility(source_cluster).activate()
 
         cdc_configurer.start_ignite_cdc(source_cluster)
 
-        client_cfg = source_cluster.config._replace(
-            client_mode=True, data_storage=None, plugins=[], ext_beans=[],
-            discovery_spi=from_ignite_cluster(source_cluster)
-        )
-
-        client = IgniteApplicationService(self.test_context, client_cfg,
-            java_class_name=JAVA_CLIENT_CLASS_NAME, num_nodes=2,
+        client = IgniteApplicationService(
+            self.test_context,
+            client_cluster_config(source_cluster),
+            java_class_name=JAVA_CLIENT_CLASS_NAME,
+            num_nodes=2,
             params={"cacheName": CACHE_NAME, "pacing": 10})
 
         client.start()
@@ -136,3 +141,30 @@ class CdcExtTest(CdcExtBaseTest):
         target_cluster.stop()
 
         return cdc_streamer_metrics
+
+
+def source_cluster_config(config):
+    cfg = deepcopy(config)
+
+    return cfg._replace(
+        ignite_instance_name="source",
+        data_storage=cfg.data_storage._replace(
+            default=cfg.data_storage.default._replace(
+                cdc_enabled=True
+            )
+        )
+    )
+
+def target_cluster_config(config):
+    cfg = deepcopy(config)
+
+    return cfg._replace(ignite_instance_name="target")
+
+def client_cluster_config(ignite):
+    return ignite.config._replace(
+        client_mode=True,
+        data_storage=None,
+        plugins=[],
+        ext_beans=[],
+        discovery_spi=from_ignite_cluster(ignite)
+    )

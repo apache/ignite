@@ -19,34 +19,29 @@ implemented in ignite extensions.
 """
 
 import time
-from copy import deepcopy
 from typing import NamedTuple
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
-from ignitetest.services.utils.cdc.cdc_spec import get_cdc_spec
 from ignitetest.services.utils.cdc.ignite_cdc import IgniteCdcUtility
-from ignitetest.services.utils.cdc.ignite_cdc_params import IgniteCdcParams
-from ignitetest.services.utils.ignite_configuration import TcpDiscoverySpi
-from ignitetest.services.utils.ignite_configuration.discovery import TcpDiscoveryVmIpFinder
 from ignitetest.services.utils.jmx_utils import JmxClient
 from ignitetest.utils.bean import Bean
 
+class CdcConfiguration(NamedTuple):
+    check_frequency: int = None
+    keep_binary: bool = None
+    lock_timeout: int = None
+    metric_exporter_spi: set = None
+    name: str = "IgniteCdcParams"
 
-class CdcParams(NamedTuple):
-    """
-    CDC test parameters.
-    """
-    cdc_caches: list
-    cdc_max_batch_size: int = None
-    cdc_only_primary: bool = None
-    cdc_kafka_to_ignite_threads: int = 8
-    cdc_kafka_partitions: int = 16
-    cdc_kafka_to_ignite_nodes: int = 2
-    cdc_kafka_retention_ms: int = None
-    cdc_kafka_nodes: int = 2
-    cdc_keep_binary: bool = None
 
+class CdcParams:
+    def __init__(self, caches, max_batch_size=None, only_primary=None, cdc_configuration=None):
+        self.caches = caches
+        self.max_batch_size = max_batch_size
+        self.only_primary = only_primary
+
+        self.cdc_configuration = CdcConfiguration() if cdc_configuration is None else cdc_configuration
 
 class CdcConfigurer:
     """
@@ -65,16 +60,12 @@ class CdcConfigurer:
         :param cdc_params CDC test params.
         """
         source_cluster.config = source_cluster.config._replace(
-            discovery_spi=TcpDiscoverySpi(ip_finder=TcpDiscoveryVmIpFinder()),
             plugins=[*source_cluster.config.plugins,
                      ('bean.j2',
                       Bean("org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider",
                            cluster_id="1",
-                           caches=cdc_params.cdc_caches))],
-            ext_beans=self.get_cdc_beans(source_cluster, target_cluster, cdc_params),
-            data_storage=source_cluster.config.data_storage._replace(
-                default=source_cluster.config.data_storage.default._replace(cdc_enabled=True)
-            )
+                           caches=cdc_params.caches))],
+            ext_beans=self.get_cdc_beans(source_cluster, target_cluster, cdc_params)
         )
 
     def configure_target_cluster(self, target_cluster, cdc_params: CdcParams):
@@ -89,10 +80,8 @@ class CdcConfigurer:
                      ('bean.j2',
                       Bean("org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider",
                            cluster_id="2",
-                           caches=cdc_params.cdc_caches))]
+                           caches=cdc_params.caches))]
         )
-
-        target_cluster.spec = get_cdc_spec(target_cluster.spec.__class__, target_cluster)
 
     def get_cdc_beans(self, source_cluster, target_cluster, cdc_params: CdcParams):
         """
@@ -104,14 +93,22 @@ class CdcConfigurer:
         :param cdc_params CDC test params.
         :return: list of beans
         """
+        cdc_configuration = cdc_params.cdc_configuration
 
-        metric_exporters = deepcopy(source_cluster.config.metric_exporters)
-        metric_exporters.add("org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi")
+        if cdc_configuration.metric_exporter_spi is not None:
+            metric_exporter_spi = cdc_configuration.metric_exporter_spi
+        else:
+            metric_exporter_spi = {}
 
-        return [("ignite_cdc.j2", IgniteCdcParams(
-            metric_exporter_spi=metric_exporters,
-            keep_binary=cdc_params.cdc_keep_binary
-        ))]
+        if "org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi" not in metric_exporter_spi:
+            cdc_configuration = cdc_configuration._replace(
+                metric_exporter_spi={
+                    *metric_exporter_spi,
+                    "org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"
+                }
+            )
+
+        return [("ignite_cdc.j2", cdc_configuration)]
 
     def start_ignite_cdc(self, source_cluster):
         """

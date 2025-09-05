@@ -16,8 +16,7 @@
 from typing import NamedTuple
 
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.utils.cdc.cdc_configurer import CdcConfigurer
-from ignitetest.services.utils.cdc.cdc_spec import get_cdc_spec
+from ignitetest.services.utils.cdc.cdc_configurer import CdcConfigurer, CdcParams
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
 
@@ -26,11 +25,6 @@ class CdcIgniteToIgniteClientConfigurer(CdcConfigurer):
     """
     Configurer for the IgniteToIgniteClientCdcStreamer
     """
-    def configure_source_cluster(self, source_cluster, target_cluster, cdc_params):
-        super().configure_source_cluster(source_cluster, target_cluster, cdc_params)
-
-        source_cluster.spec = get_cdc_spec(source_cluster.spec.__class__, source_cluster)
-
     def get_cdc_beans(self, source_cluster, target_cluster, cdc_params):
         beans: list = super().get_cdc_beans(source_cluster, target_cluster, cdc_params)
 
@@ -51,9 +45,7 @@ class CdcIgniteToIgniteClientConfigurer(CdcConfigurer):
         params = IgniteToIgniteClientCdcStreamerTemplateParams(
             target_cluster,
             target_cluster_client_config,
-            caches=cdc_params.cdc_caches,
-            max_batch_size=cdc_params.cdc_max_batch_size,
-            only_primary=cdc_params.cdc_only_primary
+            cdc=cdc_params
         )
 
         beans.append((
@@ -67,7 +59,5 @@ class CdcIgniteToIgniteClientConfigurer(CdcConfigurer):
 class IgniteToIgniteClientCdcStreamerTemplateParams(NamedTuple):
     target_cluster: IgniteAwareService
     target_cluster_client_config: IgniteThinClientConfiguration
-    caches: list
-    max_batch_size: int
-    only_primary: bool
-    name: str = "IgniteToIgniteClientCdcStreamerParams"
+    cdc: CdcParams
+    name: str = "IgniteToIgniteClientCdcStreamerTemplateParams"
