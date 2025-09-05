@@ -169,4 +169,18 @@ public class TableDmlPlannerTest extends AbstractPlannerTest {
         assertThat(invalidPlanMsg, spool.readType, equalTo(Spool.Type.EAGER));
         assertThat(invalidPlanMsg, findFirstNode(phys, byClass(IgniteIndexScan.class)), notNullValue());
     }
+
+    /** Tests that queries with duplicated column names are correctly parsed. */
+    @Test
+    public void testDuplicatedColumnNames() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("CITY", IgniteDistributions.random(), "ID", Integer.class, "NAME", String.class),
+            createTable("STREET", IgniteDistributions.random(), "ID", Integer.class, "CITY_ID", Integer.class,
+                "NAME", String.class)
+        );
+
+        physicalPlan("SELECT NAME, (SELECT NAME FROM CITY WHERE ID = S.CITY_ID LIMIT 1) AS NAME FROM STREET S ORDER BY ID", schema);
+        physicalPlan("SELECT CITY_ID, NAME, NAME FROM STREET ORDER BY ID", schema);
+        physicalPlan("SELECT CITY.NAME, STREET.NAME FROM STREET JOIN CITY ON STREET.CITY_ID = CITY.ID ORDER BY STREET.ID", schema);
+    }
 }
