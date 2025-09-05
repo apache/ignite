@@ -341,8 +341,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         if (req != null) {
             synchronized (this) {
                 if (req.onResponse()) {
-                    req.cleanup();
-
                     resCnt0 = resCnt;
 
                     resCnt0 += 1;
@@ -352,6 +350,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                 else
                     return false;
             }
+
+            req.cleanup();
 
             if (resCnt0 == mappings.size())
                 onDone();
