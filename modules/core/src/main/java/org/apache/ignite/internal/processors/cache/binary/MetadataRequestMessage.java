@@ -57,7 +57,6 @@ public class MetadataRequestMessage implements Message {
     /**
      * @return Type ID.
      */
-    /** */
     public int typeId() {
         return typeId;
     }
