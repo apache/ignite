@@ -26,6 +26,9 @@ import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -49,11 +52,12 @@ public class DirectMessageReader implements MessageReader {
 
     /**
      * @param msgFactory Message factory.
+     * @param cacheObjProc Cache object processor.
      */
-    public DirectMessageReader(final MessageFactory msgFactory) {
+    public DirectMessageReader(final MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
-                return new StateItem(msgFactory);
+                return new StateItem(msgFactory, cacheObjProc);
             }
         });
     }
@@ -306,6 +310,28 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
+    @Override public CacheObject readCacheObject() {
+        DirectByteBufferStream stream = state.item().stream;
+
+        CacheObject val = stream.readCacheObject();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject readKeyCacheObject() {
+        DirectByteBufferStream stream = state.item().stream;
+
+        KeyCacheObject key = stream.readKeyCacheObject();
+
+        lastRead = stream.lastFinished();
+
+        return key;
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls) {
         DirectByteBufferStream stream = state.item().stream;
 
@@ -385,9 +411,10 @@ public class DirectMessageReader implements MessageReader {
 
         /**
          * @param msgFactory Message factory.
+         * @param cacheObjProc Cache object processor.
          */
-        public StateItem(MessageFactory msgFactory) {
-            stream = new DirectByteBufferStream(msgFactory);
+        public StateItem(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
+            stream = new DirectByteBufferStream(msgFactory, cacheObjProc);
         }
 
         /** {@inheritDoc} */

@@ -116,7 +116,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
         switch (writer.state()) {
             case 7:
-                if (!writer.writeCollection(keys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(keys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -135,7 +135,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
         switch (reader.state()) {
             case 7:
-                keys = reader.readCollection(MessageCollectionItemType.MSG);
+                keys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;
