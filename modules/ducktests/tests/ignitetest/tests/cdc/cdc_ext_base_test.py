@@ -15,48 +15,12 @@
 
 import os
 import difflib
-from copy import deepcopy
 
-from ignitetest.services.ignite import IgniteService
-from ignitetest.services.utils.cdc.cdc_configurer import CdcConfigurer
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.utils.ignite_test import IgniteTest
 
 
 class CdcExtBaseTest(IgniteTest):
-    def get_target_cluster(self, test_context, config, nodes_count,
-                           cdc_configurer: CdcConfigurer, cdc_params):
-        ignite = IgniteService(test_context, deepcopy(config), nodes_count, modules=["cdc-ext"])
-
-        ignite.config = ignite.config._replace(ignite_instance_name="target")
-
-        if cdc_configurer:
-            cdc_configurer.configure_target_cluster(ignite, cdc_params)
-
-        ignite.start()
-
-        control_sh = ControlUtility(cluster=ignite)
-        control_sh.activate()
-
-        return ignite
-
-    def get_source_cluster(self, test_context, config, nodes_count,
-                           cdc_configurer: CdcConfigurer, cdc_params, target_cluster):
-
-        ignite = IgniteService(test_context, deepcopy(config), nodes_count, modules=["cdc-ext"])
-
-        ignite.config = ignite.config._replace(ignite_instance_name="source")
-
-        if cdc_configurer:
-            cdc_configurer.configure_source_cluster(ignite, target_cluster, cdc_params)
-
-        ignite.start()
-
-        control_sh = ControlUtility(cluster=ignite)
-        control_sh.activate()
-
-        return ignite
-
     def check_partitions_are_same(self, source_cluster, target_cluster):
         """
         Compare partitions on source and target clusters.
