@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -27,8 +27,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest.DHT_ATOMIC_HAS_RESULT_MASK;
@@ -41,19 +39,24 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** */
+    @Order(value = 4, method = "partition")
     private int partId;
 
     /** */
+    @Order(value = 5, method = "futureId")
     private long futId;
 
     /** */
+    @Order(6)
     private UUID primaryId;
 
     /** */
+    @Order(7)
     @GridToStringExclude
     private byte flags;
 
     /** */
+    @Order(value = 8, method = "errors")
     @GridToStringInclude
     private UpdateErrors errs;
 
@@ -86,10 +89,64 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
         this.flags = flags;
     }
 
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
+    }
+
+    /**
+     * @param partId Partition ID.
+     */
+    public void partition(int partId) {
+        this.partId = partId;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public long futureId() {
+        return futId;
+    }
+
+    /**
+     * @param futId Future ID.
+     */
+    public void futureId(long futId) {
+        this.futId = futId;
+    }
+
+    /**
+     * @return Primary node ID.
+     */
+    public UUID primaryId() {
+        return primaryId;
+    }
+
+    /**
+     * @param primaryId Primary node ID.
+     */
+    public void primaryId(UUID primaryId) {
+        this.primaryId = primaryId;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte flags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
+    }
+
     /**
      * @return Errors.
      */
-    @Nullable UpdateErrors errors() {
+    @Nullable public UpdateErrors errors() {
         return errs;
     }
 
@@ -98,18 +155,6 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
      */
     public void errors(UpdateErrors errs) {
         this.errs = errs;
-    }
-
-    /**
-     * @return Primary node ID.
-     */
-    UUID primaryId() {
-        return primaryId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int partition() {
-        return partId;
     }
 
     /**
@@ -149,13 +194,6 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
         return (flags & mask) != 0;
     }
 
-    /**
-     * @return Future ID.
-     */
-    public long futureId() {
-        return futId;
-    }
-
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
         return CACHE_MSG_IDX;
@@ -185,109 +223,6 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
 
         if (errs != null)
             errs.finishUnmarshal(this, ctx.cacheContext(cacheId), ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeMessage(errs))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeLong(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeInt(partId))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeUuid(primaryId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                errs = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                futId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                partId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                primaryId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
