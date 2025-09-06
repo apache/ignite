@@ -25,7 +25,6 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 
 from ignitetest.services.utils.cdc.ignite_cdc import IgniteCdcUtility
 from ignitetest.services.utils.jmx_utils import JmxClient
-from ignitetest.utils.bean import Bean
 
 
 class CdcConfiguration(NamedTuple):
@@ -47,21 +46,16 @@ class CdcParams:
         self.cdc_configuration = CdcConfiguration() if cdc_configuration is None else cdc_configuration
 
 
+class CdcContext:
+    def __init__(self):
+        self.ignite_cdc = None
+        self.source_cluster = None
+
+
 class CdcConfigurer:
     """
     Base CDC configurer class for different CDC consumer extensions.
     """
-    def __init__(self):
-        self.ignite_cdc = None
-        self.source_cluster = None
-        self.cdc_params = None
-
-    def setup_active_passive(self, src_cluster, dst_cluster, cdc_params: CdcParams):
-        setup_conflict_resolver(src_cluster, "1", cdc_params)
-        setup_conflict_resolver(dst_cluster, "2", cdc_params)
-
-        self.configure_source_cluster(src_cluster, dst_cluster, cdc_params)
-
     def configure_source_cluster(self, src_cluster, dst_cluster, cdc_params: CdcParams):
         """
         Configures CDC on the source cluster. Updates the source_cluster in place.
@@ -70,20 +64,28 @@ class CdcConfigurer:
         :param dst_cluster Ignite service representing the target cluster.
         :param cdc_params CDC test params.
         """
-        self.cdc_params = cdc_params
+        ctx = CdcContext()
+
+        ctx.cdc_params = cdc_params
+        ctx.source_cluster = src_cluster
+
+        beans = self.get_cdc_beans(src_cluster, dst_cluster, cdc_params, ctx)
 
         src_cluster.config = src_cluster.config._replace(
-            ext_beans=self.get_cdc_beans(src_cluster, dst_cluster, cdc_params)
+            ext_beans=beans
         )
 
-    def get_cdc_beans(self, source_cluster, target_cluster, cdc_params: CdcParams):
+        return ctx
+
+    def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params: CdcParams, ctx):
         """
         Returns list of CDC beans required to be created in the source Ignite cluster.
         Each bean is represented as a pair of j2 template and params instance.
 
-        :param source_cluster Ignite service representing the source cluster.
-        :param target_cluster Ignite service representing the target cluster.
+        :param src_cluster Ignite service representing the source cluster.
+        :param dst_cluster Ignite service representing the destination cluster.
         :param cdc_params CDC test params.
+        :param ctx CDC context.
         :return: list of beans
         """
         cdc_configuration = cdc_params.cdc_configuration
@@ -101,53 +103,42 @@ class CdcConfigurer:
                 }
             )
 
+        ctx.ignite_cdc = IgniteCdcUtility(src_cluster)
+
         return [("ignite_cdc.j2", cdc_configuration)]
 
-    def start_ignite_cdc(self, source_cluster):
+    def start_ignite_cdc(self, ctx):
         """
         Starts process executing the CDC consumer (ignite_cdc.sh).
 
+        :param cdc_params: CDC test params.
         :param source_cluster: Source Ignite cluster.
         :return: Service running the CDC consumer.
         """
-        self.ignite_cdc = IgniteCdcUtility(source_cluster)
+        ctx.ignite_cdc.start()
 
-        self.ignite_cdc.start()
-
-        self.source_cluster = source_cluster
-
-    def stop_ignite_cdc(self, source_cluster, timeout_sec):
+    def stop_ignite_cdc(self, ctx, timeout_sec):
         """
         Stops process executing the CDC consumer (ignite_cdc.sh).
 
+        :param ignite_cdc: Service running the CDC consumer.
         :param source_cluster: Source Ignite cluster.
         :param timeout_sec: Timeout.
         :return: arbitrary CDC consumer specific metrics (if any).
         """
-        self.ignite_cdc.stop()
+        ctx.ignite_cdc.stop()
 
         try:
-            source_cluster.await_event("WalRecordsConsumer stopped",
-                                       timeout_sec=timeout_sec, from_the_beginning=True,
-                                       log_file="ignite-cdc.log")
+            ctx.source_cluster.await_event("WalRecordsConsumer stopped",
+                                           timeout_sec=timeout_sec, from_the_beginning=True,
+                                           log_file="ignite-cdc.log")
         except TimeoutError:
-            self.ignite_cdc.stop(force_stop=True)
+            ctx.ignite_cdc.stop(force_stop=True)
 
         return {}
 
-    def wait_cdc(self, no_new_events_period_secs, timeout_sec):
-        wait_ignite_cdc_service(self.ignite_cdc, no_new_events_period_secs, timeout_sec)
-
-
-def setup_conflict_resolver(cluster, cluster_id, cdc_params: CdcParams):
-    cluster.config = cluster.config._replace(
-        plugins=[*cluster.config.plugins,
-                 ('bean.j2',
-                  Bean("org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider",
-                       cluster_id=cluster_id,
-                       conflict_resolve_field=cdc_params.conflict_resolve_field,
-                       caches=cdc_params.caches))],
-    )
+    def wait_cdc(self, ctx, no_new_events_period_secs, timeout_sec):
+        wait_ignite_cdc_service(ctx.ignite_cdc, no_new_events_period_secs, timeout_sec)
 
 
 def wait_ignite_cdc_service(ignite_cdc, no_new_events_period_secs, timeout_sec):
