@@ -18,8 +18,7 @@ import time
 
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.cdc.cdc_configurer import CdcConfigurer, CdcParams
-from ignitetest.services.utils.cdc.kafka.kafka_properties_template import KafkaPropertiesTemplate
-from ignitetest.services.utils.cdc.kafka.kafka_to_ignite import KafkaToIgniteService
+from ignitetest.services.utils.cdc.kafka_to_ignite import KafkaToIgniteService, KafkaPropertiesTemplate
 from ignitetest.utils.bean import BeanRef, Bean
 
 
