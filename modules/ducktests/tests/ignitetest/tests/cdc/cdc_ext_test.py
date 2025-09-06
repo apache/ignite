@@ -14,7 +14,6 @@
 # limitations under the License
 
 import json
-from copy import deepcopy
 from time import sleep
 
 from ducktape.mark import defaults
@@ -28,14 +27,12 @@ from ignitetest.services.utils.cdc.ignite_to_ignite_cdc_configurer import Ignite
 from ignitetest.services.utils.cdc.ignite_to_kafka_cdc_configurer import KafkaCdcParams, \
     IgniteToKafkaCdcConfigurer
 from ignitetest.services.utils.cdc.ignite_to_ignite_client_cdc_configurer import IgniteToIgniteClientCdcConfigurer
-from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
 from ignitetest.tests.cdc.cdc_ext_base_test import CdcExtBaseTest
-from ignitetest.tests.client_test import check_topology
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
@@ -53,27 +50,27 @@ class CdcExtTest(CdcExtBaseTest):
     """
     @cluster(num_nodes=6)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(pds=[True, False])
-    def cdc_ignite_to_ignite_test(self, ignite_version, pds):
-        return self.run(ignite_version, pds,
+    @defaults(pds=[True, False], mode=["active-active", "active-passive"])
+    def cdc_ignite_to_ignite_test(self, ignite_version, pds, mode):
+        return self.run(ignite_version, pds, mode,
                         IgniteToIgniteCdcConfigurer(),
                         CdcParams(caches=[CACHE_NAME]))
 
     @cluster(num_nodes=6)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(pds=[True, False])
-    def cdc_ignite_to_ignite_client_test(self, ignite_version, pds):
-        return self.run(ignite_version, pds,
+    @defaults(pds=[True, False], mode=["active-active", "active-passive"])
+    def cdc_ignite_to_ignite_client_test(self, ignite_version, pds, mode):
+        return self.run(ignite_version, pds, mode,
                         IgniteToIgniteClientCdcConfigurer(),
                         CdcParams(caches=[CACHE_NAME]))
 
     @cluster(num_nodes=12)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(pds=[True, False])
-    def cdc_ignite_to_kafka_to_ignite_test(self, ignite_version, pds):
-        zk, kafka = start_kafka(self.test_context, 2)
+    @defaults(pds=[True, False], mode=["active-active", "active-passive"])
+    def cdc_ignite_to_kafka_to_ignite_test(self, ignite_version, pds, mode):
+        zk, kafka = start_kafka(self.test_context, 1)
 
-        res = self.run(ignite_version, pds, IgniteToKafkaCdcConfigurer(),
+        res = self.run(ignite_version, pds, mode, IgniteToKafkaCdcConfigurer(),
                        KafkaCdcParams(caches=[CACHE_NAME], kafka=kafka))
 
         stop_kafka(zk, kafka)
@@ -82,11 +79,11 @@ class CdcExtTest(CdcExtBaseTest):
 
     @cluster(num_nodes=12)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(pds=[True, False])
-    def cdc_ignite_to_kafka_to_ignite_client_test(self, ignite_version, pds):
-        zk, kafka = start_kafka(self.test_context, 2)
+    @defaults(pds=[True, False], mode=["active-active", "active-passive"])
+    def cdc_ignite_to_kafka_to_ignite_client_test(self, ignite_version, pds, mode):
+        zk, kafka = start_kafka(self.test_context, 1)
 
-        res = self.run(ignite_version, pds, IgniteToKafkaCdcConfigurer(),
+        res = self.run(ignite_version, pds, mode, IgniteToKafkaCdcConfigurer(),
                        KafkaCdcParams(
                            caches=[CACHE_NAME],
                            kafka=kafka,
@@ -97,36 +94,17 @@ class CdcExtTest(CdcExtBaseTest):
 
         return res
 
-    def run(self, ignite_version, pds, cdc_configurer, cdc_params):
-        config = IgniteConfiguration(
-            version=IgniteVersion(ignite_version),
-            data_storage=DataStorageConfiguration(
-                wal_force_archive_timeout=WAL_FORCE_ARCHIVE_TIMEOUT_MS
-            ),
-            caches=[CacheConfiguration(name=CACHE_NAME)],
-            client_connector_configuration=ClientConnectorConfiguration()
-        )
+    def run(self, ignite_version, pds, mode, cdc_configurer, cdc_params):
+        src_cluster = IgniteService(
+            self.test_context, ignite_config(ignite_version, pds, "src"), 2, modules=["cdc-ext"])
+        dst_cluster = IgniteService(
+            self.test_context, ignite_config(ignite_version, pds, "dst"), 2, modules=["cdc-ext"])
 
-        if pds:
-            config = config._replace(
-                data_storage=config.data_storage._replace(
-                    default=config.data_storage.default._replace(
-                        persistence_enabled=True
-                    )
-                )
-            )
-
-        src_cluster = IgniteService(self.test_context, src_cluster_config(config), 2, modules=["cdc-ext"])
-        dst_cluster = IgniteService(self.test_context, dst_cluster_config(config), 2, modules=["cdc-ext"])
-
-        cdc_configurer.setup_active_passive(src_cluster, dst_cluster, cdc_params)
-
-        dst_cluster.start()
-        ControlUtility(dst_cluster).activate()
-        src_cluster.start()
-        ControlUtility(src_cluster).activate()
-
-        cdc_configurer.start_ignite_cdc(src_cluster)
+        if mode == "active-active":
+            src_ctx, dst_ctx = self.start_active_active(src_cluster, dst_cluster, cdc_configurer, cdc_params)
+        else:
+            src_ctx = self.start_active_passive(src_cluster, dst_cluster, cdc_configurer, cdc_params)
+            dst_ctx = None
 
         client = IgniteApplicationService(
             self.test_context,
@@ -137,14 +115,19 @@ class CdcExtTest(CdcExtBaseTest):
 
         client.start()
 
-        check_topology(ControlUtility(src_cluster), 4)
-
         sleep(TEST_DURATION_SEC)
         client.stop()
 
-        cdc_configurer.wait_cdc(no_new_events_period_secs=10, timeout_sec=300)
+        cdc_configurer.wait_cdc(src_ctx, no_new_events_period_secs=10, timeout_sec=300)
+        if dst_ctx:
+            cdc_configurer.wait_cdc(dst_ctx, no_new_events_period_secs=10, timeout_sec=300)
 
-        cdc_streamer_metrics = cdc_configurer.stop_ignite_cdc(src_cluster, timeout_sec=300)
+        cdc_streamer_metrics = cdc_configurer.stop_ignite_cdc(src_ctx, timeout_sec=300)
+        if dst_ctx:
+            cdc_streamer_metrics = {
+                "src": cdc_streamer_metrics,
+                "dst": cdc_configurer.stop_ignite_cdc(dst_ctx, timeout_sec=300)
+            }
 
         partitions_are_same = self.check_partitions_are_same(src_cluster, dst_cluster)
 
@@ -160,25 +143,6 @@ class CdcExtTest(CdcExtBaseTest):
         return cdc_streamer_metrics
 
 
-def src_cluster_config(config):
-    cfg = deepcopy(config)
-
-    return cfg._replace(
-        ignite_instance_name="source",
-        data_storage=cfg.data_storage._replace(
-            default=cfg.data_storage.default._replace(
-                cdc_enabled=True
-            )
-        )
-    )
-
-
-def dst_cluster_config(config):
-    cfg = deepcopy(config)
-
-    return cfg._replace(ignite_instance_name="target")
-
-
 def client_cluster_config(ignite):
     return ignite.config._replace(
         client_mode=True,
@@ -187,6 +151,29 @@ def client_cluster_config(ignite):
         ext_beans=[],
         discovery_spi=from_ignite_cluster(ignite)
     )
+
+
+def ignite_config(ignite_version, pds, ignite_instance_name):
+    config = IgniteConfiguration(
+        ignite_instance_name=ignite_instance_name,
+        version=IgniteVersion(ignite_version),
+        data_storage=DataStorageConfiguration(
+            wal_force_archive_timeout=WAL_FORCE_ARCHIVE_TIMEOUT_MS
+        ),
+        caches=[CacheConfiguration(name=CACHE_NAME)],
+        client_connector_configuration=ClientConnectorConfiguration()
+    )
+
+    if pds:
+        config = config._replace(
+            data_storage=config.data_storage._replace(
+                default=config.data_storage.default._replace(
+                    persistence_enabled=True
+                )
+            )
+        )
+
+    return config
 
 
 def start_kafka(test_context, kafka_nodes, zk_nodes=1):

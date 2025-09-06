@@ -15,12 +15,65 @@
 
 import os
 import difflib
+from copy import copy
 
+from ignitetest.services.utils.cdc.cdc_configurer import CdcParams
+from ignitetest.services.utils.cdc.ignite_to_kafka_cdc_configurer import IgniteToKafkaCdcConfigurer
 from ignitetest.services.utils.control_utility import ControlUtility
+from ignitetest.utils.bean import Bean
 from ignitetest.utils.ignite_test import IgniteTest
 
 
 class CdcExtBaseTest(IgniteTest):
+    def start_active_passive(self, src_cluster, dst_cluster, cdc_configurer, cdc_params):
+        enable_cdc(src_cluster)
+
+        setup_conflict_resolver(src_cluster, "1", cdc_params)
+        setup_conflict_resolver(dst_cluster, "2", cdc_params)
+
+        ctx = cdc_configurer.configure_source_cluster(src_cluster, dst_cluster, cdc_params)
+
+        dst_cluster.start()
+        ControlUtility(dst_cluster).activate()
+
+        src_cluster.start()
+        ControlUtility(src_cluster).activate()
+
+        cdc_configurer.start_ignite_cdc(ctx)
+
+        return ctx
+
+    def start_active_active(self, src_cluster, dst_cluster, cdc_configurer, cdc_params):
+        enable_cdc(src_cluster)
+        enable_cdc(dst_cluster)
+
+        setup_conflict_resolver(src_cluster, "1", cdc_params)
+        setup_conflict_resolver(dst_cluster, "2", cdc_params)
+
+        src_cdc_params = copy(cdc_params)
+        dst_cdc_params = copy(cdc_params)
+
+        if isinstance(cdc_configurer, IgniteToKafkaCdcConfigurer):
+            src_cdc_params.topic = src_cdc_params.topic + "-src-to-dst"
+            src_cdc_params.metadata_topic = src_cdc_params.metadata_topic + "-src-to-dst"
+
+            dst_cdc_params.topic = dst_cdc_params.topic + "-dst-to-src"
+            dst_cdc_params.metadata_topic = dst_cdc_params.metadata_topic + "-dst-to-src"
+
+        src_ctx = cdc_configurer.configure_source_cluster(src_cluster, dst_cluster, src_cdc_params)
+        dst_ctx = cdc_configurer.configure_source_cluster(dst_cluster, src_cluster, dst_cdc_params)
+
+        src_cluster.start()
+        ControlUtility(src_cluster).activate()
+
+        dst_cluster.start()
+        ControlUtility(dst_cluster).activate()
+
+        cdc_configurer.start_ignite_cdc(src_ctx)
+        cdc_configurer.start_ignite_cdc(dst_ctx)
+
+        return src_ctx, dst_ctx
+
     def check_partitions_are_same(self, source_cluster, target_cluster):
         """
         Compare partitions on source and target clusters.
@@ -69,3 +122,24 @@ class CdcExtBaseTest(IgniteTest):
             f"{processed_dump_filename}")
 
         return ignite.nodes[0].account.ssh_output(f"cat {processed_dump_filename}").decode("utf-8")
+
+
+def enable_cdc(cluster):
+    cluster.config = cluster.config._replace(
+        data_storage=cluster.config.data_storage._replace(
+            default=cluster.config.data_storage.default._replace(
+                cdc_enabled=True
+            )
+        )
+    )
+
+
+def setup_conflict_resolver(cluster, cluster_id, cdc_params: CdcParams):
+    cluster.config = cluster.config._replace(
+        plugins=[*cluster.config.plugins,
+                 ('bean.j2',
+                  Bean("org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider",
+                       cluster_id=cluster_id,
+                       conflict_resolve_field=cdc_params.conflict_resolve_field,
+                       caches=cdc_params.caches))],
+    )

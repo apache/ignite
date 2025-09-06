@@ -61,30 +61,25 @@ class IgniteToKafkaCdcConfigurer(CdcConfigurer):
     """
     IgniteToKafkaCdcStreamer configurer.
     """
-    def __init__(self):
-        super().__init__()
-
-        self.kafka_to_ignite = None
-        self.cdc_params = None
-
     def configure_source_cluster(self, src_cluster, dst_cluster, cdc_params: KafkaCdcParams):
-        super().configure_source_cluster(src_cluster, dst_cluster, cdc_params)
+        ctx = super().configure_source_cluster(src_cluster, dst_cluster, cdc_params)
 
         src_cluster.spec = get_ignite_to_kafka_spec(src_cluster.spec.__class__,
                                                     cdc_params.kafka.connection_string(),
                                                     src_cluster)
+        return ctx
 
-    def get_cdc_beans(self, source_cluster, target_cluster, cdc_params: KafkaCdcParams):
-        beans: list = super().get_cdc_beans(source_cluster, target_cluster, cdc_params)
+    def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params: KafkaCdcParams, ctx):
+        beans = super().get_cdc_beans(src_cluster, dst_cluster, cdc_params, ctx)
 
-        self.kafka_to_ignite = KafkaToIgniteService(
-            target_cluster.context,
+        ctx.kafka_to_ignite = KafkaToIgniteService(
+            dst_cluster.context,
             cdc_params.kafka,
-            target_cluster,
+            dst_cluster,
             cdc_params=cdc_params,
-            jvm_opts=target_cluster.spec.jvm_opts,
+            jvm_opts=dst_cluster.spec.jvm_opts,
             merge_with_default=True,
-            modules=target_cluster.modules
+            modules=dst_cluster.modules
         )
 
         beans.append((
@@ -103,30 +98,30 @@ class IgniteToKafkaCdcConfigurer(CdcConfigurer):
 
         return beans
 
-    def start_ignite_cdc(self, source_cluster):
-        self.cdc_params.kafka.create_topic(
-            name=self.cdc_params.topic,
-            partitions=self.cdc_params.kafka_partitions,
-            retention_ms=self.cdc_params.kafka_retention_ms)
+    def start_ignite_cdc(self, ctx):
+        ctx.cdc_params.kafka.create_topic(
+            name=ctx.cdc_params.topic,
+            partitions=ctx.cdc_params.kafka_partitions,
+            retention_ms=ctx.cdc_params.kafka_retention_ms)
 
-        self.cdc_params.kafka.create_topic(
-            name=self.cdc_params.metadata_topic,
-            partitions=self.cdc_params.kafka_partitions)
+        ctx.cdc_params.kafka.create_topic(
+            name=ctx.cdc_params.metadata_topic,
+            partitions=ctx.cdc_params.kafka_partitions)
 
-        self.kafka_to_ignite.start()
+        ctx.kafka_to_ignite.start()
 
-        super().start_ignite_cdc(source_cluster)
+        super().start_ignite_cdc(ctx)
 
-    def stop_ignite_cdc(self, source_cluster, timeout_sec):
-        super().stop_ignite_cdc(source_cluster, timeout_sec)
+    def stop_ignite_cdc(self, ctx, timeout_sec):
+        super().stop_ignite_cdc(ctx, timeout_sec)
 
         start = time.time()
 
-        self.kafka_to_ignite.await_all_consumed(timeout_sec)
+        ctx.kafka_to_ignite.await_all_consumed(timeout_sec)
 
         kafka_to_ignite_lag_sec = time.time() - start
 
-        self.kafka_to_ignite.stop()
+        ctx.kafka_to_ignite.stop()
 
         metrics = {
             "kafka_to_ignite_lag_sec": kafka_to_ignite_lag_sec
