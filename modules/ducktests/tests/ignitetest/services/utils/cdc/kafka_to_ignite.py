@@ -22,7 +22,7 @@ from copy import deepcopy
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils import IgniteServiceType
-from ignitetest.services.utils.cdc.kafka.kafka_properties_template import KafkaPropertiesTemplate
+from ignitetest.services.utils.config_template import ConfigTemplate
 from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
 from ignitetest.services.utils.ignite_spec import envs_to_exports
 from ignitetest.utils.bean import Bean
@@ -209,3 +209,12 @@ def get_kafka_to_ignite_spec(base, kafka_connection_string, service):
                 return self.service.script(cmd)
 
     return KafkaToIgniteSpec(service, service.spec.jvm_opts, merge_with_default=True)
+
+
+class KafkaPropertiesTemplate(ConfigTemplate):
+    """
+    Kafka client configuration properties file
+    """
+    def __init__(self, template_file_name, params):
+        super().__init__(template_file_name)
+        self.default_params = params
