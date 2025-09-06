@@ -29,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public abstract class GridCacheIdMessage extends GridCacheMessage {
     /** Cache ID. */
+    @Order(3)
     @GridToStringInclude
     @Order(3)
     protected int cacheId;
