@@ -21,7 +21,7 @@ from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
 
 
-class CdcIgniteToIgniteClientConfigurer(CdcConfigurer):
+class IgniteToIgniteClientCdcConfigurer(CdcConfigurer):
     """
     Configurer for the IgniteToIgniteClientCdcStreamer
     """

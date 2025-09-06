@@ -16,7 +16,8 @@
 """
 This module contains kafka-to-ignite.sh utility wrapper.
 """
-import os, time
+import os
+import time
 from copy import deepcopy
 
 from ignitetest.services.ignite import IgniteService
@@ -31,7 +32,7 @@ class KafkaToIgniteService(IgniteService):
     """
     Kafka to Ignite utility (kafka-to-ignite.sh) wrapper.
     """
-    def __init__(self, context, kafka, target_cluster, client_type, cdc_params, jvm_opts=None,
+    def __init__(self, context, kafka, target_cluster, cdc_params, jvm_opts=None,
                  merge_with_default=True, startup_timeout_sec=60, shutdown_timeout_sec=60, modules=None):
         def add_cdc_ext_module(_modules):
             if _modules:
@@ -45,7 +46,7 @@ class KafkaToIgniteService(IgniteService):
             (f"number of nodes ({cdc_params.kafka_to_ignite_nodes}) more then "
              f"kafka topic partitions ({cdc_params.kafka_partitions})")
 
-        super().__init__(context, self.__get_config(target_cluster, client_type),
+        super().__init__(context, self.__get_config(target_cluster, cdc_params.kafka_to_ignite_client_type),
                          cdc_params.kafka_to_ignite_nodes, jvm_opts, merge_with_default, startup_timeout_sec,
                          shutdown_timeout_sec, add_cdc_ext_module(modules))
 
@@ -77,8 +78,8 @@ class KafkaToIgniteService(IgniteService):
         super()._prepare_configs(node)
 
     def __add_kafka_streamer_config(self, parts_from, parts_to):
-        ext_beans = [
-            ("bean.j2", Bean("org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration",
+        ext_beans = [("bean.j2", Bean(
+                "org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration",
                 caches=self.cdc_params.caches,
                 max_batch_size=self.cdc_params.kafka_to_ignite_max_batch_size,
                 kafka_request_timeout=self.cdc_params.kafka_to_ignite_kafka_request_timeout,
@@ -156,6 +157,7 @@ class KafkaToIgniteService(IgniteService):
                                           f"lag={offset.lag}]")
 
                 time.sleep(2)
+
 
 def get_kafka_to_ignite_spec(base, kafka_connection_string, service):
     """
