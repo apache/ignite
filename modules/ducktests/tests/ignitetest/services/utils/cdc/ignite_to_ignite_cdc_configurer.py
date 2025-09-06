@@ -22,7 +22,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.metrics.metrics import OPENCENSUS_TEMPLATE_FILE
 
 
-class CdcIgniteToIgniteConfigurer(CdcConfigurer):
+class IgniteToIgniteCdcConfigurer(CdcConfigurer):
     """
     Configurer for the IgniteToIgniteCdcStreamer
     """
@@ -58,6 +58,7 @@ class CdcIgniteToIgniteConfigurer(CdcConfigurer):
 
         return beans
 
+
 def remove_bean_by_template_name(beans, template_name):
     """
     Removes bean from the list.
@@ -69,6 +70,7 @@ def remove_bean_by_template_name(beans, template_name):
 
     if bean:
         beans.remove(bean)
+
 
 class IgniteToIgniteCdcStreamerTemplateParams(NamedTuple):
     target_cluster: IgniteAwareService

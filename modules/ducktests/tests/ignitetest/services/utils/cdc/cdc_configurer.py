@@ -27,6 +27,7 @@ from ignitetest.services.utils.cdc.ignite_cdc import IgniteCdcUtility
 from ignitetest.services.utils.jmx_utils import JmxClient
 from ignitetest.utils.bean import Bean
 
+
 class CdcConfiguration(NamedTuple):
     check_frequency: int = None
     keep_binary: bool = None
@@ -36,12 +37,15 @@ class CdcConfiguration(NamedTuple):
 
 
 class CdcParams:
-    def __init__(self, caches, max_batch_size=None, only_primary=None, cdc_configuration=None):
+    def __init__(self, caches, max_batch_size=None, only_primary=None,
+                 conflict_resolve_field=None, cdc_configuration=None):
         self.caches = caches
         self.max_batch_size = max_batch_size
         self.only_primary = only_primary
+        self.conflict_resolve_field = conflict_resolve_field
 
         self.cdc_configuration = CdcConfiguration() if cdc_configuration is None else cdc_configuration
+
 
 class CdcConfigurer:
     """
@@ -50,37 +54,26 @@ class CdcConfigurer:
     def __init__(self):
         self.ignite_cdc = None
         self.source_cluster = None
+        self.cdc_params = None
 
-    def configure_source_cluster(self, source_cluster, target_cluster, cdc_params: CdcParams):
+    def setup_active_passive(self, src_cluster, dst_cluster, cdc_params: CdcParams):
+        setup_conflict_resolver(src_cluster, "1", cdc_params)
+        setup_conflict_resolver(dst_cluster, "2", cdc_params)
+
+        self.configure_source_cluster(src_cluster, dst_cluster, cdc_params)
+
+    def configure_source_cluster(self, src_cluster, dst_cluster, cdc_params: CdcParams):
         """
         Configures CDC on the source cluster. Updates the source_cluster in place.
 
-        :param source_cluster Ignite service representing the source cluster.
-        :param target_cluster Ignite service representing the target cluster.
+        :param src_cluster Ignite service representing the source cluster.
+        :param dst_cluster Ignite service representing the target cluster.
         :param cdc_params CDC test params.
         """
-        source_cluster.config = source_cluster.config._replace(
-            plugins=[*source_cluster.config.plugins,
-                     ('bean.j2',
-                      Bean("org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider",
-                           cluster_id="1",
-                           caches=cdc_params.caches))],
-            ext_beans=self.get_cdc_beans(source_cluster, target_cluster, cdc_params)
-        )
+        self.cdc_params = cdc_params
 
-    def configure_target_cluster(self, target_cluster, cdc_params: CdcParams):
-        """
-        Configures CDC on the target cluster. Updates the target_cluster in place.
-
-        :param target_cluster Ignite service representing the target cluster.
-        :param cdc_params CDC test params.
-        """
-        target_cluster.config = target_cluster.config._replace(
-            plugins=[*target_cluster.config.plugins,
-                     ('bean.j2',
-                      Bean("org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider",
-                           cluster_id="2",
-                           caches=cdc_params.caches))]
+        src_cluster.config = src_cluster.config._replace(
+            ext_beans=self.get_cdc_beans(src_cluster, dst_cluster, cdc_params)
         )
 
     def get_cdc_beans(self, source_cluster, target_cluster, cdc_params: CdcParams):
@@ -144,6 +137,17 @@ class CdcConfigurer:
 
     def wait_cdc(self, no_new_events_period_secs, timeout_sec):
         wait_ignite_cdc_service(self.ignite_cdc, no_new_events_period_secs, timeout_sec)
+
+
+def setup_conflict_resolver(cluster, cluster_id, cdc_params: CdcParams):
+    cluster.config = cluster.config._replace(
+        plugins=[*cluster.config.plugins,
+                 ('bean.j2',
+                  Bean("org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider",
+                       cluster_id=cluster_id,
+                       conflict_resolve_field=cdc_params.conflict_resolve_field,
+                       caches=cdc_params.caches))],
+    )
 
 
 def wait_ignite_cdc_service(ignite_cdc, no_new_events_period_secs, timeout_sec):
