@@ -46,6 +46,7 @@ EXTENSIONS_MODULES = [
     "performance-statistics-ext"
 ]
 
+
 def resolve_spec(service, **kwargs):
     """
     Resolve Spec classes for IgniteService and IgniteApplicationService
@@ -209,20 +210,8 @@ class IgniteSpec(metaclass=ABCMeta):
 
         return [os.path.join(project_dir, module_path) for module_path in module_libs]
 
-
-# def __get_extension_module_libs(spec, module_name):
-#     extensions_home_dir = extensions_home(spec)
-#
-#     module_paths = [
-#         os.path.join(module_name, "target"),
-#         os.path.join(module_name, "target", "libs")]
-#
-#     return [os.path.join(extensions_home_dir, module_path) for module_path in module_paths]
-#
-#
     def extensions_home(self):
         return os.path.join(self.service.install_root, "ignite-extensions")
-
 
     def _module_libs(self, module_name):
         """
