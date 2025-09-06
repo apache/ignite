@@ -134,8 +134,9 @@ class AbstractKafkaCdcConfigurer(CdcConfigurer, metaclass=ABCMeta):
 
         super().start_ignite_cdc(source_cluster)
 
+    def stop_ignite_cdc(self, source_cluster, timeout_sec):
+        super().stop_ignite_cdc(source_cluster, timeout_sec)
 
-    def close_cdc_beans(self, timeout_sec):
         start = time.time()
 
         self.kafka_to_ignite.await_all_consumed(timeout_sec)
