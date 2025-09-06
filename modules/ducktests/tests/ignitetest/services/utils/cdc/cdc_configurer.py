@@ -140,14 +140,6 @@ class CdcConfigurer:
         except TimeoutError:
             self.ignite_cdc.stop(force_stop=True)
 
-        return self.close_cdc_beans(timeout_sec)
-
-    def close_cdc_beans(self, timeout_sec):
-        """
-        Close and stop any services run for CDC streamer
-        :param timeout_sec: Timeout.
-        :return: arbitrary CDC consumer specific metrics (if any).
-        """
         return {}
 
     def wait_cdc(self, no_new_events_period_secs, timeout_sec):
