@@ -25,9 +25,9 @@ from ignitetest.services.kafka.kafka import KafkaSettings, KafkaService
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.cdc.cdc_configurer import CdcParams
 from ignitetest.services.utils.cdc.ignite_to_ignite_cdc_configurer import IgniteToIgniteCdcConfigurer
-from ignitetest.services.utils.cdc.kafka.ignite_to_kafka_cdc_configurer import KafkaCdcParams, \
+from ignitetest.services.utils.cdc.ignite_to_kafka_cdc_configurer import KafkaCdcParams, \
     IgniteToKafkaCdcConfigurer
-from ignitetest.services.utils.cdc.thin.ignite_to_ignite_client_cdc_configurer import IgniteToIgniteClientCdcConfigurer
+from ignitetest.services.utils.cdc.ignite_to_ignite_client_cdc_configurer import IgniteToIgniteClientCdcConfigurer
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
@@ -37,7 +37,7 @@ from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
 from ignitetest.tests.cdc.cdc_ext_base_test import CdcExtBaseTest
 from ignitetest.tests.client_test import check_topology
 from ignitetest.utils import cluster, ignite_versions
-from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
 CACHE_NAME = "cdc-test-cache"
