@@ -26,15 +26,18 @@ class IgniteToIgniteCdcConfigurer(CdcConfigurer):
     """
     Configurer for the IgniteToIgniteCdcStreamer
     """
-    def get_cdc_beans(self, source_cluster, target_cluster, cdc_params):
-        beans: list = super().get_cdc_beans(source_cluster, target_cluster, cdc_params)
+    def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params, ctx):
+        beans: list = super().get_cdc_beans(src_cluster, dst_cluster, cdc_params, ctx)
 
-        target_cluster_client_config = target_cluster.config._replace(
+        target_cluster_client_config = dst_cluster.config._replace(
             client_mode=True,
-            ssl_params=None
+            ssl_params=None,
+            plugins=[],
+            ext_beans=[],
+            data_storage=None,
         )
 
-        dummy_client = IgniteApplicationService(target_cluster.context,
+        dummy_client = IgniteApplicationService(dst_cluster.context,
                                                 target_cluster_client_config,
                                                 java_class_name="")
         target_cluster_client_config = dummy_client.spec.extend_config(target_cluster_client_config)
@@ -46,7 +49,7 @@ class IgniteToIgniteCdcConfigurer(CdcConfigurer):
         dummy_client.free()
 
         params = IgniteToIgniteCdcStreamerTemplateParams(
-            target_cluster,
+            dst_cluster,
             target_cluster_client_config,
             cdc=cdc_params
         )

@@ -25,17 +25,17 @@ class IgniteToIgniteClientCdcConfigurer(CdcConfigurer):
     """
     Configurer for the IgniteToIgniteClientCdcStreamer
     """
-    def get_cdc_beans(self, source_cluster, target_cluster, cdc_params):
-        beans: list = super().get_cdc_beans(source_cluster, target_cluster, cdc_params)
+    def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params, ctx):
+        beans: list = super().get_cdc_beans(src_cluster, dst_cluster, cdc_params, ctx)
 
-        addresses = [target_cluster.nodes[0].account.hostname + ":" +
-                     str(target_cluster.config.client_connector_configuration.port)]
+        addresses = [dst_cluster.nodes[0].account.hostname + ":" +
+                     str(dst_cluster.config.client_connector_configuration.port)]
 
         target_cluster_client_config = IgniteThinClientConfiguration(
             addresses=addresses,
-            version=target_cluster.config.version)
+            version=dst_cluster.config.version)
 
-        dummy_client = IgniteApplicationService(target_cluster.context,
+        dummy_client = IgniteApplicationService(dst_cluster.context,
                                                 target_cluster_client_config,
                                                 java_class_name="")
         target_cluster_client_config = dummy_client.spec.extend_config(target_cluster_client_config)
@@ -43,7 +43,7 @@ class IgniteToIgniteClientCdcConfigurer(CdcConfigurer):
         dummy_client.free()
 
         params = IgniteToIgniteClientCdcStreamerTemplateParams(
-            target_cluster,
+            dst_cluster,
             target_cluster_client_config,
             cdc=cdc_params
         )
