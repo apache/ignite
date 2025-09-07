@@ -75,7 +75,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
                 + "Allowed versions for joining:");
 
             allowedMinors.stream().sorted().forEach(minor -> errMsg.append("\n")
-                .append(" - " + locVer.major() + '.' + minor + ".X"));
+                .append(" - ").append(locVer.major()).append('.').append(minor).append(".X"));
 
 
             LT.warn(log, errMsg.toString());
