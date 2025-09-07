@@ -31,7 +31,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -165,7 +164,41 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testRollingUpgrade0() throws Exception {
+    public void testForwardRollingUpgrade() throws Exception {
+        IgniteEx ign0 = startGrid(0, "2.18.0", false);
+        IgniteEx ign1 = startGrid(1, "2.18.0", false);
+        IgniteEx ign2 = startGrid(2, "2.18.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+
+        ign2.close();
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+
+        startGrid(2, "2.19.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+
+        ign1.close();
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+
+        startGrid(1, "2.19.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+
+        ign0.close();
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+
+        startGrid(0, "2.19.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testBackwardRollingUpgrade() throws Exception {
         IgniteEx ign0 = startGrid(0, "2.18.0", false);
         IgniteEx ign1 = startGrid(1, "2.18.0", false);
         IgniteEx ign2 = startGrid(2, "2.18.0", false);
@@ -176,7 +209,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
 
-        startGrid(3, "2.19.0", false);
+        startGrid(0, "2.17.0", false);
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
 
@@ -184,7 +217,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
 
-        startGrid(4, "2.19.0", false);
+        startGrid(1, "2.17.0", false);
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
 
@@ -192,58 +225,81 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
 
-        startGrid(5, "2.19.0", false);
+        startGrid(2, "2.17.0", false);
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
     }
 
     /** */
     @Test
-    public void testRollingUpgrade1() throws Exception {
-        IgniteEx ign0 = startGrid(0, "2.18.0", false);
-        IgniteEx ign1 = startGrid(1, "2.19.0", false);
+    public void testForwardBackwardRollingUpgrade() throws Exception {
+        startGrid(0, "2.18.0", false);
+        IgniteEx ign1 = startGrid(1, "2.18.0", false);
+        IgniteEx ign2 = startGrid(2, "2.18.0", false);
 
-        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
-
-        ign0.close();
-
-        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 1, getTestTimeout()));
-
-        ign0 = startGrid(2, "2.20.0", false);
-
-        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
 
         ign1.close();
+        ign2.close();
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 1, getTestTimeout()));
 
-        startGrid(3, "2.21.0", false);
+        ign1 = startGrid(1, "2.19.0", false);
+        ign2 = startGrid(2, "2.19.0", false);
 
-        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+
+        ign1.close();
+        ign2.close();
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 1, getTestTimeout()));
+
+        startGrid(1, "2.17.0", false);
+        startGrid(2, "2.17.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
     }
 
     /** */
     @Test
     public void testCoordinatorChange() throws Exception {
         IgniteEx ign0 = startGrid(0, "2.18.0", false);
-        IgniteEx ign1 = startGrid(1, "2.18.0", false);
-        IgniteEx ign2 = startGrid(2, "2.19.0", false);
-
-        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
-
-        ign0.close();
+        startGrid(1, "2.19.0", false);
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
 
-        assertThrowsAnyCause(null, () -> startGrid(3, "2.17.0", false),
-            IgniteSpiException.class, "Remote node rejected due to incompatible version for cluster join.");
+        ign0.close();
 
-        assertThrowsAnyCause(null, () -> startGrid(4, "2.20.0", false),
-            IgniteSpiException.class, "Remote node rejected due to incompatible version for cluster join.");
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 1, getTestTimeout()));
 
-        startGrid(5, "2.19.0", false);
+        assertRemoteRejected(() -> startGrid(0, "2.17.0", false));
+
+        startGrid(0, "2.20.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+
+        assertRemoteRejected(() -> startGrid(2, "2.21.0", false));
+
+        assertTrue(Ignition.allGrids().size() == 2);
+    }
+
+    @Test
+    public void testDifferentServersAndClients() throws Exception {
+        startGrid(0, "2.18.0", false);
+        startGrid(1, "2.18.0", true);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
+
+        startGrid(2, "2.19.0", true);
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
+
+        startGrid(3, "2.18.0", false);
+
+        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 4, getTestTimeout()));
+
+        assertRemoteRejected(() -> startGrid(4, "2.21.0", false));
+        assertRemoteRejected(() -> startGrid(4, "2.17.0", true));
     }
 
     /** */
