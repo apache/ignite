@@ -60,8 +60,10 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
         IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
-        if (!isRollingUpgradeEligible(locVer, rmtVer)) {
-            String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
+        Set<Byte> allowedMinors = allowedMinorVersions(locVer);
+
+        if (locVer.major() != rmtVer.major() || !allowedMinors.contains(rmtVer.minor())) {
+            StringBuilder errMsg = new StringBuilder("Remote node rejected due to incompatible version for cluster join.\n"
                 + "Remote node info:\n"
                 + "  - Version     : " + rmtBuildVer + "\n"
                 + "  - Addresses   : " + U.addressesAsString(node) + "\n"
@@ -70,56 +72,42 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
                 + "  - Version     : " + locBuildVer + "\n"
                 + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
                 + "  - Node ID     : " + locNode.id() + "\n"
-                + "Allowed versions for joining:\n"
-                + "  - " + locVer.major() + '.' + locVer.minor() + ".X\n"
-                + "  - " + locVer.major() + '.' + (locVer.minor() + 1) + ".X\n"
-                + "  - " + locVer.major() + '.' + (locVer.minor() - 1) + ".X";
+                + "Allowed versions for joining:");
 
-            LT.warn(log, errMsg);
+            allowedMinors.stream().sorted().forEach(minor -> errMsg.append("\n")
+                .append(" - " + locVer.major() + '.' + minor + ".X"));
+
+
+            LT.warn(log, errMsg.toString());
 
             if (log.isDebugEnabled())
-                log.debug(errMsg);
+                log.debug(errMsg.toString());
 
-            return new IgniteNodeValidationResult(node.id(), errMsg);
+            return new IgniteNodeValidationResult(node.id(), errMsg.toString());
         }
 
         return null;
     }
 
     /**
-     * Determines whether the remote node's version is eligible for rolling upgrade with the local node.
-     * <p>
-     * A remote version is considered eligible if:
+     * A remote version is considered allowed for joining if:
      * <ul>
      *   <li>It exactly matches the local version; or</li>
      *   <li>It has the same major version as the local node and the difference in minor versions is within {@link #MAX_MINOR_DIFF}.</li>
      * </ul>
-     *
-     * @param locVer Local node's Ignite product version.
-     * @param rmtVer Remote node's Ignite product version.
-     * @return {@code true} if the remote version is compatible and eligible for rolling upgrade, {@code false} otherwise.
+     * @param locVer Local version.
      */
-    private boolean isRollingUpgradeEligible(IgniteProductVersion locVer, IgniteProductVersion rmtVer) {
-        if (locVer.major() != rmtVer.major())
-            return false;
-
-        if (locVer.minor() == rmtVer.minor())
-            return true;
-
-        boolean enableCheck = IgniteSystemProperties.getBoolean(IGNITE_ROLLING_UPGRADE_VERSION_CHECK);
-        if (!enableCheck)
-            return false;
-
-        Set<Byte> versions = ctx.discovery().allNodes().stream()
+    private Set<Byte> allowedMinorVersions(IgniteProductVersion locVer) {
+        Set<Byte> minors = ctx.discovery().allNodes().stream()
             .map(node -> IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER)).minor())
             .collect(Collectors.toSet());
 
-        if (versions.contains(rmtVer.minor()))
-            return true;
+        if (minors.size() == 1 && IgniteSystemProperties.getBoolean(IGNITE_ROLLING_UPGRADE_VERSION_CHECK)) {
+            byte base = locVer.minor();
+            minors.add((byte)(base + 1));
+            minors.add((byte)(base - 1));
+        }
 
-        if (versions.size() > 1)
-            return false;
-
-        return locVer.major() == rmtVer.major() && Math.abs(locVer.minor() - rmtVer.minor()) <= MAX_MINOR_DIFF;
+        return minors;
     }
 }
