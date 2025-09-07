@@ -401,6 +401,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         return startGrid(idx, ver, isClient, null);
     }
 
+    /** */
     private IgniteEx startGrid(int idx, String ver, boolean isClient, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
         nodeVer = ver;
 
