@@ -283,6 +283,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertTrue(Ignition.allGrids().size() == 2);
     }
 
+    /** */
     @Test
     public void testDifferentServersAndClients() throws Exception {
         startGrid(0, "2.18.0", false);
