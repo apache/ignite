@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -26,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -286,21 +289,26 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDifferentServersAndClients() throws Exception {
-        startGrid(0, "2.18.0", false);
-        startGrid(1, "2.18.0", true);
+        IgniteEx server0 = startGrid(0, "2.18.0", false);
+        IgniteEx server1 = startGrid(1, "2.19.0", false);
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
 
-        startGrid(2, "2.19.0", true);
+        startClientGridWithConnectionTo(2, "2.19.0", server0);
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
 
-        startGrid(3, "2.18.0", false);
+        startClientGridWithConnectionTo(3, "2.19.0", server1);
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 4, getTestTimeout()));
 
-        assertRemoteRejected(() -> startGrid(4, "2.21.0", false));
-        assertRemoteRejected(() -> startGrid(4, "2.17.0", true));
+        assertRemoteRejected(() -> startClientGridWithConnectionTo(4, "2.17.0", server0));
+        assertRemoteRejected(() -> startClientGridWithConnectionTo(4, "2.20.0", server1));
+
+        assertRemoteRejected(() -> startGrid(4, "2.20.0", false));
+        assertRemoteRejected(() -> startGrid(4, "2.17.0", false));
+
+        assertTrue(Ignition.allGrids().size() == 4);
     }
 
     /** */
@@ -369,9 +377,34 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private IgniteEx startClientGridWithConnectionTo(int idx, String ver, IgniteEx rmtGrid) throws Exception {
+        return startGrid(idx, ver, true, cfg -> {
+            TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+
+            TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
+
+            String address = rmtGrid.localNode().addresses().iterator().next();
+            int port = ((TcpDiscoverySpi)rmtGrid.configuration().getDiscoverySpi()).getLocalPort();
+
+            ipFinder.setAddresses(Collections.singletonList(address + ":" + port));
+
+            spi.setIpFinder(ipFinder);
+
+            cfg.setDiscoverySpi(spi);
+
+            return cfg;
+        });
+    }
+
+    /** */
     private IgniteEx startGrid(int idx, String ver, boolean isClient) throws Exception {
+        return startGrid(idx, ver, isClient, null);
+    }
+
+    private IgniteEx startGrid(int idx, String ver, boolean isClient, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
         nodeVer = ver;
 
-        return isClient ? startClientGrid(idx) : startGrid(idx);
+        return isClient ? startClientGrid(idx, cfgOp) : startGrid(idx, cfgOp);
     }
+
 }
