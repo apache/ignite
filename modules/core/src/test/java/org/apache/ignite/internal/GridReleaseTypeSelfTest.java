@@ -406,5 +406,4 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         return isClient ? startClientGrid(idx, cfgOp) : startGrid(idx, cfgOp);
     }
-
 }
