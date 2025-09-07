@@ -311,7 +311,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertTrue(Ignition.allGrids().size() == 4);
     }
 
-    /** */
+    /** Tests that starting a node with rejected version fails with remote rejection. */
     private void testConflictVersions(String acceptedVer, String rejVer, boolean withClient) {
         ThrowableSupplier<IgniteEx, Exception> sup = () -> {
             IgniteEx ign = startGrid(0, acceptedVer, false);
@@ -326,7 +326,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** */
+    /** Checks that the third grid is not compatible. */
     private void testConflictVersions(String acceptedVer1, String acceptedVer2, String rejVer, boolean withClients) {
         ThrowableSupplier<IgniteEx, Exception> sup = () -> {
             IgniteEx ign = startGrid(0, acceptedVer1, false);
@@ -343,14 +343,14 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** */
+    /** Checks that remote node rejected due to incompatible version. */
     private void assertRemoteRejected(ThrowableSupplier<IgniteEx, Exception> gridStart) {
         Throwable e = assertThrows(log, gridStart::get, IgniteCheckedException.class, null);
 
         assertTrue(X.hasCause(e, "Remote node rejected due to incompatible version for cluster join", IgniteSpiException.class));
     }
 
-    /** */
+    /** Tests two compatible grids. */
     private void testCompatibleVersions(String acceptedVer1, String acceptedVer2, boolean withClient) throws Exception {
         startGrid(0, acceptedVer1, false);
         startGrid(1, acceptedVer2, withClient);
@@ -360,7 +360,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** */
+    /** Tests three compatible grids. */
     private void testCompatibleVersions(
         String acceptedVer1,
         String acceptedVer2,
@@ -376,7 +376,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** */
+    /** Starts client grid with connection to remote grid. */
     private IgniteEx startClientGridWithConnectionTo(int idx, String ver, IgniteEx rmtGrid) throws Exception {
         return startGrid(idx, ver, true, cfg -> {
             TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
@@ -396,12 +396,12 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         });
     }
 
-    /** */
+    /** Starts grid with required version. */
     private IgniteEx startGrid(int idx, String ver, boolean isClient) throws Exception {
         return startGrid(idx, ver, isClient, null);
     }
 
-    /** */
+    /** Starts grid with required version and custom configuration. */
     private IgniteEx startGrid(int idx, String ver, boolean isClient, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
         nodeVer = ver;
 
