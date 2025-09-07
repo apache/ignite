@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.function.ThrowableSupplier;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -283,13 +282,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     private void assertRemoteRejected(ThrowableSupplier<IgniteEx, Exception> gridStart) {
         Throwable e = assertThrows(log, gridStart::get, IgniteCheckedException.class, null);
 
-        StringWriter errors = new StringWriter();
-
-        e.printStackTrace(new PrintWriter(errors));
-
-        String stackTrace = errors.toString();
-
-        assert stackTrace.contains("Remote node rejected due to incompatible version for cluster join");
+        assertTrue(X.hasCause(e, "Remote node rejected due to incompatible version for cluster join", IgniteSpiException.class));
     }
 
     /** */
