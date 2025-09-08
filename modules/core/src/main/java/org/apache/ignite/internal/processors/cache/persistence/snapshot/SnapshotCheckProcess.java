@@ -32,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -357,6 +356,8 @@ public class SnapshotCheckProcess {
         CompletableFuture<SnapshotCheckResponse> composedFut = new CompletableFuture<>();
         AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
 
+        ctx.totalParts.set(0);
+
         for (SnapshotMetadata meta : ctx.metas) {
             CompletableFuture<Map<PartitionKey, PartitionHashRecord>> metaFut = snpChecker.checkPartitions(
                 meta,
@@ -364,7 +365,7 @@ public class SnapshotCheckProcess {
                 ctx.req.groups(),
                 false,
                 ctx.req.fullCheck(),
-                totalParts -> ctx.totalParts = totalParts,
+                ctx.totalParts::addAndGet,
                 checkedPart -> ctx.checkedParts.incrementAndGet()
             );
 
@@ -620,22 +621,6 @@ public class SnapshotCheckProcess {
         int incIdx,
         boolean allRestoreHandlers
     ) {
-        return start(snpName, snpPath, grpNames, fullCheck, incIdx, allRestoreHandlers, null);
-    }
-
-    /**
-     * Starts snapshot check process like {@link #start(String, String, Collection, boolean, int, boolean)}
-     * allowing to bind an external operation id.
-     */
-    IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> start(
-        String snpName,
-        @Nullable String snpPath,
-        @Nullable Collection<String> grpNames,
-        boolean fullCheck,
-        int incIdx,
-        boolean allRestoreHandlers,
-        @Nullable UUID externalOpId
-    ) {
         assert !F.isEmpty(snpName);
 
         UUID reqId = UUID.randomUUID();
@@ -650,8 +635,7 @@ public class SnapshotCheckProcess {
             grpNames == null ? null : new HashSet<>(grpNames),
             fullCheck,
             incIdx,
-            allRestoreHandlers,
-            externalOpId
+            allRestoreHandlers
         );
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = new GridFutureAdapter<>();
@@ -711,9 +695,6 @@ public class SnapshotCheckProcess {
         mreg.register("incrementIndex", ctx.req::incrementalIndex,
             "The index of incremental snapshot of the snapshot check operation.");
 
-        mreg.register("relatedOperationId", ctx.req::relatedOperationId, UUID.class,
-            "Id of a related operation or process.");
-
         mreg.register("totalPartitions", () -> ctx.totalParts,
             "The total number of partitions to check on this node.");
 
@@ -747,11 +728,11 @@ public class SnapshotCheckProcess {
 
         /** Number of partitions to check. */
         @GridToStringExclude
-        private volatile int totalParts = -1;
+        private final AtomicInteger totalParts = new AtomicInteger(-1);
 
         /** Number of checked partitions. */
         @GridToStringExclude
-        private final AtomicLong checkedParts = new AtomicLong(0);
+        private final AtomicInteger checkedParts = new AtomicInteger(0);
 
         /** Creates operation context. */
         private SnapshotCheckContext(SnapshotCheckProcessRequest req) {

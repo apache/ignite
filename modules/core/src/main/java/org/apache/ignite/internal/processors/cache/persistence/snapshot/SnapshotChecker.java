@@ -122,7 +122,6 @@ public class SnapshotChecker {
         @Nullable Consumer<Integer> totalPartsCnsmr,
         @Nullable Consumer<Integer> checkedPartCnsmr
     ) {
-        // Await in the default executor to avoid blocking the snapshot executor if it has just one thread.
         return CompletableFuture.supplyAsync(() -> {
             SnapshotHandlerContext hctx = new SnapshotHandlerContext(
                 meta, grps, kctx.cluster().get().localNode(), sft, false, checkParts);

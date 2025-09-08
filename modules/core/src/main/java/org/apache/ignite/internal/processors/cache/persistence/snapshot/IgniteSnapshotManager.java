@@ -1747,7 +1747,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> res = checkSnpProc.start(
-            name, snpPath, grps, check, incIdx, includeCustomHandlers, reqId);
+            name, snpPath, grps, check, incIdx, includeCustomHandlers);
 
         res.listen(lsnr -> {
             if (log.isInfoEnabled()) {

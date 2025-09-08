@@ -48,9 +48,6 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
     @GridToStringInclude
     private final int incIdx;
 
-    /** External operation id. */
-    @Nullable private final UUID relatedOperationId;
-
     /**
      * Creates snapshot check process request.
      *
@@ -65,7 +62,6 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
      * @param allRestoreHandlers If {@code true}, all the registered {@link IgniteSnapshotManager#handlers()} of type
      *                           {@link SnapshotHandlerType#RESTORE} are invoked. Otherwise, only snapshot metadatas and
      *                           partition hashes are validated.
-     * @param relatedOperationId Id of a related operation like snapshot restoring.
      */
     SnapshotCheckProcessRequest(
         UUID reqId,
@@ -75,8 +71,7 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
         @Nullable Collection<String> grps,
         boolean fullCheck,
         int incIdx,
-        boolean allRestoreHandlers,
-        UUID relatedOperationId
+        boolean allRestoreHandlers
     ) {
         super(reqId, snpName, snpPath, grps, 0, nodes);
 
@@ -85,7 +80,6 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
         this.fullCheck = fullCheck;
         this.allRestoreHandlers = allRestoreHandlers;
         this.incIdx = incIdx;
-        this.relatedOperationId = relatedOperationId;
     }
 
     /**
@@ -104,11 +98,6 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
     /** @return Incremental snapshot index. If not positive, snapshot is not considered as incremental. */
     public int incrementalIndex() {
         return incIdx;
-    }
-
-    /** */
-    public @Nullable UUID relatedOperationId() {
-        return relatedOperationId;
     }
 
     /** {@inheritDoc} */
