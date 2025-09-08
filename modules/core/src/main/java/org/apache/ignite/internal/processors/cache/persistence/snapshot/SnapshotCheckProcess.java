@@ -329,13 +329,19 @@ public class SnapshotCheckProcess {
 
     /** @return A composed future of increment checks for each consistent id regarding {@link SnapshotCheckContext#metas}. */
     private CompletableFuture<SnapshotCheckResponse> incrementalFuture(SnapshotCheckContext ctx) {
+        ctx.totalCounter.set(0);
+
         // Incremental snapshots do not support working on other topology. Only single meta and snapshot part can be processed.
         SnapshotMetadata meta = ctx.metas.get(0);
 
         CompletableFuture<SnapshotCheckResponse> resFut = new CompletableFuture<>();
 
         CompletableFuture<IncrementalSnapshotVerificationTaskResult> workingFut = snpChecker.checkIncrementalSnapshot(
-            ctx.locFileTree.get(meta.consistentId()), ctx.req.incrementalIndex());
+            ctx.locFileTree.get(meta.consistentId()),
+            ctx.req.incrementalIndex(),
+            ctx.totalCounter::addAndGet,
+            ctx.checkedCounter::addAndGet
+        );
 
         workingFut.whenComplete((res, err) -> {
             if (err != null)
@@ -356,27 +362,32 @@ public class SnapshotCheckProcess {
         CompletableFuture<SnapshotCheckResponse> composedFut = new CompletableFuture<>();
         AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
 
-        ctx.totalParts.set(0);
+        ctx.totalCounter.set(0);
 
         for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<Map<PartitionKey, PartitionHashRecord>> metaFut = snpChecker.checkPartitions(
-                meta,
-                ctx.locFileTree.get(meta.consistentId()),
-                ctx.req.groups(),
-                false,
-                ctx.req.fullCheck(),
-                ctx.totalParts::addAndGet,
-                checkedPart -> ctx.checkedParts.incrementAndGet()
-            );
+            // Run asynchronously to calculate metric 'total partitions' faster.
+            kctx.pools().getSnapshotExecutorService().submit(() -> {
+                CompletableFuture<Map<PartitionKey, PartitionHashRecord>> metaFut = snpChecker.checkPartitions(
+                    meta,
+                    ctx.locFileTree.get(meta.consistentId()),
+                    ctx.req.groups(),
+                    false,
+                    ctx.req.fullCheck(),
+                    ctx.totalCounter::addAndGet,
+                    checkedPart -> ctx.checkedCounter.incrementAndGet()
+                );
 
-            metaFut.whenComplete((res, err) -> {
-                if (err != null)
-                    exceptions.put(meta.consistentId(), err);
-                else if (!F.isEmpty(res))
-                    perMetaResults.put(meta.consistentId(), res);
+                metaFut.whenComplete((res, err) -> {
+                    ctx.checkedSnapshotParts.incrementAndGet();
 
-                if (metasProcessed.decrementAndGet() == 0)
-                    composedFut.complete(new SnapshotCheckResponse(perMetaResults, exceptions));
+                    if (err != null)
+                        exceptions.put(meta.consistentId(), err);
+                    else if (!F.isEmpty(res))
+                        perMetaResults.put(meta.consistentId(), res);
+
+                    if (metasProcessed.decrementAndGet() == 0)
+                        composedFut.complete(new SnapshotCheckResponse(perMetaResults, exceptions));
+                });
             });
         }
 
@@ -560,12 +571,12 @@ public class SnapshotCheckProcess {
      *
      * @return Metadatas to process on current node.
      */
-    private @Nullable List<SnapshotMetadata> assingMetas(Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
+    private List<SnapshotMetadata> assingMetas(Map<ClusterNode, List<SnapshotMetadata>> clusterMetas) {
         ClusterNode locNode = kctx.cluster().get().localNode();
         List<SnapshotMetadata> locMetas = clusterMetas.get(locNode);
 
         if (F.isEmpty(locMetas))
-            return null;
+            return Collections.emptyList();
 
         Set<String> onlineNodesConstIdsStr = new HashSet<>(clusterMetas.size());
         // The nodes are sorted with lesser order.
@@ -687,19 +698,31 @@ public class SnapshotCheckProcess {
         assert ctx.req.requestId() != null;
 
         mreg.register("startTime", U::currentTimeMillis,
-            "The system time of the start of the cluster snapshot check operation on this node.");
-
-        mreg.register("checkPartitions", ctx.req::fullCheck,
-            "Shows whether full validation of partitions is enabled.");
-
+            "The system time of the start of the cluster snapshot check operation on current node.");
         mreg.register("incrementIndex", ctx.req::incrementalIndex,
             "The index of incremental snapshot of the snapshot check operation.");
 
-        mreg.register("totalPartitions", () -> ctx.totalParts,
-            "The total number of partitions to check on this node.");
+        if (ctx.req.incrementalIndex() > 0) {
+            mreg.register("totalWalSegments", ctx.totalCounter::get,
+                "The total number of WAL segments in the incremental snapshot to check on current node.");
+            mreg.register("processedWalSegments", ctx.checkedCounter::get,
+                "The number of checked WAL segments in the incremental snapshot on current node.");
+        }
+        else {
+            mreg.register("checkPartitions", ctx.req::fullCheck,
+                "Shows whether full validation of snapshot partitions is enabled.");
+            mreg.register("totalPartitions", ctx.totalCounter::get,
+                "The total number of partitions to check on current node.");
+            mreg.register("processedPartitions", ctx.checkedCounter::get,
+                "The number of checked partitions on current node.");
 
-        mreg.register("checkedPartitions", ctx.checkedParts::get,
-            "The number of checked partitions on this node.");
+            // Node can hold and process another nodes' snapshot data.
+            // Only entire snapshot supports checking and restoring on other topology. Incremental snapshot doesn't.
+            mreg.register("snapshotPartsToProcess", () -> ctx.metas == null ? -1 : ctx.metas.size(),
+                "Number of parts (nodes data) of snapshot to check on current node.");
+            mreg.register("processedSnapshotParts", ctx.checkedSnapshotParts::get,
+                "Number of checked snapshot parts (nodes data) on current node.");
+        }
     }
 
     /** */
@@ -717,7 +740,7 @@ public class SnapshotCheckProcess {
          * Metadatas to process on this node. Also indicates the snapshot parts to check on this node.
          * @see #partitionsHashesFuture(SnapshotCheckContext)
          */
-        @Nullable private List<SnapshotMetadata> metas;
+        @Nullable private volatile List<SnapshotMetadata> metas;
 
         /** Map of snapshot pathes per consistent id for {@link #metas}. */
         @GridToStringInclude
@@ -726,13 +749,17 @@ public class SnapshotCheckProcess {
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
-        /** Number of partitions to check. */
+        /** Common counter of total units of work to process on current node. */
         @GridToStringExclude
-        private final AtomicInteger totalParts = new AtomicInteger(-1);
+        private final AtomicInteger totalCounter = new AtomicInteger(-1);
 
-        /** Number of checked partitions. */
+        /** Common counter of checked units of work on current node. */
         @GridToStringExclude
-        private final AtomicInteger checkedParts = new AtomicInteger(0);
+        private final AtomicInteger checkedCounter = new AtomicInteger(0);
+
+        /** Number of checked snapshot parts (nodes data). */
+        @GridToStringExclude
+        private final AtomicInteger checkedSnapshotParts = new AtomicInteger(0);
 
         /** Creates operation context. */
         private SnapshotCheckContext(SnapshotCheckProcessRequest req) {

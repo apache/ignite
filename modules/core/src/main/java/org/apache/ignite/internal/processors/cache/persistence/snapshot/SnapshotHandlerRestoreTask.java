@@ -137,7 +137,7 @@ public class SnapshotHandlerRestoreTask {
                 SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.meta());
 
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
-                    new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false, check));
+                    new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false, check, null, null));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);

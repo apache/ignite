@@ -66,12 +66,14 @@ public class SnapshotChecker {
     /** */
     public CompletableFuture<IncrementalSnapshotVerificationTaskResult> checkIncrementalSnapshot(
         SnapshotFileTree sft,
-        int incIdx
+        int incIdx,
+        @Nullable Consumer<Integer> totalCnsmr,
+        @Nullable Consumer<Integer> checkedCnsmr
     ) {
         assert incIdx > 0;
 
         return CompletableFuture.supplyAsync(
-            () -> new IncrementalSnapshotVerificationTask(kctx.grid(), log, sft, incIdx).execute(),
+            () -> new IncrementalSnapshotVerificationTask(kctx.grid(), log, sft, incIdx).execute(totalCnsmr, checkedCnsmr),
             executor
         );
     }
@@ -119,15 +121,29 @@ public class SnapshotChecker {
         @Nullable Collection<String> grps,
         boolean forCreation,
         boolean checkParts,
-        @Nullable Consumer<Integer> totalPartsCnsmr,
-        @Nullable Consumer<Integer> checkedPartCnsmr
+        @Nullable Consumer<Integer> totalCnsmr,
+        @Nullable Consumer<Integer> checkedCnsmr
     ) {
         return CompletableFuture.supplyAsync(() -> {
             SnapshotHandlerContext hctx = new SnapshotHandlerContext(
-                meta, grps, kctx.cluster().get().localNode(), sft, false, checkParts);
+                meta,
+                grps,
+                kctx.cluster().get().localNode(),
+                sft,
+                false,
+                checkParts,
+                totalCnsmr == null ? null : (hndCls, totalCnt) -> {
+                    if (hndCls == SnapshotPartitionsVerifyHandler.class)
+                        totalCnsmr.accept(totalCnt);
+                },
+                checkedCnsmr == null ? null : (hndCls, processedCnt) -> {
+                    if (hndCls == SnapshotPartitionsVerifyHandler.class)
+                        checkedCnsmr.accept(processedCnt);
+                }
+            );
 
             try {
-                return new SnapshotPartitionsVerifyHandler(kctx.cache().context(), totalPartsCnsmr, checkedPartCnsmr).invoke(hctx);
+                return new SnapshotPartitionsVerifyHandler(kctx.cache().context()).invoke(hctx);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

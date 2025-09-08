@@ -94,27 +94,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** Logger. */
     private final IgniteLogger log;
 
-    /** */
-    @Nullable private final Consumer<Integer> totalPartsCnsmr;
-
-    /** */
-    @Nullable private final Consumer<Integer> checkedPartCnsmr;
-
     /** @param cctx Shared context. */
     public SnapshotPartitionsVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
-        this(cctx, null, null);
-    }
-
-    /** */
-    public SnapshotPartitionsVerifyHandler(
-        GridCacheSharedContext<?, ?> cctx,
-        @Nullable Consumer<Integer> totalPartsCnsmr,
-        @Nullable Consumer<Integer> checkedPartCnsmr
-    ) {
         this.cctx = cctx;
-
-        this.totalPartsCnsmr = totalPartsCnsmr;
-        this.checkedPartCnsmr = checkedPartCnsmr;
 
         log = cctx.logger(getClass());
     }
@@ -190,13 +172,13 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
             return Collections.emptyMap();
         }
 
-        if (totalPartsCnsmr != null)
-            totalPartsCnsmr.accept(partFiles.size());
+        if (opCtx.totalConsumer() != null)
+            opCtx.totalConsumer().accept(getClass(), partFiles.size());
 
         return meta.dump()
             ? checkDumpFiles(opCtx, partFiles)
             : checkSnapshotFiles(opCtx.snapshotFileTree(), grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()),
-                checkedPartCnsmr);
+                opCtx.progressConsumer() == null ? null : partId -> opCtx.progressConsumer().accept(getClass(), partId));
     }
 
     /** */

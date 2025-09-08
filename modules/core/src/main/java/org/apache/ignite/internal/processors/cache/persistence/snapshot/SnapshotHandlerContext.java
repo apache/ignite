@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
+import java.util.function.BiConsumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.jetbrains.annotations.Nullable;
@@ -44,6 +45,12 @@ public class SnapshotHandlerContext {
     /** If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.*/
     private final boolean check;
 
+    /** Consumer of total work units per handler type. */
+    private final BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> totalCnsmr;
+
+    /** Consumer of work units progress per handler type. */
+    private final BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> progressCnsmr;
+
     /**
      * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
@@ -52,6 +59,8 @@ public class SnapshotHandlerContext {
      * @param sft Snapshot file tree.
      * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
      * @param check If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.
+     * @param totalCnsmr Consumer of total work units per handler type.
+     * @param progressCnsmr Consumer of work units progress per handler type.
      */
     public SnapshotHandlerContext(
         SnapshotMetadata metadata,
@@ -59,7 +68,9 @@ public class SnapshotHandlerContext {
         ClusterNode locNode,
         SnapshotFileTree sft,
         boolean streamerWrn,
-        boolean check
+        boolean check,
+        @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> totalCnsmr,
+        @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> progressCnsmr
     ) {
         this.metadata = metadata;
         this.grps = grps;
@@ -67,6 +78,8 @@ public class SnapshotHandlerContext {
         this.sft = sft;
         this.streamerWrn = streamerWrn;
         this.check = check;
+        this.totalCnsmr = totalCnsmr;
+        this.progressCnsmr = progressCnsmr;
     }
 
     /**
@@ -108,5 +121,15 @@ public class SnapshotHandlerContext {
     /** @return If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched. */
     public boolean check() {
         return check;
+    }
+
+    /** @return Consumer of total work units per handler type. */
+    public @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> totalConsumer() {
+        return totalCnsmr;
+    }
+
+    /** @return Consumer of work units progress per handler type. */
+    public @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> progressConsumer() {
+        return progressCnsmr;
     }
 }
