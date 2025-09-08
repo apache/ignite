@@ -25,6 +25,7 @@ import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
+import org.apache.ignite.internal.codegen.AtomicApplicationAttributesAwareRequestSerializer;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
 import org.apache.ignite.internal.codegen.CacheGroupAffinityMessageSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
@@ -365,7 +366,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
             new SnapshotFilesRequestMessageSerializer());
         factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new,
             new SnapshotFilesFailureMessageSerializer());
-        factory.register((short)180, AtomicApplicationAttributesAwareRequest::new);
+        factory.register((short)180, AtomicApplicationAttributesAwareRequest::new, new AtomicApplicationAttributesAwareRequestSerializer());
         factory.register((short)181, TransactionAttributesAwareRequest::new, new TransactionAttributesAwareRequestSerializer());
 
         // Incremental snapshot.
