@@ -318,55 +318,55 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         }
 
         switch (writer.state()) {
-            case 21:
+            case 20:
                 if (!writer.writeLong(accessTtl))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 21:
                 if (!writer.writeBitSet(invalidateEntries))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 22:
                 if (!writer.writeIgniteUuid(miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 23:
                 if (!writer.writeObjectArray(ownedKeys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
+            case 24:
                 if (!writer.writeObjectArray(ownedValues, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
+            case 25:
                 if (!writer.writeBitSet(preloadKeys))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 26:
                 if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 28:
+            case 27:
                 if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 29:
+            case 28:
                 if (!writer.writeString(txLbl))
                     return false;
 
@@ -385,7 +385,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             return false;
 
         switch (reader.state()) {
-            case 21:
+            case 20:
                 accessTtl = reader.readLong();
 
                 if (!reader.isLastRead())
@@ -393,7 +393,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 22:
+            case 21:
                 invalidateEntries = reader.readBitSet();
 
                 if (!reader.isLastRead())
@@ -401,7 +401,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 23:
+            case 22:
                 miniId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
@@ -409,7 +409,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 24:
+            case 23:
                 ownedKeys = reader.readObjectArray(MessageCollectionItemType.KEY_CACHE_OBJECT, KeyCacheObject.class);
 
                 if (!reader.isLastRead())
@@ -417,7 +417,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 25:
+            case 24:
                 ownedValues = reader.readObjectArray(MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
@@ -425,7 +425,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 26:
+            case 25:
                 preloadKeys = reader.readBitSet();
 
                 if (!reader.isLastRead())
@@ -433,7 +433,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 27:
+            case 26:
                 taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
@@ -441,7 +441,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 28:
+            case 27:
                 topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
@@ -449,7 +449,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 29:
+            case 28:
                 txLbl = reader.readString();
 
                 if (!reader.isLastRead())

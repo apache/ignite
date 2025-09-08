@@ -224,19 +224,19 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         }
 
         switch (writer.state()) {
-            case 21:
+            case 20:
                 if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 21:
                 if (!writer.writeUuid(nearNodeId))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 22:
                 if (!writer.writeCollection(updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
@@ -255,7 +255,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             return false;
 
         switch (reader.state()) {
-            case 21:
+            case 20:
                 miniId = reader.readInt();
 
                 if (!reader.isLastRead())
@@ -263,7 +263,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 22:
+            case 21:
                 nearNodeId = reader.readUuid();
 
                 if (!reader.isLastRead())
@@ -271,7 +271,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 23:
+            case 22:
                 updCntrs = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
