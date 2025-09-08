@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
 
 import static java.lang.Long.MAX_VALUE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SEGMENT_SYNC_TIMEOUT;
@@ -583,7 +582,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
             isCancelled.set(false);
 
-            new IgniteThread(this).start();
+            U.newThread(this).start();
         }
     }
 
@@ -640,7 +639,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
             isCancelled.set(false);
 
-            new IgniteThread(walSegmentSyncWorker).start();
+            U.newThread(walSegmentSyncWorker).start();
         }
     }
 

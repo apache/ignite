@@ -17,11 +17,14 @@
 
 package org.apache.ignite;
 
+import java.io.Serializable;
+import org.apache.ignite.internal.util.GridLogThrottle;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD;
+import static org.apache.ignite.internal.util.GridLogThrottle.DFLT_LOG_THROTTLE_CAPACITY;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_MAX_LENGTH;
@@ -84,6 +87,31 @@ public class IgniteCommonsSystemProperties {
     @SystemProperty(value = "Per thread binary allocator chunk pool size",
         type = Integer.class, defaults = "" + DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE)
     public static final String IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = "IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE";
+
+    /**
+     * Manages {@code OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
+     * {@link Serializable} classes.
+     */
+    @SystemProperty("Manages OptimizedMarshaller behavior of serialVersionUID computation " +
+        "for Serializable classes")
+    public static final String IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID =
+        "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
+
+    /**
+     * When set to {@code true}, warnings that are intended for development environments and not for production
+     * (such as coding mistakes in code using Ignite) will not be logged.
+     */
+    @SystemProperty("Enables development environments warnings")
+    public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
+
+    /** Max amount of remembered errors for {@link GridLogThrottle}. */
+    @SystemProperty(value = "Max amount of remembered errors for GridLogThrottle", type = Integer.class,
+        defaults = "" + DFLT_LOG_THROTTLE_CAPACITY)
+    public static final String IGNITE_LOG_THROTTLE_CAPACITY = "IGNITE_LOG_THROTTLE_CAPACITY";
+
+    /** Defines Ignite installation folder. */
+    @SystemProperty(value = "Defines Ignite installation folder", type = String.class, defaults = "")
+    public static final String IGNITE_HOME = "IGNITE_HOME";
 
     /**
      * @param enumCls Enum type.

@@ -19,13 +19,12 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public interface CacheObject extends Message {
+public interface CacheObject {
     /** */
     public static final byte TYPE_REGULAR = 1;
 
@@ -67,7 +66,7 @@ public interface CacheObject extends Message {
      * @return Size required to store this value object.
      * @throws IgniteCheckedException If failed.
      */
-    public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException;
+    public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException;
 
     /**
      * @param buf Buffer to write value to.
@@ -114,7 +113,7 @@ public interface CacheObject extends Message {
      * @param ctx Cache context.
      * @return Instance to store in cache.
      */
-    public CacheObject prepareForCache(CacheObjectContext ctx);
+    public CacheObject prepareForCache(CacheObjectValueContext ctx);
 
     /**
      * @param ctx Context.

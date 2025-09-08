@@ -1344,6 +1344,11 @@ public class CacheGroupContext {
         return preparedToStop;
     }
 
+    /** */
+    public void applyRecoveryData(CacheGroupRecoveryState grpState) {
+        top.applyRecoveryData(grpState);
+    }
+
     /**
      * @param ccfg Cache configuration.
      * @param plugins Ignite plugin processor.

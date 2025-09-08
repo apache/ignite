@@ -28,8 +28,6 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
@@ -147,52 +145,11 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
             valueBytes(ctx);
 
         return objectPutSize(valBytes.length);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                valBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(valBytes))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
