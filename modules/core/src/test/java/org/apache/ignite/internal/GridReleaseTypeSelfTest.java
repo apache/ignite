@@ -383,10 +383,10 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
             TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
-            String address = rmtGrid.localNode().addresses().iterator().next();
+            String addr = rmtGrid.localNode().addresses().iterator().next();
             int port = ((TcpDiscoverySpi)rmtGrid.configuration().getDiscoverySpi()).getLocalPort();
 
-            ipFinder.setAddresses(Collections.singletonList(address + ":" + port));
+            ipFinder.setAddresses(Collections.singletonList(addr + ":" + port));
 
             spi.setIpFinder(ipFinder);
 
