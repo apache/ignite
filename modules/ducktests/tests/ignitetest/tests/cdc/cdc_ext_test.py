@@ -29,7 +29,7 @@ from ignitetest.services.utils.cdc.ignite_to_kafka_cdc_configurer import KafkaCd
 from ignitetest.services.utils.cdc.ignite_to_ignite_client_cdc_configurer import IgniteToIgniteClientCdcConfigurer
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
-from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster, TcpDiscoverySpi, TcpDiscoveryVmIpFinder
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
 from ignitetest.tests.cdc.cdc_ext_base_test import CdcExtBaseTest
@@ -38,10 +38,11 @@ from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
 CACHE_NAME = "cdc-test-cache"
-JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.client_test.IgniteCachePutClient"
+JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.cdc.CdcContinuousUpdatesApplication"
 
 WAL_FORCE_ARCHIVE_TIMEOUT_MS = 100
-TEST_DURATION_SEC = 5
+TEST_DURATION_SEC = 10
+RANGE = 5000
 
 
 class CdcExtTest(CdcExtBaseTest):
@@ -95,39 +96,16 @@ class CdcExtTest(CdcExtBaseTest):
         return res
 
     def run(self, ignite_version, pds, mode, cdc_configurer, cdc_params):
-        src_cluster = IgniteService(
-            self.test_context, ignite_config(ignite_version, pds, "src"), 2, modules=["cdc-ext"])
-        dst_cluster = IgniteService(
-            self.test_context, ignite_config(ignite_version, pds, "dst"), 2, modules=["cdc-ext"])
+        src_cluster = IgniteService(self.test_context, ignite_config(ignite_version, pds, "src"),
+                                    2, modules=["cdc-ext"])
+
+        dst_cluster = IgniteService(self.test_context, ignite_config(ignite_version, pds, "dst"),
+                                    2, modules=["cdc-ext"])
 
         if mode == "active-active":
-            src_ctx, dst_ctx = self.start_active_active(src_cluster, dst_cluster, cdc_configurer, cdc_params)
+            cdc_streamer_metrics = self.run_active_active(src_cluster, dst_cluster, cdc_configurer, cdc_params)
         else:
-            src_ctx = self.start_active_passive(src_cluster, dst_cluster, cdc_configurer, cdc_params)
-            dst_ctx = None
-
-        client = IgniteApplicationService(
-            self.test_context,
-            client_cluster_config(src_cluster),
-            java_class_name=JAVA_CLIENT_CLASS_NAME,
-            num_nodes=2,
-            params={"cacheName": CACHE_NAME, "pacing": 10})
-
-        client.start()
-
-        sleep(TEST_DURATION_SEC)
-        client.stop()
-
-        cdc_configurer.wait_cdc(src_ctx, no_new_events_period_secs=10, timeout_sec=300)
-        if dst_ctx:
-            cdc_configurer.wait_cdc(dst_ctx, no_new_events_period_secs=10, timeout_sec=300)
-
-        cdc_streamer_metrics = cdc_configurer.stop_ignite_cdc(src_ctx, timeout_sec=300)
-        if dst_ctx:
-            cdc_streamer_metrics = {
-                "src": cdc_streamer_metrics,
-                "dst": cdc_configurer.stop_ignite_cdc(dst_ctx, timeout_sec=300)
-            }
+            cdc_streamer_metrics = self.run_active_passive(src_cluster, dst_cluster, cdc_configurer, cdc_params)
 
         partitions_are_same = self.check_partitions_are_same(src_cluster, dst_cluster)
 
@@ -139,6 +117,69 @@ class CdcExtTest(CdcExtBaseTest):
         src_cluster.stop()
 
         dst_cluster.stop()
+
+        return cdc_streamer_metrics
+
+    def run_active_passive(self, src_cluster, dst_cluster, cdc_configurer, cdc_params):
+        src_ctx = self.start_active_passive(src_cluster, dst_cluster, cdc_configurer, cdc_params)
+
+        client = IgniteApplicationService(
+            self.test_context,
+            client_cluster_config(src_cluster),
+            java_class_name=JAVA_CLIENT_CLASS_NAME,
+            num_nodes=1,
+            params={"cacheName": CACHE_NAME, "pacing": 5, "clusterCnt": 1, "clusterIdx": 0, "range": RANGE})
+
+        client.start()
+
+        sleep(TEST_DURATION_SEC)
+
+        client.stop()
+
+        assert int(client.extract_result("putCnt")) > 0
+        assert int(client.extract_result("removeCnt")) > 0
+
+        cdc_configurer.wait_cdc(src_ctx, no_new_events_period_secs=10, timeout_sec=300)
+
+        cdc_streamer_metrics = cdc_configurer.stop_ignite_cdc(src_ctx, timeout_sec=300)
+
+        return cdc_streamer_metrics
+
+    def run_active_active(self, src_cluster, dst_cluster, cdc_configurer, cdc_params):
+        src_ctx, dst_ctx = self.start_active_active(src_cluster, dst_cluster, cdc_configurer, cdc_params)
+
+        client1 = IgniteApplicationService(
+            self.test_context,
+            client_cluster_config(src_cluster),
+            java_class_name=JAVA_CLIENT_CLASS_NAME,
+            num_nodes=1,
+            params={"cacheName": CACHE_NAME, "pacing": 1, "clusterCnt": 2, "clusterIdx": 0, "range": RANGE})
+
+        client2 = IgniteApplicationService(
+            self.test_context,
+            client_cluster_config(dst_cluster),
+            java_class_name=JAVA_CLIENT_CLASS_NAME,
+            num_nodes=1,
+            params={"cacheName": CACHE_NAME, "pacing": 1, "clusterCnt": 2, "clusterIdx": 1, "range": RANGE})
+
+        client1.start()
+        client2.start()
+
+        sleep(TEST_DURATION_SEC)
+
+        client1.stop()
+        client2.stop()
+
+        assert int(client1.extract_result("putCnt")) > 0
+        assert int(client2.extract_result("putCnt")) > 0
+
+        cdc_configurer.wait_cdc(src_ctx, no_new_events_period_secs=10, timeout_sec=300)
+        cdc_configurer.wait_cdc(dst_ctx, no_new_events_period_secs=10, timeout_sec=300)
+
+        cdc_streamer_metrics = {
+            "src": cdc_configurer.stop_ignite_cdc(src_ctx, timeout_sec=300),
+            "dst": cdc_configurer.stop_ignite_cdc(dst_ctx, timeout_sec=300)
+        }
 
         return cdc_streamer_metrics
 
@@ -155,6 +196,7 @@ def client_cluster_config(ignite):
 
 def ignite_config(ignite_version, pds, ignite_instance_name):
     config = IgniteConfiguration(
+        discovery_spi=TcpDiscoverySpi(ip_finder=TcpDiscoveryVmIpFinder()),
         ignite_instance_name=ignite_instance_name,
         version=IgniteVersion(ignite_version),
         data_storage=DataStorageConfiguration(
