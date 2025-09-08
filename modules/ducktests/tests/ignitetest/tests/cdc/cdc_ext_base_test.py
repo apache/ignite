@@ -28,9 +28,6 @@ class CdcExtBaseTest(IgniteTest):
     def start_active_passive(self, src_cluster, dst_cluster, cdc_configurer, cdc_params):
         enable_cdc(src_cluster)
 
-        setup_conflict_resolver(src_cluster, "1", cdc_params)
-        setup_conflict_resolver(dst_cluster, "2", cdc_params)
-
         ctx = cdc_configurer.configure_source_cluster(src_cluster, dst_cluster, cdc_params)
 
         dst_cluster.start()
@@ -59,6 +56,9 @@ class CdcExtBaseTest(IgniteTest):
 
             dst_cdc_params.topic = dst_cdc_params.topic + "-dst-to-src"
             dst_cdc_params.metadata_topic = dst_cdc_params.metadata_topic + "-dst-to-src"
+
+        src_cluster.config.discovery_spi.prepare_on_start(cluster=src_cluster)
+        dst_cluster.config.discovery_spi.prepare_on_start(cluster=dst_cluster)
 
         src_ctx = cdc_configurer.configure_source_cluster(src_cluster, dst_cluster, src_cdc_params)
         dst_ctx = cdc_configurer.configure_source_cluster(dst_cluster, src_cluster, dst_cdc_params)
