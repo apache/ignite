@@ -77,7 +77,6 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
             allowedMinors.stream().sorted().forEach(minor -> errMsg.append("\n")
                 .append(" - ").append(locVer.major()).append('.').append(minor).append(".X"));
 
-
             LT.warn(log, errMsg.toString());
 
             if (log.isDebugEnabled())
