@@ -1719,6 +1719,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         int incIdx,
         boolean check
     ) {
+        return checkSnapshot(name, snpPath, grps, includeCustomHandlers, incIdx, check, null);
+    }
+
+    /**
+     * Starts snapshot check process like {@link #checkSnapshot(String, String, Collection, boolean, int, boolean)}
+     * allowing to use certain request id.
+     */
+    IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(
+        String name,
+        @Nullable String snpPath,
+        @Nullable Collection<String> grps,
+        boolean includeCustomHandlers,
+        int incIdx,
+        boolean check,
+        @Nullable UUID reqId
+    ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
         A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
@@ -1731,7 +1747,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> res = checkSnpProc.start(
-            name, snpPath, grps, check, incIdx, includeCustomHandlers);
+            name, snpPath, grps, check, incIdx, includeCustomHandlers, reqId);
 
         res.listen(lsnr -> {
             if (log.isInfoEnabled()) {

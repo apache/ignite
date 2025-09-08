@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -93,9 +94,27 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     /** Logger. */
     private final IgniteLogger log;
 
+    /** */
+    @Nullable private final Consumer<Integer> totalPartsCnsmr;
+
+    /** */
+    @Nullable private final Consumer<Integer> checkedPartCnsmr;
+
     /** @param cctx Shared context. */
     public SnapshotPartitionsVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
+        this(cctx, null, null);
+    }
+
+    /** */
+    public SnapshotPartitionsVerifyHandler(
+        GridCacheSharedContext<?, ?> cctx,
+        @Nullable Consumer<Integer> totalPartsCnsmr,
+        @Nullable Consumer<Integer> checkedPartCnsmr
+    ) {
         this.cctx = cctx;
+
+        this.totalPartsCnsmr = totalPartsCnsmr;
+        this.checkedPartCnsmr = checkedPartCnsmr;
 
         log = cctx.logger(getClass());
     }
@@ -165,14 +184,19 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         if (!opCtx.check()) {
-            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
+            if (log.isInfoEnabled())
+                log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
 
             return Collections.emptyMap();
         }
 
+        if (totalPartsCnsmr != null)
+            totalPartsCnsmr.accept(partFiles.size());
+
         return meta.dump()
             ? checkDumpFiles(opCtx, partFiles)
-            : checkSnapshotFiles(opCtx.snapshotFileTree(), grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
+            : checkSnapshotFiles(opCtx.snapshotFileTree(), grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()),
+                checkedPartCnsmr);
     }
 
     /** */
@@ -181,9 +205,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         Map<Integer, List<File>> grpDirs,
         SnapshotMetadata meta,
         Set<File> partFiles,
-        boolean punchHoleEnabled
+        boolean punchHoleEnabled,
+        @Nullable Consumer<Integer> checkedPartCnsmr
     ) throws IgniteCheckedException {
-        Map<PartitionKey, PartitionHashRecord> res = new ConcurrentHashMap<>();
+        Map<PartitionKey, PartitionHashRecord> res = new ConcurrentHashMap<>(partFiles.size(), 1.0f);
+
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));
 
@@ -302,6 +328,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     }
                     catch (IOException e) {
                         throw new IgniteCheckedException(e);
+                    }
+                    finally {
+                        if (checkedPartCnsmr != null)
+                            checkedPartCnsmr.accept(partId);
                     }
 
                     return null;

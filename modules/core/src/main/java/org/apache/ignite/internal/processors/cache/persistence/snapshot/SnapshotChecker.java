@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -117,7 +118,9 @@ public class SnapshotChecker {
         SnapshotFileTree sft,
         @Nullable Collection<String> grps,
         boolean forCreation,
-        boolean checkParts
+        boolean checkParts,
+        @Nullable Consumer<Integer> totalPartsCnsmr,
+        @Nullable Consumer<Integer> checkedPartCnsmr
     ) {
         // Await in the default executor to avoid blocking the snapshot executor if it has just one thread.
         return CompletableFuture.supplyAsync(() -> {
@@ -125,7 +128,7 @@ public class SnapshotChecker {
                 meta, grps, kctx.cluster().get().localNode(), sft, false, checkParts);
 
             try {
-                return new SnapshotPartitionsVerifyHandler(kctx.cache().context()).invoke(hctx);
+                return new SnapshotPartitionsVerifyHandler(kctx.cache().context(), totalPartsCnsmr, checkedPartCnsmr).invoke(hctx);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -44,9 +45,12 @@ import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -60,6 +64,9 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 
 /** Distributed process of snapshot checking. */
 public class SnapshotCheckProcess {
+    /** */
+    public static final String SNAPSHOT_CHECK_METRIC = "snapshot-check";
+
     /** */
     private final IgniteLogger log;
 
@@ -157,6 +164,9 @@ public class SnapshotCheckProcess {
             return new GridFinishedFuture<>();
         }
         finally {
+            if (ctx != null)
+                unregisterMetrics(ctx.req.snapshotName());
+
             if (log.isInfoEnabled())
                 log.info("Finished snapshot validation [req=" + ctx.req + ']');
         }
@@ -306,8 +316,11 @@ public class SnapshotCheckProcess {
             workingFut = partitionsHashesFuture(ctx);
 
         workingFut.whenComplete((res, err) -> {
-            if (err != null)
+            if (err != null) {
+                unregisterMetrics(ctx.req.snapshotName());
+
                 phaseFut.onDone(err);
+            }
             else
                 phaseFut.onDone(res);
         });
@@ -350,7 +363,9 @@ public class SnapshotCheckProcess {
                 ctx.locFileTree.get(meta.consistentId()),
                 ctx.req.groups(),
                 false,
-                ctx.req.fullCheck()
+                ctx.req.fullCheck(),
+                totalParts -> ctx.totalParts = totalParts,
+                checkedPart -> ctx.checkedParts.incrementAndGet()
             );
 
             metaFut.whenComplete((res, err) -> {
@@ -437,6 +452,8 @@ public class SnapshotCheckProcess {
             return new GridFinishedFuture<>(new IllegalStateException("Validation of snapshot '" + req.snapshotName()
                 + "' has already started [ctx=" + ctx + ']'));
         }
+
+        registerMetrics(ctx);
 
         // Excludes non-baseline initiator.
         if (!baseline(kctx.localNodeId()))
@@ -525,8 +542,11 @@ public class SnapshotCheckProcess {
                 phase2PartsHashes.start(reqId, ctx.req);
         }
         catch (Throwable th) {
-            if (ctx != null)
+            if (ctx != null) {
+                unregisterMetrics(ctx.req.snapshotName());
+
                 contexts.remove(ctx.req.snapshotName());
+            }
 
             if (clusterOpFut != null)
                 clusterOpFut.onDone(th);
@@ -600,6 +620,22 @@ public class SnapshotCheckProcess {
         int incIdx,
         boolean allRestoreHandlers
     ) {
+        return start(snpName, snpPath, grpNames, fullCheck, incIdx, allRestoreHandlers, null);
+    }
+
+    /**
+     * Starts snapshot check process like {@link #start(String, String, Collection, boolean, int, boolean)}
+     * allowing to bind an external operation id.
+     */
+    IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> start(
+        String snpName,
+        @Nullable String snpPath,
+        @Nullable Collection<String> grpNames,
+        boolean fullCheck,
+        int incIdx,
+        boolean allRestoreHandlers,
+        @Nullable UUID externalOpId
+    ) {
         assert !F.isEmpty(snpName);
 
         UUID reqId = UUID.randomUUID();
@@ -614,7 +650,8 @@ public class SnapshotCheckProcess {
             grpNames == null ? null : new HashSet<>(grpNames),
             fullCheck,
             incIdx,
-            allRestoreHandlers
+            allRestoreHandlers,
+            externalOpId
         );
 
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> clusterOpFut = new GridFutureAdapter<>();
@@ -658,6 +695,37 @@ public class SnapshotCheckProcess {
         return null;
     }
 
+    /** */
+    private void registerMetrics(SnapshotCheckContext ctx) {
+        MetricRegistryImpl mreg = kctx.metric().registry(MetricUtils.metricName(SNAPSHOT_CHECK_METRIC, ctx.req.snapshotName()));
+
+        assert !mreg.iterator().hasNext();
+        assert ctx.req.requestId() != null;
+
+        mreg.register("startTime", U::currentTimeMillis,
+            "The system time of the start of the cluster snapshot check operation on this node.");
+
+        mreg.register("checkPartitions", ctx.req::fullCheck,
+            "Shows whether full validation of partitions is enabled.");
+
+        mreg.register("incrementIndex", ctx.req::incrementalIndex,
+            "The index of incremental snapshot of the snapshot check operation.");
+
+        mreg.register("relatedOperationId", ctx.req::relatedOperationId, UUID.class,
+            "Id of a related operation or process.");
+
+        mreg.register("totalPartitions", () -> ctx.totalParts,
+            "The total number of partitions to check on this node.");
+
+        mreg.register("checkedPartitions", ctx.checkedParts::get,
+            "The number of checked partitions on this node.");
+    }
+
+    /** */
+    private void unregisterMetrics(String snpName) {
+        kctx.metric().remove(MetricUtils.metricName(SNAPSHOT_CHECK_METRIC, snpName));
+    }
+
     /** Operation context. */
     private static final class SnapshotCheckContext {
         /** Request. */
@@ -676,6 +744,14 @@ public class SnapshotCheckProcess {
 
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
+
+        /** Number of partitions to check. */
+        @GridToStringExclude
+        private volatile int totalParts = -1;
+
+        /** Number of checked partitions. */
+        @GridToStringExclude
+        private final AtomicLong checkedParts = new AtomicLong(0);
 
         /** Creates operation context. */
         private SnapshotCheckContext(SnapshotCheckProcessRequest req) {
