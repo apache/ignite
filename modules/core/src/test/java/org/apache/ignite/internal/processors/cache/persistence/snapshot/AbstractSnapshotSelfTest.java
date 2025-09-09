@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -116,6 +117,7 @@ import static org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunc
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -179,8 +181,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     @Parameterized.Parameter(1)
     public boolean onlyPrimary;
 
+    /** */
+    @Parameterized.Parameter(2)
+    public int snpThrdPoolSz;
+
     /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}, snpThrdPoolSz={2}")
     public static Collection<Object[]> params() {
         boolean[] encVals = DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED
             ? new boolean[] {false}
@@ -188,9 +194,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         List<Object[]> res = new ArrayList<>();
 
-        for (boolean enc: encVals)
-            for (boolean onlyPrimary: new boolean[] {true, false})
-                res.add(new Object[] { enc, onlyPrimary});
+        for (boolean enc : encVals) {
+            for (boolean onlyPrimary : new boolean[] {true, false}) {
+                for (int poolSz : F.asList(DFLT_SNAPSHOT_THREAD_POOL_SIZE, 1))
+                    res.add(new Object[] {enc, onlyPrimary, poolSz});
+            }
+        }
 
         return res;
     }
@@ -221,7 +230,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 .setPageSize(PAGE_SIZE)
                 .setWalCompactionEnabled(true))
             .setClusterStateOnStart(INACTIVE)
-            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT);
+            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
+            .setSnapshotThreadPoolSize(snpThrdPoolSz);
     }
 
     /** {@inheritDoc} */
