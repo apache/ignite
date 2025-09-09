@@ -95,6 +95,16 @@ public class JUnitTeamcityReporter extends RunListener {
 
     /** */
     @Override public synchronized void testStarted(Description desc) {
+        String method = desc.getClassName() + "#" + (desc.getMethodName() != null ? desc.getMethodName() : "");
+
+        System.out.println(">>> CURRENT METHOD: " + method);
+        System.out.println(">>> METHODS: " + methods);
+
+        if (methods.contains(method)) {
+            System.out.println(">>> RETURN");
+            return;
+        }
+
         if (!desc.getClassName().equals(prevTestCls))
             System.out.println(String.format("##teamcity[progressMessage 'Running %s']",
                 escapeForTeamcity(desc.getClassName())));
@@ -115,16 +125,6 @@ public class JUnitTeamcityReporter extends RunListener {
             }
 
             prevTestCls = desc.getClassName();
-
-            String method = desc.getClassName() + "#" + (desc.getMethodName() != null ? desc.getMethodName() : "");
-
-            System.out.println(">>> CURRENT METHOD: " + method);
-            System.out.println(">>> METHODS: " + methods);
-
-            if (methods.contains(method)) {
-                System.out.println(">>> RETURN");
-                return;
-            }
 
             curXmlStream.writeStartElement("testcase");
             curXmlStream.writeAttribute("name", desc.getMethodName() != null ? desc.getMethodName() : "");
