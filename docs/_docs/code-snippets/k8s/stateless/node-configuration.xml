@@ -15,13 +15,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<!-- tag::config-block[] -->
+<?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
 
+    <!-- tag::config-block[] -->
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
 
         <property name="discoverySpi">
@@ -30,8 +31,8 @@
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder">
                         <constructor-arg>
                             <bean class="org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration">
-                                <property name="namespace" value="default" />
-                                <property name="serviceName" value="ignite" />
+                                <property name="namespace" value="ignite" />
+                                <property name="serviceName" value="ignite-service" />
                             </bean>
                         </constructor-arg>
                     </bean>
@@ -39,5 +40,5 @@
             </bean>
         </property>
     </bean>
+    <!-- end::config-block[] -->
 </beans>
-<!-- end::config-block[] -->

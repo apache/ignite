@@ -24,10 +24,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -225,7 +225,8 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             assertTrue(GridTestUtils.waitForCondition(() ->
                 grid0.cluster().forClients().node(clientId) == null, 5_000));
 
-            assertTrue(strLog.toString().contains("Node excluded, node="));
+            assertTrue(GridTestUtils.waitForCondition(() ->
+                strLog.toString().contains("Node excluded, node="), 5_000));
 
             bean.excludeNode(new UUID(0, 0).toString());
 

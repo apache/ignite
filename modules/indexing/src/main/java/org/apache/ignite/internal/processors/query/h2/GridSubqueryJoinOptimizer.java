@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlArray;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunction;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlJoin;
@@ -153,6 +154,9 @@ public class GridSubqueryJoinOptimizer {
 
             if (col instanceof GridSqlSubquery)
                 wasPulledOut = pullOutSubQryFromSelectExpr(select, null, i);
+            else if (col instanceof GridSqlOperation && ((GridSqlOperation)col).operationType() == EXISTS)
+                //We actially can't rewrite select query under exists operator. So we skip it.
+                continue;
             else {
                 ASTNodeFinder finder = new ASTNodeFinder(
                     col,
@@ -266,7 +270,6 @@ public class GridSubqueryJoinOptimizer {
      * <p>
      * We call query simple if it is select query (not union) and it has neither having nor grouping,
      * has no distinct clause, has no aggregations, has no limits, no sorting, no offset clause.
-     * Also it is not SELECT FOR UPDATE.
      *
      * @param subQry Sub query.
      * @return {@code true} if it is simple query.
@@ -280,7 +283,6 @@ public class GridSubqueryJoinOptimizer {
         boolean simple = F.isEmpty(select.sort())
             && select.offset() == null
             && select.limit() == null
-            && !select.isForUpdate()
             && !select.distinct()
             && select.havingColumn() < 0
             && F.isEmpty(select.groupColumns());
@@ -300,6 +302,18 @@ public class GridSubqueryJoinOptimizer {
             );
 
             if (aggFinder.findNext() != null)
+                return false;
+
+            // In case of query like "SELECT * FROM (SELECT i||j FROM t) u;", where subquery contains pure operation
+            // without an alias, we cannot determine which generated alias in the parent query the original expression
+            // belongs to. So the best we can do is skip the case.
+            ASTNodeFinder operationFinder = new ASTNodeFinder(
+                col,
+                (p, c) -> p instanceof GridSqlOperation,
+                ast -> false
+            );
+
+            if (operationFinder.findNext() != null)
                 return false;
         }
 
@@ -383,13 +397,25 @@ public class GridSubqueryJoinOptimizer {
         else
             target.child(childInd, subTbl);
 
-        if (subSel.where() != null)
-            parent.where(parent.where() == null ? subSel.where() : new GridSqlOperation(AND, parent.where(), subSel.where()));
+        GridSqlAst where = subSel.where();
+
+        if (where != null) {
+            if (target instanceof GridSqlJoin && childInd != GridSqlJoin.LEFT_TABLE_CHILD) {
+                GridSqlJoin join = (GridSqlJoin)target;
+
+                join.child(GridSqlJoin.ON_CHILD, new GridSqlOperation(AND, join.on(), where));
+            }
+            else
+                parent.where(parent.where() == null ? where : new GridSqlOperation(AND, parent.where(), where));
+        }
 
         remapColumns(
             parent,
-            // reference equality used intentionally here
-            col -> wrappedSubQry == col.expressionInFrom(),
+            subSel,
+            // In case of several nested subqueries, inner subqueries are wrapped into alias of outer subqueries,
+            // to check column belonging correctly we should unwrap aliases.
+            // Reference equality used intentionally here.
+            col -> GridSqlAlias.unwrap(wrappedSubQry) == GridSqlAlias.unwrap(col.expressionInFrom()),
             subTbl
         );
 
@@ -399,13 +425,14 @@ public class GridSubqueryJoinOptimizer {
     /**
      * Remap all columns that satisfy the predicate such they be referred to the given table.
      *
-     * @param ast Tree where to search columns.
+     * @param parent Tree where to search columns.
+     * @param subSelect Tree where to search column aliases.
      * @param colPred Collection predicate.
      * @param tbl Table.
      */
-    private static void remapColumns(GridSqlAst ast, Predicate<GridSqlColumn> colPred, GridSqlAlias tbl) {
+    private static void remapColumns(GridSqlAst parent, GridSqlAst subSelect, Predicate<GridSqlColumn> colPred, GridSqlAlias tbl) {
         ASTNodeFinder colFinder = new ASTNodeFinder(
-            ast,
+            parent,
             (p, c) -> c instanceof GridSqlColumn && colPred.test((GridSqlColumn)c)
         );
 
@@ -413,17 +440,42 @@ public class GridSubqueryJoinOptimizer {
         while ((res = colFinder.findNext()) != null) {
             GridSqlColumn oldCol = res.getEl().child(res.getIdx());
 
-            res.getEl().child(
-                res.getIdx(),
-                new GridSqlColumn(
-                    oldCol.column(),
-                    tbl,
-                    oldCol.schema(),
-                    tbl.alias(),
-                    oldCol.columnName()
-                )
-            );
+            BiPredicate<GridSqlAst, GridSqlAst> constPred = (p, c) ->
+                c != null && c.getSQL().equals(oldCol.columnName());
+
+            BiPredicate<GridSqlAst, GridSqlAst> aliasPred = (p, c) ->
+                c instanceof GridSqlAlias && ((GridSqlAlias)c).alias().equals(oldCol.columnName());
+
+            ASTNodeFinder.Result aliasOrPred = findNode(subSelect, constPred.or(aliasPred));
+
+            if (aliasOrPred != null)
+                res.getEl().child(res.getIdx(), GridSqlAlias.unwrap(aliasOrPred.getEl().child(aliasOrPred.getIdx())));
+            else {
+                res.getEl().child(
+                    res.getIdx(),
+                    new GridSqlColumn(
+                        oldCol.column(),
+                        tbl,
+                        oldCol.schema(),
+                        tbl.alias(),
+                        oldCol.columnName()
+                    )
+                );
+            }
         }
+    }
+
+    /**
+     * Searches for first node in AST tree according to the given parameters.
+     *
+     * @param tree Parent ast.
+     * @param pred Filter predicate.
+     * @return Found node or null.
+     */
+    private static ASTNodeFinder.Result findNode(GridSqlAst tree, BiPredicate<GridSqlAst, GridSqlAst> pred) {
+        ASTNodeFinder colFinder = new ASTNodeFinder(tree, pred);
+
+        return colFinder.findNext();
     }
 
     /**
@@ -468,7 +520,14 @@ public class GridSubqueryJoinOptimizer {
             return false;
 
         GridSqlAst subCol = GridSqlAlias.unwrap(subS.columns(false).get(0));
-
+        
+        // If a constant is selected in a subquery, we cannot put it in parent query without
+        // consequences for the correctness of the result.
+        // For example, select (select 1 from x where id = 1) becomes select 1 left join x...,
+        // and the where condition becomes meaningless.
+        
+        if (subCol instanceof GridSqlConst)
+            return false;
         if (targetEl != null)
             targetEl.child(childInd, subCol);
         else
@@ -509,8 +568,8 @@ public class GridSubqueryJoinOptimizer {
     private static boolean pullOutSubQryFromInClause(
         GridSqlSelect parent,
         @Nullable GridSqlAst targetEl,
-        int childInd)
-    {
+        int childInd
+    ) {
         // extract sub-query
         GridSqlSubquery subQry = targetEl != null
             ? targetEl.child(childInd).child(1)

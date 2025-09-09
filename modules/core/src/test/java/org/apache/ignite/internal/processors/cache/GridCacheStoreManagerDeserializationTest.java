@@ -34,14 +34,10 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -63,12 +59,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     /** Test cache name. */
     protected static final String CACHE_NAME = "cache_name";
 
-    /** */
-    @Before
-    public void beforeGridCacheStoreManagerDeserializationTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
-
     /**
      * @return Cache mode.
      */
@@ -87,11 +77,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName != null && igniteInstanceName.toLowerCase().startsWith("binary"))
-            c.setMarshaller(new BinaryMarshaller());
-        else
-            c.setMarshaller(new JdkMarshaller());
-
         c.setCacheConfiguration(cacheConfiguration());
 
         return c;
@@ -102,8 +87,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
      */
     @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         CacheConfiguration cc = defaultCacheConfiguration();
 
         // Template
@@ -135,30 +118,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-    }
-
-    /**
-     * Check whether test objects are stored correctly via stream API.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testStream() throws Exception {
-        final Ignite grid = startGrid();
-
-        final IgniteCache<TestObj, TestObj> cache = grid.createCache(CACHE_NAME);
-
-        final TestObj testObj = streamData(grid);
-
-        cache.destroy();
-        cache.close();
-
-        assert store.map.containsKey(testObj);
-
-        final IgniteCache<TestObj, TestObj> cache2 = grid.createCache(CACHE_NAME);
-
-        assert testObj.equals(cache2.get(testObj));
-        assert store.map.containsKey(testObj);
     }
 
     /**
@@ -229,30 +188,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
         assertSame(loaded, key);
         assertTrue(store.map.containsKey(key));
-    }
-
-    /**
-     * Create and add test data via Streamer API.
-     *
-     * @param grid to get streamer.
-     * @return test object (it is key and val).
-     */
-    private TestObj streamData(final Ignite grid) {
-        final IgniteDataStreamer<TestObj, TestObj> streamer = grid.dataStreamer(CACHE_NAME);
-
-        TestObj entity = null;
-
-        for (int i = 0; i < 1; i++) {
-            entity = new TestObj(i);
-
-            streamer.addData(entity, entity);
-        }
-
-        streamer.flush();
-        streamer.close();
-        streamer.future().get();
-
-        return entity;
     }
 
     /**
@@ -333,7 +268,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final TestObj testObj = (TestObj) o;
+            final TestObj testObj = (TestObj)o;
 
             return val != null ? val.equals(testObj.val) : testObj.val == null;
 

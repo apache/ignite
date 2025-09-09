@@ -91,7 +91,7 @@ public class JettyRestProcessorAuthenticatorUserManagementAuthorizationTest exte
         String pwdParam,
         String expErr
     ) throws Exception {
-       JsonNode res = JSON_MAPPER.readTree(content(null, cmd,
+        JsonNode res = JSON_MAPPER.readTree(content(null, cmd,
             "ignite.login", login,
             "ignite.password", pwd,
             "user", loginParam,

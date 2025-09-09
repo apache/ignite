@@ -19,6 +19,7 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -55,7 +56,7 @@ public class RebalanceCompleteDuringExchangeTest extends GridCommonAbstractTest 
     public void testRebalance() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache cache = ignite0.cache(DEFAULT_CACHE_NAME);
 
@@ -135,12 +136,12 @@ public class RebalanceCompleteDuringExchangeTest extends GridCommonAbstractTest 
 
         commSpi.record((ClusterNode node, Message msg) -> {
             if (msg instanceof GridDhtPartitionsSingleMessage) {
-                GridDhtPartitionsSingleMessage singleMessage = (GridDhtPartitionsSingleMessage)msg;
+                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)msg;
 
-                if (singleMessage.exchangeId() == null)
+                if (singleMsg.exchangeId() == null)
                     return false;
 
-                return singleMessage.exchangeId().topologyVersion().equals(new AffinityTopologyVersion(3, 0));
+                return singleMsg.exchangeId().topologyVersion().equals(new AffinityTopologyVersion(3, 0));
             }
 
             return false;
@@ -148,9 +149,9 @@ public class RebalanceCompleteDuringExchangeTest extends GridCommonAbstractTest 
 
         commSpi.blockMessages((ClusterNode node, Message msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage) {
-                GridDhtPartitionDemandMessage demandMessage = (GridDhtPartitionDemandMessage)msg;
+                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
 
-                return CU.cacheId(DEFAULT_CACHE_NAME) == demandMessage.groupId();
+                return CU.cacheId(DEFAULT_CACHE_NAME) == demandMsg.groupId();
             }
 
             return false;

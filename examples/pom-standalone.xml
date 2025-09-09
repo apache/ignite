@@ -27,13 +27,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- will be changed by profile activation. allows to combine profiles. -->
-        <spark.folder>src/main/java</spark.folder>
         <lgpl.folder>src/main/java</lgpl.folder>
     </properties>
 
@@ -57,31 +56,31 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-log4j</artifactId>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-log4j2</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-opencensus</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
@@ -96,36 +95,6 @@
             <groupId>io.prometheus</groupId>
             <artifactId>simpleclient_httpserver</artifactId>
             <version>0.3.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml</artifactId>
-            <version>to_be_replaced_by_ignite_version</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml-xgboost-model-parser</artifactId>
-            <version>to_be_replaced_by_ignite_version</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml-catboost-model-parser</artifactId>
-            <version>to_be_replaced_by_ignite_version</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml-spark-model-parser</artifactId>
-            <version>to_be_replaced_by_ignite_version</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml-h2o-model-parser</artifactId>
-            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
@@ -147,157 +116,17 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-kubernetes</artifactId>
             <version>to_be_replaced_by_ignite_version</version>
         </dependency>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.11.0</version>
+        </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <id>scala</id>
-
-            <properties>
-                <spark.folder>src/main/spark</spark.folder>
-            </properties>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-scalar</artifactId>
-                    <version>to_be_replaced_by_ignite_version</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-spark</artifactId>
-                    <version>to_be_replaced_by_ignite_version</version>
-                </dependency>
-            </dependencies>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>net.alchim31.maven</groupId>
-                        <artifactId>scala-maven-plugin</artifactId>
-                        <version>3.2.0</version>
-                        <configuration>
-                            <jvmArgs>
-                                <jvmArg>-Xms512m</jvmArg>
-                                <jvmArg>-Xmx1024m</jvmArg>
-                            </jvmArgs>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>scala-compile-first</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>add-source</goal>
-                                    <goal>compile</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>scala-test-compile</id>
-                                <phase>process-test-resources</phase>
-                                <goals>
-                                    <goal>testCompile</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <!-- See README.txt for details -->
-            <id>lgpl</id>
-
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-
-            <properties>
-                <lgpl.folder>src/main/java-lgpl</lgpl.folder>
-            </properties>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-hibernate_5.1</artifactId>
-                    <version>to_be_replaced_by_ignite_version</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-schedule</artifactId>
-                    <version>to_be_replaced_by_ignite_version</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-geospatial</artifactId>
-                    <version>to_be_replaced_by_ignite_version</version>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
-            <id>spark-2.4</id>
-
-            <properties>
-                <spark.folder>src/main/spark</spark.folder>
-            </properties>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-scalar</artifactId>
-                    <version>to_be_replaced_by_ignite_version</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-spark-2.4</artifactId>
-                    <version>to_be_replaced_by_ignite_version</version>
-                </dependency>
-            </dependencies>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>net.alchim31.maven</groupId>
-                        <artifactId>scala-maven-plugin</artifactId>
-                        <version>3.2.0</version>
-                        <configuration>
-                            <jvmArgs>
-                                <jvmArg>-Xms512m</jvmArg>
-                                <jvmArg>-Xmx1024m</jvmArg>
-                            </jvmArgs>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>scala-compile-first</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>add-source</goal>
-                                    <goal>compile</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>scala-test-compile</id>
-                                <phase>process-test-resources</phase>
-                                <goals>
-                                    <goal>testCompile</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-    </profiles>
 
     <build>
         <resources>
@@ -326,7 +155,6 @@
                         <configuration>
                             <sources>
                                 <source>${lgpl.folder}</source>
-                                <source>${spark.folder}</source>
                             </sources>
                         </configuration>
                     </execution>

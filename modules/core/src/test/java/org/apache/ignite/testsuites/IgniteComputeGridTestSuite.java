@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridCancelOnGridStopSelfTest;
 import org.apache.ignite.internal.GridCancelUnusedJobSelfTest;
 import org.apache.ignite.internal.GridCancelledJobsMetricsSelfTest;
 import org.apache.ignite.internal.GridCollisionJobsContextSelfTest;
+import org.apache.ignite.internal.GridCollisionManagerLoggingSelfTest;
 import org.apache.ignite.internal.GridDeploymentMultiThreadedSelfTest;
 import org.apache.ignite.internal.GridDeploymentSelfTest;
 import org.apache.ignite.internal.GridEventStorageCheckAllEventsSelfTest;
@@ -78,9 +79,15 @@ import org.apache.ignite.internal.VisorManagementEventSelfTest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManagerSelfTest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointTaskSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationManagerListenersSelfTest;
+import org.apache.ignite.internal.processors.compute.ComputeGridMonitorTest;
+import org.apache.ignite.internal.processors.compute.ComputeJobChangePriorityTest;
+import org.apache.ignite.internal.processors.compute.ComputeJobStatusTest;
+import org.apache.ignite.internal.processors.compute.ComputeTaskWithWithoutFullSupportTest;
 import org.apache.ignite.internal.processors.compute.IgniteComputeCustomExecutorConfigurationSelfTest;
 import org.apache.ignite.internal.processors.compute.IgniteComputeCustomExecutorSelfTest;
+import org.apache.ignite.internal.processors.compute.InterruptComputeJobTest;
 import org.apache.ignite.internal.processors.compute.PublicThreadpoolStarvationTest;
+import org.apache.ignite.internal.processors.compute.TaskOptionsPropagationTest;
 import org.apache.ignite.internal.util.StripedExecutorTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployContinuousModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployIsolatedModeSelfTest;
@@ -164,13 +171,21 @@ import org.junit.runners.Suite;
     PublicThreadpoolStarvationTest.class,
     StripedExecutorTest.class,
     GridJobServicesAddNodeTest.class,
+    GridCollisionManagerLoggingSelfTest.class,
 
     IgniteComputeCustomExecutorConfigurationSelfTest.class,
     IgniteComputeCustomExecutorSelfTest.class,
 
     IgniteComputeJobOneThreadTest.class,
 
-    VisorManagementEventSelfTest.class
+    VisorManagementEventSelfTest.class,
+
+    ComputeGridMonitorTest.class,
+    ComputeJobChangePriorityTest.class,
+    ComputeJobStatusTest.class,
+    ComputeTaskWithWithoutFullSupportTest.class,
+    InterruptComputeJobTest.class,
+    TaskOptionsPropagationTest.class
 })
 public class IgniteComputeGridTestSuite {
 }

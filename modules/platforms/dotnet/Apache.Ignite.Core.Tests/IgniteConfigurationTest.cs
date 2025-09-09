@@ -74,6 +74,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultProperties(new DataRegionConfiguration());
             CheckDefaultProperties(new ClientConnectorConfiguration());
             CheckDefaultProperties(new SqlConnectorConfiguration());
+            CheckDefaultProperties(new SystemDataRegionConfiguration());
         }
 
         /// <summary>
@@ -168,7 +169,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
                 Assert.AreEqual(cfg.JvmDllPath, resCfg.JvmDllPath);
                 Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
-                Assert.AreEqual(cfg.IsDaemon, resCfg.IsDaemon);
                 Assert.AreEqual(IgniteConfiguration.DefaultIsLateAffinityAssignment, resCfg.IsLateAffinityAssignment);
                 Assert.AreEqual(cfg.UserAttributes, resCfg.UserAttributes);
 
@@ -204,7 +204,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.ReconnectCount, resCom.ReconnectCount);
                 Assert.AreEqual(com.SelectorsCount, resCom.SelectorsCount);
                 Assert.AreEqual(com.SelectorSpins, resCom.SelectorSpins);
-                Assert.AreEqual(com.SharedMemoryPort, resCom.SharedMemoryPort);
                 Assert.AreEqual(com.SlowClientQueueLimit, resCom.SlowClientQueueLimit);
                 Assert.AreEqual(com.SocketReceiveBufferSize, resCom.SocketReceiveBufferSize);
                 Assert.AreEqual(com.SocketSendBufferSize, resCom.SocketSendBufferSize);
@@ -263,8 +262,6 @@ namespace Apache.Ignite.Core.Tests
 
                 AssertExtensions.ReflectionEqual(cfg.DataStorageConfiguration, resCfg.DataStorageConfiguration);
 
-                Assert.AreEqual(cfg.MvccVacuumFrequency, resCfg.MvccVacuumFrequency);
-                Assert.AreEqual(cfg.MvccVacuumThreadCount, resCfg.MvccVacuumThreadCount);
                 Assert.AreEqual(cfg.SqlQueryHistorySize, resCfg.SqlQueryHistorySize);
 
                 Assert.IsNotNull(resCfg.SqlSchemas);
@@ -554,8 +551,6 @@ namespace Apache.Ignite.Core.Tests
                 cfg.ClientConnectorConfigurationEnabled);
             Assert.AreEqual(IgniteConfiguration.DefaultRedirectJavaConsoleOutput, cfg.RedirectJavaConsoleOutput);
             Assert.AreEqual(IgniteConfiguration.DefaultAuthenticationEnabled, cfg.AuthenticationEnabled);
-            Assert.AreEqual(IgniteConfiguration.DefaultMvccVacuumFrequency, cfg.MvccVacuumFrequency);
-            Assert.AreEqual(IgniteConfiguration.DefaultMvccVacuumThreadCount, cfg.MvccVacuumThreadCount);
             Assert.AreEqual(AsyncContinuationExecutor.ThreadPool, cfg.AsyncContinuationExecutor);
 
             // Thread pools.
@@ -624,14 +619,22 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(DataStorageConfiguration.DefaultCheckpointWriteOrder, cfg.CheckpointWriteOrder);
             Assert.AreEqual(DataStorageConfiguration.DefaultWriteThrottlingEnabled, cfg.WriteThrottlingEnabled);
 
-            Assert.AreEqual(DataStorageConfiguration.DefaultSystemRegionInitialSize, cfg.SystemRegionInitialSize);
-            Assert.AreEqual(DataStorageConfiguration.DefaultSystemRegionMaxSize, cfg.SystemRegionMaxSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultPageSize, cfg.PageSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultConcurrencyLevel, cfg.ConcurrencyLevel);
             Assert.AreEqual(DataStorageConfiguration.DefaultWalAutoArchiveAfterInactivity,
                 cfg.WalAutoArchiveAfterInactivity);
             Assert.AreEqual(DataStorageConfiguration.DefaultWalAutoArchiveAfterInactivity,
                 cfg.WalForceArchiveTimeout);
+        }
+
+        /// <summary>
+        /// Checks the default properties.
+        /// </summary>
+        /// <param name="cfg">System Data Region Config.</param>
+        private static void CheckDefaultProperties(SystemDataRegionConfiguration cfg)
+        {
+            Assert.AreEqual(SystemDataRegionConfiguration.DefaultInitialSize, cfg.InitialSize);
+            Assert.AreEqual(SystemDataRegionConfiguration.DefaultMaxSize, cfg.MaxSize);
         }
 
         /// <summary>
@@ -744,7 +747,6 @@ namespace Apache.Ignite.Core.Tests
                         Endpoints = new[] {"127.0.0.1:47503", "127.0.0.1:47504"}
                     },
                     ClientReconnectDisabled = true,
-                    ForceServerMode = true,
                     IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
                     LocalAddress = "127.0.0.1",
                     LocalPort = 47503,
@@ -773,7 +775,6 @@ namespace Apache.Ignite.Core.Tests
                 NetworkSendRetryDelay = TimeSpan.FromMinutes(11),
                 WorkDirectory = Path.GetTempPath(),
                 Localhost = "127.0.0.1",
-                IsDaemon = false,
                 IsLateAffinityAssignment = false,
                 UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x),
                 AtomicConfiguration = new AtomicConfiguration
@@ -812,7 +813,6 @@ namespace Apache.Ignite.Core.Tests
                     UnacknowledgedMessagesBufferSize = 3450,
                     ConnectionsPerNode = 12,
                     UsePairedConnections = true,
-                    SharedMemoryPort = 1234,
                     SocketWriteTimeout = 2222,
                     SelectorSpins = 12,
                     FilterReachableAddresses = true
@@ -886,8 +886,6 @@ namespace Apache.Ignite.Core.Tests
                     MetricsRateTimeInterval = TimeSpan.FromSeconds(9),
                     CheckpointWriteOrder = Configuration.CheckpointWriteOrder.Random,
                     WriteThrottlingEnabled = true,
-                    SystemRegionInitialSize = 64 * 1024 * 1024,
-                    SystemRegionMaxSize = 128 * 1024 * 1024,
                     ConcurrencyLevel = 1,
                     PageSize = 8 * 1024,
                     WalAutoArchiveAfterInactivity = TimeSpan.FromMinutes(5),
@@ -924,11 +922,14 @@ namespace Apache.Ignite.Core.Tests
                             MetricsSubIntervalCount = 7,
                             SwapPath = PathUtils.GetTempDirectoryName()
                         }
+                    },
+                    SystemDataRegionConfiguration = new SystemDataRegionConfiguration
+                    {
+                        InitialSize = 64 * 1024 * 1024,
+                        MaxSize = 128 * 1024 * 1024,
                     }
                 },
                 AuthenticationEnabled = false,
-                MvccVacuumFrequency = 20000,
-                MvccVacuumThreadCount = 8,
                 SqlQueryHistorySize = 99,
                 JavaPeerClassLoadingEnabled = false,
                 SqlSchemas = new List<string> { "SCHEMA_3", "schema_4" },

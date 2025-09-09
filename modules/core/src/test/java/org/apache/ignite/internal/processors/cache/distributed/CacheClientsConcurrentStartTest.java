@@ -96,8 +96,6 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
             }
         };
 
-        cfg.setMarshaller(null);
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         if (getTestIgniteInstanceIndex(gridName) < SRV_CNT) {
@@ -157,7 +155,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
 
                         return false;
                     }
-            });
+                });
         }
 
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
@@ -230,6 +228,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
         return grid.getOrCreateCache(cacheConfiguration(cacheName));
     }
 
+    /** */
     private CacheConfiguration cacheConfiguration(String cacheName) {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 

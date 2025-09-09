@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Traverse over query AST to find info about partitioned table usage.
@@ -45,6 +47,12 @@ class SqlAstTraverser {
     private boolean hasOuterJoinReplicatedPartitioned;
 
     /** */
+    private @Nullable MixedModeCachesJoinIssue hasOuterJoinMixedCacheModeIssue;
+
+    /** Whether top-level table is replicated. */
+    private boolean isRootTableReplicated;
+
+    /** */
     SqlAstTraverser(GridSqlAst root, boolean distributedJoins, IgniteLogger log) {
         this.root = root;
         this.distributedJoins = distributedJoins;
@@ -53,6 +61,13 @@ class SqlAstTraverser {
 
     /** */
     public void traverse() {
+        if (root instanceof GridSqlSelect) {
+            GridSqlTable table = getTable(((GridSqlSelect)root).from().child());
+
+            if (table != null && !table.dataTable().isPartitioned())
+                isRootTableReplicated = true;
+        }
+
         lookForPartitionedJoin(root, null);
     }
 
@@ -71,6 +86,16 @@ class SqlAstTraverser {
         return hasOuterJoinReplicatedPartitioned;
     }
 
+    /** */
+    public boolean hasReplicatedWithPartitionedAndSubQuery() {
+        return (isRootTableReplicated && hasSubQueries && hasPartitionedTables);
+    }
+
+    /** */
+    public @Nullable MixedModeCachesJoinIssue hasOuterJoinMixedCacheModeIssue() {
+        return hasOuterJoinMixedCacheModeIssue;
+    }
+
     /**
      * Traverse AST while join operation isn't found. Check it if found.
      *
@@ -85,21 +110,21 @@ class SqlAstTraverser {
         GridSqlAst where = null;
 
         if (ast instanceof GridSqlJoin) {
-            join = (GridSqlJoin) ast;
+            join = (GridSqlJoin)ast;
             where = upWhere;
         }
         else if (ast instanceof GridSqlSelect) {
-            GridSqlSelect select = (GridSqlSelect) ast;
+            GridSqlSelect select = (GridSqlSelect)ast;
 
             if (select.from() instanceof GridSqlJoin) {
-                join = (GridSqlJoin) select.from();
+                join = (GridSqlJoin)select.from();
                 where = select.where();
             }
         }
         else if (ast instanceof GridSqlSubquery)
             hasSubQueries = true;
         else if (ast instanceof GridSqlTable)
-            hasPartitionedTables |= ((GridSqlTable) ast).dataTable().isPartitioned();
+            hasPartitionedTables |= ((GridSqlTable)ast).dataTable().isPartitioned();
 
         // No joins on this level. Traverse AST deeper.
         if (join == null) {
@@ -153,8 +178,24 @@ class SqlAstTraverser {
         if (left == null || right == null)
             return;
 
-        if (join.isLeftOuter() && !left.isPartitioned() && right.isPartitioned())
-            hasOuterJoinReplicatedPartitioned = true;
+        if (join.isLeftOuter() && !left.isPartitioned() && right.isPartitioned()) {
+            if (left.cacheContext().affinity().partitions() != right.cacheContext().affinity().partitions()) {
+                hasOuterJoinMixedCacheModeIssue = new MixedModeCachesJoinIssue("Cache [cacheName=" + left.cacheName() +
+                        ", partitionsCount=" + left.cacheContext().affinity().partitions() +
+                        "] can`t be joined with [cacheName=" + right.cacheName() +
+                        ", partitionsCount=" + right.cacheContext().affinity().partitions() +
+                        "] due to different affinity configuration. Join between PARTITIONED and REPLICATED caches is possible "
+                        + "only with the same partitions number configuration.");
+            }
+            // the only way to compare predicate classes, not work for different class loaders.
+            else if (!Objects.equals(className(left.cacheInfo().config().getNodeFilter()), className(right.cacheInfo().config()
+                    .getNodeFilter()))) {
+                hasOuterJoinMixedCacheModeIssue = new MixedModeCachesJoinIssue("Cache [cacheName=" + left.cacheName() + "] "
+                        + "can`t be joined with [cacheName=" + right.cacheName() + "] due to different node filters configuration.");
+            }
+            else
+                hasOuterJoinReplicatedPartitioned = true;
+        }
 
         // Skip check if at least one of tables isn't partitioned.
         if (!(left.isPartitioned() && right.isPartitioned()))
@@ -162,6 +203,11 @@ class SqlAstTraverser {
 
         if (!distributedJoins)
             checkPartitionedJoin(join, where, left, right, log);
+    }
+
+    /** Object class name. */
+    @Nullable private static String className(@Nullable Object obj) {
+        return obj != null ? obj.getClass().getName() : null;
     }
 
     /**
@@ -191,7 +237,7 @@ class SqlAstTraverser {
             rightTblAls, rightAffKeys, pkRight);
 
         if (!joinIsValid && where instanceof GridSqlElement)
-            joinIsValid = checkPartitionedCondition((GridSqlElement) where,
+            joinIsValid = checkPartitionedCondition((GridSqlElement)where,
                 leftTblAls, leftAffKeys, pkLeft,
                 rightTblAls, rightAffKeys, pkRight);
 
@@ -207,7 +253,7 @@ class SqlAstTraverser {
     /** Extract table instance from an AST element. */
     private GridSqlTable getTable(GridSqlElement el) {
         if (el instanceof GridSqlTable)
-            return (GridSqlTable) el;
+            return (GridSqlTable)el;
 
         if (el instanceof GridSqlAlias && el.child() instanceof GridSqlTable)
             return el.child();
@@ -227,7 +273,7 @@ class SqlAstTraverser {
     private Set<String> affKeys(boolean pk, GridH2Table tbl) {
         Set<String> affKeys = new HashSet<>();
 
-        // User explicitly specify an affinity key. Otherwise use primary key.
+        // User explicitly specify an affinity key. Otherwise, use primary key.
         if (!pk)
             affKeys.add(tbl.getAffinityKeyColumn().columnName);
         else {
@@ -258,13 +304,13 @@ class SqlAstTraverser {
         if (!(condition instanceof GridSqlOperation))
             return false;
 
-        GridSqlOperation op = (GridSqlOperation) condition;
+        GridSqlOperation op = (GridSqlOperation)condition;
 
         // It is may be a part of affinity condition.
         if (GridSqlOperationType.EQUAL == op.operationType())
             checkEqualityOperation(op, leftTbl, leftAffKeys, pkLeft, rightTbl, rightAffKeys, pkRight);
 
-        // Check affinity condition is covered fully. If true then return. Otherwise go deeper.
+        // Check affinity condition is covered fully. If true then return. Otherwise, go deeper.
         if (affinityCondIsCovered(leftAffKeys, rightAffKeys))
             return true;
 
@@ -297,8 +343,8 @@ class SqlAstTraverser {
         if (!(equalOp.child(1) instanceof GridSqlColumn))
             return;
 
-        String leftTblAls = ((GridSqlColumn) equalOp.child(0)).tableAlias();
-        String rightTblAls = ((GridSqlColumn) equalOp.child(1)).tableAlias();
+        String leftTblAls = ((GridSqlColumn)equalOp.child(0)).tableAlias();
+        String rightTblAls = ((GridSqlColumn)equalOp.child(1)).tableAlias();
 
         int leftColIdx = leftTbl.equals(leftTblAls) ? 0 : leftTbl.equals(rightTblAls) ? 1 : -1;
         int rightColIdx = rightTbl.equals(rightTblAls) ? 1 : rightTbl.equals(leftTblAls) ? 0 : -1;
@@ -306,8 +352,8 @@ class SqlAstTraverser {
         if (leftColIdx == -1 || rightColIdx == -1)
             return;
 
-        String leftCol = ((GridSqlColumn) equalOp.child(leftColIdx)).columnName();
-        String rightCol = ((GridSqlColumn) equalOp.child(rightColIdx)).columnName();
+        String leftCol = ((GridSqlColumn)equalOp.child(leftColIdx)).columnName();
+        String rightCol = ((GridSqlColumn)equalOp.child(rightColIdx)).columnName();
 
         // This is part of the affinity join condition.
         if (leftCols.contains(leftCol) && rightCols.contains(rightCol)) {
@@ -326,5 +372,30 @@ class SqlAstTraverser {
     /** */
     private boolean affinityCondIsCovered(Set<String> leftAffKeys, Set<String> rightAffKeys) {
         return leftAffKeys.isEmpty() && rightAffKeys.isEmpty();
+    }
+
+    /** Mixed cache mode join issues. */
+    static class MixedModeCachesJoinIssue {
+        /** */
+        private final boolean err;
+
+        /** */
+        private final String msg;
+
+        /** Constructor. */
+        MixedModeCachesJoinIssue(String errMsg) {
+            err = true;
+            msg = errMsg;
+        }
+
+        /** Return {@code true} if error present. */
+        boolean error() {
+            return err;
+        }
+
+        /** Return appropriate error message. */
+        String errorMessage() {
+            return msg;
+        }
     }
 }

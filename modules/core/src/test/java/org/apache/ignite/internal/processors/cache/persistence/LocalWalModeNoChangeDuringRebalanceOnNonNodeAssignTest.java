@@ -17,38 +17,44 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.io.File;
+import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.lang.String.valueOf;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
  */
+@WithSystemProperty(key = IGNITE_DISABLE_WAL_DURING_REBALANCING, value = "true")
 public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends GridCommonAbstractTest {
     /** */
-    private final int NODES = 3;
+    private static final int NODES = 3;
 
     /** */
     private CacheAtomicityMode atomicityMode;
@@ -73,7 +79,7 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(atomicityMode)
-                .setAffinity(new RendezvousAffinityFunction(false, 3))
+                .setAffinity(new CustomAffinityFunction(getTestIgniteInstanceName(NODES)))
         );
 
         return cfg;
@@ -81,22 +87,18 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10652");
-
         super.beforeTest();
 
         cleanPersistenceDir();
-
-        System.setProperty(IGNITE_DISABLE_WAL_DURING_REBALANCING, "true");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        System.clearProperty(IGNITE_DISABLE_WAL_DURING_REBALANCING);
-
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /**
@@ -122,16 +124,6 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
     /**
      * @throws Exception If failed.
      */
-    @Test
-    public void testMvcc() throws Exception {
-        atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-
-        check();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void check() throws Exception {
         Ignite ig = startGridsMultiThreaded(NODES);
 
@@ -148,11 +140,11 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
 
         ig4.cluster().setBaselineTopology(ig4.context().discovery().topologyVersion());
 
-        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory(log);
 
         String name = ig4.name();
 
-        try (WALIterator it = iteratorFactory.iterator(walPath(name), walArchivePath(name))) {
+        try (WALIterator it = iterFactory.iterator(walPath(name), walArchivePath(name))) {
             while (it.hasNext()) {
                 IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
@@ -173,26 +165,70 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
     }
 
     /**
-     *
      * @param nodeName Node name.
      * @return Path to WAL work directory.
-     * @throws IgniteCheckedException If failed.
      */
-    private String walPath(String nodeName) throws IgniteCheckedException {
-        String workDir = U.defaultWorkDirectory();
-
-        return workDir + "/" + DFLT_STORE_DIR + "/" + nodeName + "/wal";
+    private String walPath(String nodeName) {
+        return new File(sharedFileTree().db(), nodeName + "/wal").getAbsolutePath();
     }
 
     /**
-     *
      * @param nodeName Node name.
      * @return Path to WAL archive directory.
-     * @throws IgniteCheckedException If failed.
      */
-    private String walArchivePath(String nodeName) throws IgniteCheckedException {
-        String workDir = U.defaultWorkDirectory();
+    private String walArchivePath(String nodeName) {
+        return new File(sharedFileTree().db(), nodeName + "/walArchive").getAbsolutePath();
+    }
 
-        return workDir + "/" + DFLT_STORE_DIR + "/" + nodeName + "/walArchive";
+    /**
+     * Custom affinity function which does not allow to assign partitions to the node with id equals to {@code NODES}.
+     */
+    public static class CustomAffinityFunction extends RendezvousAffinityFunction {
+        /** Consistent id of a node that should not be assigned as primary/backup node. */
+        private final String consistentId;
+
+        /**
+         * Creates a new instance of CustomAffinityFunction.
+         */
+        public CustomAffinityFunction(String consistentId) {
+            super(false, NODES);
+            this.consistentId = consistentId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<List<ClusterNode>> assignPartitions(final AffinityFunctionContext affCtx) {
+            AffinityFunctionContext proxy = new AffinityFunctionContext() {
+                /** {@inheritDoc} */
+                @Override public @Nullable List<ClusterNode> previousAssignment(int part) {
+                    return null;
+                }
+
+                /** {@inheritDoc} */
+                @Override public int backups() {
+                    return affCtx.backups();
+                }
+
+                /** {@inheritDoc} */
+                @Override public List<ClusterNode> currentTopologySnapshot() {
+                    List<ClusterNode> nodes = affCtx.currentTopologySnapshot();
+
+                    nodes.removeIf(n -> n.consistentId().toString().equals(consistentId));
+
+                    return nodes;
+                }
+
+                /** {@inheritDoc} */
+                @Override public AffinityTopologyVersion currentTopologyVersion() {
+                    return affCtx.currentTopologyVersion();
+                }
+
+                /** {@inheritDoc} */
+                @Override public @Nullable DiscoveryEvent discoveryEvent() {
+                    return affCtx.discoveryEvent();
+                }
+            };
+
+            return super.assignPartitions(proxy);
+        }
     }
 }

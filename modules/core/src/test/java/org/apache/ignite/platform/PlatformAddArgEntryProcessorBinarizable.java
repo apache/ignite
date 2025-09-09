@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
  */
 public class PlatformAddArgEntryProcessorBinarizable
         implements CacheEntryProcessor<Object, Long, PlatformComputeBinarizable> {
+    /** {@inheritDoc} */
     @Override public PlatformComputeBinarizable process(MutableEntry<Object, Long> mutableEntry, Object... args)
             throws EntryProcessorException {
         Long val = (Long)args[0];

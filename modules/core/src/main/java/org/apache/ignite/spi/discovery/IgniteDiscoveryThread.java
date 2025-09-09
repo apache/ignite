@@ -22,6 +22,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
  * Marker interface for discovery thread on cluster server node.
  */
 public interface IgniteDiscoveryThread {
-    /** */
+    /** @return {@link GridWorker} instance associated with current thread. */
     GridWorker worker();
 }

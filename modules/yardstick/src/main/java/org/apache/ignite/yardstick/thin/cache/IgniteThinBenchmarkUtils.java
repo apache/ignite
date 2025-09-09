@@ -42,12 +42,12 @@ public class IgniteThinBenchmarkUtils {
         Enumeration e = NetworkInterface.getNetworkInterfaces();
 
         while (e.hasMoreElements()) {
-            NetworkInterface n = (NetworkInterface) e.nextElement();
+            NetworkInterface n = (NetworkInterface)e.nextElement();
 
             Enumeration ee = n.getInetAddresses();
 
             while (ee.hasMoreElements()) {
-                InetAddress i = (InetAddress) ee.nextElement();
+                InetAddress i = (InetAddress)ee.nextElement();
 
                 if (hostList.contains(i.getHostAddress()))
                     return i.getHostAddress();

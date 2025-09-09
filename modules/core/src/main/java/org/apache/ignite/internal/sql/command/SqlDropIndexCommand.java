@@ -37,6 +37,23 @@ public class SqlDropIndexCommand implements SqlCommand {
     /** IF EXISTS flag. */
     private boolean ifExists;
 
+    /**
+     * Default constructor.
+     */
+    public SqlDropIndexCommand() {
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @param idxName Index name.
+     * @param ifExists If exists clause.
+     */
+    public SqlDropIndexCommand(String schemaName, String idxName, boolean ifExists) {
+        this.schemaName = schemaName;
+        this.idxName = idxName;
+        this.ifExists = ifExists;
+    }
+
     /** {@inheritDoc} */
     @Override public String schemaName() {
         return schemaName;

@@ -31,9 +31,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -41,10 +41,10 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_ACEPTED;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_ACTIVE;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_REJECTED_AUTHENTICATION;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_REJECTED_TIMEOUT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_REJECTED_TOTAL;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.METRIC_ACTIVE;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 
 /**
@@ -56,8 +56,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClientListenerMetricsAccept() throws Exception {
-        try (IgniteEx ignite = startGrid(0))
-        {
+        try (IgniteEx ignite = startGrid(0)) {
             MetricRegistry mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
 
             checkConnectionsMetrics(mreg, 0, 0);
@@ -103,8 +102,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
 
-        try (IgniteEx ignite = startGrid(nodeCfg))
-        {
+        try (IgniteEx ignite = startGrid(nodeCfg)) {
             ignite.cluster().state(ClusterState.ACTIVE);
             MetricRegistry mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
 
@@ -148,8 +146,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
             .setClientConnectorConfiguration(new ClientConnectorConfiguration()
             .setThinClientEnabled(false));
 
-        try (IgniteEx ignite = startGrid(nodeCfg))
-        {
+        try (IgniteEx ignite = startGrid(nodeCfg)) {
             MetricRegistry mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
 
             checkRejectMetrics(mreg, 0, 0, 0);
@@ -166,9 +163,11 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
     /** */
     private static ClientConfiguration getClientConfiguration() {
         return new ClientConfiguration()
-                .setAddresses(Config.SERVER)
-                .setSendBufferSize(0)
-                .setReceiveBufferSize(0);
+            .setAddresses(Config.SERVER)
+            // When PA is enabled, async client channel init executes and spoils the metrics.
+            .setPartitionAwarenessEnabled(false)
+            .setSendBufferSize(0)
+            .setReceiveBufferSize(0);
     }
 
     /**

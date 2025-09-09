@@ -120,7 +120,12 @@ namespace ignite
                  *
                  * @return Column metadata.
                  */
-                virtual const meta::ColumnMetaVector* GetMeta() = 0;
+                virtual const meta::ColumnMetaVector* GetMeta()
+                {
+                    static const meta::ColumnMetaVector empty;
+
+                    return &empty;
+                }
 
                 /**
                  * Check if data is available.

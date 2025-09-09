@@ -68,7 +68,7 @@ public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAb
      */
     @Test
     public void testClientJoinAndCacheStop() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
         awaitPartitionMapExchange();
 
@@ -82,7 +82,7 @@ public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAb
             if (!(msg instanceof GridDhtPartitionsSingleMessage))
                 return false;
 
-            GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) msg;
+            GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)msg;
 
             return Optional.ofNullable(singleMsg.exchangeId())
                 .map(GridDhtPartitionExchangeId::topologyVersion)
@@ -101,7 +101,7 @@ public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAb
             if (!(msg instanceof DynamicCacheChangeBatch))
                 return;
 
-            DynamicCacheChangeBatch cacheChangeBatch = (DynamicCacheChangeBatch) msg;
+            DynamicCacheChangeBatch cacheChangeBatch = (DynamicCacheChangeBatch)msg;
 
             boolean hasCacheStopReq = cacheChangeBatch.requests().stream()
                 .anyMatch(req -> req.stop() && req.cacheName().equals(CACHE_NAME));

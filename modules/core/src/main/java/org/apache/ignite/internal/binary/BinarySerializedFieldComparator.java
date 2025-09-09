@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.util.Arrays;
+import java.util.Objects;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.binary.BinaryUtils.arrayEq;
 
 /**
  * Compares fiels in serialized form when possible.
  */
-public class BinarySerializedFieldComparator {
+class BinarySerializedFieldComparator {
     /** Position: not found. */
     private static final int POS_NOT_FOUND = -1;
 
@@ -247,48 +248,8 @@ public class BinarySerializedFieldComparator {
                 Object val1 = c1.currentField();
                 Object val2 = c2.currentField();
 
-                return isArray(val1) ? compareArrays(val1, val2) : F.eq(val1, val2);
+                return (F.isArray(val1) || BinaryUtils.isBinaryArray(val1)) ? arrayEq(val1, val2) : Objects.equals(val1, val2);
         }
-    }
-
-    /**
-     * Compare arrays.
-     *
-     * @param val1 Value 1.
-     * @param val2 Value 2.
-     * @return Result.
-     */
-    private static boolean compareArrays(Object val1, Object val2) {
-        if (val1.getClass() == val2.getClass()) {
-            if (val1 instanceof byte[])
-                return Arrays.equals((byte[])val1, (byte[])val2);
-            else if (val1 instanceof boolean[])
-                return Arrays.equals((boolean[])val1, (boolean[])val2);
-            else if (val1 instanceof short[])
-                return Arrays.equals((short[])val1, (short[])val2);
-            else if (val1 instanceof char[])
-                return Arrays.equals((char[])val1, (char[])val2);
-            else if (val1 instanceof int[])
-                return Arrays.equals((int[])val1, (int[])val2);
-            else if (val1 instanceof long[])
-                return Arrays.equals((long[])val1, (long[])val2);
-            else if (val1 instanceof float[])
-                return Arrays.equals((float[])val1, (float[])val2);
-            else if (val1 instanceof double[])
-                return Arrays.equals((double[])val1, (double[])val2);
-            else
-                return Arrays.deepEquals((Object[])val1, (Object[])val2);
-        }
-
-        return false;
-    }
-
-    /**
-     * @param field Field.
-     * @return {@code True} if field is array.
-     */
-    private static boolean isArray(@Nullable Object field) {
-        return field != null && field.getClass().isArray();
     }
 
     /**

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
@@ -35,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  * Job execution response.
  */
 public class GridJobExecuteResponse implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private UUID nodeId;
 
@@ -80,8 +76,7 @@ public class GridJobExecuteResponse implements Message {
     private AffinityTopologyVersion retry;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface. This
-     * constructor is not meant to be used for other purposes.
+     * Default constructor.
      */
     public GridJobExecuteResponse() {
         // No-op.
@@ -110,8 +105,8 @@ public class GridJobExecuteResponse implements Message {
         byte[] jobAttrsBytes,
         Map<Object, Object> jobAttrs,
         boolean isCancelled,
-        AffinityTopologyVersion retry)
-    {
+        AffinityTopologyVersion retry
+    ) {
         assert nodeId != null;
         assert sesId != null;
         assert jobId != null;
@@ -238,7 +233,7 @@ public class GridJobExecuteResponse implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -246,49 +241,49 @@ public class GridJobExecuteResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("gridExBytes", gridExBytes))
+                if (!writer.writeByteArray(gridExBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("isCancelled", isCancelled))
+                if (!writer.writeBoolean(isCancelled))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByteArray("jobAttrsBytes", jobAttrsBytes))
+                if (!writer.writeByteArray(jobAttrsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeIgniteUuid("jobId", jobId))
+                if (!writer.writeIgniteUuid(jobId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeUuid("nodeId", nodeId))
+                if (!writer.writeUuid(nodeId))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByteArray("resBytes", resBytes))
+                if (!writer.writeByteArray(resBytes))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeAffinityTopologyVersion("retry", retry))
+                if (!writer.writeAffinityTopologyVersion(retry))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeIgniteUuid("sesId", sesId))
+                if (!writer.writeIgniteUuid(sesId))
                     return false;
 
                 writer.incrementState();
@@ -302,12 +297,9 @@ public class GridJobExecuteResponse implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                gridExBytes = reader.readByteArray("gridExBytes");
+                gridExBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -315,7 +307,7 @@ public class GridJobExecuteResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                isCancelled = reader.readBoolean("isCancelled");
+                isCancelled = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -323,7 +315,7 @@ public class GridJobExecuteResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                jobAttrsBytes = reader.readByteArray("jobAttrsBytes");
+                jobAttrsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -331,7 +323,7 @@ public class GridJobExecuteResponse implements Message {
                 reader.incrementState();
 
             case 3:
-                jobId = reader.readIgniteUuid("jobId");
+                jobId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -339,7 +331,7 @@ public class GridJobExecuteResponse implements Message {
                 reader.incrementState();
 
             case 4:
-                nodeId = reader.readUuid("nodeId");
+                nodeId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -347,7 +339,7 @@ public class GridJobExecuteResponse implements Message {
                 reader.incrementState();
 
             case 5:
-                resBytes = reader.readByteArray("resBytes");
+                resBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -355,7 +347,7 @@ public class GridJobExecuteResponse implements Message {
                 reader.incrementState();
 
             case 6:
-                retry = reader.readAffinityTopologyVersion("retry");
+                retry = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -363,7 +355,7 @@ public class GridJobExecuteResponse implements Message {
                 reader.incrementState();
 
             case 7:
-                sesId = reader.readIgniteUuid("sesId");
+                sesId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -372,17 +364,12 @@ public class GridJobExecuteResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(GridJobExecuteResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 8;
     }
 
     /** {@inheritDoc} */

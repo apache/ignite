@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
+import org.apache.ignite.internal.util.typedef.F;
+
 /** */
 public class SignedBytesIndexKey extends BytesIndexKey {
     /** */
@@ -26,8 +28,6 @@ public class SignedBytesIndexKey extends BytesIndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        byte[] okey = (byte[]) o.key();
-
-        return BytesCompareUtils.compareNotNullSigned(key, okey);
+        return Integer.signum(F.compareArrays(key, ((BytesIndexKey)o).key));
     }
 }

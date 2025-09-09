@@ -26,10 +26,13 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -41,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.BinaryUtils.typeName;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.KEY_SCALE_OUT_OF_RANGE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_VALUE;
@@ -135,6 +139,21 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** Primary key fields. */
     private Set<String> pkFields;
 
+    /** */
+    private boolean implicitPk;
+
+    /** Whether absent PK parts should be filled with defaults or not. */
+    private boolean fillAbsentPKsWithDefaults;
+
+    /** */
+    private int pkInlineSize;
+
+    /** */
+    private int affFieldInlineSize;
+
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * Constructor.
      *
@@ -144,12 +163,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     public QueryTypeDescriptorImpl(String cacheName, CacheObjectContext coCtx) {
         this.cacheName = cacheName;
         this.coCtx = coCtx;
+        this.log = coCtx.kernalContext().log(getClass());
     }
 
-    /**
-     * @return Cache name.
-     */
-    public String cacheName() {
+    /** {@inheritDoc} */
+    @Override public String cacheName() {
         return cacheName;
     }
 
@@ -204,10 +222,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         return res;
     }
 
-    /**
-     * @return Properties.
-     */
-    public Map<String, GridQueryProperty> properties() {
+    /** {@inheritDoc} */
+    @Override public Map<String, GridQueryProperty> properties() {
         return props;
     }
 
@@ -603,13 +619,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             boolean isKey = false;
 
-            if (F.eq(prop.name(), keyFieldAlias()) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
-                propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
+            if (Objects.equals(prop.name(), keyFieldAlias()) || (keyFieldName == null && Objects.equals(prop.name(), KEY_FIELD_NAME))) {
+                propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
 
                 isKey = true;
             }
-            else if (F.eq(prop.name(), valueFieldAlias()) ||
-                (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME)))
+            else if (Objects.equals(prop.name(), valueFieldAlias()) ||
+                (valFieldName == null && Objects.equals(prop.name(), VAL_FIELD_NAME)))
                 propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
             else
                 propVal = prop.value(key, val);
@@ -619,28 +635,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     isKey ? NULL_KEY : NULL_VALUE);
             }
 
-            if (validateTypes && propVal != null) {
-                if (!(propVal instanceof BinaryObject)) {
-                    if (!U.box(prop.type()).isAssignableFrom(U.box(propVal.getClass()))) {
-                        // Some reference type arrays end up being converted to Object[]
-                        if (!(prop.type().isArray() && Object[].class == propVal.getClass() &&
-                            Arrays.stream((Object[]) propVal).
-                            noneMatch(x -> x != null && !U.box(prop.type().getComponentType()).isAssignableFrom(U.box(x.getClass())))))
-                        {
-                            throw new IgniteSQLException("Type for a column '" + prop.name() +
-                                "' is not compatible with table definition. Expected '" +
-                                prop.type().getSimpleName() + "', actual type '" +
-                                propVal.getClass().getSimpleName() + "'");
-                        }
-                    }
-                }
-                else if (coCtx.kernalContext().cacheObjects().typeId(prop.type().getName()) !=
-                        ((BinaryObject)propVal).type().typeId()) {
-                    throw new IgniteSQLException("Type for a column '" + prop.name() +
-                        "' is not compatible with table definition. Expected '" +
-                        prop.type().getSimpleName() + "', actual type '" +
-                        ((BinaryObject)propVal).type().typeName() + "'");
-                }
+            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.type())) {
+                throw new IgniteSQLException("Type for a column '" + prop.name() + "' is not compatible with table definition." +
+                    " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
             }
 
             if (propVal == null || prop.precision() == -1)
@@ -686,12 +683,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 Object propVal;
                 Class<?> propType;
 
-                if (F.eq(idxField, keyFieldAlias()) || F.eq(idxField, KEY_FIELD_NAME)) {
-                    propVal = key instanceof KeyCacheObject ? ((CacheObject) key).value(coCtx, true) : key;
+                if (Objects.equals(idxField, keyFieldAlias()) || Objects.equals(idxField, KEY_FIELD_NAME)) {
+                    propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
 
                     propType = propVal == null ? null : propVal.getClass();
                 }
-                else if (F.eq(idxField, valueFieldAlias()) || F.eq(idxField, VAL_FIELD_NAME)) {
+                else if (Objects.equals(idxField, valueFieldAlias()) || Objects.equals(idxField, VAL_FIELD_NAME)) {
                     propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
 
                     propType = propVal == null ? null : propVal.getClass();
@@ -705,29 +702,40 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 if (propVal == null)
                     continue;
 
-                if (!(propVal instanceof BinaryObject)) {
-                    if (!U.box(propType).isAssignableFrom(U.box(propVal.getClass()))) {
-                        // Some reference type arrays end up being converted to Object[]
-                        if (!(propType.isArray() && Object[].class == propVal.getClass() &&
-                            Arrays.stream((Object[]) propVal).
-                                noneMatch(x -> x != null && !U.box(propType.getComponentType()).isAssignableFrom(U.box(x.getClass())))))
-                        {
-                            throw new IgniteSQLException("Type for a column '" + idxField +
-                                "' is not compatible with index definition. Expected '" +
-                                propType.getSimpleName() + "', actual type '" +
-                                propVal.getClass().getSimpleName() + "'");
-                        }
-                    }
-                }
-                else if (coCtx.kernalContext().cacheObjects().typeId(propType.getName()) !=
-                    ((BinaryObject)propVal).type().typeId()) {
-                    throw new IgniteSQLException("Type for a column '" + idxField +
-                        "' is not compatible with index definition. Expected '" +
-                        propType.getSimpleName() + "', actual type '" +
-                        ((BinaryObject)propVal).type().typeName() + "'");
+                if (!isCompatibleWithPropertyType(propVal, propType)) {
+                    throw new IgniteSQLException("Type for a column '" + idxField + "' is not compatible with index definition." +
+                        " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
                 }
             }
         }
+    }
+
+    /**
+     * Checks if the specified object is compatible with the type of the column through which this object will be accessed.
+     *
+     * @param val Object to check.
+     * @param expColType Type of the column based on Query Property info.
+     */
+    private boolean isCompatibleWithPropertyType(Object val, Class<?> expColType) {
+        if (!(val instanceof BinaryObject) || BinaryUtils.isBinaryArray(val)) {
+            if (U.box(expColType).isAssignableFrom(U.box(val.getClass())))
+                return true;
+
+            if (QueryUtils.isConvertibleTypes(val, expColType))
+                return true;
+
+            return expColType.isArray()
+                && BinaryUtils.isObjectArray(val.getClass())
+                && Arrays.stream(BinaryUtils.rawArrayFromBinary(val))
+                    .allMatch(x -> x == null || U.box(expColType.getComponentType()).isAssignableFrom(U.box(x.getClass())));
+        }
+        else if (coCtx.kernalContext().cacheObjects().typeId(expColType.getName()) != ((BinaryObject)val).type().typeId()) {
+            final Class<?> cls = U.classForName(((BinaryObject)val).type().typeName(), null, true);
+
+            return (cls == null && expColType == Object.class) || (cls != null && expColType.isAssignableFrom(cls));
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -751,5 +759,45 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public void primaryKeyFields(Set<String> keys) {
         pkFields = keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean implicitPk() {
+        return implicitPk;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void implicitPk(boolean implicitPk) {
+        this.implicitPk = implicitPk;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean fillAbsentPKsWithDefaults() {
+        return fillAbsentPKsWithDefaults;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setFillAbsentPKsWithDefaults(boolean fillAbsentPKsWithDefaults) {
+        this.fillAbsentPKsWithDefaults = fillAbsentPKsWithDefaults;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int primaryKeyInlineSize() {
+        return pkInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void primaryKeyInlineSize(int pkInlineSize) {
+        this.pkInlineSize = pkInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int affinityFieldInlineSize() {
+        return affFieldInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void affinityFieldInlineSize(int affFieldInlineSize) {
+        this.affFieldInlineSize = affFieldInlineSize;
     }
 }

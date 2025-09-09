@@ -38,15 +38,15 @@ import java.lang.annotation.Target;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Random;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -62,12 +62,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
@@ -77,8 +79,9 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.thread.IgniteThreadFactory;
@@ -93,6 +96,12 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.internal.util.IgniteUtils.bytesToInt;
+import static org.apache.ignite.internal.util.IgniteUtils.bytesToLong;
+import static org.apache.ignite.internal.util.IgniteUtils.bytesToShort;
+import static org.apache.ignite.internal.util.IgniteUtils.intToBytes;
+import static org.apache.ignite.internal.util.IgniteUtils.longToBytes;
+import static org.apache.ignite.internal.util.IgniteUtils.shortToBytes;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.readResource;
 import static org.junit.Assert.assertArrayEquals;
@@ -205,15 +214,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testByteArray2String() throws Exception {
-        assertEquals("{0x0A,0x14,0x1E,0x28,0x32,0x3C,0x46,0x50,0x5A}",
-            U.byteArray2String(new byte[]{10, 20, 30, 40, 50, 60, 70, 80, 90}, "0x%02X", ",0x%02X"));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testFormatMins() throws Exception {
         printFormatMins(0);
         printFormatMins(1);
@@ -235,69 +235,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * @param mins Minutes to test.
      */
     private void printFormatMins(long mins) {
-        System.out.println("For " + mins + " minutes: " + X.formatMins(mins));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDownloadUrlFromHttp() throws Exception {
-        GridEmbeddedHttpServer srv = null;
-        try {
-            String urlPath = "/testDownloadUrl/";
-            srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(urlPath,
-                GridTestUtils.resolveIgnitePath("/modules/core/src/test/config/tests.properties"));
-
-            File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
-
-            file = U.downloadUrl(new URL(srv.getBaseUrl() + urlPath), file);
-
-            assert file.exists();
-            assert file.delete();
-        }
-        finally {
-            if (srv != null)
-                srv.stop(1);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDownloadUrlFromHttps() throws Exception {
-        GridEmbeddedHttpServer srv = null;
-        try {
-            String urlPath = "/testDownloadUrl/";
-            srv = GridEmbeddedHttpServer.startHttpsServer().withFileDownloadingHandler(urlPath,
-                GridTestUtils.resolveIgnitePath("modules/core/src/test/config/tests.properties"));
-
-            File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
-
-            file = U.downloadUrl(new URL(srv.getBaseUrl() + urlPath), file);
-
-            assert file.exists();
-            assert file.delete();
-        }
-        finally {
-            if (srv != null)
-                srv.stop(1);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDownloadUrlFromLocalFile() throws Exception {
-        File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
-
-        file = U.downloadUrl(
-            GridTestUtils.resolveIgnitePath("modules/core/src/test/config/tests.properties").toURI().toURL(), file);
-
-        assert file.exists();
-        assert file.delete();
+        System.out.println("For " + mins + " minutes: " + U.formatMins(mins));
     }
 
     /**
@@ -307,23 +245,10 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testOs() throws Exception {
         System.out.println("OS string: " + U.osString());
         System.out.println("JDK string: " + U.jdkString());
-        System.out.println("OS/JDK string: " + U.osJdkString());
 
         System.out.println("Is Windows: " + U.isWindows());
-        System.out.println("Is Windows 95: " + U.isWindows95());
-        System.out.println("Is Windows 98: " + U.isWindows98());
-        System.out.println("Is Windows NT: " + U.isWindowsNt());
-        System.out.println("Is Windows 2000: " + U.isWindows2k());
-        System.out.println("Is Windows 2003: " + U.isWindows2003());
-        System.out.println("Is Windows XP: " + U.isWindowsXp());
-        System.out.println("Is Windows Vista: " + U.isWindowsVista());
         System.out.println("Is Linux: " + U.isLinux());
         System.out.println("Is Mac OS: " + U.isMacOs());
-        System.out.println("Is Netware: " + U.isNetWare());
-        System.out.println("Is Solaris: " + U.isSolaris());
-        System.out.println("Is Solaris SPARC: " + U.isSolarisSparc());
-        System.out.println("Is Solaris x86: " + U.isSolarisX86());
-        System.out.println("Is Windows7: " + U.isWindows7());
     }
 
     /**
@@ -535,74 +460,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    @Test
-    public void testReadByteArray() {
-        assertTrue(Arrays.equals(new byte[0], U.readByteArray(ByteBuffer.allocate(0))));
-        assertTrue(Arrays.equals(new byte[0], U.readByteArray(ByteBuffer.allocate(0), ByteBuffer.allocate(0))));
-
-        Random rnd = new Random();
-
-        byte[] bytes = new byte[13];
-
-        rnd.nextBytes(bytes);
-
-        assertTrue(Arrays.equals(bytes, U.readByteArray(ByteBuffer.wrap(bytes))));
-        assertTrue(Arrays.equals(bytes, U.readByteArray(ByteBuffer.wrap(bytes), ByteBuffer.allocate(0))));
-        assertTrue(Arrays.equals(bytes, U.readByteArray(ByteBuffer.allocate(0), ByteBuffer.wrap(bytes))));
-
-        for (int i = 0; i < 1000; i++) {
-            int n = rnd.nextInt(100);
-
-            bytes = new byte[n];
-
-            rnd.nextBytes(bytes);
-
-            ByteBuffer[] bufs = new ByteBuffer[1 + rnd.nextInt(10)];
-
-            int x = 0;
-
-            for (int j = 0; j < bufs.length - 1; j++) {
-                int size = x == n ? 0 : rnd.nextInt(n - x);
-
-                bufs[j] = (ByteBuffer)ByteBuffer.wrap(bytes).position(x).limit(x += size);
-            }
-
-            bufs[bufs.length - 1] = (ByteBuffer)ByteBuffer.wrap(bytes).position(x).limit(n);
-
-            assertTrue(Arrays.equals(bytes, U.readByteArray(bufs)));
-        }
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    @Test
-    public void testHashCodeFromBuffers() {
-        assertEquals(Arrays.hashCode(new byte[0]), U.hashCode(ByteBuffer.allocate(0)));
-        assertEquals(Arrays.hashCode(new byte[0]), U.hashCode(ByteBuffer.allocate(0), ByteBuffer.allocate(0)));
-
-        Random rnd = new Random();
-
-        for (int i = 0; i < 1000; i++) {
-            ByteBuffer[] bufs = new ByteBuffer[1 + rnd.nextInt(15)];
-
-            for (int j = 0; j < bufs.length; j++) {
-                byte[] bytes = new byte[rnd.nextInt(25)];
-
-                rnd.nextBytes(bytes);
-
-                bufs[j] = ByteBuffer.wrap(bytes);
-            }
-
-            assertEquals(U.hashCode(bufs), Arrays.hashCode(U.readByteArray(bufs)));
-        }
-    }
-
-    /**
      * Test annotation look up.
      */
     @Test
@@ -751,21 +608,14 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertTrue(ips.get(ips.size() - 1).isUnresolved());
     }
 
-    @Test
-    public void testMD5Calculation() throws Exception {
-        String md5 = U.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
-
-        assertEquals("d7dbe555be2eee7fa658299850169fa1", md5);
-    }
-
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testResolveLocalAddresses() throws Exception {
-        InetAddress inetAddress = InetAddress.getByName("0.0.0.0");
+        InetAddress inetAddr = InetAddress.getByName("0.0.0.0");
 
-        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(inetAddress);
+        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(inetAddr);
 
         Collection<String> hostNames = addrs.get2();
 
@@ -980,12 +830,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallel() throws Throwable {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
-        ExecutorService executorService = Executors.newFixedThreadPool(3,
+        ExecutorService executorSrvc = Executors.newFixedThreadPool(3,
             new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             IgniteUtils.doInParallel(3,
-                executorService,
+                executorSrvc,
                 asList(1, 2, 3),
                 i -> {
                     try {
@@ -998,8 +848,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             );
-        } finally {
-            executorService.shutdownNow();
+        }
+        finally {
+            executorSrvc.shutdownNow();
         }
     }
 
@@ -1010,12 +861,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallelBatch() {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
-        ExecutorService executorService = Executors.newFixedThreadPool(3,
+        ExecutorService executorSrvc = Executors.newFixedThreadPool(3,
             new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             IgniteUtils.doInParallel(2,
-                executorService,
+                executorSrvc,
                 asList(1, 2, 3),
                 i -> {
                     try {
@@ -1033,8 +884,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         }
         catch (Exception e) {
             assertTrue(e.toString(), X.hasCause(e, TimeoutException.class));
-        } finally {
-            executorService.shutdownNow();
+        }
+        finally {
+            executorSrvc.shutdownNow();
         }
     }
 
@@ -1075,15 +927,16 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDoInParallelResultsOrder() throws IgniteCheckedException {
-        ExecutorService executorService = Executors.newFixedThreadPool(4,
+        ExecutorService executorSrvc = Executors.newFixedThreadPool(4,
             new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             for (int parallelism = 1; parallelism < 16; parallelism++)
                 for (int size = 0; size < 10_000; size++)
-                    testOrder(executorService, size, parallelism);
-        } finally {
-            executorService.shutdownNow();
+                    testOrder(executorSrvc, size, parallelism);
+        }
+        finally {
+            executorSrvc.shutdownNow();
         }
     }
 
@@ -1093,14 +946,14 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDoInParallelWithStealingJob() throws IgniteCheckedException {
         // Pool size should be less that input data collection.
-        ExecutorService executorService = Executors
+        ExecutorService executorSrvc = Executors
             .newSingleThreadExecutor(new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         CountDownLatch mainThreadLatch = new CountDownLatch(1);
         CountDownLatch poolThreadLatch = new CountDownLatch(1);
 
         // Busy one thread from the pool.
-        executorService.submit(new Runnable() {
+        executorSrvc.submit(new Runnable() {
             @Override public void run() {
                 try {
                     poolThreadLatch.await();
@@ -1121,7 +974,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         AtomicInteger poolThreadCnt = new AtomicInteger();
 
         Collection<Integer> res = U.doInParallel(10,
-            executorService,
+            executorSrvc,
             data,
             new IgniteThrowableFunction<Integer, Integer>() {
                 @Override public Integer apply(Integer cnt) throws IgniteInterruptedCheckedException {
@@ -1166,12 +1019,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDoInParallelWithStealingJobRunTaskInExecutor() throws Exception {
         // Pool size should be less that input data collection.
-        ExecutorService executorService = Executors.newFixedThreadPool(2,
+        ExecutorService executorSrvc = Executors.newFixedThreadPool(2,
             new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
-        Future<?> f1 = executorService.submit(() -> runTask(executorService));
-        Future<?> f2 = executorService.submit(() -> runTask(executorService));
-        Future<?> f3 = executorService.submit(() -> runTask(executorService));
+        Future<?> f1 = executorSrvc.submit(() -> runTask(executorSrvc));
+        Future<?> f2 = executorSrvc.submit(() -> runTask(executorSrvc));
+        Future<?> f3 = executorSrvc.submit(() -> runTask(executorSrvc));
 
         f1.get();
         f2.get();
@@ -1264,19 +1117,19 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDoInParallelException() {
-        String expectedException = "ExpectedException";
+        String expectedEx = "ExpectedException";
 
-        ExecutorService executorService = Executors
+        ExecutorService executorSrvc = Executors
             .newSingleThreadExecutor(new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             IgniteUtils.doInParallel(
                 1,
-                executorService,
+                executorSrvc,
                 asList(1, 2, 3),
                 i -> {
                     if (Integer.valueOf(1).equals(i))
-                        throw new IgniteCheckedException(expectedException);
+                        throw new IgniteCheckedException(expectedEx);
 
                     return null;
                 }
@@ -1285,9 +1138,10 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             fail("Should throw ParallelExecutionException");
         }
         catch (IgniteCheckedException e) {
-            assertEquals(expectedException, e.getMessage());
-        } finally {
-            executorService.shutdownNow();
+            assertEquals(expectedEx, e.getMessage());
+        }
+        finally {
+            executorSrvc.shutdownNow();
         }
     }
 
@@ -1302,7 +1156,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * 3)Simple strings. <br/>
      *
      * 4)Various combinations of strings with one, two, and three-byte
-     * characters with size greater than {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     * characters with size greater than <code>65535</code>. <br/>
      *
      * @throws Exception If failed.
      */
@@ -1319,60 +1173,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                 String readBigUTF = U.readLongString(dIn);
 
                 assertEquals(readLine, readBigUTF);
-            });
-        }
-    }
-
-    /**
-     * Testing method {@link IgniteUtils#writeCutString} using resource files,
-     * where each line is needed to test different cases: <br/>
-     * 1){@code null}. <br/>
-     *
-     * 2)Empty line. <br/>
-     *
-     * 3)Simple strings. <br/>
-     *
-     * 4)String containing single-byte characters of size
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 5)String containing single-byte characters of size more than
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 6)String containing two-byte characters of size
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 7)String containing two-byte characters of size more than
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 8)String containing three-byte characters of size
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * 9)String containing three-byte characters of size more than
-     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testWriteLimitUTF() throws Exception {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            readLines("org.apache.ignite.util/limitUtf.txt", readLine -> {
-                baos.reset();
-
-                DataOutput dOut = new DataOutputStream(baos);
-                U.writeCutString(dOut, readLine);
-
-                DataInputStream dIn = new DataInputStream(new ByteArrayInputStream(baos.toByteArray()));
-                String readUTF = U.readString(dIn);
-
-                if (nonNull(readLine)) {
-                    AtomicInteger utfBytes = new AtomicInteger();
-
-                    readLine = readLine.chars()
-                        .filter(c -> utfBytes.addAndGet(U.utfBytes((char)c)) <= U.UTF_BYTE_LIMIT)
-                        .mapToObj(c -> String.valueOf((char)c)).collect(joining());
-                }
-
-                assertEquals(readLine, readUTF);
             });
         }
     }
@@ -1463,7 +1263,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * @param consumer Consumer.
      * @throws Exception If failed.
      */
-    private void readLines(String rsrcName, ThrowableConsumer<String> consumer) throws Exception {
+    private void readLines(String rsrcName, ConsumerX<String> consumer) throws Exception {
         byte[] content = readResource(getClass().getClassLoader(), rsrcName);
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(content)))) {
@@ -1479,54 +1279,173 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests that local hostname is ignored if {@link IgniteSystemProperties#IGNITE_IGNORE_LOCAL_HOST_NAME} is
+     * set to {@code true}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_LOCAL_HOST, value = "example.com")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME, value = "true")
+    public void testResolveLocalAddressesWithHostNameDefined() throws Exception {
+        testAddressResolveWithLocalHostDefined();
+    }
+
+    /**
+     * Tests that local hostname is not ignored if {@link IgniteSystemProperties#IGNITE_IGNORE_LOCAL_HOST_NAME} is
+     * set to {@code false}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_LOCAL_HOST, value = "example.com")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME, value = "false")
+    public void testResolveLocalAddressesWithHostNameDefinedAndLocalHostNameNotIgnored() throws Exception {
+        testAddressResolveWithLocalHostDefined();
+    }
+
+    /**
+     * Tests {@link IgniteUtils#isLambda(Class)} on lambdas.
+     */
+    @Test
+    public void testIsLambdaOnLambdas() {
+        Runnable someLambda = () -> {};
+
+        int locVar = 0;
+        Runnable capturingLocLambda = () -> {
+            System.out.println(locVar);
+        };
+
+        Runnable capturingOuterClsLambda = () -> {
+            System.out.println(repeatRule);
+        };
+
+        Runnable methodRef = this::testIsLambdaOnLambdas;
+
+        assertTrue(IgniteUtils.isLambda(someLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(capturingLocLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(capturingOuterClsLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(methodRef.getClass()));
+    }
+
+    /** Test nested class. */
+    private static class TestNestedClass {
+    }
+
+    /** Test inner class. */
+    private class TestInnerClass {
+    }
+
+    /**
+     * Tests {@link IgniteUtils#isLambda(Class)} on non-lambda classes.
+     */
+    @Test
+    public void testIsLambdaOnOrdinaryClasses() throws Exception {
+        assertFalse(IgniteUtils.isLambda(Object.class));
+
+        Runnable anonCls = new Runnable() {
+            /** {@inheritDoc} */
+            @Override public void run() {
+                // No-op.
+            }
+        };
+
+        assertFalse(IgniteUtils.isLambda(anonCls.getClass()));
+        assertFalse(IgniteUtils.isLambda(TestEnum.class));
+
+        // Loading only inner class with test classloader, while outer class
+        // will be loaded with the default classloader. Thus, if we execute method like isAnonymousClass
+        // on the loaded class, it will fail with the IncompatibleClassChangeError. That's why order in
+        // IgniteUtils isLambda is important.
+        GridTestClassLoader clsLdr = new GridTestClassLoader(
+            TestNestedClass.class.getName(),
+            TestInnerClass.class.getName()
+        );
+
+        Class<?> nestedCls = clsLdr.loadClass(TestNestedClass.class.getName());
+        assertFalse(IgniteUtils.isLambda(nestedCls));
+
+        Class<?> innerCls = clsLdr.loadClass(TestInnerClass.class.getName());
+        assertFalse(IgniteUtils.isLambda(innerCls));
+    }
+
+    /**
+     * Tests {@link IgniteUtils#resolveLocalAddresses(InetAddress)} with different values set to
+     * {@link IgniteSystemProperties#IGNITE_LOCAL_HOST} and {@link IgniteSystemProperties#IGNITE_IGNORE_LOCAL_HOST_NAME}.
+     *
+     * @throws Exception If failed.
+     */
+    private void testAddressResolveWithLocalHostDefined() throws Exception {
+        try {
+            boolean ignoreLocHostname = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME);
+            String userDefinedHost = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_LOCAL_HOST);
+
+            InetSocketAddress inetSockAddr = new InetSocketAddress(userDefinedHost, 0);
+            InetAddress addr = inetSockAddr.getAddress();
+            IgniteBiTuple<Collection<String>, Collection<String>> locAddrs = IgniteUtils.resolveLocalAddresses(addr);
+
+            if (ignoreLocHostname) {
+                // If local hostname is ignored, then no hostname should be resolved.
+                assertTrue(locAddrs.get2().isEmpty());
+            }
+            else {
+                // If local hostname is not ignored, then we should receive example.com.
+                assertFalse(locAddrs.get2().isEmpty());
+                assertEquals("example.com", F.first(locAddrs.get2()));
+            }
+        }
+        finally {
+            // Clear local address cache as we have polluted it with this test.
+            GridTestUtils.setFieldValue(IgniteUtils.class, "cachedLocalAddrAllHostNames", null);
+            GridTestUtils.setFieldValue(IgniteUtils.class, "cachedLocalAddr", null);
+        }
+    }
+
+    /**
      * Test enum.
      */
     private enum TestEnum {
+        /** */
         E1,
+
+        /** */
         E2,
+
+        /** */
         E3
     }
 
+    /** */
     @Documented @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
     private @interface Ann1 {}
 
+    /** */
     @Documented @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
     private @interface Ann2 {}
 
+    /** */
     private static class A1 implements I3, I5 {}
 
+    /** */
     private static class A2 extends A1 {}
 
+    /** */
     private static class A3 implements I5 {}
 
+    /** */
     @Ann1 private interface I1 {}
 
+    /** */
     private interface I2 extends I1 {}
 
+    /** */
     private interface I3 extends I2 {}
 
+    /** */
     @Ann2 private interface I4 {}
 
+    /** */
     private interface I5 extends I4 {}
-
-    /**
-     * Represents an operation that accepts a single input argument and returns
-     * no result. Unlike most other functional interfaces,
-     * {@code ThrowableConsumer} is expected to operate via side-effects.
-     *
-     * Also it is able to throw {@link Exception} unlike {@link Consumer}.
-     *
-     * @param <T> The type of the input to the operation.
-     */
-    @FunctionalInterface
-    private static interface ThrowableConsumer<T> {
-        /**
-         * Performs this operation on the given argument.
-         *
-         * @param t the input argument.
-         */
-        void accept(@Nullable T t) throws Exception;
-    }
 
     /**
      * Test to verify the {@link U#hashToIndex(int, int)}.
@@ -1555,4 +1474,155 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertEquals(3, U.hashToIndex(-15, 4));
     }
 
+    /** Test {@link U#staticField(Class, String)} throws on unknown field. */
+    @Test(expected = IgniteCheckedException.class)
+    public void testReadUnknownStaticFieldFailed() throws Exception {
+        U.staticField(String.class, "unknown_field");
+    }
+
+    /**
+     * Test UUID conversions from string to binary and back.
+     *
+     */
+    @Test
+    public void testUuidConvertions() {
+        Map<String, byte[]> map = new LinkedHashMap<>();
+
+        map.put("2ec84557-f7c4-4a2e-aea8-251eb13acff3", new byte[] {
+            46, -56, 69, 87, -9, -60, 74, 46, -82, -88, 37, 30, -79, 58, -49, -13
+        });
+        map.put("4e17b7b5-79e7-4db5-ac45-a644ead95b9e", new byte[] {
+            78, 23, -73, -75, 121, -25, 77, -75, -84, 69, -90, 68, -22, -39, 91, -98
+        });
+        map.put("412daadb-e9e6-443b-8b87-8d7895fc2e53", new byte[] {
+            65, 45, -86, -37, -23, -26, 68, 59, -117, -121, -115, 120, -107, -4, 46, 83
+        });
+        map.put("e71aabf4-4aad-4280-b4e9-3c310be0cb88", new byte[] {
+            -25, 26, -85, -12, 74, -83, 66, -128, -76, -23, 60, 49, 11, -32, -53, -120
+        });
+        map.put("d4454cda-a81f-490f-9424-9bdfcc9cf610", new byte[] {
+            -44, 69, 76, -38, -88, 31, 73, 15, -108, 36, -101, -33, -52, -100, -10, 16
+        });
+        map.put("3a584450-5e85-4b69-9f9d-043d89fef23b", new byte[] {
+            58, 88, 68, 80, 94, -123, 75, 105, -97, -99, 4, 61, -119, -2, -14, 59
+        });
+        map.put("6c8baaec-f173-4a60-b566-240a87d7f81d", new byte[] {
+            108, -117, -86, -20, -15, 115, 74, 96, -75, 102, 36, 10, -121, -41, -8, 29
+        });
+        map.put("d99c7102-79f7-4fb4-a665-d331cf285c20", new byte[] {
+            -39, -100, 113, 2, 121, -9, 79, -76, -90, 101, -45, 49, -49, 40, 92, 32
+        });
+        map.put("007d56c7-5c8b-4279-a700-7f3f95946dde", new byte[] {
+            0, 125, 86, -57, 92, -117, 66, 121, -89, 0, 127, 63, -107, -108, 109, -34
+        });
+        map.put("15627963-d8f9-4423-bedc-f6f89f7d3433", new byte[] {
+            21, 98, 121, 99, -40, -7, 68, 35, -66, -36, -10, -8, -97, 125, 52, 51
+        });
+
+        for (Map.Entry<String, byte[]> e : map.entrySet()) {
+            UUID uuid = UUID.fromString(e.getKey());
+            UUID uuidFromBytes = IgniteUtils.bytesToUuid(e.getValue(), 0);
+
+            assertEquals(uuid, uuidFromBytes);
+            assertEquals(e.getKey(), uuid.toString());
+            assertEquals(e.getKey(), uuidFromBytes.toString());
+
+            byte[] bytes = IgniteUtils.uuidToBytes(uuid);
+
+            assertTrue(e.getKey(), Arrays.equals(e.getValue(), bytes));
+        }
+    }
+
+    /** */
+    @Test
+    public void testShortToBytes() {
+        Map<String, Short> map = new HashMap<>();
+
+        map.put("00-00", (short)0);
+        map.put("00-0F", (short)0x0F);
+        map.put("FF-F1", (short)-0x0F);
+        map.put("27-10", (short)10000);
+        map.put("D8-F0", (short)-10000);
+        map.put("80-00", Short.MIN_VALUE);
+        map.put("7F-FF", Short.MAX_VALUE);
+
+        for (Map.Entry<String, Short> entry : map.entrySet()) {
+            byte[] b = asByteArray(entry.getKey());
+
+            Assert.assertArrayEquals(b, shortToBytes(entry.getValue()));
+            Assert.assertEquals((short)entry.getValue(), bytesToShort(b, 0));
+
+            byte[] tmp = new byte[2];
+
+            shortToBytes(entry.getValue(), tmp, 0);
+            Assert.assertArrayEquals(b, tmp);
+        }
+    }
+
+    /** */
+    @Test
+    public void testIntToBytes() {
+        Map<String, Integer> map = new HashMap<>();
+
+        map.put("00-00-00-00", 0);
+        map.put("00-FF-FF-FF", 0xFFFFFF);
+        map.put("FF-00-00-01", -0xFFFFFF);
+        map.put("3B-9A-CA-00", 1000000000);
+        map.put("C4-65-36-00", -1000000000);
+        map.put("80-00-00-00", Integer.MIN_VALUE);
+        map.put("7F-FF-FF-FF", Integer.MAX_VALUE);
+
+        for (Map.Entry<String, Integer> entry : map.entrySet()) {
+            byte[] b = asByteArray(entry.getKey());
+
+            Assert.assertArrayEquals(b, intToBytes(entry.getValue()));
+            Assert.assertEquals((int)entry.getValue(), bytesToInt(b, 0));
+
+            byte[] tmp = new byte[4];
+
+            intToBytes(entry.getValue(), tmp, 0);
+            Assert.assertArrayEquals(b, tmp);
+        }
+    }
+
+    /** */
+    @Test
+    public void testLongToBytes() {
+        Map<String, Long> map = new LinkedHashMap<>();
+
+        map.put("00-00-00-00-00-00-00-00", 0L);
+        map.put("00-00-00-00-00-FF-FF-FF", 0xFFFFFFL);
+        map.put("FF-FF-FF-FF-FF-00-00-01", -0xFFFFFFL);
+        map.put("00-00-00-00-3B-9A-CA-00", 1000000000L);
+        map.put("FF-FF-FF-FF-C4-65-36-00", -1000000000L);
+        map.put("00-00-AA-AA-AA-AA-AA-AA", 0xAAAAAAAAAAAAL);
+        map.put("FF-FF-55-55-55-55-55-56", -0xAAAAAAAAAAAAL);
+        map.put("0D-E0-B6-B3-A7-64-00-00", 1000000000000000000L);
+        map.put("F2-1F-49-4C-58-9C-00-00", -1000000000000000000L);
+        map.put("80-00-00-00-00-00-00-00", Long.MIN_VALUE);
+        map.put("7F-FF-FF-FF-FF-FF-FF-FF", Long.MAX_VALUE);
+
+        for (Map.Entry<String, Long> entry : map.entrySet()) {
+            byte[] b = asByteArray(entry.getKey());
+
+            Assert.assertArrayEquals(b, longToBytes(entry.getValue()));
+            Assert.assertEquals((long)entry.getValue(), bytesToLong(b, 0));
+
+            byte[] tmp = new byte[8];
+
+            longToBytes(entry.getValue(), tmp, 0);
+            Assert.assertArrayEquals(b, tmp);
+        }
+    }
+
+    /** */
+    private byte[] asByteArray(String text) {
+        String[] split = text.split("-");
+        byte[] b = new byte[split.length];
+
+        for (int i = 0; i < split.length; i++)
+            b[i] = (byte)Integer.parseInt(split[i], 16);
+
+        return b;
+    }
 }

@@ -207,6 +207,107 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSubquery() {
+        Ignite client = grid(2);
+
+        IgniteCache<Object, Object> personCache = client.cache(PERSON_CACHE);
+        IgniteCache<Object, Object> orgCache = client.cache(ORG_CACHE);
+        IgniteCache<Object, Object> orgCacheRepl = client.cache(ORG_CACHE_REPLICATED);
+
+        List<Integer> keys = primaryKeys(ignite(0).cache(PERSON_CACHE), 4, 200_000);
+
+        orgCache.put(keys.get(0), new Organization(0, "org1"));
+        orgCacheRepl.put(keys.get(0), new Organization(0, "org1"));
+
+        personCache.put(keys.get(1), new Person(0, "p1"));
+        personCache.put(keys.get(2), new Person(0, "p2"));
+        personCache.put(keys.get(3), new Person(0, "p3"));
+
+        // Subquery in `WHERE` clause
+        checkQuery("select p._key, p.name " +
+            "from \"person\".Person p where " +
+            "p.orgId in (select o.id from \"org\".Organization o)", orgCache, 3);
+
+        checkQuery("select o.name " +
+            "from \"org\".Organization o where " +
+            "o.id in (select p.orgId from \"person\".Person p)", orgCache, 1);
+
+        checkQuery("select p._key, p.name " +
+            "from \"person\".Person p where " +
+            "p.orgId in (select o.id from \"org\".Organization o)", orgCacheRepl, 3);
+
+        checkQuery("select o.name " +
+            "from \"org\".Organization o where " +
+            "o.id in (select p.orgId from \"person\".Person p)", orgCacheRepl, 1);
+
+        // Prevent `IN` optimization.
+        checkQuery("select p._key, p.name " +
+            "from \"person\".Person p where " +
+            "p.orgId < 10 or p.orgId in (select o.id from \"org\".Organization o)", orgCache, 3);
+
+        checkQuery("select o.name " +
+            "from \"org\".Organization o where " +
+            "o.id < 10 or o.id in (select p.orgId from \"person\".Person p)", orgCache, 1);
+
+        checkQuery("select p._key, p.name " +
+            "from \"person\".Person p where " +
+            "p.orgId < 10 or p.orgId in (select o.id from \"org\".Organization o)", orgCacheRepl, 3);
+
+        checkQuery("select o.name " +
+            "from \"org\".Organization o where " +
+            "o.id < 10 or o.id in (select p.orgId from \"person\".Person p)", orgCacheRepl, 1);
+
+        // Subquery in `FROM` clause
+        checkQuery("select p1._key, p1.name " +
+            "from (select p._key, p.name, p.orgId from \"person\".Person p " +
+            "    where p.orgId < 10 or p.orgId in (select o.id from \"org\".Organization o)) p1 " +
+            "where p1.orgId > -1", orgCache, 3);
+
+        checkQuery("select o1.name " +
+            "from (select o.id, o.name from \"org\".Organization o " +
+            "    where o.id < 10 or o.id in (select p.orgId from \"person\".Person p)) o1 " +
+            "where o1.id > -1", orgCache, 1);
+
+        checkQuery("select p1._key, p1.name " +
+            "from (select p._key, p.name, p.orgId from \"person\".Person p " +
+            "    where p.orgId < 10 or p.orgId in (select o.id from \"org\".Organization o)) p1 " +
+            "where p1.orgId > -1", orgCacheRepl, 3);
+
+        checkQuery("select o1.name " +
+            "from (select o.id, o.name from \"org\".Organization o " +
+            "    where o.id < 10 or o.id in (select p.orgId from \"person\".Person p)) o1 " +
+            "where o1.id > -1", orgCacheRepl, 1);
+
+        // Join with subquery
+        checkQuery("select o1.name, p._key, p.name " +
+            "from \"person\".Person p " +
+            "join (select o.id, o.name from \"org\".Organization o " +
+            "    where o.id < 10 or o.id in (select p.orgId from \"person\".Person p)) o1 " +
+            "on (p.orgId = o1.id)", orgCache, 3);
+
+        checkQuery("select o.name, p1._key, p1.name " +
+            "from \"org\".Organization o " +
+            "join  (select p._key, p.name, p.orgId from \"person\".Person p " +
+            "    where p.orgId < 10 or p.orgId in (select o.id from \"org\".Organization o)) p1 " +
+            "on (p1.orgId = o.id)", orgCache, 3);
+
+        checkQuery("select o1.name, p._key, p.name " +
+            "from \"person\".Person p " +
+            "join (select o.id, o.name from \"org\".Organization o " +
+            "    where o.id < 10 or o.id in (select p.orgId from \"person\".Person p)) o1 " +
+            "on (p.orgId = o1.id)", orgCacheRepl, 3);
+
+        checkQuery("select o.name, p1._key, p1.name " +
+            "from \"org\".Organization o " +
+            "join (select p._key, p.name, p.orgId from \"person\".Person p " +
+            "    where p.orgId < 10 or p.orgId in (select o.id from \"org\".Organization o)) p1 " +
+            "on (p1.orgId = o.id)", orgCacheRepl, 3);
+    }
+
+    /**
      * @param sql SQL.
      * @param cache Cache.
      * @param expSize Expected results size.

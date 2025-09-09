@@ -26,20 +26,20 @@ import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.IORowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -47,14 +47,17 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 
 /**
  * Creates temporary index to defragment old index.
  */
 public class DefragIndexFactory extends InlineIndexFactory {
+    /** Empty array. */
+    private static final byte[] EMPTY_BYTES = new byte[0];
+
     /** Temporary offheap manager. */
     private final IgniteCacheOffheapManager offheap;
 
@@ -103,6 +106,11 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         final MetaPageInfo oldInfo = oldIdx.segment(segmentNum).metaInfo();
 
+        // Set IO wrappers for the new tree.
+        BPlusInnerIO<IndexRow> innerIO = (BPlusInnerIO<IndexRow>)wrap(tree.latestInnerIO(), tree.rowHandler());
+        BPlusLeafIO<IndexRow> leafIo = (BPlusLeafIO<IndexRow>)wrap(tree.latestLeafIO(), tree.rowHandler());
+        tree.setIos(new IOVersions<>(innerIO), new IOVersions<>(leafIo));
+
         tree.copyMetaInfo(oldInfo);
 
         tree.enableSequentialWriteMode();
@@ -147,6 +155,30 @@ public class DefragIndexFactory extends InlineIndexFactory {
         }
     }
 
+    /**
+     * Stores the needed info about the row in the page. Overrides {@link BPlusIO#storeByOffset(long, int, Object)}.
+     *
+     * @param io Page io.
+     * @param pageAddr Page address.
+     * @param off Data offset.
+     * @param row H2 cache row.
+     * @param <IO> Type of the Page io.
+     */
+    private static <IO extends BPlusIO<?> & InlineIO> void storeByOffset(
+        IO io,
+        long pageAddr,
+        int off,
+        DefragIndexRowImpl row
+    ) {
+        int payloadSize = io.inlineSize();
+
+        assert row.link() != 0;
+
+        PageUtils.putBytes(pageAddr, off, row.values);
+
+        IORowHandler.store(pageAddr, off + payloadSize, row);
+    }
+
     /** */
     private static <T extends BPlusIO<IndexRow> & InlineIO> IndexRow lookupRow(
         InlineIndexRowHandler rowHnd,
@@ -158,41 +190,16 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         int off = io.offset(idx);
 
-        IndexKey[] keys = new IndexKey[rowHnd.indexKeyDefinitions().size()];
+        int inlineSize = io.inlineSize();
 
-        int fieldOff = 0;
+        byte[] values;
 
-        for (int i = 0; i < rowHnd.inlineIndexKeyTypes().size(); i++) {
-            InlineIndexKeyType keyType = rowHnd.inlineIndexKeyTypes().get(i);
+        if (rowHnd.inlineIndexKeyTypes().isEmpty())
+            values = EMPTY_BYTES;
+        else
+            values = PageUtils.getBytes(pageAddr, off, inlineSize);
 
-            IndexKey key = keyType.get(pageAddr, off + fieldOff, io.inlineSize() - fieldOff);
-
-            fieldOff += keyType.inlineSize(key);
-
-            keys[i] = key;
-        }
-
-        if (io.storeMvccInfo()) {
-            long mvccCrdVer = io.mvccCoordinatorVersion(pageAddr, idx);
-            long mvccCntr = io.mvccCounter(pageAddr, idx);
-            int mvccOpCntr = io.mvccOperationCounter(pageAddr, idx);
-
-            MvccDataRow row = new MvccDataRow(
-                null,
-                0,
-                link,
-                PageIdUtils.partId(PageIdUtils.pageId(link)),
-                CacheDataRowAdapter.RowData.LINK_ONLY,
-                mvccCrdVer,
-                mvccCntr,
-                mvccOpCntr,
-                true
-            );
-
-            return new IndexRowImpl(rowHnd, row, keys);
-        }
-
-        return new IndexRowImpl(rowHnd, new CacheDataRowAdapter(link), keys);
+        return new DefragIndexRowImpl(rowHnd, new CacheDataRowAdapter(link), values);
     }
 
     /** */
@@ -213,7 +220,9 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off, IndexRow row) throws IgniteCheckedException {
-            io.storeByOffset(pageAddr, off, row);
+            assertPageType(pageAddr);
+
+            DefragIndexFactory.storeByOffset(io, pageAddr, off, (DefragIndexRowImpl)row);
         }
 
         /** {@inheritDoc} */
@@ -237,26 +246,6 @@ public class DefragIndexFactory extends InlineIndexFactory {
         @Override public int inlineSize() {
             return io.inlineSize();
         }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCoordinatorVersion(long pageAddr, int idx) {
-            return io.mvccCoordinatorVersion(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCounter(long pageAddr, int idx) {
-            return io.mvccCounter(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int mvccOperationCounter(long pageAddr, int idx) {
-            return io.mvccOperationCounter(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean storeMvccInfo() {
-            return io.storeMvccInfo();
-        }
     }
 
     /** */
@@ -277,18 +266,20 @@ public class DefragIndexFactory extends InlineIndexFactory {
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off, IndexRow row) throws IgniteCheckedException {
-            io.storeByOffset(pageAddr, off, row);
+            assertPageType(pageAddr);
+
+            DefragIndexFactory.storeByOffset(io, pageAddr, off, (DefragIndexRowImpl)row);
         }
 
         /** {@inheritDoc} */
         @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<IndexRow> srcIo, long srcPageAddr, int srcIdx)
-            throws IgniteCheckedException
-        {
+            throws IgniteCheckedException {
             io.store(dstPageAddr, dstIdx, srcIo, srcPageAddr, srcIdx);
         }
 
         /** {@inheritDoc} */
-        @Override public IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx) throws IgniteCheckedException {
+        @Override public IndexRow getLookupRow(BPlusTree<IndexRow, ?> tree, long pageAddr, int idx)
+            throws IgniteCheckedException {
             return lookupRow(rowHnd, pageAddr, idx, this);
         }
 
@@ -301,25 +292,28 @@ public class DefragIndexFactory extends InlineIndexFactory {
         @Override public int inlineSize() {
             return io.inlineSize();
         }
+    }
 
-        /** {@inheritDoc} */
-        @Override public long mvccCoordinatorVersion(long pageAddr, int idx) {
-            return io.mvccCoordinatorVersion(pageAddr, idx);
+    /**
+     * IndexRowImpl with index values stored in a byte array.
+     */
+    public static class DefragIndexRowImpl extends IndexRowImpl {
+        /** Byte array of index values. */
+        private final byte[] values;
+
+        /** */
+        public DefragIndexRowImpl(InlineIndexRowHandler rowHnd, CacheDataRow row, byte[] values) {
+            super(rowHnd, row);
+            this.values = values;
         }
 
-        /** {@inheritDoc} */
-        @Override public long mvccCounter(long pageAddr, int idx) {
-            return io.mvccCounter(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int mvccOperationCounter(long pageAddr, int idx) {
-            return io.mvccOperationCounter(pageAddr, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean storeMvccInfo() {
-            return io.storeMvccInfo();
+        /** */
+        public static DefragIndexRowImpl create(
+            InlineIndexRowHandler rowHnd,
+            long newLink,
+            DefragIndexRowImpl oldValue
+        ) {
+            return new DefragIndexRowImpl(rowHnd, new CacheDataRowAdapter(newLink), oldValue.values);
         }
     }
 }

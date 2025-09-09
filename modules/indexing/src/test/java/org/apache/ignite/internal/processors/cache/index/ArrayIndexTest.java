@@ -21,20 +21,29 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
+import static org.apache.ignite.client.Config.SERVER;
 
 /**
  * Checks that sql operation works by arrays.
@@ -90,7 +99,7 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
     public void shouldSelectAllRows() throws Exception {
         IgniteEx ex = startGrid(0);
 
-        ex.cluster().active(true);
+        ex.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ex.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -122,7 +131,7 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
     public void shouldSelectParticularValue() throws Exception {
         IgniteEx ex = startGrid(0);
 
-        ex.cluster().active(true);
+        ex.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ex.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -150,7 +159,7 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
 
         IgniteEx ex = startGrid(0);
 
-        ex.cluster().active(true);
+        ex.cluster().state(ClusterState.ACTIVE);
 
         executeSql(ex, "CREATE TABLE Binary_Entries (key binary(16) not null, val binary(16), PRIMARY KEY(key))");
 
@@ -161,12 +170,67 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
 
     }
 
+    /** */
+    @Test
+    public void shouldSupportTableExpressions() throws Exception {
+        checkTableExpression(false);
+    }
+
+    /** */
+    @Test
+    public void shouldSupportTableExpressionsWithBinaryArrays() throws Exception {
+        checkTableExpression(true);
+    }
+
+    /** */
+    private void checkTableExpression(boolean useTypedArrays) throws Exception {
+        System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useTypedArrays));
+        BinaryUtils.initUseBinaryArrays();
+
+        try (IgniteEx ex = startGrid(0);
+             IgniteEx cli = startClientGrid(1);
+             IgniteClient thinCli = Ignition.startClient(new ClientConfiguration().setAddresses(SERVER))) {
+
+            ex.cluster().state(ClusterState.ACTIVE);
+
+            executeSql(cli, "CREATE TABLE T1 (id int not null, name varchar(1), PRIMARY KEY(id))");
+
+            String insertQry = "INSERT INTO T1(id, name) VALUES (?, ?)";
+
+            executeSql(cli, insertQry, 1, "A");
+            executeSql(cli, insertQry, 2, "B");
+            executeSql(cli, insertQry, 3, "C");
+
+            String select = "SELECT T1.ID, T1.NAME FROM T1 INNER JOIN TABLE (id2 int = ?) T2 on (T1.id = T2.id2) ORDER BY id";
+            Object arg = new Integer[] {1, 2};
+
+            Consumer<List<List<?>>> checker = res -> {
+                assertNotNull(res);
+
+                assertEquals(2, res.size());
+
+                assertEquals(1, res.get(0).get(0));
+                assertEquals("A", res.get(0).get(1));
+                assertEquals(2, res.get(1).get(0));
+                assertEquals("B", res.get(1).get(1));
+            };
+
+            checker.accept(executeSql(ex, select, arg));
+            checker.accept(executeSql(cli, select, arg));
+            checker.accept(thinCli.query(new SqlFieldsQuery(select).setArgs(arg)).getAll());
+        }
+        finally {
+            System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
+            BinaryUtils.initUseBinaryArrays();
+        }
+    }
+
     /**
      *
      */
-    private List<List<?>> executeSql(IgniteEx node, String sqlText) throws Exception {
+    private List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) throws Exception {
         GridQueryProcessor qryProc = node.context().query();
 
-        return qryProc.querySqlFields(new SqlFieldsQuery(sqlText), true).getAll();
+        return qryProc.querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
     }
 }

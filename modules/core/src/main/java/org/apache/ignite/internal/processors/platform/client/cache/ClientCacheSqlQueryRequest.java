@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareReq
  * Sql query request.
  */
 @SuppressWarnings("unchecked")
-public class ClientCacheSqlQueryRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
+public class ClientCacheSqlQueryRequest extends ClientCacheQueryRequest implements ClientTxAwareRequest {
     /** Query. */
     private final SqlQuery qry;
 
@@ -40,7 +40,7 @@ public class ClientCacheSqlQueryRequest extends ClientCacheDataRequest implement
      *
      * @param reader Reader.
      */
-    public ClientCacheSqlQueryRequest(BinaryRawReaderEx reader) {
+    public ClientCacheSqlQueryRequest(BinaryReaderEx reader) {
         super(reader);
 
         qry = new SqlQuery(reader.readString(), reader.readString())
@@ -49,12 +49,12 @@ public class ClientCacheSqlQueryRequest extends ClientCacheDataRequest implement
                 .setLocal(reader.readBoolean())
                 .setReplicatedOnly(reader.readBoolean())
                 .setPageSize(reader.readInt())
-                .setTimeout((int) reader.readLong(), TimeUnit.MILLISECONDS);
+                .setTimeout((int)reader.readLong(), TimeUnit.MILLISECONDS);
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteCache cache = cache(ctx);
+        IgniteCache<Object, Object> cache = cache(ctx);
 
         ctx.incrementCursors();
 

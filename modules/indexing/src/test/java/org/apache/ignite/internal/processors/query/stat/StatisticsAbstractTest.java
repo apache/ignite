@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -33,13 +34,16 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
@@ -78,7 +82,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     static final StatisticsTarget SMALL_TARGET = new StatisticsTarget(SMALL_KEY, null);
 
     /** Async operation timeout for test */
-    static final int TIMEOUT = 3_000;
+    static final int TIMEOUT = 10_000;
 
     static {
         assertTrue(SMALL_SIZE < MED_SIZE && MED_SIZE < BIG_SIZE);
@@ -224,9 +228,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @param grid Grid to process obsolescence on.
      */
     private void processObsolescence(IgniteEx grid) {
-        IgniteH2Indexing indexing = (IgniteH2Indexing)grid.context().query().getIndexing();
-
-        ((IgniteStatisticsManagerImpl)indexing.statsManager()).processObsolescence();
+        ((IgniteStatisticsManagerImpl)grid.context().query().statsManager()).processObsolescence();
     }
 
     /**
@@ -259,12 +261,23 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Create SQL table with the given index.
+     * Creates SQL table with the given index and fills with small amount of data.
      *
      * @param suffix Table idx, if {@code null} - name "SMALL" without index will be used.
      * @return Table name.
      */
     protected String createSmallTable(String suffix) {
+        return createSmallTable(SMALL_SIZE, suffix);
+    }
+
+    /**
+     * Creates SQL table with the given index and fills with data of the passed amount.
+     *
+     * @param preloadCnt Records cnt to load after creation.
+     * @param suffix Table idx, if {@code null} - name "SMALL" without index will be used.
+     * @return Table name.
+     */
+    protected String createSmallTable(int preloadCnt, String suffix) {
         String tblName = "small" + ((suffix != null) ? suffix : "");
 
         sql("DROP TABLE IF EXISTS " + tblName);
@@ -277,7 +290,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
 
         sql(String.format("CREATE INDEX %s_c ON %s(c)", tblName, tblName));
 
-        for (int i = 0; i < SMALL_SIZE; i++)
+        for (int i = 0; i < preloadCnt; i++)
             sql(String.format("INSERT INTO %s(a, b, c) VALUES(%d, %d, %d)", tblName, i, i, i % 10));
 
         return tblName;
@@ -353,83 +366,100 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     /**
      * Update statistics on specified objects in PUBLIC schema.
      *
+     * @param type Statistics type to collect statistics by.
      * @param tables Tables where to update statistics.
      */
-    protected void updateStatistics(@NotNull String... tables) {
+    protected void updateStatistics(StatisticsType type, @NotNull String... tables) {
         StatisticsTarget[] targets = Arrays.stream(tables).map(tbl -> new StatisticsTarget(SCHEMA, tbl.toUpperCase()))
             .toArray(StatisticsTarget[]::new);
 
-        updateStatistics(targets);
+        updateStatistics(type, targets);
     }
 
     /**
      * Collect statistics for specified objects in PUBLIC schema.
      *
+     * @param type Statistics type to collect statistics by.
      * @param tables Tables where to collect statistics.
      */
-    protected void collectStatistics(@NotNull String... tables) {
+    protected void collectStatistics(StatisticsType type, @NotNull String... tables) {
         StatisticsTarget[] targets = Arrays.stream(tables).map(tbl -> new StatisticsTarget(SCHEMA, tbl.toUpperCase()))
             .toArray(StatisticsTarget[]::new);
 
-        collectStatistics(targets);
+        collectStatistics(type, targets);
     }
 
     /**
      * Update statistics on specified objects.
      *
+     * @param type Statistics type to ubdate statistics by.
      * @param targets Targets to refresh statistics by.
      */
-    protected void updateStatistics(StatisticsTarget... targets) {
-        makeStatistics(false, targets);
+    protected void updateStatistics(StatisticsType type, StatisticsTarget... targets) {
+        makeStatistics(false, type, targets);
     }
 
     /**
      * Update statistics on specified objects.
      *
+     * @param type Statistics type to update statistics by.
      * @param targets Targets to collect statistics by.
      */
-    protected void collectStatistics(StatisticsTarget... targets) {
-        makeStatistics(true, targets);
+    protected void collectStatistics(StatisticsType type, StatisticsTarget... targets) {
+        makeStatistics(true, type, targets);
     }
 
     /**
      * Collect or refresh statistics.
      *
      * @param collect If {@code true} - collect new statistics, if {@code false} - update existing.
-     * @param targets
+     * @param type Statistics type to get statistics by.
+     * @param targets Targets to process statistics by.
      */
-    private void makeStatistics(boolean collect, StatisticsTarget... targets) {
+    private void makeStatistics(boolean collect, StatisticsType type, StatisticsTarget... targets) {
         try {
-            Map<StatisticsTarget, Long> expectedVersion = new HashMap<>();
+            Map<StatisticsTarget, Long> expectedVer = new HashMap<>();
             IgniteStatisticsManagerImpl statMgr = statisticsMgr(0);
-            for (StatisticsTarget target : targets) {
-                StatisticsObjectConfiguration currCfg = statMgr.statisticConfiguration().config(target.key());
 
-                Predicate<StatisticsColumnConfiguration> pred;
-                if (F.isEmpty(target.columns()))
-                    pred = c -> true;
-                else {
-                    Set<String> cols = Arrays.stream(target.columns()).collect(Collectors.toSet());
-
-                    pred = c -> cols.contains(c.name());
-                }
-
-                Long expVer = (currCfg == null) ? 1L : currCfg.columnsAll().values().stream().filter(pred)
-                    .mapToLong(StatisticsColumnConfiguration::version).min().orElse(0L) + 1;
-
-                expectedVersion.put(target, expVer);
-            }
+            for (StatisticsTarget target : targets)
+                expectedVer.put(target, minStatVer(statMgr, target) + 1);
 
             if (collect)
                 statisticsMgr(0).collectStatistics(buildDefaultConfigurations(targets));
             else
                 statisticsMgr(0).refreshStatistics(targets);
 
-            awaitStatistics(TIMEOUT, expectedVersion);
+            awaitStatistics(TIMEOUT, expectedVer, type);
         }
         catch (Exception ex) {
             throw new IgniteException(ex);
         }
+    }
+
+    /**
+     * Get minimum statistics version for the given target.
+     *
+     * param statMgr Statistics manager to get configuration from.
+     * @param target Statistics target to get the minimum version by.
+     * @return Minimum statistics configuraion version for the given target
+     * or 0 if there are no configuration for the given targer.
+     * @throws IgniteCheckedException In case of configuration read errors.
+     */
+    public Long minStatVer(IgniteStatisticsManagerImpl statMgr, StatisticsTarget target) throws IgniteCheckedException {
+        StatisticsObjectConfiguration currCfg = statMgr.statisticConfiguration().config(target.key());
+
+        Predicate<StatisticsColumnConfiguration> pred;
+
+        if (F.isEmpty(target.columns()))
+            pred = c -> true;
+        else {
+            Set<String> cols = Arrays.stream(target.columns()).collect(Collectors.toSet());
+
+            pred = c -> cols.contains(c.name());
+        }
+
+        return (currCfg == null) ? 0L : currCfg.columnsAll().values().stream().filter(pred)
+            .mapToLong(StatisticsColumnConfiguration::version).min().orElse(0L);
     }
 
     /**
@@ -460,13 +490,30 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
         );
     }
 
+    /**
+     * Get object statistics.
+     *
+     * @return Object statistics.
+     */
+    protected ObjectStatisticsImpl getStatistics() {
+        ColumnStatistics colStatistics = new ColumnStatistics(null, null, 100, 0,
+            100, 0, new byte[0], 0, U.currentTimeMillis());
+
+        return new ObjectStatisticsImpl(0, Collections.singletonMap("col1", colStatistics)
+        );
+    }
+
     /** Check that all statistics collections related tasks is empty in specified node. */
     protected void checkStatisticTasksEmpty(IgniteEx ign) {
+        if (ign.localNode().isClient())
+            return;
+
         Map<StatisticsKey, LocalStatisticsGatheringContext> currColls = GridTestUtils.getFieldValue(
-            statisticsMgr(ign), "gatherer", "gatheringInProgress"
+            statisticsMgr(ign), "statProc", "gatheringInProgress"
         );
 
-        assertTrue(currColls.toString(), currColls.isEmpty());
+        assertTrue("Has statistics collection tasks on node " + ign.localNode().id() + ":" + currColls.toString(),
+            currColls.isEmpty());
 
         IgniteThreadPoolExecutor mgmtPool = GridTestUtils.getFieldValue(statisticsMgr(ign), "mgmtPool");
 
@@ -482,12 +529,17 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      *
      * @param timeout Timeout.
      * @param expectedVersions Expected versions for specified targets.
+     * @param type Type to get statistics by.
      * @throws Exception In case of errors.
      */
-    protected void awaitStatistics(long timeout, Map<StatisticsTarget, Long> expectedVersions) throws Exception {
+    protected void awaitStatistics(
+        long timeout,
+        Map<StatisticsTarget, Long> expectedVersions,
+        StatisticsType type
+    ) throws Exception {
         for (Ignite ign : G.allGrids()) {
-            if (!((IgniteEx)ign).context().clientNode())
-                awaitStatistics(timeout, expectedVersions, (IgniteEx)ign);
+            if (StatisticsType.GLOBAL == type || !((IgniteEx)ign).context().clientNode())
+                awaitStatistics(timeout, expectedVersions, (IgniteEx)ign, type);
         }
     }
 
@@ -497,41 +549,50 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @param timeout Timeout.
      * @param expectedVersions Expected versions for specified targets.
      * @param ign Node to await.
+     * @param type Statistics type.
      * @throws Exception In case of errors.
      */
-    protected void awaitStatistics(long timeout, Map<StatisticsTarget, Long> expectedVersions, IgniteEx ign)
-        throws Exception {
+    protected void awaitStatistics(
+        long timeout,
+        Map<StatisticsTarget, Long> expectedVersions,
+        IgniteEx ign,
+        StatisticsType type
+    ) throws Exception {
         long t0 = U.currentTimeMillis();
 
-        IgniteH2Indexing indexing = (IgniteH2Indexing)ign.context().query().getIndexing();
+        GridQueryProcessor qryProc = ign.context().query();
 
         while (true) {
             try {
                 checkStatisticTasksEmpty(ign);
-                for (Map.Entry<StatisticsTarget, Long> targetVersionEntry : expectedVersions.entrySet()) {
-                    StatisticsTarget target = targetVersionEntry.getKey();
-                    Long ver = targetVersionEntry.getValue();
 
-                    ObjectStatisticsImpl s = (ObjectStatisticsImpl)indexing.statsManager().getLocalStatistics(target.key());
-                    assertNotNull(s);
+                for (Map.Entry<StatisticsTarget, Long> targetVerEntry : expectedVersions.entrySet()) {
+                    StatisticsTarget target = targetVerEntry.getKey();
 
-                    long minVer = Long.MAX_VALUE;
+                    // Statistics configuration manager could not get fresh enough configuration version till now so we
+                    // need to request global statistics again to force it's collection
+                    // TODO: remove me statisticsMgr(ign).getGlobalStatistics(target.key());
 
-                    Set<String> cols;
-                    if (F.isEmpty(target.columns()))
-                        cols = s.columnsStatistics().keySet();
-                    else
-                        cols = Arrays.stream(target.columns()).collect(Collectors.toSet());
+                    Long ver = targetVerEntry.getValue();
 
-                    for (String col : cols) {
-                        if (s.columnStatistics(col).version() < minVer)
-                            minVer = s.columnStatistics(col).version();
+                    ObjectStatisticsImpl s;
+
+                    switch (type) {
+                        case LOCAL:
+                            s = (ObjectStatisticsImpl)qryProc.statsManager().getLocalStatistics(target.key());
+
+                            break;
+
+                        case GLOBAL:
+                            s = (ObjectStatisticsImpl)qryProc.statsManager().getGlobalStatistics(target.key());
+
+                            break;
+
+                        default:
+                            throw new IllegalArgumentException("Unexpected statistics type " + type);
                     }
 
-                    if (minVer == Long.MAX_VALUE)
-                        minVer = -1;
-
-                    assertEquals((long)ver, minVer);
+                    checkStatisticsVersion(ign.localNode().id(), s, target, ver);
                 }
 
                 return;
@@ -542,6 +603,32 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
                 else
                     U.sleep(200);
             }
+        }
+    }
+
+    /**
+     * Check specified statistics.
+     *
+     * @param stat Object statistics to check.
+     * @param target Statistics target to check only some columns.
+     * @param ver Mininum allowed version.
+     */
+    private void checkStatisticsVersion(UUID nodeId, ObjectStatisticsImpl stat, StatisticsTarget target, long ver) {
+        assertFalse("No column statistics found: " + stat + " on node " + nodeId,
+            stat == null || stat.columnsStatistics().isEmpty());
+
+        Set<String> cols;
+
+        if (F.isEmpty(target.columns()))
+            cols = stat.columnsStatistics().keySet();
+        else
+            cols = Arrays.stream(target.columns()).collect(Collectors.toSet());
+
+        for (String col : cols) {
+            ColumnStatistics colStat = stat.columnStatistics(col);
+
+            assertFalse(String.format("Expect minVer %d but column %s has %s version on node %s", ver, col,
+                (colStat == null) ? null : colStat.version(), nodeId), colStat == null || colStat.version() < ver);
         }
     }
 
@@ -624,9 +711,17 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @return Local table statistics or {@code null} if there are no such statistics in specified node.
      */
     protected ObjectStatisticsImpl getStatsFromNode(int nodeIdx, String tblName, StatisticsType type) {
+        StatisticsKey key = new StatisticsKey(SCHEMA, tblName);
+
         switch (type) {
+            case GLOBAL:
+
+                return (ObjectStatisticsImpl)statisticsMgr(nodeIdx).getGlobalStatistics(key);
+
             case LOCAL:
-                return (ObjectStatisticsImpl)statisticsMgr(nodeIdx).getLocalStatistics(new StatisticsKey(SCHEMA, tblName));
+
+                return (ObjectStatisticsImpl)statisticsMgr(nodeIdx).getLocalStatistics(key);
+
             case PARTITION:
             default:
                 throw new UnsupportedOperationException();
@@ -640,9 +735,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @return Statistics manager implementation.
      */
     public IgniteStatisticsManagerImpl statisticsMgr(int nodeIdx) {
-        IgniteH2Indexing indexing = (IgniteH2Indexing)grid(nodeIdx).context().query().getIndexing();
-
-        return (IgniteStatisticsManagerImpl)indexing.statsManager();
+        return statisticsMgr(grid(nodeIdx));
     }
 
     /**
@@ -652,9 +745,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @return Statistics manager implementation.
      */
     public IgniteStatisticsManagerImpl statisticsMgr(IgniteEx ign) {
-        IgniteH2Indexing indexing = (IgniteH2Indexing)ign.context().query().getIndexing();
-
-        return (IgniteStatisticsManagerImpl)indexing.statsManager();
+        return (IgniteStatisticsManagerImpl)ign.context().query().statsManager();
     }
 
     /**
@@ -663,7 +754,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @param vals Values to populate into the set.
      * @return Set of specified values.
      */
-    public <T> Set<T> setOf(T... vals) {
+    public static <T> Set<T> setOf(T... vals) {
         if (F.isEmpty(vals))
             return Collections.emptySet();
 
@@ -700,7 +791,106 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
                 List<List<?>> res = ign.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery(sql)).getAll();
 
                 return checker.test(res);
-            }, 1000));
+            }, TIMEOUT));
         }
+    }
+
+    /**
+     * Add persistence region to default data region specified ignite configuration.
+     *
+     * @param cfg Base configuration to add persistence into.
+     * @param igniteInstanceName Instance name.
+     * @return Same configuration with persistence enabled.
+     */
+    protected IgniteConfiguration addPersistenceRegion(IgniteConfiguration cfg, String igniteInstanceName) {
+        cfg.setConsistentId(igniteInstanceName);
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+
+        cfg.setDataStorageConfiguration(memCfg);
+
+        return cfg;
+    }
+
+    /**
+     * Add in memory region to default data region specified ignite configuration.
+     *
+     * @param cfg Base configuration to add in memory into.
+     * @param igniteInstanceName Instance name.
+     * @return Same configuration with persistence enabled.
+     */
+    protected IgniteConfiguration addImMemoryRegion(IgniteConfiguration cfg, String igniteInstanceName) {
+        cfg.setConsistentId(igniteInstanceName);
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(false));
+
+        cfg.setDataStorageConfiguration(memCfg);
+
+        return cfg;
+    }
+
+    /**
+     * Check that all expected lines exist in actual. If not - fail.
+     *
+     * @param expected Expected lines, nulls mean any value.
+     * @param actual Actual lines.
+     */
+    protected void checkContains(List<List<Object>> expected, List<List<?>> actual) {
+        List<Object> notExisting = testContains(expected, actual);
+
+        if (notExisting != null)
+            fail("Unable to found " + notExisting + " in specified dataset");
+    }
+
+    /**
+     * Test that all expected lines exist in actual.
+     *
+     * @param expected Expected lines, nulls mean any value.
+     * @param actual Actual lines.
+     * @return First not existing line or {@code null} if all lines presented.
+     */
+    protected List<Object> testContains(List<List<Object>> expected, List<List<?>> actual) {
+        assertTrue(expected.size() <= actual.size());
+
+        assertTrue("Test may take too long with such datasets of actual = " + actual.size(), actual.size() <= 1024);
+
+        for (List<Object> exp : expected) {
+            boolean found = false;
+
+            for (List<?> act : actual) {
+                found = checkEqualWithNull(exp, act);
+
+                if (found)
+                    break;
+            }
+
+            if (!found)
+                return exp;
+        }
+
+        return null;
+    }
+
+    /**
+     * Compare expected line with actual one.
+     *
+     * @param expected Expected line, {@code null} value mean any value.
+     * @param actual Actual line.
+     * @return {@code true} if line are equal, {@code false} - otherwise.
+     */
+    protected boolean checkEqualWithNull(List<Object> expected, List<?> actual) {
+        assertEquals(expected.size(), actual.size());
+
+        for (int i = 0; i < expected.size(); i++) {
+            Object exp = expected.get(i);
+            Object act = actual.get(i);
+
+            if (exp != null && !exp.equals(act) && act != null)
+                return false;
+        }
+
+        return true;
     }
 }

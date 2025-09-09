@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,9 +49,6 @@ import org.jetbrains.annotations.Nullable;
  * Lite dht cache backup update request.
  */
 public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Keys to update. */
     @GridToStringInclude
     @GridDirectCollection(KeyCacheObject.class)
@@ -128,7 +124,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     private GridLongList updateCntrs;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtAtomicUpdateRequest() {
         // No-op.
@@ -149,6 +145,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
      * @param forceTransformBackups Force transform backups flag.
      * @param taskNameHash Task name hash code.
      * @param addDepInfo Deployment info.
+     * @param readRepairRecovery Recovery on Read Repair flag.
      */
     public GridDhtAtomicUpdateRequest(
         int cacheId,
@@ -162,7 +159,8 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         boolean addDepInfo,
         boolean keepBinary,
         boolean skipStore,
-        boolean forceTransformBackups
+        boolean forceTransformBackups,
+        boolean readRepairRecovery
     ) {
         super(cacheId,
             nodeId,
@@ -173,7 +171,8 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             taskNameHash,
             addDepInfo,
             keepBinary,
-            skipStore);
+            skipStore,
+            readRepairRecovery);
 
         assert invokeArgs == null || forceTransformBackups;
 
@@ -548,7 +547,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -556,97 +555,97 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
         switch (writer.state()) {
             case 12:
-                if (!writer.writeMessage("conflictExpireTimes", conflictExpireTimes))
+                if (!writer.writeMessage(conflictExpireTimes))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection("conflictVers", conflictVers, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(conflictVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollection("entryProcessorsBytes", entryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection(entryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeBoolean("forceTransformBackups", forceTransformBackups))
+                if (!writer.writeBoolean(forceTransformBackups))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeObjectArray(invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeCollection("nearEntryProcessorsBytes", nearEntryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection(nearEntryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeMessage("nearExpireTimes", nearExpireTimes))
+                if (!writer.writeMessage(nearExpireTimes))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeMessage("nearTtls", nearTtls))
+                if (!writer.writeMessage(nearTtls))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeCollection("nearVals", nearVals, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(nearVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeMessage("obsoleteIndexes", obsoleteIndexes))
+                if (!writer.writeMessage(obsoleteIndexes))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeCollection("prevVals", prevVals, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(prevVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeMessage("ttls", ttls))
+                if (!writer.writeMessage(ttls))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeMessage("updateCntrs", updateCntrs))
+                if (!writer.writeMessage(updateCntrs))
                     return false;
 
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(vals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -660,15 +659,12 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 12:
-                conflictExpireTimes = reader.readMessage("conflictExpireTimes");
+                conflictExpireTimes = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -676,7 +672,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 13:
-                conflictVers = reader.readCollection("conflictVers", MessageCollectionItemType.MSG);
+                conflictVers = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -684,7 +680,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 14:
-                entryProcessorsBytes = reader.readCollection("entryProcessorsBytes", MessageCollectionItemType.BYTE_ARR);
+                entryProcessorsBytes = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -692,7 +688,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 15:
-                forceTransformBackups = reader.readBoolean("forceTransformBackups");
+                forceTransformBackups = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -700,7 +696,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 16:
-                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
+                invokeArgsBytes = reader.readObjectArray(MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -708,7 +704,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 17:
-                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
+                keys = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -716,7 +712,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 18:
-                nearEntryProcessorsBytes = reader.readCollection("nearEntryProcessorsBytes", MessageCollectionItemType.BYTE_ARR);
+                nearEntryProcessorsBytes = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -724,7 +720,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 19:
-                nearExpireTimes = reader.readMessage("nearExpireTimes");
+                nearExpireTimes = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -732,7 +728,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 20:
-                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
+                nearKeys = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -740,7 +736,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 21:
-                nearTtls = reader.readMessage("nearTtls");
+                nearTtls = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -748,7 +744,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 22:
-                nearVals = reader.readCollection("nearVals", MessageCollectionItemType.MSG);
+                nearVals = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -756,7 +752,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 23:
-                obsoleteIndexes = reader.readMessage("obsoleteIndexes");
+                obsoleteIndexes = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -764,7 +760,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 24:
-                prevVals = reader.readCollection("prevVals", MessageCollectionItemType.MSG);
+                prevVals = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -772,7 +768,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 25:
-                ttls = reader.readMessage("ttls");
+                ttls = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -780,7 +776,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 26:
-                updateCntrs = reader.readMessage("updateCntrs");
+                updateCntrs = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -788,7 +784,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 27:
-                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
+                vals = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -797,7 +793,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
         }
 
-        return reader.afterMessageRead(GridDhtAtomicUpdateRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -809,11 +805,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /** {@inheritDoc} */
     @Override public short directType() {
         return 38;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 28;
     }
 
     /** {@inheritDoc} */

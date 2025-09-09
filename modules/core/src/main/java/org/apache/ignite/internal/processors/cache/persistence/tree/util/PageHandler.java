@@ -490,7 +490,7 @@ public abstract class PageHandler<X, R> {
         @Nullable Boolean walPlc) {
         // If the page is clean, then it is either newly allocated or just after checkpoint.
         // In both cases we have to write full page contents to WAL.
-        return wal != null && !wal.isAlwaysWriteFullPages() && walPlc != TRUE && !wal.disabled(cacheId) &&
+        return wal != null && !wal.isAlwaysWriteFullPages() && walPlc != TRUE && !wal.pageRecordsDisabled(cacheId, pageId) &&
             (walPlc == FALSE || pageMem.isDirty(cacheId, pageId, page));
     }
 
@@ -521,7 +521,7 @@ public abstract class PageHandler<X, R> {
      */
     public static void zeroMemory(ByteBuffer buf, int off, int len) {
         if (buf.isDirect())
-            GridUnsafe.setMemory(GridUnsafe.bufferAddress(buf) + off, len, (byte)0);
+            GridUnsafe.zeroMemory(GridUnsafe.bufferAddress(buf) + off, len);
 
         else {
             for (int i = off; i < off + len; i++)
@@ -538,14 +538,5 @@ public abstract class PageHandler<X, R> {
      */
     public static void copyMemory(long srcAddr, long srcOff, long dstAddr, long dstOff, long cnt) {
         GridUnsafe.copyMemory(null, srcAddr + srcOff, null, dstAddr + dstOff, cnt);
-    }
-
-    /**
-     * @param addr Address.
-     * @param off Offset.
-     * @param len Length.
-     */
-    public static void zeroMemory(long addr, int off, int len) {
-        GridUnsafe.setMemory(addr + off, len, (byte)0);
     }
 }

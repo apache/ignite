@@ -30,14 +30,11 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSH
  * Message requesting to wait until node's SPI context initialize.
  */
 public class HandshakeWaitMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = DIRECT_TYPE_SIZE;
 
     /**
-     * Default constructor required by {@link Message}.
+     * Default constructor.
      */
     public HandshakeWaitMessage() {
         // No-op.
@@ -66,11 +63,6 @@ public class HandshakeWaitMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return HANDSHAKE_WAIT_MSG_TYPE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 0;
     }
 
     /** {@inheritDoc} */

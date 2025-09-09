@@ -30,6 +30,7 @@ public class TestDistibutedConfigurationPlugin extends AbstractTestPluginProvide
     /** */
     private GridKernalContext igniteCtx;
 
+    /** */
     public static Consumer<GridKernalContext> supplier = (ctx) -> {
     };
 

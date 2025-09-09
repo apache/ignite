@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -45,6 +46,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -59,10 +61,11 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.CommandProcessor;
-import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -357,27 +360,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         }
         finally {
             client().destroyCache("new");
-        }
-    }
-
-    /**
-     * Test creating table over existing LOCAL cache fails (enabling query).
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testCreateTableOnExistingLocalCache() throws Exception {
-        client().getOrCreateCache(new CacheConfiguration<>("local").setCacheMode(CacheMode.LOCAL));
-
-        try {
-            GridTestUtils.assertThrows(null, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    doTestCustomNames("local", null, null);
-                    return null;
-                }
-            }, IgniteSQLException.class, "Schema changes are not supported for LOCAL cache");
-        }
-        finally {
-            client().destroyCache("local");
         }
     }
 
@@ -792,8 +774,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @Test
     public void testInvalidAtomicity() {
         assertCreateTableWithParamsThrows("atomicity=InvalidValue",
-            "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL, ATOMIC, " +
-            "TRANSACTIONAL_SNAPSHOT): InvalidValue");
+            "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL, ATOMIC): InvalidValue");
     }
 
     /**
@@ -1076,7 +1057,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class,
-        "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx_2]");
+            "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx_2]");
     }
 
     /**
@@ -1785,24 +1766,48 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             execute("create table t1(id int primary key, name varchar)");
             execute("create table t2(id int primary key, name varchar)");
 
-            IgniteH2Indexing h2Idx = (IgniteH2Indexing)grid(0).context().query().getIndexing();
+            SchemaManager schemaMgr = grid(0).context().query().schemaManager();
 
             String cacheName = cacheName("T1");
 
-            Collection<H2TableDescriptor> col = h2Idx.schemaManager().tablesForCache(cacheName);
+            Collection<TableDescriptor> col = schemaMgr.tablesForCache(cacheName);
 
             assertNotNull(col);
 
-            H2TableDescriptor[] tables = col.toArray(new H2TableDescriptor[col.size()]);
+            assertEquals(1, col.size());
 
-            assertEquals(1, tables.length);
-
-            assertEquals(tables[0].table().getName(), "T1");
+            assertEquals("T1", F.first(col).type().tableName());
         }
         finally {
             execute("drop table t1 if exists");
             execute("drop table t2 if exists");
         }
+    }
+
+    /**
+     * Create table with wrapped key and user value type and insert value by cache API.
+     * Check inserted value.
+     * @throws Exception In case of errors.
+     */
+    @Test
+    public void testWrappedKeyValidation() throws Exception {
+        IgniteCache c1 = ignite(0).getOrCreateCache("WRAP_KEYS");
+        c1.query(new SqlFieldsQuery("CREATE TABLE TestValues (\n" +
+                "  namePK varchar primary key,\n" +
+                "  notUniqueId int\n" +
+                ") WITH \"wrap_key=true," +
+                "value_type=" + TestValue.class.getName() + "\""))
+            .getAll();
+
+        IgniteCache<String, TestValue> values = ignite(0).cache(cacheName("TESTVALUES"));
+
+        TestValue v1 = new TestValue(1);
+
+        values.put("1", v1);
+
+        TestValue rv1 = values.get("1");
+
+        assertEquals(v1, rv1);
     }
 
     /**
@@ -1951,5 +1956,39 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     private static String cacheName(String tblName) {
         return QueryUtils.createTableCacheName("PUBLIC", tblName);
+    }
+
+    /**
+     * Test class for sql queryable test value
+     */
+    private static class TestValue {
+        /**
+         * Not unique id
+         */
+        @QuerySqlField
+        int notUniqueId;
+
+        /** */
+        public TestValue(int notUniqueId) {
+            this.notUniqueId = notUniqueId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestValue testVal = (TestValue)o;
+
+            return notUniqueId == testVal.notUniqueId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(notUniqueId);
+        }
     }
 }

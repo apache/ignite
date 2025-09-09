@@ -91,6 +91,12 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** See {@link CacheConfiguration#getQueryParallelism()}. */
     private Integer parallelism;
 
+    /** INLINE_SIZE for PK index. */
+    private Integer pkInlineSize;
+
+    /** INLINE_SIZE for affinity key index. */
+    private Integer affInlineSize;
+
     /**
      * @return Cache name upon which new cache configuration for this table must be based.
      */
@@ -369,6 +375,26 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void parallelism(Integer parallelism) {
         this.parallelism = parallelism;
+    }
+
+    /** */
+    public Integer primaryKeyInlineSize() {
+        return pkInlineSize;
+    }
+
+    /** */
+    public void primaryKeyInlineSize(Integer pkInlineSize) {
+        this.pkInlineSize = pkInlineSize;
+    }
+
+    /** */
+    public Integer affinityKeyInlineSize() {
+        return affInlineSize;
+    }
+
+    /** */
+    public void affinityKeyInlineSize(Integer affInlineSize) {
+        this.affInlineSize = affInlineSize;
     }
 
     /** {@inheritDoc} */

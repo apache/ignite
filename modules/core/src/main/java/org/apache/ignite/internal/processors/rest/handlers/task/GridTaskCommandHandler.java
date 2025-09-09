@@ -77,8 +77,8 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.RESULT;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeForNodeId;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
@@ -140,7 +140,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     else
                         res.found(false);
 
-                    Object topic = U.unmarshal(ctx, req.topicBytes(), U.resolveClassLoader(ctx.config()));
+                    Object topic = TOPIC_REST.topic("task-result", req.topicId());
 
                     ctx.io().sendToCustomTopic(nodeId, topic, res, SYSTEM_POOL);
                 }
@@ -186,7 +186,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         if (log.isDebugEnabled())
             log.debug("Handling task REST request: " + req);
 
-        GridRestTaskRequest req0 = (GridRestTaskRequest) req;
+        GridRestTaskRequest req0 = (GridRestTaskRequest)req;
 
         final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
 
@@ -216,22 +216,20 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 final IgniteInternalFuture<Object> taskFut;
 
                 if (locExec) {
-                    ctx.task().setThreadContext(TC_TIMEOUT, timeout);
-
                     Object arg = !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null;
 
-                    taskFut = ctx.task().execute(name, arg);
+                    taskFut = ctx.task().execute(name, arg, options().asPublicRequest().withTimeout(timeout));
                 }
                 else {
                     // Using predicate instead of node intentionally
                     // in order to provide user well-structured EmptyProjectionException.
-                    ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(req.destinationId()));
-
-                    ctx.task().setThreadContext(TC_NO_FAILOVER, true);
+                    ClusterGroup prj = ctx.grid().cluster().forPredicate(nodeForNodeId(req.destinationId()));
 
                     taskFut = ctx.closure().callAsync(
                         BALANCE,
-                        new ExeCallable(name, params, timeout), prj.nodes());
+                        new ExeCallable(name, params, timeout),
+                        options(prj.nodes()).withFailoverDisabled()
+                    );
                 }
 
                 if (async) {
@@ -481,16 +479,15 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         };
 
         // 1. Create unique topic name and register listener.
-        Object topic = TOPIC_REST.topic("task-result", topicIdGen.getAndIncrement());
+        long topicId = topicIdGen.getAndIncrement();
+        Object topic = TOPIC_REST.topic("task-result", topicId);
 
         try {
             ctx.io().addMessageListener(topic, msgLsnr);
 
             // 2. Send message.
             try {
-                byte[] topicBytes = U.marshal(ctx, topic);
-
-                ctx.io().sendToGridTopic(taskNode, TOPIC_REST, new GridTaskResultRequest(taskId, topic, topicBytes), SYSTEM_POOL);
+                ctx.io().sendToGridTopic(taskNode, TOPIC_REST, new GridTaskResultRequest(taskId, topicId), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 String errMsg = "Failed to send task result request [resHolderId=" + resHolderId +

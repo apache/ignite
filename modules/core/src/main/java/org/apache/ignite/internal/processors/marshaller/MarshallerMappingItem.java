@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import java.io.Serializable;
+import java.util.Objects;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -80,11 +81,11 @@ public final class MarshallerMappingItem implements Serializable {
         if (!(obj instanceof MarshallerMappingItem))
             return false;
 
-        MarshallerMappingItem that = (MarshallerMappingItem) obj;
+        MarshallerMappingItem that = (MarshallerMappingItem)obj;
 
         return platformId == that.platformId
                 && typeId == that.typeId
-                && (clsName != null ? clsName.equals(that.clsName) : that.clsName == null);
+                && (Objects.equals(clsName, that.clsName));
     }
 
     /** {@inheritDoc} */

@@ -19,15 +19,15 @@ package org.apache.ignite.internal.commandline.cache.reset_lost_partitions;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.PrintStream;
 import java.util.Map;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Result of CacheResetLostPartitionsTask
  */
-public class CacheResetLostPartitionsTaskResult extends VisorDataTransferObject {
+public class CacheResetLostPartitionsTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,14 +48,14 @@ public class CacheResetLostPartitionsTaskResult extends VisorDataTransferObject 
     /**
      * Print job result.
      *
-     * @param out Print stream.
+     * @param printer Printer.
      */
-    public void print(PrintStream out) {
+    public void print(Consumer<String> printer) {
         if (msgMap == null || msgMap.isEmpty())
             return;
 
-        for (String message : msgMap.values())
-            out.println(message);
+        for (String msg : msgMap.values())
+            printer.accept(msg);
     }
 
     /** */
@@ -74,7 +74,7 @@ public class CacheResetLostPartitionsTaskResult extends VisorDataTransferObject 
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         msgMap = U.readMap(in);
     }
 }

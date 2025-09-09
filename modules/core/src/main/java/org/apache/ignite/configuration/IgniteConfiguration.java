@@ -40,7 +40,6 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
-import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compute.ComputeJob;
@@ -54,12 +53,10 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
@@ -85,6 +82,7 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -92,7 +90,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
+import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.USE_FAILURE_HANDLER;
 
 /**
  * This class defines grid runtime configuration. This configuration is passed to
@@ -199,7 +197,7 @@ public class IgniteConfiguration {
     public static final int DFLT_MGMT_THREAD_CNT = 4;
 
     /** Default segmentation policy. */
-    public static final SegmentationPolicy DFLT_SEG_PLC = STOP;
+    public static final SegmentationPolicy DFLT_SEG_PLC = USE_FAILURE_HANDLER;
 
     /** Default value for wait for segment on startup flag. */
     public static final boolean DFLT_WAIT_FOR_SEG_ON_START = true;
@@ -225,8 +223,11 @@ public class IgniteConfiguration {
     /** Default value for cache sanity check enabled flag. */
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
-    /** Default relative working directory path for snapshot operation result. */
+    /** Default relative working directory path for snapshot operation result. The default directory is <tt>snapshots</tt>. */
     public static final String DFLT_SNAPSHOT_DIRECTORY = "snapshots";
+
+    /** Default number of threads to perform snapshot operations. The default value is <tt>4</tt>. */
+    public static final int DFLT_SNAPSHOT_THREAD_POOL_SIZE = 4;
 
     /** Default value for late affinity assignment flag. */
     @Deprecated
@@ -261,12 +262,6 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = SqlConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
-
-    /** Default number of MVCC vacuum threads.. */
-    public static final int DFLT_MVCC_VACUUM_THREAD_CNT = 2;
-
-    /** Default time interval between MVCC vacuum runs in milliseconds. */
-    public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
 
     /**
      * Default SQL query history size.
@@ -336,14 +331,8 @@ public class IgniteConfiguration {
     /** Local node ID. */
     private UUID nodeId;
 
-    /** Marshaller. */
-    private Marshaller marsh;
-
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;
-
-    /** Daemon flag. */
-    private boolean daemon;
 
     /** Whether or not peer class loading is enabled. */
     private boolean p2pEnabled = DFLT_P2P_ENABLED;
@@ -564,6 +553,9 @@ public class IgniteConfiguration {
      */
     private String snapshotPath = DFLT_SNAPSHOT_DIRECTORY;
 
+    /** Total number of threads to perform snapshot operation. By default, the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used. */
+    private int snapshotThreadPoolSize = DFLT_SNAPSHOT_THREAD_POOL_SIZE;
+
     /** Active on start flag. */
     @Deprecated
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -588,12 +580,6 @@ public class IgniteConfiguration {
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
-    /** Size of MVCC vacuum thread pool. */
-    private int mvccVacuumThreadCnt = DFLT_MVCC_VACUUM_THREAD_CNT;
-
-    /** Time interval between vacuum runs (ms). */
-    private long mvccVacuumFreq = DFLT_MVCC_VACUUM_FREQUENCY;
-
     /** User authentication enabled. */
     private boolean authEnabled;
 
@@ -614,6 +600,9 @@ public class IgniteConfiguration {
 
     /** Shutdown policy for cluster. */
     public ShutdownPolicy shutdown = DFLT_SHUTDOWN_POLICY;
+
+    /** Default values for distributed properties. */
+    private Map<String, String> distrProps;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -674,7 +663,6 @@ public class IgniteConfiguration {
         cliConnCfg = cfg.getClientConnectorConfiguration();
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
-        daemon = cfg.isDaemon();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
@@ -690,7 +678,6 @@ public class IgniteConfiguration {
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
         lsnrs = cfg.getLocalEventListeners();
-        marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
         mbeanSrv = cfg.getMBeanServer();
         metricsExpTime = cfg.getMetricsExpireTime();
@@ -698,8 +685,6 @@ public class IgniteConfiguration {
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
-        mvccVacuumThreadCnt = cfg.getMvccVacuumThreadCount();
-        mvccVacuumFreq = cfg.getMvccVacuumFrequency();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         odbcCfg = cfg.getOdbcConfiguration();
@@ -723,6 +708,7 @@ public class IgniteConfiguration {
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
         segResolvers = cfg.getSegmentationResolvers();
         snapshotPath = cfg.getSnapshotPath();
+        snapshotThreadPoolSize = cfg.getSnapshotThreadPoolSize();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
@@ -744,6 +730,7 @@ public class IgniteConfiguration {
         sqlCfg = cfg.getSqlConfiguration();
         shutdown = cfg.getShutdownPolicy();
         asyncContinuationExecutor = cfg.getAsyncContinuationExecutor();
+        distrProps = cfg.getDistributedPropertiesDefaultValues();
     }
 
     /**
@@ -787,46 +774,6 @@ public class IgniteConfiguration {
      */
     public String getIgniteInstanceName() {
         return igniteInstanceName;
-    }
-
-    /**
-     * Whether or not this node should be a daemon node.
-     * <p>
-     * Daemon nodes are the usual grid nodes that participate in topology but not
-     * visible on the main APIs, i.e. they are not part of any cluster groups. The only
-     * way to see daemon nodes is to use {@link ClusterGroup#forDaemons()} method.
-     * <p>
-     * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology, but also needs to be
-     * excluded from the "normal" topology, so that it won't participate in the task execution
-     * or in-memory data grid storage.
-     *
-     * @return {@code True} if this node should be a daemon node, {@code false} otherwise.
-     * @see ClusterGroup#forDaemons()
-     */
-    public boolean isDaemon() {
-        return daemon;
-    }
-
-    /**
-     * Sets daemon flag.
-     * <p>
-     * Daemon nodes are the usual grid nodes that participate in topology but not
-     * visible on the main APIs, i.e. they are not part of any cluster group. The only
-     * way to see daemon nodes is to use {@link ClusterGroup#forDaemons()} method.
-     * <p>
-     * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology, but also needs to be
-     * excluded from the "normal" topology, so that it won't participate in the task execution
-     * or in-memory data grid storage.
-     *
-     * @param daemon Daemon flag.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setDaemon(boolean daemon) {
-        this.daemon = daemon;
-
-        return this;
     }
 
     /**
@@ -915,7 +862,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of logger to use in grid. If not provided,
-     * {@ignitelink org.apache.ignite.logger.log4j.Log4JLogger}
+     * {@ignitelink org.apache.ignite.logger.log4j2.Log4J2Logger}
      * will be used.
      *
      * @return Logger to use in grid.
@@ -1441,36 +1388,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Should return an instance of marshaller to use in grid. If not provided,
-     * default marshaller implementation that allows to read object field values
-     * without deserialization will be used.
-     *
-     * @return Marshaller to use in grid.
-     * @deprecated Since 2.1. Some Ignite features will not work if non-null marshaller is set
-     *     (IgniteCache.withKeepBinary(), .NET, CPP, ODBC)
-     */
-    @Deprecated
-    public Marshaller getMarshaller() {
-        return marsh;
-    }
-
-    /**
-     * Sets marshaller to use within grid.
-     *
-     * @param marsh Marshaller to use within grid.
-     * @see IgniteConfiguration#getMarshaller()
-     * @return {@code this} for chaining.
-     * @deprecated Since 2.1. Some Ignite features will not work if non-null marshaller is set
-     *     (IgniteCache.withKeepBinary(), .NET, CPP, ODBC)
-     */
-    @Deprecated
-    public IgniteConfiguration setMarshaller(Marshaller marsh) {
-        this.marsh = marsh;
-
-        return this;
-    }
-
-    /**
      * Returns {@code true} if peer class loading is enabled, {@code false}
      * otherwise. Default value is {@code false} specified by {@link #DFLT_P2P_ENABLED}.
      * <p>
@@ -1677,10 +1594,11 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Compression level for internal network messages.
+     * Sets compression level for internal network messages.
+     * @param netCompressionLevel Compression level for internal network messages.
      * <p>
      * If not provided, then default value
-     * Deflater.BEST_SPEED is used.
+     * {@link Deflater#BEST_SPEED} is used.
      *
      */
     public void setNetworkCompressionLevel(int netCompressionLevel) {
@@ -1741,6 +1659,25 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setNetworkSendRetryCount(int sndRetryCnt) {
         this.sndRetryCnt = sndRetryCnt;
+
+        return this;
+    }
+
+    /**
+     * @return Total number of threads to perform snapshot operation. By default,
+     * the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used.
+     */
+    public int getSnapshotThreadPoolSize() {
+        return snapshotThreadPoolSize;
+    }
+
+    /**
+     * @param snapshotThreadPoolSize Total number of threads to perform snapshot operation. By default,
+     * the {@link #DFLT_SNAPSHOT_THREAD_POOL_SIZE} is used.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSnapshotThreadPoolSize(int snapshotThreadPoolSize) {
+        this.snapshotThreadPoolSize = snapshotThreadPoolSize;
 
         return this;
     }
@@ -1930,6 +1867,7 @@ public class IgniteConfiguration {
      * Sets SSL context factory that will be used for creating a secure socket  layer.
      *
      * @param sslCtxFactory Ssl context factory.
+     * @return {@code this} for chaining.
      * @see SslContextFactory
      */
     public IgniteConfiguration setSslContextFactory(Factory<SSLContext> sslCtxFactory) {
@@ -2175,7 +2113,7 @@ public class IgniteConfiguration {
      * on arrive to mapped node. This approach suits well for large amount of small
      * jobs (which is a wide-spread use case). User still can control the number
      * of concurrent jobs by setting maximum thread pool size defined by
-     * IgniteConfiguration.getPublicThreadPoolSize() configuration property.
+     * {@link IgniteConfiguration#getPublicThreadPoolSize()} configuration property.
      *
      * @return Grid collision SPI implementation or {@code null} to use default implementation.
      */
@@ -2454,11 +2392,12 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link MetricExporterSpi}.
+     * Sets fully configured instances of {@link MetricExporterSpi}. {@link JmxMetricExporterSpi} is used by default.
      *
      * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
      * @return {@code this} for chaining.
      * @see IgniteConfiguration#getMetricExporterSpi()
+     * @see JmxMetricExporterSpi
      */
     public IgniteConfiguration setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {
         this.metricExporterSpi = metricExporterSpi;
@@ -2480,9 +2419,10 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets fully configured metric SPI implementations.
+     * Gets fully configured metric SPI implementations. {@link JmxMetricExporterSpi} is used by default.
      *
      * @return Metric exporter SPI implementations.
+     * @see JmxMetricExporterSpi
      */
     public MetricExporterSpi[] getMetricExporterSpi() {
         return metricExporterSpi;
@@ -2599,6 +2539,7 @@ public class IgniteConfiguration {
      * Sets cache configurations.
      *
      * @param cacheCfg Cache configurations.
+     * @return {@code this} for chaining.
      */
     @SuppressWarnings({"ZeroLengthArrayAllocation"})
     public IgniteConfiguration setCacheConfiguration(CacheConfiguration... cacheCfg) {
@@ -2612,7 +2553,6 @@ public class IgniteConfiguration {
      * {@link DiscoverySpi} in client mode if this property is {@code true}.
      *
      * @return Client mode flag.
-     * @see TcpDiscoverySpi#setForceServerMode(boolean)
      */
     public Boolean isClientMode() {
         return clientMode;
@@ -2644,6 +2584,7 @@ public class IgniteConfiguration {
      * Cache key configuration defines
      *
      * @param cacheKeyCfg Cache key configuration.
+     * @return {@code this} for chaining.
      */
     public IgniteConfiguration setCacheKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
         this.cacheKeyCfg = cacheKeyCfg;
@@ -2664,6 +2605,7 @@ public class IgniteConfiguration {
      * Sets configuration for Ignite Binary objects.
      *
      * @param binaryCfg Binary configuration object.
+     * @return {@code this} for chaining.
      */
     public IgniteConfiguration setBinaryConfiguration(BinaryConfiguration binaryCfg) {
         this.binaryCfg = binaryCfg;
@@ -3155,7 +3097,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @return By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used. The value can be
+     * @return By default, the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used. The value can be
      * configured as relative path starting from the Ignites {@link #getWorkDirectory()} or
      * the value can be represented as an absolute snapshot working path.
      */
@@ -3164,11 +3106,14 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @param snapshotPath By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used.
+     * @param snapshotPath By default, the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used.
      * The value can be configured as relative path starting from the Ignites {@link #getWorkDirectory()}
      * or the value can be represented as an absolute snapshot working path instead.
+     * @return {@code this} for chaining.
      */
     public IgniteConfiguration setSnapshotPath(String snapshotPath) {
+        A.notNull(snapshotPath, "snapshotPath");
+
         this.snapshotPath = snapshotPath;
 
         return this;
@@ -3494,60 +3439,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
-     * <p>
-     * Returns number of MVCC vacuum threads.
-     *
-     * @return Number of MVCC vacuum threads.
-     */
-    @IgniteExperimental
-    public int getMvccVacuumThreadCount() {
-        return mvccVacuumThreadCnt;
-    }
-
-    /**
-     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
-     * <p>
-     * Sets number of MVCC vacuum threads.
-     *
-     * @param mvccVacuumThreadCnt Number of MVCC vacuum threads.
-     * @return {@code this} for chaining.
-     */
-    @IgniteExperimental
-    public IgniteConfiguration setMvccVacuumThreadCount(int mvccVacuumThreadCnt) {
-        this.mvccVacuumThreadCnt = mvccVacuumThreadCnt;
-
-        return this;
-    }
-
-    /**
-     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
-     * <p>
-     * Returns time interval between MVCC vacuum runs in milliseconds.
-     *
-     * @return Time interval between MVCC vacuum runs in milliseconds.
-     */
-    @IgniteExperimental
-    public long getMvccVacuumFrequency() {
-        return mvccVacuumFreq;
-    }
-
-    /**
-     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
-     * <p>
-     * Sets time interval between MVCC vacuum runs in milliseconds.
-     *
-     * @param mvccVacuumFreq Time interval between MVCC vacuum runs in milliseconds.
-     * @return {@code this} for chaining.
-     */
-    @IgniteExperimental
-    public IgniteConfiguration setMvccVacuumFrequency(long mvccVacuumFreq) {
-        this.mvccVacuumFreq = mvccVacuumFreq;
-
-        return this;
-    }
-
-    /**
      * Returns {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
      * Default value is false; authentication is disabled.
      *
@@ -3674,6 +3565,27 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
         this.asyncContinuationExecutor = asyncContinuationExecutor;
+
+        return this;
+    }
+
+    /**
+     * Gets default values for distributed properties.
+     *
+     * @return Default values for distributed properties.
+     */
+    public Map<String, String> getDistributedPropertiesDefaultValues() {
+        return distrProps;
+    }
+
+    /**
+     * Sets default values for distributed properties.
+     *
+     * @param distrProps Default values for distributed properties.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDistributedPropertiesDefaultValues(Map<String, String> distrProps) {
+        this.distrProps = distrProps;
 
         return this;
     }

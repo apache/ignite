@@ -34,7 +34,8 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
@@ -107,8 +108,8 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @return Java filter or null.
      */
     private static CacheEntryEventFilter getJavaFilter(Object filter, GridKernalContext ctx) {
-        if (filter instanceof BinaryObjectImpl) {
-            BinaryObjectImpl bo = (BinaryObjectImpl)filter;
+        if (BinaryUtils.isBinaryObjectImpl(filter)) {
+            BinaryObjectEx bo = (BinaryObjectEx)filter;
 
             if (bo.typeId() == GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY) {
                 PlatformJavaObjectFactoryProxy prx = bo.deserialize();
@@ -156,12 +157,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                 initialQryCur = getInitialQueryCursor(initialQry);
             }
             catch (Exception e) {
-                try
-                {
+                try {
                     close0();
                 }
-                catch (Exception ignored)
-                {
+                catch (Exception ignored) {
                     // Ignore
                 }
 
@@ -262,6 +261,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                 @Override public List<GridQueryFieldMetadata> fieldsMeta() {
                     return ((QueryCursorEx)cursor).fieldsMeta();
                 }
+
+                @Override public boolean isQuery() {
+                    return false;
+                }
             }, batchSize);
 
         return new PlatformQueryCursor(platformCtx, new QueryCursorEx<Cache.Entry>() {
@@ -284,6 +287,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
 
             @Override public List<GridQueryFieldMetadata> fieldsMeta() {
                 return null;
+            }
+
+            @Override public boolean isQuery() {
+                return false;
             }
         }, batchSize);
     }

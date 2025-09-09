@@ -36,32 +36,129 @@ control.bat <connection parameters> <command> <arguments>
 
 == Connecting to Cluster
 
-When executed without connection parameters, the control script tries to connect to a node running on localhost (`localhost:11211`).
+NOTE: Starting from Apache Ignite version 2.17, the utility by default uses a connection through the thin client protocol (configured on a node via `org.apache.ignite.configuration.ClientConnectorConfiguration`). See link:#migration-to-the-thin-client-protocol[Migration Notes] for more information.
+
+When executed without connection parameters, the control script tries to connect to a node running on localhost (`localhost:10800`).
 If you want to connect to a node that is running on a remove machine, specify the connection parameters.
 
 [cols="2,3,1",opts="header"]
 |===
 |Parameter | Description | Default Value
-
 | --host HOST_OR_IP | The host name or IP address of the node. | `localhost`
-
-| --port PORT | The port to connect to. | `11211`
-
+| --port PORT | The port to connect to. | `10800`
 | --user USER | The user name. |
-| --password PASSWORD |The user password. |
-| --ping-interval PING_INTERVAL | The ping interval. | 5000
-| --ping-timeout PING_TIMEOUT | Ping response timeout. | 30000
-| --ssl-protocol PROTOCOL1, PROTOCOL2... | A list of SSL protocols to try when connecting to the cluster. link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html#SunJSSE_Protocols[Supported protocols,window=_blank]. | `TLS`
-| --ssl-cipher-suites CIPHER1,CIPHER2...  | A list of SSL ciphers. link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html#SupportedCipherSuites[Supported ciphers,window=_blank]. |
+| --password | Force `control.sh` to prompt for a user password before connecting to a cluster. Although you can explicitly specify a value for this option like `--password PASSWORD`, doing so is strongly discouraged due to security concerns. If this option is omitted, `control.sh` will automatically prompt for a user password if the server requires password authentication. However, `control.sh` will waste a connection attempt while determining whether the server needs a password. |
+| --ssl-protocol PROTOCOL1, PROTOCOL2... | A list of SSL protocols to try when connecting to the cluster. link:https://docs.oracle.com/en/java/javase/11/security/java-security-overview1.html#GUID-FCF419A7-B856-46DD-A36F-C6F88F9AF37F[Supported protocols,window=_blank]. | `TLS`
+| --ssl-cipher-suites CIPHER1,CIPHER2...  | A list of SSL ciphers. link:https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#jsse-cipher-suite-names[Supported ciphers,window=_blank]. |
 | --ssl-key-algorithm ALG | The SSL key algorithm. | `SunX509`
 | --keystore-type KEYSTORE_TYPE | The keystore type. | `JKS`
 | --keystore KEYSTORE_PATH | The path to the keystore. Specify a keystore to enable SSL for the control script.|
-| --keystore-password KEYSTORE_PWD | The password to the keystore.  |
+| --keystore-password | Force `control.sh` to prompt for a keystore password before connecting to a cluster. Although you can explicitly specify a value for this option like `--keystore-password KEYSTORE_PWD`, doing so is strongly discouraged due to security concerns. If this option is omitted, `control.sh` will automatically prompt for a keystore password before connecting to the cluster if `--keystore KEYSTORE_PATH` argument is specified. |
 | --truststore-type TRUSTSTORE_TYPE | The type of the truststore. | `JKS`
 | --truststore TRUSTSTORE_PATH | The path to the truststore. |
-| --truststore-password TRUSTSTORE_PWD | The password to the truststore. |
+| --truststore-password | Force `control.sh` to prompt for a truststore password before connecting to a cluster. Although you can explicitly specify a value for this option like `--truststore-password TRUSTSTORE_PWD`, doing so is strongly discouraged due to security concerns. If this option is omitted, `control.sh` will automatically prompt for a truststore password before connecting to the cluster if `--truststore TRUSTSTORE_PATH` argument is specified. |
+| --ssl-factory SSL_FACTORY_PATH | Custom SSL factory Spring xml file path. |
 |===
 
+== Migration to the thin client protocol
+
+With the default configuration of Ignite, no migration actions will be required. Additional configuration of the connector is no longer necessary.
+
+If you connect to the wrong connector, you will receive an error and may see the message:
+
+`Make sure you are connecting to the client connector (configured on a node via 'org.apache.ignite.configuration.ClientConnectorConfiguration'). Connection to the REST connector was deprecated and will be removed for the control utility in future releases. Set up the 'IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION' system property to 'true' to forcefully connect to the REST connector (configured on a node via 'org.apache.ignite.configuration.ConnectorConfiguration').`
+
+To ensure backward compatibility, a system property has been added to provide the old behavior (note: it will be removed in version 2.18):
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+export IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION=true;
+control.sh --state --host x.x.x.x --port 11212
+----
+tab:Windows[]
+[source, shell]
+----
+SET IGNITE_CONTROL_UTILITY_USE_CONNECTOR_CONNECTION=true
+control.bat --state --host x.x.x.x --port 11212
+----
+--
+
+In some cases, the following actions may be required to migrate user scripts using the utility:
+
+=== 1. A custom port is specified:
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+control.sh --state --host x.x.x.x --port 11212
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat --state --host x.x.x.x --port 11212
+----
+--
+
+To migrate, specify the port for the thin client connector:
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+control.sh --state --host x.x.x.x
+control.sh --state --host x.x.x.x --port 10801
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat --state --host x.x.x.x
+control.bat --state --host x.x.x.x --port 10801
+----
+--
+
+=== 2. A custom SSL factory for the binary REST connector is specified, different from the SSL factory for the thin client connector:
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+control.sh --state --ssl-factory connector-ssl-factory.xml
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat --state --ssl-factory connector-ssl-factory.xml
+----
+--
+
+To migrate, specify the SSL factory for the thin client connector:
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+control.sh --state --ssl-factory ignite-ssl-factory.xml
+control.sh --state --ssl-factory client-connector-ssl-factory.xml
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat --state --ssl-factory ignite-ssl-factory.xml
+control.bat --state --ssl-factory client-connector-ssl-factory.xml
+----
+--
+
+=== 3. The client connector is disabled.
+
+Enable it in the configuration (`IgniteConfiguration#setClientConnectorConfiguration`).
 
 == Activation, Deactivation and Topology Management
 
@@ -421,6 +518,115 @@ control.sh|bat --cache list . --seq
 control.sh|bat --cache list counter-.* --seq
 ----
 
+== Creating Caches
+
+You can use the control script to create specific caches.
+
+NOTE: The 'ignite-spring' module should be enabled.
+
+[source, shell]
+----
+control.sh|bat --cache create --springXmlConfig springXmlFilePath --skip-existing
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--springXmlConfig springXmlConfigPath` | Path to the Spring XML configuration that contains
+'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from.
+|`--skip-existing`| Optional flag to skip existing caches.
+|===
+
+Examples:
+[source, shell]
+----
+# Create caches from the `/ignite/config/userCaches.xml` configuration.
+control.sh|bat --cache create --springXmlConfig /ignite/config/userCaches.xml
+
+# Create caches from the `/ignite/config/userCaches.xml` configuration except existing ones.
+control.sh|bat --cache create --springXmlConfig /ignite/config/userCaches.xml --skip-existing
+----
+
+== Destroying Caches
+
+You can use the control script to destroy specific caches.
+
+[source, shell]
+----
+control.sh|bat --cache destroy --caches cache1,...,cacheN|--destroy-all-caches
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--caches cache1,...,cacheN`| Specifies a comma-separated list of cache names to be destroyed.
+| `--destroy-all-caches` | Permanently destroy all user-created caches.
+|===
+
+Examples:
+[source, shell]
+----
+# Destroy cache1 and cache2.
+control.sh|bat --cache destroy --caches cache1,cache2
+
+# Destroy all user-created caches.
+control.sh|bat --cache destroy --destroy-all-caches
+----
+
+== Clearing Caches
+
+You can use the control script to clear specific caches.
+
+[source, shell]
+----
+control.sh|bat --cache clear --caches cache1,...,cacheN
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--caches cache1,...,cacheN`| Specifies a comma-separated list of cache names to be cleared.
+|===
+
+Examples:
+[source, shell]
+----
+# Clear cache1 and cache2.
+control.sh|bat --cache clear --caches cache1,cache2
+----
+
+== Scanning Caches
+
+You can use the control script to scan cache entries.
+
+[source, shell]
+----
+control.sh|bat --cache scan cacheName [--limit N]
+----
+
+For each entry four columns will be displayed: key class, string representation of key, value class, and string representation of value.
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--limit N`| Limit amount of entries to scan (default 1000).
+|===
+
+Examples:
+[source, shell]
+----
+# Query no more than 10 entries from cache "cache1"
+control.sh|bat --cache scan cache1 --limit 10
+----
+
 == Resetting Lost Partitions
 
 You can use the control script to reset lost partitions for specific caches.
@@ -432,24 +638,28 @@ control.sh --cache reset_lost_partitions cacheName1,cacheName2,...
 ----
 
 
-== Consistency Check Commands
+== Consistency Check and Repair Commands
 
-`control.sh|bat` includes a set of consistency check commands that enable you to verify internal data consistency.
+`control.sh|bat` includes a set of consistency check commands that enable you to verify and repair internal data consistency.
 
 First, the commands can be used for debugging and troubleshooting purposes especially if you're in active development.
 
 Second, if there is a suspicion that a query (such as a SQL query, etc.) returns an incomplete or wrong result set, the commands can verify whether there is inconsistency in the data.
 
-Finally, the consistency check commands can be utilized as part of regular cluster health monitoring.
+Third, the consistency check commands can be utilized as a part of regular cluster health monitoring.
+
+Finally, consistency can be repaired if necessary.
 
 Let's review these usage scenarios in more detail.
 
 === Verifying Partition Checksums
 
-//Even if update counters and size are equal on the primary and backup nodes, there might be a case when the primary and backup  diverge due to some critical failure.
+Even if update counters and size are equal on the primary and backup nodes, the primary and backup might diverge due to some critical failure.
+
 The `idle_verify` command compares the hash of the primary partition with that of the backup partitions and reports any differences.
 The differences might be the result of node failure or incorrect shutdown during an update operation.
-If any inconsistency is detected, we recommend remove the incorrect partitions.
+
+If any inconsistency is detected, we recommend removing the incorrect partitions or repairing the consistency using the `--consistency repair` command.
 
 [source,shell]
 ----
@@ -478,6 +688,102 @@ Partition instances: [PartitionHashRecord [isPrimary=true, partHash=97595430, up
 === Cluster Should Be Idle During `idle_verify` Check
 All updates should be stopped when `idle_verify` calculates hashes, otherwise it may show false positive error results. It's impossible to compare big datasets in a distributed system if they are being constantly updated​.
 ====
+
+=== Repairing cache consistency
+[WARNING]
+====
+[discrete]
+===  Experimental feature
+The command may not work on some special/unique configurations or even cause a cluster/node failure.
+
+Command execution MUST be checked on the test environment using the data/configuration similar to the production before the execution on the real production environment.
+====
+
+[WARNING]
+====
+[discrete]
+===  Additional configuration required
+The command uses special link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/events/EventType.html#EVT_CONSISTENCY_VIOLATION[Consistency Violation Event] to detect the consistency violations. This event must be enabled before the command execution.
+
+Please, refer to the link:events/listening-to-events#enabling-events[Enabling Events] section for details.
+====
+
+`idle_verify` command provides the inconsistent cache group names and partitions list as a result.
+The `repair` command allows performing cache consistency check and repair (when possible) using the link:key-value-api/read-repair[Read Repair] approach for every inconsistent partition found by `idle_verify`.
+
+The command uses special strategies to perform the repair. It's recommended to use `CHECK_ONLY` strategy to list inconsistent values and then choose the proper link:key-value-api/read-repair#strategies[Repair Strategy].
+
+By default, found inconsistent entries will be listed in the application log. You may change the location by configuring the logger for a special logging path for the `org.apache.ignite.internal.visor.consistency` package.
+
+By default, found inconsistent entries will be listed as is but may be masked by enabling link:logging#suppressing-sensitive-information[IGNITE_TO_STRING_INCLUDE_SENSITIVE] system property.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --enable-experimental --consistency repair --cache cache-name --partitions partitions --strategy strategy
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --enable-experimental --consistency repair --cache cache-name --partitions partitions --strategy strategy
+----
+--
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `cache-name`| Cache (or cache group) name to be checked/repaired.
+| `partitions`| Comma separated list of cache's partitions to be checked/repaired.
+| `strategy`| See link:key-value-api/read-repair#strategies[Repair Strategies].
+|===
+
+Optional parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--parallel`| Allows performing check/repair in the fastest way, by parallel execution at all partition owners.
+|===
+
+=== Cache consistency check/repair operations status
+
+The command allows to check `--consistency repair` commands status.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --enable-experimental --consistency status
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --enable-experimental --consistency status
+----
+--
+
+=== Partition update counters finalization
+
+The command allows fo finalize partition update counters after the manual repair.
+Finalization closes gaps at transactional cache partition update counters.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --enable-experimental --consistency finalize
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --enable-experimental --consistency finalize
+----
+--
 
 === Validating SQL Index Consistency
 The `validate_indexes` command validates the indexes of given caches on all cluster nodes.
@@ -528,6 +834,19 @@ a primary partition and a corresponding backup partitions and prints a report if
 Differences may be the result of inconsistencies in some data on the cluster from which the snapshot was taken. It is
 recommended to perform the `idle_verify` procedure on the cluster if this case occurs.
 
+The checking incremental snapshot command verifies data in WAL segments only. It checks that every transaction included into
+snapshot is fully committed on every participated node. It also calculates hashes of these transactions and committed data
+changes and compares it between nodes.
+
+[WARNING]
+====
+[discrete]
+=== The Incremental Snapshot Check verifies transactional caches only
+Please note, incremental snapshots doesn't guarantee consistency of atomic caches. It is highly recommended verifying these
+caches after restoring with the `idle_verify` command. If it is needed it's possible to repair inconsistent partitions with
+the `--consistency` command.
+====
+
 This procedure does not require the cluster to be in the `idle` state.
 
 [tabs]
@@ -537,6 +856,10 @@ tab:Shell[]
 ----
 # Checks that partitions of all snapshot caches have the correct checksums and primary/backup ones actually contain the same data.
 control.(sh|bat) --snapshot check snapshot_name
+
+# Checks the transactional data included into incremental snapshots. Incremental snapshots with indices from 1 to 3 are checked.
+control.(sh|bat) --snapshot check snapshot_name --increment 3
+
 ----
 --
 
@@ -565,7 +888,7 @@ If the index inline sizes are different, the console output is similar to the da
 [source,text]
 ----
 Control utility [ver. 2.10.0]
-2021 Copyright(C) Apache Software Foundation
+2022 Copyright(C) Apache Software Foundation
 User: test
 Time: 2021-04-27T16:13:21.213
 Command [CACHE] started
@@ -770,6 +1093,28 @@ io.dataregion.default.PagesReplaceAge             0
 io.dataregion.default.PhysicalMemoryPages         0
 Command [METRIC] finished with code: 0
 
+== Metric configure command
+
+The metrics command configure bounds of histogram metrics or rate time interval of hitrate metric.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --metric --configure-histogram histogram-metric-name 1,2,3
+control.sh --metric --configure-hitrate hitrate-metric-name 1000
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --metric --configure-histogram histogram-metric-name 1,2,3
+control.bat --metric --configure-hitrate hitrate-metric-name 1000
+----
+--
+
+NOTE: For metric command use following format as metric name: `<register-name>.<metric-name>`. For example: `io.datastorage.WalLoggingRate` must be set for `WalLoggingRate` metric.
+
 == Indexes Management
 
 The commands below allow to get a specific information on indexes and to trigger the indexes rebuild process.
@@ -826,12 +1171,12 @@ To trigger the rebuild process of all indexes for the specified caches or the ca
 tab:Unix[]
 [source,shell]
 ----
-control.sh --cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+control.sh --cache indexes_force_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 ----
 tab:Window[]
 [source,shell]
 ----
-control.bat --cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+control.bat --cache indexes_force_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 ----
 --
 
@@ -872,9 +1217,9 @@ control.sh --system-view nodes
 Command [SYSTEM-VIEW] started
 Arguments: --system-view nodes
 --------------------------------------------------------------------------------
-nodeId                                  consistentId                                         version                          isClient    isDaemon    nodeOrder    addresses                                          hostnames          isLocal
-a8a28869-cac6-4b17-946a-6f7f547b9f62    0:0:0:0:0:0:0:1%lo0,127.0.0.1,192.168.31.45:47500    2.10.0#20201230-sha1:00000000    false       false               1    [0:0:0:0:0:0:0:1%lo0, 127.0.0.1, 192.168.31.45]    [192.168.31.45]    true
-d580433d-c621-45ff-a558-b4df82d09613    0:0:0:0:0:0:0:1%lo0,127.0.0.1,192.168.31.45:47501    2.10.0#20201230-sha1:00000000    false       false               2    [0:0:0:0:0:0:0:1%lo0, 127.0.0.1, 192.168.31.45]    [192.168.31.45]    false
+nodeId                                  consistentId                                         version                          isClient    nodeOrder    addresses                                          hostnames          isLocal
+a8a28869-cac6-4b17-946a-6f7f547b9f62    0:0:0:0:0:0:0:1%lo0,127.0.0.1,192.168.31.45:47500    2.10.0#20201230-sha1:00000000    false               1    [0:0:0:0:0:0:0:1%lo0, 127.0.0.1, 192.168.31.45]    [192.168.31.45]    true
+d580433d-c621-45ff-a558-b4df82d09613    0:0:0:0:0:0:0:1%lo0,127.0.0.1,192.168.31.45:47501    2.10.0#20201230-sha1:00000000    false               2    [0:0:0:0:0:0:0:1%lo0, 127.0.0.1, 192.168.31.45]    [192.168.31.45]    false
 Command [SYSTEM-VIEW] finished with code: 0
 
 
@@ -947,3 +1292,100 @@ Parameters:
 | `status`| Get status of collecting performance statistics in the cluster.
 |===
 
+== Working with Cluster Properties
+
+The `control.sh|bat` script provides an ability to work with link:SQL/sql-statistics[SQL statistics,window=_blank] functionality.
+
+To get the full list of available properties, use the `--property list` command. This command returns the list of all available properties to work with:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property list
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat  --property list
+----
+--
+
+You can set property value with `--property set` command. For example, to enable or disable SQL statistics in cluster use, specify `ON`, `OFF`,  or `NO_UPDATE` values:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property set --name 'statistics.usage.state' --val 'ON'
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat  --property set --name 'statistics.usage.state' --val 'ON'
+----
+--
+
+You can also get property value with `--property get` command. For example:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property get --name 'statistics.usage.state'
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --property get --name 'statistics.usage.state'
+----
+--
+
+== Manage cache metrics collection
+
+The command provides an ability to enable, disable or show status of cache metrics collection.
+
+[source, shell]
+----
+control.sh|bat --cache metrics enable|disable|status --caches cache1[,...,cacheN]|--all-caches
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--caches cache1[,...,cacheN]`| Specifies a comma-separated list of cache names to which operation should be applied.
+| `--all-caches` | Applies operation to all user caches.
+|===
+
+Examples:
+[source, shell]
+----
+# Show metrics statuses for all caches:
+control.sh|bat --cache metrics status --all-caches
+
+# Enable metrics collection for cache-1 and cache-2:
+control.sh|bat --cache metrics enable --caches cache-2,cache-1
+----
+
+== Rebuild index
+
+The `schedule_indexes_rebuild` commands Apache Ignite to rebuild indexes for specified caches or cache groups. Target caches or cache groups must be in Maintenance Mode.
+
+[source, shell]
+----
+ control.sh|bat --cache schedule_indexes_rebuild --node-ids nodeId1,...nodeIdN|--all-nodes --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+|--node-id | A list of nodes to rebuild indexes on. If not specified, schedules rebuild on all nodes.
+|--cache-names | Comma-separated list of cache names, optionally with indexes. If indexes are not specified, all indexes of the cache will be scheduled for the rebuild operation. Can be used simultaneously with cache group names.
+|--group-names | Comma-separated list of cache group names. Can be used simultaneously with cache names.

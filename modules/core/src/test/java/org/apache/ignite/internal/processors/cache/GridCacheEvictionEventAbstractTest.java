@@ -32,9 +32,7 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
@@ -46,13 +44,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * Eviction event self test.
  */
 public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstractTest {
-    /** */
-    @Before
-    public void beforeGridCacheEvictionEventAbstractTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-    }
-
     /**
      *
      */
@@ -62,9 +53,6 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         IgniteConfiguration c = super.getConfiguration();
 
         CacheConfiguration cc = defaultCacheConfiguration();
@@ -104,9 +92,9 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
         g.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
-                CacheEvent e = (CacheEvent) evt;
+                CacheEvent e = (CacheEvent)evt;
 
-                oldVal.set((String) e.oldValue());
+                oldVal.set((String)e.oldValue());
 
                 latch.countDown();
 

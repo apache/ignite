@@ -31,8 +31,11 @@ public class MetastoragePageIOUtils {
     /**
      * @see MetastorageBPlusIO#getLink(long, int)
      */
-    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
-    long getLink(IO io, long pageAddr, int idx) {
+    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO> long getLink(
+        IO io,
+        long pageAddr,
+        int idx
+    ) {
         assert idx < io.getCount(pageAddr) : idx;
 
         return PageUtils.getLong(pageAddr, io.offset(idx));
@@ -41,16 +44,22 @@ public class MetastoragePageIOUtils {
     /**
      * @see MetastorageBPlusIO#getKeySize(long, int)
      */
-    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
-    short getKeySize(IO io, long pageAddr, int idx) {
+    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO> short getKeySize(
+        IO io,
+        long pageAddr, int idx
+    ) {
         return PageUtils.getShort(pageAddr, io.offset(idx) + 8);
     }
 
     /**
      * @see MetastorageBPlusIO#getKey(long, int, MetastorageRowStore)
      */
-    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
-    String getKey(IO io, long pageAddr, int idx, MetastorageRowStore rowStore) throws IgniteCheckedException {
+    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO> String getKey(
+        IO io,
+        long pageAddr,
+        int idx,
+        MetastorageRowStore rowStore
+    ) throws IgniteCheckedException {
         int off = io.offset(idx);
         int len = PageUtils.getShort(pageAddr, off + 8);
 
@@ -73,10 +82,12 @@ public class MetastoragePageIOUtils {
     /**
      * @see MetastorageBPlusIO#getDataRow(long, int, MetastorageRowStore)
      */
-    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
-    MetastorageDataRow getDataRow(IO io, long pageAddr, int idx, MetastorageRowStore rowStore)
-        throws IgniteCheckedException
-    {
+    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO> MetastorageDataRow getDataRow(
+        IO io,
+        long pageAddr,
+        int idx,
+        MetastorageRowStore rowStore
+    ) throws IgniteCheckedException {
         long link = io.getLink(pageAddr, idx);
 
         int off = io.offset(idx);
@@ -101,8 +112,14 @@ public class MetastoragePageIOUtils {
     /**
      * @see BPlusIO#store(long, int, org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO, long, int)
      */
-    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
-    void store(IO dstIo, long dstPageAddr, int dstIdx, BPlusIO<MetastorageRow> srcIo, long srcPageAddr, int srcIdx) {
+    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO> void store(
+        IO dstIo,
+        long dstPageAddr,
+        int dstIdx,
+        BPlusIO<MetastorageRow> srcIo,
+        long srcPageAddr,
+        int srcIdx
+    ) {
         int srcOff = srcIo.offset(srcIdx);
         int dstOff = dstIo.offset(dstIdx);
 
@@ -112,8 +129,12 @@ public class MetastoragePageIOUtils {
     /**
      * @see BPlusIO#storeByOffset(long, int, Object)
      */
-    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
-    void storeByOffset(IO io, long pageAddr, int off, MetastorageRow row) {
+    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO> void storeByOffset(
+        IO io,
+        long pageAddr,
+        int off,
+        MetastorageRow row
+    ) {
         assert row.link() != 0;
 
         PageUtils.putLong(pageAddr, off, row.link());

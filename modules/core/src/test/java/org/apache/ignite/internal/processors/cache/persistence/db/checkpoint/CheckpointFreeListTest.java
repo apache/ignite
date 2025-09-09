@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.db.checkpoint;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,6 +45,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -69,9 +70,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -157,7 +155,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     public void testFreeListRestoredCorrectly() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx igniteClient = startClientGrid(getClientConfiguration("client"));
 
@@ -186,7 +184,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         GridCacheOffheapManager offheap2 = cacheOffheapManager();
 
@@ -230,7 +228,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING, value = "true")
     public void testRestoreFreeListCorrectlyAfterRandomStop() throws Exception {
         IgniteEx ignite0 = startGrid(0);
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         Random random = new Random();
 
@@ -263,20 +261,17 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        Path cacheFolder = Paths.get(U.defaultWorkDirectory(),
-            DFLT_STORE_DIR,
-            ignite0.name().replaceAll("\\.", "_"),
-            CACHE_DIR_PREFIX + CACHE_NAME
-        );
+        Path cacheFolder = ignite0.context().pdsFolderResolver().fileTree()
+            .defaultCacheStorage(ignite0.cachex(CACHE_NAME).configuration()).toPath();
 
         Optional<Long> totalPartSizeBeforeStop = totalPartitionsSize(cacheFolder);
 
         CyclicBarrier nodeStartBarrier = new CyclicBarrier(2);
 
-        int approximateIterationCount = SF.applyLB(10, 6);
+        int approximateIterationCnt = SF.applyLB(10, 6);
 
         //Approximate count of entries to put per one iteration.
-        int iterationDataCount = entriesToRemove.size() / approximateIterationCount;
+        int iterationDataCnt = entriesToRemove.size() / approximateIterationCnt;
 
         startAsyncPutThread(entriesToRemove, nodeStartBarrier);
 
@@ -286,7 +281,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
             ignite0 = startGrid(0);
 
-            ignite0.cluster().active(true);
+            ignite0.cluster().state(ClusterState.ACTIVE);
 
             if (entriesToRemove.isEmpty())
                 break;
@@ -295,7 +290,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
             nodeStartBarrier.await();
             nodeStartBarrier.reset();
 
-            int awaitSize = entriesToRemove.size() - iterationDataCount;
+            int awaitSize = entriesToRemove.size() - iterationDataCnt;
 
             waitForCondition(() -> entriesToRemove.size() < awaitSize || entriesToRemove.size() == 0, 20000);
         }
@@ -320,7 +315,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     public void testFreeListUnderLoadMultipleCheckpoints() throws Throwable {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         int minValSize = 64;
         int maxValSize = 128;
@@ -450,9 +445,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
      * @return Total partitinos size.
      */
     private Optional<Long> totalPartitionsSize(Path cacheFolder) {
-        return Stream.of(
-            requireNonNull(cacheFolder.toFile().listFiles((dir, name) -> name.startsWith(PART_FILE_PREFIX)))
-        )
+        return Stream.of(requireNonNull(cacheFolder.toFile().listFiles(NodeFileTree::partitionFile)))
             .map(File::length)
             .reduce(Long::sum);
     }

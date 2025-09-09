@@ -57,11 +57,14 @@ public class JmhPageLockTrackerBenchmark {
     /** */
     @State(Scope.Thread)
     public static class ThreadLocalState {
+        /** */
         PageLockListener pl;
 
+        /** */
         @Param({"2", "4", "8", "16"})
         int stackSize;
 
+        /** */
         @Param({
             "HeapArrayLockStack",
             "HeapArrayLockLog",
@@ -70,11 +73,14 @@ public class JmhPageLockTrackerBenchmark {
         })
         String type;
 
+        /** */
         @Param({"true", "false"})
         boolean barrier;
 
+        /** */
         int StructureId = 123;
 
+        /** */
         @Setup
         public void doSetup() {
             pl = create(Thread.currentThread().getName(), type, barrier);

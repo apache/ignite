@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import java.util.Arrays;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /** */
 public class BytesIndexKey implements IndexKey {
@@ -35,14 +36,35 @@ public class BytesIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.BYTES;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.BYTES;
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        byte[] okey = (byte[]) o.key();
+        byte[] arr0 = key;
+        byte[] arr1 = ((BytesIndexKey)o).key;
 
-        return BytesCompareUtils.compareNotNullUnsigned(key, okey);
+        if (arr0 == arr1)
+            return 0;
+
+        int commonLen = Math.min(arr0.length, arr1.length);
+        int unSignArr0;
+        int unSignArr1;
+
+        for (int i = 0; i < commonLen; ++i) {
+            unSignArr0 = arr0[i] & 255;
+            unSignArr1 = arr1[i] & 255;
+
+            if (unSignArr0 != unSignArr1)
+                return unSignArr0 > unSignArr1 ? 1 : -1;
+        }
+
+        return Integer.signum(Integer.compare(arr0.length, arr1.length));
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return Arrays.toString(key);
     }
 }

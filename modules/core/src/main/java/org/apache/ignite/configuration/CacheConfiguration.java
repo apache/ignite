@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
@@ -51,10 +52,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -121,7 +122,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default atomicity mode. */
     public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
 
-    /** 
+    /**
       * Default lock timeout.
       * @deprecated Default lock timeout configuration property has no effect.
       */
@@ -433,6 +434,22 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private Integer diskPageCompressionLevel;
 
+    /**
+     * Root directories where partition files are stored.
+     * @see DataStorageConfiguration#setStoragePath(String)
+     * @see DataStorageConfiguration#setExtraStoragePaths(String[])
+     */
+    @IgniteExperimental
+    @Nullable private String[] storagePaths;
+
+    /**
+     * Root directory where index file are stored.
+     * @see DataStorageConfiguration#setStoragePath(String)
+     * @see DataStorageConfiguration#setExtraStoragePaths(String[])
+     */
+    @IgniteExperimental
+    @Nullable private String idxPath;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -531,6 +548,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
         sqlOnheapCacheMaxSize = cc.getSqlOnheapCacheMaxSize();
         evtsDisabled = cc.isEventsDisabled();
+        storagePaths = cc.getStoragePaths();
+        idxPath = cc.getIndexPath();
     }
 
     /**
@@ -603,6 +622,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * @return Name of the memory policy.
      * @deprecated Use {@link #getDataRegionName()} (String)} instead.
      */
     @Deprecated
@@ -626,6 +646,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * @param memPlcName Memory policy name.
+     * @return {@code this} for chaining.
      * @deprecated Use {@link #setDataRegionName(String)} instead.
      */
     @Deprecated
@@ -755,6 +777,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * <p>
      * Defaults to {@link #DFLT_SQL_ONHEAP_CACHE_MAX_SIZE}.
      *
+     * @param sqlOnheapCacheMaxSize Maximum SQL on-heap cache.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setSqlOnheapCacheMaxSize(int sqlOnheapCacheMaxSize) {
@@ -805,6 +828,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Enabling this can greatly improve performance for key-value operations and scan queries,
      * at the expense of RAM usage.
      *
+     * @param platformCfg Platform cache configuration.
      * @return {@code this} for chaining.
      */
     @IgniteExperimental
@@ -1612,7 +1636,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Rebalancing delay, {@code 0} to start rebalancing immediately, {@code -1} to
      *      start rebalancing manually, or positive value to specify delay in milliseconds
      *      after which rebalancing should start automatically.
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public long getRebalanceDelay() {
         return rebalanceDelay;
     }
@@ -1622,7 +1648,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param rebalanceDelay Rebalance delay to set.
      * @return {@code this} for chaining.
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setRebalanceDelay(long rebalanceDelay) {
         this.rebalanceDelay = rebalanceDelay;
 
@@ -1993,7 +2021,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean dup = false;
 
             for (QueryEntity entity : qryEntities) {
-                if (F.eq(entity.findValueType(), newEntity.findValueType())) {
+                if (Objects.equals(entity.findValueType(), newEntity.findValueType())) {
                     dup = true;
 
                     break;
@@ -2004,7 +2032,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 qryEntities.add(newEntity);
 
             // Set key configuration if needed.
-            String affFieldName = BinaryContext.affinityFieldName(keyCls);
+            String affFieldName = CU.affinityFieldName(keyCls);
 
             if (affFieldName != null) {
                 CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(newEntity.getKeyType(), affFieldName);
@@ -2015,7 +2043,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                     boolean keyCfgDup = false;
 
                     for (CacheKeyConfiguration oldKeyCfg : keyCfg) {
-                        if (F.eq(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
+                        if (Objects.equals(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
                             keyCfgDup = true;
 
                             break;
@@ -2110,7 +2138,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean found = false;
 
             for (QueryEntity existing : this.qryEntities) {
-                if (F.eq(entity.findValueType(), existing.findValueType())) {
+                if (Objects.equals(entity.findValueType(), existing.findValueType())) {
                     found = true;
 
                     break;
@@ -2370,6 +2398,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets cache key configuration.
      *
      * @param cacheKeyCfg Cache key configuration.
+     * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
         this.keyCfg = cacheKeyCfg;
@@ -2442,6 +2471,50 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
         this.diskPageCompressionLevel = diskPageCompressionLevel;
+
+        return this;
+    }
+
+    /**
+     * @return A path to the root directory where the Persistent Store for cache group will persist data and indexes.
+     */
+    @IgniteExperimental
+    @Nullable public String[] getStoragePaths() {
+        return storagePaths;
+    }
+
+    /**
+     * Sets a path to the root directory where the Persistent Store will persist data.
+     * By default, the Persistent Store's files are located under {@link DataStorageConfiguration#getStoragePath()}.
+     *
+     * @param storagePaths Persistence store path.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public CacheConfiguration<K, V> setStoragePaths(String... storagePaths) {
+        this.storagePaths = storagePaths;
+
+        return this;
+    }
+
+    /**
+     * @return A path to the root directory where the Persistent Store for cache group will persist index.
+     */
+    @IgniteExperimental
+    @Nullable public String getIndexPath() {
+        return idxPath;
+    }
+
+    /**
+     * Sets a path to the root directory where the Persistent Store will persist index partition.
+     * By default, the Persistent Store's files are located under {@link DataStorageConfiguration#getStoragePath()}.
+     *
+     * @param idxPath Index path.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public CacheConfiguration<K, V> setIndexPath(String idxPath) {
+        this.idxPath = idxPath;
 
         return this;
     }

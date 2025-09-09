@@ -132,5 +132,11 @@
     <!-- Server certificates are not validated. -->
     <Rule Id="CA5359" Action="None" />
 
+    <!-- Unsafe LoadXml. -->
+    <Rule Id="CA3075" Action="None" />
+
+    <!-- Insecure XmlDocument. -->
+    <Rule Id="CA3077" Action="None" />
+
   </Rules>
 </RuleSet>

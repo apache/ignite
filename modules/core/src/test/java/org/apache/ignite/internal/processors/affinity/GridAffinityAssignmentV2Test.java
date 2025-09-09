@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -53,89 +54,72 @@ public class GridAffinityAssignmentV2Test {
     /** */
     protected IgniteProductVersion ver = new IgniteProductVersion();
 
+    /** */
     private ClusterNode clusterNode1 = node(metrics, ver, "1");
 
+    /** */
     private ClusterNode clusterNode2 = node(metrics, ver, "2");
 
+    /** */
     private ClusterNode clusterNode3 = node(metrics, ver, "3");
 
+    /** */
     private ClusterNode clusterNode4 = node(metrics, ver, "4");
 
+    /** */
     private ClusterNode clusterNode5 = node(metrics, ver, "5");
 
+    /** */
     private ClusterNode clusterNode6 = node(metrics, ver, "6");
 
-    private List<ClusterNode> clusterNodes = new ArrayList<ClusterNode>() {{
-        add(clusterNode1);
-        add(clusterNode2);
-        add(clusterNode3);
-        add(clusterNode4);
-        add(clusterNode5);
-        add(clusterNode6);
-    }};
+    /** */
+    private List<ClusterNode> clusterNodes = new ArrayList<>();
+
+    {
+        clusterNodes.add(clusterNode1);
+        clusterNodes.add(clusterNode2);
+        clusterNodes.add(clusterNode3);
+        clusterNodes.add(clusterNode4);
+        clusterNodes.add(clusterNode5);
+        clusterNodes.add(clusterNode6);
+    }
 
     /**
      * Test GridAffinityAssignment logic when backup threshold is not reached.
      */
     @Test
     public void testPrimaryBackupPartitions() {
-        GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
+        GridAffinityAssignment gridAffAssignment = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
-            new ArrayList<List<ClusterNode>>() {{
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode1);
-                    add(clusterNode2);
-                    add(clusterNode3);
-                    add(clusterNode4);
-                }});
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode1);
-                    add(clusterNode2);
-                    add(clusterNode3);
-                    add(clusterNode4);
-                }});
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode5);
-                    add(clusterNode6);
-                }});
-            }},
+            Arrays.asList(
+                Arrays.asList(clusterNode1, clusterNode2, clusterNode3, clusterNode4),
+                Arrays.asList(clusterNode1, clusterNode2, clusterNode3, clusterNode4),
+                Arrays.asList(clusterNode5, clusterNode6)
+            ),
             new ArrayList<>()
         );
 
-        GridAffinityAssignmentV2 gridAffinityAssignment2 = new GridAffinityAssignmentV2(
+        GridAffinityAssignmentV2 gridAffAssignment2 = new GridAffinityAssignmentV2(
             new AffinityTopologyVersion(1, 0),
-            new ArrayList<List<ClusterNode>>() {{
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode1);
-                    add(clusterNode2);
-                    add(clusterNode3);
-                    add(clusterNode4);
-                }});
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode1);
-                    add(clusterNode2);
-                    add(clusterNode3);
-                    add(clusterNode4);
-                }});
-                add(new ArrayList<ClusterNode>() {{
-                    add(clusterNode5);
-                    add(clusterNode6);
-                }});
-            }},
+            Arrays.asList(
+                Arrays.asList(clusterNode1, clusterNode2, clusterNode3, clusterNode4),
+                Arrays.asList(clusterNode1, clusterNode2, clusterNode3, clusterNode4),
+                Arrays.asList(clusterNode5, clusterNode6)
+            ),
             new ArrayList<>()
         );
 
-        assertPartitions(gridAffinityAssignment);
+        assertPartitions(gridAffAssignment);
 
-        assertPartitions(gridAffinityAssignment2);
+        assertPartitions(gridAffAssignment2);
 
         if (AffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
-            assertSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
+            assertSame(gridAffAssignment2.getIds(0), gridAffAssignment2.getIds(0));
         else
-            assertNotSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
+            assertNotSame(gridAffAssignment2.getIds(0), gridAffAssignment2.getIds(0));
 
         try {
-            gridAffinityAssignment2.primaryPartitions(clusterNode1.id()).add(1000);
+            gridAffAssignment2.primaryPartitions(clusterNode1.id()).add(1000);
 
             fail("Unmodifiable exception expected");
         }
@@ -144,7 +128,7 @@ public class GridAffinityAssignmentV2Test {
         }
 
         try {
-            gridAffinityAssignment2.backupPartitions(clusterNode1.id()).add(1000);
+            gridAffAssignment2.backupPartitions(clusterNode1.id()).add(1000);
 
             fail("Unmodifiable exception expected");
         }
@@ -153,7 +137,7 @@ public class GridAffinityAssignmentV2Test {
         }
 
         Set<Integer> unwrapped = U.field(
-            gridAffinityAssignment2.primaryPartitions(clusterNode1.id()),
+            gridAffAssignment2.primaryPartitions(clusterNode1.id()),
             "delegate"
         );
 
@@ -163,11 +147,9 @@ public class GridAffinityAssignmentV2Test {
             assertTrue(unwrapped instanceof BitSetIntSet);
     }
 
+    /** */
     private void assertPartitions(AffinityAssignment gridAffinityAssignment) {
-        List<Integer> parts = new ArrayList<Integer>() {{
-            add(0);
-            add(1);
-        }};
+        List<Integer> parts = Arrays.asList(0, 1);
 
         assertTrue(gridAffinityAssignment.primaryPartitions(clusterNode1.id()).containsAll(parts));
         assertFalse(gridAffinityAssignment.primaryPartitions(clusterNode1.id()).contains(2));
@@ -206,15 +188,13 @@ public class GridAffinityAssignmentV2Test {
         for (int i = 0; i < 10; i++)
             nodes.add(node(metrics, ver, "1" + i));
 
-        GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
+        GridAffinityAssignment gridAffAssignment = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
-            new ArrayList<List<ClusterNode>>() {{
-                add(nodes);
-            }},
+            Collections.singletonList(nodes),
             new ArrayList<>()
         );
 
-        assertSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
+        assertSame(gridAffAssignment.getIds(0), gridAffAssignment.getIds(0));
     }
 
     /**
@@ -228,11 +208,9 @@ public class GridAffinityAssignmentV2Test {
         for (int i = 0; i < 10; i++)
             nodes.add(node(metrics, ver, "1" + i));
 
-        GridAffinityAssignmentV2 gridAffinityAssignment2 = new GridAffinityAssignmentV2(
+        GridAffinityAssignmentV2 gridAffAssignment2 = new GridAffinityAssignmentV2(
             new AffinityTopologyVersion(1, 0),
-            new ArrayList<List<ClusterNode>>() {{
-                add(nodes);
-            }},
+            Collections.singletonList(nodes),
             new ArrayList<>()
         );
 
@@ -240,13 +218,13 @@ public class GridAffinityAssignmentV2Test {
 
         ObjectOutputStream outputStream = new ObjectOutputStream(byteArrOutputStream);
 
-        outputStream.writeObject(gridAffinityAssignment2);
+        outputStream.writeObject(gridAffAssignment2);
 
         ObjectInputStream inputStream = new ObjectInputStream(new ByteArrayInputStream(byteArrOutputStream.toByteArray()));
 
         GridAffinityAssignmentV2 deserialized = (GridAffinityAssignmentV2)inputStream.readObject();
 
-        assertEquals(deserialized.topologyVersion(), gridAffinityAssignment2.topologyVersion());
+        assertEquals(deserialized.topologyVersion(), gridAffAssignment2.topologyVersion());
     }
 
     /**

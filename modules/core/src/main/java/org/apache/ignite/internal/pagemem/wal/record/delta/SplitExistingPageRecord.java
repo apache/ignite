@@ -61,10 +61,12 @@ public class SplitExistingPageRecord extends PageDeltaRecord {
         return RecordType.BTREE_EXISTING_PAGE_SPLIT;
     }
 
+    /** */
     public int middleIndex() {
         return mid;
     }
 
+    /** */
     public long forwardId() {
         return fwdId;
     }

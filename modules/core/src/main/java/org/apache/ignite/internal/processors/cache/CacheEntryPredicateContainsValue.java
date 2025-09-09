@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -68,12 +68,15 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
         GridCacheContext cctx = e.context();
 
         if (this.val instanceof BinaryObject && val instanceof BinaryObject)
-            return F.eq(val, this.val);
+            return Objects.equals(val, this.val);
 
         Object thisVal = CU.value(this.val, cctx, false);
         Object cacheVal = CU.value(val, cctx, false);
 
-        return F.eq(thisVal, cacheVal);
+        if (thisVal.getClass().isArray())
+            return Objects.deepEquals(thisVal, cacheVal);
+
+        return Objects.equals(thisVal, cacheVal);
     }
 
     /** {@inheritDoc} */
@@ -94,7 +97,7 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -102,7 +105,7 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("val", val))
+                if (!writer.writeMessage(val))
                     return false;
 
                 writer.incrementState();
@@ -116,15 +119,12 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 0:
-                val = reader.readMessage("val");
+                val = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -133,17 +133,12 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
 
         }
 
-        return reader.afterMessageRead(CacheEntryPredicateContainsValue.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 98;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

@@ -40,7 +40,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -527,9 +526,9 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
 
-        PageLockTrackerManager pageLockTrackerManager = mock(PageLockTrackerManager.class);
+        PageLockTrackerManager pageLockTrackerMgr = mock(PageLockTrackerManager.class);
 
-        when(pageLockTrackerManager.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
+        when(pageLockTrackerMgr.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
 
         return new CacheFreeList(
             1,
@@ -538,7 +537,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
             null,
             metaPageId,
             true,
-            pageLockTrackerManager,
+            pageLockTrackerMgr,
             new GridTestKernalContext(log),
             null,
             PageIdAllocator.FLAG_IDX
@@ -611,11 +610,6 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int headerSize() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
         @Override public long link() {
             return link;
         }
@@ -632,46 +626,6 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public int cacheId() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long newMvccCoordinatorVersion() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long newMvccCounter() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int newMvccOperationCounter() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCoordinatorVersion() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long mvccCounter() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int mvccOperationCounter() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte mvccTxState() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte newMvccTxState() {
             return 0;
         }
     }
@@ -719,6 +673,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
             return value(ctx, cpy, null);
         }
 
+        /** {@inheritDoc} */
         @Override public <T> @Nullable T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
             return (T)data;
         }
@@ -729,7 +684,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int valueBytesLength(CacheObjectContext ctx) {
+        @Override public int valueBytesLength(CacheObjectValueContext ctx) {
             return data.length;
         }
 
@@ -765,7 +720,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+        @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
             assert false;
 
             return this;
@@ -798,13 +753,6 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public short directType() {
-            assert false;
-
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
             assert false;
 
             return 0;

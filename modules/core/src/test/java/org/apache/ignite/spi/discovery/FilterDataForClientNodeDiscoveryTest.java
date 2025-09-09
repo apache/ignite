@@ -84,12 +84,12 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
 
             grid(i).context().discovery().setCustomEventListener(
                 MessageForServer.class, new CustomEventListener<MessageForServer>() {
-                @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
-                    MessageForServer msg) {
+                    @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+                        MessageForServer msg) {
 
-                    recvMsg[idx0] = true;
-                }
-            });
+                        recvMsg[idx0] = true;
+                    }
+                });
         }
 
         for (int i = 0; i < 4; ++i) {

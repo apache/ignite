@@ -23,8 +23,9 @@ import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.net.ssl.SSLContext;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -60,6 +61,12 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     /** */
     private final SSLContext sslCtx;
 
+    /** */
+    private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+
+    /** */
+    private final int connTimeout;
+
     /**
      * Constructor.
      *
@@ -81,6 +88,8 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         }
         else
             filters = new GridNioFilter[] {codecFilter};
+
+        connTimeout = cfg.getTimeout();
 
         try {
             srv = GridNioServer.<ByteBuffer>builder()
@@ -107,12 +116,26 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
 
     /** {@inheritDoc} */
     @Override public void start() {
-        srv.start();
+        rwLock.writeLock().lock();
+
+        try {
+            srv.start();
+        }
+        finally {
+            rwLock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
-        srv.stop();
+    @Override public synchronized void stop() {
+        rwLock.writeLock().lock();
+
+        try {
+            srv.stop();
+        }
+        finally {
+            rwLock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -120,9 +143,34 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                                            ClientMessageHandler msgHnd,
                                            ClientConnectionStateHandler stateHnd)
             throws ClientConnectionException {
+        rwLock.readLock().lock();
+
         try {
-            SocketChannel ch = SocketChannel.open();
-            ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), Integer.MAX_VALUE);
+            SocketChannel ch = null;
+            try {
+                ch = SocketChannel.open();
+                ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), connTimeout);
+            }
+            catch (Exception e) {
+                if (ch != null) {
+                    if (ch.socket() != null) {
+                        try {
+                            ch.socket().close();
+                        }
+                        catch (Exception ignored) {
+                            // ignore close exception
+                        }
+                    }
+
+                    try {
+                        ch.close();
+                    }
+                    catch (Exception ignored) {
+                        // ignore close exception
+                    }
+                }
+                throw new ClientConnectionException(e.getMessage(), e);
+            }
 
             Map<Integer, Object> meta = new HashMap<>();
             GridNioFuture<?> sslHandshakeFut = null;
@@ -133,15 +181,23 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
             }
 
-            GridNioSession ses = srv.createSession(ch, meta, false, null).get();
+            GridNioFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
+
+            if (sesFut.error() != null)
+                sesFut.get();
 
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();
 
+            GridNioSession ses = sesFut.get();
+
             return new GridNioClientConnection(ses, msgHnd, stateHnd);
         }
         catch (Exception e) {
-            throw new ClientConnectionException(e.getMessage(), e);
+            throw new ClientConnectionException(e.getMessage() + " [remoteAddress=" + addr + ']', e);
+        }
+        finally {
+            rwLock.readLock().unlock();
         }
     }
 }

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -50,8 +51,8 @@ import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
+import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -386,8 +387,8 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
                 if (qCol.isEmpty())
                     return false;
 
-                for (GridRunningQueryInfo queryInfo : qCol)
-                    queryInfo.cancel();
+                for (GridRunningQueryInfo qryInfo : qCol)
+                    qryInfo.cancel();
 
                 return true;
             }
@@ -656,8 +657,8 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
 
             Person other = (Person)obj;
 
-            return F.eq(name, other.name) && position == other.position &&
-                amount == other.amount && F.eq(updated, other.updated);
+            return Objects.equals(name, other.name) && position == other.position &&
+                amount == other.amount && Objects.equals(updated, other.updated);
         }
     }
 

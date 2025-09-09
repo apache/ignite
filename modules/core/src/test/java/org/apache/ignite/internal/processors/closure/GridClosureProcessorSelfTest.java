@@ -33,6 +33,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.gridfunc.IntSumReducer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
@@ -220,8 +221,8 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      */
     private IgniteFuture<?> runAsync(int idx,
         Collection<ClosureTestRunnable> jobs,
-        @Nullable IgnitePredicate<ClusterNode> p)
-    {
+        @Nullable IgnitePredicate<ClusterNode> p
+    ) {
         assert idx >= 0 && idx < NODES_CNT;
         assert !F.isEmpty(jobs);
 
@@ -295,7 +296,9 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         assert idx >= 0 && idx < NODES_CNT;
 
         return new IgnitePredicate<ClusterNode>() {
-            @Override public boolean apply(ClusterNode e) { return grid(idx).localNode().id().equals(e.id()); }
+            @Override public boolean apply(ClusterNode e) {
+                return grid(idx).localNode().id().equals(e.id());
+            }
         };
     }
 
@@ -456,7 +459,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     public void testReduceAsync() throws Exception {
         Collection<ClosureTestCallable> jobs = F.asList(new ClosureTestCallable(), new ClosureTestCallable());
 
-        IgniteFuture<Integer> fut = grid(0).compute().callAsync(jobs, F.sumIntReducer());
+        IgniteFuture<Integer> fut = grid(0).compute().callAsync(jobs, new IntSumReducer());
 
         // Sum of arithmetic progression.
         int exp = (1 + jobs.size()) * jobs.size() / 2;

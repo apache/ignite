@@ -65,13 +65,6 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     }
 
     /**
-     * @return Logger.
-     */
-    protected IgniteLogger log() {
-        return log;
-    }
-
-    /**
      * @return Context.
      */
     protected GridCacheSharedContext<K, V> context() {
@@ -91,6 +84,9 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
             return;
 
         onKernalStart0(active);
+
+        if (log != null && log.isDebugEnabled())
+            log.debug(kernalStartInfo());
     }
 
     /**

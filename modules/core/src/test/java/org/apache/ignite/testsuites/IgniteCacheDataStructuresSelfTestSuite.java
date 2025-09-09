@@ -18,13 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.AtomicCacheAffinityConfigurationTest;
-import org.apache.ignite.internal.processors.cache.consistency.AtomicReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.ExplicitTransactionalReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.ImplicitTransactionalReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.ReplicatedExplicitTransactionalReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.ReplicatedImplicitTransactionalReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.SingleBackupExplicitTransactionalReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.SingleBackupImplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueCleanupSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueClientDisconnectTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeConsistencySelfTest;
@@ -33,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteAtomicRe
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteAtomicSequenceClusterReadOnlyTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteAtomicStampedClusterReadOnlyTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDataStructuresTest;
-import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDiscoveryDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteCountDownLatchClusterReadOnlyTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureUniqueNameTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureWithJobTest;
@@ -45,15 +37,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteSetClust
 import org.apache.ignite.internal.processors.cache.datastructures.OutOfMemoryVolatileRegionTest;
 import org.apache.ignite.internal.processors.cache.datastructures.SemaphoreFailoverNoWaitingAcquirerTest;
 import org.apache.ignite.internal.processors.cache.datastructures.SemaphoreFailoverSafeReleasePermitsTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalAtomicQueueApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalAtomicSetSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalQueueApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalSequenceApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalSetSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.IgniteLocalAtomicLongApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.IgniteLocalCountDownLatchSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.IgniteLocalLockSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.IgniteLocalSemaphoreSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest;
@@ -116,15 +99,6 @@ import org.junit.runners.Suite;
     GridCachePartitionedQueueFailoverDataConsistencySelfTest.class,
     GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class,
 
-    GridCacheLocalSequenceApiSelfTest.class,
-    GridCacheLocalSetSelfTest.class,
-    GridCacheLocalAtomicSetSelfTest.class,
-    GridCacheLocalQueueApiSelfTest.class,
-    GridCacheLocalAtomicQueueApiSelfTest.class,
-    IgniteLocalCountDownLatchSelfTest.class,
-    IgniteLocalSemaphoreSelfTest.class,
-    IgniteLocalLockSelfTest.class,
-
     GridCacheReplicatedSequenceApiSelfTest.class,
     GridCacheReplicatedSequenceMultiNodeSelfTest.class,
     GridCacheReplicatedQueueApiSelfTest.class,
@@ -175,7 +149,6 @@ import org.junit.runners.Suite;
     GridCachePartitionedDataStructuresFailoverSelfTest.class,
     GridCacheQueueMultiNodeConsistencySelfTest.class,
 
-    IgniteLocalAtomicLongApiSelfTest.class,
     IgnitePartitionedAtomicLongApiSelfTest.class,
     IgniteReplicatedAtomicLongApiSelfTest.class,
 
@@ -198,7 +171,6 @@ import org.junit.runners.Suite;
     IgniteDataStructuresNoClassOnServerTest.class,
 
     IgniteClientDataStructuresTest.class,
-    IgniteClientDiscoveryDataStructuresTest.class,
 
     IgnitePartitionedQueueNoBackupsTest.class,
 
@@ -207,16 +179,6 @@ import org.junit.runners.Suite;
     AtomicCacheAffinityConfigurationTest.class,
 
     IgniteCacheDataStructuresBinarySelfTestSuite.class,
-
-    ImplicitTransactionalReadRepairTest.class,
-    SingleBackupImplicitTransactionalReadRepairTest.class,
-    ReplicatedImplicitTransactionalReadRepairTest.class,
-
-    AtomicReadRepairTest.class,
-
-    ExplicitTransactionalReadRepairTest.class,
-    SingleBackupExplicitTransactionalReadRepairTest.class,
-    ReplicatedExplicitTransactionalReadRepairTest.class,
 
     IgniteAtomicLongClusterReadOnlyTest.class,
     IgniteAtomicReferenceClusterReadOnlyTest.class,

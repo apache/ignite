@@ -58,9 +58,9 @@ public class GridCacheLocalFieldsQueryFuture
      * @param err Error.
      * @param finished Finished or not.
      */
-    public void onPage(@Nullable UUID nodeId, @Nullable List<GridQueryFieldMetadata> metaData,
+    public void onFieldsPage(@Nullable UUID nodeId, @Nullable List<GridQueryFieldMetadata> metaData,
         @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
-        onPage(nodeId, data, err, finished);
+        onPage(nodeId, null, data, err, finished);
 
         if (!metaFut.isDone())
             metaFut.onDone(metaData);
@@ -72,7 +72,7 @@ public class GridCacheLocalFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override boolean fields() {
+    @Override public boolean fields() {
         return true;
     }
 }

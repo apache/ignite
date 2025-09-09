@@ -262,6 +262,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
+                IGNORE_FALSE_UNDEFINED
                 ~SharedPointer()
                 {
                     if (impl && impl->Decrement())
@@ -293,7 +294,7 @@ namespace ignite
                  *
                  * @return Raw pointer.
                  */
-                const T* Get() const
+                T* Get() const
                 {
                     return ptr;
                 }

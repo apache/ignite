@@ -27,10 +27,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringWriter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import jodd.jerry.Jerry;
+import jodd.lagarto.dom.LagartoDOMBuilder;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
 import org.apache.tools.ant.Project;
@@ -42,9 +42,6 @@ import org.apache.tools.ant.taskdefs.MatchingTask;
 public class GridJavadocAntTask extends MatchingTask {
     /** Directory. */
     private File dir;
-
-    /** CSS file name. */
-    private String css;
 
     /** Whether to verify JavaDoc HTML. */
     private boolean verify = true;
@@ -58,17 +55,6 @@ public class GridJavadocAntTask extends MatchingTask {
         assert dir != null;
 
         this.dir = dir;
-    }
-
-    /**
-     * Sets CSS file name.
-     *
-     * @param css CSS file name to set.
-     */
-    public void setCss(String css) {
-        assert css != null;
-
-        this.css = css;
     }
 
     /**
@@ -104,11 +90,7 @@ public class GridJavadocAntTask extends MatchingTask {
         if (dir == null)
             throw new BuildException("'dir' attribute must be specified.");
 
-        if (css == null)
-            throw new BuildException("'css' attribute must be specified.");
-
         log("dir=" + dir, Project.MSG_DEBUG);
-        log("css=" + css, Project.MSG_DEBUG);
 
         DirectoryScanner scanner = getDirectoryScanner(dir);
 
@@ -151,23 +133,33 @@ public class GridJavadocAntTask extends MatchingTask {
     }
 
     /**
-     * Processes file (validating and cleaning up Javadoc's HTML).
+     * Processes file (validating Javadoc's HTML).
      *
-     * @param file File to cleanup.
+     * @param fileName File to validate.
      * @throws IOException Thrown in case of any I/O error.
      * @throws IllegalArgumentException In JavaDoc HTML validation failed.
      */
-    private void processFile(String file) throws IOException {
-        assert file != null;
+    private void processFile(String fileName) throws IOException {
+        assert fileName != null;
 
-        String fileContent = readFileToString(file, Charset.forName("UTF-8"));
+        File file = new File(fileName);
+
+        String fileContent = readFileToString(file);
 
         if (verify) {
             // Parse HTML.
-            Jerry doc = Jerry.jerry(fileContent);
+            Jerry doc = Jerry.create(
+                    new LagartoDOMBuilder()
+                            .enableHtmlMode()
+                            .configure(cfg -> cfg.setErrorLogEnabled(false))
+            ).parse(fileContent);
 
-            // TODO https://issues.apache.org/jira/browse/IGNITE-13202 Check also index.html file.
-            if (file.endsWith("overview-summary.html")) {
+            if (!"11".equals(System.getProperty("java.specification.version"))) {
+                throw new IllegalArgumentException("GridJavadocAntTask isn't tested for java versions after 11. " +
+                    "Please check html rendering of documentation package groups works correctly and remove this exception then.");
+            }
+
+            if ("index.html".equals(file.getName())) {
                 // Try to find Other Packages section.
                 Jerry otherPackages =
                     doc.find("div.contentContainer table.overviewSummary caption span:contains('Other Packages')");
@@ -180,8 +172,26 @@ public class GridJavadocAntTask extends MatchingTask {
                         "Please add packages description to parent/pom.xml into <plugin>(maven-javadoc-plugin) / " +
                         "<configuration> / <groups>");
                 }
+
+                int pkgGrps = doc.find("div.contentContainer table.overviewSummary caption span.tableTab").size();
+
+                if (pkgGrps == 0) {
+                    throw new IllegalArgumentException("Documentation package groups missed. Please add packages " +
+                        "description to parent/pom.xml into <plugin>(maven-javadoc-plugin) / " +
+                        "<configuration> / <groups>");
+                }
+
+                // This limit is set for JDK11. Each group is represented as a tab. Tabs are enumerated with a number 2^N
+                // where N is a sequential number for a tab. For 32 tabs (+ the "All Packages" tab) the number is overflowed
+                // and the tabulation becomes broken. See var data in "index.html".
+                if (pkgGrps > 30) {
+                    throw new IllegalArgumentException("Too many package groups: " + pkgGrps + ". The limit"
+                        + " is 30 due to the javadoc limitations. Please reduce groups in parent/pom.xml"
+                        + " inside <plugin>(maven-javadoc-plugin) / <configuration> / <groups>");
+                }
             }
             else if (!isViewHtml(file)) {
+                // TODO: fix the description block location IGNITE-22650
                 // Try to find a class description block.
                 Jerry descBlock = doc.find("div.contentContainer .description");
 
@@ -190,176 +200,9 @@ public class GridJavadocAntTask extends MatchingTask {
             }
         }
 
-        GridJavadocCharArrayLexReader lexer = new GridJavadocCharArrayLexReader(fileContent.toCharArray());
-
-        Collection<GridJavadocToken> toks = new ArrayList<>();
-
-        StringBuilder tokBuf = new StringBuilder();
-
-        int ch;
-
-        while ((ch = lexer.read()) != GridJavadocCharArrayLexReader.EOF) {
-            // Instruction, tag or comment.
-            if (ch == '<') {
-                if (tokBuf.length() > 0) {
-                    toks.add(new GridJavadocToken(GridJavadocTokenType.TOKEN_TEXT, tokBuf.toString()));
-
-                    tokBuf.setLength(0);
-                }
-
-                tokBuf.append('<');
-
-                ch = lexer.read();
-
-                if (ch == GridJavadocCharArrayLexReader.EOF)
-                    throw new IOException("Unexpected EOF: " + file);
-
-                // Instruction or comment.
-                if (ch == '!') {
-                    for (; ch != GridJavadocCharArrayLexReader.EOF && ch != '>'; ch = lexer.read())
-                        tokBuf.append((char)ch);
-
-                    if (ch == GridJavadocCharArrayLexReader.EOF)
-                        throw new IOException("Unexpected EOF: " + file);
-
-                    assert ch == '>';
-
-                    tokBuf.append('>');
-
-                    String val = tokBuf.toString();
-
-                    toks.add(new GridJavadocToken(val.startsWith("<!--") ? GridJavadocTokenType.TOKEN_COMM :
-                        GridJavadocTokenType.TOKEN_INSTR, val));
-
-                    tokBuf.setLength(0);
-                }
-                // Tag.
-                else {
-                    for (; ch != GridJavadocCharArrayLexReader.EOF && ch != '>'; ch = lexer.read())
-                        tokBuf.append((char)ch);
-
-                    if (ch == GridJavadocCharArrayLexReader.EOF)
-                        throw new IOException("Unexpected EOF: " + file);
-
-                    assert ch == '>';
-
-                    tokBuf.append('>');
-
-                    if (tokBuf.length() <= 2)
-                        throw new IOException("Invalid HTML in [file=" + file + ", html=" + tokBuf + ']');
-
-                    String val = tokBuf.toString();
-
-                    toks.add(new GridJavadocToken(val.startsWith("</") ?
-                        GridJavadocTokenType.TOKEN_CLOSE_TAG : GridJavadocTokenType.TOKEN_OPEN_TAG, val));
-
-                    tokBuf.setLength(0);
-                }
-            }
-            else
-                tokBuf.append((char)ch);
-        }
-
-        if (tokBuf.length() > 0)
-            toks.add(new GridJavadocToken(GridJavadocTokenType.TOKEN_TEXT, tokBuf.toString()));
-
-        for (GridJavadocToken tok : toks) {
-            String val = tok.value();
-
-            switch (tok.type()) {
-                case TOKEN_COMM: {
-                    break;
-                }
-
-                case TOKEN_OPEN_TAG: {
-                    tok.update(fixColors(tok.value()));
-
-                    break;
-                }
-
-                case TOKEN_CLOSE_TAG: {
-                    if ("</head>".equalsIgnoreCase(val))
-                        tok.update(
-                            "<link rel='shortcut icon' href='https://ignite.apache.org/favicon.ico'/>\n" +
-                            "</head>\n");
-
-                    break;
-                }
-
-                case TOKEN_INSTR: {
-                    // No-op.
-
-                    break;
-                }
-
-                case TOKEN_TEXT: {
-                    tok.update(fixColors(val));
-
-                    break;
-                }
-
-                default:
-                    assert false;
-            }
-        }
-
-        StringBuilder buf = new StringBuilder();
-        StringBuilder tmp = new StringBuilder();
-
-        boolean inPre = false;
-
-        // Second pass for unstructured replacements.
-        for (GridJavadocToken tok : toks) {
-            String val = tok.value();
-
-            switch (tok.type()) {
-                case TOKEN_INSTR:
-                case TOKEN_TEXT:
-                case TOKEN_COMM: {
-                    tmp.append(val);
-
-                    break;
-                }
-
-                case TOKEN_OPEN_TAG: {
-                    if (val.toLowerCase().startsWith("<pre name=")) {
-                        inPre = true;
-
-                        buf.append(fixBrackets(tmp.toString()));
-
-                        tmp.setLength(0);
-                    }
-
-                    tmp.append(val);
-
-                    break;
-                }
-
-                case TOKEN_CLOSE_TAG: {
-                    if (val.toLowerCase().startsWith("</pre") && inPre) {
-                        inPre = false;
-
-                        buf.append(tmp.toString());
-
-                        tmp.setLength(0);
-                    }
-
-                    tmp.append(val);
-
-                    break;
-                }
-
-                default:
-                    assert false;
-            }
-        }
-
-        String s = buf.append(fixBrackets(tmp.toString())).toString();
-
-        s = fixExternalLinks(s);
-        s = fixDeprecated(s);
-        s = fixNullable(s);
-        s = fixTodo(s);
+        String s = fileContent.replaceFirst(
+            "</head>",
+            "<link rel='shortcut icon' href='https://ignite.apache.org/favicon.ico'/>\n</head>\n");
 
         replaceFile(file, s);
     }
@@ -368,74 +211,13 @@ public class GridJavadocAntTask extends MatchingTask {
      * Checks whether a file is a view-related HTML file rather than a single
      * class documentation.
      *
-     * @param fileName HTML file name.
+     * @param file HTML file.
      * @return {@code True} if it's a view-related HTML.
      */
-    private boolean isViewHtml(String fileName) {
-        String baseName = new File(fileName).getName();
+    private boolean isViewHtml(File file) {
+        String baseName = file.getName();
 
         return "index.html".equals(baseName) || baseName.contains("-") || "allclasses.html".equals(baseName);
-    }
-
-    /**
-     *
-     * @param s String token.
-     * @return Token with replaced colors.
-     */
-    private String fixColors(String s) {
-        return s.replace("0000c0", "000000").
-            replace("000000", "333333").
-            replace("c00000", "333333").
-            replace("008000", "999999").
-            replace("990000", "336699").
-            replace("font color=\"#808080\"", "font size=-2 color=\"#aaaaaa\"");
-    }
-
-    /**
-     *
-     * @param s String token.
-     * @return Fixed token value.
-     */
-    private String fixBrackets(String s) {
-        return s.replace("&lt;", "<span class='angle_bracket'>&lt;</span>").
-            replace("&gt;", "<span class='angle_bracket'>&gt;</span>");
-    }
-
-    /**
-     *
-     * @param s String token.
-     * @return Fixed token value.
-     */
-    private String fixTodo(String s) {
-        return s.replace("TODO", "<span class='todo'>TODO</span>");
-    }
-
-    /**
-     *
-     * @param s String token.
-     * @return Fixed token value.
-     */
-    private String fixNullable(String s) {
-        return s.replace("<FONT SIZE=\"-1\">@Nullable", "<FONT SIZE=\"-1\" class='nullable'>@Nullable");
-    }
-
-    /**
-     *
-     * @param s String token.
-     * @return Fixed token value.
-     */
-    private String fixDeprecated(String s) {
-        return s.replace("<B>Deprecated.</B>", "<span class='deprecated'>Deprecated.</span>");
-    }
-
-    /**
-     *
-     * @param s String token.
-     * @return Fixed token value.
-     */
-    private String fixExternalLinks(String s) {
-        return s.replace("A HREF=\"http://java.sun.com/j2se/1.6.0",
-            "A target='jse5javadoc' HREF=\"http://java.sun.com/j2se/1.6.0");
     }
 
     /**
@@ -445,7 +227,7 @@ public class GridJavadocAntTask extends MatchingTask {
      * @param body New body for the file.
      * @throws IOException Thrown in case of any errors.
      */
-    private void replaceFile(String file, String body) throws IOException {
+    private void replaceFile(File file, String body) throws IOException {
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
             out.write(body.getBytes());
         }
@@ -454,13 +236,12 @@ public class GridJavadocAntTask extends MatchingTask {
     /**
      * Reads file to string using specified charset.
      *
-     * @param fileName File name.
-     * @param charset File charset.
+     * @param file File.
      * @return File content.
      * @throws IOException If error occurred.
      */
-    public static String readFileToString(String fileName, Charset charset) throws IOException {
-        Reader input = new InputStreamReader(new FileInputStream(fileName), charset);
+    public static String readFileToString(File file) throws IOException {
+        Reader input = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
 
         StringWriter output = new StringWriter();
 

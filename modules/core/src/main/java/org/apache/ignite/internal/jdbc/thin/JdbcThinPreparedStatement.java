@@ -39,12 +39,16 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import org.apache.ignite.internal.processors.odbc.SqlInputStreamWrapper;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
+
+import static java.sql.Types.BINARY;
+import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 
 /**
  * JDBC prepared statement implementation.
@@ -213,9 +217,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setBinaryStream(int paramIdx, InputStream x, int length) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("Streams are not supported.");
+        setBinaryStream(paramIdx, x, (long)length);
     }
 
     /** {@inheritDoc} */
@@ -305,16 +307,12 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, Blob x) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setArgument(paramIdx, x);
     }
 
     /** {@inheritDoc} */
     @Override public void setClob(int paramIdx, Clob x) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setString(paramIdx, x.getSubString(1, (int)x.length()));
     }
 
     /** {@inheritDoc} */
@@ -415,9 +413,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, InputStream inputStream, long length) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setBinaryStream(paramIdx, inputStream, length);
     }
 
     /** {@inheritDoc} */
@@ -450,7 +446,18 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void setBinaryStream(int paramIdx, InputStream x, long length) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Streams are not supported.");
+        if (length < 0)
+            throw new SQLException("Invalid argument. Length should be greater than 0.");
+
+        if (length > MAX_ARRAY_SIZE) {
+            throw new SQLFeatureNotSupportedException("Invalid argument. InputStreams with length greater than " + MAX_ARRAY_SIZE +
+                    " are not supported.");
+        }
+
+        if (x == null)
+            setNull(paramIdx, BINARY);
+        else
+            setArgument(paramIdx, new SqlInputStreamWrapper(x, (int)length));
     }
 
     /** {@inheritDoc} */
@@ -471,7 +478,10 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void setBinaryStream(int paramIdx, InputStream x) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Streams are not supported.");
+        if (x == null)
+            setNull(paramIdx, BINARY);
+        else
+            setArgument(paramIdx, new SqlInputStreamWrapper(x));
     }
 
     /** {@inheritDoc} */
@@ -497,9 +507,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, InputStream inputStream) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setBinaryStream(paramIdx, inputStream);
     }
 
     /** {@inheritDoc} */

@@ -66,6 +66,29 @@ namespace ignite
         }
 
         /**
+         * Replace all alphabetic symbols of the string with their uppercase
+         * versions.
+         * @param str String to be transformed.
+         */
+        inline void IntoUpper(std::string& str)
+        {
+            std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+        }
+
+        /**
+         * Get uppercase version of the string.
+         *
+         * @param str Input string.
+         * @return Upper cased version of the string.
+         */
+        inline std::string ToUpper(const std::string& str)
+        {
+            std::string res(str);
+            IntoUpper(res);
+            return res;
+        }
+
+        /**
          * Strips leading and trailing whitespaces from string.
          *
          * @param str String to be transformed.
@@ -594,7 +617,7 @@ namespace ignite
         };
 
         /**
-         * Deinit guard class template.
+         * De-init guard class template.
          *
          * Upon destruction calls provided deinit function on provided instance.
          *
@@ -654,7 +677,107 @@ namespace ignite
          * @param name Name without extension.
          * @return Full name.
          */
-        IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const char* name);
+        IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const std::string& name);
+
+        /**
+         * Get hex dump of binary data in string form.
+         * @param data Data.
+         * @param count Number of bytes.
+         * @return Hex dump string.
+         */
+        IGNITE_IMPORT_EXPORT std::string HexDump(const void* data, size_t count);
+
+        /**
+         * Fibonacci sequence iterator.
+         *
+         * @tparam S Sequence length. Should be >= 2.
+         */
+        template<size_t S>
+        class FibonacciSequence
+        {
+        public:
+            /** Size. */
+            static const size_t size = S > 2 ? S : 2;
+
+            /**
+             * Constructor.
+             */
+            FibonacciSequence()
+            {
+                sequence[0] = 0;
+                sequence[1] = 1;
+
+                for (size_t i = 2; i < size; ++i)
+                    sequence[i] = sequence[i - 1] + sequence[i - 2];
+            }
+
+            /**
+             * Get n-th or max member of sequence.
+             *
+             * @param n Member position.
+             * @return N-th member of sequence if n < size, or max member.
+             */
+            size_t GetValue(size_t n) const
+            {
+                if (n < size)
+                    return sequence[n];
+
+                return sequence[size-1];
+            }
+
+        private:
+            /** Sequence of fibonacci numbers */
+            size_t sequence[size];
+        };
+
+        /**
+         * Throw platform-specific error.
+         *
+         * @param msg Error message.
+         */
+        IGNITE_IMPORT_EXPORT void ThrowSystemError(const std::string& msg);
+
+        /**
+         * Try extract from system error stack and throw platform-specific error.
+         *
+         * @param description Error description.
+         * @param advice User advice.
+         */
+        IGNITE_IMPORT_EXPORT void ThrowLastSystemError(const std::string& description, const std::string& advice);
+
+        /**
+         * Try extract from system error stack and throw platform-specific error.
+         *
+         * @param description Error description.
+         */
+        IGNITE_IMPORT_EXPORT void ThrowLastSystemError(const std::string& description);
+
+        /**
+         * Format error message.
+         *
+         * @param description Error description.
+         * @param description Error details.
+         * @param advice User advice.
+         */
+        IGNITE_IMPORT_EXPORT std::string FormatErrorMessage(const std::string& description, const std::string& details,
+            const std::string& advice);
+
+        /**
+         * Try extract from system error stack, format and return platform-specific error.
+         *
+         * @param description Error description.
+         * @return Error in human-readable format.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetLastSystemError(const std::string& description);
+
+        /**
+         * Try extract from system error stack, format and return platform-specific error.
+         *
+         * @param description Error description.
+         * @param advice User advice.
+         * @return Error in human-readable format.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetLastSystemError(const std::string& description, const std::string& advice);
     }
 }
 

@@ -43,10 +43,10 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -174,27 +174,26 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryRawReaderEx reader(PlatformMemory mem) {
+    @Override public BinaryReaderEx reader(PlatformMemory mem) {
         return reader(mem.input());
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryRawReaderEx reader(PlatformInputStream in) {
-        return new BinaryReaderExImpl(marsh.context(),
+    @Override public BinaryReaderEx reader(PlatformInputStream in) {
+        return BinaryUtils.reader(marsh.context(),
             in,
             ctx.config().getClassLoader(),
-            null,
             true,
             true);
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryRawWriterEx writer(PlatformMemory mem) {
+    @Override public BinaryWriterEx writer(PlatformMemory mem) {
         return writer(mem.output());
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryRawWriterEx writer(PlatformOutputStream out) {
+    @Override public BinaryWriterEx writer(PlatformOutputStream out) {
         return marsh.writer(out);
     }
 
@@ -207,7 +206,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
         try (PlatformMemory mem0 = mem.allocate()) {
             PlatformOutputStream out = mem0.output();
 
-            BinaryRawWriterEx w = writer(out);
+            BinaryWriterEx w = writer(out);
 
             w.writeUuid(node.id());
             PlatformUtils.writeNodeAttributes(w, node.attributes());
@@ -215,7 +214,6 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
             w.writeCollection(node.hostNames());
             w.writeLong(node.order());
             w.writeBoolean(node.isLocal());
-            w.writeBoolean(node.isDaemon());
             w.writeBoolean(node.isClient());
             w.writeObjectDetached(node.consistentId());
             PlatformUtils.writeNodeVersion(w, node.version());
@@ -231,7 +229,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public void writeNode(BinaryRawWriterEx writer, ClusterNode node) {
+    @Override public void writeNode(BinaryWriterEx writer, ClusterNode node) {
         if (node == null) {
             writer.writeUuid(null);
 
@@ -244,7 +242,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public void writeNodes(BinaryRawWriterEx writer, Collection<ClusterNode> nodes) {
+    @Override public void writeNodes(BinaryWriterEx writer, Collection<ClusterNode> nodes) {
         if (nodes == null) {
             writer.writeInt(-1);
 
@@ -261,7 +259,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public void writeClusterMetrics(BinaryRawWriterEx writer, @Nullable ClusterMetrics metrics) {
+    @Override public void writeClusterMetrics(BinaryWriterEx writer, @Nullable ClusterMetrics metrics) {
         if (metrics == null)
             writer.writeBoolean(false);
         else {
@@ -336,7 +334,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public void processMetadata(BinaryRawReaderEx reader) {
+    @Override public void processMetadata(BinaryReaderEx reader) {
         Collection<BinaryMetadata> metas = PlatformUtils.readBinaryMetadataCollection(reader);
 
         BinaryContext binCtx = cacheObjProc.binaryContext();
@@ -346,12 +344,12 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public void writeMetadata(BinaryRawWriterEx writer, int typeId, boolean includeSchemas) {
+    @Override public void writeMetadata(BinaryWriterEx writer, int typeId, boolean includeSchemas) {
         writeMetadata0(writer, cacheObjProc.metadata(typeId), includeSchemas);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeAllMetadata(BinaryRawWriterEx writer) {
+    @Override public void writeAllMetadata(BinaryWriterEx writer) {
         Collection<BinaryType> metas = cacheObjProc.metadata();
 
         writer.writeInt(metas.size());
@@ -361,8 +359,8 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public void writeSchema(BinaryRawWriterEx writer, int typeId, int schemaId) {
-        writer.writeIntArray(PlatformUtils.getSchema(cacheObjProc, typeId, schemaId));
+    @Override public void writeSchema(BinaryWriterEx writer, int typeId, int schemaId) {
+        writer.writeIntArray(BinaryUtils.getSchema(cacheObjProc, typeId, schemaId));
     }
 
     /**
@@ -371,13 +369,13 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
      * @param writer Writer.
      * @param meta Metadata.
      */
-    private void writeMetadata0(BinaryRawWriterEx writer, BinaryType meta, boolean includeSchemas) {
+    private void writeMetadata0(BinaryWriterEx writer, BinaryType meta, boolean includeSchemas) {
         if (meta == null)
             writer.writeBoolean(false);
         else {
             writer.writeBoolean(true);
 
-            BinaryMetadata meta0 = ((BinaryTypeImpl) meta).metadata();
+            BinaryMetadata meta0 = ((BinaryTypeImpl)meta).metadata();
 
             PlatformUtils.writeBinaryMetadata(writer, meta0, includeSchemas);
         }
@@ -405,11 +403,10 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public void writeEvent(BinaryRawWriterEx writer, Event evt) {
+    @Override public void writeEvent(BinaryWriterEx writer, Event evt) {
         assert writer != null;
 
-        if (evt == null)
-        {
+        if (evt == null) {
             writer.writeInt(-1);
 
             return;
@@ -534,7 +531,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
      * @param writer Writer.
      * @param evt Event.
      */
-    private void writeCommonEventData(BinaryRawWriterEx writer, EventAdapter evt) {
+    private void writeCommonEventData(BinaryWriterEx writer, EventAdapter evt) {
         writer.writeObject(evt.id());
         writer.writeLong(evt.localOrder());
         writeNode(writer, evt.node());
@@ -560,13 +557,13 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformJob createJob(Object task, long ptr, @Nullable Object job) {
-        return new PlatformFullJob(this, (PlatformAbstractTask)task, ptr, job);
+    @Override public PlatformJob createJob(Object task, long ptr, @Nullable Object job, String jobName) {
+        return new PlatformFullJob(this, (PlatformAbstractTask)task, ptr, job, jobName);
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformJob createClosureJob(Object task, long ptr, Object job) {
-        return new PlatformClosureJob((PlatformAbstractTask)task, ptr, job);
+    @Override public PlatformJob createClosureJob(Object task, long ptr, Object job, String jobName) {
+        return new PlatformClosureJob((PlatformAbstractTask)task, ptr, job, jobName);
     }
 
     /** {@inheritDoc} */
@@ -607,7 +604,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
         Boolean useTls = platformCacheUpdateUseThreadLocal.get();
         if (useTls != null && useTls) {
-            long cacheIdAndPartition = ((long)part << 32) + cacheId;
+            long cacheIdAndPartition = ((long)part << 32) | (0xFFFFFFFFL & cacheId);
 
             gateway().platformCacheUpdateFromThreadLocal(
                     cacheIdAndPartition, ver.topologyVersion(), ver.minorTopologyVersion());
@@ -633,7 +630,8 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
                 out.writeInt(part);
                 out.writeLong(ver.topologyVersion());
                 out.writeInt(ver.minorTopologyVersion());
-            } else {
+            }
+            else {
                 out.writeBoolean(false);
             }
 
@@ -657,7 +655,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     @Override public @Nullable BinaryMetadata getBinaryType(String typeName) {
         try (PlatformMemory mem0 = mem.allocate()) {
             PlatformOutputStream out = mem0.output();
-            BinaryRawWriterEx writer = writer(out);
+            BinaryWriterEx writer = writer(out);
 
             writer.writeString(typeName);
             out.synchronize();
@@ -681,7 +679,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         AffinityTopologyVersion ver = fut.topologyVersion();
 
         if (ver != null) {

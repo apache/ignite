@@ -20,22 +20,23 @@ package org.apache.ignite.internal.commandline.cache.distribution;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Result of CacheDistributionTask
  */
-public class CacheDistributionTaskResult extends VisorDataTransferObject {
+public class CacheDistributionTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,8 +83,7 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in
-    ) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         nodeResList = U.readList(in);
         exceptions = U.readMap(in);
     }
@@ -96,20 +96,20 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
     /**
      * Print collect information on the distribution of partitions.
      *
-     * @param out Print stream.
+     * @param printer Result printer.
      */
-    public void print(PrintStream out) {
+    public void print(Consumer<String> printer) {
         if (nodeResList.isEmpty())
             return;
 
         List<Row> rows = new ArrayList<>();
 
         for (CacheDistributionNode node : nodeResList) {
-            for (CacheDistributionGroup group : node.getGroups()) {
-                for (CacheDistributionPartition partition : group.getPartitions()) {
+            for (CacheDistributionGroup grp : node.getGroups()) {
+                for (CacheDistributionPartition partition : grp.getPartitions()) {
                     final Row row = new Row();
-                    row.setGroupId(group.getGroupId());
-                    row.setGroupName(group.getGroupName());
+                    row.setGroupId(grp.getGroupId());
+                    row.setGroupName(grp.getGroupName());
                     row.setPartition(partition.getPartition());
                     row.setNodeId(node.getNodeId());
                     row.setPrimary(partition.isPrimary());
@@ -128,25 +128,25 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
 
         StringBuilder userAttrsName = new StringBuilder();
         if (!rows.isEmpty() && rows.get(0).userAttrs != null) {
-            for (String userAttribute : rows.get(0).userAttrs.keySet()) {
+            for (String userAttr : rows.get(0).userAttrs.keySet()) {
                 userAttrsName.append(',');
 
-                if (userAttribute != null)
-                    userAttrsName.append(userAttribute);
+                if (userAttr != null)
+                    userAttrsName.append(userAttr);
             }
         }
-        out.println("[groupId,partition,nodeId,primary,state,updateCounter,partitionSize,nodeAddresses" + userAttrsName + "]");
+        printer.accept("[groupId,partition,nodeId,primary,state,updateCounter,partitionSize,nodeAddresses" + userAttrsName + "]");
 
         int oldGrpId = 0;
 
         for (Row row : rows) {
             if (oldGrpId != row.grpId) {
-                out.println("[next group: id=" + row.grpId + ", name=" + row.grpName + ']');
+                printer.accept("[next group: id=" + row.grpId + ", name=" + row.grpName + ']');
 
                 oldGrpId = row.getGroupId();
             }
 
-            row.print(out);
+            row.print(printer);
         }
     }
 
@@ -308,39 +308,41 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
         }
 
         /** */
-        public void print(PrintStream out) {
-            out.print(grpId);
-            out.print(',');
+        public void print(Consumer<String> printer) {
+            SB out = new SB();
 
-            out.print(partId);
-            out.print(',');
+            out.a(grpId);
+            out.a(',');
 
-            out.print(U.id8(getNodeId()));
-            out.print(',');
+            out.a(partId);
+            out.a(',');
 
-            out.print(primary ? "P" : "B");
-            out.print(',');
+            out.a(U.id8(getNodeId()));
+            out.a(',');
 
-            out.print(state);
-            out.print(',');
+            out.a(primary ? "P" : "B");
+            out.a(',');
 
-            out.print(updateCntr);
-            out.print(',');
+            out.a(state);
+            out.a(',');
 
-            out.print(size);
-            out.print(',');
+            out.a(updateCntr);
+            out.a(',');
 
-            out.print(addrs);
+            out.a(size);
+            out.a(',');
+
+            out.a(addrs);
 
             if (userAttrs != null) {
-                for (String userAttribute : userAttrs.values()) {
-                    out.print(',');
-                    if (userAttribute != null)
-                        out.print(userAttribute);
+                for (String userAttr : userAttrs.values()) {
+                    out.a(',');
+                    if (userAttr != null)
+                        out.a(userAttr);
                 }
             }
 
-            out.println();
+            printer.accept(out.toString());
         }
     }
 }

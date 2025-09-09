@@ -17,10 +17,12 @@
 
 namespace Apache.Ignite.Core.Services
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Defines functionality to deploy distributed services in the Ignite.
@@ -239,6 +241,8 @@ namespace Apache.Ignite.Core.Services
         /// <typeparam name="T">Service type.</typeparam>
         /// <param name="name">Service name.</param>
         /// <returns>Deployed service with specified name.</returns>
+        [Obsolete("Corrupts the service statistics. Use the proxies like GetServiceProxy() or " +
+                  "GetDynamicServiceProxy() instead.")]
         T GetService<T>(string name);
 
         /// <summary>
@@ -247,46 +251,58 @@ namespace Apache.Ignite.Core.Services
         /// <typeparam name="T">Service type.</typeparam>
         /// <param name="name">Service name.</param>
         /// <returns>All deployed services with specified name.</returns>
+        [Obsolete("Corrupts the service statistics. Use the proxies like GetServiceProxy() or " +
+                  "GetDynamicServiceProxy() instead.")]
         ICollection<T> GetServices<T>(string name);
 
         /// <summary>
-        /// Gets a remote handle on the service. If service is available locally,
-        /// then local instance is returned, otherwise, a remote proxy is dynamically
-        /// created and provided for the specified service.
+        /// Gets a handle on remote or local service. The proxy is dynamically created and provided for the specified
+        /// service.
         /// </summary>
         /// <typeparam name="T">Service type.</typeparam>
         /// <param name="name">Service name.</param>
-        /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
+        /// <returns>Proxy over service.</returns>
         T GetServiceProxy<T>(string name) where T : class;
 
         /// <summary>
-        /// Gets a remote handle on the service. If service is available locally,
-        /// then local instance is returned, otherwise, a remote proxy is dynamically
+        /// Gets a handle on remote or local service. The proxy is dynamically created and provided for the specified
+        /// service.
+        /// </summary>
+        /// <typeparam name="T">Service type.</typeparam>
+        /// <param name="name">Service name.</param>
+        /// <param name="sticky">Whether or not Ignite should always contact the same remote
+        /// service or try to load-balance between services.</param>
+        /// <returns>Proxy over service.</returns>
+        T GetServiceProxy<T>(string name, bool sticky) where T : class;
+
+        /// <summary>
+        /// Gets a handle on remote or local service with the specified caller context. The proxy is dynamically
         /// created and provided for the specified service.
         /// </summary>
         /// <typeparam name="T">Service type.</typeparam>
         /// <param name="name">Service name.</param>
         /// <param name="sticky">Whether or not Ignite should always contact the same remote
         /// service or try to load-balance between services.</param>
-        /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
-        T GetServiceProxy<T>(string name, bool sticky) where T : class;
+        /// <param name="callCtx">Service call context.</param>
+        /// <returns>Proxy over service.</returns>
+        /// <seealso cref="IServiceCallContext"/>
+        [IgniteExperimental]
+        T GetServiceProxy<T>(string name, bool sticky, IServiceCallContext callCtx) where T : class;
 
         /// <summary>
-        /// Gets a remote handle on the service as a dynamic object. If service is available locally,
-        /// then local instance is returned, otherwise, a remote proxy is dynamically
-        /// created and provided for the specified service.
+        /// Gets a handle on remote or local service as a dynamic object. The proxy is dynamically created and provided
+        /// for the specified service.
         /// <para />
         /// This method utilizes <c>dynamic</c> feature of the language and does not require any
         /// service interfaces or classes. Java services can be accessed as well as .NET services.
         /// </summary>
         /// <param name="name">Service name.</param>
-        /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
+        /// <returns>Proxy over service.</returns>
         dynamic GetDynamicServiceProxy(string name);
 
         /// <summary>
-        /// Gets a remote handle on the service as a dynamic object. If service is available locally,
-        /// then local instance is returned, otherwise, a remote proxy is dynamically
-        /// created and provided for the specified service.
+        /// Gets a handle on remote or local service as a dynamic object. The proxy is dynamically created and provided
+        /// for the specified service.
         /// <para />
         /// This method utilizes <c>dynamic</c> feature of the language and does not require any
         /// service interfaces or classes. Java services can be accessed as well as .NET services.
@@ -294,8 +310,24 @@ namespace Apache.Ignite.Core.Services
         /// <param name="name">Service name.</param>
         /// <param name="sticky">Whether or not Ignite should always contact the same remote
         /// service or try to load-balance between services.</param>
-        /// <returns>Either proxy over remote service or local service if it is deployed locally.</returns>
+        /// <returns>Proxy over service.</returns>
         dynamic GetDynamicServiceProxy(string name, bool sticky);
+        
+        /// <summary>
+        /// Gets a handle on remote or local service as a dynamic object with the specified caller context. The proxy
+        /// is dynamically created and provided for the specified service.
+        /// <para />
+        /// This method utilizes <c>dynamic</c> feature of the language and does not require any
+        /// service interfaces or classes. Java services can be accessed as well as .NET services.
+        /// </summary>
+        /// <param name="name">Service name.</param>
+        /// <param name="sticky">Whether or not Ignite should always contact the same remote
+        /// service or try to load-balance between services.</param>
+        /// <param name="callCtx">Service call context.</param>
+        /// <returns>Proxy over service.</returns>
+        /// <seealso cref="IServiceCallContext"/>
+        [IgniteExperimental]
+        dynamic GetDynamicServiceProxy(string name, bool sticky, IServiceCallContext callCtx);
 
         /// <summary>
         /// Returns an instance with binary mode enabled.

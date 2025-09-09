@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.cache.authentication;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.authentication.UserManagementException;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -66,13 +66,13 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+        recreateDefaultDb();
 
         startGrids(NODES_COUNT - 1);
 
         startClientGrid(NODES_COUNT - 1);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 

@@ -21,8 +21,19 @@ package org.apache.ignite.client;
  * SSL Protocol.
  */
 public enum SslProtocol {
-    /** Supports some version of TLS; may support other versions. */TLS,
-    /** Supports RFC 2246: TLS version 1.0 ; may support other versions. */TLSv1,
-    /** Supports RFC 4346: TLS version 1.1 ; may support other versions. */TLSv1_1,
-    /** Supports RFC 5246: TLS version 1.2 ; may support other versions. */TLSv1_2
+    /** Supports some version of TLS; may support other versions. */
+    TLS,
+
+    /** Supports RFC 2246: TLS version 1.0 ; may support other versions. */
+    TLSv1,
+
+    /** Supports RFC 4346: TLS version 1.1 ; may support other versions. */
+
+    TLSv1_1,
+
+    /** Supports RFC 5246: TLS version 1.2 ; may support other versions. */
+    TLSv1_2,
+
+    /** Supports RFC 8446: TLS version 1.3 ; may support other versions. */
+    TLSv1_3
 }

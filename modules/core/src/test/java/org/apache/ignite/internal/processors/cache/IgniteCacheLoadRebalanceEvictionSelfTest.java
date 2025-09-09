@@ -59,15 +59,15 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        LruEvictionPolicy evictionPolicy = new LruEvictionPolicy<>();
-        evictionPolicy.setMaxSize(LRU_MAX_SIZE);
+        LruEvictionPolicy evictionPlc = new LruEvictionPolicy<>();
+        evictionPlc.setMaxSize(LRU_MAX_SIZE);
 
         CacheConfiguration<String, byte[]> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setBackups(1);
         cacheCfg.setReadFromBackup(true);
-        cacheCfg.setEvictionPolicy(evictionPolicy);
+        cacheCfg.setEvictionPolicy(evictionPlc);
         cacheCfg.setOnheapCacheEnabled(true);
         cacheCfg.setStatisticsEnabled(true);
 

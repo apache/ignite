@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -37,35 +35,39 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTask;
+import org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  * Tesing index full and partial rebuild.
  */
 public class GridIndexRebuildTest extends GridCommonAbstractTest {
+    /** */
     public static final String FIRST_CACHE = "cache1";
 
+    /** */
     public static final String SECOND_CACHE = "cache2";
 
     /** */
-    private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -144,7 +146,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         IgniteEx grid1 = startGrids(4);
 
-        grid1.cluster().active(true);
+        grid1.cluster().state(ClusterState.ACTIVE);
 
         final int accountCnt = 2048;
 
@@ -191,19 +193,29 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
             }
         }).start();
 
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-
         long diff = System.currentTimeMillis() - start;
 
         U.sleep(7500 - (diff % 5000));
+
+        NodeFileTree ft = ignite(3).context().pdsFolderResolver().fileTree();
 
         stopGrid(3);
 
         stop.set(true);
 
-        for (File grp : new File(workDir, U.maskForFileName(getTestIgniteInstanceName(3))).listFiles()) {
-            new File(grp, "index.bin").delete();
+        boolean idxRmvd = false;
+
+        for (File grp : ft.existingCacheDirsWithoutMeta()) {
+            File idx = new File(grp, partitionFileName(INDEX_PARTITION));
+
+            assertTrue(idx.exists());
+
+            idx.delete();
+
+            idxRmvd = true;
         }
+
+        assertTrue(idxRmvd);
 
         startGrid(3);
 
@@ -213,21 +225,23 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         ImmutableSet<UUID> nodes = ImmutableSet.of(grid(2).localNode().id(), grid(3).localNode().id());
 
-        VisorValidateIndexesTaskArg arg = new VisorValidateIndexesTaskArg(null,
-            null, 10000, 1, true, true);
+        CacheValidateIndexesCommandArg arg = new CacheValidateIndexesCommandArg();
 
-        VisorTaskArgument<VisorValidateIndexesTaskArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
+        arg.checkFirst(10000);
+        arg.checkThrough(1);
+        arg.checkCrc(true);
+        arg.checkSizes(true);
 
-        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> exec = grid1.context().task().
-            execute(new VisorValidateIndexesTask(), visorTaskArg);
+        ValidateIndexesTaskResult res = grid1.context().task().execute(
+            new ValidateIndexesTask(),
+            new VisorTaskArgument<>(nodes, arg, true)
+        ).get().result();
 
-        VisorValidateIndexesTaskResult res = exec.get();
-
-        Map<UUID, VisorValidateIndexesJobResult> results = res.results();
+        Map<?, ValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 
-        for (VisorValidateIndexesJobResult jobResult : results.values()) {
+        for (ValidateIndexesJobResult jobResult : results.values()) {
             System.err.println(jobResult);
 
             hasIssue |= jobResult.hasIssues();
@@ -254,7 +268,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         IgniteEx grid1 = startGrids(4);
 
-        grid1.cluster().active(true);
+        grid1.cluster().state(ClusterState.ACTIVE);
 
         final int accountCnt = 2048;
 
@@ -308,21 +322,23 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         ImmutableSet<UUID> nodes = ImmutableSet.of(grid(2).localNode().id(), grid(3).localNode().id());
 
-        VisorValidateIndexesTaskArg arg = new VisorValidateIndexesTaskArg(null,
-            null, 10000, 1, true, true);
+        CacheValidateIndexesCommandArg arg = new CacheValidateIndexesCommandArg();
 
-        VisorTaskArgument<VisorValidateIndexesTaskArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
+        arg.checkFirst(10000);
+        arg.checkThrough(1);
+        arg.checkCrc(true);
+        arg.checkSizes(true);
 
-        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> execute = grid1.context().task().
-            execute(new VisorValidateIndexesTask(), visorTaskArg);
+        ValidateIndexesTaskResult res = grid1.context().task().execute(
+            new ValidateIndexesTask(),
+            new VisorTaskArgument<>(nodes, arg, true)
+        ).get().result();
 
-        VisorValidateIndexesTaskResult res = execute.get();
-
-        Map<UUID, VisorValidateIndexesJobResult> results = res.results();
+        Map<?, ValidateIndexesJobResult> results = res.results();
 
         boolean hasIssue = false;
 
-        for (VisorValidateIndexesJobResult jobResult : results.values()) {
+        for (ValidateIndexesJobResult jobResult : results.values()) {
             System.err.println(jobResult);
 
             hasIssue |= jobResult.hasIssues();
@@ -331,25 +347,6 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
         assertFalse(hasIssue);
 
         assertFalse("B+Tree is corrupted.", lsnr.check());
-    }
-
-    /** */
-    private void cleanPersistenceFiles(String igName) throws Exception {
-        String ig1DbPath = Paths.get(DFLT_STORE_DIR, igName).toString();
-
-        File igDbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbPath, false);
-
-        U.delete(igDbDir);
-
-        Files.createDirectory(igDbDir.toPath());
-
-        String ig1DbWalPath = Paths.get(DFLT_STORE_DIR, "wal", igName).toString();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
-
-        ig1DbWalPath = Paths.get(DFLT_STORE_DIR, "wal", "archive", igName).toString();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
     }
 
     /** */

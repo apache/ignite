@@ -39,7 +39,7 @@ public class InlineIndexFactory implements IndexFactory {
 
     /** {@inheritDoc} */
     @Override public Index createIndex(GridCacheContext<?, ?> cctx, IndexDefinition def) {
-        SortedIndexDefinition sdef = (SortedIndexDefinition) def;
+        SortedIndexDefinition sdef = (SortedIndexDefinition)def;
 
         InlineIndexTree[] trees = new InlineIndexTree[sdef.segments()];
         InlineRecommender recommender = new InlineRecommender(cctx, sdef);
@@ -61,15 +61,15 @@ public class InlineIndexFactory implements IndexFactory {
                     RootPage page = rootPage(cctx, sdef.treeName(), i);
 
                     trees[i] = createIndexSegment(cctx, sdef, page, stats, recommender, i);
-
-                } finally {
+                }
+                finally {
                     db.checkpointReadUnlock();
                 }
             }
 
             return new InlineIndexImpl(cctx, sdef, trees, stats);
-
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

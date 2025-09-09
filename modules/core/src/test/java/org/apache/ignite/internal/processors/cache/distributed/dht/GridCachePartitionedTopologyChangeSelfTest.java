@@ -260,7 +260,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 List<Integer> parts = partitions(node, nodeType);
 
                 info(">>> Partitions for node [nodeId=" + node.localNode().id() + ", parts=" + parts +
-                   ", type=" + nodeType + ']');
+                    ", type=" + nodeType + ']');
 
                 final Map<Integer, Integer> keysMap = keysFor(node, parts);
 
@@ -510,9 +510,9 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 txFut.get(1000);
 
             for (int i = 0; i < 3; i++) {
-                Affinity affinity = grid(i).affinity(DEFAULT_CACHE_NAME);
+                Affinity aff = grid(i).affinity(DEFAULT_CACHE_NAME);
 
-                ConcurrentMap addedNodes = U.field(affinity, "addedNodes");
+                ConcurrentMap addedNodes = U.field(aff, "addedNodes");
 
                 assertFalse(addedNodes.containsKey(leftNodeId));
             }

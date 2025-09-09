@@ -37,10 +37,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -91,9 +93,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Return value require flag. */
     protected final boolean retval;
 
-    /** Raw return value flag. */
-    protected final boolean rawRetval;
-
     /** Expiry policy. */
     protected final ExpiryPolicy expiryPlc;
 
@@ -111,6 +110,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
     /** Recovery flag. */
     protected final boolean recovery;
+
+    /** Application attributes. */
+    protected final @Nullable Map<String, String> appAttrs;
 
     /** Near cache flag. */
     protected final boolean nearEnabled;
@@ -154,7 +156,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param op Operation.
      * @param invokeArgs Invoke arguments.
      * @param retval Return value flag.
-     * @param rawRetval Raw return value flag.
      * @param expiryPlc Expiry policy.
      * @param filter Filter.
      * @param taskNameHash Task name hash.
@@ -162,6 +163,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param keepBinary Keep binary flag.
      * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Remap count.
+     * @param appAttrs Application attributes.
      */
     protected GridNearAtomicAbstractUpdateFuture(
         GridCacheContext cctx,
@@ -170,14 +172,14 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         GridCacheOperation op,
         @Nullable Object[] invokeArgs,
         boolean retval,
-        boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
         CacheEntryPredicate[] filter,
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
         boolean recovery,
-        int remapCnt
+        int remapCnt,
+        @Nullable Map<String, String> appAttrs
     ) {
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
@@ -190,18 +192,18 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         this.op = op;
         this.invokeArgs = invokeArgs;
         this.retval = retval;
-        this.rawRetval = rawRetval;
         this.expiryPlc = expiryPlc;
         this.filter = filter;
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
+        deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         nearEnabled = CU.isNearEnabled(cctx);
 
         this.remapCnt = remapCnt;
+        this.appAttrs = appAttrs;
     }
 
     /**
@@ -297,19 +299,18 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      */
     final void sendSingleRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
         if (cctx.localNodeId().equals(nodeId)) {
-            cache.updateAllAsyncInternal(cctx.localNode(), req,
-                new GridDhtAtomicCache.UpdateReplyClosure() {
-                    @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
-                        if (syncMode != FULL_ASYNC)
-                            onPrimaryResponse(res.nodeId(), res, false);
-                        else if (res.remapTopologyVersion() != null)
-                            ((GridDhtAtomicCache)cctx.cache()).remapToNewPrimary(req);
-                    }
-                });
+            cache.updateAllAsyncInternal(cctx.localNode(), req, new UpdateReplyClosureContextAware() {
+                @Override void apply0(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
+                    if (syncMode != FULL_ASYNC)
+                        onPrimaryResponse(res.nodeId(), res, false);
+                    else if (res.remapTopologyVersion() != null)
+                        ((GridDhtAtomicCache<?, ?>)cctx.cache()).remapToNewPrimary(req);
+                }
+            });
         }
         else {
             try {
-                cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+                cctx.io().send(req.nodeId(), wrapWithApplicationAttributes(req), cctx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("Near update fut, sent request [futId=" + req.futureId() +
@@ -349,12 +350,14 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param futId Not null ID if need remove future.
      */
     final void completeFuture(@Nullable GridCacheReturn ret, Throwable err, @Nullable Long futId) {
-        Object retval = ret == null ? null : rawRetval ? ret : (this.retval || op == TRANSFORM) ?
-            cctx.unwrapBinaryIfNeeded(
-                ret.value(),
-                keepBinary,
-                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
-            ) : ret.success();
+        Object retval = ret == null
+            ? null
+            : (this.retval || op == TRANSFORM)
+                ? cctx.unwrapBinaryIfNeeded(
+                    ret.value(),
+                    keepBinary,
+                    U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId))
+                : ret.success();
 
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
@@ -771,7 +774,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
                 nodeRes.rcvd = true;
 
-                rcvdCnt++;
             }
             else {
                 if (!hasRes) // Do not finish future until primary response received and mapping is known.
@@ -779,8 +781,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
                 mappedNodes.put(nodeId, new NodeResult(true));
 
-                rcvdCnt++;
             }
+
+            rcvdCnt++;
 
             return finished();
         }
@@ -897,6 +900,35 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
          * on primary to ensure FULL_SYNC guarantee.
          */
         ALL_RCVD_CHECK_PRIMARY
+    }
+
+    /** Wraps closure with CacheOperationContext awared of application attributes. */
+    protected abstract class UpdateReplyClosureContextAware implements GridDhtAtomicCache.UpdateReplyClosure {
+        /** */
+        @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
+            CacheOperationContext prevOpCtx = cctx.operationContextPerCall();
+
+            if (appAttrs != null)
+                cctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(appAttrs));
+
+            try {
+                apply0(req, res);
+            }
+            finally {
+                cctx.operationContextPerCall(prevOpCtx);
+            }
+        }
+
+        /** */
+        abstract void apply0(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res);
+    }
+
+    /**
+     * @param msg Message to wrap if application attributes are specified.
+     * @return Original or wrapped message.
+     */
+    protected GridCacheMessage wrapWithApplicationAttributes(GridNearAtomicAbstractUpdateRequest msg) {
+        return appAttrs != null ? new AtomicApplicationAttributesAwareRequest(msg, appAttrs) : msg;
     }
 
     /** {@inheritDoc} */

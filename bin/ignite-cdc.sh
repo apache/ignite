@@ -24,4 +24,8 @@ if [ "${IGNITE_HOME:-}" = "" ];
     else IGNITE_HOME_TMP=${IGNITE_HOME};
 fi
 
+if ! [ "${CDC_JVM_OPTS:-}" = "" ]; then
+    export JVM_OPTS=$CDC_JVM_OPTS
+fi
+
 ${IGNITE_HOME_TMP}/bin/ignite.sh "$@"

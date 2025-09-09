@@ -34,6 +34,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -50,17 +51,20 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
-import org.apache.log4j.WriterAppender;
+import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.addRootLoggerAppender;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.removeRootLoggerAppender;
+import static org.apache.logging.log4j.Level.ALL;
 
 /**
  * Tests for {@code IgniteDataStreamerImpl}.
@@ -86,6 +90,10 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+
+        // Unbinds the log listeners from single static log instance.
+        U.<AtomicReference<IgniteLogger>>field(DataStreamerImpl.class, "logRef").set(null);
+        GridTestUtils.setFieldValue(null, DataStreamerImpl.class, "log", null);
     }
 
     /** {@inheritDoc} */
@@ -129,6 +137,95 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         for (IgniteFuture fut : futures)
             assertTrue(fut.isDone());
+    }
+
+    /**
+     * Test inconsistency log warning of the streamer. Default receiver goes first and is set again after a consistent
+     * receiver. The warning must appear only once.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInconsistencyWarningDefaultReceiverFirst() throws Exception {
+        doTestInconsistencyWarning(true, null, DataStreamerCacheUpdaters.batched(), null);
+    }
+
+    /**
+     * Test inconsistency log warning of the streamer when default receiver that is set after a consistent receiver. The
+     * warning must appear only once.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInconsistencyWarningDefaultReceiverFollows() throws Exception {
+        doTestInconsistencyWarning(true, DataStreamerCacheUpdaters.batched(), null,
+            DataStreamerCacheUpdaters.individual(), null);
+    }
+
+    /**
+     * Test inconsistency log warning of the streamer. Must not appear with consistent receivers.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInconsistencyWarningOtherReceivers() throws Exception {
+        doTestInconsistencyWarning(false, DataStreamerCacheUpdaters.batched(),
+            DataStreamerCacheUpdaters.individual(), DataStreamerCacheUpdaters.batchedSorted());
+    }
+
+    /**
+     * Test inconsistency log warning of the streamer.
+     *
+     * @param mustWarn  {@code True}, if just one warning expected. {@code False} if no warning expected at all.
+     * @param receivers The streamer receivers to load with the same streamer instance. Must not be empty. {@code Null}
+     *        for the default receiver.
+     * @throws Exception If failed.
+     */
+    private void doTestInconsistencyWarning(boolean mustWarn,
+        StreamReceiver<Integer, Integer>... receivers) throws Exception {
+        assert receivers.length > 0;
+
+        LogListener lsnr = LogListener.matches(DataStreamerImpl.WRN_INCONSISTENT_UPDATES)
+            .times(mustWarn ? 1 : 0).build();
+
+        startGrids(2);
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(G.allGrids().size()));
+
+        ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
+        log.registerListener(lsnr);
+        cfg.setGridLogger(log);
+
+        IgniteEx ldr = startClientGrid(cfg);
+
+        CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration();
+        ldr.getOrCreateCache(ccfg);
+
+        try (IgniteDataStreamer<Integer, Integer> ds = ldr.dataStreamer(ccfg.getName())) {
+            for (StreamReceiver<Integer, Integer> rcvr : receivers) {
+                // Resets default receiver.
+                if (rcvr == null)
+                    ds.allowOverwrite(false);
+                else
+                    ds.receiver(rcvr);
+
+                // Put some amount of data.
+                AtomicInteger loadCnt = new AtomicInteger(KEYS_COUNT);
+
+                GridTestUtils.runMultiThreaded(() -> {
+                    int v;
+
+                    while (loadCnt.get() > 0) {
+                        v = loadCnt.getAndDecrement();
+
+                        if (v >= 0)
+                            ds.addData(v, v);
+                    }
+                }, 3, "testDsLoader");
+            }
+        }
+
+        assertTrue(lsnr.check());
     }
 
     /**
@@ -334,10 +431,10 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         if (e != null) {
             if (e instanceof Error)
-                throw (Error) e;
+                throw (Error)e;
 
             if (e instanceof RuntimeException)
-                throw (RuntimeException) e;
+                throw (RuntimeException)e;
 
             throw new RuntimeException(e);
         }
@@ -409,10 +506,10 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         if (e != null) {
             if (e instanceof Error)
-                throw (Error) e;
+                throw (Error)e;
 
             if (e instanceof RuntimeException)
-                throw (RuntimeException) e;
+                throw (RuntimeException)e;
 
             throw new RuntimeException(e);
         }
@@ -437,9 +534,12 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         cnt = 0;
 
         StringWriter logWriter = new StringWriter();
-        Appender logAppender = new WriterAppender(new SimpleLayout(), logWriter);
+        String appName = "test-string-writer";
 
-        Logger.getRootLogger().addAppender(logAppender);
+        addRootLoggerAppender(ALL, WriterAppender.newBuilder()
+            .setName(appName)
+            .setTarget(logWriter)
+            .build());
 
         startGrids(MAX_CACHE_COUNT - 1); // cache-enabled nodes
 
@@ -449,14 +549,13 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             needStaleTop = true; // simulate stale topology for the next action
 
             streamer.addData(KEY, VAL);
-        } finally {
+        }
+        finally {
             needStaleTop = false;
 
             logWriter.flush();
 
-            Logger.getRootLogger().removeAppender(logAppender);
-
-            logAppender.close();
+            removeRootLoggerAppender(appName);
         }
 
         assertFalse(logWriter.toString().contains("DataStreamer will retry data transfer at stable topology"));

@@ -18,10 +18,18 @@
 package org.apache.ignite.internal.processors.query.stat;
 
 import java.math.BigDecimal;
-
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.h2.value.ValueUuid;
+import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
+import java.util.UUID;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.convertToSqlDate;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.convertToSqlTime;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.convertToTimestamp;
 
 /**
  * Gather statistics on test table dtypes and check that statistics manager will return correct statistics for
@@ -33,10 +41,8 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
      */
     @Test
     public void testCollectedStatistics() {
-
-        IgniteH2Indexing indexing = (IgniteH2Indexing) grid(0).context().query().getIndexing();
-        ObjectStatisticsImpl dtypesStat = (ObjectStatisticsImpl) indexing.statsManager().getLocalStatistics(
-            new StatisticsKey(SCHEMA, "DTYPES"));
+        ObjectStatisticsImpl dtypesStat = (ObjectStatisticsImpl)grid(0).context().query().statsManager()
+            .getLocalStatistics(new StatisticsKey(SCHEMA, "DTYPES"));
 
         assertNotNull(dtypesStat);
 
@@ -58,13 +64,13 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
             assertEquals(dtypesStat.rowCount(), colStat.total());
             assertNotNull(colStat.raw());
 
-            if (colName.equals("COL_GEOMETRY")) {
-                assertNull(colStat.min());
-                assertNull(colStat.max());
+            if ("BINARY".equals(type) || "GEOMETRY".equals(type) || "VARCHAR".equals(type) || "CHAR".equals(type)) {
+                assertNull("Unexpected min for " + type, colStat.min());
+                assertNull("Unexpected max for " + type, colStat.max());
             }
             else {
-                assertNotNull(colStat.min());
-                assertNotNull(colStat.max());
+                assertNotNull("Unexpected min for " + type, colStat.min());
+                assertNotNull("Unexpected max for " + type, colStat.max());
             }
         }
     }
@@ -78,8 +84,8 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics booleanStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(2, booleanStats.distinct());
-        assertFalse(booleanStats.min().getBoolean());
-        assertTrue(booleanStats.max().getBoolean());
+        assertTrue(booleanStats.min().compareTo(BigDecimal.ZERO) == 0);
+        assertTrue(booleanStats.max().compareTo(BigDecimal.ONE) == 0);
         assertEquals(1, booleanStats.size());
     }
 
@@ -92,8 +98,8 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics intStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, intStats.distinct());
-        assertEquals(1, intStats.min().getInt());
-        assertEquals(SMALL_SIZE - 1, intStats.max().getInt());
+        assertEquals(1, intStats.min().intValue());
+        assertEquals(SMALL_SIZE - 1, intStats.max().intValue());
         assertEquals(4, intStats.size());
     }
 
@@ -106,8 +112,8 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics tinyintStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, tinyintStats.distinct());
-        assertEquals(1, tinyintStats.min().getShort());
-        assertEquals(SMALL_SIZE - 1, tinyintStats.max().getShort());
+        assertEquals(1, tinyintStats.min().byteValue());
+        assertEquals(SMALL_SIZE - 1, tinyintStats.max().byteValue());
         assertEquals(1, tinyintStats.size());
     }
 
@@ -120,8 +126,8 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics smallintStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, smallintStats.distinct());
-        assertEquals(1, smallintStats.min().getShort());
-        assertEquals(SMALL_SIZE - 1, smallintStats.max().getShort());
+        assertEquals(1, smallintStats.min().shortValue());
+        assertEquals(SMALL_SIZE - 1, smallintStats.max().shortValue());
         assertEquals(2, smallintStats.size());
     }
 
@@ -134,8 +140,8 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics bigintStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, bigintStats.distinct());
-        assertEquals(1, bigintStats.min().getBigDecimal().intValue());
-        assertEquals(SMALL_SIZE - 1, bigintStats.max().getBigDecimal().intValue());
+        assertEquals(1, bigintStats.min().intValue());
+        assertEquals(SMALL_SIZE - 1, bigintStats.max().intValue());
         assertEquals(8, bigintStats.size());
     }
 
@@ -148,9 +154,11 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics decimalStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, decimalStats.distinct());
-        assertEquals(new BigDecimal("0.01"), decimalStats.min().getBigDecimal());
-        assertEquals(new BigDecimal("" + ((double)SMALL_SIZE - 1) / 100), decimalStats.max().getBigDecimal());
-        assertEquals(2, decimalStats.size());
+        assertEquals(new BigDecimal("0.01"), decimalStats.min());
+        assertEquals(new BigDecimal("" + ((double)SMALL_SIZE - 1) / 100), decimalStats.max());
+
+        // Size of unscaled value plus scale.
+        assertEquals(new BigDecimal("0.01").unscaledValue().toByteArray().length + 4, decimalStats.size());
     }
 
     /**
@@ -162,9 +170,9 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics doubleStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, doubleStats.distinct());
-        assertEquals(0.01, doubleStats.min().getDouble());
-        assertEquals(((double)SMALL_SIZE - 1) / 100, doubleStats.max().getDouble());
-        assertEquals(2, doubleStats.size());
+        assertEquals(0.01, doubleStats.min().doubleValue());
+        assertEquals(((double)SMALL_SIZE - 1) / 100, doubleStats.max().doubleValue());
+        assertEquals(8, doubleStats.size());
     }
 
     /**
@@ -176,9 +184,9 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics realStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, realStats.distinct());
-        assertEquals(new BigDecimal("0.01"), realStats.min().getBigDecimal());
-        assertEquals(new BigDecimal("" + ((double)SMALL_SIZE - 1) / 100), realStats.max().getBigDecimal());
-        assertEquals(2, realStats.size());
+        assertEquals(0.01f, realStats.min().floatValue());
+        assertEquals(((float)SMALL_SIZE - 1) / 100, realStats.max().floatValue());
+        assertEquals(4, realStats.size());
     }
 
     /**
@@ -190,9 +198,9 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics timeStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, timeStats.distinct());
-        assertEquals("12:00:01", timeStats.min().getTime().toString());
-        assertEquals("12:01:39", timeStats.max().getTime().toString());
-        assertEquals(4, timeStats.size());
+        assertEquals(convert(LocalTime.of(12, 0, 1)), timeStats.min());
+        assertEquals(convert(LocalTime.of(12, 1, 39)), timeStats.max());
+        assertEquals(8, timeStats.size());
     }
 
     /**
@@ -204,9 +212,9 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics dateStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, dateStats.distinct());
-        assertEquals("1970-01-02", dateStats.min().getDate().toString());
-        assertEquals("1970-04-10", dateStats.max().getDate().toString());
-        assertEquals(4, dateStats.size());
+        assertEquals(convert(LocalDate.of(1970, Month.JANUARY, 2)), dateStats.min());
+        assertEquals(convert(LocalDate.of(1970, Month.APRIL, 10)), dateStats.max());
+        assertEquals(8, dateStats.size());
     }
 
     /**
@@ -218,9 +226,9 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics timestampStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, timestampStats.distinct());
-        assertEquals("1970-01-01 12:00:01.0", timestampStats.min().getTimestamp().toString());
-        assertEquals("1970-01-01 12:01:39.0", timestampStats.max().getTimestamp().toString());
-        assertEquals(4, timestampStats.size());
+        assertEquals(convert(LocalDateTime.of(1970, Month.JANUARY, 1, 12, 0, 1)), timestampStats.min());
+        assertEquals(convert(LocalDateTime.of(1970, Month.JANUARY, 1, 12, 1, 39)), timestampStats.max());
+        assertEquals(12, timestampStats.size());
     }
 
     /**
@@ -232,8 +240,8 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics varcharStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, varcharStats.distinct());
-        assertEquals("varchar" + 1, varcharStats.min().getString());
-        assertEquals("varchar" + (SMALL_SIZE - 1), varcharStats.max().getString());
+        assertNull(varcharStats.min());
+        assertNull(varcharStats.max());
         assertEquals(8, varcharStats.size());
     }
 
@@ -246,8 +254,8 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics charStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(26, charStats.distinct());
-        assertEquals('A', charStats.min().getString().charAt(0));
-        assertEquals('Z', charStats.max().getString().charAt(0));
+        assertNull(charStats.min());
+        assertNull(charStats.max());
         assertEquals(1, charStats.size());
     }
 
@@ -260,8 +268,10 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics decimalStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, decimalStats.distinct());
-        assertEquals(1L, ((ValueUuid)decimalStats.min()).getLow());
-        assertEquals(SMALL_SIZE - 1L, ((ValueUuid)decimalStats.max()).getLow());
+        assertEquals(new BigDecimal(new BigInteger(1, IgniteUtils.uuidToBytes(new UUID(0L, 1L)))),
+            decimalStats.min());
+        assertEquals(new BigDecimal(new BigInteger(1, IgniteUtils.uuidToBytes(new UUID(0L, SMALL_SIZE - 1L)))),
+            decimalStats.max());
         assertEquals(16, decimalStats.size());
     }
 
@@ -274,8 +284,8 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         ColumnStatistics binaryStats = getTypesStats().columnStatistics(colName);
 
         assertEquals(SMALL_SIZE - 1, binaryStats.distinct());
-        assertEquals((byte)1, binaryStats.min().getBytes()[3]);
-        assertEquals((byte)99, binaryStats.max().getBytes()[3]);
+        assertNull(binaryStats.min());
+        assertNull(binaryStats.max());
         assertEquals(4, binaryStats.size());
     }
 
@@ -285,6 +295,21 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
      * @return Local object statistics for dtypes table.
      */
     private ObjectStatisticsImpl getTypesStats() {
-        return (ObjectStatisticsImpl) statisticsMgr(0).getLocalStatistics(new StatisticsKey(SCHEMA, "DTYPES"));
+        return (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(new StatisticsKey(SCHEMA, "DTYPES"));
+    }
+
+    /** */
+    private static BigDecimal convert(LocalTime time) {
+        return new BigDecimal(convertToSqlTime(time).getTime());
+    }
+
+    /** */
+    private static BigDecimal convert(LocalDate date) {
+        return new BigDecimal(convertToSqlDate(date).getTime());
+    }
+
+    /** */
+    private static BigDecimal convert(LocalDateTime ts) {
+        return new BigDecimal(convertToTimestamp(ts).getTime());
     }
 }

@@ -17,27 +17,20 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Request for cancelling tasks.
  */
 public class GridTaskCancelRequest implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
+    @Order(value = 0, method = "sessionId")
     private IgniteUuid sesId;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Default constructor.
      */
     public GridTaskCancelRequest() {
         // No-op.
@@ -61,63 +54,21 @@ public class GridTaskCancelRequest implements Message {
         return sesId;
     }
 
+    /**
+     * @param sesId New session ID.
+     */
+    public void sessionId(IgniteUuid sesId) {
+        this.sesId = sesId;
+    }
+
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIgniteUuid("sesId", sesId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                sesId = reader.readIgniteUuid("sesId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridTaskCancelRequest.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 5;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

@@ -28,9 +28,6 @@ import org.jetbrains.annotations.Nullable;
  * Task result response.
  */
 public class GridTaskResultResponse implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Result. */
     @GridDirectTransient
     private Object res;
@@ -127,7 +124,7 @@ public class GridTaskResultResponse implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -135,25 +132,25 @@ public class GridTaskResultResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("err", err))
+                if (!writer.writeString(err))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("finished", finished))
+                if (!writer.writeBoolean(finished))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeBoolean("found", found))
+                if (!writer.writeBoolean(found))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray("resBytes", resBytes))
+                if (!writer.writeByteArray(resBytes))
                     return false;
 
                 writer.incrementState();
@@ -167,12 +164,9 @@ public class GridTaskResultResponse implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                err = reader.readString("err");
+                err = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -180,7 +174,7 @@ public class GridTaskResultResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                finished = reader.readBoolean("finished");
+                finished = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -188,7 +182,7 @@ public class GridTaskResultResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                found = reader.readBoolean("found");
+                found = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -196,7 +190,7 @@ public class GridTaskResultResponse implements Message {
                 reader.incrementState();
 
             case 3:
-                resBytes = reader.readByteArray("resBytes");
+                resBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -205,16 +199,11 @@ public class GridTaskResultResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(GridTaskResultResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 77;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 }

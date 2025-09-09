@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.util.Collection;
+import java.util.BitSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.cache.CacheException;
@@ -42,10 +43,9 @@ public interface Reducer {
     /**
      * Set source nodes.
      *
-     * @param nodes Nodes.
-     * @param segmentsCnt Index segments per table.
+     * @param nodesToSegmentsCnt Mapping of nodes to expected count of segments to scan.
      */
-    void setSources(Collection<ClusterNode> nodes, int segmentsCnt);
+    void setSources(Map<ClusterNode, BitSet> nodesToSegmentsCnt);
 
     /**
      * @return Return source nodes for this merge index.

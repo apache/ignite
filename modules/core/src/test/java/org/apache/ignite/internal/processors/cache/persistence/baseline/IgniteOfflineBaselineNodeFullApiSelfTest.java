@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
+import org.apache.ignite.cluster.ClusterState;
+
 /**
  * Full API cache tests with situation when there is an offline node from BaselineTopology.
  */
@@ -30,7 +32,7 @@ public class IgniteOfflineBaselineNodeFullApiSelfTest extends IgniteBaselineAbst
 
         startGrid("offlineBaselineNode");
 
-        grid(0).active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         stopGrid("offlineBaselineNode");
 

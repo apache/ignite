@@ -73,7 +73,9 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
     @Test
     @WithSystemProperty(key = IGNITE_PERF_STAT_FILE_MAX_SIZE, value = "" + TEST_FILE_MAX_SIZE)
     public void testFileMaxSize() throws Exception {
-        long initLen = srv.context().cache().cacheDescriptors().values().stream().mapToInt(
+        long initLen = 1 + OperationType.versionRecordSize();
+
+        initLen += srv.context().cache().cacheDescriptors().values().stream().mapToInt(
             desc -> 1 + cacheStartRecordSize(desc.cacheName().getBytes().length, false)).sum();
 
         long expOpsCnt = (TEST_FILE_MAX_SIZE - initLen) / (/*typeOp*/1 + OperationType.cacheRecordSize());
@@ -98,9 +100,9 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
 
         List<File> files = statisticsFiles();
 
-        assertEquals(1, files.size());
+        assertEquals(2, files.size());
 
-        long statFileLen = files.get(0).length();
+        long statFileLen = performanceStatisticsFiles(files).get(0).length();
 
         assertEquals(expLen, statFileLen);
 
@@ -123,8 +125,11 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
 
         List<File> files = statisticsFiles();
 
-        assertEquals(1, files.size());
-        assertEquals(0, files.get(0).length());
+        assertEquals(2, files.size());
+
+        File file = performanceStatisticsFiles(files).get(0);
+
+        assertEquals(0, file.length());
 
         srv.cache(DEFAULT_CACHE_NAME).get(0);
 
@@ -133,9 +138,9 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
                 try {
                     List<File> statFiles = statisticsFiles();
 
-                    assertEquals(1, statFiles.size());
+                    assertEquals(2, statFiles.size());
 
-                    return statFiles.get(0).length() > 0;
+                    return file.length() > 0;
                 }
                 catch (Exception e) {
                     throw new RuntimeException(e);
@@ -155,7 +160,7 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
 
         startCollectStatistics();
 
-        int expLen = 0;
+        int expLen = 1 + OperationType.versionRecordSize();
 
         for (int i = 0; i < tasksCnt; i++) {
             String taskName = "TestTask-" + i;
@@ -195,7 +200,9 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
 
         List<File> files = statisticsFiles();
 
-        assertEquals(1, files.size());
-        assertEquals(expLen, files.get(0).length());
+        assertEquals(2, files.size());
+
+        File file = performanceStatisticsFiles(files).get(0);
+        assertEquals(expLen, file.length());
     }
 }

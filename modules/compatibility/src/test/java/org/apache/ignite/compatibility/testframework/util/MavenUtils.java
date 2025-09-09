@@ -18,20 +18,27 @@
 package org.apache.ignite.compatibility.testframework.util;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.RepositoryBase;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,10 +50,7 @@ public class MavenUtils {
     private static String locRepPath = null;
 
     /** */
-    private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
-
-    /** Set this flag to true if running PDS compatibility tests locally. */
-    private static boolean useGgRepo;
+    private static final String MAVEN_DEPENDENCY_PLUGIN = "org.apache.maven.plugins:maven-dependency-plugin:3.2.0";
 
     /**
      * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId={@code artifactId}.
@@ -89,23 +93,23 @@ public class MavenUtils {
 
         assert names.length >= 3;
 
-        String groupId = names[0];
+        String grpId = names[0];
         String artifactId = names[1];
-        String version = names[2];
+        String ver = names[2];
         String packaging = names.length > 3 ? names[3] : null;
         String classifier = names.length > 4 ? names[4] : null;
 
         String jarFileName = String.format("%s-%s%s.%s",
             artifactId,
-            version,
+            ver,
             (classifier == null ? "" : "-" + classifier),
             (packaging == null ? "jar" : packaging)
         );
 
         String pathToArtifact = getMavenLocalRepositoryPath() + File.separator +
-            groupId.replace(".", File.separator) + File.separator +
+            grpId.replace(".", File.separator) + File.separator +
             artifactId.replace(".", File.separator) + File.separator +
-            version + File.separator + jarFileName;
+            ver + File.separator + jarFileName;
 
         if (Files.notExists(Paths.get(pathToArtifact)))
             downloadArtifact(artifact);
@@ -142,6 +146,29 @@ public class MavenUtils {
         return output.substring(output.lastIndexOf('>', endTagPos) + 1, endTagPos);
     }
 
+    /** @return Collection of configured repositories for the Maven project. */
+    private static Collection<String> mavenProjectRepositories() throws Exception {
+        String workDir = System.getProperty("user.dir");
+
+        File prjPomFile = new File(workDir, "pom.xml");
+
+        if (!prjPomFile.exists())
+            return Collections.emptyList();
+
+        Path outPath = Files.createTempFile("effective-pom", "");
+
+        try {
+            exec(buildMvnCommand() + " -f " + workDir + " help:effective-pom -Doutput=" + outPath.toAbsolutePath());
+
+            Model model = new MavenXpp3Reader().read(new FileInputStream(outPath.toFile()));
+
+            return F.transform(model.getRepositories(), RepositoryBase::getUrl);
+        }
+        finally {
+            Files.deleteIfExists(outPath);
+        }
+    }
+
     /**
      * Downloads and stores in local repository an artifact with given identifier.
      *
@@ -151,22 +178,14 @@ public class MavenUtils {
     private static void downloadArtifact(String artifact) throws Exception {
         X.println("Downloading artifact... Identifier: " + artifact);
 
-        // Default platform independ path for maven settings file.
-        Path localProxyMavenSettings = Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml");
+        GridStringBuilder mavenCmdArgs = new SB(" ").a(MAVEN_DEPENDENCY_PLUGIN).a(":get -Dartifact=" + artifact);
 
-        String localProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
+        Collection<String> repos = mavenProjectRepositories();
 
-        SB mavenCommandArgs = new SB(" org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact);
+        if (!repos.isEmpty())
+            mavenCmdArgs.a(" -DremoteRepositories=").a(String.join(",", repos));
 
-        if (!F.isEmpty(localProxyMavenSettingsFromEnv))
-            localProxyMavenSettings = Paths.get(localProxyMavenSettingsFromEnv);
-
-        if (Files.exists(localProxyMavenSettings))
-            mavenCommandArgs.a(" -s " + localProxyMavenSettings.toString());
-        else
-            mavenCommandArgs.a(useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "");
-
-        exec(buildMvnCommand() + mavenCommandArgs.toString());
+        exec(buildMvnCommand() + mavenCmdArgs.toString());
 
         X.println("Download is finished");
     }
@@ -223,14 +242,46 @@ public class MavenUtils {
      * @return Maven executable command.
      */
     private static String buildMvnCommand() {
+        String mvnCmd = resolveMavenApplicationPath();
+
+        Path mvnSettingsFilePath = resolveMavenSettingsFilePath();
+
+        if (Files.exists(mvnSettingsFilePath))
+            mvnCmd += " -s " + mvnSettingsFilePath;
+
+        return mvnCmd;
+    }
+
+    /** */
+    private static Path resolveMavenSettingsFilePath() {
+        String settingsPathEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
+
+        return F.isEmpty(settingsPathEnv)
+            ? Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml")
+            : Paths.get(settingsPathEnv);
+    }
+
+    /** */
+    private static String resolveMavenApplicationPath() {
         String m2Home = System.getenv("M2_HOME");
 
         if (m2Home == null)
             m2Home = System.getProperty("M2_HOME");
 
-        if (m2Home == null)
-            return "mvn";
+        if (m2Home != null)
+            return m2Home + "/bin/mvn";
 
-        return m2Home + "/bin/mvn";
+        File curDir = new File(System.getProperty("user.dir"));
+
+        while (curDir != null) {
+            Path mvnwPath = Paths.get(curDir.getAbsolutePath(), "mvnw");
+
+            if (Files.exists(mvnwPath) && Files.isExecutable(mvnwPath))
+                return mvnwPath.toString();
+
+            curDir = curDir.getParentFile();
+        }
+
+        return "mvn";
     }
 }

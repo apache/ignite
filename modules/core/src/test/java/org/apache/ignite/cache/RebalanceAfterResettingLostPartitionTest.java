@@ -18,11 +18,11 @@
 package org.apache.ignite.cache;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,6 +38,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  *
@@ -103,7 +105,7 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
     public void testRebalanceAfterPartitionsWereLost() throws Exception {
         startGrids(2);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (int j = 0; j < CACHE_SIZE; j++)
             grid(0).cache(CACHE_NAME).put(j, "Value" + j);
@@ -144,13 +146,11 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
         // Returning first node to the cluster.
         IgniteEx g0 = startGrid(0);
 
-        assertTrue(Objects.requireNonNull(
-            grid(0).cachex(CACHE_NAME)).context().topology().localPartitions().stream().allMatch(
+        assertTrue(requireNonNull(grid(0).cachex(CACHE_NAME)).context().topology().localPartitions().stream().allMatch(
             p -> p.state() == GridDhtPartitionState.LOST));
 
         // Verify that partition loss is detected.
-        assertTrue(Objects.requireNonNull(
-            grid(1).cachex(CACHE_NAME)).context().topology().localPartitions().stream().allMatch(
+        assertTrue(requireNonNull(grid(1).cachex(CACHE_NAME)).context().topology().localPartitions().stream().allMatch(
             p -> p.state() == GridDhtPartitionState.LOST));
 
         // Reset lost partitions and wait for PME.
@@ -158,13 +158,11 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
 
         awaitPartitionMapExchange();
 
-        assertTrue(Objects.requireNonNull(
-            grid(0).cachex(CACHE_NAME)).context().topology().localPartitions().stream().allMatch(
+        assertTrue(requireNonNull(grid(0).cachex(CACHE_NAME)).context().topology().localPartitions().stream().allMatch(
             p -> p.state() == GridDhtPartitionState.OWNING));
 
         // Verify that partitions are in owning state.
-        assertTrue(Objects.requireNonNull(
-            grid(1).cachex(CACHE_NAME)).context().topology().localPartitions().stream().allMatch(
+        assertTrue(requireNonNull(grid(1).cachex(CACHE_NAME)).context().topology().localPartitions().stream().allMatch(
             p -> p.state() == GridDhtPartitionState.OWNING));
 
         // Verify that data was successfully rebalanced.

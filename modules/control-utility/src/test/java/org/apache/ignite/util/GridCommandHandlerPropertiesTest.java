@@ -20,6 +20,10 @@ package org.apache.ignite.util;
 import java.io.Serializable;
 import java.util.Set;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.client.ClientAuthenticationException;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
@@ -27,14 +31,21 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.ignite.Ignition.startClient;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.processors.cache.ConnectionEnabledPropertyTest.THIN_CONN_ENABLED_PROP;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TRANSFER_RATE_BYTES;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Checks command line property commands.
@@ -57,6 +68,8 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     @Test
     public void testHelp() {
+        Assume.assumeTrue(cliCommandHandler());
+
         assertEquals(EXIT_CODE_OK, execute("--property", "help"));
 
         String out = testOut.toString();
@@ -65,13 +78,32 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
         assertContains(log, out, "control.(sh|bat) --property help");
 
         assertContains(log, out, "Print list of available properties:");
-        assertContains(log, out, "control.(sh|bat) --property list");
+        assertContains(log, out, "control.(sh|bat) --property list [--info]");
+        assertContains(log, out, "--info  - Print detailed information: name, value, description.");
 
         assertContains(log, out, "Get the property value:");
         assertContains(log, out, "control.(sh|bat) --property get --name <property_name>");
 
         assertContains(log, out, "Set the property value:");
         assertContains(log, out, "control.(sh|bat) --property set --name <property_name> --val <property_value>");
+    }
+
+    /**
+     * Check the command ' --property list [--info]'.
+     * Steps:
+     */
+    @Test
+    public void testListWithValues() {
+        assertEquals(EXIT_CODE_OK, execute("--property", "list", "--info"));
+
+        String out = testOut.toString();
+
+        for (DistributedChangeableProperty<Serializable> pd : crd.context()
+            .distributedConfiguration().properties()) {
+            assertContains(log, out, pd.getName());
+            assertContains(log, out, String.valueOf(pd.get()));
+            assertContains(log, out, pd.description());
+        }
     }
 
     /**
@@ -105,7 +137,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
     }
 
     /**
-     * Check the set command fro property 'sql.disabledFunctions'.
+     * Check the set command for property 'sql.disabledFunctions'.
      * Steps:
      */
     @Test
@@ -134,7 +166,9 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      * Checks the set command for property 'checkpoint.deviation'.
      */
     @Test
-    public void testPropertyCheckpointDeviation() {
+    public void testPropertyCheckpointDeviation() throws IgniteCheckedException {
+        String propName = "checkpoint.deviation";
+
         for (Ignite ign : G.allGrids()) {
             if (ign.configuration().isClientMode())
                 continue;
@@ -142,14 +176,15 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
             SimpleDistributedProperty<Integer> cpFreqDeviation = U.field(((IgniteEx)ign).context().cache().context().database(),
                 "cpFreqDeviation");
 
-            assertNull(cpFreqDeviation.get());
+            if (cpFreqDeviation.get() != null)
+                ((IgniteEx)ign).context().distributedMetastorage().remove(propName);
         }
 
         assertEquals(
             EXIT_CODE_OK,
             execute(
                 "--property", "set",
-                "--name", "checkpoint.deviation",
+                "--name", propName,
                 "--val", "20"
             )
         );
@@ -168,7 +203,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
     }
 
     /**
-     * Check the set command fro property 'sql.defaultQueryTimeout'.
+     * Check the set command for property 'sql.defaultQueryTimeout'.
      * Steps:
      */
     @Test
@@ -205,6 +240,15 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     @Test
     public void testPropertyWalRebalanceThreshold() {
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY,
+                "--val", Integer.toString(DFLT_PDS_WAL_REBALANCE_THRESHOLD)
+            )
+        );
+
         assertDistributedPropertyEquals(HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY, DFLT_PDS_WAL_REBALANCE_THRESHOLD);
 
         int newVal = DFLT_PDS_WAL_REBALANCE_THRESHOLD * 2;
@@ -222,6 +266,69 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
     }
 
     /**
+     * Check the set command for property 'snapshotTransferRate'.
+     */
+    @Test
+    public void testPropertySnapshotTransferRate() {
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY,
+                "--val", Long.toString(DFLT_SNAPSHOT_TRANSFER_RATE_BYTES)
+            )
+        );
+
+        assertDistributedPropertyEquals(SNAPSHOT_TRANSFER_RATE_DMS_KEY, DFLT_SNAPSHOT_TRANSFER_RATE_BYTES);
+
+        long newVal = 1024;
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", SNAPSHOT_TRANSFER_RATE_DMS_KEY,
+                "--val", Long.toString(newVal)
+            )
+        );
+
+        assertDistributedPropertyEquals(SNAPSHOT_TRANSFER_RATE_DMS_KEY, newVal);
+    }
+
+    /** */
+    @Test
+    public void testConnectionEnabled() {
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertEquals(EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", THIN_CONN_ENABLED_PROP,
+                "--val", "false"
+            )
+        );
+
+        assertThrows(log, () -> startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800")),
+            ClientAuthenticationException.class, CONN_DISABLED_BY_ADMIN_ERR_MSG);
+
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertEquals(EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", THIN_CONN_ENABLED_PROP,
+                "--val", "true"
+            )
+        );
+
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        try (IgniteClient cli = startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {
+            assertTrue(cli.cluster().state().active());
+        }
+    }
+
+    /**
      * Validates that distributed property has specified value across all nodes.
      *
      * @param propName Distributed property name.
@@ -230,7 +337,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     private <T extends Serializable> void assertDistributedPropertyEquals(String propName, T expected) {
         for (Ignite ign : G.allGrids()) {
-            IgniteEx ignEx = (IgniteEx) ign;
+            IgniteEx ignEx = (IgniteEx)ign;
 
             if (ign.configuration().isClientMode())
                 continue;

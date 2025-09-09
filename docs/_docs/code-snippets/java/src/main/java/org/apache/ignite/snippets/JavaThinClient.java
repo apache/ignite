@@ -331,12 +331,12 @@ public class JavaThinClient {
         try (IgniteClient igniteClient = Ignition.startClient(cfg)) {
 
             // getting the id of the first node
-            UUID nodeId = (UUID) igniteClient.query(new SqlFieldsQuery("SELECT * from NODES").setSchema("IGNITE"))
+            UUID nodeId = (UUID) igniteClient.query(new SqlFieldsQuery("SELECT * from NODES").setSchema("SYS"))
             .getAll().iterator().next().get(0);
 
             double cpu_load = (Double) igniteClient
             .query(new SqlFieldsQuery("select CUR_CPU_LOAD * 100 from NODE_METRICS where NODE_ID = ? ")
-            .setSchema("IGNITE").setArgs(nodeId.toString()))
+            .setSchema("SYS").setArgs(nodeId.toString()))
             .getAll().iterator().next().get(0);
 
             System.out.println("node's cpu load = " + cpu_load);
@@ -359,10 +359,37 @@ public class JavaThinClient {
         try (IgniteClient client = Ignition.startClient(cfg)) {
             ClientCache<Integer, String> cache = client.cache("myCache");
             // Put, get or remove data from the cache...
+            cache.put(0, "Hello, world!");
+            // The partition number can be specified with IndexQuery#setPartition(Integer) as well.
+            ScanQuery scanQuery = new ScanQuery().setPartition(part);
         } catch (ClientException e) {
             System.err.println(e.getMessage());
         }
         //end::partition-awareness[]
+    }
+
+    void partitionAwarenessWithCustomMapper() throws Exception {
+        //tag::partition-awareness-with-mapper[]
+        // Partition awarenes is enabled by default since Apache Ignite 2.11 release.
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddresses("node1_address:10800", "node2_address:10800", "node3_address:10800")
+            .setPartitionAwarenessMapperFactory(new ClientPartitionAwarenessMapperFactory() {
+                /** {@inheritDoc} */
+                @Override public ClientPartitionAwarenessMapper create(String cacheName, int partitions) {
+                    AffinityFunction aff = new RendezvousAffinityFunction(false, partitions);
+
+                    return aff::partition;
+                }
+            })
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
+            ClientCache<Integer, String> cache = client.cache(PART_CUSTOM_AFFINITY_CACHE_NAME);
+            // Put, get or remove data from the cache, partition awarenes will be enabled.
+        }
+        catch (ClientException e) {
+            System.err.println(e.getMessage());
+        }
+        //end::partition-awareness-with-mapper[]
     }
 
     private String[] fetchServerAddresses() {
@@ -494,4 +521,24 @@ public class JavaThinClient {
     private static interface MyService {
         public void myServiceMethod();
     }
+
+    void entryProcessor() throws Exception {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            //tag::entry-processor[]
+            ClientCache<Integer, Integer> cache = client.getOrCreateCache("myCache");
+            cache.invoke(0, new IncrementProcessor());
+            //end::entry-processor[]
+        }
+    }
+
+    //tag::entry-processor-class[]
+    public class IncrementProcessor implements EntryProcessor<Integer, Integer, Integer> {
+        @Override public Integer process(MutableEntry<Integer, Integer> entry, Object... arguments) {
+            entry.setValue(entry.getValue() == null ? 1 : entry.getValue() + 1);
+            return entry.getValue();
+        }
+    }
+    //end::entry-processor-class[]
 }

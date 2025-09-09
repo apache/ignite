@@ -22,10 +22,16 @@
 #include <string>
 
 #include <ignite/thin/cache/query/query_sql_fields.h>
+#include <ignite/thin/cache/query/query_scan.h>
+#include <ignite/thin/cache/event/java_cache_entry_event_filter.h>
+
+#include <ignite/impl/thin/cache/continuous/continuous_query_client_holder.h>
 
 #include "impl/data_router.h"
 #include "impl/transactions/transactions_impl.h"
+#include "impl/cache/query/query_cursor_impl.h"
 #include "impl/cache/query/query_fields_cursor_impl.h"
+#include "impl/cache/query/continuous/continuous_query_handle_impl.h"
 
 namespace ignite
 {
@@ -298,6 +304,25 @@ namespace ignite
                      */
                     query::SP_QueryFieldsCursorImpl Query(const ignite::thin::cache::query::SqlFieldsQuery &qry);
 
+                    /**
+                     * Perform scan query.
+                     *
+                     * @param qry Query.
+                     * @return Query cursor proxy.
+                     */
+                    query::SP_QueryCursorImpl Query(const ignite::thin::cache::query::ScanQuery& qry);
+
+                    /**
+                     * Starts the continuous query execution
+                     *
+                     * @param continuousQuery Continuous query.
+                     * @param filter Remote Java filter.
+                     * @return Query handle. Once all instances are destroyed query execution stopped.
+                     */
+                    query::continuous::SP_ContinuousQueryHandleClientImpl QueryContinuous(
+                            const query::continuous::SP_ContinuousQueryClientHolderBase& continuousQuery,
+                            const ignite::thin::cache::event::JavaCacheEntryEventFilter& filter);
+
                 private:
                     /**
                      * Synchronously send request message and receive response.
@@ -308,7 +333,7 @@ namespace ignite
                      * @throw IgniteError on error.
                      */
                     template<typename ReqT, typename RspT>
-                    void SyncCacheKeyMessage(const WritableKey& key, const ReqT& req, RspT& rsp);
+                    void SyncCacheKeyMessage(const WritableKey& key, ReqT& req, RspT& rsp);
 
                     /**
                      * Synchronously send message and receive response.
@@ -319,7 +344,19 @@ namespace ignite
                      * @throw IgniteError on error.
                      */
                     template<typename ReqT, typename RspT>
-                    SP_DataChannel SyncMessage(const ReqT& req, RspT& rsp);
+                    SP_DataChannel SyncMessage(ReqT& req, RspT& rsp);
+
+                    /**
+                     * Synchronously send message and receive response.
+                     * Modified to properly set SQL state on connection errors.
+                     *
+                     * @param req Request message.
+                     * @param rsp Response message.
+                     * @return Channel that was used for request.
+                     * @throw IgniteError on error.
+                     */
+                    template<typename ReqT, typename RspT>
+                    SP_DataChannel SyncMessageSql(ReqT& req, RspT& rsp);
 
                     /**
                      * Synchronously send request message and receive response taking in account that it can be

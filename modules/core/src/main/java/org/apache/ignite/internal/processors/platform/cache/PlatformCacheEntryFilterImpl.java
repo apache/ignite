@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -65,7 +65,7 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = ctx.writer(out);
+            BinaryWriterEx writer = ctx.writer(out);
 
             writer.writeLong(ptr);
 
@@ -77,7 +77,8 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
                     // Put value to platform thread local so it can be requested when missing.
                     writer.writeBoolean(false);
                     ctx.kernalContext().platform().setThreadLocal(v);
-                } else {
+                }
+                else {
                     writer.writeBoolean(true);
                     writer.writeObject(v);
                 }
@@ -144,14 +145,15 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = ctx.writer(out);
+            BinaryWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);
 
             if (cacheId != null) {
                 writer.writeBoolean(true);
                 writer.writeInt(cacheId);
-            } else {
+            }
+            else {
                 writer.writeBoolean(false);
             }
 

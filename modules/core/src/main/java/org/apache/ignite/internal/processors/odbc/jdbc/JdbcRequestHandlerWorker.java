@@ -27,8 +27,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -74,7 +74,7 @@ class JdbcRequestHandlerWorker extends GridWorker {
      * Start this worker.
      */
     void start() {
-        new IgniteThread(this).start();
+        U.newThread(this).start();
     }
 
     /** {@inheritDoc} */
@@ -98,7 +98,7 @@ class JdbcRequestHandlerWorker extends GridWorker {
         finally {
             // Notify indexing that this worker is being stopped.
             try {
-                ctx.query().getIndexing().onClientDisconnect();
+                ctx.query().onClientDisconnect();
             }
             catch (Exception ignored) {
                 // No-op.

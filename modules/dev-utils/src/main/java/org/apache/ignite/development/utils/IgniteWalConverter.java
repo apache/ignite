@@ -80,33 +80,32 @@ public class IgniteWalConverter {
 
         final WalStat stat = params.isPrintStat() ? new WalStat() : null;
 
-        IgniteWalIteratorFactory.IteratorParametersBuilder iteratorParametersBuilder =
+        IgniteWalIteratorFactory.IteratorParametersBuilder iterParametersBuilder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
+                .fileTree(params.getFileTree())
                 .pageSize(params.getPageSize())
-                .binaryMetadataFileStoreDir(params.getBinaryMetadataFileStoreDir())
-                .marshallerMappingFileStoreDir(params.getMarshallerMappingFileStoreDir())
                 .keepBinary(params.isKeepBinary());
 
-        if (params.getWalDir() != null)
-            iteratorParametersBuilder.filesOrDirs(params.getWalDir());
+        if (params.getFileTree().wal().exists())
+            iterParametersBuilder.filesOrDirs(params.getFileTree().wal());
 
-        if (params.getWalArchiveDir() != null)
-            iteratorParametersBuilder.filesOrDirs(params.getWalArchiveDir());
+        if (params.getFileTree().walArchive().exists())
+            iterParametersBuilder.filesOrDirs(params.getFileTree().walArchive());
 
         final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory();
 
         boolean printAlways = F.isEmpty(params.getRecordTypes());
 
-        try (WALIterator stIt = walIterator(factory.iterator(iteratorParametersBuilder), params.getPages())) {
-            String currentWalPath = null;
+        try (WALIterator stIt = walIterator(factory.iterator(iterParametersBuilder), params.getPages())) {
+            String curWalPath = null;
 
             while (stIt.hasNextX()) {
-                final String currentRecordWalPath = getCurrentWalFilePath(stIt);
+                final String curRecordWalPath = getCurrentWalFilePath(stIt);
 
-                if (currentWalPath == null || !currentWalPath.equals(currentRecordWalPath)) {
-                    out.println("File: " + currentRecordWalPath);
+                if (curWalPath == null || !curWalPath.equals(curRecordWalPath)) {
+                    out.println("File: " + curRecordWalPath);
 
-                    currentWalPath = currentRecordWalPath;
+                    curWalPath = curRecordWalPath;
                 }
 
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
@@ -122,7 +121,7 @@ public class IgniteWalConverter {
                     boolean print = true;
 
                     if (record instanceof TimeStampRecord)
-                        print = withinTimeRange((TimeStampRecord) record, params.getFromTime(), params.getToTime());
+                        print = withinTimeRange((TimeStampRecord)record, params.getFromTime(), params.getToTime());
 
                     final String recordStr = toString(record, params.getProcessSensitiveData());
 
@@ -194,10 +193,12 @@ public class IgniteWalConverter {
         if (walRecord instanceof DataRecord) {
             final DataRecord dataRecord = (DataRecord)walRecord;
 
-            final List<DataEntry> entryWrappers = new ArrayList<>(dataRecord.writeEntries().size());
+            int entryCnt = dataRecord.entryCount();
 
-            for (DataEntry dataEntry : dataRecord.writeEntries())
-                entryWrappers.add(new DataEntryWrapper(dataEntry, sensitiveData));
+            final List<DataEntry> entryWrappers = new ArrayList<>(entryCnt);
+
+            for (int i = 0; i < entryCnt; i++)
+                entryWrappers.add(new DataEntryWrapper(dataRecord.get(i), sensitiveData));
 
             dataRecord.setWriteEntries(entryWrappers);
         }

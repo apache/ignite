@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -46,6 +47,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer;
+import org.apache.ignite.internal.jdbc2.JdbcBlob;
+import org.apache.ignite.internal.jdbc2.JdbcClob;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
@@ -314,7 +318,7 @@ public class JdbcThinResultSet implements ResultSet {
         if (val instanceof Number)
             return ((Number)val).byteValue();
         else if (cls == Boolean.class)
-            return (Boolean) val ? (byte) 1 : (byte) 0;
+            return (Boolean)val ? (byte)1 : (byte)0;
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Byte.parseByte(val.toString());
@@ -337,9 +341,9 @@ public class JdbcThinResultSet implements ResultSet {
         Class<?> cls = val.getClass();
 
         if (val instanceof Number)
-            return ((Number) val).shortValue();
+            return ((Number)val).shortValue();
         else if (cls == Boolean.class)
-            return (Boolean) val ? (short) 1 : (short) 0;
+            return (Boolean)val ? (short)1 : (short)0;
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Short.parseShort(val.toString());
@@ -362,9 +366,9 @@ public class JdbcThinResultSet implements ResultSet {
         Class<?> cls = val.getClass();
 
         if (val instanceof Number)
-            return ((Number) val).intValue();
+            return ((Number)val).intValue();
         else if (cls == Boolean.class)
-            return (Boolean) val ? 1 : 0;
+            return (Boolean)val ? 1 : 0;
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Integer.parseInt(val.toString());
@@ -389,7 +393,7 @@ public class JdbcThinResultSet implements ResultSet {
         if (val instanceof Number)
             return ((Number)val).longValue();
         else if (cls == Boolean.class)
-            return (long) ((Boolean) val ? 1 : 0);
+            return (long)((Boolean)val ? 1 : 0);
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Long.parseLong(val.toString());
@@ -412,9 +416,9 @@ public class JdbcThinResultSet implements ResultSet {
         Class<?> cls = val.getClass();
 
         if (val instanceof Number)
-            return ((Number) val).floatValue();
+            return ((Number)val).floatValue();
         else if (cls == Boolean.class)
-            return (float) ((Boolean) val ? 1 : 0);
+            return (float)((Boolean)val ? 1 : 0);
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Float.parseFloat(val.toString());
@@ -437,9 +441,9 @@ public class JdbcThinResultSet implements ResultSet {
         Class<?> cls = val.getClass();
 
         if (val instanceof Number)
-            return ((Number) val).doubleValue();
+            return ((Number)val).doubleValue();
         else if (cls == Boolean.class)
-            return (double)((Boolean) val ? 1 : 0);
+            return (double)((Boolean)val ? 1 : 0);
         else if (cls == String.class || cls == Character.class) {
             try {
                 return Double.parseDouble(val.toString());
@@ -470,6 +474,8 @@ public class JdbcThinResultSet implements ResultSet {
 
         if (cls == byte[].class)
             return (byte[])val;
+        else if (cls == JdbcBinaryBuffer.class)
+            return ((JdbcBinaryBuffer)val).bytes();
         else if (cls == Byte.class)
             return new byte[] {(byte)val};
         else if (cls == Short.class) {
@@ -480,13 +486,13 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == Integer.class) {
             int x = (int)val;
 
-            return new byte[] { (byte) (x >> 24), (byte) (x >> 16), (byte) (x >> 8), (byte) x};
+            return new byte[] { (byte)(x >> 24), (byte)(x >> 16), (byte)(x >> 8), (byte)x};
         }
         else if (cls == Long.class) {
             long x = (long)val;
 
-            return new byte[] {(byte) (x >> 56), (byte) (x >> 48), (byte) (x >> 40), (byte) (x >> 32),
-                (byte) (x >> 24), (byte) (x >> 16), (byte) (x >> 8), (byte) x};
+            return new byte[] {(byte)(x >> 56), (byte)(x >> 48), (byte)(x >> 40), (byte)(x >> 32),
+                (byte)(x >> 24), (byte)(x >> 16), (byte)(x >> 8), (byte)x};
         }
         else if (cls == String.class)
             return ((String)val).getBytes();
@@ -585,9 +591,15 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(int colIdx) throws SQLException {
-        ensureNotClosed();
+        Object val = getValue(colIdx);
 
-        throw new SQLFeatureNotSupportedException("Stream are not supported.");
+        if (val == null)
+            return null;
+
+        if (val instanceof JdbcBinaryBuffer)
+            return ((JdbcBinaryBuffer)val).inputStream();
+        else
+            return new ByteArrayInputStream(getBytes(colIdx));
     }
 
     /** {@inheritDoc} */
@@ -697,9 +709,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public InputStream getBinaryStream(String colLb) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("Streams are not supported.");
+        return getBinaryStream(findColumn(colLb));
     }
 
     /** {@inheritDoc} */
@@ -736,14 +746,19 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Object getObject(int colIdx) throws SQLException {
-        return getValue(colIdx);
+        Object val = getValue(colIdx);
+
+        if (val instanceof JdbcBinaryBuffer)
+            return ((JdbcBinaryBuffer)val).bytes();
+        else
+            return val;
     }
 
     /** {@inheritDoc} */
     @Override public Object getObject(String colLb) throws SQLException {
         int colIdx = findColumn(colLb);
 
-        return getValue(colIdx);
+        return getObject(colIdx);
     }
 
     /** {@inheritDoc} */
@@ -1296,16 +1311,22 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(int colIdx) throws SQLException {
-        ensureNotClosed();
+        Object val = getValue(colIdx);
 
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        if (val == null)
+            return null;
+
+        if (!(val instanceof JdbcBinaryBuffer))
+            throw new SQLException("Cannot convert to Blob [colIdx=" + colIdx + "]");
+
+        return new JdbcBlob(((JdbcBinaryBuffer)val).shallowCopy());
     }
 
     /** {@inheritDoc} */
     @Override public Clob getClob(int colIdx) throws SQLException {
-        ensureNotClosed();
+        String str = getString(colIdx);
 
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return str != null ? new JdbcClob(str) : null;
     }
 
     /** {@inheritDoc} */
@@ -1329,16 +1350,14 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(String colLb) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return getBlob(findColumn(colLb));
     }
 
     /** {@inheritDoc} */
     @Override public Clob getClob(String colLb) throws SQLException {
-        ensureNotClosed();
+        String str = getString(colLb);
 
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return str != null ? new JdbcClob(str) : null;
     }
 
     /** {@inheritDoc} */
@@ -1819,6 +1838,8 @@ public class JdbcThinResultSet implements ResultSet {
             return getTimestamp(colIdx);
         else if (targetCls == byte[].class)
             return getBytes(colIdx);
+        else if (targetCls == Blob.class)
+            return getBlob(colIdx);
         else if (targetCls == URL.class)
             return getURL(colIdx);
         else {

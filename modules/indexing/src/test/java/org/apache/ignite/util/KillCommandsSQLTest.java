@@ -20,18 +20,23 @@ package org.apache.ignite.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.sql.SqlKeyword.CLIENT;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.CONTINUOUS;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
@@ -42,6 +47,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.PAGES_CNT;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelClientConnection;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
@@ -73,6 +79,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     public static final String KILL_CQ_QRY = KILL + " " + CONTINUOUS;
 
     /** */
+    public static final String KILL_CLI_QRY = KILL + " " + CLIENT;
+
+    /** */
     private static List<IgniteEx> srvs;
 
     /** Client that starts tasks. */
@@ -80,6 +89,10 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
     /** Client that kills tasks. */
     private static IgniteEx killCli;
+
+    /** */
+    private Consumer<T3<UUID, String, Long>> killScan =
+        args -> execute(killCli, KILL_SCAN_QRY + " '" + args.get1() + "' '" + args.get2() + "' " + args.get3());
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -95,6 +108,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
         srvs.get(0).cluster().state(ACTIVE);
 
+        // We change to reduce the waiting time for interrupting compute job.
+        computeJobWorkerInterruptTimeout(srvs.get(0)).propagate(100L);
+
         IgniteCache<Object, Object> cache = startCli.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
@@ -105,11 +121,10 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
             cache.put(i, i);
     }
 
-    /** */
+    /** @throws Exception If failed. */
     @Test
-    public void testCancelScanQuery() {
-        doTestScanQueryCancel(startCli, srvs,
-            args -> execute(killCli, KILL_SCAN_QRY + " '" + args.get1() + "' '" + args.get2() + "' " + args.get3()));
+    public void testCancelScanQuery() throws Exception {
+        doTestScanQueryCancel(startCli, srvs, killScan);
     }
 
     /** @throws Exception If failed. */
@@ -141,7 +156,17 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     @Test
     public void testCancelContinuousQuery() throws Exception {
         doTestCancelContinuousQuery(startCli, srvs, (nodeId, routineId) ->
-            execute(killCli, KILL_CQ_QRY + " '" + nodeId.toString() + "'" + " '" + routineId.toString() + "'"));
+            execute(killCli, KILL_CQ_QRY + " '" + nodeId.toString() + "'" + " '" + routineId.toString() + "'"), killScan);
+    }
+
+    /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-25021")
+    @Test
+    public void testCancelClientConnection() {
+        doTestCancelClientConnection(srvs, (nodeId, connId) -> execute(
+            nodeId == null ? srvs.get(1) : G.ignite(nodeId),
+            KILL_CLI_QRY + " " + (connId == null ? "ALL" : Long.toString(connId))
+        ));
     }
 
     /** */

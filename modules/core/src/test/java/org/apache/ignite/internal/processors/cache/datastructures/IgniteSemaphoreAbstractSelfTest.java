@@ -27,7 +27,6 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -54,12 +53,10 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -99,9 +96,6 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
      */
     @Test
     public void testFailover() throws Exception {
-        if (atomicsCacheMode() == LOCAL)
-            return;
-
         checkFailover(true);
         checkFailover(false);
     }
@@ -296,18 +290,18 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     @Test
     public void testSemaphoreClosing() throws Exception {
         IgniteConfiguration cfg;
-        GridStringLogger stringLogger;
+        GridStringLogger strLog;
 
-        stringLogger = new GridStringLogger();
+        strLog = new GridStringLogger();
 
         cfg = optimize(getConfiguration("npeGrid"));
-        cfg.setGridLogger(stringLogger);
+        cfg.setGridLogger(strLog);
 
         try (Ignite ignite = startGrid(cfg.getIgniteInstanceName(), cfg)) {
             ignite.semaphore("semaphore", 1, true, true);
         }
 
-        assertFalse(stringLogger.toString().contains(NullPointerException.class.getName()));
+        assertFalse(strLog.toString().contains(NullPointerException.class.getName()));
     }
 
     /**
@@ -318,7 +312,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     @Test
     public void testAcquireAndExecute() throws Exception {
         IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecute", 1, true, true);
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        ExecutorService executorSrvc = Executors.newSingleThreadExecutor();
 
         IgniteCallable<Integer> callable = new IgniteCallable<Integer>() {
             @Override public Integer call() {
@@ -328,28 +322,28 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
             }
         };
 
-        IgniteFuture igniteFuture = semaphore.acquireAndExecute(callable, 1);
+        IgniteFuture igniteFut = semaphore.acquireAndExecute(callable, 1);
 
         Runnable runnable = new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {
-                IgniteFutureImpl impl = (IgniteFutureImpl<Integer>) igniteFuture;
+                IgniteFutureImpl impl = (IgniteFutureImpl<Integer>)igniteFut;
 
-                GridFutureAdapter fut = (GridFutureAdapter) (impl.internalFuture());
+                GridFutureAdapter fut = (GridFutureAdapter)(impl.internalFuture());
                 fut.onDone(true);
             }
         };
 
-        executorService.submit(runnable);
+        executorSrvc.submit(runnable);
 
         Thread.sleep(1000);
-        igniteFuture.get(7000, MILLISECONDS);
+        igniteFut.get(7000, MILLISECONDS);
 
-        assertTrue(igniteFuture.isDone());
+        assertTrue(igniteFut.isDone());
 
         assertTrue(semaphore.availablePermits() == 1);
 
-        executorService.shutdown();
+        executorSrvc.shutdown();
     }
 
     /**
@@ -360,7 +354,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     @Test
     public void testAcquireAndExecuteIfFailure() {
         IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecuteIfFailure", 1, true, true);
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        ExecutorService executorSrvc = Executors.newSingleThreadExecutor();
 
         IgniteCallable<Integer> callable = new IgniteCallable<Integer>() {
             @Override public Integer call() {
@@ -370,34 +364,35 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteFuture igniteFuture = semaphore.acquireAndExecute(callable, 1);
+                IgniteFuture igniteFut = semaphore.acquireAndExecute(callable, 1);
 
                 Runnable runnable = new Runnable() {
                     /** {@inheritDoc} */
                     @Override public void run() {
                         try {
                             Thread.sleep(1000);
-                            IgniteFutureImpl impl = (IgniteFutureImpl<Integer>) igniteFuture;
+                            IgniteFutureImpl impl = (IgniteFutureImpl<Integer>)igniteFut;
 
-                            GridFutureAdapter fut = (GridFutureAdapter) (impl.internalFuture());
+                            GridFutureAdapter fut = (GridFutureAdapter)(impl.internalFuture());
                             fut.onDone(true);
-                        } catch (InterruptedException e) {
+                        }
+                        catch (InterruptedException e) {
                             throw new RuntimeException(e.getMessage());
                         }
                     }
                 };
 
-                executorService.submit(runnable);
+                executorSrvc.submit(runnable);
 
-                ((IgniteFutureImpl)igniteFuture).internalFuture().get();
+                ((IgniteFutureImpl)igniteFut).internalFuture().get();
 
-                assertTrue(igniteFuture.isDone());
+                assertTrue(igniteFut.isDone());
 
                 return null;
             }
         }, RuntimeException.class, "Foobar");
 
-        executorService.shutdown();
+        executorSrvc.shutdown();
     }
 
     /**

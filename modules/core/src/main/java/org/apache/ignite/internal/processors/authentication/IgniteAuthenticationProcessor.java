@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,7 +48,6 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -61,6 +61,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -71,7 +72,6 @@ import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -89,7 +89,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.ADD;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.REMOVE;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.UPDATE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
 
@@ -162,7 +161,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** Starts processor. */
     public void startProcessor() throws IgniteCheckedException {
-        if (!GridCacheUtils.isPersistenceEnabled(ctx.config())) {
+        if (!ctx.clientNode() && !CU.isPersistenceEnabled(ctx.config())) {
             throw new IgniteCheckedException("Authentication can be enabled only for cluster with enabled persistence."
                 + " Check the DataRegionConfiguration");
         }
@@ -183,7 +182,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         discoMgr.setCustomEventListener(UserAcceptedMessage.class, new UserAcceptedListener());
 
-        discoMgr.localJoinFuture().listen(fut -> onLocalJoin());
+        discoMgr.localJoinFuture().listen(this::onLocalJoin);
 
         discoLsnr = (evt, discoCache) -> {
             if (ctx.isStopping())
@@ -289,8 +288,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (ctx.clientNode()) {
             if (ctx.discovery().aliveServerNodes().isEmpty()) {
                 throw new IgniteAccessControlException("No alive server node was found to which the authentication" +
-                    " operation could be delegated. It is possible that the client node has been started with the" +
-                    " \"forceServerMode\" flag enabled and no server node had been started yet.");
+                    " operation could be delegated.");
             }
 
             AuthenticateFuture fut;
@@ -424,7 +422,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (spi instanceof TcpDiscoverySpi)
             return ((TcpDiscoverySpi)spi).isLocalNodeCoordinator();
         else
-            return F.eq(ctx.localNodeId(), coordinator().id());
+            return Objects.equals(ctx.localNodeId(), coordinator().id());
     }
 
     /** {@inheritDoc} */
@@ -444,7 +442,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (!ctx.state().publicApiActiveState(true)) {
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
                 "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                "join the cluster. To activate the cluster call Ignite.active(true).");
+                "join the cluster. To activate the cluster call Ignite.cluster().state(ClusterState.ACTIVE).");
         }
     }
 
@@ -633,8 +631,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 if (res == null
                     && !ctx.discovery().allNodes().isEmpty()
                     && ctx.discovery().aliveServerNodes().isEmpty()) {
-                    U.warn(log, "Cannot find the server coordinator node. "
-                        + "Possible a client is started with forceServerMode=true.");
+                    U.warn(log, "Cannot find the server coordinator node.");
                 }
                 else
                     assert res != null;
@@ -687,7 +684,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 it.hasNext(); ) {
                 AuthenticateFuture f = it.next().getValue();
 
-                if (F.eq(nodeId, f.nodeId())) {
+                if (Objects.equals(nodeId, f.nodeId())) {
                     f.retry(true);
 
                     f.onDone();
@@ -697,7 +694,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             }
 
             // Coordinator left
-            if (F.eq(coordinator().id(), nodeId)) {
+            if (Objects.equals(coordinator().id(), nodeId)) {
                 // Refresh info about coordinator node.
                 crdNode = null;
 
@@ -793,10 +790,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * Initial user set and initial user operation (received on join) are processed here.
      */
     private void onLocalJoin() {
-        if (ctx.isDaemon() || ctx.clientDisconnected() || coordinator() == null)
+        if (ctx.clientDisconnected() || coordinator() == null)
             return;
 
-        if (F.eq(coordinator().id(), ctx.localNodeId())) {
+        if (Objects.equals(coordinator().id(), ctx.localNodeId())) {
             assert initUsrs == null;
 
             // Creates default user on coordinator if it is the first start of PDS cluster
@@ -890,7 +887,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @return {@code true} if node holds user information. Otherwise returns {@code false}.
      */
     private static boolean isNodeHoldsUsers(ClusterNode n) {
-        return !n.isClient() && !n.isDaemon();
+        return !n.isClient();
     }
 
     /**
@@ -1209,9 +1206,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         /**
          * @param nodeId ID of the node that processes authentication request.
          */
-       AuthenticateFuture(UUID nodeId) {
-           this.nodeId = nodeId;
-       }
+        AuthenticateFuture(UUID nodeId) {
+            this.nodeId = nodeId;
+        }
 
         /**
          * @return ID of the node that processes authentication request.
@@ -1406,11 +1403,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
 
         /** {@inheritDoc} */
-        @Override public SecurityPermissionSet permissions() {
-            return ALLOW_ALL;
-        }
-
-        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SecuritySubjectImpl.class, this);
         }
@@ -1432,26 +1424,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         /** {@inheritDoc} */
         @Override public SecuritySubject subject() {
             return subj;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean systemOperationAllowed(SecurityPermission perm) {
-            return true;
         }
     }
 }

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
@@ -44,6 +43,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -52,12 +52,11 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -72,7 +71,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.util.IgniteUtils.fileCount;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
@@ -95,9 +93,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     /** The topic to send files to. */
     private static Object topic;
 
-    /** File filter. */
-    private static FilenameFilter fileBinFilter;
-
     /** Locally used fileIo to interact with output file. */
     private final FileIO[] fileIo = new FileIO[1];
 
@@ -117,12 +112,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     @BeforeClass
     public static void beforeAll() {
         topic = GridTopic.TOPIC_CACHE.topic("test", 0);
-
-        fileBinFilter = new FilenameFilter() {
-            @Override public boolean accept(File dir, String name) {
-                return name.endsWith(FILE_SUFFIX);
-            }
-        };
     }
 
     /**
@@ -176,7 +165,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         snd = startGrid(0);
         rcv = startGrid(1);
 
-        snd.cluster().active(true);
+        snd.cluster().state(ClusterState.ACTIVE);
 
         addCacheData(snd, DEFAULT_CACHE_NAME);
 
@@ -185,8 +174,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         Map<String, Long> fileSizes = new HashMap<>();
         Map<String, Integer> fileCrcs = new HashMap<>();
         Map<String, Serializable> fileParams = new HashMap<>();
-
-        assertTrue(snd.context().io().fileTransmissionSupported(rcv.localNode()));
 
         rcv.context().io().addTransmissionHandler(topic, new TransmissionHandlerAdapter() {
             @Override public void onEnd(UUID rmtNodeId) {
@@ -209,9 +196,9 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
         });
 
-        File cacheDirIg0 = cacheWorkDir(snd, DEFAULT_CACHE_NAME);
+        File cacheDirIg0 = snd.context().pdsFolderResolver().fileTree().defaultCacheStorage(snd.cachex(DEFAULT_CACHE_NAME).configuration());
 
-        File[] cacheParts = cacheDirIg0.listFiles(fileBinFilter);
+        File[] cacheParts = cacheDirIg0.listFiles(NodeFileTree::binFile);
 
         for (File file : cacheParts) {
             fileSizes.put(file.getName(), file.length());
@@ -233,7 +220,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         stopAllGrids();
 
-        assertEquals(fileSizes.size(), tempStore.listFiles(fileBinFilter).length);
+        assertEquals(fileSizes.size(), tempStore.listFiles(NodeFileTree::binFile).length);
 
         for (File file : cacheParts) {
             // Check received file lengths.
@@ -246,7 +233,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         }
 
         // Check received file CRCs.
-        for (File file : tempStore.listFiles(fileBinFilter)) {
+        for (File file : tempStore.listFiles(NodeFileTree::binFile)) {
             assertEquals("Received file CRC-32 checksum is incorrect: " + file.getName(),
                 fileCrcs.get(file.getName()), new Integer(FastCrc.calcCrc(file)));
         }
@@ -257,7 +244,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      */
     @Test(expected = IgniteCheckedException.class)
     public void testFileHandlerFilePathThrowsEx() throws Exception {
-        final String exTestMessage = "Test exception. Handler initialization failed at onBegin.";
+        final String exTestMsg = "Test exception. Handler initialization failed at onBegin.";
 
         snd = startGrid(0);
         rcv = startGrid(1);
@@ -266,7 +253,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         rcv.context().io().addTransmissionHandler(topic, new DefaultTransmissionHandler(rcv, fileToSend, tempStore) {
             @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
-                throw new IgniteException(exTestMessage);
+                throw new IgniteException(exTestMsg);
             }
 
             @Override public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta) {
@@ -282,7 +269,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
 
             @Override public void onException(UUID nodeId, Throwable err) {
-                assertEquals(exTestMessage, err.getMessage());
+                assertEquals(exTestMsg, err.getMessage());
             }
         });
 
@@ -534,7 +521,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     @Test
     public void testFileHandlerNextWriterOpened() throws Exception {
         final int fileSizeBytes = 5 * 1024 * 1024;
-        final AtomicBoolean networkExThrown = new AtomicBoolean();
+        final AtomicBoolean netkExThrown = new AtomicBoolean();
 
         snd = startGrid(0);
         rcv = startGrid(1);
@@ -548,7 +535,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
 
             @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
-                if (networkExThrown.compareAndSet(false, true))
+                if (netkExThrown.compareAndSet(false, true))
                     return null;
 
                 return rcvFile.getAbsolutePath();
@@ -793,7 +780,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         snd = startGrid(0);
         rcv = startGrid(1);
 
-        snd.cluster().active(true);
+        snd.cluster().state(ClusterState.ACTIVE);
 
         File fileToSend = createFileRandomData("testFile", 1024 * 1024);
 
@@ -927,22 +914,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             for (int i = 0; i < CACHE_SIZE; i++)
                 dataStreamer.addData(i, i + cacheName.hashCode());
         }
-    }
-
-    /**
-     * @param ignite An ignite instance.
-     * @param cacheName Cache name.
-     * @return The cache working directory.
-     */
-    private File cacheWorkDir(IgniteEx ignite, String cacheName) {
-        // Resolve cache directory.
-        IgniteInternalCache<?, ?> cache = ignite.cachex(cacheName);
-
-        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)cache.context()
-            .shared()
-            .pageStore();
-
-        return pageStoreMgr.cacheWorkDir(cache.configuration());
     }
 
     /**

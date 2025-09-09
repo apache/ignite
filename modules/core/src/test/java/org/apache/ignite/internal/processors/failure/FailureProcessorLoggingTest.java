@@ -180,6 +180,11 @@ public class FailureProcessorLoggingTest extends GridCommonAbstractTest {
                 threadDumpErrorFlag.set(true);
         }
 
+        /** {@inheritDoc} */
+        @Override public ListeningTestLogger getLogger(Object ctgr) {
+            return this;
+        }
+
         /**
          * Reset warn flag.
          */

@@ -25,9 +25,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlArray;
@@ -199,7 +199,7 @@ public final class DmlAstUtils {
         if (!(tbl instanceof GridH2Table))
             return null;
 
-        GridH2RowDescriptor desc = ((GridH2Table)tbl).rowDescriptor();
+        GridQueryRowDescriptor desc = ((GridH2Table)tbl).rowDescriptor();
         if (!desc.isValueColumn(update.cols().get(0).column().getColumnId()))
             return null;
 
@@ -234,7 +234,7 @@ public final class DmlAstUtils {
         if (!(where instanceof GridSqlOperation))
             return null;
 
-        GridSqlOperation whereOp = (GridSqlOperation) where;
+        GridSqlOperation whereOp = (GridSqlOperation)where;
 
         // Does this WHERE limit only by _key?
         if (isKeyEqualityCondition(whereOp))
@@ -251,9 +251,9 @@ public final class DmlAstUtils {
         if (!(left instanceof GridSqlOperation && right instanceof GridSqlOperation))
             return null;
 
-        GridSqlOperation leftOp = (GridSqlOperation) left;
+        GridSqlOperation leftOp = (GridSqlOperation)left;
 
-        GridSqlOperation rightOp = (GridSqlOperation) right;
+        GridSqlOperation rightOp = (GridSqlOperation)right;
 
         if (isKeyEqualityCondition(leftOp)) { // _key = ? and _val = ?
             if (!isValueEqualityCondition(rightOp))
@@ -291,7 +291,7 @@ public final class DmlAstUtils {
         if (!(column.column().getTable() instanceof GridH2Table))
             return false;
 
-        GridH2RowDescriptor desc = ((GridH2Table) column.column().getTable()).rowDescriptor();
+        GridQueryRowDescriptor desc = ((GridH2Table)column.column().getTable()).rowDescriptor();
 
         return (key ? desc.isKeyColumn(column.column().getColumnId()) :
                        desc.isValueColumn(column.column().getColumnId())) &&
@@ -362,7 +362,7 @@ public final class DmlAstUtils {
 
         GridSqlElement where = update.where();
 
-        // On no MVCC mode we cannot use lazy mode when UPDATE query contains index with updated columns
+        // We cannot use lazy mode when UPDATE query contains index with updated columns
         // and that index may be chosen to scan by WHERE condition
         // because in this case any rows update may be updated several times.
         // e.g. in the cases below we cannot use lazy mode:

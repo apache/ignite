@@ -37,9 +37,6 @@ public class PartitionUpdateCountersMessage implements Message {
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;
 
     /** */
-    private static final long serialVersionUID = 193442457510062844L;
-
-    /** */
     private byte data[];
 
     /** */
@@ -107,19 +104,6 @@ public class PartitionUpdateCountersMessage implements Message {
         long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE + 4;
 
         return GridUnsafe.getLong(data, off);
-    }
-
-    /**
-     * @param idx Item number.
-     * @param value Initial partition counter.
-     */
-    public void initialCounter(int idx, long value) {
-        if (idx >= size)
-            throw new ArrayIndexOutOfBoundsException();
-
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE + 4;
-
-        GridUnsafe.putLong(data, off, value);
     }
 
     /**
@@ -192,7 +176,7 @@ public class PartitionUpdateCountersMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -200,13 +184,13 @@ public class PartitionUpdateCountersMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("cacheId", cacheId))
+                if (!writer.writeInt(cacheId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("data", data, 0, size * ITEM_SIZE))
+                if (!writer.writeByteArray(data, 0, size * ITEM_SIZE))
                     return false;
 
                 writer.incrementState();
@@ -220,12 +204,9 @@ public class PartitionUpdateCountersMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                cacheId = reader.readInt("cacheId");
+                cacheId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -233,7 +214,7 @@ public class PartitionUpdateCountersMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                data = reader.readByteArray("data");
+                data = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -244,17 +225,12 @@ public class PartitionUpdateCountersMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(PartitionUpdateCountersMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 157;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

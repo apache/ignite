@@ -127,6 +127,7 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
         assertEquals(expected, actual);
     }
 
+    /** */
     @Rule
     public ExpectedException expectedEx = ExpectedException.none();
 

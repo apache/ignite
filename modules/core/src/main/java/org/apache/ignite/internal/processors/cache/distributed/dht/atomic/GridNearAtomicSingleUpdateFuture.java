@@ -41,9 +41,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.lang.GridPlainRunnable;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -60,10 +57,10 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  */
 public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpdateFuture {
     /** Keys */
-    private Object key;
+    private final Object key;
 
     /** Values. */
-    private Object val;
+    private final Object val;
 
     /** */
     private PrimaryRequestState reqState;
@@ -77,7 +74,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param val Values or transform closure.
      * @param invokeArgs Optional arguments for entry processor.
      * @param retval Return value require flag.
-     * @param rawRetval {@code True} if should return {@code GridCacheReturn} as future result.
      * @param expiryPlc Expiry policy explicitly specified for cache operation.
      * @param filter Entry filter.
      * @param taskNameHash Task name hash code.
@@ -95,14 +91,14 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         @Nullable Object val,
         @Nullable Object[] invokeArgs,
         final boolean retval,
-        final boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
         final CacheEntryPredicate[] filter,
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
         boolean recovery,
-        int remapCnt
+        int remapCnt,
+        @Nullable Map<String, String> appAttrs
     ) {
         super(cctx,
             cache,
@@ -110,14 +106,14 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             op,
             invokeArgs,
             retval,
-            rawRetval,
             expiryPlc,
             filter,
             taskNameHash,
             skipStore,
             keepBinary,
             recovery,
-            remapCnt);
+            remapCnt,
+            appAttrs);
         this.key = key;
         this.val = val;
     }
@@ -306,8 +302,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         AffinityTopologyVersion remapTopVer0 = null;
 
         if (remapTopVer == null) {
-            if (err != null &&
-                X.hasCause(err, CachePartialUpdateCheckedException.class) &&
+            if (X.hasCause(err, CachePartialUpdateCheckedException.class) &&
                 X.hasCause(err, ClusterTopologyCheckedException.class) &&
                 storeFuture() &&
                 --remapCnt > 0) {
@@ -363,18 +358,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         IgniteInternalFuture<AffinityTopologyVersion> fut = cctx.shared().exchange().affinityReadyFuture(remapTopVer);
 
-        if (fut == null)
-            fut = new GridFinishedFuture<>(remapTopVer);
-
-        fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-            @Override public void apply(final IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-                    @Override public void run() {
-                        mapOnTopology();
-                    }
-                });
-            }
-        });
+        fut.listen(() -> cctx.kernalContext().closure().runLocalSafe(this::mapOnTopology));
     }
 
     /**
@@ -425,15 +409,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         else {
             assert !topLocked : this;
 
-            fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-                        @Override public void run() {
-                            mapOnTopology();
-                        }
-                    });
-                }
-            });
+            fut.listen(() -> cctx.kernalContext().closure().runLocalSafe(this::mapOnTopology));
 
             return;
         }

@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -110,7 +111,7 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
         Ignite ig0 = startGrids(3);
 
         ig0.cluster().baselineAutoAdjustEnabled(false);
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         int entries = 100_000;
 
@@ -147,7 +148,7 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
         });
 
         // Compare previous single message with current.
-        MessageComparator prevMessageComparator = new MessageComparator();
+        MessageComparator prevMsgComparator = new MessageComparator();
 
         // Pause rebalance and count of single map messages.
         unwrapSPI(ig3).pause(GridDhtPartitionDemandMessage.class, (msg) -> {
@@ -157,8 +158,8 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
             if (msg.exchangeId() != null)
                 awaitlatch.countDown();
 
-            if (!done.get() && prevMessageComparator.prevEquals(msg)) {
-                System.out.println("Equals messages, prev=" + prevMessageComparator.prev + " , curr=" + msg);
+            if (!done.get() && prevMsgComparator.prevEquals(msg)) {
+                System.out.println("Equals messages, prev=" + prevMsgComparator.prev + " , curr=" + msg);
 
                 cnt.incrementAndGet();
             }
@@ -236,6 +237,7 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
      *
      */
     protected static class BlockTcpCommunicationSpi extends TcpCommunicationSpi {
+        /** */
         private volatile IgniteInClosure<GridDhtPartitionsSingleMessage> cls;
 
         /** */

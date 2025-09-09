@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
 
             var messages = new List<string>();
-            foreach (var dllPath in GetJvmDllPaths(configJvmDllPath))
+            foreach (var dllPath in GetJvmDllPaths(configJvmDllPath, log))
             {
                 log.Debug("Trying to load {0} from [option={1}, path={2}]...", FileJvmDll, dllPath.Key, dllPath.Value);
 
@@ -265,7 +265,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the JVM DLL paths in order of lookup priority.
         /// </summary>
-        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPaths(string configJvmDllPath)
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPaths(string configJvmDllPath, ILogger log)
         {
             if (!string.IsNullOrEmpty(configJvmDllPath))
             {
@@ -284,9 +284,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
 
             foreach (var keyValuePair in
-                GetJvmDllPathsWindows()
-                    .Concat(GetJvmDllPathsLinux())
-                    .Concat(GetJvmDllPathsMacOs()))
+                GetJvmDllPathsWindows(log)
+                    .Concat(GetJvmDllPathsLinux(log))
+                    .Concat(GetJvmDllPathsMacOs(log)))
             {
                 yield return keyValuePair;
             }
@@ -295,9 +295,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets Jvm dll paths from Windows registry.
         /// </summary>
-        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsWindows()
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsWindows(ILogger log)
         {
-#if !NETCOREAPP
             if (!Os.IsWindows)
             {
                 yield break;
@@ -314,7 +313,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 using (var jSubKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regPath))
                 {
                     if (jSubKey == null)
+                    {
+                        log.Debug("Registry key does not exist: " + regPath);
+
                         continue;
+                    }
 
                     var curVer = jSubKey.GetValue("CurrentVersion") as string;
 
@@ -323,25 +326,34 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
                     foreach (var ver in versions.Where(v => !string.IsNullOrEmpty(v)))
                     {
-                        using (var verKey = jSubKey.OpenSubKey(ver))
-                        {
-                            var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
+                        using var verKey = jSubKey.OpenSubKey(ver);
 
-                            if (dllPath != null)
-                                yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                        if (verKey == null)
+                        {
+                            log.Debug("Registry key does not exist: " + ver);
+
+                            continue;
+                        }
+
+                        var dllPath = verKey.GetValue("RuntimeLib") as string;
+
+                        if (dllPath != null)
+                        {
+                            yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                        }
+                        else
+                        {
+                            log.Debug("Registry key does not have 'RuntimeLib' value: " + ver);
                         }
                     }
                 }
             }
-#else
-            yield break;
-#endif
         }
 
         /// <summary>
         /// Gets the Jvm dll paths from /usr/bin/java symlink.
         /// </summary>
-        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsLinux()
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsLinux(ILogger log)
         {
             if (Os.IsWindows || Os.IsMacOs)
             {
@@ -351,19 +363,28 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             const string javaExec = "/usr/bin/java";
             if (!File.Exists(javaExec))
             {
+                log.Debug("/usr/bin/java does not exist.");
                 yield break;
             }
 
-            var file = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
-            // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+            var file = Shell.ExecuteSafe("/usr/bin/readlink", "-f /usr/bin/java", log: log);
+            // /usr/lib/jvm/java-11-openjdk-amd64/jre/bin/java
 
             if (string.IsNullOrWhiteSpace(file))
             {
+                file = Shell.ExecuteSafe("readlink", "-f /usr/bin/java", log: log);
+            }
+
+            if (string.IsNullOrWhiteSpace(file))
+            {
+                log.Debug("readlink -f /usr/bin/java failed.");
                 yield break;
             }
 
+            log.Debug("/usr/bin/java resolved to '{0}'", file);
+
             var dir = Path.GetDirectoryName(file);
-            // /usr/lib/jvm/java-8-openjdk-amd64/jre/bin
+            // /usr/lib/jvm/java-11-openjdk-amd64/jre/bin
 
             if (dir == null)
             {
@@ -373,10 +394,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             var libFolder = Path.GetFullPath(Path.Combine(dir, "../lib/"));
             if (!Directory.Exists(libFolder))
             {
+                log.Debug("Directory does not exist: '{0}'", libFolder);
                 yield break;
             }
 
-            // Predefined path: /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server/libjvm.so
+            // Predefined path: /usr/lib/jvm/java-11-openjdk-amd64/jre/lib/amd64/server/libjvm.so
             yield return new KeyValuePair<string, string>(javaExec,
                 Path.Combine(libFolder, "amd64", "server", FileJvmDll));
 
@@ -390,12 +412,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the JVM DLL paths on macOs.
         /// </summary>
-        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsMacOs()
+        private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsMacOs(ILogger log)
         {
             const string jvmDir = "/Library/Java/JavaVirtualMachines";
 
             if (!Directory.Exists(jvmDir))
             {
+                log.Debug("Directory does not exist: " + jvmDir);
+
                 yield break;
             }
 

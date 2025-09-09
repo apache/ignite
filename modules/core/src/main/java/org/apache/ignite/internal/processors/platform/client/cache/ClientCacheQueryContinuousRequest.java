@@ -25,8 +25,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
@@ -56,7 +56,7 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
      *
      * @param reader Reader.
      */
-    public ClientCacheQueryContinuousRequest(BinaryRawReaderEx reader) {
+    public ClientCacheQueryContinuousRequest(BinaryReaderEx reader) {
         super(reader);
 
         int pageSize = reader.readInt();
@@ -69,8 +69,8 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
         qry = new ContinuousQuery();
 
         qry.setPageSize(pageSize)
-           .setTimeInterval(timeInterval)
-           .setIncludeExpired(includeExpired);
+            .setTimeInterval(timeInterval)
+            .setIncludeExpired(includeExpired);
     }
 
     /** {@inheritDoc} */
@@ -113,7 +113,7 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
             throw new IgniteClientException(ClientStatus.FAILED,
                     "Filter must be a BinaryObject: " + filter.getClass());
 
-        BinaryObjectImpl bo = (BinaryObjectImpl) filter;
+        BinaryObjectEx bo = (BinaryObjectEx)filter;
 
         switch (filterPlatform) {
             case ClientPlatform.JAVA: {
@@ -121,7 +121,7 @@ public class ClientCacheQueryContinuousRequest extends ClientCacheRequest {
                     PlatformJavaObjectFactoryProxy prx = bo.deserialize();
 
                     CacheEntryEventSerializableFilter rmtFilter =
-                            (CacheEntryEventSerializableFilter) prx.factory(ctx.kernalContext()).create();
+                            (CacheEntryEventSerializableFilter)prx.factory(ctx.kernalContext()).create();
 
                     return FactoryBuilder.factoryOf(rmtFilter);
                 }

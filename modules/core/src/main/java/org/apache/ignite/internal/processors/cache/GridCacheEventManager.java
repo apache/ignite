@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -121,8 +121,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         String cloClsName,
         String taskName,
-        boolean keepBinary)
-    {
+        boolean keepBinary
+    ) {
         addEvent(part,
             key,
             cctx.localNodeId(),
@@ -185,8 +185,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         String cloClsName,
         String taskName,
-        boolean keepBinary)
-    {
+        boolean keepBinary
+    ) {
         addEvent(part,
             key,
             nodeId,
@@ -227,8 +227,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         boolean hasOldVal,
         String cloClsName,
         String taskName,
-        boolean keepBinary)
-    {
+        boolean keepBinary
+    ) {
         IgniteInternalTx tx = owner == null ? null : cctx.tm().tx(owner.version());
 
         addEvent(part,
@@ -307,9 +307,6 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false, null);
             }
             catch (Exception e) {
-                if (!cctx.cacheObjectContext().kernalContext().cacheObjects().isBinaryEnabled(cctx.config()))
-                    throw e;
-
                 if (log.isDebugEnabled())
                     log.debug("Failed to unmarshall cache object value for the event notification: " + e);
 
@@ -371,7 +368,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 break;
 
             for (ClusterNode node : top)
-                if (F.eq(node.id(), nodeId))
+                if (Objects.equals(node.id(), nodeId))
                     return node;
         }
 

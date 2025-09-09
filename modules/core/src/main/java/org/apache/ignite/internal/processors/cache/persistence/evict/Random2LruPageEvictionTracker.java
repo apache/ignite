@@ -69,9 +69,9 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 8);
+        trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 8L);
 
-        GridUnsafe.setMemory(trackingArrPtr, trackingSize * 8, (byte)0);
+        GridUnsafe.zeroMemory(trackingArrPtr, trackingSize * 8L);
     }
 
     /** {@inheritDoc} */
@@ -92,16 +92,22 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         do {
             int trackingIdx = trackingIdx(pageIdx);
 
-            int firstTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8);
+            long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-            int secondTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8 + 4);
+            int firstTs = first(trackingData);
+
+            assert firstTs >= 0 : "[firstTs=" + firstTs + ", trackingData=" + trackingData + "]";
+
+            int secondTs = second(trackingData);
+
+            long newTrackingData;
 
             if (firstTs <= secondTs)
-                success = GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx * 8, firstTs, (int)latestTs);
-            else {
-                success = GridUnsafe.compareAndSwapInt(
-                    null, trackingArrPtr + trackingIdx * 8 + 4, secondTs, (int)latestTs);
-            }
+                newTrackingData = U.toLong((int)latestTs, secondTs);
+            else
+                newTrackingData = U.toLong(firstTs, (int)latestTs);
+
+            success = GridUnsafe.compareAndSwapLong(null, trackingArrPtr + trackingIdx * 8L, trackingData, newTrackingData);
         } while (!success);
     }
 
@@ -123,9 +129,32 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             while (dataPagesCnt < SAMPLE_SIZE) {
                 int trackingIdx = rnd.nextInt(trackingSize);
 
-                int firstTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8);
+                long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
-                int secondTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8 + 4);
+                int firstTs = first(trackingData);
+
+                if (firstTs < 0) {
+                    // For page containing fragmented row data timestamps stored in the row's head page are used.
+                    // Fragment page (other than the tail one) contains link to tail page. Tail page contains link to
+                    // head page. So head page is found no more than in two hops.
+                    trackingIdx = -firstTs;
+
+                    trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+
+                    firstTs = first(trackingData);
+
+                    if (firstTs < 0) {
+                        trackingIdx = -firstTs;
+
+                        trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+
+                        firstTs = first(trackingData);
+
+                        assert firstTs >= 0 : "[firstTs=" + firstTs + ", secondTs=" + second(trackingData) + "]";
+                    }
+                }
+
+                int secondTs = second(trackingData);
 
                 int minTs = Math.min(firstTs, secondTs);
 
@@ -164,9 +193,9 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override protected boolean checkTouch(long pageId) {
         int trackingIdx = trackingIdx(PageIdUtils.pageIndex(pageId));
 
-        int firstTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8);
+        int firstTs = first(GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L));
 
-        return firstTs != 0;
+        return firstTs > 0;
     }
 
     /** {@inheritDoc} */
@@ -175,6 +204,43 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         int trackingIdx = trackingIdx(pageIdx);
 
-        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8, 0L);
+        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, 0L);
+    }
+
+    /**
+     * Link two pages containing fragments of row.
+     * <p>
+     * Link is stored as a negated page tracking index in the first integer in the tracking data.
+     * Second integer in the tracking data is set to 0.
+     *
+     * @param pageTrackingIdx     Page tracking index.
+     * @param nextPageTrackingIdx Tracking index of page to link to.
+     */
+    @Override protected void linkFragmentPages(int pageTrackingIdx, int nextPageTrackingIdx) {
+        GridUnsafe.putLongVolatile(null, trackingArrPtr + pageTrackingIdx * 8L,
+            U.toLong(-nextPageTrackingIdx, 0));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int getFragmentLink(int pageTrackingIdx) {
+        int link = first(GridUnsafe.getLongVolatile(null, trackingArrPtr + pageTrackingIdx * 8L));
+
+        assert link <= 0 : "[link=" + link + "]";
+
+        return -link;
+    }
+
+    /**
+     * Helper to extract first integer value.
+     */
+    private int first(long l) {
+        return (int)(l >> Integer.SIZE);
+    }
+
+    /**
+     * Helper to extract second integer value.
+     */
+    private int second(long l) {
+        return (int)l;
     }
 }

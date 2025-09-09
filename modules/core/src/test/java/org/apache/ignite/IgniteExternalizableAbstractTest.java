@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -36,7 +36,7 @@ public class IgniteExternalizableAbstractTest extends GridCommonAbstractTest {
 
         BinaryMarshaller bin = createStandaloneBinaryMarshaller();
 
-        marshallers.add(new JdkMarshaller());
+        marshallers.add(Marshallers.jdk());
         marshallers.add(bin);
 
         return marshallers;

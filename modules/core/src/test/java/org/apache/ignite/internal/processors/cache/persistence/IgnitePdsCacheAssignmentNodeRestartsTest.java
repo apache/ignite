@@ -127,9 +127,9 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
 
             final int gridsCnt = 5;
 
-            final int groupsCnt = 2;
+            final int grpsCnt = 2;
 
-            final IgniteEx node = (IgniteEx) startGridsMultiThreaded(gridsCnt);
+            final IgniteEx node = (IgniteEx)startGridsMultiThreaded(gridsCnt);
 
             final List<CacheConfiguration> cfgs = Arrays.asList(
                 cacheConfiguration("g1c1", TRANSACTIONAL, PARTITIONED, gridsCnt, "testGrp1"),
@@ -139,13 +139,13 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
 
             node.getOrCreateCaches(cfgs);
 
-            validateDepIds(groupsCnt);
+            validateDepIds(grpsCnt);
 
             stopAllGrids();
 
-            IgniteEx node2 = (IgniteEx) startGridsMultiThreaded(gridsCnt);
+            IgniteEx node2 = (IgniteEx)startGridsMultiThreaded(gridsCnt);
 
-            validateDepIds(groupsCnt); // Deployment ids must be the same on all nodes.
+            validateDepIds(grpsCnt); // Deployment ids must be the same on all nodes.
 
             final int restartIdxFrom = 2;
 
@@ -201,7 +201,7 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
         Map<Integer, IgniteUuid> depIds = new HashMap<>();
 
         for (Ignite ignite : G.allGrids()) {
-            final Map<Integer, CacheGroupDescriptor> descMap = ((IgniteEx) ignite).context().cache().cacheGroupDescriptors();
+            final Map<Integer, CacheGroupDescriptor> descMap = ((IgniteEx)ignite).context().cache().cacheGroupDescriptors();
 
             for (Map.Entry<Integer, CacheGroupDescriptor> entry : descMap.entrySet()) {
                 final IgniteUuid u = entry.getValue().deploymentId();
@@ -233,13 +233,13 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
                 crdNode = locNode;
         }
 
-        AffinityTopologyVersion topVer = ((IgniteKernal) grid(crdNode)).
+        AffinityTopologyVersion topVer = ((IgniteKernal)grid(crdNode)).
             context().cache().context().exchange().readyAffinityVersion();
 
         Map<String, List<List<ClusterNode>>> affMap = new HashMap<>();
 
         for (Ignite node : nodes) {
-            IgniteKernal node0 = (IgniteKernal) node;
+            IgniteKernal node0 = (IgniteKernal)node;
 
             for (IgniteInternalCache cache : node0.context().cache().caches()) {
                 List<List<ClusterNode>> aff = affMap.get(cache.name());

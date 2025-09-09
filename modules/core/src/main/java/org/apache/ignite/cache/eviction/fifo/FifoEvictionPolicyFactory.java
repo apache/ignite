@@ -47,12 +47,20 @@ public class FifoEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFacto
     public FifoEvictionPolicyFactory() {
     }
 
-    /** Constructor. */
+    /**
+     * Constructor.
+     *
+     * @param maxSize Maximum allowed size of cache before entry will start getting evicted.
+     */
     public FifoEvictionPolicyFactory(int maxSize) {
         setMaxSize(maxSize);
     }
 
-    /** */
+    /**
+     * @param maxSize Maximum allowed size of cache before entry will start getting evicted.
+     * @param batchSize Batch size.
+     * @param maxMemSize Sets maximum allowed cache size in bytes.
+     */
     public FifoEvictionPolicyFactory(int maxSize, int batchSize, long maxMemSize) {
         setMaxSize(maxSize);
         setBatchSize(batchSize);
@@ -61,12 +69,12 @@ public class FifoEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFacto
 
     /** {@inheritDoc} */
     @Override public FifoEvictionPolicy<K, V> create() {
-        FifoEvictionPolicy<K, V> policy = new FifoEvictionPolicy<>();
+        FifoEvictionPolicy<K, V> plc = new FifoEvictionPolicy<>();
 
-        policy.setBatchSize(getBatchSize());
-        policy.setMaxMemorySize(getMaxMemorySize());
-        policy.setMaxSize(getMaxSize());
+        plc.setBatchSize(getBatchSize());
+        plc.setMaxMemorySize(getMaxMemorySize());
+        plc.setMaxSize(getMaxSize());
 
-        return policy;
+        return plc;
     }
 }

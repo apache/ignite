@@ -377,7 +377,7 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
             TestKey testKey = (TestKey)o;
 
             return key == testKey.key;
-       }
+        }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {

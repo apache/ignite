@@ -48,8 +48,6 @@ public class TestStorageUtils {
         boolean breakCntr,
         boolean breakData
     ) throws IgniteCheckedException {
-        assert !ctx.isLocal();
-
         int partId = ctx.affinity().partition(key);
         GridDhtLocalPartition locPart = ctx.topology().localPartition(partId);
 

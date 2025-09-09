@@ -81,10 +81,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -117,22 +115,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-        TestCommunicationSpi commSpi = new TestCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(commSpi);
+        cfg.setCommunicationSpi(new TestCommunicationSpi());
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
     }
 
     /** {@inheritDoc} */
@@ -1471,7 +1457,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         assertTrue(((GridNearTxPrepareRequest)msgs.get(0)).firstClientRequest());
 
         for (int i = 1; i < msgs.size(); i++)
-            assertFalse(((GridNearTxPrepareRequest) msgs.get(i)).firstClientRequest());
+            assertFalse(((GridNearTxPrepareRequest)msgs.get(i)).firstClientRequest());
     }
 
     /**
@@ -1604,9 +1590,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     private void checkData(final Map<Integer, Integer> map,
         final Set<Integer> keys,
         IgniteCache<?, ?> clientCache,
-        final int expNodes)
-        throws Exception
-    {
+        final int expNodes
+    ) throws Exception {
         final List<Ignite> nodes = G.allGrids();
 
         final Affinity<Integer> aff = nodes.get(0).affinity(DEFAULT_CACHE_NAME);
@@ -1963,61 +1948,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         if (testType != TestType.LOCK)
             checkData(null, putKeys, grid(SRV_CNT).cache(DEFAULT_CACHE_NAME), SRV_CNT + CLIENT_CNT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testServersLeaveOnStart() throws Exception {
-        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        ccfg.setCacheMode(PARTITIONED);
-        ccfg.setBackups(1);
-        ccfg.setAtomicityMode(ATOMIC);
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setRebalanceMode(SYNC);
-
-        Ignite ignite0 = startGrid(0);
-
-        final AtomicInteger nodeIdx = new AtomicInteger(2);
-
-        final int CLIENTS = 10;
-
-        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                int idx = nodeIdx.getAndIncrement();
-
-                startClientGrid(idx);
-
-                return null;
-            }
-        }, CLIENTS, "start-client");
-
-        ignite0.close();
-
-        fut.get();
-
-        for (int i = 0; i < CLIENTS; i++) {
-            Ignite ignite = grid(i + 2);
-
-            assertEquals(CLIENTS, ignite.cluster().nodes().size());
-        }
-
-        startGrid(0);
-        startGrid(1);
-
-        awaitPartitionMapExchange();
-
-        for (int i = 0; i < CLIENTS; i++) {
-            Ignite ignite = grid(i + 2);
-
-            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
-
-            cache.put(i, i);
-
-            assertEquals((Object)i, cache.get(i));
-        }
     }
 
     /**

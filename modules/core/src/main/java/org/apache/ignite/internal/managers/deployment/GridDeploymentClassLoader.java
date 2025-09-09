@@ -91,11 +91,11 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
     /** Registered nodes. */
     @GridToStringExclude
-    private LinkedList<UUID> nodeList;
+    private final LinkedList<UUID> nodeList;
 
     /** Node ID -> Loader ID. */
     @GridToStringInclude
-    private Map<UUID, IgniteUuid> nodeLdrMap;
+    private final Map<UUID, IgniteUuid> nodeLdrMap;
 
     /** */
     @GridToStringExclude
@@ -475,7 +475,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             if (X.hasCause(e, TimeoutException.class))
                 throw e;
 
-            throw new ClassNotFoundException("Failed to load class due to unexpected error: " + name, e);
+            throw new P2PClassNotFoundException("Failed to load class due to unexpected error: " + name, e);
         }
 
         return cls;
@@ -602,7 +602,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         synchronized (mux) {
             // Skip requests for the previously missed classes.
             if (missedRsrcs != null && missedRsrcs.contains(path)) {
-                throw new ClassNotFoundException("Failed to peer load class, previous request for the same class " +
+                throw new P2PClassNotFoundException("Failed to peer load class, previous request for the same class " +
                     "has failed [class=" + name + ", nodeClsLdrIds=" +
                     nodeLdrMap + ", clsLoadersHierarchy=" + clsLdrHierarchy + ']');
             }
@@ -613,7 +613,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             nodeLdrMapCp = singleNode ? nodeLdrMap : new HashMap<>(nodeLdrMap);
         }
 
-        List<IgniteException> classRequestExceptions = new ArrayList<>();
+        List<IgniteException> clsReqExceptions = new ArrayList<>();
 
         for (UUID nodeId : nodeListCp) {
             if (nodeId.equals(ctx.discovery().localNode().id()))
@@ -644,7 +644,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
                     LT.warn(log, msg);
 
-                    classRequestExceptions.add(new IgniteException(msg));
+                    clsReqExceptions.add(new IgniteException(msg));
 
                     synchronized (mux) {
                         if (missedRsrcs != null)
@@ -683,28 +683,28 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                     else if (log.isDebugEnabled())
                         log.debug(msg);
 
-                    classRequestExceptions.add(new IgniteException(msg, e));
+                    clsReqExceptions.add(new IgniteException(msg, e));
                 }
             }
             catch (TimeoutException e) {
-                classRequestExceptions.add(new IgniteException("Failed to send class-loading request to node (is node alive?) " +
+                clsReqExceptions.add(new IgniteException("Failed to send class-loading request to node (is node alive?) " +
                     "[node=" + node.id() + ", clsName=" + name + ", clsPath=" + path + ", clsLdrId=" + ldrId +
                     ", clsLoadersHierarchy=" + clsLdrHierarchy + ']', e));
             }
         }
 
-        if (!classRequestExceptions.isEmpty()) {
-            IgniteException exception = classRequestExceptions.remove(0);
+        if (!clsReqExceptions.isEmpty()) {
+            IgniteException ex = clsReqExceptions.remove(0);
 
-            for (Exception e : classRequestExceptions)
-                exception.addSuppressed(e);
+            for (Exception e : clsReqExceptions)
+                ex.addSuppressed(e);
 
-            LT.warn(log, exception.getMessage(), exception);
+            LT.warn(log, ex.getMessage(), ex);
 
-            throw exception;
+            throw ex;
         }
         else {
-            ClassNotFoundException cnfe = new ClassNotFoundException("Failed to peer load class [" +
+            ClassNotFoundException cnfe = new P2PClassNotFoundException("Failed to peer load class [" +
                 "class=" + name +
                 ", nodeClsLdrs=" + nodeLdrMapCp +
                 ", clsLoadersHierarchy=" + clsLdrHierarchy +
@@ -858,7 +858,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 }
 
                 if (e instanceof TimeoutException)
-                    throw (TimeoutException) e;
+                    throw (TimeoutException)e;
             }
         }
 

@@ -34,9 +34,11 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
@@ -107,7 +109,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        ignite().cluster().active(true);
+        ignite().cluster().state(ClusterState.ACTIVE);
 
         cache = cache();
 
@@ -126,7 +128,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
             List<CacheConfiguration> toCreate = new ArrayList<>();
 
             for (int i = 0; i < caches - 1; i++) {
-                JdkMarshaller marsh = new JdkMarshaller();
+                JdkMarshaller marsh = Marshallers.jdk();
 
                 CacheConfiguration ccfg0 = marsh.unmarshal(marsh.marshal(ccfg), null);
 
@@ -150,7 +152,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
 
             for (ClusterNode node : ignite().cluster().nodes())
                 parts.put(node,
-                    new T2<List<Integer>, List<Integer>>(new ArrayList<Integer>(), new ArrayList<Integer>()));
+                    new T2<>(new ArrayList<>(), new ArrayList<>()));
 
             U.sleep(5000);
 
@@ -237,7 +239,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
      * @throws Exception If failed.
      */
     protected final void loadCachesData() throws Exception {
-        List<IgniteCache> caches = testCaches != null ? testCaches : Collections.<IgniteCache>singletonList(cache);
+        List<IgniteCache> caches = testCaches != null ? testCaches : Collections.singletonList(cache);
 
         if (caches.size() > 1) {
             ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -372,5 +374,12 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
         int nextRandom() {
             return rnd.nextInt(min, max);
         }
+    }
+
+    /**
+     * @return Caches.
+     */
+    protected int cachesCnt() {
+        return caches;
     }
 }

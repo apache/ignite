@@ -96,9 +96,9 @@ tab:C++[unsupported]
 
 Amazon S3-based discovery allows Ignite nodes to register their IP addresses on start-up in an Amazon S3 store.
 This way other nodes can try to connect to any of the IP addresses stored in S3 and initiate automatic node discovery.
-To use S3 based automatic node discovery, you need to configure the `TcpDiscoveryS3IpFindera` type of `ipFinder`.
+To use S3 based automatic node discovery, you need to configure the `TcpDiscoveryS3IpFinder` type of `ipFinder`.
 
-CAUTION: You must link:setup#enabling-modules[enable the 'ignite-aws' module].
+IMPORTANT: You must download and link:setup#enabling-modules[enable the 'ignite-aws-ext' extension].
 
 Here is an example of how to configure Amazon S3 based IP finder:
 
@@ -276,7 +276,7 @@ Ignite supports automatic node discovery by utilizing Azure Blob Storage.
 This mechanism is implemented in `TcpDiscoveryAzureBlobStorageIpFinder`.
 On start-up, each node registers its IP address in the storage and discovers other nodes by reading the storage.
 
-IMPORTANT: To use `TcpDiscoveryAzureBlobStorageIpFinder`, enable the `ignite-azure` link:setup#enabling-modules[module] in your application.
+IMPORTANT: To use `TcpDiscoveryAzureBlobStorageIpFinder` you must download and link:setup#enabling-modules[enable the 'ignite-azure-ext' extension].
 
 Here is an example of how to configure Azure Blob Storage based IP finder:
 
@@ -305,7 +305,7 @@ tab:XML[]
 tab:Java[]
 [source,java]
 ----
-include::{javaFile}[tag=google,indent=0]
+include::{javaFile}[tag=azureBlobStorage,indent=0]
 ----
 tab:C#/.NET[unsupported]
 tab:C++[unsupported]

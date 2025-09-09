@@ -70,18 +70,20 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         testIterator(1024);
     }
 
+    /** */
     @Test(expected = NoSuchElementException.class)
     public void shouldThrowExceptionIfHasNotNextElement() {
         IntSet intSet = new BitSetIntSet(2);
         intSet.add(1);
         intSet.add(2);
-        Iterator<Integer> iterator = intSet.iterator();
+        Iterator<Integer> iter = intSet.iterator();
 
-        iterator.next();
-        iterator.next();
-        iterator.next();
+        iter.next();
+        iter.next();
+        iter.next();
     }
 
+    /** */
     @Test
     public void hasNextShouldBeIdempotent() {
         IntSet intSet = new BitSetIntSet(3);
@@ -90,18 +92,19 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         intSet.add(3);
         Iterator<Integer> iter = intSet.iterator();
 
-        assertEquals(1, (int) iter.next());
+        assertEquals(1, (int)iter.next());
 
         iter.hasNext();
         iter.hasNext();
         iter.hasNext();
-        assertEquals(2, (int) iter.next());
+        assertEquals(2, (int)iter.next());
 
         iter.hasNext();
         iter.hasNext();
-        assertEquals(3, (int) iter.next());
+        assertEquals(3, (int)iter.next());
     }
 
+    /** */
     @Test
     public void toIntArray() {
         IntSet emptySet = new BitSetIntSet();
@@ -143,24 +146,24 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         assertTrue(bitSet.add(11));
         assertTrue(bitSet.add(1025));
 
-        Iterator<Integer> iterator = bitSet.iterator();
+        Iterator<Integer> iter = bitSet.iterator();
 
-        assertTrue(iterator.hasNext());
-        assertEquals(0, (int)iterator.next());
+        assertTrue(iter.hasNext());
+        assertEquals(0, (int)iter.next());
 
-        assertTrue(iterator.hasNext());
-        assertEquals(1, (int)iterator.next());
+        assertTrue(iter.hasNext());
+        assertEquals(1, (int)iter.next());
 
-        assertTrue(iterator.hasNext());
-        assertEquals(10, (int)iterator.next());
+        assertTrue(iter.hasNext());
+        assertEquals(10, (int)iter.next());
 
-        assertTrue(iterator.hasNext());
-        assertEquals(11, (int)iterator.next());
+        assertTrue(iter.hasNext());
+        assertEquals(11, (int)iter.next());
 
-        assertTrue(iterator.hasNext());
-        assertEquals(1025, (int)iterator.next());
+        assertTrue(iter.hasNext());
+        assertEquals(1025, (int)iter.next());
 
-        assertFalse(iterator.hasNext());
+        assertFalse(iter.hasNext());
 
         List<Integer> list = new ArrayList<>();
 
@@ -223,24 +226,24 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         intSet.add(11);
         intSet.add(1025);
 
-        assertTrue(intSet.containsAll(new ArrayList<Integer>() {{
-            add(1);
-            add(10);
-        }}));
+        assertTrue(intSet.containsAll(Arrays.asList(
+            1,
+            10
+        )));
 
-        assertFalse(intSet.containsAll(new ArrayList<Integer>() {{
-            add(1);
-            add(10);
-            add(11);
-            add(1025);
-            add(1026);
-        }}));
+        assertFalse(intSet.containsAll(Arrays.asList(
+            1,
+            10,
+            11,
+            1025,
+            1026
+        )));
 
-        assertFalse(intSet.containsAll(new ArrayList<Integer>() {{
-            add(1);
-            add(10);
-            add(12);
-        }}));
+        assertFalse(intSet.containsAll(Arrays.asList(
+            1,
+            10,
+            12
+        )));
     }
 
     /**
@@ -256,28 +259,28 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         intSet.add(11);
         intSet.add(1025);
 
-        assertFalse(intSet.addAll(new ArrayList<Integer>() {{
-            add(1);
-            add(10);
-        }}));
+        assertFalse(intSet.addAll(Arrays.asList(
+            1,
+            10
+        )));
 
         assertEquals(4, intSet.size());
 
-        assertTrue(intSet.addAll(new ArrayList<Integer>() {{
-            add(1);
-            add(10);
-            add(11);
-            add(1025);
-            add(1026);
-        }}));
+        assertTrue(intSet.addAll(Arrays.asList(
+            1,
+            10,
+            11,
+            1025,
+            1026
+        )));
 
         assertEquals(5, intSet.size());
 
         try {
-            intSet.retainAll(new ArrayList<Integer>() {{
-                add(10);
-                add(1025);
-            }});
+            intSet.retainAll(Arrays.asList(
+                10,
+                1025
+            ));
 
             fail("retainAll is not supported");
         }

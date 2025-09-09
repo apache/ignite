@@ -20,28 +20,19 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.SystemProperty;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
-import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
-import static org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager.exchangeProtocolVersion;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 
 /**
  *
  */
 public class ExchangeContext {
-    /** Enables exchange compatibility with protocol version 1. */
-    @SystemProperty(value = "Enables the compatibility mode for the exchange protocol of version 1")
-    public static final String IGNITE_EXCHANGE_COMPATIBILITY_VER_1 = "IGNITE_EXCHANGE_COMPATIBILITY_VER_1";
-
     /** Logger. */
     private final IgniteLogger log;
 
@@ -54,14 +45,22 @@ public class ExchangeContext {
     /** PME is not required. */
     private boolean exchangeFreeSwitch;
 
+    /**
+     * Whether cache requests that were mapped to an outdated topology version should be forcibly remapped to
+     * the up-to-date one. {@code True} forces all cache requests (including those that were mapped to the stale topology
+     * version with the same key affinity distribution) to wait current PME completion on all nodes.
+     * This is critical in situations when you want to ensure that no cache requests can be executed until PME is
+     * finished on all nodes (e.g. snapshot operation).
+     *
+     * @see GridCacheAffinityManager#isCompatibleWithCurrentTopologyVersion(AffinityTopologyVersion)
+     */
+    private final boolean remapStaleCacheReq;
+
     /** Merges allowed flag. */
     private final boolean merge;
 
     /** */
     private final ExchangeDiscoveryEvents evts;
-
-    /** */
-    private final boolean compatibilityNode = getBoolean(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, false);
 
     /**
      * @param cctx Context.
@@ -71,23 +70,13 @@ public class ExchangeContext {
     public ExchangeContext(GridCacheSharedContext<?, ?> cctx, boolean crd, GridDhtPartitionsExchangeFuture fut) {
         log = cctx.logger(getClass());
 
-        int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
-
-        boolean allNodesSupportsPmeFreeSwitch = allNodesSupports(fut.firstEventCache().allNodes(), PME_FREE_SWITCH);
-
-        if (!allNodesSupportsPmeFreeSwitch)
-            log.warning("Current topology does not support the PME-free switch. Please check all nodes support" +
-                " this feature and it was not explicitly disabled by IGNITE_PME_FREE_SWITCH_DISABLED JVM option.");
-
         boolean pmeFreeAvailable = (fut.wasRebalanced() && fut.isBaselineNodeFailed()) || isSnapshotOperation(fut.firstEvent());
 
-        if (!compatibilityNode &&
-            pmeFreeAvailable &&
-            allNodesSupportsPmeFreeSwitch) {
+        if (pmeFreeAvailable) {
             exchangeFreeSwitch = true;
             merge = false;
         }
-        else if (compatibilityNode || (crd && fut.localJoinExchange())) {
+        else if (crd && fut.localJoinExchange()) {
             fetchAffOnJoin = true;
             merge = false;
         }
@@ -95,22 +84,14 @@ public class ExchangeContext {
             boolean startCaches = fut.exchangeId().isJoined() &&
                 fut.sharedContext().cache().hasCachesReceivedFromJoin(fut.exchangeId().eventNode());
 
-            fetchAffOnJoin = protocolVer == 1;
+            fetchAffOnJoin = false;
 
-            merge = !startCaches &&
-                protocolVer > 1 &&
-                fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT;
+            merge = !startCaches && fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT;
         }
 
         evts = new ExchangeDiscoveryEvents(fut);
-    }
 
-    /**
-     * @param node Node.
-     * @return {@code True} if node supports exchange merge protocol.
-     */
-    boolean supportsMergeExchanges(ClusterNode node) {
-        return !compatibilityNode && exchangeProtocolVersion(node.version()) > 1;
+        remapStaleCacheReq = isSnapshotOperation(fut.firstEvent());
     }
 
     /**
@@ -157,6 +138,14 @@ public class ExchangeContext {
      */
     public boolean mergeExchanges() {
         return merge;
+    }
+
+   /**
+     * @return Whether cache requests that were mapped to an outdated topology version should be forcibly remapped to
+     * the up-to-date one.
+     */
+    public boolean remapStaleCacheRequests() {
+        return remapStaleCacheReq;
     }
 
     /** {@inheritDoc} */

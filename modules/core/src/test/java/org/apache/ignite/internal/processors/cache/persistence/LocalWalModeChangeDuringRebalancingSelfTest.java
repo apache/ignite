@@ -65,7 +65,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -606,8 +605,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         for (int k = 0; k < 2500; k++)
             cache.put(k, k);
 
-        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager) ig0.context().cache().context().database();
-        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager) ig1.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager)ig1.context().cache().context().database();
 
         dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
         dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
@@ -682,12 +681,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);
 
-        String ig1Folder = ig1.context().pdsFolderResolver().resolveFolders().folderName();
-        File dbDir = U.resolveWorkDirectory(ig1.configuration().getWorkDirectory(), "db", false);
-
-        File ig1LfsDir = new File(dbDir, ig1Folder);
-        File ig1CpDir = new File(ig1LfsDir, "cp");
-
         ig0.cluster().baselineAutoAdjustEnabled(false);
         ig0.cluster().state(ACTIVE);
 
@@ -696,8 +689,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         for (int k = 0; k < 2500; k++)
             cache.put(k, k);
 
-        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager) ig0.context().cache().context().database();
-        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager) ig1.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg0 = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
+        GridCacheDatabaseSharedManager dbMrg1 = (GridCacheDatabaseSharedManager)ig1.context().cache().context().database();
 
         dbMrg0.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
         dbMrg1.forceCheckpoint("cp").futureFor(CheckpointState.FINISHED).get();
@@ -715,7 +708,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         ig0 = startGrid(0);
 
-        File[] cpMarkers = ig1CpDir.listFiles();
+        File[] cpMarkers = ig1.context().pdsFolderResolver().fileTree().checkpoint().listFiles();
 
         for (File cpMark : cpMarkers) {
             if (cpMark.getName().contains("-END"))
@@ -736,7 +729,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             private Ignite ig;
 
             @Override public void run() {
-                MaintenanceRegistry mntcRegistry = ((IgniteEx) ig).context().maintenanceRegistry();
+                MaintenanceRegistry mntcRegistry = ((IgniteEx)ig).context().maintenanceRegistry();
 
                 List<MaintenanceAction<?>> actions = mntcRegistry
                     .actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
@@ -844,12 +837,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
             do {
-                try {
-                    cache.put(rnd.nextInt(keysCnt), rnd.nextInt());
-                }
-                catch (Exception ex) {
-                    MvccFeatureChecker.assertMvccWriteConflict(ex);
-                }
+                cache.put(rnd.nextInt(keysCnt), rnd.nextInt());
             }
             while (U.currentTimeMillis() < stopTs);
         }, threadCnt, "load-cache");

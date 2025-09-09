@@ -71,7 +71,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
                 if (valBytes == null) {
                     assert val != null;
 
-                    valBytes = proc.marshal(ctx, val);
+                    valBytes = valueBytesFromValue(ctx);
                 }
 
                 if (ldr == null) {
@@ -89,7 +89,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
             assert valBytes != null;
 
-            Object val = proc.unmarshal(ctx, valBytes, kernalCtx.config().isPeerClassLoadingEnabled() ?
+            Object val = valueFromValueBytes(ctx, kernalCtx.config().isPeerClassLoadingEnabled() ?
                 kernalCtx.cache().context().deploy().globalLoader() : null);
 
             if (ctx.storeValue())
@@ -105,7 +105,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+            valBytes = valueBytesFromValue(ctx);
 
         return valBytes;
     }
@@ -115,7 +115,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
         assert val != null || valBytes != null;
 
         if (valBytes == null)
-            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+            valBytes = valueBytesFromValue(ctx);
     }
 
     /** {@inheritDoc} */
@@ -123,7 +123,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
         assert val != null || valBytes != null;
 
         if (val == null && ctx.storeValue())
-            val = ctx.kernalContext().cacheObjects().unmarshal(ctx, valBytes, ldr);
+            val = valueFromValueBytes(ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -151,7 +151,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         return this;
     }
 }

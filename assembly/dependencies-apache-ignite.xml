@@ -32,9 +32,9 @@
     <moduleSets>
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:ignite-spring</include>
-                <include>org.apache.ignite:ignite-indexing</include>
-                <include>org.apache.ignite:ignite-control-utility</include>
+                <include>${project.groupId}:ignite-spring</include>
+                <include>${project.groupId}:ignite-indexing</include>
+                <include>${project.groupId}:ignite-control-utility</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -73,7 +73,7 @@
 
         <moduleSet>
             <includes>
-                <include>org.apache.ignite:ignite-core</include>
+                <include>${project.groupId}:ignite-core</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
@@ -104,6 +104,7 @@
                             <exclude>*-tests.jar</exclude>
                             <exclude>*-javadoc.jar</exclude>
                             <exclude>*-sources.jar</exclude>
+                            <exclude>original-*.jar</exclude>
                         </excludes>
                     </fileSet>
                 </fileSets>
@@ -113,36 +114,33 @@
         <moduleSet>
             <includeSubModules>true</includeSubModules>
             <excludes>
-                <exclude>org.apache.ignite:ignite-core</exclude>
-                <exclude>org.apache.ignite:ignite-clients</exclude>
-                <exclude>org.apache.ignite:ignite-spring</exclude>
-                <exclude>org.apache.ignite:ignite-tools</exclude>
-                <exclude>org.apache.ignite:ignite-extdata-p2p</exclude>
-                <exclude>org.apache.ignite:ignite-extdata-uri</exclude>
-                <exclude>org.apache.ignite:ignite-extdata-uri-dep</exclude>
-                <exclude>org.apache.ignite:ignite-examples</exclude>
-                <exclude>org.apache.ignite:ignite-indexing</exclude>
-                <exclude>org.apache.ignite:ignite-visor-console</exclude>
-                <exclude>org.apache.ignite:ignite-visor-console_2.10</exclude>
-                <exclude>org.apache.ignite:ignite-visor-plugins</exclude>
-                <exclude>org.apache.ignite:ignite-codegen</exclude>
-                <exclude>org.apache.ignite:ignite-apache-license-gen</exclude>
-                <exclude>org.apache.ignite:ignite-hibernate-core</exclude>
-                <exclude>org.apache.ignite:ignite-hibernate_4.2</exclude>
-                <exclude>org.apache.ignite:ignite-hibernate_5.1</exclude>
-                <exclude>org.apache.ignite:ignite-hibernate_5.3</exclude>
-                <exclude>org.apache.ignite:ignite-schedule</exclude>
-                <exclude>org.apache.ignite:ignite-geospatial</exclude>
-                <exclude>org.apache.ignite:ignite-appserver-test</exclude>
-                <exclude>org.apache.ignite:ignite-websphere-test</exclude>
-                <exclude>org.apache.ignite:ignite-cassandra</exclude>
-                <exclude>org.apache.ignite:ignite-yardstick</exclude>
-                <exclude>org.apache.ignite:ignite-benchmarks</exclude>
-                <exclude>org.apache.ignite:ignite-dev-utils</exclude>
-                <exclude>org.apache.ignite:ignite-extdata-platform</exclude>
-                <exclude>org.apache.ignite:ignite-compatibility</exclude>
-                <exclude>org.apache.ignite:ignite-sqlline</exclude>
-                <exclude>org.apache.ignite:ignite-control-utility</exclude>
+                <exclude>${project.groupId}:ignite-bom</exclude>
+                <exclude>${project.groupId}:ignite-core</exclude>
+                <exclude>${project.groupId}:ignite-commons</exclude>
+                <exclude>${project.groupId}:ignite-binary-api</exclude>
+                <exclude>${project.groupId}:ignite-binary-impl</exclude>
+                <exclude>${project.groupId}:ignite-clients</exclude>
+                <exclude>${project.groupId}:ignite-spring</exclude>
+                <exclude>${project.groupId}:ignite-tools</exclude>
+                <exclude>${project.groupId}:ignite-extdata-p2p</exclude>
+                <exclude>${project.groupId}:ignite-extdata-uri</exclude>
+                <exclude>${project.groupId}:ignite-extdata-uri-dep</exclude>
+                <exclude>${project.groupId}:ignite-extdata-pluggable</exclude>
+                <exclude>${project.groupId}:ignite-examples</exclude>
+                <exclude>${project.groupId}:ignite-indexing</exclude>
+                <exclude>${project.groupId}:ignite-codegen</exclude>
+                <exclude>${project.groupId}:ignite-codegen2</exclude>
+                <exclude>${project.groupId}:ignite-schedule</exclude>
+                <exclude>${project.groupId}:ignite-appserver-test</exclude>
+                <exclude>${project.groupId}:ignite-websphere-test</exclude>
+                <exclude>${project.groupId}:ignite-yardstick</exclude>
+                <exclude>${project.groupId}:ignite-benchmarks</exclude>
+                <exclude>${project.groupId}:ignite-dev-utils</exclude>
+                <exclude>${project.groupId}:ignite-extdata-platform</exclude>
+                <exclude>${project.groupId}:ignite-compatibility</exclude>
+                <exclude>${project.groupId}:ignite-sqlline</exclude>
+                <exclude>${project.groupId}:ignite-control-utility</exclude>
+                <exclude>${project.groupId}:ignite-checkstyle</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

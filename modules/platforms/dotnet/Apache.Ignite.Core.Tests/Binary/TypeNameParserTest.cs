@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 #else
             const string coreAsmNamePrefix = "mscorlib,";
 #endif
-            
+
             // Simple name.
             var res = TypeNameParser.Parse("List`1[[Int]]");
             Assert.AreEqual("List`1", res.GetName());
@@ -193,9 +193,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("System.Int32", gen.GetNameWithNamespace());
 
             res = TypeNameParser.Parse(typeof(NestedGeneric<int>.NestedGeneric2<string>).AssemblyQualifiedName);
-            
+
             Assert.AreEqual("NestedGeneric2`1", res.GetName());
-            Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.TypeNameParserTest+NestedGeneric`1+NestedGeneric2`1", 
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.TypeNameParserTest+NestedGeneric`1+NestedGeneric2`1",
                 res.GetNameWithNamespace());
 
             Assert.AreEqual(2, res.Generics.Count);
@@ -237,6 +237,22 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckType(typeof(List<int>[]));
             CheckType(typeof(List<int>[,]));
             CheckType(typeof(List<int>[][]));
+        }
+
+        [Test]
+        public void TestCompilerGeneratedTypes([Values(
+                @"Foo.Bar+<Abc-Def<System-String\,System-Byte\[\]>-Convert>d__0",
+                @"Foo.Bar+<Foo-Bar<Abc-Def<System-Byte\[\]>\,Abc-Def<System-String>>-Convert>d__4`1",
+                @"Program\+IFoo`2\[\[System.Int32\, System.Private.CoreLib\, Version=4.0.0.0\, Culture=neutral\, PublicKeyToken=567\]\,\[System.String\, System.Private.CoreLib\, Version=4.0.0.0\, Culture=neutral\, PublicKeyToken=123\]\]"
+                )]
+            string typeName)
+        {
+            var res = TypeNameParser.Parse(typeName);
+
+            Assert.AreEqual(typeName, res.GetName());
+            Assert.IsNull(res.GetAssemblyName());
+            Assert.IsNull(res.GetArray());
+            Assert.IsFalse(res.HasNamespace());
         }
 
         /// <summary>

@@ -27,16 +27,13 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -49,15 +46,6 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
 
     /** */
     private static final int KEYS = 1025;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -96,19 +84,6 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testMvccTxOnHeap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT);
-
-        doTestScanQuery(ccfg, true, true);
-        doTestScanQuery(ccfg, true, false);
-        doTestScanQuery(ccfg, false, true);
-        doTestScanQuery(ccfg, false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testAtomicOnHeapLocalEntries() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC);
 
@@ -124,19 +99,6 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
     @Test
     public void testTxOnHeapLocalEntries() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL);
-
-        doTestLocalEntries(ccfg, true, true);
-        doTestLocalEntries(ccfg, true, false);
-        doTestLocalEntries(ccfg, false, true);
-        doTestLocalEntries(ccfg, false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxOnHeapLocalEntries() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT);
 
         doTestLocalEntries(ccfg, true, true);
         doTestLocalEntries(ccfg, true, false);

@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentS
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceDirectoryWarningLoggingTest;
 import org.apache.ignite.internal.processors.cache.persistence.RestorePartitionStateDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryEncryptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryWithParamsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
@@ -39,7 +40,9 @@ import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePds
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCacheIntegrationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsDiskErrorsRecoveringTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsNoActualWalHistoryTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsThreadInterruptionRandomAccessWalTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsThreadInterruptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.WalFilesCloseTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryPPCTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryTest;
@@ -90,12 +93,15 @@ import org.junit.runners.Suite;
     IgnitePdsBinaryMetadataAsyncWritingTest.class,
     IgnitePdsMarshallerMappingRestoreOnNodeStartTest.class,
     IgnitePdsThreadInterruptionTest.class,
+    IgnitePdsThreadInterruptionRandomAccessWalTest.class,
+    WalFilesCloseTest.class,
     IgnitePdsBinarySortObjectFieldsTest.class,
 
     IgnitePdsCorruptedIndexTest.class,
 
     IgniteLogicalRecoveryTest.class,
     IgniteLogicalRecoveryWithParamsTest.class,
+    IgniteLogicalRecoveryEncryptionTest.class,
 
     IgniteSequentialNodeCrashRecoveryTest.class,
 

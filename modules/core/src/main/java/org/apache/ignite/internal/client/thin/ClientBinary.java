@@ -24,18 +24,16 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 
 /**
  * Thin client implementation of {@link IgniteBinary}.
  */
-class ClientBinary implements IgniteBinary {
+public class ClientBinary implements IgniteBinary {
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
@@ -48,7 +46,7 @@ class ClientBinary implements IgniteBinary {
 
     /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
-        return marsh.context().typeId(typeName);
+        return binaryContext().typeId(typeName);
     }
 
     /** {@inheritDoc} */
@@ -61,7 +59,7 @@ class ClientBinary implements IgniteBinary {
 
         byte[] objBytes = marsh.marshal(obj);
 
-        return (T)marsh.unmarshal(new BinaryHeapInputStream(objBytes));
+        return (T)marsh.unmarshal(BinaryStreams.inputStream(objBytes));
     }
 
     /** {@inheritDoc} */
@@ -69,7 +67,7 @@ class ClientBinary implements IgniteBinary {
         if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
-        return new BinaryObjectBuilderImpl(marsh.context(), typeName);
+        return BinaryObjectBuilders.builder(binaryContext(), typeName);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +75,7 @@ class ClientBinary implements IgniteBinary {
         if (binaryObj == null)
             throw new NullPointerException("binaryObj");
 
-        return BinaryObjectBuilderImpl.wrap(binaryObj);
+        return BinaryObjectBuilders.builder(binaryObj);
     }
 
     /** {@inheritDoc} */
@@ -93,19 +91,19 @@ class ClientBinary implements IgniteBinary {
         if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
-        int typeId = marsh.context().typeId(typeName);
+        int typeId = binaryContext().typeId(typeName);
 
         return type(typeId);
     }
 
     /** {@inheritDoc} */
     @Override public BinaryType type(int typeId) {
-        return marsh.context().metadata(typeId);
+        return binaryContext().metadata(typeId);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<BinaryType> types() {
-        return marsh.context().metadata();
+        return binaryContext().metadata();
     }
 
     /** {@inheritDoc} */
@@ -113,11 +111,11 @@ class ClientBinary implements IgniteBinary {
         if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
-        BinaryContext ctx = marsh.context();
+        BinaryContext ctx = binaryContext();
 
         int typeId = ctx.typeId(typeName);
 
-        return new BinaryEnumObjectImpl(ctx, typeId, null, ord);
+        return BinaryUtils.binaryEnum(ord, ctx, typeId);
     }
 
     /** {@inheritDoc} */
@@ -128,7 +126,7 @@ class ClientBinary implements IgniteBinary {
         if (name == null || name.isEmpty())
             throw new IllegalArgumentException("name");
 
-        BinaryContext ctx = marsh.context();
+        BinaryContext ctx = binaryContext();
 
         int typeId = ctx.typeId(typeName);
 
@@ -149,7 +147,7 @@ class ClientBinary implements IgniteBinary {
                 name
             ));
 
-        return new BinaryEnumObjectImpl(ctx, typeId, null, ordinal);
+        return BinaryUtils.binaryEnum(ordinal, ctx, typeId);
     }
 
     /** {@inheritDoc} */
@@ -157,19 +155,24 @@ class ClientBinary implements IgniteBinary {
         if (typeName == null || typeName.isEmpty())
             throw new IllegalArgumentException("typeName");
 
-        BinaryContext ctx = marsh.context();
+        BinaryContext ctx = binaryContext();
 
         int typeId = ctx.typeId(typeName);
 
-        ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, null, null, null, true, vals), false);
+        ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, null, null, true, vals), false);
 
         return ctx.metadata(typeId);
     }
 
     /** {@inheritDoc} */
     @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
-        BinaryClassDescriptor clsDesc = marsh.context().registerClass(cls, true, false);
+        int typeId = binaryContext().registerType(cls, true, false);
 
-        return marsh.context().metadata(clsDesc.typeId());
+        return binaryContext().metadata(typeId);
+    }
+
+    /** @return Binary context. */
+    public BinaryContext binaryContext() {
+        return marsh.context();
     }
 }

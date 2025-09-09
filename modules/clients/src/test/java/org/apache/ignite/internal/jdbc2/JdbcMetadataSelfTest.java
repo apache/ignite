@@ -35,7 +35,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -62,6 +64,7 @@ import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.CATALOG_NAME;
 
 /**
  * Metadata tests.
@@ -319,7 +322,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testGetAllView() throws Exception {
-        Set<String> expViews = new HashSet<>(Arrays.asList(
+        Set<String> expViews = new TreeSet<>(Arrays.asList(
             "BASELINE_NODES",
             "BASELINE_NODE_ATTRIBUTES",
             "CACHES",
@@ -331,6 +334,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "SCAN_QUERIES",
             "NODES",
             "NODE_ATTRIBUTES",
+            "CONFIGURATION",
             "NODE_METRICS",
             "SCHEMAS",
             "TABLES",
@@ -338,6 +342,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "JOBS",
             "SERVICES",
             "CLIENT_CONNECTIONS",
+            "CLIENT_CONNECTION_ATTRIBUTES",
             "TRANSACTIONS",
             "VIEWS",
             "TABLE_COLUMNS",
@@ -361,10 +366,12 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "DS_REENTRANTLOCKS",
             "STATISTICS_CONFIGURATION",
             "STATISTICS_PARTITION_DATA",
-            "STATISTICS_LOCAL_DATA"
+            "STATISTICS_LOCAL_DATA",
+            "STATISTICS_GLOBAL_DATA",
+            "SQL_PLANS_HISTORY"
         ));
 
-        Set<String> actViews = new HashSet<>();
+        Set<String> actViews = new TreeSet<>();
 
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
@@ -529,13 +536,15 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     assertEquals(0, rs.getInt("NULLABLE"));
                     assertEquals(0, rs.getInt(11)); // nullable column by index
                     assertEquals("NO", rs.getString("IS_NULLABLE"));
-                } else if ("AGE".equals(name)) {
+                }
+                else if ("AGE".equals(name)) {
                     assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
                     assertEquals("INTEGER", rs.getString("TYPE_NAME"));
                     assertEquals(0, rs.getInt("NULLABLE"));
                     assertEquals(0, rs.getInt(11)); // nullable column by index
                     assertEquals("NO", rs.getString("IS_NULLABLE"));
-                } else if ("ORGID".equals(name)) {
+                }
+                else if ("ORGID".equals(name)) {
                     assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
                     assertEquals("INTEGER", rs.getString("TYPE_NAME"));
                     assertEquals(1, rs.getInt("NULLABLE"));
@@ -569,7 +578,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     assertEquals(0, rs.getInt("NULLABLE"));
                     assertEquals(0, rs.getInt(11)); // nullable column by index
                     assertEquals("NO", rs.getString("IS_NULLABLE"));
-                } else if ("name".equals(name)) {
+                }
+                else if ("name".equals(name)) {
                     assertEquals(VARCHAR, rs.getInt("DATA_TYPE"));
                     assertEquals("VARCHAR", rs.getString("TYPE_NAME"));
                     assertEquals(1, rs.getInt("NULLABLE"));
@@ -609,37 +619,42 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIndexMetadata() throws Exception {
+        List<String> expectedIdxs = Arrays.asList(
+            "_key_PK.1._KEY.A",
+            "PERSON_NAME_ASC_AGE_DESC_IDX.1.NAME.A",
+            "PERSON_NAME_ASC_AGE_DESC_IDX.2.AGE.D",
+            "PERSON_NAME_ASC_AGE_DESC_IDX.3._KEY.A",
+            "PERSON_ORGID_ASC_IDX.1.ORGID.A",
+            "PERSON_ORGID_ASC_IDX.2._KEY.A"
+        );
+
         try (Connection conn = DriverManager.getConnection(BASE_URL);
              ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
 
-            int cnt = 0;
+            List<String> actualIdxs = new ArrayList<>();
 
             while (rs.next()) {
-                String idxName = rs.getString("INDEX_NAME");
-                String field = rs.getString("COLUMN_NAME");
-                String ascOrDesc = rs.getString("ASC_OR_DESC");
+                actualIdxs.add(String.join(".",
+                    rs.getString("INDEX_NAME"),
+                    String.valueOf(rs.getInt("ORDINAL_POSITION")),
+                    rs.getString("COLUMN_NAME"),
+                    rs.getString("ASC_OR_DESC")));
 
-                assertEquals(DatabaseMetaData.tableIndexOther, rs.getInt("TYPE"));
-
-                if ("PERSON_ORGID_ASC_IDX".equals(idxName)) {
-                    assertEquals("ORGID", field);
-                    assertEquals("A", ascOrDesc);
-                }
-                else if ("PERSON_NAME_ASC_AGE_DESC_IDX".equals(idxName)) {
-                    if ("NAME".equals(field))
-                        assertEquals("A", ascOrDesc);
-                    else if ("AGE".equals(field))
-                        assertEquals("D", ascOrDesc);
-                    else
-                        fail("Unexpected field: " + field);
-                }
-                else
-                    fail("Unexpected index: " + idxName);
-
-                cnt++;
+                // Below values are constant for a cache
+                assertEquals(CATALOG_NAME, rs.getString("TABLE_CAT"));
+                assertEquals("pers", rs.getString("TABLE_SCHEM"));
+                assertEquals("PERSON", rs.getString("TABLE_NAME"));
+                assertNull(rs.getObject("INDEX_QUALIFIER"));
+                assertEquals(DatabaseMetaData.tableIndexOther, rs.getShort("TYPE"));
+                assertEquals(0, rs.getInt("CARDINALITY"));
+                assertEquals(0, rs.getInt("PAGES"));
+                assertNull(rs.getString("FILTER_CONDITION"));
             }
 
-            assertEquals(3, cnt);
+            assertEquals("Unexpected indexes count", expectedIdxs.size(), actualIdxs.size());
+
+            for (int i = 0; i < actualIdxs.size(); i++)
+                assertEquals("Unexpected index", expectedIdxs.get(i), actualIdxs.get(i));
         }
     }
 

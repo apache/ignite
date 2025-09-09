@@ -52,6 +52,8 @@ public class PageMetaIOV2 extends PageMetaIO {
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setEncryptedPageIndex(long pageAddr, int pageIdx) {
+        assertPageType(pageAddr);
+
         if (getEncryptedPageIndex(pageAddr) == pageIdx)
             return false;
 
@@ -75,6 +77,8 @@ public class PageMetaIOV2 extends PageMetaIO {
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
     public boolean setEncryptedPageCount(long pageAddr, int pagesCnt) {
+        assertPageType(pageAddr);
+
         if (getEncryptedPageCount(pageAddr) == pagesCnt)
             return false;
 
@@ -97,6 +101,8 @@ public class PageMetaIOV2 extends PageMetaIO {
      * @param pageAddr Page address.
      */
     public void upgradePage(long pageAddr) {
+        assertPageType(pageAddr);
+
         assert PageIO.getType(pageAddr) == getType();
 
         PageIO.setVersion(pageAddr, getVersion());

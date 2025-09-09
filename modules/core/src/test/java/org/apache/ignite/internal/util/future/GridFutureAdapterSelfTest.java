@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.future;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,11 +34,13 @@ import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Tests grid future adapter use cases.
@@ -66,7 +69,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
         final GridFutureAdapter<String> callFut1 = fut;
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return callFut1.get();
             }
@@ -78,7 +81,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
         final GridFutureAdapter<String> callFut2 = fut;
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return callFut2.get();
             }
@@ -98,7 +101,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOnCancelled() throws Exception {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
@@ -108,7 +111,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             }
         }, IgniteFutureCancelledCheckedException.class, null);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
@@ -344,6 +347,140 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testChainCompose() throws IgniteCheckedException {
+        Executor[] executors = new Executor[] { null, Executors.newSingleThreadExecutor() };
+
+        for (Executor exec : executors) {
+            checkCompose(true, false, false, exec);
+            checkCompose(false, false, false, exec);
+            checkCompose(true, true, false, exec);
+            checkCompose(false, true, false, exec);
+
+            checkCompose(true, false, true, exec);
+            checkCompose(false, false, true, exec);
+            checkCompose(true, true, true, exec);
+            checkCompose(false, true, true, exec);
+        }
+
+        checkComposeCancel();
+    }
+
+    /**
+     * @param directOrder Whether to complete the futures in direct order. Direct order is: 1st is completed the future
+     *                    on which {@link IgniteInternalFuture#chainCompose(IgniteClosure)} is called, 2nd is the future
+     *                    returned by {@code doneCb} passed to  {@link IgniteInternalFuture#chainCompose(IgniteClosure)}.
+     * @param withException Whether the futures are completed with exceptions.
+     * @param cbException Whether the callback throws an exception instead of returning a future.
+     * @param exec Executor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void checkCompose(
+        boolean directOrder,
+        boolean withException,
+        boolean cbException,
+        Executor exec
+    ) throws IgniteCheckedException {
+        GridFutureAdapter<Object> fut0 = new GridFutureAdapter<>();
+        GridFutureAdapter<Object> cbFut = new GridFutureAdapter<>();
+
+        IgniteInternalFuture<Object> chainedFut = fut0.chainCompose(
+            f -> {
+                if (cbException)
+                    throw new RuntimeException("cbException");
+                else
+                    return cbFut;
+            },
+            exec
+        );
+
+        assertFalse(chainedFut.isDone());
+
+        Object res0 = withException ? new Exception("test0") : new Object();
+        Object resCb = withException ? new Exception("testCb") : new Object();
+
+        if (directOrder) {
+            futureOnDone(fut0, res0);
+
+            assertTrue(fut0.isDone());
+
+            if (exec == null)
+                assertEquals(cbException, chainedFut.isDone());
+
+            futureOnDone(cbFut, resCb);
+        }
+        else {
+            futureOnDone(cbFut, resCb);
+
+            assertTrue(cbFut.isDone());
+
+            if (exec == null)
+                assertFalse(chainedFut.isDone());
+
+            futureOnDone(fut0, res0);
+        }
+
+        boolean exThrown = false;
+
+        try {
+            chainedFut.get(1000);
+        }
+        catch (Exception e) {
+            exThrown = true;
+
+            if (cbException)
+                assertEquals("cbException", e.getMessage());
+            else if (withException)
+                assertEquals("testCb", e.getMessage());
+            else
+                throw e;
+        }
+
+        assertEquals(withException || cbException, exThrown);
+
+        assertTrue(chainedFut.isDone());
+    }
+
+    /**
+     * Completes the future exceptionally, if {@code res} is the instance of {@link Throwable}.
+     *
+     * @param fut Future.
+     * @param res Result.
+     */
+    private void futureOnDone(GridFutureAdapter<Object> fut, Object res) {
+        if (res instanceof Throwable) {
+            Throwable t = (Throwable)res;
+
+            fut.onDone(t);
+        }
+        else
+            fut.onDone(res);
+    }
+
+    /**
+     * Check the behavior of compose future when inner future is cancelled.
+     */
+    private void checkComposeCancel() {
+        GridFutureAdapter<Object> fut0 = new GridFutureAdapter<>();
+        GridFutureAdapter<Object> fut1 = new GridFutureAdapter<>();
+
+        IgniteInternalFuture<Object> fut2 = fut0.chainCompose(f -> fut1);
+
+        fut0.onDone(new Object());
+
+        fut1.onCancelled();
+
+        assertTrue(fut1.isDone());
+        assertTrue(fut1.isCancelled());
+
+        assertThrows(log, () -> fut2.get(1000), IgniteFutureCancelledCheckedException.class, null);
+
+        assertTrue(fut2.isDone());
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @Test
@@ -390,6 +527,5 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         catch (IgniteFutureCancelledCheckedException e) {
             info("Caught expected exception: " + e);
         }
-
     }
 }

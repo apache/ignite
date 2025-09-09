@@ -98,6 +98,8 @@ public class TaskEvent extends EventAdapter {
      * @param sesId Task session ID.
      * @param taskName Task name.
      * @param subjId Subject ID.
+     * @param internal Whether current task belongs to Ignite internal tasks.
+     * @param taskClsName Name ot the task class.
      */
     public TaskEvent(ClusterNode node, String msg, int type, IgniteUuid sesId, String taskName, String taskClsName,
         boolean internal, @Nullable UUID subjId) {

@@ -39,7 +39,7 @@ public class RotatedIdPartRecord extends PageDeltaRecord {
 
         assert rotatedIdPart >= 0 && rotatedIdPart <= 0xFF;
 
-        this.rotatedIdPart = (byte) rotatedIdPart;
+        this.rotatedIdPart = (byte)rotatedIdPart;
     }
 
     /** {@inheritDoc} */

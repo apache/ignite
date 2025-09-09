@@ -1,0 +1,46 @@
+{#
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+#}
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util" xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+    <bean class="org.apache.ignite.IgniteJdbcThinDataSource" id="thin.jdbc.cfg">
+        <property name="addresses">
+            <list>
+                {% for address in config.addresses %}
+                    <value>{{ address }}</value>
+                {% endfor %}
+            </list>
+        </property>
+
+        {% if config.username %}
+            <property name="username" value="{{ config.username }}"/>
+            <property name="password" value="{{ config.password }}"/>
+        {% endif %}
+
+        {% if config.ssl_params %}
+            <property name="sslMode" value="require"/>
+            <property name="sslClientCertificateKeyStoreUrl" value="{{ config.ssl_params.key_store_path }}"/>
+            <property name="sslClientCertificateKeyStorePassword" value="{{ config.ssl_params.key_store_password }}"/>
+            <property name="sslTrustCertificateKeyStoreUrl" value="{{ config.ssl_params.trust_store_path }}"/>
+            <property name="sslTrustCertificateKeyStorePassword" value="{{ config.ssl_params.trust_store_password }}"/>
+        {% endif %}
+    </bean>
+</beans>

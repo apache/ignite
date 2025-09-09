@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -30,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileWriteHandle;
@@ -45,7 +47,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 
 /**
  *
@@ -120,7 +121,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
     public void test() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         FileWriteAheadLogManager walMgr = (FileWriteAheadLogManager)ig.context().cache().context().wal();
 
@@ -132,7 +133,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
                 st.addData(i, new byte[1024 * 1024]);
         }
 
-        File archiveDir = U.field(walMgr, "walArchiveDir");
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
         stopGrid(0, false);
 
@@ -144,7 +145,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         long idxBefore = fhBefore.getSegmentId();
 
-        File[] files = archiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+        File[] files = ft.walArchiveCompactedOrRawSegments();
 
         Arrays.sort(files);
 
@@ -154,7 +155,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
                 log.info("File " + f.getAbsolutePath() + " deleted");
         }
 
-        Assert.assertEquals(0, archiveDir.listFiles().length);
+        Assert.assertEquals(0, ft.walArchive().listFiles().length);
 
         evts.clear();
 
@@ -165,17 +166,17 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         SegmentAware afterSaw = U.field(walMgr, "segmentAware");
 
-        long afterLastArchivedAbsoluteIndex = afterSaw.lastArchivedAbsoluteIndex();
+        long afterLastArchivedAbsoluteIdx = afterSaw.lastArchivedAbsoluteIndex();
 
         int segments = ig.configuration().getDataStorageConfiguration().getWalSegments();
 
         Assert.assertTrue(
             "lastArchivedBeforeIdx=" + beforeLastArchivedAbsoluteIdx +
-                ", lastArchivedAfterIdx=" + afterLastArchivedAbsoluteIndex + ",  segments=" + segments,
-            afterLastArchivedAbsoluteIndex >=
+                ", lastArchivedAfterIdx=" + afterLastArchivedAbsoluteIdx + ",  segments=" + segments,
+            afterLastArchivedAbsoluteIdx >=
             (beforeLastArchivedAbsoluteIdx - segments));
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         FileWriteHandle fhAfter = U.field(walMgr, "currHnd");
 
@@ -187,16 +188,16 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
         Assert.assertTrue(idxAfter >= beforeLastArchivedAbsoluteIdx);
 
         log.info("currentIdx=" + idxAfter + ", lastArchivedBeforeIdx=" + beforeLastArchivedAbsoluteIdx +
-            ", lastArchivedAfteridx=" + afterLastArchivedAbsoluteIndex + ",  segments=" + segments);
+            ", lastArchivedAfteridx=" + afterLastArchivedAbsoluteIdx + ",  segments=" + segments);
 
         // One is a last archived, secod is a current write segment.
-        final long awaitAchviedSegments = idxAfter - afterLastArchivedAbsoluteIndex - 2;
+        final long awaitAchviedSegments = idxAfter - afterLastArchivedAbsoluteIdx - 2;
 
         // Await all current available semgment will be archived.
         assertTrue(GridTestUtils.waitForCondition(
             new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    long cut = evts.keySet().stream().filter(e -> e > afterLastArchivedAbsoluteIndex).count();
+                    long cut = evts.keySet().stream().filter(e -> e > afterLastArchivedAbsoluteIdx).count();
 
                     return cut >= awaitAchviedSegments;
                 }

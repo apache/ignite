@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -142,7 +143,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     public void testDynamicSchemaChangesPersistenceWithStaticCache() throws Exception {
         IgniteEx node = startGrid(getConfigurationWithStaticCache(getTestIgniteInstanceName(0)));
 
-        node.active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache cache = node.cache(STATIC_CACHE_NAME);
 
@@ -164,7 +165,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         // will be ignored due to cache names duplication.
         node = startGrid(0);
 
-        node.active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         checkDynamicSchemaChanges(node, STATIC_CACHE_NAME);
     }
@@ -177,7 +178,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     private void checkSchemaStateAfterNodeRestart(boolean aliveCluster) throws Exception {
         IgniteEx node = startGrid(0);
 
-        node.active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         if (aliveCluster)
             startGrid(1);
@@ -199,7 +200,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         node = startGrid(0);
 
-        node.active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         checkDynamicSchemaChanges(node, SQL_CACHE_NAME);
 
@@ -330,7 +331,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            IgnitePersistentStoreSchemaLoadTest.Person person = (IgnitePersistentStoreSchemaLoadTest.Person) o;
+            IgnitePersistentStoreSchemaLoadTest.Person person = (IgnitePersistentStoreSchemaLoadTest.Person)o;
 
             return id == person.id && (name != null ? name.equals(person.name) : person.name == null);
 

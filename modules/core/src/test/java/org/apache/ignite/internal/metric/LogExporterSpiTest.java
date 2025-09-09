@@ -33,7 +33,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 public class LogExporterSpiTest extends AbstractExporterSpiTest {
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(super.log);
 
     /** */
     private IgniteEx ignite;
@@ -71,18 +71,18 @@ public class LogExporterSpiTest extends AbstractExporterSpiTest {
     public void testLogSpi() throws Exception {
         cleanPersistenceDir();
 
-        Set<String> expectedAttributes = new GridConcurrentHashSet<>(EXPECTED_ATTRIBUTES);
+        Set<String> expectedAttrs = new GridConcurrentHashSet<>(EXPECTED_ATTRIBUTES);
 
         log.registerListener(s -> {
-            for (String attr : expectedAttributes) {
+            for (String attr : expectedAttrs) {
                 if (s.contains(attr))
-                    expectedAttributes.remove(attr);
+                    expectedAttrs.remove(attr);
             }
         });
 
         ignite = startGrid(0);
 
-        boolean res = waitForCondition(expectedAttributes::isEmpty, EXPORT_TIMEOUT * 10);
+        boolean res = waitForCondition(expectedAttrs::isEmpty, EXPORT_TIMEOUT * 10);
 
         assertTrue(res);
 

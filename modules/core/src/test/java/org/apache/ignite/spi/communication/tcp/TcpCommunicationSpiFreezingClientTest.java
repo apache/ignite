@@ -17,78 +17,45 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.lang.management.ManagementFactory;
-import java.util.Iterator;
-import javax.cache.Cache;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.nio.GridCommunicationClient;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.junit.Assume;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests that freezing due to JVM STW client will be failed if connection can't be established.
  */
+@WithSystemProperty(key = IGNITE_ENABLE_FORCIBLE_NODE_KILL, value = "true")
 public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setFailureDetectionTimeout(120000);
-        cfg.setClientFailureDetectionTimeout(120000);
+        cfg.setFailureDetectionTimeout(getTestTimeout());
+        cfg.setClientFailureDetectionTimeout(getTestTimeout());
 
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
-        spi.setConnectTimeout(3000);
-        spi.setMaxConnectTimeout(6000);
-        spi.setReconnectCount(3);
+        spi.setConnectTimeout(1000);
+        spi.setMaxConnectTimeout(1000);
         spi.setIdleConnectionTimeout(100);
-        spi.setSharedMemoryPort(-1);
-
-        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setCommunicationSpi(spi);
-        cfg.setDiscoverySpi(discoSpi);
-
-        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME).setWriteSynchronizationMode(FULL_SYNC).
-            setCacheMode(PARTITIONED).setAtomicityMode(ATOMIC));
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
     /** {@inheritDoc} */
@@ -96,89 +63,51 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         return true;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** @throws Exception If failed. */
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     public void testFreezingClient() throws Exception {
-        try {
-            final IgniteEx srv = startGrids(2);
+        Assume.assumeTrue("The test reqires the 'kill' command.", U.isUnix() || U.isMacOs());
 
-            final IgniteEx client = startClientGrid(3);
+        Ignite srv = startGrid(0);
+        IgniteProcessProxy client = (IgniteProcessProxy)startClientGrid("client");
 
-            final int keysCnt = 100_000;
+        // Close communication connections by idle.
+        waitConnectionsClosed(srv);
 
-            try (IgniteDataStreamer<Integer, byte[]> streamer = srv.dataStreamer(DEFAULT_CACHE_NAME)) {
-                for (int i = 0; i < keysCnt; i++)
-                    streamer.addData(i, new byte[512]);
-            }
+        // Simulate freeze/STW on the client.
+        client.getProcess().suspend();
 
-            // Wait for connections go idle.
-            doSleep(1000);
+        // Open new communication connection to the freezing client.
+        GridTestUtils.assertThrowsWithCause(
+            () -> srv.compute(srv.cluster().forClients()).withNoFailover().run(() -> {}),
+            ClusterTopologyException.class);
 
-            srv.compute(srv.cluster().forNode(client.localNode())).withNoFailover().call(new ClientClosure());
-
-            fail("Client node must be kicked from topology");
-        }
-        catch (ClusterTopologyException e) {
-            // Expected.
-
-            e.printStackTrace();
-
-            System.out.println(e);
-        }
-        finally {
-            stopAllGrids();
-        }
+        assertEquals(1, srv.cluster().nodes().size());
     }
 
-    /** */
-    public static class ClientClosure implements IgniteCallable<Integer> {
-        /** */
-        private static final long serialVersionUID = 0L;
+    /** Waits for all communication connections closed by idle. */
+    private void waitConnectionsClosed(Ignite node) {
+        TcpCommunicationSpi spi = (TcpCommunicationSpi)node.configuration().getCommunicationSpi();
+        Map<UUID, GridCommunicationClient[]> clientsMap = GridTestUtils.getFieldValue(spi, "clientPool", "clients");
 
-        @IgniteInstanceResource
-        private transient Ignite ignite;
+        try {
+            assertTrue(waitForCondition(() -> {
+                for (GridCommunicationClient[] clients : clientsMap.values()) {
+                    if (clients == null)
+                        continue;
 
-        @LoggerResource
-        private IgniteLogger log;
+                    for (GridCommunicationClient client : clients) {
+                        if (client != null)
+                            return false;
+                    }
+                }
 
-        /** {@inheritDoc} */
-        @Override public Integer call() throws Exception {
-            Thread loadThread = new Thread(() -> log.info("result = " + simulateLoad()));
-
-            loadThread.setName("load-thread");
-            loadThread.start();
-
-            int cnt = 0;
-
-            final Iterator<Cache.Entry<Integer, byte[]>> it = ignite.cache(DEFAULT_CACHE_NAME).
-                query(new ScanQuery<Integer, byte[]>().setPageSize(100000)).iterator();
-
-            while (it.hasNext()) {
-                Cache.Entry<Integer, byte[]> entry = it.next();
-
-                // Trigger STW.
-                final long[] tids = ManagementFactory.getThreadMXBean().findDeadlockedThreads();
-
-                cnt++;
-            }
-
-            loadThread.join();
-
-            return cnt;
+                return true;
+            }, getTestTimeout()));
         }
-
-        /**
-         *
-         */
-        public static double simulateLoad() {
-            double d = 0;
-
-            for (int i = 0; i < 1000000000; i++)
-                d += Math.log(Math.PI * i);
-
-            return d;
+        catch (IgniteInterruptedCheckedException e) {
+            throw U.convertException(e);
         }
     }
 }

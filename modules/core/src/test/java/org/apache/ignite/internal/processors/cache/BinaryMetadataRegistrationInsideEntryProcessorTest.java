@@ -34,6 +34,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -107,7 +108,7 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
      */
     @Test
     public void testContinuousQueryAndBinaryObjectBuilder() throws Exception {
-        startGrids(3).cluster().active(true);
+        startGrids(3).cluster().state(ClusterState.ACTIVE);
 
         grid(0).createCache(new CacheConfiguration<>()
             .setName(CACHE_NAME)
@@ -236,9 +237,14 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
      *
      */
     private enum CustomEnum {
-        /** */ONE(1),
-        /** */TWO(2),
-        /** */THREE(3);
+        /** */
+        ONE(1),
+
+        /** */
+        TWO(2),
+
+        /** */
+        THREE(3);
 
         /** Value. */
         private final Object val;

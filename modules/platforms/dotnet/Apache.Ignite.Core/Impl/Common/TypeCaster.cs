@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Linq.Expressions;
 
     /// <summary>
-    /// Does type casts without extra boxing. 
+    /// Does type casts without extra boxing.
     /// Should be used when casting compile-time incompatible value types instead of "(T)(object)x".
     /// </summary>
     /// <typeparam name="T">Target type</typeparam>
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Common
             /// <summary>
             /// Compiled caster delegate.
             /// </summary>
-            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields", 
+            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields",
                 Justification = "Incorrect warning")]
             [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes",
                 Justification = "Intended usage to leverage compiler caching.")]
@@ -87,9 +87,39 @@ namespace Apache.Ignite.Core.Impl.Common
                 }
 
                 var paramExpr = Expression.Parameter(typeof(TFrom));
-                var convertExpr = Expression.Convert(paramExpr, typeof(T));
+
+                var convertExpr = typeof(TFrom) == typeof(Enum)
+                    ? TryConvertRawEnum(typeof(T), paramExpr)
+                    : Expression.Convert(paramExpr, typeof(T));
 
                 return Expression.Lambda<Func<TFrom, T>>(convertExpr, paramExpr).Compile();
+            }
+
+            private static Expression TryConvertRawEnum(Type toType, Expression fromParamExpr)
+            {
+                var mtdName = "";
+
+                if (toType == typeof(byte))
+                    mtdName = "ToByte";
+                else if (toType == typeof(sbyte))
+                    mtdName = "ToSByte";
+                else if (toType == typeof(short))
+                    mtdName = "ToInt16";
+                else if (toType == typeof(ushort))
+                    mtdName = "ToUInt16";
+                else if (toType == typeof(int))
+                    mtdName = "ToInt32";
+                else if (toType == typeof(uint))
+                    mtdName = "ToUInt32";
+
+                var toIntMtd = typeof(Convert).GetMethod(mtdName, new[] {typeof(object)});
+
+                if (toIntMtd == null)
+                {
+                    throw new InvalidCastException($"Unable to convert 'System.Enum' to '{toType}': no converter found.");
+                }
+
+                return Expression.Call(null, toIntMtd, fromParamExpr);
             }
         }
     }

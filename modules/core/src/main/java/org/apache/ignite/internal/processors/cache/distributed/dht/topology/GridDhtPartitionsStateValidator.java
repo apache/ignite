@@ -26,9 +26,7 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -37,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -47,9 +44,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
  * process.
  */
 public class GridDhtPartitionsStateValidator {
-    /** Version since node is able to send cache sizes in {@link GridDhtPartitionsSingleMessage}. */
-    private static final IgniteProductVersion SIZES_VALIDATION_AVAILABLE_SINCE = IgniteProductVersion.fromString("2.5.0");
-
     /** Cache shared context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
@@ -92,17 +86,8 @@ public class GridDhtPartitionsStateValidator {
         Map<Integer, Map<UUID, Long>> resUpdCnt = validatePartitionsUpdateCounters(top, messages, ignoringNodes);
         Map<Integer, Map<UUID, Long>> resSize = Collections.emptyMap();
 
-        // For sizes validation ignore also nodes which are not able to send cache sizes.
-        for (UUID id : messages.keySet()) {
-            ClusterNode node = cctx.discovery().node(id);
-            if (node != null && node.version().compareTo(SIZES_VALIDATION_AVAILABLE_SINCE) < 0)
-                ignoringNodes.add(id);
-        }
-
-        if (!cctx.cache().cacheGroup(top.groupId()).mvccEnabled()) { // TODO: Remove "if" clause in IGNITE-9451.
-            // Validate cache sizes.
-            resSize = validatePartitionsSizes(top, messages, ignoringNodes);
-        }
+        // Validate cache sizes.
+        resSize = validatePartitionsSizes(top, messages, ignoringNodes);
 
         AffinityTopologyVersion topVer = fut.context().events().topologyVersion();
 
@@ -198,19 +183,17 @@ public class GridDhtPartitionsStateValidator {
             updateCountersAndNodesByPartitions.put(part.id(), new AbstractMap.SimpleEntry<>(cctx.localNodeId(), part.updateCounter()));
         }
 
-        int partitions = top.partitions();
-
         // Then process and validate counters from other nodes.
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : messages.entrySet()) {
             UUID nodeId = e.getKey();
             if (ignoringNodes.contains(nodeId))
                 continue;
 
-            final GridDhtPartitionsSingleMessage message = e.getValue();
+            final GridDhtPartitionsSingleMessage msg = e.getValue();
 
-            CachePartitionPartialCountersMap countersMap = message.partitionUpdateCounters(top.groupId(), partitions);
+            CachePartitionPartialCountersMap countersMap = msg.partitionUpdateCounters(top.groupId());
 
-            Map<Integer, Long> sizesMap = message.partitionSizes(top.groupId());
+            Map<Integer, Long> sizesMap = msg.partitionSizes(top.groupId());
 
             Set<Integer> ignorePartitions = shouldIgnore(top, nodeId, countersMap, sizesMap);
 
@@ -220,9 +203,9 @@ public class GridDhtPartitionsStateValidator {
                 if (ignorePartitions != null && ignorePartitions.contains(p))
                     continue;
 
-                long currentCounter = countersMap.updateCounterAt(i);
+                long curCounter = countersMap.updateCounterAt(i);
 
-                process(invalidPartitions, updateCountersAndNodesByPartitions, p, nodeId, currentCounter);
+                process(invalidPartitions, updateCountersAndNodesByPartitions, p, nodeId, curCounter);
             }
         }
 
@@ -259,19 +242,17 @@ public class GridDhtPartitionsStateValidator {
             sizesAndNodesByPartitions.put(part.id(), new AbstractMap.SimpleEntry<>(cctx.localNodeId(), part.fullSize()));
         }
 
-        int partitions = top.partitions();
-
         // Then process and validate sizes from other nodes.
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : messages.entrySet()) {
             UUID nodeId = e.getKey();
             if (ignoringNodes.contains(nodeId))
                 continue;
 
-            final GridDhtPartitionsSingleMessage message = e.getValue();
+            final GridDhtPartitionsSingleMessage msg = e.getValue();
 
-            CachePartitionPartialCountersMap countersMap = message.partitionUpdateCounters(top.groupId(), partitions);
+            CachePartitionPartialCountersMap countersMap = msg.partitionUpdateCounters(top.groupId());
 
-            Map<Integer, Long> sizesMap = message.partitionSizes(top.groupId());
+            Map<Integer, Long> sizesMap = msg.partitionSizes(top.groupId());
 
             Set<Integer> ignorePartitions = shouldIgnore(top, nodeId, countersMap, sizesMap);
 
@@ -281,9 +262,9 @@ public class GridDhtPartitionsStateValidator {
                 if (ignorePartitions != null && ignorePartitions.contains(p))
                     continue;
 
-                long currentSize = sizesMap.getOrDefault(p, 0L);
+                long curSize = sizesMap.getOrDefault(p, 0L);
 
-                process(invalidPartitions, sizesAndNodesByPartitions, p, nodeId, currentSize);
+                process(invalidPartitions, sizesAndNodesByPartitions, p, nodeId, curSize);
             }
         }
 

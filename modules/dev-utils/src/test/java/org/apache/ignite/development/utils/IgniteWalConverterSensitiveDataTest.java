@@ -18,7 +18,6 @@
 package org.apache.ignite.development.utils;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
@@ -29,6 +28,7 @@ import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -67,8 +68,8 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
     /** Sensitive data prefix. */
     private static final String SENSITIVE_DATA_VALUE_PREFIX = "must_hide_it_";
 
-    /** Path to directory where WAL is stored. */
-    private static String walDirPath;
+    /** Node file tree. */
+    private static NodeFileTree ft;
 
     /** Page size. */
     private static int pageSize;
@@ -95,7 +96,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
         int nodeId = 0;
 
         IgniteEx crd = startGrid(nodeId);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         try (Transaction tx = crd.transactions().txStart()) {
             IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);
@@ -129,11 +130,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
 
         IgniteConfiguration cfg = crd.configuration();
 
-        String wd = cfg.getWorkDirectory();
-        String wp = cfg.getDataStorageConfiguration().getWalPath();
-        String fn = kernalCtx.pdsFolderResolver().resolveFolders().folderName();
-
-        walDirPath = wd + File.separator + wp + File.separator + fn;
+        ft = kernalCtx.pdsFolderResolver().fileTree();
         pageSize = cfg.getDataStorageConfiguration().getPageSize();
 
         stopGrid(nodeId);
@@ -244,7 +241,8 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
 
         List<String> args = new ArrayList<>();
         args.add("pageSize=" + pageSize);
-        args.add("walDir=" + walDirPath);
+        args.add("root=" + ft.root());
+        args.add("folderName=" + ft.folderName());
         if (processSensitiveData != null)
             args.add("processSensitiveData=" + processSensitiveData.name());
 
@@ -257,11 +255,11 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
         else
             assertNotContains(log, testOutStr, SENSITIVE_DATA_VALUE_PREFIX);
 
-        for (String sensitiveDataValue : sensitiveValues) {
+        for (String sensitiveDataVal : sensitiveValues) {
             if (containsData)
-                assertContains(log, testOutStr, converter.apply(sensitiveDataValue));
+                assertContains(log, testOutStr, converter.apply(sensitiveDataVal));
             else
-                assertNotContains(log, testOutStr, converter.apply(sensitiveDataValue));
+                assertNotContains(log, testOutStr, converter.apply(sensitiveDataVal));
         }
     }
 

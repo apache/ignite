@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.communication.tcp.internal;
 
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Map;
@@ -39,23 +38,16 @@ import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.ipc.shmem.IpcOutOfSystemResourcesException;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
-import org.apache.ignite.internal.util.nio.GridShmemCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.communication.tcp.AttributeNames;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.internal.shmem.SHMemHandshakeClosure;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
@@ -63,8 +55,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.nonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DISABLED_CLIENT_PORT;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.OUT_OF_RESOURCES_TCP_MSG;
-import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.handshakeTimeoutException;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.nodeAddresses;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.usePairedConnections;
 
@@ -198,7 +188,8 @@ public class ConnectionClientPool {
     public GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
         assert node != null;
         assert (connIdx >= 0 && connIdx < cfg.connectionsPerNode())
-            || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection())) : connIdx;
+            || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()))
+            || GridNioServerWrapper.isChannelConnIdx(connIdx) : "Wrong communication connection index: " + connIdx;
 
         if (locNodeSupplier.get().isClient()) {
             if (node.isClient()) {
@@ -373,9 +364,9 @@ public class ConnectionClientPool {
 
             ConnectionRequestFuture triggerFut = new ConnectionRequestFuture();
 
-            triggerFut.listen(f -> {
+            triggerFut.listen(() -> {
                 try {
-                    fut0.onDone(f.get());
+                    fut0.onDone(triggerFut.get());
                 }
                 catch (Throwable t) {
                     fut0.onDone(t);
@@ -396,7 +387,7 @@ public class ConnectionClientPool {
                     ? cfg.failureDetectionTimeout()
                     : cfg.connectionTimeout();
 
-                    fut.get(failTimeout);
+                fut.get(failTimeout);
             }
             catch (Throwable triggerException) {
                 if (forcibleNodeKillEnabled
@@ -438,8 +429,6 @@ public class ConnectionClientPool {
         throws IgniteCheckedException {
         assert node != null;
 
-        Integer shmemPort = node.attribute(attrs.shmemPort());
-
         ClusterNode locNode = locNodeSupplier.get();
 
         if (locNode == null)
@@ -447,34 +436,6 @@ public class ConnectionClientPool {
 
         if (log.isDebugEnabled())
             log.debug("Creating NIO client to node: " + node);
-
-        // If remote node has shared memory server enabled and has the same set of MACs
-        // then we are likely to run on the same host and shared memory communication could be tried.
-        if (shmemPort != null && U.sameMacs(locNode, node)) {
-            try {
-                // https://issues.apache.org/jira/browse/IGNITE-11126 Rework failure detection logic.
-                GridCommunicationClient client = createShmemClient(
-                    node,
-                    connIdx,
-                    shmemPort);
-
-                if (log.isDebugEnabled())
-                    log.debug("Shmem client created: " + client);
-
-                return client;
-            }
-            catch (IgniteCheckedException e) {
-                if (e.hasCause(IpcOutOfSystemResourcesException.class))
-                    // Has cause or is itself the IpcOutOfSystemResourcesException.
-                    LT.warn(log, OUT_OF_RESOURCES_TCP_MSG);
-                else if (nodeGetter.apply(node.id()) != null)
-                    LT.warn(log, e.getMessage());
-                else if (log.isDebugEnabled()) {
-                    log.debug("Failed to establish shared memory connection with local node (node has left): " +
-                        node.id());
-                }
-            }
-        }
 
         final long start = System.currentTimeMillis();
 
@@ -518,105 +479,6 @@ public class ConnectionClientPool {
 
     /**
      * @param node Node.
-     * @param port Port.
-     * @param connIdx Connection index.
-     * @return Client.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public GridCommunicationClient createShmemClient(
-        ClusterNode node,
-        int connIdx,
-        Integer port
-    ) throws IgniteCheckedException {
-        int attempt = 1;
-
-        int connectAttempts = 1;
-
-        long connTimeout0 = cfg.connectionTimeout();
-
-        IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(tcpCommSpi, !node.isClient());
-
-        while (true) {
-            GridCommunicationClient client;
-
-            try {
-                client = new GridShmemCommunicationClient(
-                    connIdx,
-                    metricsLsnr.metricRegistry(),
-                    port,
-                    timeoutHelper.nextTimeoutChunk(cfg.connectionTimeout()),
-                    log,
-                    msgFormatterSupplier.get());
-            }
-            catch (IgniteCheckedException e) {
-                if (timeoutHelper.checkFailureTimeoutReached(e))
-                    throw e;
-
-                // Reconnect for the second time, if connection is not established.
-                if (connectAttempts < 2 && X.hasCause(e, ConnectException.class)) {
-                    connectAttempts++;
-
-                    continue;
-                }
-
-                throw e;
-            }
-
-            try {
-                safeShmemHandshake(client, node.id(), timeoutHelper.nextTimeoutChunk(connTimeout0));
-            }
-            catch (IgniteSpiOperationTimeoutException e) {
-                client.forceClose();
-
-                if (cfg.failureDetectionTimeoutEnabled() && timeoutHelper.checkFailureTimeoutReached(e)) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Handshake timed out (failure threshold reached) [failureDetectionTimeout=" +
-                            cfg.failureDetectionTimeout() + ", err=" + e.getMessage() + ", client=" + client + ']');
-                    }
-
-                    throw e;
-                }
-
-                assert !cfg.failureDetectionTimeoutEnabled();
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Handshake timed out (will retry with increased timeout) [timeout=" + connTimeout0 +
-                        ", err=" + e.getMessage() + ", client=" + client + ']');
-                }
-
-                if (attempt == cfg.reconCount() || connTimeout0 > cfg.maxConnectionTimeout()) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Handshake timedout (will stop attempts to perform the handshake) " +
-                            "[timeout=" + connTimeout0 + ", maxConnTimeout=" + cfg.maxConnectionTimeout() +
-                            ", attempt=" + attempt + ", reconCnt=" + cfg.reconCount() +
-                            ", err=" + e.getMessage() + ", client=" + client + ']');
-                    }
-
-                    throw e;
-                }
-                else {
-                    attempt++;
-
-                    connTimeout0 *= 2;
-
-                    continue;
-                }
-            }
-            catch (IgniteCheckedException | RuntimeException | Error e) {
-                if (log.isDebugEnabled())
-                    log.debug("Caught exception (will close client) [err=" + e.getMessage() + ", client=" + client + ']');
-
-                client.forceClose();
-
-                throw e;
-            }
-
-            return client;
-        }
-    }
-
-    /**
-     * @param node Node.
      * @param connIdx Connection index.
      * @param addClient Client to add.
      */
@@ -632,7 +494,8 @@ public class ConnectionClientPool {
         }
 
         if (connIdx >= cfg.connectionsPerNode()) {
-            assert !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()));
+            assert !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()))
+                || GridNioServerWrapper.isChannelConnIdx(connIdx) : "Wrong communication connection index: " + connIdx;
 
             return;
         }
@@ -798,33 +661,6 @@ public class ConnectionClientPool {
     public void completeFutures(IgniteClientDisconnectedCheckedException err) {
         for (GridFutureAdapter<GridCommunicationClient> clientFut : clientFuts.values())
             clientFut.onDone(err);
-    }
-
-    /**
-     * Performs handshake in timeout-safe way.
-     *
-     * @param client Client.
-     * @param rmtNodeId Remote node.
-     * @param timeout Timeout for handshake.
-     * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
-     */
-    @SuppressWarnings("ThrowFromFinallyBlock")
-    private void safeShmemHandshake(
-        GridCommunicationClient client,
-        UUID rmtNodeId,
-        long timeout
-    ) throws IgniteCheckedException {
-        HandshakeTimeoutObject obj = new HandshakeTimeoutObject(client);
-
-        handshakeTimeoutExecutorService.schedule(obj, timeout, TimeUnit.MILLISECONDS);
-
-        try {
-            client.doHandshake(new SHMemHandshakeClosure(log, rmtNodeId, clusterStateProvider, locNodeSupplier));
-        }
-        finally {
-            if (!obj.cancel())
-                throw handshakeTimeoutException();
-        }
     }
 
     /**

@@ -47,7 +47,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         int off = 0;
         int len = 3;
 
-        final TestCacheObject obj = new TestCacheObject((byte) 1);
+        final TestCacheObject obj = new TestCacheObject((byte)1);
 
         // Write part of the cache object and cut on header (3 bytes instead of 5)
         assert CacheObjectAdapter.putValue(obj.cacheObjectType(), dataBuf, off, len, data, 0);
@@ -90,9 +90,6 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
      */
     private static class TestCacheObject implements CacheObject {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final byte type;
 
         /**
@@ -118,7 +115,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public int valueBytesLength(final CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public int valueBytesLength(final CacheObjectValueContext ctx) throws IgniteCheckedException {
             return 0;
         }
 
@@ -149,7 +146,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(final CacheObjectContext ctx) {
+        @Override public CacheObject prepareForCache(final CacheObjectValueContext ctx) {
             return null;
         }
 
@@ -176,11 +173,6 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @Override public short directType() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
             return 0;
         }
 

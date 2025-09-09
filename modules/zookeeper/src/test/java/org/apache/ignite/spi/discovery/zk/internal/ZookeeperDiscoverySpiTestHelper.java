@@ -136,9 +136,9 @@ class ZookeeperDiscoverySpiTestHelper {
      * @return Expected event instance.
      */
     static DiscoveryEvent leftEvent(long topVer, boolean fail) {
-        int eventType = fail ? EventType.EVT_NODE_FAILED : EventType.EVT_NODE_LEFT;
+        int evtType = fail ? EventType.EVT_NODE_FAILED : EventType.EVT_NODE_LEFT;
 
-        DiscoveryEvent expEvt = new DiscoveryEvent(null, null, eventType, null);
+        DiscoveryEvent expEvt = new DiscoveryEvent(null, null, evtType, null);
 
         expEvt.topologySnapshot(topVer, null);
 
@@ -240,9 +240,8 @@ class ZookeeperDiscoverySpiTestHelper {
     static void waitNoAliveZkNodes(final IgniteLogger log,
         String connectStr,
         final List<String> failedZkNodes,
-        long timeout)
-        throws Exception
-    {
+        long timeout
+    ) throws Exception {
         final ZookeeperClient zkClient = new ZookeeperClient(log, connectStr, 10_000, null);
 
         try {

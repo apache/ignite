@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cluster;
 
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -42,7 +42,7 @@ public class ClientClusterGroupGetNodesDetailsResponse extends ClientResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
         super.encode(ctx, writer);
 
         writer.writeInt(nodes.size());
@@ -54,7 +54,7 @@ public class ClientClusterGroupGetNodesDetailsResponse extends ClientResponse {
             writer.writeCollection(node.hostNames());
             writer.writeLong(node.order());
             writer.writeBoolean(node.isLocal());
-            writer.writeBoolean(node.isDaemon());
+            writer.writeBoolean(false);
             writer.writeBoolean(node.isClient());
             writer.writeObjectDetached(node.consistentId());
             PlatformUtils.writeNodeVersion(writer, node.version());

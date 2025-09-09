@@ -81,7 +81,7 @@ public class BigEntryQueryTest extends GridCommonAbstractTest {
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setIndexedTypes(Long.class, Value.class));
 
-            cache.putAll((Map) LongStream.range(610026643276160000L, 610026643276170000L).boxed()
+            cache.putAll((Map)LongStream.range(610026643276160000L, 610026643276170000L).boxed()
                 .collect(Collectors.toMap(Function.identity(),
                     t -> Value.of(new byte[(random.nextInt(16)) * 1000]),
                     (a, b) -> a, TreeMap::new)));
@@ -90,7 +90,7 @@ public class BigEntryQueryTest extends GridCommonAbstractTest {
                 long start = 610026643276160000L;
                 long end = start + random.nextInt(10);
 
-                int expectedResultCount = (int)(end - start + 1);
+                int expectedResultCnt = (int)(end - start + 1);
 
                 String sql = String.format(
                     "SELECT _KEY " +
@@ -109,7 +109,7 @@ public class BigEntryQueryTest extends GridCommonAbstractTest {
                     Collections.sort(resultKeys);
                 }
 
-                assertEquals(expectedResultCount, resultKeys.size());
+                assertEquals(expectedResultCnt, resultKeys.size());
             }
             cache.destroy();
         }

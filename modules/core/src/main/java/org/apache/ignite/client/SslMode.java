@@ -21,6 +21,9 @@ package org.apache.ignite.client;
  * SSL/TLS modes.
  */
 public enum SslMode {
-    /** Disabled. */DISABLED,
-    /** Required. */REQUIRED
+    /** Disabled. */
+    DISABLED,
+
+    /** Required. */
+    REQUIRED
 }

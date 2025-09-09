@@ -26,7 +26,7 @@
 #include "ignite/odbc/config/settable_value.h"
 #include "ignite/odbc/ssl_mode.h"
 #include "ignite/odbc/end_point.h"
-#include "ignite/odbc/nested_tx_mode.h"
+#include "ignite/odbc/engine_mode.h"
 
 namespace ignite
 {
@@ -106,8 +106,8 @@ namespace ignite
                     /** Default value for password attribute. */
                     static const std::string password;
 
-                    /** Default value for nestedTxMode attribute. */
-                    static const NestedTxMode::Type nestedTxMode;
+                    /** Default value for SQL engine attribute. */
+                    static const EngineMode::Type engineMode;
                 };
 
                 /**
@@ -541,25 +541,25 @@ namespace ignite
                 bool IsPasswordSet() const;
 
                 /**
-                 * Get nested transaction mode.
+                 * Get SQL engine mode.
                  *
-                 * @return Nested transaction mode.
+                 * @return SQL engine mode.
                  */
-                NestedTxMode::Type GetNestedTxMode() const;
+                EngineMode::Type GetEngineMode() const;
 
                 /**
-                 * Set nested transaction mode.
+                 * Set SQL engine mode.
                  *
-                 * @param mode Nested transaction mode.
+                 * @param mode SQL engine mode.
                  */
-                void SetNestedTxMode(NestedTxMode::Type mode);
+                void SetEngineMode(EngineMode::Type mode);
 
                 /**
                  * Check if the value set.
                  *
                  * @return @true if the value set.
                  */
-                bool IsNestedTxModeSet() const;
+                bool IsEngineModeSet() const;
 
                 /**
                  * Get argument map.
@@ -639,8 +639,8 @@ namespace ignite
                 /** Password. */
                 SettableValue<std::string> password;
 
-                /** Nested transaction mode. */
-                SettableValue<NestedTxMode::Type> nestedTxMode;
+                /** SQL engine mode. */
+                SettableValue<EngineMode::Type> engineMode;
             };
 
             template<>
@@ -672,8 +672,8 @@ namespace ignite
                 const SettableValue<ssl::SslMode::Type>& value);
 
             template<>
-            void Configuration::AddToMap<NestedTxMode::Type>(ArgumentMap& map, const std::string& key,
-                const SettableValue<NestedTxMode::Type>& value);
+            void Configuration::AddToMap(ArgumentMap& map, const std::string& key,
+                                         const SettableValue<EngineMode::Type>& value);
         }
     }
 }

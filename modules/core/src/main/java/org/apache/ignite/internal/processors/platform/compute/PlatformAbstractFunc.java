@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.compute;
 import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.PlatformSecurityAwareJob;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
@@ -33,7 +34,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * Cleaner alternative to {@link PlatformClosureJob}, uses less wrapping for the underlying object,
  * and a single callback.
  */
-public abstract class PlatformAbstractFunc implements Serializable {
+public abstract class PlatformAbstractFunc implements PlatformSecurityAwareJob, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,17 +49,22 @@ public abstract class PlatformAbstractFunc implements Serializable {
     @IgniteInstanceResource
     protected transient Ignite ignite;
 
+    /** Platform function name. */
+    private final String funcName;
+
     /**
      * Constructor.
      *
      * @param func Platform func.
      * @param ptr Handle for local execution.
+     * @param funcName Platform function name.
      */
-    protected PlatformAbstractFunc(Object func, long ptr) {
+    protected PlatformAbstractFunc(Object func, long ptr, String funcName) {
         this.ptr = ptr;
         assert func != null;
 
         this.func = func;
+        this.funcName = funcName;
     }
 
     /**
@@ -77,7 +83,8 @@ public abstract class PlatformAbstractFunc implements Serializable {
             if (ptr != 0) {
                 out.writeBoolean(true);
                 out.writeLong(ptr);
-            } else {
+            }
+            else {
                 out.writeBoolean(false);
                 ctx.writer(out).writeObject(func);
             }
@@ -90,6 +97,11 @@ public abstract class PlatformAbstractFunc implements Serializable {
 
             return PlatformUtils.readInvocationResult(ctx, ctx.reader(in));
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return funcName;
     }
 
     /**

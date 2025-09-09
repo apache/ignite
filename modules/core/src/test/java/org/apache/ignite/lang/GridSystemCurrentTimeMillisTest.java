@@ -47,6 +47,7 @@ public class GridSystemCurrentTimeMillisTest {
      *
      */
     private static class Timer implements Runnable {
+        /** */
         @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
         @Override public void run() {
             while (true) {
@@ -66,6 +67,7 @@ public class GridSystemCurrentTimeMillisTest {
      *
      */
     private static class Client implements Runnable {
+        /** */
         @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
         @Override public void run() {
             int readsCnt = 0;

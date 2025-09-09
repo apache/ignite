@@ -22,71 +22,46 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
+import org.apache.ignite.internal.processors.query.QueryParserMetricsHolder;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.SqlStrictParseException;
-import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
-import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
-import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
-import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
-import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
-import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
-import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
-import org.apache.ignite.internal.sql.command.SqlDropStatisticsCommand;
-import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
-import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
-import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
-import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
-import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
-import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
-import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlRefreshStatitsicsCommand;
-import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.api.ErrorCode;
 import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.keyColumn;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PARSER_CACHE_HIT;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY_PARSE;
 
@@ -99,9 +74,10 @@ public class QueryParser {
 
     /** A pattern for commands having internal implementation in Ignite. */
     private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
-        "^(create|drop)\\s+index|^analyze\\s|^refresh\\sstatistics|^drop\\sstatistics|^alter\\s+table|^copy" +
-            "|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user" +
-            "|^kill\\s+(query|scan|continuous|compute|service|transaction)|show|help|grant|revoke",
+        "^(create|drop)\\s+index|^analyze\\s|^refresh\\s+statistics|^drop\\s+statistics|^alter\\s+table|^copy" +
+            "|^set|^begin|^start|^commit|^rollback|^(create|alter|drop)\\s+user" +
+            "|^(create|create\\s+or\\s+replace|drop)\\s+view" +
+            "|^kill\\s+(query|scan|continuous|compute|service|transaction|client)|show|help|grant|revoke",
         Pattern.CASE_INSENSITIVE);
 
     /** Indexing. */
@@ -116,6 +92,14 @@ public class QueryParser {
     /** Query parser metrics holder. */
     private final QueryParserMetricsHolder metricsHolder;
 
+    /** Predicate to filter supported native commands. */
+    private final Predicate<SqlCommand> nativeCmdPredicate;
+
+    /**
+     * Forcibly fills missing columns belonging to the primary key with nulls or default values if those have been specified.
+     */
+    private final boolean forceFillAbsentPKsWithDefaults;
+
     /** */
     private volatile GridBoundedConcurrentLinkedHashMap<QueryDescriptor, QueryParserCacheEntry> cache =
         new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
@@ -125,13 +109,18 @@ public class QueryParser {
      *
      * @param idx Indexing instance.
      * @param connMgr Connection manager.
+     * @param nativeCmdPredicate Predicate to filter supported native commands.
      */
-    public QueryParser(IgniteH2Indexing idx, ConnectionManager connMgr) {
+    public QueryParser(IgniteH2Indexing idx, ConnectionManager connMgr, Predicate<SqlCommand> nativeCmdPredicate) {
         this.idx = idx;
         this.connMgr = connMgr;
+        this.nativeCmdPredicate = nativeCmdPredicate;
 
         this.log = idx.kernalContext().log(QueryParser.class);
         this.metricsHolder = new QueryParserMetricsHolder(idx.kernalContext().metric());
+
+        this.forceFillAbsentPKsWithDefaults = IgniteSystemProperties.getBoolean(
+                IgniteSystemProperties.IGNITE_SQL_FILL_ABSENT_PK_WITH_DEFAULTS, false);
     }
 
     /**
@@ -159,15 +148,11 @@ public class QueryParser {
      * @return Parameters.
      */
     public QueryParameters queryParameters(SqlFieldsQuery qry) {
-        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
         boolean autoCommit = true;
         List<Object[]> batchedArgs = null;
 
         if (qry instanceof SqlFieldsQueryEx) {
             SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)qry;
-
-            if (qry0.getNestedTxMode() != null)
-                nestedTxMode = qry0.getNestedTxMode();
 
             autoCommit = qry0.isAutoCommit();
 
@@ -186,7 +171,6 @@ public class QueryParser {
             qry.isLazy(),
             qry.getPageSize(),
             null,
-            nestedTxMode,
             autoCommit,
             batchedArgs,
             qry.getUpdateBatchSize()
@@ -268,27 +252,7 @@ public class QueryParser {
 
             assert nativeCmd != null : "Empty query. Parser met end of data";
 
-            if (!(nativeCmd instanceof SqlCreateIndexCommand
-                || nativeCmd instanceof SqlDropIndexCommand
-                || nativeCmd instanceof SqlBeginTransactionCommand
-                || nativeCmd instanceof SqlCommitTransactionCommand
-                || nativeCmd instanceof SqlRollbackTransactionCommand
-                || nativeCmd instanceof SqlBulkLoadCommand
-                || nativeCmd instanceof SqlAlterTableCommand
-                || nativeCmd instanceof SqlSetStreamingCommand
-                || nativeCmd instanceof SqlCreateUserCommand
-                || nativeCmd instanceof SqlAlterUserCommand
-                || nativeCmd instanceof SqlDropUserCommand
-                || nativeCmd instanceof SqlKillQueryCommand
-                || nativeCmd instanceof SqlKillComputeTaskCommand
-                || nativeCmd instanceof SqlKillServiceCommand
-                || nativeCmd instanceof SqlKillTransactionCommand
-                || nativeCmd instanceof SqlKillScanQueryCommand
-                || nativeCmd instanceof SqlKillContinuousQueryCommand
-                || nativeCmd instanceof SqlAnalyzeCommand
-                || nativeCmd instanceof SqlRefreshStatitsicsCommand
-                || nativeCmd instanceof SqlDropStatisticsCommand)
-            )
+            if (!nativeCmdPredicate.test(nativeCmd))
                 return null;
 
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.lastCommandSql());
@@ -380,6 +344,8 @@ public class QueryParser {
                 if (GridSqlQueryParser.isExplainUpdate(prepared))
                     throw new IgniteSQLException("Explains of update queries are not supported.",
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+                GridSqlQueryParser.failIfSelectForUpdateQuery(prepared);
 
                 // Get remaining query and check if it is allowed.
                 SqlFieldsQuery remainingQry = null;
@@ -485,7 +451,6 @@ public class QueryParser {
                 GridSqlQuery selectStmt = (GridSqlQuery)parser.parse(prepared);
 
                 List<Integer> cacheIds = parser.cacheIds();
-                Integer mvccCacheId = mvccCacheIdForSelect(parser.objectsMap());
 
                 // Calculate if query is in fact can be executed locally.
                 boolean loc = qry.isLocal();
@@ -509,63 +474,6 @@ public class QueryParser {
                 // over segmented PARTITIONED case. In this case multiple map queries will be executed against local
                 // node stripes in parallel and then merged through reduce process.
                 boolean splitNeeded = !loc || locSplit;
-
-                String forUpdateQryOutTx = null;
-                String forUpdateQryTx = null;
-                GridCacheTwoStepQuery forUpdateTwoStepQry = null;
-
-                boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
-
-                // SELECT FOR UPDATE case handling. We need to create extra queries with appended _key
-                // column to be able to lock selected rows further.
-                if (forUpdate) {
-                    // We have checked above that it's not an UNION query, so it's got to be SELECT.
-                    assert selectStmt instanceof GridSqlSelect;
-
-                    // Check FOR UPDATE invariants: only one table, MVCC is there.
-                    if (cacheIds.size() != 1)
-                        throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
-                            "that involve single transactional cache.");
-
-                    if (mvccCacheId == null)
-                        throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
-                            "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-                    // We need a copy because we are going to modify AST a bit. We do not want to modify original select.
-                    GridSqlSelect selForUpdate = ((GridSqlSelect)selectStmt).copySelectForUpdate();
-
-                    // Clear forUpdate flag to run it as a plain query.
-                    selForUpdate.forUpdate(false);
-                    ((GridSqlSelect)selectStmt).forUpdate(false);
-
-                    // Remember sql string without FOR UPDATE clause.
-                    forUpdateQryOutTx = selForUpdate.getSQL();
-
-                    GridSqlAlias keyCol = keyColumn(selForUpdate);
-
-                    selForUpdate.addColumn(keyCol, true);
-
-                    // Remember sql string without FOR UPDATE clause and with _key column.
-                    forUpdateQryTx = selForUpdate.getSQL();
-
-                    // Prepare additional two-step query for FOR UPDATE case.
-                    if (splitNeeded) {
-                        c.schema(newQry.getSchema());
-
-                        forUpdateTwoStepQry = GridSqlQuerySplitter.split(
-                            c,
-                            selForUpdate,
-                            forUpdateQryTx,
-                            newQry.isCollocated(),
-                            newQry.isDistributedJoins(),
-                            newQry.isEnforceJoinOrder(),
-                            locSplit,
-                            idx,
-                            paramsCnt,
-                            log
-                        );
-                    }
-                }
 
                 GridCacheTwoStepQuery twoStepQry = null;
 
@@ -593,12 +501,8 @@ public class QueryParser {
                 QueryParserResultSelect select = new QueryParserResultSelect(
                     selectStmt,
                     twoStepQry,
-                    forUpdateTwoStepQry,
                     meta,
-                    cacheIds,
-                    mvccCacheId,
-                    forUpdateQryOutTx,
-                    forUpdateQryTx
+                    cacheIds
                 );
 
                 return new QueryParserResult(
@@ -611,7 +515,17 @@ public class QueryParser {
                     null
                 );
             }
-            catch (IgniteCheckedException | SQLException e) {
+            catch (SQLException e) {
+                if (e.getErrorCode() == ErrorCode.DATABASE_IS_CLOSED) {
+                    idx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
+
+                    throw new IgniteSQLException("Critical database error. " + e.getMessage(),
+                        IgniteQueryErrorCode.DB_UNRECOVERABLE_ERROR, e);
+                }
+                else
+                    throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
+            }
+            catch (IgniteCheckedException e) {
                 throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
             }
             finally {
@@ -634,48 +548,6 @@ public class QueryParser {
     }
 
     /**
-     * Get ID of the first MVCC cache for SELECT.
-     *
-     * @param objMap Object map.
-     * @return ID of the first MVCC cache or {@code null} if no MVCC caches involved.
-     */
-    private Integer mvccCacheIdForSelect(Map<Object, Object> objMap) {
-        Boolean mvccEnabled = null;
-        Integer mvccCacheId = null;
-        GridCacheContextInfo cctx = null;
-
-        for (Object o : objMap.values()) {
-            if (o instanceof GridSqlAlias)
-                o = GridSqlAlias.unwrap((GridSqlAst)o);
-            if (o instanceof GridSqlTable && ((GridSqlTable)o).dataTable() != null) {
-                GridSqlTable tbl = (GridSqlTable)o;
-
-                if (tbl.dataTable() != null) {
-                    GridCacheContextInfo curCctx = tbl.dataTable().cacheInfo();
-
-                    assert curCctx != null;
-
-                    boolean curMvccEnabled =
-                        curCctx.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-
-                    if (mvccEnabled == null) {
-                        mvccEnabled = curMvccEnabled;
-
-                        if (mvccEnabled)
-                            mvccCacheId = curCctx.cacheId();
-
-                        cctx = curCctx;
-                    }
-                    else if (mvccEnabled != curMvccEnabled)
-                        MvccUtils.throwAtomicityModesMismatchException(cctx.config(), curCctx.config());
-                }
-            }
-        }
-
-        return mvccCacheId;
-    }
-
-    /**
      * Prepare DML statement.
      *
      * @param planKey Plan key.
@@ -683,7 +555,7 @@ public class QueryParser {
      * @return Statement.
      */
     private QueryParserResultDml prepareDmlStatement(QueryDescriptor planKey, Prepared prepared) {
-        if (F.eq(QueryUtils.SCHEMA_SYS, planKey.schemaName()))
+        if (Objects.equals(QueryUtils.SCHEMA_SYS, planKey.schemaName()))
             throw new IgniteSQLException("DML statements are not supported on " + planKey.schemaName() + " schema",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
@@ -697,24 +569,7 @@ public class QueryParser {
         // Check if caches are started because we may need to collect affinity info later on, so they needs to be
         // available on local node.
         for (GridH2Table h2tbl : tbls)
-            H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl);
-
-        // Check MVCC mode.
-        GridCacheContextInfo ctx = null;
-        boolean mvccEnabled = false;
-
-        for (GridH2Table h2tbl : tbls) {
-            GridCacheContextInfo curCtx = h2tbl.cacheInfo();
-            boolean curMvccEnabled = curCtx.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-
-            if (ctx == null) {
-                ctx = curCtx;
-
-                mvccEnabled = curMvccEnabled;
-            }
-            else if (curMvccEnabled != mvccEnabled)
-                MvccUtils.throwAtomicityModesMismatchException(ctx.config(), curCtx.config());
-        }
+            H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl.cacheInfo());
 
         // Get streamer info.
         GridH2Table streamTbl = null;
@@ -732,9 +587,9 @@ public class QueryParser {
             plan = UpdatePlanBuilder.planForStatement(
                 planKey,
                 stmt,
-                mvccEnabled,
                 idx,
-                log
+                log,
+                forceFillAbsentPKsWithDefaults
             );
         }
         catch (Exception e) {
@@ -744,12 +599,7 @@ public class QueryParser {
                 throw new IgniteSQLException("Failed to prepare update plan.", e);
         }
 
-        return new QueryParserResultDml(
-            stmt,
-            mvccEnabled,
-            streamTbl,
-            plan
-        );
+        return new QueryParserResultDml(stmt, streamTbl, plan);
     }
 
     /**
@@ -766,7 +616,7 @@ public class QueryParser {
      * @param isQry {@code true} for select queries, otherwise (DML/DDL queries) {@code false}.
      */
     private static void checkQueryType(SqlFieldsQuery qry, boolean isQry) {
-        Boolean qryFlag = qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx) qry).isQuery() : null;
+        Boolean qryFlag = qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx)qry).isQuery() : null;
 
         if (qryFlag != null && qryFlag != isQry)
             throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",

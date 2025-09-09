@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -24,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -33,18 +33,19 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
+import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -59,7 +60,7 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
  * Rebuild index after index.bin remove, when partition is moving.
@@ -72,7 +73,7 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
     private static final AtomicReference<CountDownLatch> SUPPLY_MESSAGE_LATCH = new AtomicReference<>();
 
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(super.log);
 
     /**
      * User key.
@@ -202,14 +203,18 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
     @Test
     @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0") // Use only historical rebalance
     public void shouldRebuldIndexForMovingPartitionWithHistoricalRebalance() throws Exception {
-        IgniteEx node1 = startGrid(0);
-        startGrid(1);
+        IgniteEx node0 = startGrid(0);
+        IgniteEx node1 = startGrid(1);
 
-        node1.cluster().active(true);
+        node0.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<UserKey, UserValue> cache = node1.getOrCreateCache(CACHE_NAME);
+        IgniteCache<UserKey, UserValue> cache = node0.getOrCreateCache(CACHE_NAME);
 
         cache.put(new UserKey(1), new UserValue(333));
+
+        File idx = node1.context().pdsFolderResolver().fileTree().partitionFile(node1.cachex(CACHE_NAME).configuration(), INDEX_PARTITION);
+
+        assertTrue(idx.exists());
 
         stopGrid(1);
 
@@ -217,7 +222,7 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
 
         SUPPLY_MESSAGE_LATCH.set(new CountDownLatch(1));
 
-        removeIndexBin(1);
+        U.delete(idx);
 
         LogListener rebuildLsnr = finishIndexRebuildLsnr(CACHE_NAME);
 
@@ -231,7 +236,7 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
 
         ValidateIndexesClosure clo = new ValidateIndexesClosure(() -> false, Collections.singleton(CACHE_NAME), 0, 0, false, true);
         node2.context().resource().injectGeneric(clo);
-        VisorValidateIndexesJobResult res = clo.call();
+        ValidateIndexesJobResult res = clo.call();
 
         assertFalse(res.hasIssues());
     }
@@ -244,17 +249,6 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
         log.registerListener(lsnr);
 
         return lsnr;
-    }
-
-    /** */
-    private void removeIndexBin(int nodeId) throws IgniteCheckedException {
-        U.delete(
-            U.resolveWorkDirectory(
-                U.defaultWorkDirectory(),
-                "db/" + U.maskForFileName(getTestIgniteInstanceName(nodeId)) + "/cache-" + CACHE_NAME + "/" + INDEX_FILE_NAME,
-                false
-            )
-        );
     }
 
     /** */

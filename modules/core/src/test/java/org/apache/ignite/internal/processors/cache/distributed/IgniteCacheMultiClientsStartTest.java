@@ -62,7 +62,6 @@ public class IgniteCacheMultiClientsStartTest extends GridCommonAbstractTest {
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSocketWriteTimeout(200);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setLocalPortRange(200);
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(0);
 
@@ -75,7 +74,7 @@ public class IgniteCacheMultiClientsStartTest extends GridCommonAbstractTest {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(PARTITIONED);
-            ccfg.setAtomicityMode(CacheAtomicityMode.values()[i % 3]);
+            ccfg.setAtomicityMode(CacheAtomicityMode.values()[i % CacheAtomicityMode.values().length]);
             ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
             ccfg.setBackups(1);
 

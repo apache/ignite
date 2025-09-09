@@ -34,7 +34,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface IgniteSpiConfiguration {
     /**
-     * Whether this configuration setting is optional or not.
+     * @return Whether this configuration setting is optional or not.
      */
     public boolean optional();
 }

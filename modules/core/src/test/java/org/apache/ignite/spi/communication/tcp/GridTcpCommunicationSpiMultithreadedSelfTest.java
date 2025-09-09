@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.communication.CommunicationListener;
@@ -79,9 +78,6 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     /** Message id sequence. */
     private AtomicLong msgId = new AtomicLong();
 
-    /** */
-    private final boolean useShmem;
-
     /** SPI resources. */
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
@@ -101,19 +97,10 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     private static boolean reject;
 
     /**
-     * @param useShmem Use shared mem.
-     */
-    GridTcpCommunicationSpiMultithreadedSelfTest(boolean useShmem) {
-        super(false);
-
-        this.useShmem = useShmem;
-    }
-
-    /**
      *
      */
     public GridTcpCommunicationSpiMultithreadedSelfTest() {
-        this(false);
+        super(false);
     }
 
     /**
@@ -341,7 +328,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
                 while (run.get() && !Thread.currentThread().isInterrupted()) {
                     U.sleep(interval * 3 / 2);
 
-                    ((TcpCommunicationSpi)spis.get(from.id())).onNodeLeft(to.consistentId(), to.id());
+                    CommunicationWorkerThreadUtils.onNodeLeft((TcpCommunicationSpi)spis.get(from.id()), to.consistentId(), to.id());
                 }
             }
             catch (IgniteInterruptedCheckedException ignored) {
@@ -437,9 +424,6 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     private CommunicationSpi<Message> newCommunicationSpi() {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
-        if (!useShmem)
-            spi.setSharedMemoryPort(-1);
-
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         spi.setIdleConnectionTimeout(IDLE_CONN_TIMEOUT);
 
@@ -484,7 +468,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
             MessageFactoryProvider testMsgFactory = factory -> factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(
-                    new MessageFactory[] {new GridIoMessageFactory(), testMsgFactory})
+                    new MessageFactoryProvider[] {new GridIoMessageFactory(), testMsgFactory})
             );
 
             ctx.timeoutProcessor(timeoutProcessor);

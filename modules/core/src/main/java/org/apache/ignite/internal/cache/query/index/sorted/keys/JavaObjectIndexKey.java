@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import java.util.Arrays;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Represents an index key that stores as Java Object.
  *
- * {@link IndexKeyTypes#JAVA_OBJECT}.
+ * {@link IndexKeyType#JAVA_OBJECT}.
  */
 public abstract class JavaObjectIndexKey implements IndexKey {
     /** {@inheritDoc} */
@@ -32,8 +33,8 @@ public abstract class JavaObjectIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.JAVA_OBJECT;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.JAVA_OBJECT;
     }
 
     /** {@inheritDoc} */
@@ -46,7 +47,7 @@ public abstract class JavaObjectIndexKey implements IndexKey {
 
         // Keep old logic there and below.
         if (isComparable && otherIsComparable && haveCommonComparableSuperclass(o1.getClass(), o2.getClass()))
-            return ((Comparable) o1).compareTo(o2);
+            return ((Comparable)o1).compareTo(o2);
 
         else if (o1.getClass() != o2.getClass()) {
             if (isComparable != otherIsComparable)
@@ -54,12 +55,16 @@ public abstract class JavaObjectIndexKey implements IndexKey {
             else
                 return o1.getClass().getName().compareTo(o2.getClass().getName());
 
-        } else {
+        }
+        else {
             int h1 = o1.hashCode();
             int h2 = o2.hashCode();
 
-            if (h1 == h2)
-                return o1.equals(o2) ? 0 : BytesCompareUtils.compareNotNullSigned(bytesNoCopy(), ((JavaObjectIndexKey) o).bytesNoCopy());
+            if (h1 == h2) {
+                return o1.equals(o2)
+                    ? 0
+                    : Integer.signum(F.compareArrays(bytesNoCopy(), ((JavaObjectIndexKey)o).bytesNoCopy()));
+            }
             else
                 return h1 > h2 ? 1 : -1;
         }
@@ -81,7 +86,8 @@ public abstract class JavaObjectIndexKey implements IndexKey {
             } while (Comparable.class.isAssignableFrom(cls1));
 
             return supCls0 == supCls1;
-        } else
+        }
+        else
             return true;
     }
 
@@ -105,5 +111,10 @@ public abstract class JavaObjectIndexKey implements IndexKey {
             int len = bytes.length;
             return len == 0 ? EMPTY_BYTES : Arrays.copyOf(bytes, len);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return key().toString();
     }
 }

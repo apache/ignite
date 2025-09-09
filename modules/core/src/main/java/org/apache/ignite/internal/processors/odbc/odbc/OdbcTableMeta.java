@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import java.util.Objects;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 
 /**
  * ODBC table-related metadata.
@@ -63,7 +63,7 @@ public class OdbcTableMeta {
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (o instanceof OdbcTableMeta) {
-            OdbcTableMeta other = (OdbcTableMeta) o;
+            OdbcTableMeta other = (OdbcTableMeta)o;
 
             return this == other ||
                     Objects.equals(catalog, other.catalog) && Objects.equals(schema, other.schema) &&
@@ -78,7 +78,7 @@ public class OdbcTableMeta {
      *
      * @param writer Binary writer.
      */
-    public void writeBinary(BinaryRawWriterEx writer) {
+    public void writeBinary(BinaryWriterEx writer) {
         writer.writeString(catalog);
         writer.writeString(schema);
         writer.writeString(table);

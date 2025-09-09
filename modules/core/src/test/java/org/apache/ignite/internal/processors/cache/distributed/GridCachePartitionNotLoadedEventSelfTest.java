@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.TestTcpCommunicationSpi;
 import org.junit.Test;
@@ -54,11 +54,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstractTest {
     /** */
     private int backupCnt;
-
-    /** {@inheritDoc} */
-    @Override public void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -105,10 +100,10 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     public void testPrimaryAndBackupDead() throws Exception {
         backupCnt = 1;
 
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(4);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(4);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -176,7 +171,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         startGrid(1);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 
@@ -211,7 +206,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         IgniteEx crd = startGrid(1);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         startGrid(0);
 
@@ -251,7 +246,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         startGrid(1);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 

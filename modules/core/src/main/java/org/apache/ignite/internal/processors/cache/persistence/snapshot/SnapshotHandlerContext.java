@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -28,21 +29,44 @@ public class SnapshotHandlerContext {
     /** Snapshot metadata. */
     private final SnapshotMetadata metadata;
 
+    /** The full path to the snapshot files. */
+    private final SnapshotFileTree sft;
+
     /** The names of the cache groups on which the operation is performed. */
     private final Collection<String> grps;
 
     /** Local node. */
     private final ClusterNode locNode;
 
+    /** Warning flag of concurrent inconsistent-by-nature streamer updates. */
+    private final boolean streamerWrn;
+
+    /** If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.*/
+    private final boolean check;
+
     /**
      * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
+     * {@code False} otherwise. Always {@code false} for snapshot restoration.
      * @param locNode Local node.
+     * @param sft Snapshot file tree.
+     * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
+     * @param check If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.
      */
-    public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode) {
+    public SnapshotHandlerContext(
+        SnapshotMetadata metadata,
+        @Nullable Collection<String> grps,
+        ClusterNode locNode,
+        SnapshotFileTree sft,
+        boolean streamerWrn,
+        boolean check
+    ) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
+        this.sft = sft;
+        this.streamerWrn = streamerWrn;
+        this.check = check;
     }
 
     /**
@@ -50,6 +74,13 @@ public class SnapshotHandlerContext {
      */
     public SnapshotMetadata metadata() {
         return metadata;
+    }
+
+    /**
+     * @return Snapshot file tree.
+     */
+    public SnapshotFileTree snapshotFileTree() {
+        return sft;
     }
 
     /**
@@ -65,5 +96,17 @@ public class SnapshotHandlerContext {
      */
     public ClusterNode localNode() {
         return locNode;
+    }
+
+    /**
+     * @return {@code True} if concurrent streaming updates occurred during snapshot operation. {@code False} otherwise.
+     */
+    public boolean streamerWarning() {
+        return streamerWrn;
+    }
+
+    /** @return If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched. */
+    public boolean check() {
+        return check;
     }
 }

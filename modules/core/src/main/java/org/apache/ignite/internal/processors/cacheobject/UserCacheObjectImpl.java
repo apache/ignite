@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cacheobject;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -54,21 +53,20 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         try {
             IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
 
             if (valBytes == null)
-                valBytes = proc.marshal(ctx, val);
+                valBytes = valueBytesFromValue(ctx);
 
             if (ctx.storeValue()) {
                 boolean p2pEnabled = ctx.kernalContext().config().isPeerClassLoadingEnabled();
 
                 ClassLoader ldr = p2pEnabled ?
-                    IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
+                    IgniteUtils.detectClass(val).getClassLoader() : val.getClass().getClassLoader();
 
-                Object val = this.val != null && proc.immutable(this.val) ? this.val :
-                    proc.unmarshal(ctx, valBytes, ldr);
+                Object val = this.val != null && proc.immutable(this.val) ? this.val : valueFromValueBytes(ctx, ldr);
 
                 return new CacheObjectImpl(val, valBytes);
             }

@@ -113,10 +113,10 @@ public class DeploymentClassLoaderCallableTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void runJob1(Ignite ignite, long timeout) throws Exception {
-        ClassLoader testClassLoader1 = new GridTestExternalClassLoader(new URL[] {
+        ClassLoader testClsLoader1 = new GridTestExternalClassLoader(new URL[] {
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))}, RUN_CLS, RUN_CLS2);
 
-        Constructor ctor = testClassLoader1.loadClass(RUN_CLS1).getConstructor();
+        Constructor ctor = testClsLoader1.loadClass(RUN_CLS1).getConstructor();
         ignite.compute().withTimeout(timeout).broadcast((IgniteCallable<?>)ctor.newInstance());
     }
 
@@ -126,10 +126,10 @@ public class DeploymentClassLoaderCallableTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void runJob0(Ignite ignite, long timeout) throws Exception {
-        ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[] {
+        ClassLoader testClsLdr = new GridTestExternalClassLoader(new URL[] {
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))}, RUN_CLS1, RUN_CLS2);
 
-        Constructor ctor = testClassLoader.loadClass(RUN_CLS).getConstructor();
+        Constructor ctor = testClsLdr.loadClass(RUN_CLS).getConstructor();
         ignite.compute().withTimeout(timeout).broadcast((IgniteCallable<?>)ctor.newInstance());
     }
 
@@ -139,10 +139,10 @@ public class DeploymentClassLoaderCallableTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void runJob2(Ignite ignite, long timeout) throws Exception {
-        ClassLoader testClassLoader = new GridTestExternalClassLoader(new URL[] {
+        ClassLoader testClsLdr = new GridTestExternalClassLoader(new URL[] {
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))}, RUN_CLS, RUN_CLS1);
 
-        Constructor ctor = testClassLoader.loadClass(RUN_CLS2).getConstructor();
+        Constructor ctor = testClsLdr.loadClass(RUN_CLS2).getConstructor();
         ignite.compute().withTimeout(timeout).broadcast((IgniteCallable<?>)ctor.newInstance());
     }
 }

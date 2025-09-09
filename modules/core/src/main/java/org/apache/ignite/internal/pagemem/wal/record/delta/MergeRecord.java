@@ -72,18 +72,22 @@ public class MergeRecord<L> extends PageDeltaRecord {
         return RecordType.BTREE_PAGE_MERGE;
     }
 
+    /** */
     public long parentId() {
         return prntId;
     }
 
+    /** */
     public int parentIndex() {
         return prntIdx;
     }
 
+    /** */
     public long rightId() {
         return rightId;
     }
 
+    /** */
     public boolean isEmptyBranch() {
         return emptyBranch;
     }

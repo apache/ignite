@@ -38,13 +38,11 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -53,7 +51,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 /**
  * Binary builder test.
  */
-public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstractTest {
+public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArraysTest {
     /** */
     private static IgniteConfiguration cfg;
 
@@ -88,8 +86,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         bCfg.setNameMapper(new BinaryBasicNameMapper(false));
 
         cfg.setBinaryConfiguration(bCfg);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         this.cfg = cfg;
 
@@ -165,7 +161,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         assertEquals(expectedHashCode("Class"), po.type().typeId());
         assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        assertEquals((byte) 1, po.<Byte>field("byteField").byteValue());
+        assertEquals((byte)1, po.<Byte>field("byteField").byteValue());
     }
 
     /**
@@ -632,7 +628,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         assertEquals(expectedHashCode("Class"), po.type().typeId());
         assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), po.hashCode());
 
-        Object[] arr = po.field("objectArrayField");
+        Object[] arr = useBinaryArrays ? po.<BinaryArray>field("objectArrayField").array() : po.field("objectArrayField");
 
         assertEquals(2, arr.length);
 
@@ -844,7 +840,9 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
      */
     @Test
     public void testMetaData() throws Exception {
-        BinaryObjectBuilder builder = builder("org.test.MetaTest");
+        String cls = "org.test.MetaTest" + (useBinaryArrays ? "0" : "");
+
+        BinaryObjectBuilder builder = builder(cls);
 
         builder.setField("intField", 1);
         builder.setField("byteArrayField", new byte[] {1, 2, 3});
@@ -853,7 +851,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         BinaryType meta = po.type();
 
-        assertEquals(expectedTypeName("org.test.MetaTest"), meta.typeName());
+        assertEquals(expectedTypeName(cls), meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
@@ -865,7 +863,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         assertEquals("int", meta.fieldTypeName("intField"));
         assertEquals("byte[]", meta.fieldTypeName("byteArrayField"));
 
-        builder = builder("org.test.MetaTest");
+        builder = builder(cls);
 
         builder.setField("intField", 2);
         builder.setField("uuidField", UUID.randomUUID());
@@ -874,7 +872,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         meta = po.type();
 
-        assertEquals(expectedTypeName("org.test.MetaTest"), meta.typeName());
+        assertEquals(expectedTypeName(cls), meta.typeName());
 
         fields = meta.fieldNames();
 
@@ -896,7 +894,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     public void testGetFromCopiedObj() {
         BinaryObject objStr = builder(GridBinaryTestClasses.TestObjectAllTypes.class.getName()).setField("str", "aaa").build();
 
-        BinaryObjectBuilderImpl builder = builder(objStr);
+        BinaryObjectBuilder builder = builder(objStr);
         assertEquals("aaa", builder.getField("str"));
 
         builder.setField("str", "bbb");
@@ -918,7 +916,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         GridBinaryTestClasses.TestObjectContainer c = new GridBinaryTestClasses.TestObjectContainer(list);
 
-        BinaryObjectBuilderImpl builder = builder(toBinary(c));
+        BinaryObjectBuilder builder = builder(toBinary(c));
         builder.<List>getField("foo").add("!!!");
 
         BinaryObject res = builder.build();
@@ -960,7 +958,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         GridBinaryTestClasses.TestObjectPlainBinary obj =
             new GridBinaryTestClasses.TestObjectPlainBinary(toBinary(new GridBinaryTestClasses.TestObjectAllTypes()));
 
-        BinaryObjectBuilderImpl builder = builder(toBinary(obj));
+        BinaryObjectBuilder builder = builder(toBinary(obj));
         assertTrue(builder.getField("plainBinary") instanceof BinaryObject);
 
         GridBinaryTestClasses.TestObjectPlainBinary deserialized = builder.build().deserialize();
@@ -1010,7 +1008,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         obj.setDefaultData();
         obj.enumArr = null;
 
-        BinaryObjectBuilderImpl builder = builder(toBinary(obj));
+        BinaryObjectBuilder builder = builder(toBinary(obj));
 
         builder.getField("i_");
 
@@ -1064,8 +1062,8 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     /**
      * @return Builder.
      */
-    private BinaryObjectBuilderImpl builder(BinaryObject obj) {
-        return (BinaryObjectBuilderImpl)binaries().builder(obj);
+    private BinaryObjectBuilder builder(BinaryObject obj) {
+        return binaries().builder(obj);
     }
 
     /**

@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTreeRuntimeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -50,11 +49,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
-import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.LINK_WITH_HEADER;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
@@ -306,7 +301,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 try {
                     long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
 
-                    assert pageAddr != 0L : nextLink;
+                    assert pageAddr != 0L : "Cannot lock page [link=" + U.hexLong(nextLink) +
+                        ", tag=" + PageIdUtils.tag(pageId) + ", pageLockState=[" + pageMem.pageLockStateInfo(page) + "]]";
 
                     try {
                         DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
@@ -381,8 +377,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         long nextLink = data.nextLink();
 
-        int hdrLen = 0;
-
         if (incomplete == null) {
             if (nextLink == 0) {
                 // Fast path for a single page row.
@@ -390,18 +384,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                 return null;
             }
-
-            // Assume that row header is always located entirely on the very first page.
-            hdrLen = readHeader(sharedCtx, pageAddr, data.offset(), rowData);
-
-            if (rowData == LINK_WITH_HEADER)
-                return null;
         }
 
         ByteBuffer buf = wrapPointer(pageAddr, pageSize);
 
-        int off = data.offset() + hdrLen;
-        int payloadSize = data.payloadSize() - hdrLen;
+        int off = data.offset();
+        int payloadSize = data.payloadSize();
 
         buf.position(off);
         buf.limit(off + payloadSize);
@@ -414,20 +402,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
             incomplete.setNextLink(nextLink);
 
         return incomplete;
-    }
-
-    /**
-     * Reads row header (i.e. MVCC info) which should be located on the very first page od data.
-     *
-     * @param sharedCtx Shared context.
-     * @param addr Address.
-     * @param off Offset
-     * @param rowData Required row data.
-     * @return Number of bytes read.
-     */
-    protected int readHeader(GridCacheSharedContext<?, ?> sharedCtx, long addr, int off, RowData rowData) {
-        // No-op.
-        return 0;
     }
 
     /**
@@ -536,11 +510,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     ) throws IgniteCheckedException {
         int off = 0;
 
-        off += readHeader(sharedCtx, addr, off, rowData);
-
-        if (rowData == LINK_WITH_HEADER)
-            return;
-
         if (readCacheId) {
             cacheId = PageUtils.getInt(addr, off);
 
@@ -553,7 +522,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int len = PageUtils.getInt(addr, off);
         off += 4;
 
-        if (rowData != RowData.NO_KEY && rowData != RowData.NO_KEY_WITH_HINTS) {
+        if (rowData != RowData.NO_KEY) {
             byte type = PageUtils.getByte(addr, off);
             off++;
 
@@ -923,51 +892,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
         return len + (cacheId() != 0 ? 4 : 0);
     }
 
-    /** {@inheritDoc} */
-    @Override public int headerSize() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long mvccCoordinatorVersion() {
-        return MVCC_CRD_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long mvccCounter() {
-        return MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int mvccOperationCounter() {
-        return MVCC_OP_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte mvccTxState() {
-        return TxState.NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newMvccCoordinatorVersion() {
-        return MVCC_CRD_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newMvccCounter() {
-        return MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int newMvccOperationCounter() {
-        return MVCC_OP_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte newMvccTxState() {
-        return TxState.NA;
-    }
-
     /**
      *
      */
@@ -979,19 +903,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         KEY_ONLY,
 
         /** */
-        NO_KEY,
-
-        /** */
-        LINK_ONLY,
-
-        /** */
-        LINK_WITH_HEADER,
-
-        /** Force instant hints actualization for rebalance (to avoid races with vacuum). */
-        FULL_WITH_HINTS,
-
-        /** Force instant hints actualization for update operation with history (to avoid races with vacuum). */
-        NO_KEY_WITH_HINTS
+        NO_KEY
     }
 
     /** {@inheritDoc} */

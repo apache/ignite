@@ -31,12 +31,12 @@ import java.lang.annotation.Target;
 @Target({ElementType.PARAMETER})
 public @interface MXBeanParameter {
     /**
-     * Parameter name.
+     * @return Parameter name.
      */
     String name();
 
     /**
-     * Parameter description.
+     * @return Parameter description.
      */
     String description();
 }

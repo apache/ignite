@@ -49,7 +49,7 @@ public abstract class AbstractFailureHandler implements FailureHandler {
     }
 
     /**
-     * Returns unmodifiable set of ignored failure types.
+     * @return Unmodifiable set of ignored failure types.
      */
     public Set<FailureType> getIgnoredFailureTypes() {
         return ignoredFailureTypes;

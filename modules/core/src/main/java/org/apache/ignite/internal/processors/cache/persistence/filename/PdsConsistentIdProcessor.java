@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -36,7 +37,10 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     private final GridKernalContext ctx;
 
     /** Cached folder settings. */
-    private PdsFolderSettings<NodeFileLockHolder> settings;
+    private volatile PdsFolderSettings<NodeFileLockHolder> settings;
+
+    /** Cached Ignite directories. */
+    private volatile NodeFileTree ft;
 
     /**
      * Creates folders resolver
@@ -52,25 +56,63 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
 
     /** {@inheritDoc} */
     @Override public PdsFolderSettings<NodeFileLockHolder> resolveFolders() throws IgniteCheckedException {
-        if (settings == null) {
-            //here deprecated method is used to get compatible version of consistentId
-            PdsFolderResolver<NodeFileLockHolder> resolver =
-                new PdsFolderResolver<>(ctx.config(), log, ctx.discovery().consistentId(), this::tryLock);
+        if (settings == null)
+            init();
 
-            settings = resolver.resolve();
+        return settings;
+    }
 
-            if (settings == null)
-                settings = resolver.generateNew();
-
-            if (!settings.isCompatible()) {
-                if (log.isInfoEnabled())
-                    log.info("Consistent ID used for local node is [" + settings.consistentId() + "] " +
-                        "according to persistence data storage folders");
-
-                ctx.discovery().consistentId(settings.consistentId());
+    /** {@inheritDoc} */
+    @Override public NodeFileTree fileTree() {
+        if (ft == null) {
+            try {
+                init();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
         }
-        return settings;
+
+        return ft;
+    }
+
+    /** Initialize PDS settings. */
+    private synchronized void init() throws IgniteCheckedException {
+        if (settings != null)
+            return;
+
+        initSettings();
+        initFileTree();
+    }
+
+    /** Initialize PDS settings. */
+    private void initSettings() throws IgniteCheckedException {
+        assert settings == null;
+        assert ft == null;
+
+        //here deprecated method is used to get compatible version of consistentId
+        PdsFolderResolver<NodeFileLockHolder> resolver =
+            new PdsFolderResolver<>(ctx.config(), log, ctx.discovery().consistentId(), this::tryLock);
+
+        settings = resolver.resolve();
+
+        if (settings == null)
+            settings = resolver.generateNew();
+
+        if (!settings.isCompatible()) {
+            if (log.isInfoEnabled())
+                log.info("Consistent ID used for local node is [" + settings.consistentId() + "] " +
+                    "according to persistence data storage folders");
+
+            ctx.discovery().consistentId(settings.consistentId());
+        }
+    }
+
+    /** Initialize file tree. */
+    private void initFileTree() throws IgniteCheckedException {
+        assert ft == null;
+
+        ft = new NodeFileTree(ctx.config(), resolveFolders().folderName());
     }
 
     /**

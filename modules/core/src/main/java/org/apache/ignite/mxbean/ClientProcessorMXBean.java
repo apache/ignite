@@ -21,7 +21,11 @@ import java.util.List;
 
 /**
  * MXBean interface that provides access to ODBC\JDBC\Thin client connections.
+ *
+ * @see org.apache.ignite.internal.management.api.CommandMBean
+ * @deprecated Use managements API beans, instead.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides information about client connections.")
 public interface ClientProcessorMXBean {
     /**
@@ -47,5 +51,15 @@ public interface ClientProcessorMXBean {
     @MXBeanDescription("Drop client connection by ID.")
     public boolean dropConnection(
         @MXBeanParameter(name = "id", description = "Client connection ID.") long id
+    );
+
+    /**
+     * If sets to {@code true} shows full stack trace otherwise highlevel short error message.
+     *
+     * @param show Show flag.
+     */
+    @MXBeanDescription("Show error full stack.")
+    void showFullStackOnClientSide(
+        @MXBeanParameter(name = "show", description = "Show error full stack.") boolean show
     );
 }

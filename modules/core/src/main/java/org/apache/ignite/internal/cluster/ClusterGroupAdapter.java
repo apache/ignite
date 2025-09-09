@@ -52,6 +52,9 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.lang.GridNodePredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.IsAllPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -64,6 +67,8 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Collections.unmodifiableCollection;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeForNodeIds;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  *
@@ -133,7 +138,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
         this.ids = ids;
 
-        p = F.nodeForNodeIds(ids);
+        p = nodeForNodeIds(ids);
     }
 
     /**
@@ -151,7 +156,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         this.ids = ids;
 
         if (p == null && ids != null)
-            this.p = F.nodeForNodeIds(ids);
+            this.p = nodeForNodeIds(ids);
     }
 
     /**
@@ -311,10 +316,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         else {
             Collection<ClusterNode> all;
 
-            if (p instanceof DaemonFilter)
-                all = F.concat(false, ctx.discovery().daemonNodes(), ctx.discovery().allNodes());
-            else
-                all = ctx.discovery().allNodes();
+            all = ctx.discovery().allNodes();
 
             return p != null ? F.view(all, p) : all;
         }
@@ -370,7 +372,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             if (p != null)
                 ctx.resource().injectGeneric(p);
 
-            return new ClusterGroupAdapter(ctx, this.p != null ? F.and(p, this.p) : p);
+            return new ClusterGroupAdapter(ctx, this.p != null ? and(p, this.p) : p);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -378,6 +380,51 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /**
+     * Get a predicate that evaluates to {@code true} if each of its component predicates
+     * evaluates to {@code true}. The components are evaluated in order they are supplied.
+     * Evaluation will be stopped as soon as first predicate evaluates to {@code false}.
+     * Passed in predicates are NOT copied. If no predicates are passed in the returned
+     * predicate will always evaluate to {@code false}.
+     *
+     * @param ps Passed in predicate. If none provided - always-{@code false} predicate is
+     *      returned.
+     * @param <T> Type of the free variable, i.e. the element the predicate is called on.
+     * @return Predicate that evaluates to {@code true} if each of its component predicates
+     *      evaluates to {@code true}.
+     */
+    @SuppressWarnings({"unchecked"})
+    private static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
+        if (F.isEmpty(ps))
+            return F.alwaysTrue();
+
+        if (F.isAlwaysFalse(ps))
+            return F.alwaysFalse();
+
+        if (F.isAlwaysTrue(ps))
+            return F.alwaysTrue();
+
+        if (F0.isAllNodePredicates(ps)) {
+            Set<UUID> ids = new HashSet<>();
+
+            for (IgnitePredicate<? super T> p : ps) {
+                if (p != null) {
+                    Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
+
+                    if (ids.isEmpty())
+                        ids.addAll(list);
+                    else
+                        ids.retainAll(list);
+                }
+            }
+
+            // T must be <T extends ClusterNode>.
+            return (IgnitePredicate<T>)new GridNodePredicate(ids);
+        }
+        else
+            return new IsAllPredicate<>(ps);
     }
 
     /** {@inheritDoc} */
@@ -461,7 +508,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 nodeIds = U.newHashSet(ids.length + 1);
 
                 for (UUID id0 : ids) {
-                    if (contains(id))
+                    if (contains(id0))
                         nodeIds.add(id0);
                 }
 
@@ -501,7 +548,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     @Override public final ClusterGroup forOthers(ClusterNode node, ClusterNode... nodes) {
         A.notNull(node, "node");
 
-        return forOthers(F.concat(false, node.id(), F.nodeIds(Arrays.asList(nodes))));
+        return forOthers(F.concat(false, node.id(), nodeIds(Arrays.asList(nodes))));
     }
 
     /** {@inheritDoc} */
@@ -564,19 +611,9 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             return forPredicate(new OthersFilter(excludeIds));
     }
 
-    /**
-     * @throws IllegalStateException In case of daemon node.
-     */
-    private void checkDaemon() throws IllegalStateException {
-        if (ctx.isDaemon())
-            throw new IllegalStateException("Not applicable for the daemon node.");
-    }
-
     /** {@inheritDoc} */
     @Override public final ClusterGroup forCacheNodes(String cacheName) {
         CU.validateCacheName(cacheName);
-
-        checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, true, true, true));
     }
@@ -585,16 +622,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     @Override public final ClusterGroup forDataNodes(String cacheName) {
         CU.validateCacheName(cacheName);
 
-        checkDaemon();
-
         return forPredicate(new CachesFilter(cacheName, true, false, false));
     }
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forClientNodes(String cacheName) {
         CU.validateCacheName(cacheName);
-
-        checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, false, true, true));
     }
@@ -603,8 +636,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     @Override public ClusterGroup forCacheNodes(String cacheName, boolean affNodes, boolean nearNodes,
         boolean clientNodes) {
         CU.validateCacheName(cacheName);
-
-        checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, affNodes, nearNodes, clientNodes));
     }
@@ -625,11 +656,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         A.notNull(host, "host");
 
         return forPredicate(new HostsFilter(host, hosts));
-    }
-
-    /** {@inheritDoc} */
-    @Override public final ClusterGroup forDaemons() {
-        return forPredicate(new DaemonFilter());
     }
 
     /** {@inheritDoc} */
@@ -905,18 +931,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /**
      */
-    private static class DaemonFilter implements IgnitePredicate<ClusterNode> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode n) {
-            return n.isDaemon();
-        }
-    }
-
-    /**
-     */
     private static class OthersFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -979,7 +993,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 return emptySet();
             }
             else {
-                ageP = F.nodeForNodes(node);
+                ageP = new GridNodePredicate(node);
 
                 return singleton(node);
             }

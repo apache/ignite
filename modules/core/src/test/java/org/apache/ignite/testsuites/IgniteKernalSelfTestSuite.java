@@ -50,11 +50,13 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAttribu
 import org.apache.ignite.internal.managers.discovery.IgniteTopologyPrintFormatSelfTest;
 import org.apache.ignite.internal.managers.events.GridEventStorageManagerInternalEventsSelfTest;
 import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTest;
+import org.apache.ignite.internal.managers.events.LifecycleAwareListenerTest;
 import org.apache.ignite.internal.processors.cache.ClusterActiveStateChangeWithNodeOutOfBaselineTest;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustInMemoryTest;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustTest;
 import org.apache.ignite.internal.processors.cluster.ClusterReadOnlyModeNodeJoinTest;
 import org.apache.ignite.internal.processors.cluster.ClusterReadOnlyModeSelfTest;
+import org.apache.ignite.internal.processors.cluster.ClusterStateChangeOnNodeJoinTest;
 import org.apache.ignite.internal.processors.cluster.GridAddressResolverSelfTest;
 import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
@@ -87,8 +89,7 @@ import org.junit.runners.Suite;
     GridCacheMessageSelfTest.class,
     GridDeploymentManagerStopSelfTest.class,
     GridManagerStopSelfTest.class,
-    GridDiscoveryManagerAttributesSelfTest.RegularDiscovery.class,
-    GridDiscoveryManagerAttributesSelfTest.ClientDiscovery.class,
+    GridDiscoveryManagerAttributesSelfTest.class,
     GridDiscoveryManagerAliveCacheSelfTest.class,
     GridDiscoveryEventSelfTest.class,
     GridPortProcessorSelfTest.class,
@@ -115,7 +116,9 @@ import org.junit.runners.Suite;
     NodeWithFilterRestartTest.class,
     ClusterActiveStateChangeWithNodeOutOfBaselineTest.class,
     IgniteNodeValidationFailedEventTest.class,
-    GridMutableLongTest.class
+    GridMutableLongTest.class,
+    LifecycleAwareListenerTest.class,
+    ClusterStateChangeOnNodeJoinTest.class
 })
 public class IgniteKernalSelfTestSuite {
 }

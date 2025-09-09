@@ -137,6 +137,7 @@ public abstract class PagesList extends DataStructure {
      *
      */
     private final class CutTail extends PageHandler<Void, Boolean> {
+        /** {@inheritDoc} */
         @Override public Boolean run(
             int cacheId,
             long pageId,
@@ -153,7 +154,8 @@ public abstract class PagesList extends DataStructure {
 
             long tailId = io.getNextId(pageAddr);
 
-            assert tailId != 0;
+            if (tailId == 0)
+                throw corruptedFreeListException("nextId is 0 in non-tail page [pageId=" + U.hexLong(pageId) + "]", pageId);
 
             io.setNextId(pageAddr, 0L);
 
@@ -557,6 +559,13 @@ public abstract class PagesList extends DataStructure {
             }
         }
     }
+
+    /**
+     * Gets per page free space for specified bucket.
+     *
+     * @return Free space available to use for each page in specified bucket.
+     */
+    public abstract int getPageFreeSpace(int bucket);
 
     /**
      * Gets bucket index by page freespace.
@@ -2319,7 +2328,7 @@ public abstract class PagesList extends DataStructure {
          * @param tailId Tail ID.
          * @param empty Empty flag.
          */
-        Stripe(long tailId, boolean empty) {
+        public Stripe(long tailId, boolean empty) {
             this.tailId = tailId;
             this.empty = empty;
         }
@@ -2334,7 +2343,7 @@ public abstract class PagesList extends DataStructure {
 
             Stripe stripe = (Stripe)o;
 
-            return F.eq(tailId, stripe.tailId) && F.eq(empty, stripe.empty);
+            return Objects.equals(tailId, stripe.tailId) && Objects.equals(empty, stripe.empty);
         }
 
         /** {@inheritDoc} */

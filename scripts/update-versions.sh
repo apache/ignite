@@ -19,7 +19,9 @@
 #
 # Updates Ignite version in Java pom files, .NET AssemblyInfo files, C++ configure files.
 # Run in Ignite sources root directory.
-# Usage: ./update-versions 2.6.0
+# Usage:
+# update snapshot version: ./scripts/update-versions.sh 2.14.0-SNAPSHOT
+# update release version: ./scripts/update-versions.sh 2.13.0
 #
 
 if [ $# -eq 0 ]
@@ -28,8 +30,17 @@ if [ $# -eq 0 ]
     exit 1
 fi
 
-echo Updating Java versions to $1 with Maven...
-mvn versions:set -DnewVersion=$1 -Pall-java,all-scala,all-other -DgenerateBackupPoms=false -DgroupId=* -DartifactId=* -DoldVersion=* -DprocessDependencies=false
+SED_OPTION=(-i)
 
-echo Updating .NET, C++ and other resources versions to $1 with Maven...
-mvn validate -P update-versions -D new.ignite.version=$1
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  SED_OPTION=(-i '')
+fi
+
+echo Updating versions to "$1"
+
+# The ignite-checkstyle module has it's own Apache parent, so in has to be updated independently.
+sed "${SED_OPTION[@]}" -e "s/<revision>\(.*\)</<revision>${1}</g" ./parent/pom.xml ./modules/checkstyle/pom.xml;
+
+echo Updating sub-modules versions to "$1" and resouces during the build
+
+mvn validate -P update-versions

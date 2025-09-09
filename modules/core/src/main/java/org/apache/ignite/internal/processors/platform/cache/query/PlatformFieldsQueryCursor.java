@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.cache.query;
 
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -47,7 +47,7 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
     }
 
     /** {@inheritDoc} */
-    @Override protected void write(BinaryRawWriterEx writer, List vals) {
+    @Override protected void write(BinaryWriterEx writer, List vals) {
         assert vals != null;
 
         int rowSizePos = writer.reserveInt();
@@ -63,7 +63,7 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
     }
 
     /** {@inheritDoc} */
-    @Override public void processOutStream(int type, final BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, final BinaryWriterEx writer) throws IgniteCheckedException {
         if (type == OP_GET_FIELD_NAMES) {
             List<GridQueryFieldMetadata> fieldsMeta = cursor().fieldsMeta();
 
@@ -71,12 +71,14 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
 
             for (GridQueryFieldMetadata meta : fieldsMeta)
                 writer.writeString(meta.fieldName());
-        } else if (type == OP_GET_FIELDS_META) {
+        }
+        else if (type == OP_GET_FIELDS_META) {
             List<GridQueryFieldMetadata> metas = cursor().fieldsMeta();
 
             if (metas == null) {
                 writer.writeInt(0);
-            } else {
+            }
+            else {
                 writer.writeInt(metas.size());
 
                 for (GridQueryFieldMetadata meta : metas) {
@@ -84,7 +86,8 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
                     writer.writeString(meta.fieldTypeName());
                 }
             }
-        } else {
+        }
+        else {
             super.processOutStream(type, writer);
         }
     }

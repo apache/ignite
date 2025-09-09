@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.encryption;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,6 +44,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.InitMessage;
@@ -379,7 +379,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             try {
                 grpKeyFut.get(MAX_AWAIT_MILLIS);
                 checkGroupKey(grpId, keyId, MAX_AWAIT_MILLIS);
-            } catch (IgniteException e) {
+            }
+            catch (IgniteException e) {
                 assertTrue(e.getMessage().contains("Cache group key change was rejected. Master key has been changed."));
 
                 // Retry iteration.
@@ -717,7 +718,8 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
             waitForCondition(() ->
                 encrMgr0.groupKeyIds(grpId).size() == 1 && encrMgr1.groupKeyIds(grpId).size() == 1, MAX_AWAIT_MILLIS);
-        } finally {
+        }
+        finally {
             loadFut.cancel();
         }
 
@@ -759,14 +761,12 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
 
         assertEquals(2, node.context().encryption().groupKeyIds(grpId).size());
 
+        NodeFileTree ft = node.context().pdsFolderResolver().fileTree();
+
         stopAllGrids();
 
         // Cleanup WAL arcive folder.
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-
-        boolean rmvd = U.delete(new File(dbDir, "wal/archive"));
-
-        assertTrue(rmvd);
+        assertTrue(U.delete(ft.walArchive().getParentFile()));
 
         node = startGrid(GRID_0);
 

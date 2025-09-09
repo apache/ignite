@@ -22,25 +22,6 @@
            xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2
            http://maven.apache.org/xsd/component-1.1.2.xsd">
     <files>
-        <!-- Copy CPP files. -->
-        <file>
-            <source>modules/platforms/cpp/project/vs/ignite.slnrel</source>
-            <outputDirectory>/platforms/cpp/project/vs</outputDirectory>
-            <destName>ignite.sln</destName>
-        </file>
-
-        <file>
-            <source>modules/platforms/cpp/project/vs/ignite_x86.slnrel</source>
-            <outputDirectory>/platforms/cpp/project/vs</outputDirectory>
-            <destName>ignite_x86.sln</destName>
-        </file>
-
-        <file>
-            <source>modules/platforms/cpp/CMakeLists.txt</source>
-            <outputDirectory>/platforms/cpp</outputDirectory>
-            <destName>CMakeLists.txt</destName>
-        </file>
-
         <!-- Other files. -->
         <file>
             <source>assembly/LICENSE_IGNITE</source>
@@ -78,6 +59,9 @@
         <fileSet>
             <directory>modules/platforms/dotnet/bin</directory>
             <outputDirectory>/platforms/dotnet/bin</outputDirectory>
+            <excludes>
+                <exclude>libs/**</exclude>
+            </excludes>
         </fileSet>
 
         <!-- Move .Net docs. -->
@@ -98,13 +82,15 @@
             <outputDirectory>/platforms/dotnet/licenses</outputDirectory>
         </fileSet>
 
-        <!-- Move CPP readme. -->
+        <!-- Move CPP files. -->
         <fileSet>
             <directory>modules/platforms/cpp</directory>
             <outputDirectory>/platforms/cpp</outputDirectory>
             <includes>
                 <include>README.txt</include>
                 <include>DEVNOTES.txt</include>
+                <include>CMakeLists.txt</include>
+                <include>CMakeSettings.json.in</include>
             </includes>
         </fileSet>
 
@@ -124,12 +110,6 @@
         <fileSet>
             <directory>modules/platforms/cpp/network</directory>
             <outputDirectory>/platforms/cpp/network</outputDirectory>
-        </fileSet>
-
-        <!-- Move CPP "jni" module. -->
-        <fileSet>
-            <directory>modules/platforms/cpp/jni</directory>
-            <outputDirectory>/platforms/cpp/jni</outputDirectory>
         </fileSet>
 
         <!-- Move CPP "core" module. -->
@@ -223,11 +203,6 @@
         <fileSet>
             <directory>target/javadoc/core</directory>
             <outputDirectory>/docs/javadoc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>modules/scalar/target/site/scaladocs</directory>
-            <outputDirectory>/docs/scaladoc/scalar</outputDirectory>
         </fileSet>
 
         <fileSet>

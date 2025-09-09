@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.client.thin.io;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Client connection: abstracts away sending and receiving messages.
@@ -29,8 +31,23 @@ public interface ClientConnection extends AutoCloseable {
      * Sends a message.
      *
      * @param msg Message buffer.
+     * @param onDone Callback to be invoked when asynchronous send operation completes.
      */
-    void send(ByteBuffer msg) throws IgniteCheckedException;
+    void send(ByteBuffer msg, @Nullable Runnable onDone) throws IgniteCheckedException;
+
+    /**
+     * Gets local address of this session.
+     *
+     * @return Local network address or {@code null} if non-socket communication is used.
+     */
+    @Nullable InetSocketAddress localAddress();
+
+    /**
+     * Gets address of remote peer on this session.
+     *
+     * @return Address of remote peer or {@code null} if non-socket communication is used.
+     */
+    @Nullable InetSocketAddress remoteAddress();
 
     /**
      * Closes the connection.

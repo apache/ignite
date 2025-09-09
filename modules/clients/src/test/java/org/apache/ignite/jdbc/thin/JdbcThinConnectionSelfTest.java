@@ -17,7 +17,6 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -45,15 +44,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
-import org.apache.ignite.internal.jdbc.thin.ConnectionProperties;
-import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
-import org.apache.ignite.internal.util.HostAndPortRange;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridStringLogger;
@@ -71,9 +66,7 @@ import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.Statement.NO_GENERATED_KEYS;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
-import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
-import static org.apache.ignite.internal.processors.odbc.SqlStateCode.TRANSACTION_STATE_EXCEPTION;
-import static org.apache.ignite.testframework.GridTestUtils.RunnableX;
+import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -115,9 +108,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
         cfg.setGridLogger(new GridStringLogger());
 
         return cfg;
@@ -386,43 +376,43 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testSqlHints() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            assertHints(conn, false, false, false, false, false,
+            assertHints(conn, false, false, false, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&distributedJoins=true")) {
-            assertHints(conn, true, false, false, false, false,
+            assertHints(conn, true, false, false, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&enforceJoinOrder=true")) {
-            assertHints(conn, false, true, false, false, false,
+            assertHints(conn, false, true, false, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&collocated=true")) {
-            assertHints(conn, false, false, true, false, false,
+            assertHints(conn, false, false, true, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&replicatedOnly=true")) {
-            assertHints(conn, false, false, false, true, false,
+            assertHints(conn, false, false, false, true, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&lazy=true")) {
-            assertHints(conn, false, false, false, false, true,
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&lazy=" + (!DFLT_LAZY))) {
+            assertHints(conn, false, false, false, false, !DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&skipReducerOnUpdate=true")) {
-            assertHints(conn, false, false, false, false, false,
+            assertHints(conn, false, false, false, false, DFLT_LAZY,
                 true, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&distributedJoins=true&" +
-            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true&skipReducerOnUpdate=true")) {
-            assertHints(conn, true, true, true, true, true,
+            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=" + (!DFLT_LAZY) + "&skipReducerOnUpdate=true")) {
+            assertHints(conn, true, true, true, true, !DFLT_LAZY,
                 true, partitionAwareness);
         }
     }
@@ -435,38 +425,38 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testSqlHintsSemicolon() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";distributedJoins=true")) {
-            assertHints(conn, true, false, false, false, false,
+            assertHints(conn, true, false, false, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";enforceJoinOrder=true")) {
-            assertHints(conn, false, true, false, false, false,
+            assertHints(conn, false, true, false, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";collocated=true")) {
-            assertHints(conn, false, false, true, false, false,
+            assertHints(conn, false, false, true, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";replicatedOnly=true")) {
-            assertHints(conn, false, false, false, true, false,
+            assertHints(conn, false, false, false, true, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";lazy=true")) {
-            assertHints(conn, false, false, false, false, true,
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";lazy=" + (!DFLT_LAZY))) {
+            assertHints(conn, false, false, false, false, !DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";skipReducerOnUpdate=true")) {
-            assertHints(conn, false, false, false, false, false,
+            assertHints(conn, false, false, false, false, DFLT_LAZY,
                 true, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";distributedJoins=true;" +
-            "enforceJoinOrder=true;collocated=true;replicatedOnly=true;lazy=true;skipReducerOnUpdate=true")) {
-            assertHints(conn, true, true, true, true, true,
+            "enforceJoinOrder=true;collocated=true;replicatedOnly=true;lazy=" + (!DFLT_LAZY) + ";skipReducerOnUpdate=true")) {
+            assertHints(conn, true, true, true, true, !DFLT_LAZY,
                 true, partitionAwareness);
         }
     }
@@ -1290,50 +1280,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testBeginFailsWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            conn.createStatement().execute("BEGIN");
-
-            fail("Exception is expected");
-        }
-        catch (SQLException e) {
-            assertEquals(TRANSACTION_STATE_EXCEPTION, e.getSQLState());
-        }
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testCommitIgnoredWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            conn.setAutoCommit(false);
-            conn.createStatement().execute("COMMIT");
-
-            conn.commit();
-        }
-        // assert no exception
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRollbackIgnoredWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            conn.setAutoCommit(false);
-
-            conn.createStatement().execute("ROLLBACK");
-
-            conn.rollback();
-        }
-        // assert no exception
-    }
-
-    /**
      * @throws Exception If failed.
      */
     @Test
@@ -1786,16 +1732,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testCreateClob() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            // Unsupported
-            assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createClob();
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "SQL-specific types are not supported"
-            );
+
+            assertNotNull(conn.createClob());
 
             conn.close();
 
@@ -1817,16 +1755,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testCreateBlob() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            // Unsupported
-            assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createBlob();
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "SQL-specific types are not supported"
-            );
+
+            assertNotNull(conn.createBlob());
 
             conn.close();
 
@@ -1958,7 +1888,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             assertNotNull(propsResult);
 
-            assertTrue(propsResult.isEmpty());
+            assertFalse(propsResult.isEmpty());
 
             conn.close();
 
@@ -2165,45 +2095,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Test that attempting to supply invalid nested TX mode to driver fails on the client.
-     */
-    @Test
-    public void testInvalidNestedTxMode() {
-        assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                DriverManager.getConnection(urlWithPartitionAwarenessProp + "&nestedTransactionsMode=invalid");
-
-                return null;
-            }
-        }, SQLException.class, "Invalid nested transactions handling mode");
-    }
-
-    /**
-     * Test that attempting to send unexpected name of nested TX mode to server on handshake yields an error.
-     * We have to do this without explicit {@link Connection} as long as there's no other way to bypass validation and
-     * supply a malformed {@link ConnectionProperties} to {@link JdbcThinTcpIo}.
-     */
-    @Test
-    public void testInvalidNestedTxModeOnServerSide() {
-        ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
-
-        connProps.setAddresses(new HostAndPortRange[] {new HostAndPortRange(LOCALHOST, DFLT_PORT, DFLT_PORT)});
-
-        connProps.nestedTxMode("invalid");
-
-        connProps.setPartitionAwareness(partitionAwareness);
-
-        assertThrows(null, new Callable<Object>() {
-            @SuppressWarnings("ResultOfObjectAllocationIgnored")
-            @Override public Object call() throws Exception {
-                new JdbcThinTcpIo(connProps, new InetSocketAddress(LOCALHOST, DFLT_PORT), getBinaryContext(), 0);
-
-                return null;
-            }
-        }, SQLException.class, "err=Invalid nested transactions handling mode: invalid");
-    }
-
-    /**
      */
     @Test
     public void testSslClientAndPlainServer() {
@@ -2265,14 +2156,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             f.get();
 
-            boolean exceptionFound = false;
+            boolean exFound = false;
 
             for (SQLException e : exs) {
                 if (e != null && e.getMessage().contains("Concurrent access to JDBC connection is not allowed"))
-                    exceptionFound = true;
+                    exFound = true;
             }
 
-            assertTrue("Concurrent access to JDBC connection is not allowed", exceptionFound);
+            assertTrue("Concurrent access to JDBC connection is not allowed", exFound);
         }
     }
 
@@ -2341,10 +2232,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         marsh.setContext(getFakeMarshallerCtx());
 
-        BinaryContext ctx = new BinaryContext(BinaryNoopMetadataHandler.instance(),
-            new IgniteConfiguration(), new NullLogger());
+        BinaryContext ctx = U.binaryContext(marsh);
 
-        ctx.configure(marsh);
         ctx.registerUserTypesSchema();
 
         return ctx;

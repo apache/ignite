@@ -48,6 +48,7 @@ public interface ComputeJobContinuation {
      * pretty standard notation for this concept that originated from Scheme programming
      * language. Basically, the job is held to be continued later, hence the name of the method.
      *
+     * @param <T> Type of the job execution result.
      * @return Always returns {@code null} for convenience to be used in code with return statement.
      * @throws IllegalStateException If job has been already held before.
      */
@@ -71,6 +72,7 @@ public interface ComputeJobContinuation {
      * be continued later, hence the name of the method.
      *
      * @param timeout Timeout in milliseconds after which job will be automatically resumed.
+     * @param <T> Type of the job execution result.
      * @return Always returns {@code null} for convenience to be used in code with return statement.
      * @throws IllegalStateException If job has been already held before
      */

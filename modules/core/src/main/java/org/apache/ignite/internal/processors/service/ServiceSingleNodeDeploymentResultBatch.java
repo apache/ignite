@@ -36,9 +36,6 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
  * Contains collection of {@link ServiceSingleNodeDeploymentResult} mapped services ids.
  */
 public class ServiceSingleNodeDeploymentResultBatch implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Deployment process id. */
     @GridToStringInclude
     private ServiceDeploymentProcessId depId;
@@ -82,7 +79,7 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -90,13 +87,13 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("depId", depId))
+                if (!writer.writeMessage(depId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMap("results", results, IGNITE_UUID, MSG))
+                if (!writer.writeMap(results, IGNITE_UUID, MSG))
                     return false;
 
                 writer.incrementState();
@@ -109,12 +106,9 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                depId = reader.readMessage("depId");
+                depId = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -122,7 +116,7 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
                 reader.incrementState();
 
             case 1:
-                results = reader.readMap("results", IGNITE_UUID, MSG, false);
+                results = reader.readMap(IGNITE_UUID, MSG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -130,17 +124,12 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(ServiceSingleNodeDeploymentResultBatch.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 168;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

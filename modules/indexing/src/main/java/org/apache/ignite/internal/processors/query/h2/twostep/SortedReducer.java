@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -125,21 +125,35 @@ public class SortedReducer extends AbstractReducer {
     }
 
     /** {@inheritDoc} */
-    @Override public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
-        super.setSources(nodes, segmentsCnt);
+    @Override public void setSources(Map<ClusterNode, BitSet> nodesToSegments) {
+        super.setSources(nodesToSegments);
 
-        streamsMap = U.newHashMap(nodes.size());
-        RowStream[] streams = new RowStream[nodes.size() * segmentsCnt];
+        streamsMap = U.newHashMap(nodesToSegments.size());
+
+        int totalSegmentsCnt = 0;
+
+        for (BitSet bs : nodesToSegments.values())
+            totalSegmentsCnt += bs.cardinality();
+
+        RowStream[] streams = new RowStream[totalSegmentsCnt];
 
         int i = 0;
 
-        for (ClusterNode node : nodes) {
+        for (Map.Entry<ClusterNode, BitSet> e : nodesToSegments.entrySet()) {
+            BitSet activeSegments = e.getValue();
+
+            int segmentsCnt = activeSegments.length();
+
             RowStream[] segments = new RowStream[segmentsCnt];
 
-            for (int s = 0; s < segmentsCnt; s++)
-                streams[i++] = segments[s] = new RowStream();
+            for (int s = 0; s < segmentsCnt; s++) {
+                if (activeSegments.get(s))
+                    streams[i++] = segments[s] = new RowStream();
+                else
+                    segments[s] = new RowStream();
+            }
 
-            if (streamsMap.put(node.id(), segments) != null)
+            if (streamsMap.put(e.getKey().id(), segments) != null)
                 throw new IllegalStateException();
         }
 
@@ -389,7 +403,7 @@ public class SortedReducer extends AbstractReducer {
             if (!iter.hasNext())
                 return false;
 
-            cur = H2PlainRowFactory.create(iter.next());
+            cur = H2PlainRowFactory.create(colCnt, iter.next());
 
             return true;
         }
@@ -431,7 +445,7 @@ public class SortedReducer extends AbstractReducer {
          * @param last Upper bound.
          * @param stream Stream of all the rows from remote nodes.
          */
-         FetchingCursor(SearchRow first, SearchRow last, Iterator<Row> stream) {
+        FetchingCursor(SearchRow first, SearchRow last, Iterator<Row> stream) {
             assert stream != null;
 
             // Initially we will use all the fetched rows, after we will switch to the last block.

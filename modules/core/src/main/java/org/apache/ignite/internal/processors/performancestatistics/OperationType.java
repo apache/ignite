@@ -85,12 +85,33 @@ public enum OperationType {
     CHECKPOINT(18),
 
     /** Pages write throttle. */
-    PAGES_WRITE_THROTTLE(19);
+    PAGES_WRITE_THROTTLE(19),
+
+    /** Count of processed by query rows. */
+    QUERY_ROWS(20),
+
+    /** Custom query property. */
+    QUERY_PROPERTY(21),
+
+    /** Cache put all conflict. */
+    CACHE_PUT_ALL_CONFLICT(22),
+
+    /** Cache remove all conflict. */
+    CACHE_REMOVE_ALL_CONFLICT(23),
+
+    /** System view schema. */
+    SYSTEM_VIEW_SCHEMA(24),
+
+    /** System view row. */
+    SYSTEM_VIEW_ROW(25),
+
+    /** Version. */
+    VERSION(255);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
         CACHE_GET_AND_PUT, CACHE_GET_AND_REMOVE, CACHE_INVOKE, CACHE_LOCK, CACHE_GET_ALL, CACHE_PUT_ALL,
-        CACHE_REMOVE_ALL, CACHE_INVOKE_ALL);
+        CACHE_REMOVE_ALL, CACHE_INVOKE_ALL, CACHE_PUT_ALL_CONFLICT, CACHE_REMOVE_ALL_CONFLICT);
 
     /** Transaction operations. */
     public static final EnumSet<OperationType> TX_OPS = EnumSet.of(TX_COMMIT, TX_ROLLBACK);
@@ -148,6 +169,13 @@ public enum OperationType {
         return 1 + 4 + (cached ? 4 : 4 + nameLen);
     }
 
+    /**
+     * @return Cache start record size left after reading name string.
+     */
+    public static int readCacheStartRecordSize() {
+        return cacheStartRecordSize(0, true) - 1 /* cached flag */ - 4 /* hash or len of str */;
+    }
+
     /** @return Cache record size. */
     public static int cacheRecordSize() {
         return 4 + 8 + 8;
@@ -170,9 +198,51 @@ public enum OperationType {
         return 1 + (cached ? 4 : 4 + textLen) + 1 + 8 + 8 + 8 + 1;
     }
 
+    /**
+     * @return Query record size left after reading text string.
+     */
+    public static int readQueryRecordSize() {
+        return queryRecordSize(0, true) - 1 /* cached flag */ - 4 /* hash or len of str */;
+    }
+
     /** @return Query reads record size. */
     public static int queryReadsRecordSize() {
         return 1 + 16 + 8 + 8 + 8;
+    }
+
+    /**
+     * @param actionLen Rows action length.
+     * @param cached {@code True} if action is cached.
+     * @return Query rows record size.
+     */
+    public static int queryRowsRecordSize(int actionLen, boolean cached) {
+        return 1 + (cached ? 4 : 4 + actionLen) + 1 + 16 + 8 + 8;
+    }
+
+    /**
+     * @return Query rows record size left after reading action string.
+     */
+    public static int readQueryRowsRecordSize() {
+        return queryRowsRecordSize(0, true) - 1 /* cached flag */ - 4 /* hash or len of str */;
+    }
+
+    /**
+     * @param nameLen Propery name length.
+     * @param nameCached {@code True} if property name is cached.
+     * @param valLen Propery value length.
+     * @param valCached {@code True} if property value is cached.
+     * @return Query property record size.
+     */
+    public static int queryPropertyRecordSize(int nameLen, boolean nameCached, int valLen, boolean valCached) {
+        return 1 + (nameCached ? 4 : 4 + nameLen) + 1 + (valCached ? 4 : 4 + valLen) + 1 + 16 + 8;
+    }
+
+    /**
+     * @return Query property record size left after reading name and val strings.
+     */
+    public static int readQueryPropertyRecordSize() {
+        return queryPropertyRecordSize(0, true, 0, true)
+            - 1 /* cached flag */ - 4 /* hash or len of name str */ - 1 /* cached flag */ - 4 /* hash or len of val str */;
     }
 
     /**
@@ -184,6 +254,13 @@ public enum OperationType {
         return 1 + (cached ? 4 : 4 + nameLen) + 24 + 8 + 8 + 4;
     }
 
+    /**
+     * @return Task record size left after reading name string.
+     */
+    public static int readTaskRecordSize() {
+        return taskRecordSize(0, true) - 1 /* cached flag */ - 4 /* hash or len of str */;
+    }
+
     /** @return Job record size. */
     public static int jobRecordSize() {
         return 24 + 8 + 8 + 8 + 1;
@@ -191,7 +268,12 @@ public enum OperationType {
 
     /** @return Checkpoint record size. */
     public static int checkpointRecordSize() {
-        return 8 * 12 + 4 * 3;
+        return 8 * 13 + 4 * 3;
+    }
+
+    /** @return Version record size. */
+    public static int versionRecordSize() {
+        return Short.BYTES;
     }
 
     /** @return Pages write throttle record size. */

@@ -51,7 +51,8 @@ public class TestJob implements ComputeJob {
         if (sleepTime != null) {
             try {
                 U.sleep(sleepTime);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new IgniteException(e);
             }
         }

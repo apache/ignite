@@ -22,7 +22,7 @@ import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -126,7 +126,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc}  */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_UPDATE:
                 int plc = reader.readInt();
@@ -189,12 +189,12 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 return TRUE;
 
             case OP_SET_PER_NODE_BUFFER_SIZE:
-                ldr.perNodeBufferSize((int) val);
+                ldr.perNodeBufferSize((int)val);
 
                 return TRUE;
             
             case OP_SET_PER_THREAD_BUFFER_SIZE:
-                ldr.perThreadBufferSize((int) val);
+                ldr.perThreadBufferSize((int)val);
 
                 return TRUE;
 
@@ -204,7 +204,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 return TRUE;
 
             case OP_SET_PER_NODE_PARALLEL_OPS:
-                ldr.perNodeParallelOperations((int) val);
+                ldr.perNodeParallelOperations((int)val);
 
                 return TRUE;
 

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
 {
     extern alias TestDll2;
     using System;
+    using System.Configuration;
     using System.IO;
     using System.Threading;
     using Apache.Ignite.Core.Cluster;
@@ -179,11 +180,18 @@ namespace Apache.Ignite.Core.Tests.Deployment
             // Copy Apache.Ignite.exe and Apache.Ignite.Core.dll 
             // to a separate folder so that it does not locate our assembly automatically.
             var folder = PathUtils.GetTempDirectoryName();
-            foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly})
+            foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly, typeof(ConfigurationManager).Assembly})
             {
                 Assert.IsNotNull(asm.Location);
                 File.Copy(asm.Location, Path.Combine(folder, Path.GetFileName(asm.Location)));
             }
+
+            // ReSharper disable once AssignNullToNotNullAttribute
+            var cfgMan = Path.Combine(
+                Path.GetDirectoryName(typeof(Ignition).Assembly.Location),
+                "System.Configuration.ConfigurationManager.dll");
+
+            File.Copy(cfgMan, Path.Combine(folder, Path.GetFileName(cfgMan)));
 
             var exePath = Path.Combine(folder, "Apache.Ignite.exe");
 

@@ -76,11 +76,10 @@ Development:
  * Update Linker\Input\Additional Dependencies in Project Properties with path to
    * ignite.common.lib
    * ignite.binary.lib
-   * ignite.jni.lib to use thick client
    * ignite.core.lib to use thick client
    * ignite.network.lib to use thin client
    * ignite.thin-client.lib to use thin client
- * Make sure that your application is aware about ignite.jni.dll and ignite.core.dll or
+ * Make sure that your application is aware about ignite.core.dll or
    ignite.thin-client.dll libraries. The easiest way to achieve this is to either make
    sure these files are in %PATH%, or to put them into the output directory of your
    project with help of PostBuild events.

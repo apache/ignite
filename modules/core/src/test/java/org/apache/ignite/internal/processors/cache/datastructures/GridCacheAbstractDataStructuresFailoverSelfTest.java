@@ -66,12 +66,9 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -133,8 +130,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
         AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
         atomicCfg.setCacheMode(collectionCacheMode());
@@ -148,9 +143,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         ccfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(ccfg);
-
-        if (cfg.isClientMode() == TRUE)
-            ((TcpDiscoverySpi)(cfg.getDiscoverySpi())).setForceServerMode(true);
 
         return cfg;
     }
@@ -766,7 +758,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                 // Signal the server to go down.
                 ignite.semaphore("sync", 0, true, true).release();
 
-                boolean isExceptionThrown = false;
+                boolean isExThrown = false;
 
                 try {
                     // Wait for the server to go down.
@@ -780,10 +772,10 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                     fail("Interrupted exception not expected here.");
                 }
                 catch (IgniteException ignored) {
-                    isExceptionThrown = true;
+                    isExThrown = true;
                 }
                 finally {
-                    assertTrue(isExceptionThrown);
+                    assertTrue(isExThrown);
 
                     assertFalse(l.isHeldByCurrentThread());
                 }

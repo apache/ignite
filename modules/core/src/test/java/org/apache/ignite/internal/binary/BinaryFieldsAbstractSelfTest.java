@@ -27,9 +27,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -48,28 +47,19 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     protected BinaryMarshaller createMarshaller() throws Exception {
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(),
-            new NullLogger());
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setCompactFooter(compactFooter());
-
         bCfg.setTypeConfigurations(Arrays.asList(
             new BinaryTypeConfiguration(TestObject.class.getName()),
             new BinaryTypeConfiguration(TestOuterObject.class.getName()),
             new BinaryTypeConfiguration(TestInnerObject.class.getName())
         ));
 
-        IgniteConfiguration iCfg = new IgniteConfiguration();
-
-        iCfg.setBinaryConfiguration(bCfg);
-
         marsh.setContext(new MarshallerContextTestImpl(null));
-
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
+        marsh.setBinaryContext(U.binaryContext(marsh, new IgniteConfiguration().setBinaryConfiguration(bCfg)));
 
         return marsh;
     }
@@ -459,27 +449,27 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
             Object expVal = U.field(ctx.obj, fieldName);
 
             if (val instanceof BinaryObject)
-                val = ((BinaryObject) val).deserialize();
+                val = ((BinaryObject)val).deserialize();
 
-            if (val != null && val.getClass().isArray()) {
+            if (F.isArray(expVal)) {
                 assertNotNull(expVal);
 
                 if (val instanceof byte[])
-                    assertTrue(Arrays.equals((byte[]) expVal, (byte[]) val));
+                    assertTrue(Arrays.equals((byte[])expVal, (byte[])val));
                 else if (val instanceof boolean[])
-                    assertTrue(Arrays.equals((boolean[]) expVal, (boolean[]) val));
+                    assertTrue(Arrays.equals((boolean[])expVal, (boolean[])val));
                 else if (val instanceof short[])
-                    assertTrue(Arrays.equals((short[]) expVal, (short[]) val));
+                    assertTrue(Arrays.equals((short[])expVal, (short[])val));
                 else if (val instanceof char[])
-                    assertTrue(Arrays.equals((char[]) expVal, (char[]) val));
+                    assertTrue(Arrays.equals((char[])expVal, (char[])val));
                 else if (val instanceof int[])
-                    assertTrue(Arrays.equals((int[]) expVal, (int[]) val));
+                    assertTrue(Arrays.equals((int[])expVal, (int[])val));
                 else if (val instanceof long[])
-                    assertTrue(Arrays.equals((long[]) expVal, (long[]) val));
+                    assertTrue(Arrays.equals((long[])expVal, (long[])val));
                 else if (val instanceof float[])
-                    assertTrue(Arrays.equals((float[]) expVal, (float[]) val));
+                    assertTrue(Arrays.equals((float[])expVal, (float[])val));
                 else if (val instanceof double[])
-                    assertTrue(Arrays.equals((double[]) expVal, (double[]) val));
+                    assertTrue(Arrays.equals((double[])expVal, (double[])val));
                 else {
                     Object[] expVal0 = (Object[])expVal;
                     Object[] val0 = (Object[])val;
@@ -598,60 +588,85 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
         /** Primitive fields. */
         public byte fByte;
 
+        /** */
         public boolean fBool;
 
+        /** */
         public short fShort;
 
+        /** */
         public char fChar;
 
+        /** */
         public int fInt;
 
+        /** */
         public long fLong;
 
+        /** */
         public float fFloat;
 
+        /** */
         public double fDouble;
 
+        /** */
         public byte[] fByteArr;
 
+        /** */
         public boolean[] fBoolArr;
 
+        /** */
         public short[] fShortArr;
 
+        /** */
         public char[] fCharArr;
 
+        /** */
         public int[] fIntArr;
 
+        /** */
         public long[] fLongArr;
 
+        /** */
         public float[] fFloatArr;
 
+        /** */
         public double[] fDoubleArr;
 
         /** Special fields. */
         public String fString;
 
+        /** */
         public Date fDate;
 
+        /** */
         public Timestamp fTimestamp;
 
+        /** */
         public UUID fUuid;
 
+        /** */
         public BigDecimal fDecimal;
 
+        /** */
         public String[] fStringArr;
 
+        /** */
         public Date[] fDateArr;
 
+        /** */
         public Timestamp[] fTimestampArr;
 
+        /** */
         public UUID[] fUuidArr;
 
+        /** */
         public BigDecimal[] fDecimalArr;
 
         /** Nested object. */
         public TestInnerObject fObj;
 
+        /** */
         public TestInnerObject[] fObjArr;
 
         /** Field which is always set to null. */

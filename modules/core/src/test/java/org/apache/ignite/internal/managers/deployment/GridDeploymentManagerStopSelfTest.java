@@ -21,7 +21,6 @@ import java.util.Map;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.deployment.DeploymentListener;
@@ -46,7 +45,6 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
 
         GridTestKernalContext ctx = newContext();
 
-        ctx.config().setMarshaller(new JdkMarshaller());
         ctx.config().setDeploymentSpi(spi);
 
         GridResourceProcessor resProc = new GridResourceProcessor(ctx);
@@ -76,7 +74,9 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException { return null; }
+        @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
+            return null;
+        }
 
         /** {@inheritDoc} */
         @Override public void onContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException { /* No-op. */ }
@@ -91,7 +91,9 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         @Override public void setListener(DeploymentListener lsnr) { /* No-op. */ }
 
         /** {@inheritDoc} */
-        @Override public String getName() { return getClass().getSimpleName(); }
+        @Override public String getName() {
+            return getClass().getSimpleName();
+        }
 
         /** {@inheritDoc} */
         @Override public DeploymentResource findResource(String rsrcName) {
@@ -99,10 +101,14 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException { return false; }
+        @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException {
+            return false;
+        }
 
         /** {@inheritDoc} */
-        @Override public boolean unregister(String rsrcName) { return false; }
+        @Override public boolean unregister(String rsrcName) {
+            return false;
+        }
 
         /** {@inheritDoc} */
         @Override public void onClientDisconnected(IgniteFuture<?> reconnectFut) { /* No-op. */ }

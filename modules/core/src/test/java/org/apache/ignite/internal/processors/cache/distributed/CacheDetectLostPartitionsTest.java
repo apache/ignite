@@ -148,16 +148,14 @@ public class CacheDetectLostPartitionsTest extends GridCommonAbstractTest {
         assertFalse(cache.lostPartitions().isEmpty());
 
         GridTestUtils.assertThrows(null, () -> {
-                for (int i = 0; i < 1000; i++)
-                    cache.get(i);
-            },
-            IgniteException.class, "partition data has been lost");
+            for (int i = 0; i < 1000; i++)
+                cache.get(i);
+        }, IgniteException.class, "partition data has been lost");
 
         GridTestUtils.assertThrows(null, () -> {
-                for (int i = 0; i < 1000; i++)
-                    cache.put(i, i);
-            },
-            IgniteException.class, "partition data has been lost");
+            for (int i = 0; i < 1000; i++)
+                cache.put(i, i);
+        }, IgniteException.class, "partition data has been lost");
     }
 
     /** Filter by consistent id. */

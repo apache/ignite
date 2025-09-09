@@ -33,7 +33,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,18 +49,9 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** Number of keys to load via data streamer. */
     private static final int KEYS_COUNT = 1000;
 
-    /** Flag indicating should be cache configured with binary or not.  */
-    private static boolean binaries;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (binaries) {
-            BinaryMarshaller marsh = new BinaryMarshaller();
-
-            cfg.setMarshaller(marsh);
-        }
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -93,8 +83,6 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     @Test
     public void testAddDataFromMap() throws Exception {
         try {
-            binaries = false;
-
             startGrids(2);
 
             awaitPartitionMapExchange();
@@ -142,8 +130,6 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     @Test
     public void testAddMissingBinary() throws Exception {
         try {
-            binaries = true;
-
             startGrids(2);
 
             awaitPartitionMapExchange();
@@ -178,8 +164,6 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     @Test
     public void testAddBinaryDataFromMap() throws Exception {
         try {
-            binaries = true;
-
             startGrids(2);
 
             awaitPartitionMapExchange();
@@ -238,8 +222,6 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     @Test
     public void testAddBinaryCreatedWithBuilder() throws Exception {
         try {
-            binaries = true;
-
             startGrids(2);
 
             awaitPartitionMapExchange();
@@ -305,6 +287,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
             this.val = val;
         }
 
+        /** */
         public Integer val() {
             return val;
         }
@@ -349,6 +332,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
             this.val = val;
         }
 
+        /** */
         public Integer val() {
             return val;
         }

@@ -19,13 +19,11 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -42,7 +40,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -197,7 +194,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         startGrid(0).cluster().state(ClusterState.ACTIVE);
 
-        startGrid(1, (UnaryOperator<IgniteConfiguration>) cfg -> {
+        startGrid(1, (UnaryOperator<IgniteConfiguration>)cfg -> {
             cfg.setClientMode(true);
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(new TcpDiscoveryVmIpFinder(false)
@@ -255,8 +252,8 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         for (int i = 0; i < SRVS_NUM; i++) {
             ccfg = cacheConfiguration(CACHE_NAME, ATOMIC);
 
-            startGrid(i, (UnaryOperator<IgniteConfiguration>) cfg -> {
-                ListeningTestLogger log = new ListeningTestLogger(false, cfg.getGridLogger());
+            startGrid(i, (UnaryOperator<IgniteConfiguration>)cfg -> {
+                ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
 
                 log.registerListener(lsnr);
 
@@ -289,8 +286,8 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
             "Failed to wait for establishing inverse communication connection"
         ).build();
 
-        startGrid(SRVS_NUM - 1, (UnaryOperator<IgniteConfiguration>) cfg -> {
-            ListeningTestLogger log = new ListeningTestLogger(false, cfg.getGridLogger());
+        startGrid(SRVS_NUM - 1, (UnaryOperator<IgniteConfiguration>)cfg -> {
+            ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
 
             log.registerListener(lsnr);
 
@@ -308,7 +305,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         TcpCommunicationSpi spi = (TcpCommunicationSpi)srv.configuration().getCommunicationSpi();
 
-        GridTestUtils.invoke(spi, "onNodeLeft", clientNode.consistentId(), clientNode.id());
+        CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
             srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
@@ -324,16 +321,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
      * closed connection won't automatically reopen when we don't expect it.
      */
     private void interruptCommWorkerThreads(String clientName) {
-        List<Thread> tcpCommWorkerThreads = Thread.getAllStackTraces().keySet().stream()
-            .filter(t -> t.getName().contains("tcp-comm-worker"))
-            .filter(t -> t.getName().contains(clientName))
-            .collect(Collectors.toList());
-
-        for (Thread tcpCommWorkerThread : tcpCommWorkerThreads) {
-            U.interrupt(tcpCommWorkerThread);
-
-            U.join(tcpCommWorkerThread, log);
-        }
+        CommunicationWorkerThreadUtils.interruptCommWorkerThreads(clientName, log);
     }
 
     /**
@@ -348,13 +336,13 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         UNREACHABLE_DESTINATION.set(UNRESOLVED_HOST);
         RESPOND_TO_INVERSE_REQUEST.set(false);
 
-        AtomicBoolean clientFailedEventFlag = new AtomicBoolean(false);
+        AtomicBoolean clientFailedEvtFlag = new AtomicBoolean(false);
 
         IgniteEx srv = startGrid();
 
         srv.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event event) {
-                clientFailedEventFlag.set(true);
+                clientFailedEvtFlag.set(true);
 
                 return false;
             }
@@ -369,13 +357,13 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
 
         TcpCommunicationSpi spi = (TcpCommunicationSpi)srv.configuration().getCommunicationSpi();
 
-        GridTestUtils.invoke(spi, "onNodeLeft", clientNode.consistentId(), clientNode.id());
+        CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
             srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
         );
 
-        assertTrue(GridTestUtils.waitForCondition(clientFailedEventFlag::get, 10_000));
+        assertTrue(GridTestUtils.waitForCondition(clientFailedEvtFlag::get, 10_000));
     }
 
     /**

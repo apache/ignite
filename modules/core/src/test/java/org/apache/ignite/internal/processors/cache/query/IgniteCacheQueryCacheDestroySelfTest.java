@@ -49,6 +49,7 @@ public class IgniteCacheQueryCacheDestroySelfTest extends GridCommonAbstractTest
     /** */
     public static final int GRID_CNT = 3;
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
@@ -101,7 +102,7 @@ public class IgniteCacheQueryCacheDestroySelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     private void runQuery() throws Exception {
-        ScanQuery<String, String> scanQuery = new ScanQuery<String, String>()
+        ScanQuery<String, String> scanQry = new ScanQuery<String, String>()
             .setLocal(true)
             .setFilter(new IgniteBiPredicate<String, String>() {
                 @Override public boolean apply(String key, String p) {
@@ -114,13 +115,13 @@ public class IgniteCacheQueryCacheDestroySelfTest extends GridCommonAbstractTest
         IgniteCache<String, String> example = ignite.cache(CACHE_NAME);
 
         for (int partition : ignite.affinity(CACHE_NAME).primaryPartitions(ignite.cluster().localNode())) {
-            scanQuery.setPartition(partition);
+            scanQry.setPartition(partition);
 
-            try (QueryCursor cursor = example.query(scanQuery)) {
+            try (QueryCursor cursor = example.query(scanQry)) {
                 for (Object p : cursor) {
-                    String value = (String) ((Cache.Entry)p).getValue();
+                    String val = (String)((Cache.Entry)p).getValue();
 
-                    assertNotNull(value);
+                    assertNotNull(val);
                 }
             }
         }

@@ -17,23 +17,19 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -113,48 +109,6 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void dynamicIndexCreate(
-        String schemaName,
-        String tblName,
-        QueryIndexDescriptorImpl idxDesc,
-        boolean ifNotExists,
-        SchemaIndexCacheVisitor cacheVisitor
-    ) throws IgniteCheckedException {
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dynamicIndexDrop(
-        String schemaName,
-        String idxName,
-        boolean ifExists
-    ) throws IgniteCheckedException {
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dynamicAddColumn(
-        String schemaName,
-        String tblName,
-        List<QueryField> cols,
-        boolean ifTblExists,
-        boolean ifColNotExists
-    ) throws IgniteCheckedException {
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dynamicDropColumn(
-        String schemaName,
-        String tblName,
-        List<String> cols,
-        boolean ifTblExists,
-        boolean ifColExists
-    ) throws IgniteCheckedException {
-
-    }
-
-    /** {@inheritDoc} */
     @Override public void registerCache(
         String cacheName,
         String schemaName,
@@ -164,35 +118,8 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) throws IgniteCheckedException {
+    @Override public void unregisterCache(GridCacheContextInfo<?, ?> cacheInfo) {
 
-    }
-
-    /** {@inheritDoc} */
-    @Override public UpdateSourceIterator<?> executeUpdateOnDataNodeTransactional(
-        GridCacheContext<?, ?> cctx,
-        int[] ids,
-        int[] parts,
-        String schema,
-        String qry,
-        Object[] params,
-        int flags,
-        int pageSize,
-        int timeout,
-        AffinityTopologyVersion topVer,
-        MvccSnapshot mvccSnapshot,
-        GridQueryCancel cancel
-    ) throws IgniteCheckedException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean registerType(
-        GridCacheContextInfo cacheInfo,
-        GridQueryTypeDescriptor desc,
-        boolean isSql
-    ) throws IgniteCheckedException {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -228,11 +155,6 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void markAsRebuildNeeded(GridCacheContext cctx, boolean val) {
-
-    }
-
-    /** {@inheritDoc} */
     @Override public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts) {
         return null;
     }
@@ -243,13 +165,8 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
+    @Override public RunningQueryManager runningQueryManager() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancelQueries(Collection<Long> queries) {
-
     }
 
     /** {@inheritDoc} */
@@ -258,53 +175,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public String schema(String cacheName) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<String> schemasNames() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery sql) {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable GridCacheContextInfo registeredCacheInfo(String cacheName) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void closeCacheOnClient(String cacheName) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void registerMxBeans(IgniteMBeansManager mbMgr) {
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<TableInformation> tablesInformation(
-        String schemaNamePtrn,
-        String tblNamePtrn,
-        String... tblTypes) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<ColumnInformation> columnsInformation(
-        String schemaNamePtrn,
-        String tblNamePtrn,
-        String colNamePtrn) {
-        return null;
     }
 }

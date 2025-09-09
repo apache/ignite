@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheS
  * No-op processor.
  */
 public class PlatformNoopProcessor extends GridProcessorAdapter implements PlatformProcessor {
+    /** */
     public PlatformNoopProcessor(GridKernalContext ctx) {
         super(ctx);
     }

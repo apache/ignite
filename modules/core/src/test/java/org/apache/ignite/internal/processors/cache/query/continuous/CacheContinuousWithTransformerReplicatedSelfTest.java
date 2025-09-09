@@ -298,7 +298,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
                 @Override public String apply(CacheEntryEvent<? extends Integer, ? extends Employee> evt) {
                     return null;
                 }
-        }));
+            }));
 
         qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(new CacheEntryEventSerializableFilter<Integer, Employee>() {
             @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Employee> evt) {
@@ -458,6 +458,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
      */
     @IgniteAsyncCallback
     private static class LocalEventListenerAsync extends LocalEventListener {
+        /** */
         LocalEventListenerAsync(AtomicInteger transCnt, CountDownLatch transUpdCnt) {
             super(transCnt, transUpdCnt);
         }

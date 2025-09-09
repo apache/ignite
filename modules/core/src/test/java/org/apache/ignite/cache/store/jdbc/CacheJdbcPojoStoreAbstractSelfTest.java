@@ -37,10 +37,7 @@ import org.apache.ignite.cache.store.jdbc.model.PersonKey;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -114,13 +111,6 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         Connection conn = getConnection();
 
@@ -157,24 +147,15 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
-
-        cfg.setMarshaller(marshaller());
 
         ConnectorConfiguration connCfg = new ConnectorConfiguration();
         cfg.setConnectorConfiguration(connCfg);
 
         return cfg;
     }
-
-    /**
-     * @return Marshaller to be used in test.
-     */
-    protected abstract Marshaller marshaller();
 
     /**
      * @return Types to be used in test.
@@ -496,8 +477,6 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     private void checkPutRemove() throws Exception {
-        boolean binaryMarshaller = marshaller() instanceof BinaryMarshaller || marshaller() == null;
-
         IgniteCache<Object, Person> c1 = grid().cache(CACHE_NAME);
 
         Connection conn = getConnection();
@@ -531,8 +510,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertEquals(testDate, rs.getDate(3));
             assertEquals("Person-to-test-put-insert", rs.getString(4));
 
-            assertEquals(testGender.toString(),
-                binaryMarshaller ? Gender.values()[rs.getInt(5)].toString() : rs.getString(5));
+            assertEquals(testGender.toString(), Gender.values()[rs.getInt(5)].toString());
 
             assertFalse("Unexpected more data in result set", rs.next());
 
@@ -552,8 +530,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertEquals(testDate, rs.getDate(3));
             assertEquals("Person-to-test-put-update", rs.getString(4));
 
-            assertEquals(testGender.toString(),
-                binaryMarshaller ? Gender.values()[rs.getInt(5)].toString() : rs.getString(5));
+            assertEquals(testGender.toString(), Gender.values()[rs.getInt(5)].toString());
 
             assertFalse("Unexpected more data in result set", rs.next());
 
@@ -631,7 +608,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertTrue("Unexpected exception: " + msg,
                 ("Provided key type is not found in store or cache configuration " +
                     "[cache=" + CACHE_NAME + ", key=PersonKeyWrong]").equals(msg));
-        } finally {
+        }
+        finally {
             checkFetchSize = false;
         }
     }

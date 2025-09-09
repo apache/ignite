@@ -35,7 +35,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
@@ -57,7 +56,13 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                 if (res != 0)
                     return res;
 
-                return o1.timeoutId().compareTo(o2.timeoutId());
+                res = o1.timeoutId().compareTo(o2.timeoutId());
+
+                if (res != 0)
+                    return res;
+
+                // There can be an intersection between timeouts and ids for different subsystems.
+                return o1.getClass().getName().compareTo(o2.getClass().getName());
             }
         });
 
@@ -75,7 +80,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() {
-        new IgniteThread(timeoutWorker).start();
+        U.newThread(timeoutWorker).start();
 
         if (log.isDebugEnabled())
             log.debug("Timeout processor started.");
@@ -296,7 +301,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                 throw t;
             }
             finally {
-                if (err == null && !isCancelled)
+                if (err == null && !isCancelled.get())
                     err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly.");
 
                 if (err instanceof OutOfMemoryError)

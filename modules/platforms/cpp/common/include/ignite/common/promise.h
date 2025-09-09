@@ -213,6 +213,98 @@ namespace ignite
             /** Shared state. */
             concurrent::SharedPointer< SharedState<ValueType> > state;
         };
+
+        /**
+         * Specialization for SharePointer type.
+         */
+        template<typename T>
+        class Promise< concurrent::SharedPointer<T> >
+        {
+        public:
+            /** Template value type */
+            typedef T ValueType;
+
+            /** Template value type wrapped in shared pointer */
+            typedef concurrent::SharedPointer<ValueType> SP_ValueType;
+
+            /**
+             * Constructor.
+             */
+            Promise() :
+                state(new SharedState<SP_ValueType>())
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~Promise()
+            {
+                SharedState<SP_ValueType>* state0 = state.Get();
+
+                assert(state0 != 0);
+
+                if (!state0->IsSet())
+                    state0->SetError(IgniteError(IgniteError::IGNITE_ERR_FUTURE_STATE,
+                        "Broken promise. Value will never be set due to internal error."));
+            }
+
+
+            /**
+             * Get future for this promise.
+             *
+             * @return New future instance.
+             */
+            Future<SP_ValueType> GetFuture() const
+            {
+                return Future<SP_ValueType>(state);
+            }
+
+            /**
+             * Set value.
+             *
+             * @throw IgniteError with IgniteError::IGNITE_ERR_FUTURE_STATE if error or value has been set already.
+             * @param val Value to set.
+             */
+            void SetValue(SP_ValueType val)
+            {
+                SharedState<SP_ValueType>* state0 = state.Get();
+
+                assert(state0 != 0);
+
+                return state0->SetValue(val);
+            }
+
+            /**
+             * Set error.
+             *
+             * @throw IgniteError with IgniteError::IGNITE_ERR_FUTURE_STATE if error or value has been set already.
+             * @param err Error to set.
+             */
+            void SetError(const IgniteError& err)
+            {
+                SharedState<SP_ValueType>* state0 = state.Get();
+
+                assert(state0 != 0);
+
+                state0->SetError(err);
+            }
+
+            /**
+             * Set cancel target.
+             */
+            void SetCancelTarget(std::auto_ptr<Cancelable>& target)
+            {
+                state.Get()->SetCancelTarget(target);
+            }
+
+        private:
+            IGNITE_NO_COPY_ASSIGNMENT(Promise);
+
+            /** Shared state. */
+            concurrent::SharedPointer< SharedState<SP_ValueType> > state;
+        };
     }
 }
 

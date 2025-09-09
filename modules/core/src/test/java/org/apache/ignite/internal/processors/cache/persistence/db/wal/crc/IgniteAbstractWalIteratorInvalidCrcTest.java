@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
@@ -25,6 +24,7 @@ import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -34,11 +34,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -89,7 +89,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
 
         ignite = (IgniteEx)startGrid();
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -103,7 +103,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
         for (int i = 0; i < insertingCnt; i++)
             cache.put(i, val);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -121,12 +121,14 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
     /**
      * Instantiate WAL iterator according to the iterator type of specific implementation.
      * @param walMgr WAL manager instance.
+     * @param ft Node file tree.
      * @param ignoreArchiveDir Do not include archive segments in resulting iterator if this flag is true.
      * @return WAL iterator instance.
      * @throws IgniteCheckedException If iterator creation failed for some reason.
      */
     @NotNull protected abstract WALIterator getWalIterator(
         IgniteWriteAheadLogManager walMgr,
+        NodeFileTree ft,
         boolean ignoreArchiveDir
     ) throws IgniteCheckedException;
 
@@ -173,19 +175,18 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
         boolean shouldFail
     ) throws IOException, IgniteCheckedException {
         IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
-        File walArchiveDir = U.field(walMgr, "walArchiveDir");
         List<FileDescriptor> archiveDescs = iterFactory.resolveWalFiles(
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                .filesOrDirs(walArchiveDir)
+                .filesOrDirs(ft.walArchive())
         );
 
-        File walDir = U.field(walMgr, "walWorkDir");
         List<FileDescriptor> descs = iterFactory.resolveWalFiles(
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                .filesOrDirs(walDir)
+                .filesOrDirs(ft.wal())
         );
 
         FileDescriptor corruptedDesc = descPicker.apply(archiveDescs, descs);
@@ -199,8 +200,8 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
         if (shouldFail) {
             WALPointer[] lastReadPtrRef = new WALPointer[1];
 
-            IgniteException igniteException = (IgniteException) GridTestUtils.assertThrows(log, () -> {
-                try (WALIterator iter = getWalIterator(walMgr, ignoreArchiveDir)) {
+            IgniteException igniteEx = (IgniteException)GridTestUtils.assertThrows(log, () -> {
+                try (WALIterator iter = getWalIterator(walMgr, ft, ignoreArchiveDir)) {
                     for (IgniteBiTuple<WALPointer, WALRecord> tuple : iter) {
                         WALPointer ptr = tuple.get1();
                         lastReadPtrRef[0] = ptr;
@@ -210,7 +211,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
                 return null;
             }, IgniteException.class, "Failed to read WAL record");
 
-            assertTrue(igniteException.hasCause(IgniteDataIntegrityViolationException.class));
+            assertTrue(igniteEx.hasCause(IgniteDataIntegrityViolationException.class));
 
             WALPointer lastReadPtr = lastReadPtrRef[0];
             assertNotNull(lastReadPtr);
@@ -220,7 +221,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
             assertEquals(lastReadPtr, beforeCorruptedPtr);
         }
         else
-            try (WALIterator iter = getWalIterator(walMgr, ignoreArchiveDir)) {
+            try (WALIterator iter = getWalIterator(walMgr, ft, ignoreArchiveDir)) {
                 while (iter.hasNext())
                     iter.next();
             }

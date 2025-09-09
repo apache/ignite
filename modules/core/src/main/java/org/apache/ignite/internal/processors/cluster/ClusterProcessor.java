@@ -42,6 +42,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDiagnosticInfo;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext.CompoundInfo;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -56,7 +57,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridTimerTask;
@@ -70,10 +70,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.IgniteClusterMXBean;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -93,6 +93,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_INTERNAL_DIAGNOSTIC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_METRICS;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsistentIds;
 
 /**
  *
@@ -157,7 +158,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     private final Map<UUID, byte[]> allNodesMetrics = new ConcurrentHashMap<>();
 
     /** */
-    private final JdkMarshaller marsh = new JdkMarshaller();
+    private final JdkMarshaller marsh;
 
     /** */
     private DiscoveryMetricsProvider metricsProvider;
@@ -186,8 +187,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, DFLT_UPDATE_NOTIFIER));
 
         cluster = new IgniteClusterImpl(ctx);
-
         sndMetrics = !(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi);
+        marsh = ctx.marshallerContext().jdkMarshaller();
     }
 
     /**
@@ -199,9 +200,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.isDaemon())
-            return;
-
         GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
 
         isp.registerDistributedMetastorageListener(this);
@@ -228,9 +226,9 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 if (log.isInfoEnabled())
                     log.info(
                         "Cluster tag will be set to new value: " +
-                            newVal != null ? newVal.tag() : "null" +
+                            (newVal != null ? newVal.tag() : "null") +
                             ", previous value was: " +
-                            oldVal != null ? oldVal.tag() : "null");
+                            (oldVal != null ? oldVal.tag() : "null"));
 
                 if (oldVal != null && newVal != null) {
                     if (ctx.event().isRecordable(EVT_CLUSTER_TAG_UPDATED)) {
@@ -308,10 +306,10 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 "Please try again later.");
 
         if (!metastorage.compareAndSet(CLUSTER_ID_TAG_KEY, oldTag, new ClusterIdAndTag(oldTag.id(), newTag))) {
-            ClusterIdAndTag concurrentValue = metastorage.read(CLUSTER_ID_TAG_KEY);
+            ClusterIdAndTag concurrentVal = metastorage.read(CLUSTER_ID_TAG_KEY);
 
             throw new IgniteCheckedException("Cluster tag has been concurrently updated to different value: " +
-                concurrentValue.tag());
+                concurrentVal.tag());
         }
         else
             cluster.setTag(newTag);
@@ -401,12 +399,10 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
                         byte[] diagRes;
 
-                        IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> c;
-
                         try {
-                            c = msg0.unmarshal(marsh);
+                            CompoundInfo info = msg0.unmarshal(marsh);
 
-                            diagRes = marsh.marshal(c.apply(ctx));
+                            diagRes = marsh.marshal(info.diagnosticInfo(ctx));
                         }
                         catch (Exception e) {
                             U.error(diagnosticLog, "Failed to run diagnostic closure: " + e, e);
@@ -695,7 +691,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             if (ctx.isStopping() || ctx.clientDisconnected())
                 return -1;
 
-            Collection<Object> srvIds = F.nodeConsistentIds(cluster.forServers().nodes());
+            Collection<Object> srvIds = nodeConsistentIds(cluster.forServers().nodes());
 
             return F.size(cluster.currentBaselineTopology(), node -> srvIds.contains(node.consistentId()));
         }, "Active baseline nodes count.");
@@ -741,7 +737,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             return;
 
         try {
-            ClusterNodeMetrics metrics = U.unmarshalZip(ctx.config().getMarshaller(), metricsBytes, null);
+            ClusterNodeMetrics metrics = U.unmarshalZip(ctx.marshaller(), metricsBytes, null);
 
             assert node instanceof IgniteClusterNode : node;
 
@@ -778,7 +774,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             ClusterNodeMetrics metrics = new ClusterNodeMetrics(locNode.metrics(), locNode.cacheMetrics());
 
             try {
-                byte[] metricsBytes = U.zip(U.marshal(ctx.config().getMarshaller(), metrics));
+                byte[] metricsBytes = U.zip(U.marshal(ctx.marshaller(), metrics));
 
                 allNodesMetrics.put(ctx.localNodeId(), metricsBytes);
             }
@@ -812,7 +808,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             ClusterNodeMetrics metrics = new ClusterNodeMetrics(metricsProvider.metrics(), metricsProvider.cacheMetrics());
 
             try {
-                byte[] metricsBytes = U.zip(U.marshal(ctx.config().getMarshaller(), metrics));
+                byte[] metricsBytes = U.zip(U.marshal(ctx.marshaller(), metrics));
 
                 ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(metricsBytes);
 
@@ -855,34 +851,26 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @return Cluster name.
      * */
     public String clusterName() {
-        try {
-            ctx.cache().awaitStarted();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-
         return IgniteSystemProperties.getString(
             IGNITE_CLUSTER_NAME,
-            ctx.cache().utilityCache().context().dynamicDeploymentId().toString()
+            String.valueOf(ctx.grid().cluster().id())
         );
     }
 
     /**
-     * Sends diagnostic message closure to remote node. When response received dumps remote message and local
+     * Sends diagnostic message to remote node. When response received dumps remote message and local
      * communication info about connection(s) with remote node.
      *
      * @param nodeId Target node ID.
-     * @param c Closure to send.
-     * @param baseMsg Local message to log.
+     * @param info Compound info.
      * @return Message future.
      */
-    public IgniteInternalFuture<String> requestDiagnosticInfo(final UUID nodeId,
-        IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> c,
-        final String baseMsg) {
+    public IgniteInternalFuture<String> requestDiagnosticInfo(final UUID nodeId, CompoundInfo info) {
         final GridFutureAdapter<String> infoFut = new GridFutureAdapter<>();
 
-        final IgniteInternalFuture<IgniteDiagnosticInfo> rmtFut = sendDiagnosticMessage(nodeId, c);
+        final String baseMsg = info.message();
+
+        final IgniteInternalFuture<IgniteDiagnosticInfo> rmtFut = sendDiagnosticMessage(nodeId, info);
 
         rmtFut.listen(new CI1<IgniteInternalFuture<IgniteDiagnosticInfo>>() {
             @Override public void apply(IgniteInternalFuture<IgniteDiagnosticInfo> fut) {
@@ -926,15 +914,12 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /**
      * @param nodeId Target node ID.
-     * @param c Message closure.
+     * @param info Compound info.
      * @return Message future.
      */
-    private IgniteInternalFuture<IgniteDiagnosticInfo> sendDiagnosticMessage(UUID nodeId,
-        IgniteClosure<GridKernalContext, IgniteDiagnosticInfo> c) {
+    private IgniteInternalFuture<IgniteDiagnosticInfo> sendDiagnosticMessage(UUID nodeId, CompoundInfo info) {
         try {
-            IgniteDiagnosticMessage msg = IgniteDiagnosticMessage.createRequest(marsh,
-                c,
-                diagFutId.getAndIncrement());
+            IgniteDiagnosticMessage msg = IgniteDiagnosticMessage.createRequest(marsh, info, diagFutId.getAndIncrement());
 
             InternalDiagnosticFuture fut = new InternalDiagnosticFuture(nodeId, msg.futureId());
 

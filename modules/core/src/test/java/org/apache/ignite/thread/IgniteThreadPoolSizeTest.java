@@ -18,6 +18,7 @@
 package org.apache.ignite.thread;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -76,7 +77,8 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalanceThreadPoolSize() throws Exception {
-        testWrongPoolSize(configuration().setRebalanceThreadPoolSize(WRONG_VALUE));
+        assertThrowsAnyCause(log, () -> Ignition.start(configuration().setRebalanceThreadPoolSize(WRONG_VALUE)),
+            IgniteException.class, "thread pool size");
     }
 
     /**

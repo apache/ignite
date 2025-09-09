@@ -21,8 +21,8 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.internal.processors.query.RunningQueryManager;
+import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
+import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
@@ -57,7 +57,7 @@ public class BulkLoadProcessor implements AutoCloseable {
     private final RunningQueryManager runningQryMgr;
 
     /** Query id. */
-    private final Long qryId;
+    private final long qryId;
 
     /** Exception, current load process ended with, or {@code null} if in progress or if succeded. */
     private Exception failReason;
@@ -80,7 +80,7 @@ public class BulkLoadProcessor implements AutoCloseable {
      * @param tracing Tracing processor.
      */
     public BulkLoadProcessor(BulkLoadParser inputParser, IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter,
-        BulkLoadCacheWriter outputStreamer, RunningQueryManager runningQryMgr, Long qryId, Tracing tracing) {
+        BulkLoadCacheWriter outputStreamer, RunningQueryManager runningQryMgr, long qryId, Tracing tracing) {
         this.inputParser = inputParser;
         this.dataConverter = dataConverter;
         this.outputStreamer = outputStreamer;

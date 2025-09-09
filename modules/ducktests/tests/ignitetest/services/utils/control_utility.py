@@ -26,6 +26,7 @@ from typing import NamedTuple
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
 from ignitetest.services.utils.auth import get_credentials, is_auth_enabled
+from ignitetest.services.utils.ignite_spec import envs_to_exports
 from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enabled, IGNITE_ADMIN_ALIAS
 from ignitetest.services.utils.jmx_utils import JmxClient
 from ignitetest.utils.version import V_2_11_0
@@ -37,7 +38,6 @@ class ControlUtility:
     """
     BASE_COMMAND = "control.sh"
 
-    # pylint: disable=R0913
     def __init__(self, cluster, ssl_params=None, username=None, password=None):
         self._cluster = cluster
         self.logger = cluster.context.logger
@@ -152,11 +152,15 @@ class ControlUtility:
 
         assert ('no issues found.' in data), data
 
-    def idle_verify(self):
+    def idle_verify(self, cache_names=None):
         """
         Idle verify.
         """
-        data = self.__run("--cache idle_verify")
+
+        if cache_names is None:
+            data = self.__run("--cache idle_verify")
+        else:
+            data = self.__run(f"--cache idle_verify {cache_names}")
 
         if self._cluster.config.version < V_2_11_0:
             msg = 'idle_verify check has finished, no conflicts have been found.'
@@ -164,6 +168,7 @@ class ControlUtility:
             msg = 'The check procedure has finished, no conflicts have been found.'
 
         assert (msg in data), data
+        return data
 
     def idle_verify_dump(self, node=None):
         """
@@ -172,9 +177,18 @@ class ControlUtility:
         """
         data = self.__run("--cache idle_verify --dump", node=node)
 
-        assert ('VisorIdleVerifyDumpTask successfully' in data), data
+        assert ('IdleVerifyDumpTask successfully' in data), data
 
         return re.search(r'/.*.txt', data).group(0)
+
+    def check_consistency(self, args):
+        """
+        Consistency check.
+        """
+        data = self.__run(f"--consistency {args} --enable-experimental")
+
+        assert ('Command [CONSISTENCY] finished with code: 0' in data), data
+        return data
 
     def snapshot_create(self, snapshot_name: str, timeout_sec: int = 60):
         """
@@ -190,9 +204,9 @@ class ControlUtility:
 
         while datetime.now() < delta_time:
             for node in self._cluster.nodes:
-                mbean = JmxClient(node).find_mbean('.*name=snapshot')
+                mbean = JmxClient(node).find_mbean('.*name=snapshot.*', negative_pattern='group=views')
 
-                if snapshot_name != next(mbean.LastSnapshotName):
+                if snapshot_name != next(mbean.LastSnapshotName, ""):
                     continue
 
                 start_time = int(next(mbean.LastSnapshotStartTime))
@@ -205,6 +219,69 @@ class ControlUtility:
 
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
                            f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
+
+    def snapshot_check(self, snapshot_name: str):
+        """
+        Check snapshot.
+        :param snapshot_name: Name of snapshot.
+        """
+        res = self.__run(f"--snapshot check {snapshot_name}")
+
+        assert "The check procedure has finished, no conflicts have been found." in res
+
+        return res
+
+    def start_performance_statistics(self):
+        """
+        Start performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("start")
+
+        assert "Started." in output
+
+        return output
+
+    def stop_performance_statistics(self):
+        """
+        Stop performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("stop")
+
+        assert "Stopped." in output
+
+        return output
+
+    def rotate_performance_statistics(self):
+        """
+        Rotate performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("rotate")
+
+        assert "Rotated." in output
+
+        return output
+
+    def is_performance_statistics_enabled(self):
+        """
+        Check status of performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("status")
+
+        assert "Enabled." in output or "Disabled." in output
+
+        return "Enabled." in output
+
+    def run(self, cmd, node=None):
+        """
+        Run arbitrary control.sh subcommand.
+        :param cmd: Command line parameters for the control.sh.
+        :param node: Node to run the control.sh on.
+        :return: Output of the commands as a string.
+        """
+        return self.__run(cmd, node)
+
+    def __performance_statistics_cmd(self, sub_command):
+        return self.__run(f"--performance-statistics {sub_command}")
 
     @staticmethod
     def __tx_command(**kwargs):
@@ -245,7 +322,8 @@ class ControlUtility:
     @staticmethod
     def __parse_tx_info(output):
         tx_info_pattern = re.compile(
-            "Near XID version: (?P<xid_full>GridCacheVersion \\[topVer=\\d+, order=\\d+, nodeOrder=\\d+\\])\\n\\s+"
+            "Near XID version: "
+            "(?P<xid_full>GridCacheVersion \\[topVer=\\d+, order=\\d+, nodeOrder=\\d+(, dataCenterId=\\d+)?\\])\\n\\s+"
             "Near XID version \\(UUID\\): (?P<xid>[^\\s]+)\\n\\s+"
             "Isolation: (?P<isolation>[^\\s]+)\\n\\s+"
             "Concurrency: (?P<concurrency>[^\\s]+)\\n\\s+"
@@ -281,10 +359,11 @@ class ControlUtility:
         tx_pattern = re.compile(
             "Tx: \\[xid=(?P<xid>[^\\s]+), "
             "label=(?P<label>[^\\s]+), state=(?P<state>[^\\s]+), "
-            "startTime=(?P<start_time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{3}), duration=(?P<duration>\\d+), "
+            "startTime=(?P<start_time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{3}), "
+            "duration=(?P<duration>\\d+)( sec)?, "
             "isolation=(?P<isolation>[^\\s]+), concurrency=(?P<concurrency>[^\\s]+), "
             "topVer=AffinityTopologyVersion \\[topVer=(?P<top_ver>\\d+), minorTopVer=(?P<minor_top_ver>\\d+)\\], "
-            "timeout=(?P<timeout>\\d+), size=(?P<size>\\d+), dhtNodes=\\[(?P<dht_nodes>.*)\\], "
+            "timeout=(?P<timeout>\\d+)( sec)?, size=(?P<size>\\d+), dhtNodes=\\[(?P<dht_nodes>.*)\\], "
             "nearXid=(?P<near_xid>[^\\s]+), parentNodeIds=\\[(?P<parent_nodes>.*)\\]\\]")
 
         str_fields = ['xid', 'label', 'state', 'isolation', 'concurrency', 'near_xid']
@@ -306,9 +385,9 @@ class ControlUtility:
     def __parse_cluster_state(output):
         state_pattern = re.compile("Cluster state: (?P<cluster_state>[^\\s]+)")
         topology_pattern = re.compile("Current topology version: (?P<topology_version>\\d+)")
-        baseline_pattern = re.compile("Consistent(Id|ID)=(?P<consistent_id>[^\\s]+)"
-                                      "(,\\sA(ddress|DDRESS)=(?P<address>[^\\s]+))?"
-                                      ",\\sS(tate|TATE)=(?P<state>[^\\s]+)"
+        baseline_pattern = re.compile("Consistent(Id|ID)=(?P<consistent_id>[^\\s,]+)"
+                                      "(,\\sA(ddress|DDRESS)=(?P<address>[^\\s,]+))?"
+                                      ",\\sS(tate|TATE)=(?P<state>[^\\s,]+)"
                                       "(,\\sOrder=(?P<order>\\d+))?")
 
         match = state_pattern.search(output)
@@ -355,7 +434,19 @@ class ControlUtility:
         auth = ""
         if hasattr(self, "username"):
             auth = f" --user {self.username} --password {self.password} "
-        return self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}")
+
+        return "%s %s" % \
+               (envs_to_exports(self.envs()),
+                self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}"))
+
+    def envs(self):
+        """
+        :return: environment set.
+        """
+        return {
+            'EXCLUDE_TEST_CLASSES': 'true',
+            'CONTROL_JVM_OPTS': '-Dlog4j.configurationFile=file:' + self._cluster.log_config_file
+        }
 
     @staticmethod
     def __parse_output(raw_output):

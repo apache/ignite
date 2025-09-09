@@ -23,14 +23,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,14 +45,9 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Tests discovery event topology snapshots.
  */
 public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
-    /** Daemon flag. */
-    private boolean daemon;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
-
-        daemon = false;
     }
 
     /** */
@@ -73,7 +65,6 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        c.setDaemon(daemon);
         c.setConnectorConfiguration(null);
 
         return c;
@@ -165,7 +156,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED : evt;
 
-                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent)evt).topologyNodes());
 
                     latch.countDown();
 
@@ -232,7 +223,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                     assert evt.type() == EVT_NODE_JOINED
                         || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED : evt;
 
-                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent)evt).topologyNodes());
 
                     latch.countDown();
 
@@ -349,10 +340,10 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_JOINED : evt;
 
-                    X.println(">>>>>>> Joined " + F.viewReadOnly(((DiscoveryEvent) evt).topologyNodes(),
+                    X.println(">>>>>>> Joined " + F.viewReadOnly(((DiscoveryEvent)evt).topologyNodes(),
                         NODE_2ID));
 
-                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent)evt).topologyNodes());
 
                     return true;
                 }
@@ -380,50 +371,6 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             for (int i = 1; i <= 10; i++)
                 assertTrue(ids.contains(grid(i).localNode().id()));
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDaemonNodeJoin() throws Exception {
-        try {
-            startGridsMultiThreaded(3);
-
-            final AtomicReference<IgniteCheckedException> err = new AtomicReference<>();
-
-            for (int i = 0; i < 3; i++) {
-                Ignite g = grid(i);
-
-                g.events().localListen(new IgnitePredicate<Event>() {
-                    @Override public boolean apply(Event evt) {
-                        DiscoveryEvent discoEvt = (DiscoveryEvent) evt;
-
-                        if (discoEvt.topologyNodes().size() != 3)
-                            err.compareAndSet(null, new IgniteCheckedException("Invalid discovery event [evt=" + discoEvt +
-                                ", nodes=" + discoEvt.topologyNodes() + ']'));
-
-                        return true;
-                    }
-                }, EventType.EVT_NODE_JOINED);
-            }
-
-            daemon = true;
-
-            IgniteKernal daemon = (IgniteKernal)startGrid(3);
-
-            DiscoveryEvent join = daemon.context().discovery().localJoinEvent();
-
-            assertEquals(3, join.topologyNodes().size());
-
-            U.sleep(100);
-
-            if (err.get() != null)
-                throw err.get();
         }
         finally {
             stopAllGrids();

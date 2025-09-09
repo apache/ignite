@@ -25,14 +25,19 @@
 
 #include <ignite/common/concurrent.h>
 
+#include <ignite/thin/cache/query/query_cursor.h>
 #include <ignite/thin/cache/query/query_fields_cursor.h>
+#include <ignite/thin/cache/query/query_scan.h>
 #include <ignite/thin/cache/query/query_sql_fields.h>
+#include <ignite/thin/cache/query/continuous/continuous_query_client.h>
+#include <ignite/thin/cache/query/continuous/continuous_query_handle.h>
 
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/writable_key.h>
 
 #include <ignite/impl/thin/readable.h>
 #include <ignite/impl/thin/cache/cache_client_proxy.h>
+#include <ignite/impl/thin/cache/continuous/continuous_query_client_holder.h>
 
 namespace ignite
 {
@@ -72,7 +77,7 @@ namespace ignite
                  *
                  * @param impl Implementation.
                  */
-                CacheClient(common::concurrent::SharedPointer<void> impl) :
+                explicit CacheClient(const common::concurrent::SharedPointer<void>& impl) :
                     proxy(impl)
                 {
                     // No-op.
@@ -178,7 +183,7 @@ namespace ignite
                 void GetAll(InIter begin, InIter end, OutIter dst)
                 {
                     impl::thin::WritableSetImpl<K, InIter> wrSeq(begin, end);
-                    impl::thin::ReadableMapImpl<K, V, OutIter> rdSeq(dst);
+                    impl::thin::ReadableContainerImpl< std::pair<K, V>, OutIter> rdSeq(dst);
 
                     proxy.GetAll(wrSeq, rdSeq);
                 }
@@ -594,6 +599,33 @@ namespace ignite
                 query::QueryFieldsCursor Query(const query::SqlFieldsQuery& qry)
                 {
                     return proxy.Query(qry);
+                }
+
+                /**
+                 * Perform scan query.
+                 *
+                 * @param qry Query.
+                 * @return Query cursor.
+                 */
+                query::QueryCursor<KeyType, ValueType> Query(const query::ScanQuery& qry)
+                {
+                    return query::QueryCursor<KeyType, ValueType>(proxy.Query(qry));
+                }
+
+                /**
+                 * Starts the continuous query execution
+                 *
+                 * @param continuousQuery Continuous query.
+                 * @return Query handle. Once all instances are destroyed query execution stopped.
+                 */
+                query::continuous::ContinuousQueryHandleClient QueryContinuous(
+                    query::continuous::ContinuousQueryClient<K, V> continuousQuery)
+                {
+                    using namespace impl::thin::cache::query::continuous;
+
+                    SP_ContinuousQueryClientHolderBase holder(new ContinuousQueryClientHolder<K, V>(continuousQuery));
+
+                    return proxy.QueryContinuous(holder, continuousQuery.GetJavaFilter());
                 }
 
                 /**

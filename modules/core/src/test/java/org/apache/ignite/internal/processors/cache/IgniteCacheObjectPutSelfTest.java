@@ -44,8 +44,6 @@ public class IgniteCacheObjectPutSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setMarshaller(null);
-
         return cfg;
     }
 
@@ -164,9 +162,9 @@ public class IgniteCacheObjectPutSelfTest extends GridCommonAbstractTest {
             if (!(o instanceof TestValue))
                 return false;
 
-            TestValue value = (TestValue)o;
+            TestValue val = (TestValue)o;
 
-            return val == value.val;
+            return this.val == val.val;
         }
 
         /** {@inheritDoc} */

@@ -96,7 +96,7 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
     /**
      *
      */
-   public static class CacheInfo implements Serializable {
+    public static class CacheInfo implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -53,7 +53,12 @@ public enum GridCacheQueryType {
     /**
      * Cache set items query.
      */
-    SET;
+    SET,
+
+    /**
+     * Index query.
+     */
+    INDEX;
 
     /** Enumerated values. */
     private static final GridCacheQueryType[] VALS = values();

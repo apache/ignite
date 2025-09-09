@@ -42,6 +42,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
@@ -144,6 +145,9 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         checkQuery("select (select 1)");
         checkQuery("select (select 1, select ?)");
         checkQuery("select ((select 1), select ? + ?)");
+        checkQuery("select 1 + ?");
+        checkQuery("select ? + 1");
+        checkQuery("select ? + ?");
         checkQuery("select CURRENT_DATE");
         checkQuery("select CURRENT_DATE()");
 
@@ -194,7 +198,9 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         checkQuery("select * from Person");
         checkQuery("select distinct * from Person");
         checkQuery("select p.name, date from Person p");
-        checkQuery("select p.name, date from Person p for update");
+
+        assertParseThrows("select p.name, date from Person p for update", IgniteSQLException.class,
+            "SELECT FOR UPDATE is not supported.");
 
         checkQuery("select * from Person p, sch2.Address a");
         checkQuery("select * from Person, sch2.Address");
@@ -693,7 +699,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertTrue(stmt instanceof GridSqlCreateIndex);
 
-        assertCreateIndexEquals(exp, (GridSqlCreateIndex) stmt);
+        assertCreateIndexEquals(exp, (GridSqlCreateIndex)stmt);
     }
 
     /**
@@ -706,7 +712,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertTrue(stmt instanceof GridSqlDropIndex);
 
-        assertDropIndexEquals(exp, (GridSqlDropIndex) stmt);
+        assertDropIndexEquals(exp, (GridSqlDropIndex)stmt);
     }
 
     /**
@@ -741,7 +747,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertTrue(stmt instanceof GridSqlCreateTable);
 
-        assertCreateTableEquals(exp, (GridSqlCreateTable) stmt);
+        assertCreateTableEquals(exp, (GridSqlCreateTable)stmt);
     }
 
     /**
@@ -879,7 +885,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         assertTrue(stmt instanceof GridSqlDropTable);
 
-        assertDropTableEquals(exp, (GridSqlDropTable) stmt);
+        assertDropTableEquals(exp, (GridSqlDropTable)stmt);
     }
 
     /**
@@ -976,15 +982,15 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
      *
      */
     private H2PooledConnection connection() throws Exception {
-        IgniteH2Indexing idx = (IgniteH2Indexing)((IgniteEx)ignite).context().query().getIndexing();
+        GridQueryProcessor qryProc = ((IgniteEx)ignite).context().query();
+        IgniteH2Indexing idx = (IgniteH2Indexing)qryProc.getIndexing();
 
-        return idx.connections().connection(idx.schema(DEFAULT_CACHE_NAME));
+        return idx.connections().connection(qryProc.schemaManager().schemaName(DEFAULT_CACHE_NAME));
     }
 
     /**
      * @param sql Sql.
      */
-    @SuppressWarnings("unchecked")
     private <T extends Prepared> T parse(String sql) throws Exception {
         try (H2PooledConnection conn = connection()) {
             Session ses = H2Utils.session(conn);
@@ -1035,11 +1041,13 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         assertSqlEquals(U.firstNotNull(prepared.getPlanSQL(), prepared.getSQL()), res);
     }
 
+    /** */
     @QuerySqlFunction
     public static int cool1() {
         return 1;
     }
 
+    /** */
     @QuerySqlFunction
     public static ResultSet table0(Connection c, String a, int b) throws SQLException {
         return c.createStatement().executeQuery("select '" + a + "' as a, " + b + " as b");
@@ -1063,21 +1071,27 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
      *
      */
     public static class Person implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         public Date date = new Date(System.currentTimeMillis());
 
+        /** */
         @QuerySqlField(index = true)
         public String name = "Ivan";
 
+        /** */
         @QuerySqlField(index = true)
         public String parentName;
 
+        /** */
         @QuerySqlField(index = true)
         public int addrId;
 
+        /** */
         @QuerySqlField
         public Integer[] addrIds;
 
+        /** */
         @QuerySqlField(index = true)
         public int old;
     }
@@ -1086,12 +1100,15 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
      *
      */
     public static class Address implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         public int id;
 
+        /** */
         @QuerySqlField(index = true)
         public int streetNumber;
 
+        /** */
         @QuerySqlField(index = true)
         public String street = "Nevskiy";
     }

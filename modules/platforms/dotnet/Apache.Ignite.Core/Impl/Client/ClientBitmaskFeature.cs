@@ -31,6 +31,9 @@ namespace Apache.Ignite.Core.Impl.Client
         ServiceInvoke = 5, // The flag is not necessary and exists for legacy reasons
         // DefaultQueryTimeout = 6, // IGNITE-13692
         QueryPartitionsBatchSize = 7,
-        BinaryConfiguration = 8
+        BinaryConfiguration = 8,
+        ServiceInvokeCtx = 10,
+        Heartbeat = 11,
+        ServiceTopology = 16,
     }
 }

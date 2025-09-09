@@ -107,7 +107,7 @@ import org.jetbrains.annotations.Nullable;
  *     Integer v1 = cache.get("k1");
  *
  *     // Check if v1 satisfies some condition before doing a put.
- *     if (v1 != null && v1 > 0)
+ *     if (v1 != null &amp;&amp; v1 &gt; 0)
  *         cache.put("k1", 2);
  *
  *     cache.remove("k2");
@@ -277,14 +277,14 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     public IgniteFuture<Void> rollbackAsync() throws IgniteException;
 
     /**
-     * Resume a transaction if it was previously suspended. <strong>Supported only for optimistic transactions.</strong>
+     * Resume a transaction if it was previously suspended.
      *
      * @throws IgniteException If resume failed.
      */
     public void resume() throws IgniteException;
 
     /**
-     * Suspends a transaction. It could be resumed later. <strong>Supported only for optimistic transactions.</strong>
+     * Suspends a transaction. It could be resumed later.
      *
      * @throws IgniteException If suspension failed.
      */

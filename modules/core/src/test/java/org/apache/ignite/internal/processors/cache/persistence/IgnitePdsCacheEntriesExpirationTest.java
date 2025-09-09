@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -128,7 +129,7 @@ public class IgnitePdsCacheEntriesExpirationTest extends GridCommonAbstractTest 
 
         IgniteEx srv0 = startGrids(2);
 
-        srv0.cluster().active(true);
+        srv0.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 

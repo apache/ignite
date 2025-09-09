@@ -28,13 +28,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -72,7 +73,7 @@ public class TcpCommunicationMetricsListener {
     private final Ignite ignite;
 
     /** Metrics registry. */
-    private final MetricRegistry mreg;
+    private final MetricRegistryImpl mreg;
 
     /** All registered metrics. */
     private final Set<ThreadMetrics> allMetrics = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -113,14 +114,17 @@ public class TcpCommunicationMetricsListener {
     /** Message type map. */
     private volatile Map<Short, String> msgTypeMap;
 
-    /** */
+    /**
+     * @param ignite Ignite instance.
+     * @param spiCtx Ignite SPI context.
+     */
     public TcpCommunicationMetricsListener(Ignite ignite, IgniteSpiContext spiCtx) {
         this.ignite = ignite;
         this.spiCtx = spiCtx;
 
-        mreg = (MetricRegistry)spiCtx.getOrCreateMetricRegistry(COMMUNICATION_METRICS_GROUP_NAME);
+        mreg = (MetricRegistryImpl)spiCtx.getOrCreateMetricRegistry(COMMUNICATION_METRICS_GROUP_NAME);
 
-        msgCntrsByType = createMessageCounters((IgniteMessageFactory)spiCtx.messageFactory());
+        msgCntrsByType = createMessageCounters(spiCtx.messageFactory());
 
         sentMsgsCntByConsistentIdMetricFactory = consistentId -> {
             String name = metricName(COMMUNICATION_METRICS_GROUP_NAME, consistentId.toString());
@@ -147,12 +151,12 @@ public class TcpCommunicationMetricsListener {
             if (!mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR))
                 return;
 
-            ((MetricRegistry)mreg).longAdderMetric(
+            ((MetricRegistryImpl)mreg).longAdderMetric(
                     SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME,
                     SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC
             );
 
-            ((MetricRegistry)mreg).longAdderMetric(
+            ((MetricRegistryImpl)mreg).longAdderMetric(
                     RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME,
                     RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC
             );
@@ -165,7 +169,7 @@ public class TcpCommunicationMetricsListener {
      * @param factory Message factory.
      * @return Counters of sent and received messages grouped by direct type.
      */
-    private IntMap<IgniteBiTuple<LongAdderMetric, LongAdderMetric>> createMessageCounters(IgniteMessageFactory factory) {
+    private IntMap<IgniteBiTuple<LongAdderMetric, LongAdderMetric>> createMessageCounters(MessageFactory factory) {
         IgniteMessageFactoryImpl msgFactory = (IgniteMessageFactoryImpl)factory;
 
         short[] directTypes = msgFactory.registeredDirectTypes();
@@ -185,7 +189,7 @@ public class TcpCommunicationMetricsListener {
         return msgCntrsByType;
     }
 
-    /** Metrics registry. */
+    /** @return Metrics registry. */
     public MetricRegistry metricRegistry() {
         return mreg;
     }
@@ -201,7 +205,7 @@ public class TcpCommunicationMetricsListener {
         assert consistentId != null;
 
         if (msg instanceof GridIoMessage) {
-            msg = ((GridIoMessage) msg).message();
+            msg = ((GridIoMessage)msg).message();
 
             updateMessageTypeMap(msg);
 
@@ -222,7 +226,7 @@ public class TcpCommunicationMetricsListener {
         assert consistentId != null;
 
         if (msg instanceof GridIoMessage) {
-            msg = ((GridIoMessage) msg).message();
+            msg = ((GridIoMessage)msg).message();
 
             updateMessageTypeMap(msg);
 
@@ -431,12 +435,22 @@ public class TcpCommunicationMetricsListener {
         }
     }
 
-    /** Generate metric name by message direct type id. */
+    /**
+     * Generate metric name by message direct type id.
+     *
+     * @param directType Direct type ID of sent message.
+     * @return Metric name for sent message.
+     */
     public static String sentMessagesByTypeMetricName(Short directType) {
         return metricName(SENT_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
     }
 
-    /** Generate metric name by message direct type id. */
+    /**
+     * Generate metric name by message direct type id.
+     *
+     * @param directType Direct type ID of the received message.
+     * @return Metric name for the received message.
+     */
     public static String receivedMessagesByTypeMetricName(Short directType) {
         return metricName(RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
     }

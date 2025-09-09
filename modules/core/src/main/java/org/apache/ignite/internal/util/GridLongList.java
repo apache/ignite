@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -33,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Minimal list API to work with primitive longs. This list exists
@@ -95,16 +92,6 @@ public class GridLongList implements Message, Externalizable {
     private GridLongList(long[] arr, int size) {
         this.arr = arr;
         idx = size;
-    }
-
-    /**
-     * @return Copy of this list.
-     */
-    public GridLongList copy() {
-        if (idx == 0)
-            return new GridLongList();
-
-        return new GridLongList(Arrays.copyOf(arr, idx));
     }
 
     /** {@inheritDoc} */
@@ -176,7 +163,7 @@ public class GridLongList implements Message, Externalizable {
         if (arr == null)
             arr = new long[4];
         else if (arr.length == idx)
-            arr = Arrays.copyOf(arr, arr.length << 1);
+            arr = Arrays.copyOf(arr, Math.max(1, arr.length) << 1);
 
         arr[idx++] = x;
     }
@@ -186,15 +173,6 @@ public class GridLongList implements Message, Externalizable {
      */
     public void clear() {
         idx = 0;
-    }
-
-    /**
-     * Gets the last element.
-     *
-     * @return The last element.
-     */
-    public long last() {
-        return arr[idx - 1];
     }
 
     /**
@@ -286,33 +264,6 @@ public class GridLongList implements Message, Externalizable {
     }
 
     /**
-     * @param l List to check.
-     * @return {@code True} if this list contains all the elements of passed in list.
-     */
-    public boolean containsAll(GridLongList l) {
-        for (int i = 0; i < l.size(); i++) {
-            if (!contains(l.get(i)))
-                return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @return {@code True} if there are no duplicates.
-     */
-    public boolean distinct() {
-        for (int i = 0; i < idx; i++) {
-            for (int j = i + 1; j < idx; j++) {
-                if (arr[i] == arr[j])
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
      * @param size New size.
      * @param last If {@code true} the last elements will be removed, otherwise the first.
      */
@@ -322,7 +273,7 @@ public class GridLongList implements Message, Externalizable {
         if (size == idx)
             return;
 
-        if (!last && idx != 0 && size != 0)
+        if (!last && size != 0)
             System.arraycopy(arr, idx - size, arr, 0, size);
 
         idx = size;
@@ -372,26 +323,6 @@ public class GridLongList implements Message, Externalizable {
     }
 
     /**
-     * Removes value from this list.
-     *
-     * @param startIdx Index to begin search with.
-     * @param oldVal Old value.
-     * @param newVal New value.
-     * @return Index of replaced value if the value was found and replaced or {@code -1} otherwise.
-     */
-    public int replaceValue(int startIdx, long oldVal, long newVal) {
-        for (int i = startIdx; i < idx; i++) {
-            if (arr[i] == oldVal) {
-                arr[i] = newVal;
-
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    /**
      * @return Array copy.
      */
     public long[] array() {
@@ -414,7 +345,7 @@ public class GridLongList implements Message, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
         idx = in.readInt();
 
         arr = new long[idx];
@@ -440,59 +371,6 @@ public class GridLongList implements Message, Externalizable {
     }
 
     /**
-     * @param in Input to read list from.
-     * @return Grid long list.
-     * @throws IOException If failed.
-     */
-    @Nullable public static GridLongList readFrom(DataInput in) throws IOException {
-        int idx = in.readInt();
-
-        if (idx == -1)
-            return null;
-
-        long[] arr = new long[idx];
-
-        for (int i = 0; i < idx; i++)
-            arr[i] = in.readLong();
-
-        return new GridLongList(arr);
-    }
-
-    /**
-     * @param out Output to write to.
-     * @param list List.
-     * @throws IOException If failed.
-     */
-    public static void writeTo(DataOutput out, @Nullable GridLongList list) throws IOException {
-        out.writeInt(list != null ? list.idx : -1);
-
-        if (list != null) {
-            for (int i = 0; i < list.idx; i++)
-                out.writeLong(list.arr[i]);
-        }
-    }
-
-    /**
-     * @param to To list.
-     * @param from From list.
-     * @return To list (passed in or created).
-     */
-    public static GridLongList addAll(@Nullable GridLongList to, GridLongList from) {
-        if (to == null) {
-            GridLongList res = new GridLongList(from.size());
-
-            res.addAll(from);
-
-            return res;
-        }
-        else {
-            to.addAll(from);
-
-            return to;
-        }
-    }
-
-    /**
      * Sorts this list.
      * Use {@code copy().sort()} if you need a defensive copy.
      *
@@ -505,21 +383,6 @@ public class GridLongList implements Message, Externalizable {
         return this;
     }
 
-    /**
-     * Removes given number of elements from the end. If the given number of elements is higher than
-     * list size, then list will be cleared.
-     *
-     * @param cnt Count to pop from the end.
-     */
-    public void pop(int cnt) {
-        assert cnt >= 0 : cnt;
-
-        if (idx < cnt)
-            idx = 0;
-        else
-            idx -= cnt;
-    }
-
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
@@ -530,7 +393,7 @@ public class GridLongList implements Message, Externalizable {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -538,13 +401,13 @@ public class GridLongList implements Message, Externalizable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLongArray("arr", arr, idx))
+                if (!writer.writeLongArray(arr, idx))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("idx", idx))
+                if (!writer.writeInt(idx))
                     return false;
 
                 writer.incrementState();
@@ -558,12 +421,9 @@ public class GridLongList implements Message, Externalizable {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                arr = reader.readLongArray("arr");
+                arr = reader.readLongArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -571,7 +431,7 @@ public class GridLongList implements Message, Externalizable {
                 reader.incrementState();
 
             case 1:
-                idx = reader.readInt("idx");
+                idx = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -580,16 +440,11 @@ public class GridLongList implements Message, Externalizable {
 
         }
 
-        return reader.afterMessageRead(GridLongList.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 85;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 }

@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * <p>
  * Hash code is calculated in the same way as {@link Arrays#hashCode(byte[])} does.
  */
-public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
+class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
     /** Singleton instance */
     private static final BinaryArrayIdentityResolver INSTANCE = new BinaryArrayIdentityResolver();
 
@@ -44,36 +44,35 @@ public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver 
     /**
      * Default constructor.
      */
-    public BinaryArrayIdentityResolver() {
+    private BinaryArrayIdentityResolver() {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override protected int hashCode0(BinaryObject obj) {
-        int hash = 1;
-
         if (obj instanceof BinaryObjectExImpl) {
             BinaryObjectExImpl ex = (BinaryObjectExImpl)obj;
 
             int start = ex.dataStartOffset();
             int end = ex.footerStartOffset();
 
-            if (ex.hasArray()) {
-                // Handle heap object.
-                byte[] data = ex.array();
-
-                for (int i = start; i < end; i++)
-                    hash = 31 * hash + data[i];
-            }
+            if (ex.hasBytes())
+                return hashCode(ex.bytes(), start, end);
             else {
                 // Handle offheap object.
+                int hash = 1;
+
                 long ptr = ex.offheapAddress();
 
                 for (int i = start; i < end; i++)
                     hash = 31 * hash + BinaryPrimitives.readByte(ptr, i);
+
+                return hash;
             }
         }
-        else if (obj instanceof BinaryEnumObjectImpl) {
+        else if (BinaryUtils.isBinaryEnumObject(obj)) {
+            int hash = 1;
+
             int ord = obj.enumOrdinal();
 
             // Construct hash as if it was an int serialized in little-endian form.
@@ -81,10 +80,20 @@ public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver 
             hash = 31 * hash + (ord & 0x0000FF00);
             hash = 31 * hash + (ord & 0x00FF0000);
             hash = 31 * hash + (ord & 0xFF000000);
+
+            return hash;
         }
         else
             throw new BinaryObjectException("Array identity resolver cannot be used with provided BinaryObject " +
                 "implementation: " + obj.getClass().getName());
+    }
+
+    /** */
+    public int hashCode(byte[] data, int startPos, int endPos) {
+        int hash = 1;
+
+        for (int i = startPos; i < endPos; i++)
+            hash = 31 * hash + data[i];
 
         return hash;
     }
@@ -105,15 +114,15 @@ public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver 
                 BinaryObjectExImpl exx1 = (BinaryObjectExImpl)ex1;
                 BinaryObjectExImpl exx2 = (BinaryObjectExImpl)ex2;
 
-                if (exx1.hasArray())
-                    return exx2.hasArray() ? equalsHeap(exx1, exx2) : equalsHeapOffheap(exx1, exx2);
+                if (exx1.hasBytes())
+                    return exx2.hasBytes() ? equalsHeap(exx1, exx2) : equalsHeapOffheap(exx1, exx2);
                 else
-                    return exx2.hasArray() ? equalsHeapOffheap(exx2, exx1) : equalsOffheap(exx1, exx2);
+                    return exx2.hasBytes() ? equalsHeapOffheap(exx2, exx1) : equalsOffheap(exx1, exx2);
             }
             else {
                 // Handle enums.
-                assert ex1 instanceof BinaryEnumObjectImpl;
-                assert ex2 instanceof BinaryEnumObjectImpl;
+                assert BinaryUtils.isBinaryEnumObject(ex1);
+                assert BinaryUtils.isBinaryEnumObject(ex2);
 
                 return ex1.enumOrdinal() == ex2.enumOrdinal();
             }
@@ -133,8 +142,8 @@ public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver 
      * @return Result.
      */
     private static boolean equalsHeap(BinaryObjectExImpl o1, BinaryObjectExImpl o2) {
-        byte[] arr1 = o1.array();
-        byte[] arr2 = o2.array();
+        byte[] arr1 = o1.bytes();
+        byte[] arr2 = o2.bytes();
 
         assert arr1 != null && arr2 != null;
 
@@ -163,7 +172,7 @@ public class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver 
      * @return Result.
      */
     private static boolean equalsHeapOffheap(BinaryObjectExImpl o1, BinaryObjectExImpl o2) {
-        byte[] arr1 = o1.array();
+        byte[] arr1 = o1.bytes();
         long ptr2 = o2.offheapAddress();
 
         assert arr1 != null && ptr2 != 0;

@@ -37,6 +37,9 @@ public class ThinClientConfiguration {
     /** Active compute tasks per connection limit. */
     private int maxActiveComputeTasksPerConn = DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION;
 
+    /** If {@code true} sends a server exception stack trace to the client side. */
+    private boolean sendServerExcStackTraceToClient;
+
     /**
      * Creates thin-client configuration with all default values.
      */
@@ -54,10 +57,11 @@ public class ThinClientConfiguration {
 
         maxActiveTxPerConn = cfg.maxActiveTxPerConn;
         maxActiveComputeTasksPerConn = cfg.maxActiveComputeTasksPerConn;
+        sendServerExcStackTraceToClient = cfg.sendServerExcStackTraceToClient;
     }
 
     /**
-     * Gets active transactions count per connection limit.
+     * @return Active transactions count per connection limit.
      */
     public int getMaxActiveTxPerConnection() {
         return maxActiveTxPerConn;
@@ -66,6 +70,7 @@ public class ThinClientConfiguration {
     /**
      * Sets active transactions count per connection limit.
      *
+     * @param maxActiveTxPerConn Active transactions count per connection limit.
      * @return {@code this} for chaining.
      */
     public ThinClientConfiguration setMaxActiveTxPerConnection(int maxActiveTxPerConn) {
@@ -87,10 +92,40 @@ public class ThinClientConfiguration {
      * Sets active compute tasks per connection limit.
      * Value {@code 0} means that compute grid functionality is disabled for thin clients.
      *
+     * @param maxActiveComputeTasksPerConn Active compute tasks per connection limit.
      * @return {@code this} for chaining.
      */
     public ThinClientConfiguration setMaxActiveComputeTasksPerConnection(int maxActiveComputeTasksPerConn) {
         this.maxActiveComputeTasksPerConn = maxActiveComputeTasksPerConn;
+
+        return this;
+    }
+
+    /**
+     * @return If {@code true} sends a server exception stack to the client side.
+     */
+    public boolean sendServerExceptionStackTraceToClient() {
+        return sendServerExcStackTraceToClient;
+    }
+
+    /**
+     * @param sendServerExcStackTraceToClient If {@code true} sends a server exception stack to the client side.
+     * @return {@code this} for chaining.
+     * @deprecated Use {@link #setServerToClientExceptionStackTraceSending(boolean)} instead.
+     */
+    @Deprecated
+    public ThinClientConfiguration sendServerExceptionStackTraceToClient(boolean sendServerExcStackTraceToClient) {
+        this.sendServerExcStackTraceToClient = sendServerExcStackTraceToClient;
+
+        return this;
+    }
+
+    /**
+     * @param sendStackTrace If {@code true} sends a server exception stack to the client side.
+     * @return {@code this} for chaining.
+     */
+    public ThinClientConfiguration setServerToClientExceptionStackTraceSending(boolean sendStackTrace) {
+        sendServerExcStackTraceToClient = sendStackTrace;
 
         return this;
     }

@@ -22,24 +22,23 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.SystemProperty;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 
 /**
  * Write to a log recommendation for inline size.
  */
 public class InlineRecommender {
-    /** @see #IGNITE_THROTTLE_INLINE_SIZE_CALCULATION */
+    /** Default throttle frequency for an index row inline size calculation and logging index inline size recommendation. */
     public static final int DFLT_THROTTLE_INLINE_SIZE_CALCULATION = 1_000;
 
-    /** */
-    @SystemProperty(value = "How often real invocation of inline size calculation will be skipped.", type = Long.class,
-        defaults = "" + DFLT_THROTTLE_INLINE_SIZE_CALCULATION)
-    public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
+    /** Recommended number of child items to avoid index performance drop / tree degeneration. */
+    private static final int RECOMMENDED_CHILD_NUMBER = 2;
 
     /** Counter of inline size calculation for throttling real invocations. */
     private final AtomicLong inlineSizeCalculationCntr = new AtomicLong();
@@ -69,9 +68,9 @@ public class InlineRecommender {
      * current inline size.
      */
     @SuppressWarnings({"ConditionalBreakInInfiniteLoop", "IfMayBeConditional"})
-    public void recommend(IndexRow row, int currInlineSize) {
+    public void recommend(IndexRow row, int currInlineSize, int pageSize) {
         // Do the check only for put operations.
-        if (row.indexSearchRow())
+        if (row.indexPlainRow())
             return;
 
         long invokeCnt = inlineSizeCalculationCntr.get();
@@ -83,6 +82,21 @@ public class InlineRecommender {
 
         if (throttle)
             return;
+
+        int maxRecommendedInlineSize = maxRecommendedInlineSize(pageSize);
+
+        if (currInlineSize > maxRecommendedInlineSize) {
+            U.warn(log, "Inline size is too big and may lead to performance degradation or tree degeneration. " +
+                    "Consider decreasing inline size or increasing page size " + "(" + getRecommendation() + ") " +
+                    "[cacheName=" + def.idxName().cacheName() +
+                    ", tableName=" + def.idxName().tableName() +
+                    ", idxName=" + def.idxName().idxName() +
+                    ", inlineSize=" + currInlineSize +
+                    ", pageSize=" + pageSize +
+                    ", maxRecommendedInlineSize=" + maxRecommendedInlineSize + "]");
+
+            return;
+        }
 
         int newSize = 0;
 
@@ -105,28 +119,14 @@ public class InlineRecommender {
                     break;
             }
 
-            String cols = def.indexKeyDefinitions().stream()
-                .map(IndexKeyDefinition::name)
+            String cols = def.indexKeyDefinitions().keySet().stream()
                 .collect(Collectors.joining(", ", "(", ")"));
 
             String type = def.primary() ? "PRIMARY KEY" : def.affinity() ? "AFFINITY KEY (implicit)" : "SECONDARY";
 
-            String recommendation;
-
-            if (def.primary() || def.affinity()) {
-                recommendation = "set system property "
-                    + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recommended size " +
-                    "(be aware it will be used by default for all indexes without explicit inline size)";
-            }
-            else {
-                recommendation = "use INLINE_SIZE option for CREATE INDEX command, " +
-                    "QuerySqlField.inlineSize for annotated classes, or QueryIndex.inlineSize for explicit " +
-                    "QueryEntity configuration";
-            }
-
             String warn = "Indexed columns of a row cannot be fully inlined into index " +
                 "what may lead to slowdown due to additional data page reads, increase index inline size if needed " +
-                "(" + recommendation + ") " +
+                "(" + getRecommendation() + ") " +
                 "[cacheName=" + def.idxName().cacheName() +
                 ", tableName=" + def.idxName().tableName() +
                 ", idxName=" + def.idxName().idxName() +
@@ -137,5 +137,29 @@ public class InlineRecommender {
 
             U.warn(log, warn);
         }
+    }
+
+    /** Returns a recommendation how to fix the inline size issue. */
+    private String getRecommendation() {
+        if (def.primary() || def.affinity()) {
+            return "set system property "
+                + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recommended size " +
+                "(be aware it will be used by default for all indexes without explicit inline size)";
+        }
+        else {
+            return "use INLINE_SIZE option for CREATE INDEX command, " +
+                "QuerySqlField.inlineSize for annotated classes, or QueryIndex.inlineSize for explicit " +
+                "QueryEntity configuration";
+        }
+    }
+
+    /**
+     * To avoid performance problems (i.e. tree degeneration), at least {@link #RECOMMENDED_CHILD_NUMBER} items should
+     * fit into one page. So maximum inline size equals: I = (PS - H - (N + 1) * L) / N - R, where I - inline size,
+     * PS - page size, H - page header size, L - size of the child link, P - number of child elements, R - row link size.
+     */
+    private int maxRecommendedInlineSize(int pageSize) {
+        return (pageSize - AbstractDataPageIO.ITEMS_OFF - (RECOMMENDED_CHILD_NUMBER + 1) * AbstractDataPageIO.LINK_SIZE)
+                / RECOMMENDED_CHILD_NUMBER - Long.BYTES;
     }
 }

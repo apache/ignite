@@ -193,12 +193,12 @@ public class GridCachePartitionsUpdateCountersAndSizeTest extends GridCommonAbst
 
         /** return true if inconsistent counters.*/
         public boolean checkCnt() {
-                return cn;
+            return cn;
         }
 
         /** return true if inconsistent partition size.*/
         public boolean checkSize() {
-                return sz;
+            return sz;
         }
 
         /** {@inheritDoc} */

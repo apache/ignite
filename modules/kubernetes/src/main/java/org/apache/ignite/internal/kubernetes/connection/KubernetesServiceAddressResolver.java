@@ -71,7 +71,9 @@ public class KubernetesServiceAddressResolver {
 
             @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {}
 
-            @Override public X509Certificate[] getAcceptedIssuers() { return null; }
+            @Override public X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
         }
     };
 
@@ -168,10 +170,11 @@ public class KubernetesServiceAddressResolver {
     private Collection<InetAddress> parseAddresses(List<Address> addresses) {
         Collection<InetAddress> addrs = new ArrayList<>();
         if (addresses != null && !addresses.isEmpty()) {
-            for (Address address : addresses) {
+            for (Address addr : addresses) {
                 try {
-                    addrs.add(InetAddress.getByName(address.ip));
-                } catch (UnknownHostException ignore) {
+                    addrs.add(InetAddress.getByName(addr.ip));
+                }
+                catch (UnknownHostException ignore) {
                     throw new IgniteException("Kubernetes Address is not valid IP address");
                 }
             }
@@ -188,7 +191,8 @@ public class KubernetesServiceAddressResolver {
     private String serviceAccountToken(String file) {
         try {
             return new String(Files.readAllBytes(Paths.get(file)));
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new IgniteException("Failed to load services account token [setAccountToken= " + file + "]", e);
         }
     }

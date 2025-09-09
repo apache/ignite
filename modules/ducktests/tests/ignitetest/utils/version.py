@@ -17,7 +17,7 @@
 Module contains ignite version utility class.
 """
 import re
-from distutils.version import LooseVersion
+from looseversion import LooseVersion
 
 from ignitetest import __version__
 
@@ -47,7 +47,7 @@ class IgniteVersion(LooseVersion):
             self.project = self.DEFAULT_PROJECT if not match.group(1) else match.group(1)
             version = match.group(2)
 
-        self.is_dev = (version.lower() == __version__.lower()) or version == self.DEV_VERSION
+        self.is_dev = version == self.DEV_VERSION
 
         if self.is_dev:
             version = __version__  # we may also parse pom file to gain correct version (in future)
@@ -61,7 +61,6 @@ class IgniteVersion(LooseVersion):
         if isinstance(other, str):
             other = IgniteVersion(other)
 
-        # pylint: disable=W0511
         # todo solve comparability issues and uncomment the following
         # if self.project != other.project:
         #     raise Exception("Incomperable versons v1=%s, v2=%s because of different projects" % (self, other))
@@ -72,7 +71,7 @@ class IgniteVersion(LooseVersion):
         return "IgniteVersion ('%s')" % str(self)
 
 
-DEV_BRANCH = IgniteVersion(__version__)
+DEV_BRANCH = IgniteVersion("dev")
 
 # 2.7.x versions
 V_2_7_6 = IgniteVersion("2.7.6")
@@ -94,8 +93,30 @@ LATEST_2_10 = V_2_10_0
 
 # 2.11.x versions
 V_2_11_0 = IgniteVersion("2.11.0")
+V_2_11_1 = IgniteVersion("2.11.1")
+LATEST_2_11 = V_2_11_1
+
+# 2.12.x versions
+V_2_12_0 = IgniteVersion("2.12.0")
+LATEST_2_12 = V_2_12_0
+
+# 2.13.x versions
+V_2_13_0 = IgniteVersion("2.13.0")
+LATEST_2_13 = V_2_13_0
+
+# 2.14.x versions
+V_2_14_0 = IgniteVersion("2.14.0")
+LATEST_2_14 = V_2_14_0
+
+# 2.15.x versions
+V_2_15_0 = IgniteVersion("2.15.0")
+LATEST_2_15 = V_2_15_0
+
+# 2.16.x versions
+V_2_16_0 = IgniteVersion("2.16.0")
+LATEST_2_16 = V_2_16_0
 
 # if you updated the LATEST version
 # please check DEV version in 'tests/ignitetest/__init__.py'
-LATEST = LATEST_2_10
+LATEST = LATEST_2_16
 OLDEST = V_2_7_6

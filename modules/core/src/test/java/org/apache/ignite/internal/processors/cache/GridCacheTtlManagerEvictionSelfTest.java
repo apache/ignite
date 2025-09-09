@@ -28,7 +28,6 @@ import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -48,14 +47,6 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
     private volatile CacheMode cacheMode;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -70,14 +61,6 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalEviction() throws Exception {
-        checkEviction(CacheMode.LOCAL);
     }
 
     /**
@@ -113,9 +96,9 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
 
             for (int i = 1; i <= ENTRIES_TO_PUT; i++) {
                 String key = "Some test entry key#" + i;
-                String value = "Some test entry value#" + i;
+                String val = "Some test entry value#" + i;
 
-                cache.put(key, value);
+                cache.put(key, val);
             }
 
             if (log.isTraceEnabled())

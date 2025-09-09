@@ -25,8 +25,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.UnsafeChunk;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mem.MemoryAllocator;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Memory provider implementation based on unsafe memory access.
@@ -49,10 +50,22 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
     /** */
     private int used = 0;
 
+    /** */
+    private final MemoryAllocator allocator;
+
     /**
      * @param log Ignite logger to use.
      */
-    public UnsafeMemoryProvider(IgniteLogger log) {
+    public UnsafeMemoryProvider(@Nullable IgniteLogger log) {
+        this(log, null);
+    }
+
+    /**
+     * @param log Ignite logger to use.
+     * @param allocator Memory allocator. If {@code null}, default {@link UnsafeMemoryAllocator} will be used.
+     */
+    public UnsafeMemoryProvider(@Nullable IgniteLogger log, @Nullable MemoryAllocator allocator) {
+        this.allocator = allocator == null ? new UnsafeMemoryAllocator() : allocator;
         this.log = log;
     }
 
@@ -70,20 +83,21 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
     /** {@inheritDoc} */
     @Override public void shutdown(boolean deallocate) {
+        if (!deallocate) {
+            used = 0;
+
+            return;
+        }
+
         if (regions != null) {
             for (Iterator<DirectMemoryRegion> it = regions.iterator(); it.hasNext(); ) {
                 DirectMemoryRegion chunk = it.next();
 
-                if (deallocate) {
-                    GridUnsafe.freeMemory(chunk.address());
+                allocator.freeMemory(chunk.address());
 
-                    // Safety.
-                    it.remove();
-                }
+                // Safety.
+                it.remove();
             }
-
-            if (!deallocate)
-                used = 0;
         }
     }
 
@@ -100,7 +114,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
         long ptr;
 
         try {
-            ptr = GridUnsafe.allocateMemory(chunkSize);
+            ptr = allocator.allocateMemory(chunkSize);
         }
         catch (IllegalArgumentException e) {
             String msg = "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +

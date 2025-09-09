@@ -52,7 +52,7 @@ public class PSUStatisticPartialGatheringTest extends StatisticsAbstractTest {
             sql(String.format("insert into tbl_select(id, lo_select, med_select, hi_select) values(%d, %d, %d, %d)",
                 i, i % 10, i % 100, i % 1000));
 
-        collectStatistics("tbl_select");
+        collectStatistics(StatisticsType.GLOBAL, "tbl_select");
     }
 
     /**
@@ -82,7 +82,7 @@ public class PSUStatisticPartialGatheringTest extends StatisticsAbstractTest {
             String.format(SQL, 6, 6), NO_HINTS);
 
         // All columns set up before also will be updated
-        updateStatistics(new StatisticsTarget(SCHEMA, "TBL_SELECT", "LO_SELECT"));
+        updateStatistics(StatisticsType.GLOBAL, new StatisticsTarget(SCHEMA, "TBL_SELECT", "LO_SELECT"));
 
         checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{"TBL_SELECT_LO_IDX"},
             String.format(SQL, 8, 8), NO_HINTS);

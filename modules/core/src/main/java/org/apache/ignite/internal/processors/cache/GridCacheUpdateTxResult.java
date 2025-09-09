@@ -17,13 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.List;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache entry transactional update result.
@@ -36,28 +31,7 @@ public class GridCacheUpdateTxResult {
     private long updateCntr;
 
     /** */
-    private GridFutureAdapter<GridCacheUpdateTxResult> fut;
-
-    /** */
     private WALPointer logPtr;
-
-    /** Mvcc history. */
-    private List<MvccLinkAwareSearchRow> mvccHistory;
-
-    /** Previous value. */
-    private CacheObject prevVal;
-
-    /** Invoke result. */
-    private CacheInvokeResult invokeRes;
-
-    /** New value. */
-    private CacheObject newVal;
-
-    /** Value before the current tx. */
-    private CacheObject oldVal;
-
-    /** Filtered flag. */
-    private boolean filtered;
 
     /**
      * Constructor.
@@ -77,17 +51,6 @@ public class GridCacheUpdateTxResult {
     GridCacheUpdateTxResult(boolean success, WALPointer logPtr) {
         this.success = success;
         this.logPtr = logPtr;
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param success Success flag.
-     * @param fut Update future.
-     */
-    GridCacheUpdateTxResult(boolean success, GridFutureAdapter<GridCacheUpdateTxResult> fut) {
-        this.success = success;
-        this.fut = fut;
     }
 
     /**
@@ -122,97 +85,6 @@ public class GridCacheUpdateTxResult {
      */
     public WALPointer loggedPointer() {
         return logPtr;
-    }
-
-    /**
-     * @return Update future.
-     */
-    @Nullable public IgniteInternalFuture<GridCacheUpdateTxResult> updateFuture() {
-        return fut;
-    }
-
-    /**
-     * @return Mvcc history rows.
-     */
-    @Nullable public List<MvccLinkAwareSearchRow> mvccHistory() {
-        return mvccHistory;
-    }
-
-    /**
-     * @param mvccHistory Mvcc history rows.
-     */
-    public void mvccHistory(List<MvccLinkAwareSearchRow> mvccHistory) {
-        this.mvccHistory = mvccHistory;
-    }
-
-    /**
-     * @return Previous value.
-     */
-    @Nullable public CacheObject prevValue() {
-        return prevVal;
-    }
-
-    /**
-     * @param prevVal Previous value.
-     */
-    public void prevValue(@Nullable CacheObject prevVal) {
-        this.prevVal = prevVal;
-    }
-
-    /**
-     * @param result Entry processor invoke result.
-     */
-    public void invokeResult(CacheInvokeResult result) {
-        invokeRes = result;
-    }
-
-    /**
-     * @return Invoke result.
-     */
-    public CacheInvokeResult invokeResult() {
-        return invokeRes;
-    }
-
-    /**
-     * @return New value.
-     */
-    public CacheObject newValue() {
-        return newVal;
-    }
-
-    /**
-     * @return Old value.
-     */
-    public CacheObject oldValue() {
-        return oldVal;
-    }
-
-    /**
-     * @param newVal New value.
-     */
-    public void newValue(CacheObject newVal) {
-        this.newVal = newVal;
-    }
-
-    /**
-     * @param oldVal Old value.
-     */
-    public void oldValue(CacheObject oldVal) {
-        this.oldVal = oldVal;
-    }
-
-    /**
-     * @return Filtered flag.
-     */
-    public boolean filtered() {
-        return filtered;
-    }
-
-    /**
-     * @param filtered Filtered flag.
-     */
-    public void filtered(boolean filtered) {
-        this.filtered = filtered;
     }
 
     /** {@inheritDoc} */

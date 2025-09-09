@@ -15,6 +15,14 @@
  * limitations under the License.
  */
 
+#include <sys/sysinfo.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <unistd.h>
+
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "ignite/common/concurrent_os.h"
 
 namespace ignite
@@ -202,6 +210,73 @@ namespace ignite
                 pthread_once(&tlsKeyInit, AllocateTlsKey);
 
                 pthread_setspecific(tlsKey, ptr);
+            }
+
+            Thread::Thread() :
+                thread()
+            {
+                // No-op.
+            }
+
+            Thread::~Thread()
+            {
+                // No-op.
+            }
+
+            void* Thread::ThreadRoutine(void* arg)
+            {
+                Thread* self = static_cast<Thread*>(arg);
+
+                self->Run();
+
+                return 0;
+            }
+
+            void Thread::Start()
+            {
+                int res = pthread_create(&thread, NULL, Thread::ThreadRoutine, this);
+
+                IGNITE_UNUSED(res);
+                assert(res == 0);
+            }
+
+            void Thread::Join()
+            {
+                pthread_join(thread, 0);
+            }
+
+            uint32_t GetNumberOfProcessors()
+            {
+                int res = get_nprocs();
+
+                return static_cast<uint32_t>(res < 0 ? 0 : res);
+            }
+
+            int32_t GetThreadsCount()
+            {
+                DIR *proc_dir;
+                {
+                    char dirname[100];
+                    snprintf(dirname, sizeof dirname, "/proc/%d/task", getpid());
+                    proc_dir = opendir(dirname);
+                }
+
+                if (!proc_dir)
+                    return -1;
+
+                int32_t threadsCnt = 0;
+                struct dirent *entry;
+                while ((entry = readdir(proc_dir)) != NULL)
+                {
+                    if(entry->d_name[0] == '.')
+                        continue;
+
+                    ++threadsCnt;
+                }
+
+                closedir(proc_dir);
+
+                return threadsCnt;
             }
         }
     }

@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
@@ -37,6 +36,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -191,19 +191,19 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRecoveryOnJoinToActiveCluster() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx node = grid(2);
 
-        AggregateCacheLoader cacheLoader = new AggregateCacheLoader(node);
+        AggregateCacheLoader cacheLdr = new AggregateCacheLoader(node);
 
-        cacheLoader.loadByTime(5_000).get();
+        cacheLdr.loadByTime(5_000).get();
 
         forceCheckpoint();
 
-        cacheLoader.loadByTime(5_000).get();
+        cacheLdr.loadByTime(5_000).get();
 
         stopGrid(2, true);
 
@@ -211,7 +211,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        cacheLoader.consistencyCheck(node);
+        cacheLdr.consistencyCheck(node);
 
         checkNoRebalanceAfterRecovery();
 
@@ -223,33 +223,33 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRecoveryOnJoinToInactiveCluster() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx node = grid(2);
 
-        AggregateCacheLoader cacheLoader = new AggregateCacheLoader(node);
+        AggregateCacheLoader cacheLdr = new AggregateCacheLoader(node);
 
-        cacheLoader.loadByTime(5_000).get();
+        cacheLdr.loadByTime(5_000).get();
 
         forceCheckpoint();
 
-        cacheLoader.loadByTime(5_000).get();
+        cacheLdr.loadByTime(5_000).get();
 
         stopGrid(2, true);
 
-        crd.cluster().active(false);
+        crd.cluster().state(ClusterState.INACTIVE);
 
         node = startGrid(2);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
         checkNoRebalanceAfterRecovery();
 
-        cacheLoader.consistencyCheck(node);
+        cacheLdr.consistencyCheck(node);
 
         checkCacheContextsConsistencyAfterRecovery();
     }
@@ -270,37 +270,24 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    @Test
-    public void testRecoveryWithMvccCaches() throws Exception {
-        List<CacheConfiguration> dynamicCaches = Lists.newArrayList(
-            cacheConfiguration(DYNAMIC_CACHE_PREFIX + 0, CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT),
-            cacheConfiguration(DYNAMIC_CACHE_PREFIX + 1, CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-        );
-
-        doTestWithDynamicCaches(dynamicCaches);
-    }
-
-    /**
      * @param dynamicCaches Dynamic caches.
      */
     private void doTestWithDynamicCaches(List<CacheConfiguration> dynamicCaches) throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx node = grid(2);
 
         node.getOrCreateCaches(dynamicCaches);
 
-        AggregateCacheLoader cacheLoader = new AggregateCacheLoader(node);
+        AggregateCacheLoader cacheLdr = new AggregateCacheLoader(node);
 
-        cacheLoader.loadByTime(5_000).get();
+        cacheLdr.loadByTime(5_000).get();
 
         forceCheckpoint();
 
-        cacheLoader.loadByTime(5_000).get();
+        cacheLdr.loadByTime(5_000).get();
 
         stopGrid(2, true);
 
@@ -311,7 +298,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         checkNoRebalanceAfterRecovery();
 
         for (int idx = 0; idx < 3; idx++)
-            cacheLoader.consistencyCheck(grid(idx));
+            cacheLdr.consistencyCheck(grid(idx));
 
         checkCacheContextsConsistencyAfterRecovery();
     }
@@ -321,20 +308,20 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRecoveryOnJoinToDifferentBlt() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx node = grid(2);
 
-        AggregateCacheLoader cacheLoader = new AggregateCacheLoader(node);
+        AggregateCacheLoader cacheLdr = new AggregateCacheLoader(node);
 
-        cacheLoader.loadByTime(5_000).get();
+        cacheLdr.loadByTime(5_000).get();
 
         forceCheckpoint();
 
-        cacheLoader.loadByTime(5_000).get();
+        cacheLdr.loadByTime(5_000).get();
 
         stopGrid(2, true);
 
@@ -347,7 +334,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         for (int idx = 0; idx < 3; idx++)
-            cacheLoader.consistencyCheck(grid(idx));
+            cacheLdr.consistencyCheck(grid(idx));
 
         checkCacheContextsConsistencyAfterRecovery();
     }
@@ -357,19 +344,19 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRecoveryOnCrushDuringCheckpointOnNodeStart() throws Exception {
-        IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3, false);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3, false);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx node = grid(2);
 
-        AggregateCacheLoader cacheLoader = new AggregateCacheLoader(node);
+        AggregateCacheLoader cacheLdr = new AggregateCacheLoader(node);
 
-        cacheLoader.loadByTime(5_000).get();
+        cacheLdr.loadByTime(5_000).get();
 
         forceCheckpoint();
 
-        cacheLoader.loadByTime(5_000).get();
+        cacheLdr.loadByTime(5_000).get();
 
         stopGrid(2, false);
 
@@ -380,7 +367,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         try {
             startNodeFut.get();
         }
-        catch (Exception expected) { }
+        catch (Exception expected) {
+            // Ignore.
+        }
 
         // Wait until node will leave cluster.
         GridTestUtils.waitForCondition(() -> {
@@ -404,7 +393,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         checkNoRebalanceAfterRecovery();
 
         for (int idx = 0; idx < 3; idx++)
-            cacheLoader.consistencyCheck(grid(idx));
+            cacheLdr.consistencyCheck(grid(idx));
     }
 
     /**
@@ -462,30 +451,22 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      * Method checks that there were no rebalance for all caches (excluding sys cache).
      */
     private void checkNoRebalanceAfterRecovery() {
-        int sysCacheGroupId = CU.cacheId(GridCacheUtils.UTILITY_CACHE_NAME);
+        int sysCacheGrpId = CU.cacheId(GridCacheUtils.UTILITY_CACHE_NAME);
 
         List<Ignite> nodes = G.allGrids();
 
         for (final Ignite node : nodes) {
             TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(node);
 
-            Set<Integer> mvccCaches = ((IgniteEx) node).context().cache().cacheGroups().stream()
-                .flatMap(group -> group.caches().stream())
-                .filter(cache -> cache.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
-                .map(GridCacheContext::groupId)
-                .collect(Collectors.toSet());
-
-            List<Integer> rebalancedGroups = spi.recordedMessages(true).stream()
-                .map(msg -> (GridDhtPartitionDemandMessage) msg)
+            List<Integer> rebalancedGrps = spi.recordedMessages(true).stream()
+                .map(msg -> (GridDhtPartitionDemandMessage)msg)
                 .map(GridCacheGroupIdMessage::groupId)
-                .filter(grpId -> grpId != sysCacheGroupId)
-                //TODO: remove following filter when failover for MVCC will be fixed.
-                .filter(grpId -> !mvccCaches.contains(grpId))
+                .filter(grpId -> grpId != sysCacheGrpId)
                 .distinct()
                 .collect(Collectors.toList());
 
             Assert.assertTrue("There was unexpected rebalance for some groups" +
-                " [node=" + node.name() + ", groups=" + rebalancedGroups + ']', rebalancedGroups.isEmpty());
+                " [node=" + node.name() + ", groups=" + rebalancedGrps + ']', rebalancedGrps.isEmpty());
         }
     }
 
@@ -519,12 +500,12 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         public IgniteInternalFuture<?> loadByTime(int timeMillis) {
             GridCompoundFuture<?, ?> loadFut = new GridCompoundFuture();
 
-            for (CacheLoader cacheLoader : cacheLoaders) {
+            for (CacheLoader cacheLdr : cacheLoaders) {
                 long endTime = U.currentTimeMillis() + timeMillis;
 
-                cacheLoader.stopPredicate = it -> U.currentTimeMillis() >= endTime;
+                cacheLdr.stopPredicate = it -> U.currentTimeMillis() >= endTime;
 
-                loadFut.add(GridTestUtils.runAsync(cacheLoader));
+                loadFut.add(GridTestUtils.runAsync(cacheLdr));
             }
 
             loadFut.markInitialized();
@@ -536,8 +517,8 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
          * @param ignite Ignite node to check consistency from.
          */
         public void consistencyCheck(IgniteEx ignite) {
-            for (CacheLoader cacheLoader : cacheLoaders)
-                cacheLoader.consistencyCheck(ignite);
+            for (CacheLoader cacheLdr : cacheLoaders)
+                cacheLdr.consistencyCheck(ignite);
         }
     }
 
@@ -602,7 +583,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
                     // Throttle against GC.
                     U.sleep(1);
                 }
-                catch (Exception ignored) { }
+                catch (Exception ignored) {
+                    // Ignore.
+                }
             }
         }
 
@@ -628,9 +611,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            CacheLoader loader = (CacheLoader) o;
+            CacheLoader ldr = (CacheLoader)o;
 
-            return Objects.equals(cacheName, loader.cacheName);
+            return Objects.equals(cacheName, ldr.cacheName);
         }
 
         /** {@inheritDoc} */
@@ -666,10 +649,10 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue testValue = (TestValue) o;
+            TestValue testVal = (TestValue)o;
 
-            return indexedField == testValue.indexedField &&
-                Arrays.equals(payload, testValue.payload);
+            return indexedField == testVal.indexedField &&
+                Arrays.equals(payload, testVal.payload);
         }
 
         /** {@inheritDoc} */

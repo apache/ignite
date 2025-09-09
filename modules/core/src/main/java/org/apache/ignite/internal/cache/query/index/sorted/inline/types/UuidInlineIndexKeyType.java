@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import java.util.UUID;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.UuidIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -29,12 +30,12 @@ public class UuidInlineIndexKeyType extends NullableInlineIndexKeyType<UuidIndex
     /**
      */
     public UuidInlineIndexKeyType() {
-        super(IndexKeyTypes.UUID, (short) 16);
+        super(IndexKeyType.UUID, (short)16);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, UuidIndexKey key) {
-        UUID v = (UUID) key.key();
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+        UUID v = (UUID)key.key();
 
         long part1 = PageUtils.getLong(pageAddr, off + 1);
 
@@ -50,9 +51,9 @@ public class UuidInlineIndexKeyType extends NullableInlineIndexKeyType<UuidIndex
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, UuidIndexKey key, int maxSize) {
-        UUID val = (UUID) key.key();
+        UUID val = (UUID)key.key();
 
-        PageUtils.putByte(pageAddr, off, (byte) type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putLong(pageAddr, off + 1, val.getMostSignificantBits());
         PageUtils.putLong(pageAddr, off + 9, val.getLeastSignificantBits());
 

@@ -23,10 +23,10 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -56,7 +56,7 @@ public class IgniteClientReconnectStopTest extends IgniteClientReconnectAbstract
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
         final CountDownLatch reconnectLatch = new CountDownLatch(1);
 
-        final IgniteDiscoverySpi clientSpi = spi0(client);
+        final IgniteDiscoverySpiInternalListenerSupport clientSpi = (IgniteDiscoverySpiInternalListenerSupport)spi0(client);
 
         DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
 
@@ -72,7 +72,8 @@ public class IgniteClientReconnectStopTest extends IgniteClientReconnectAbstract
                     info("Disconnected: " + evt);
 
                     disconnectLatch.countDown();
-                } else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                }
+                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
                     info("Reconnected: " + evt);
 
                     reconnectLatch.countDown();

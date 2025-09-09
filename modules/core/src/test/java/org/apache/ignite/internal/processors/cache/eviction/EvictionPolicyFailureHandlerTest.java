@@ -53,7 +53,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class EvictionPolicyFailureHandlerTest extends GridCommonAbstractTest {
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, GridAbstractTest.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
 
     /** Node failure. */
     private AtomicBoolean nodeFailure = new AtomicBoolean(false);
@@ -171,11 +171,11 @@ public class EvictionPolicyFailureHandlerTest extends GridCommonAbstractTest {
 
         GridCacheAdapter<Object, Object> cache = ((IgniteKernal)node2).internalCache(DEFAULT_CACHE_NAME);
 
-        Affinity<Object> affinity = cache.affinity();
+        Affinity<Object> aff = cache.affinity();
 
         try {
             for (int i = 0; i < 1000; i++) {
-                if (affinity.isPrimary(node1.localNode(), i))
+                if (aff.isPrimary(node1.localNode(), i))
                     cache.put(i, 1);
             }
         }
@@ -196,15 +196,15 @@ public class EvictionPolicyFailureHandlerTest extends GridCommonAbstractTest {
 
         GridCacheAdapter<Object, Object> cache = ((IgniteKernal)node2).internalCache(DEFAULT_CACHE_NAME);
 
-        Affinity<Object> affinity = cache.affinity();
+        Affinity<Object> aff = cache.affinity();
 
         for (int i = 0; i < 1000; i++) {
-            if (affinity.isPrimary(node1.localNode(), i))
+            if (aff.isPrimary(node1.localNode(), i))
                 cache.put(i, 1);
         }
 
         for (int i = 0; i < 1000; i++) {
-            if (affinity.isPrimary(node1.localNode(), (double)i))
+            if (aff.isPrimary(node1.localNode(), (double)i))
                 cache.put((double)i, 1);
         }
 

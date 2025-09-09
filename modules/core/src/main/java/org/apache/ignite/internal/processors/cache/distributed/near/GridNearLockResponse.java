@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
@@ -38,9 +37,6 @@ import org.jetbrains.annotations.Nullable;
  * Near cache lock response.
  */
 public class GridNearLockResponse extends GridDistributedLockResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Collection of versions that are pending and less than lock version. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)
@@ -67,7 +63,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     private boolean compatibleRemapVer;
 
     /**
-     * Empty constructor (required by {@link Externalizable}).
+     * Empty constructor.
      */
     public GridNearLockResponse() {
         // No-op.
@@ -216,7 +212,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -224,43 +220,43 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
 
         switch (writer.state()) {
             case 11:
-                if (!writer.writeAffinityTopologyVersion("clientRemapVer", clientRemapVer))
+                if (!writer.writeAffinityTopologyVersion(clientRemapVer))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeBoolean("compatibleRemapVer", compatibleRemapVer))
+                if (!writer.writeBoolean(compatibleRemapVer))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
+                if (!writer.writeObjectArray(dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeBooleanArray("filterRes", filterRes))
+                if (!writer.writeBooleanArray(filterRes))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeObjectArray("mappedVers", mappedVers, MessageCollectionItemType.MSG))
+                if (!writer.writeObjectArray(mappedVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeCollection("pending", pending, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(pending, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -274,15 +270,12 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 11:
-                clientRemapVer = reader.readAffinityTopologyVersion("clientRemapVer");
+                clientRemapVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -290,7 +283,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 12:
-                compatibleRemapVer = reader.readBoolean("compatibleRemapVer");
+                compatibleRemapVer = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -298,7 +291,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 13:
-                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
+                dhtVers = reader.readObjectArray(MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -306,7 +299,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 14:
-                filterRes = reader.readBooleanArray("filterRes");
+                filterRes = reader.readBooleanArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -314,7 +307,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 15:
-                mappedVers = reader.readObjectArray("mappedVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
+                mappedVers = reader.readObjectArray(MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -322,7 +315,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 16:
-                miniId = reader.readInt("miniId");
+                miniId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -330,7 +323,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 17:
-                pending = reader.readCollection("pending", MessageCollectionItemType.MSG);
+                pending = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -339,17 +332,12 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
 
         }
 
-        return reader.afterMessageRead(GridNearLockResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 52;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 18;
     }
 
     /** {@inheritDoc} */

@@ -66,6 +66,7 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
     /** */
     @SuppressWarnings("PublicInnerClass")
     public static class JobContextTask extends ComputeTaskSplitAdapter<Object, Object> {
+        /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 

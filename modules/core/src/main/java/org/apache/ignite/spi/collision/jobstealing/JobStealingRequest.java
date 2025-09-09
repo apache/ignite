@@ -17,25 +17,20 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Job stealing request.
  */
 public class JobStealingRequest implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Delta. */
+    @Order(0)
     private int delta;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor.
      */
     public JobStealingRequest() {
         // No-op.
@@ -51,8 +46,15 @@ public class JobStealingRequest implements Message {
     /**
      * @return Delta.
      */
-    int delta() {
+    public int delta() {
         return delta;
+    }
+
+    /**
+     * @param delta New delta.
+     */
+    public void delta(int delta) {
+        this.delta = delta;
     }
 
     /** {@inheritDoc} */
@@ -61,57 +63,8 @@ public class JobStealingRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt("delta", delta))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                delta = reader.readInt("delta");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(JobStealingRequest.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 82;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

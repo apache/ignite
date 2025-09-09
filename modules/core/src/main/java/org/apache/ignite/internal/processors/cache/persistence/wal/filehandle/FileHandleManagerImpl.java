@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.ClosedByInterruptException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
 
 import static java.lang.Long.MAX_VALUE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SEGMENT_SYNC_TIMEOUT;
@@ -181,18 +179,10 @@ public class FileHandleManagerImpl implements FileHandleManager {
         else
             rbuf = currentHandle().buf.reset();
 
-        try {
-            return new FileWriteHandleImpl(
-                cctx, fileIO, rbuf, serializer, metrics, walWriter, 0,
-                mode, mmap, false, fsyncDelay, maxWalSegmentSize
-            );
-        }
-        catch (ClosedByInterruptException e) {
-            if (rbuf != null)
-                rbuf.free();
-        }
-
-        return null;
+        return new FileWriteHandleImpl(
+            cctx, fileIO, rbuf, serializer, metrics, walWriter, 0,
+            mode, mmap, false, fsyncDelay, maxWalSegmentSize
+        );
     }
 
     /**
@@ -412,7 +402,7 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
                 unparkWaiters(MAX_VALUE);
 
-                if (err == null && !isCancelled)
+                if (err == null && !isCancelled.get())
                     err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
@@ -571,8 +561,6 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
                 hdl.written += hdl.fileIO.writeFully(buf);
 
-                metrics.onWalBytesWritten(size);
-
                 assert hdl.written == hdl.fileIO.position();
             }
             catch (IOException e) {
@@ -592,9 +580,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
         public void restart() {
             assert runner() == null : "WALWriter is still running.";
 
-            isCancelled = false;
+            isCancelled.set(false);
 
-            new IgniteThread(this).start();
+            U.newThread(this).start();
         }
     }
 
@@ -649,9 +637,9 @@ public class FileHandleManagerImpl implements FileHandleManager {
         public void restart() {
             assert runner() == null : "WalSegmentSyncer is running.";
 
-            isCancelled = false;
+            isCancelled.set(false);
 
-            new IgniteThread(walSegmentSyncWorker).start();
+            U.newThread(walSegmentSyncWorker).start();
         }
     }
 

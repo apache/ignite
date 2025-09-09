@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import javax.cache.event.CacheEntryEvent;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientNotification;
+
+import static javax.cache.event.EventType.EXPIRED;
+import static javax.cache.event.EventType.REMOVED;
 
 /**
  * Continuous query notification.
@@ -44,7 +47,7 @@ public class ClientCacheEntryEventNotification extends ClientNotification {
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
         super.encode(ctx, writer);
 
         int pos = writer.reserveInt();
@@ -53,23 +56,23 @@ public class ClientCacheEntryEventNotification extends ClientNotification {
         for (CacheEntryEvent evt : evts) {
             writer.writeObjectDetached(evt.getKey());
             writer.writeObjectDetached(evt.getOldValue());
-            writer.writeObjectDetached(evt.getValue());
+            writer.writeObjectDetached(evt.getEventType() == EXPIRED || evt.getEventType() == REMOVED ? null : evt.getValue());
 
             switch (evt.getEventType()) {
                 case CREATED:
-                    writer.writeByte((byte) 0);
+                    writer.writeByte((byte)0);
                     break;
 
                 case UPDATED:
-                    writer.writeByte((byte) 1);
+                    writer.writeByte((byte)1);
                     break;
 
                 case REMOVED:
-                    writer.writeByte((byte) 2);
+                    writer.writeByte((byte)2);
                     break;
 
                 case EXPIRED:
-                    writer.writeByte((byte) 3);
+                    writer.writeByte((byte)3);
                     break;
 
                 default:

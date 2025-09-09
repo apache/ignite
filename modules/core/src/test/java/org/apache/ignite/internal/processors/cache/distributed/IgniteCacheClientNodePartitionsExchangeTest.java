@@ -24,10 +24,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -52,12 +52,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1;
 
 /**
  *
@@ -66,8 +63,6 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -104,7 +99,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         ignite0.close();
 
-        waitForTopologyUpdate(2, 4);
+        waitForTopologyUpdate(2, 3);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -112,7 +107,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
                 return null;
             }
-        }, CacheServerNotFoundException.class, null);
+        }, IgniteClientDisconnectedException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -120,19 +115,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
                 return null;
             }
-        }, CacheServerNotFoundException.class, null);
-
-        ignite1.close();
-
-        waitForTopologyUpdate(1, 5);
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                ignite2.cache(DEFAULT_CACHE_NAME).get(1);
-
-                return null;
-            }
-        }, CacheServerNotFoundException.class, null);
+        }, IgniteClientDisconnectedException.class, null);
     }
 
     /**
@@ -191,29 +174,6 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
      */
     @Test
     public void testPartitionsExchange() throws Exception {
-        partitionsExchange(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPartitionsExchangeCompatibilityMode() throws Exception {
-        System.setProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, "true");
-
-        try {
-            partitionsExchange(true);
-        }
-        finally {
-            System.clearProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1);
-        }
-    }
-
-    /**
-     * @param compatibilityMode {@code True} to test old exchange protocol.
-     * @throws Exception If failed.
-     */
-    private void partitionsExchange(boolean compatibilityMode) throws Exception {
         Ignite ignite0 = startGrid(0);
 
         TestCommunicationSpi spi0 = (TestCommunicationSpi)ignite0.configuration().getCommunicationSpi();
@@ -311,41 +271,19 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         ignite4.close();
 
-        if (compatibilityMode) {
-            // With late affinity old protocol exchange on server leave is completed by discovery message.
-            // With FairAffinityFunction affinity calculation is different, this causes one more topology change.
-            boolean exchangeAfterRebalance = false;
+        waitForTopologyUpdate(4, 6);
 
-            waitForTopologyUpdate(4,
-                exchangeAfterRebalance ? new AffinityTopologyVersion(6, 1) : new AffinityTopologyVersion(6, 0));
+        assertEquals(0, spi0.partitionsSingleMessages());
+        assertEquals(3, spi0.partitionsFullMessages());
 
-            assertEquals(0, spi0.partitionsSingleMessages());
-            assertEquals(exchangeAfterRebalance ? 3 : 0, spi0.partitionsFullMessages());
+        assertEquals(1, spi1.partitionsSingleMessages());
+        assertEquals(0, spi1.partitionsFullMessages());
 
-            assertEquals(exchangeAfterRebalance ? 2 : 1, spi1.partitionsSingleMessages());
-            assertEquals(0, spi1.partitionsFullMessages());
+        assertEquals(1, spi2.partitionsSingleMessages());
+        assertEquals(0, spi2.partitionsFullMessages());
 
-            assertEquals(exchangeAfterRebalance ? 1 : 0, spi2.partitionsSingleMessages());
-            assertEquals(0, spi2.partitionsFullMessages());
-
-            assertEquals(exchangeAfterRebalance ? 1 : 0, spi3.partitionsSingleMessages());
-            assertEquals(0, spi3.partitionsFullMessages());
-        }
-        else {
-            waitForTopologyUpdate(4, 6);
-
-            assertEquals(0, spi0.partitionsSingleMessages());
-            assertEquals(3, spi0.partitionsFullMessages());
-
-            assertEquals(1, spi1.partitionsSingleMessages());
-            assertEquals(0, spi1.partitionsFullMessages());
-
-            assertEquals(1, spi2.partitionsSingleMessages());
-            assertEquals(0, spi2.partitionsFullMessages());
-
-            assertEquals(1, spi3.partitionsSingleMessages());
-            assertEquals(0, spi3.partitionsFullMessages());
-        }
+        assertEquals(1, spi3.partitionsSingleMessages());
+        assertEquals(0, spi3.partitionsFullMessages());
 
         spi0.reset();
         spi1.reset();

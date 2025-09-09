@@ -51,6 +51,7 @@ import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Properties;
 import java.util.Queue;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -274,7 +276,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     @Test
     public void testRequireSerializable() throws Exception {
         try {
-            OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+            OptimizedMarshaller marsh = Marshallers.optimized(true);
 
             marsh.setContext(CTX);
 
@@ -297,7 +299,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedUnmarshallingLogging() throws Exception {
-        OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+        OptimizedMarshaller marsh = Marshallers.optimized(true);
 
         marsh.setContext(CTX);
 
@@ -319,7 +321,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedMarshallingLogging() throws Exception {
-        OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+        OptimizedMarshaller marsh = Marshallers.optimized(true);
 
         marsh.setContext(CTX);
 
@@ -349,7 +351,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         Arrays.fill(obj.longArr, 100L);
         Arrays.fill(obj.doubleArr, 100.0d);
 
-        final OptimizedMarshaller marsh = new OptimizedMarshaller();
+        final OptimizedMarshaller marsh = Marshallers.optimized();
 
         marsh.setContext(CTX);
 
@@ -1111,7 +1113,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testExcludedClass() throws Exception {
-        Class<?>[] exclClasses = U.staticField(MarshallerExclusions.class, "EXCL_CLASSES");
+        Set<Class<?>> exclClasses = U.staticField(MarshallerExclusions.class, "EXCL_CLASSES");
 
         assertFalse(F.isEmpty(exclClasses));
 
@@ -1124,9 +1126,9 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInet6Address() throws Exception {
-        final InetAddress address = Inet6Address.getByAddress(new byte[16]);
+        final InetAddress addr = Inet6Address.getByAddress(new byte[16]);
 
-        assertEquals(address, marshalUnmarshal(address));
+        assertEquals(addr, marshalUnmarshal(addr));
     }
 
     /**
@@ -2337,7 +2339,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
             if (!(obj instanceof NestedReadWriteObject))
                 return false;
 
-            NestedReadWriteObject o = (NestedReadWriteObject) obj;
+            NestedReadWriteObject o = (NestedReadWriteObject)obj;
 
             return o.val == val && Objects.equals(o.str, str) && Objects.equals(o.obj1, obj1)
                 && Objects.equals(o.obj2, obj2);

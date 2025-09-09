@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -329,6 +328,26 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 if (isDeadClassLoader(meta))
                     return null;
 
+                boolean skipSearchDeployment = false;
+
+                // Check already exist deployment.
+                if (meta.deploymentMode() == SHARED) {
+                    Collection<GridDeployment> created = getDeployments();
+
+                    for (GridDeployment dep0 : created) {
+                        // hot redeploy from same node
+                        if (dep0.participants().containsKey(meta.senderNodeId()) || dep0.undeployed())
+                            continue;
+
+                        IgniteBiTuple<Class<?>, Throwable> cls = dep0.deployedClass(meta.className(), meta.alias());
+
+                        if (cls.getKey() != null && cls.getValue() == null) {
+                            ((SharedDeployment)dep0).addParticipant(meta.senderNodeId(), meta.classLoaderId());
+                            skipSearchDeployment = true;
+                        }
+                    }
+                }
+
                 if (!F.isEmpty(meta.participants())) {
                     Map<UUID, IgniteUuid> participants = new LinkedHashMap<>();
 
@@ -376,7 +395,8 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     return null;
                 }
 
-                dep = (SharedDeployment)searchDeploymentCache(meta);
+                if (!skipSearchDeployment)
+                    dep = (SharedDeployment)searchDeploymentCache(meta);
 
                 if (dep == null) {
                     List<SharedDeployment> deps = cache.get(meta.userVersion());
@@ -1243,8 +1263,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
         /** {@inheritDoc} */
         @Override public void onDeployed(Class<?> cls) {
-            assert !Thread.holdsLock(mux);
-
             boolean isTask = isTask(cls);
 
             String msg = (isTask ? "Task" : "Class") + " was deployed in SHARED or CONTINUOUS mode: " + cls;
@@ -1312,8 +1330,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     U.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), alias);
 
                 // Clear optimized marshaller's cache.
-                if (ctx.config().getMarshaller() instanceof AbstractMarshaller)
-                    ((AbstractMarshaller)ctx.config().getMarshaller()).onUndeploy(ldr);
+                ctx.marshaller().onUndeploy(ldr);
 
                 clearSerializationCaches();
 

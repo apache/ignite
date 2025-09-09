@@ -39,11 +39,12 @@ import org.apache.ignite.IgniteJdbcThinDataSource;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 
 /**
  * DataSource test.
@@ -56,8 +57,6 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }
@@ -132,15 +131,15 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     public void testResetUrl() throws Exception {
         IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 
-        ids.setUrl("jdbc:ignite:thin://127.0.0.1:10800/test?lazy=true");
+        ids.setUrl("jdbc:ignite:thin://127.0.0.1:10800/test?lazy=" + (!DFLT_LAZY));
 
         assertEquals("test", ids.getSchema());
-        assertTrue(ids.isLazy());
+        assertEquals(!DFLT_LAZY, ids.isLazy());
 
         ids.setUrl("jdbc:ignite:thin://mydomain.org,localhost?collocated=true");
 
         assertNull(ids.getSchema());
-        assertFalse(ids.isLazy());
+        assertEquals(DFLT_LAZY, ids.isLazy());
         assertTrue(ids.isCollocated());
     }
 
@@ -159,7 +158,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
                 assertFalse(io.connectionProperties().isAutoCloseServerCursor());
                 assertFalse(io.connectionProperties().isCollocated());
                 assertFalse(io.connectionProperties().isEnforceJoinOrder());
-                assertFalse(io.connectionProperties().isLazy());
+                assertEquals(DFLT_LAZY, io.connectionProperties().isLazy());
                 assertFalse(io.connectionProperties().isDistributedJoins());
                 assertFalse(io.connectionProperties().isReplicatedOnly());
             }
@@ -168,7 +167,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         ids.setAutoCloseServerCursor(true);
         ids.setCollocated(true);
         ids.setEnforceJoinOrder(true);
-        ids.setLazy(true);
+        ids.setLazy(!DFLT_LAZY);
         ids.setDistributedJoins(true);
         ids.setReplicatedOnly(true);
 
@@ -178,7 +177,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
                 assertTrue(io.connectionProperties().isAutoCloseServerCursor());
                 assertTrue(io.connectionProperties().isCollocated());
                 assertTrue(io.connectionProperties().isEnforceJoinOrder());
-                assertTrue(io.connectionProperties().isLazy());
+                assertEquals(!DFLT_LAZY, io.connectionProperties().isLazy());
                 assertTrue(io.connectionProperties().isDistributedJoins());
                 assertTrue(io.connectionProperties().isReplicatedOnly());
             }

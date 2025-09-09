@@ -36,7 +36,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTEN
  */
 public class ConsistentIdImplicitlyExplicitlyTest extends GridCommonAbstractTest {
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(super.log);
 
     /** Ipaddress with port pattern. */
     private static final String IPADDRESS_WITH_PORT_PATTERN = "^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +

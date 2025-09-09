@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -58,14 +58,14 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
         super.encode(ctx, writer);
 
         IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
 
         long endTopVer0 = endTopVer == UNKNOWN_TOP_VER ? cluster.topologyVersion() : endTopVer;
 
-        Collection<ClusterNode> topology = cluster.topology(endTopVer0);
+        Collection<ClusterNode> top = cluster.topology(endTopVer0);
 
         writer.writeLong(endTopVer0);
 
@@ -73,7 +73,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
             int pos = writer.reserveInt();
             int size = 0;
 
-            for (ClusterNode node : topology) {
+            for (ClusterNode node : top) {
                 if (writeNode(writer, node))
                     size++;
             }
@@ -85,7 +85,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
         }
 
         Map<UUID, ClusterNode> startNodes = toMap(cluster.topology(startTopVer));
-        Map<UUID, ClusterNode> endNodes = toMap(topology);
+        Map<UUID, ClusterNode> endNodes = toMap(top);
 
         int pos = writer.reserveInt();
         int cnt = 0;
@@ -118,7 +118,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
      * @param writer Writer.
      * @param node Node.
      */
-    private static boolean writeNode(BinaryRawWriterEx writer, ClusterNode node) {
+    private static boolean writeNode(BinaryWriterEx writer, ClusterNode node) {
         if (node.isClient())
             return false;
 
@@ -128,7 +128,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
             return false; // No client connector.
 
         writeUuid(writer, node.id());
-        writer.writeInt((int) port);
+        writer.writeInt((int)port);
 
         Collection<String> addrs = node.addresses();
         Collection<String> hosts = node.hostNames();
@@ -150,7 +150,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
      * @param writer Writer.
      * @param id id.
      */
-    private static void writeUuid(BinaryRawWriterEx writer, UUID id) {
+    private static void writeUuid(BinaryWriterEx writer, UUID id) {
         writer.writeLong(id.getMostSignificantBits());
         writer.writeLong(id.getLeastSignificantBits());
     }

@@ -26,7 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
@@ -65,12 +65,12 @@ import static org.junit.Assert.assertArrayEquals;
 /** */
 public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
-    private MetricRegistry mreg;
+    private MetricRegistryImpl mreg;
 
     /** */
     @Before
     public void setUp() throws Exception {
-        mreg = new MetricRegistry("group", name -> null, name -> null, null);
+        mreg = new MetricRegistryImpl("group", name -> null, name -> null, null);
     }
 
     /** */
@@ -145,7 +145,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         assertEquals(0, l.value());
 
         assertThrowsWithCause(() -> mreg.register(new AtomicLongMetric(mName, "")),
-            StringIndexOutOfBoundsException.class);
+            AssertionError.class);
 
         assertThrowsWithCause(() -> mreg.register(new AtomicLongMetric(metricName("mreg", mName), "")),
             AssertionError.class);
@@ -256,6 +256,11 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         futs.add(runAsync(() -> {
             for (int i = 0; i < cnt; i++)
+                h.value(-100);
+        }));
+
+        futs.add(runAsync(() -> {
+            for (int i = 0; i < cnt; i++)
                 h.value(9);
         }));
 
@@ -279,7 +284,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         long[] res = h.value();
 
-        assertEquals(cnt, res[0]);
+        assertEquals(cnt * 2, res[0]);
         assertEquals(cnt * 2, res[1]);
         assertEquals(cnt * 3, res[2]);
         assertEquals(cnt * 4, res[3]);
@@ -288,7 +293,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testGetMetrics() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", name -> null, name -> null, null);
+        MetricRegistryImpl mreg = new MetricRegistryImpl("group", name -> null, name -> null, null);
 
         mreg.longMetric("test1", "");
         mreg.longMetric("test2", "");
@@ -309,7 +314,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRemove() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", name -> null, name -> null, null);
+        MetricRegistryImpl mreg = new MetricRegistryImpl("group", name -> null, name -> null, null);
 
         AtomicLongMetric cntr = mreg.longMetric("my.name", null);
         AtomicLongMetric cntr2 = mreg.longMetric("my.name.x", null);

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
 {
     using System;
     using System.ComponentModel;
+    using System.Xml.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
 
@@ -79,9 +80,6 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary> Default value of <see cref="SelectorSpins"/> property. </summary>
         public const long DefaultSelectorSpins = 0;
 
-        /// <summary> Default value of <see cref="SharedMemoryPort"/> property. </summary>
-        public const int DefaultSharedMemoryPort = -1;
-
         /// <summary> Default socket buffer size. </summary>
         public const int DefaultSocketBufferSize = 32 * 1024;
 
@@ -111,7 +109,6 @@ namespace Apache.Ignite.Core.Communication.Tcp
             MaxConnectTimeout = DefaultMaxConnectTimeout;
             MessageQueueLimit = DefaultMessageQueueLimit;
             ReconnectCount = DefaultReconnectCount;
-            SharedMemoryPort = DefaultSharedMemoryPort;
             SelectorsCount = DefaultSelectorsCount;
             SelectorSpins = DefaultSelectorSpins;
             SocketReceiveBufferSize = DefaultSocketBufferSize;
@@ -142,7 +139,6 @@ namespace Apache.Ignite.Core.Communication.Tcp
             ReconnectCount = reader.ReadInt();
             SelectorsCount = reader.ReadInt();
             SelectorSpins = reader.ReadLong();
-            SharedMemoryPort = reader.ReadInt();
             SlowClientQueueLimit = reader.ReadInt();
             SocketReceiveBufferSize = reader.ReadInt();
             SocketSendBufferSize = reader.ReadInt();
@@ -301,12 +297,6 @@ namespace Apache.Ignite.Core.Communication.Tcp
         public bool UsePairedConnections { get; set; }
 
         /// <summary>
-        /// Gets or sets a local port to accept shared memory connections.
-        /// </summary>
-        [DefaultValue(DefaultSharedMemoryPort)]
-        public int SharedMemoryPort { get; set; }
-
-        /// <summary>
         /// Gets or sets socket write timeout for TCP connection. If message can not be written to
         /// socket within this time then connection is closed and reconnect is attempted.
         /// <para />
@@ -349,7 +339,6 @@ namespace Apache.Ignite.Core.Communication.Tcp
             writer.WriteInt(ReconnectCount);
             writer.WriteInt(SelectorsCount);
             writer.WriteLong(SelectorSpins);
-            writer.WriteInt(SharedMemoryPort);
             writer.WriteInt(SlowClientQueueLimit);
             writer.WriteInt(SocketReceiveBufferSize);
             writer.WriteInt(SocketSendBufferSize);

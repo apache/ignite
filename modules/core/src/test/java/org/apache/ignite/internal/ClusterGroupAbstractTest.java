@@ -53,12 +53,12 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Abstract test for {@link org.apache.ignite.cluster.ClusterGroup}
@@ -120,8 +120,6 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
         return cfg;
     }
 
@@ -146,7 +144,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
      * @return Remote nodes IDs.
      */
     protected Collection<UUID> remoteNodeIds() {
-        return F.nodeIds(projection().forRemotes().nodes());
+        return nodeIds(projection().forRemotes().nodes());
     }
 
     /**
@@ -255,7 +253,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
 
         ClusterGroup remotePrj = projection().forRemotes();
 
-        Collection<UUID> prjNodeIds = F.nodeIds(remotePrj.nodes());
+        Collection<UUID> prjNodeIds = nodeIds(remotePrj.nodes());
 
         assert prjNodeIds.size() == remoteNodeIds.size();
 
@@ -270,7 +268,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
 
             UUID excludedId = g.cluster().localNode().id();
 
-            assert !F.nodeIds(remotePrj.nodes()).contains(excludedId);
+            assert !nodeIds(remotePrj.nodes()).contains(excludedId);
         }
         finally {
             stopGrid(name);
@@ -427,13 +425,13 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
      * @throws Exception If failed.
      */
     private void call3(AtomicInteger cnt) throws Exception {
-        IgniteFuture<String> fut = compute(prj).applyAsync(clrJob, (String) null);
+        IgniteFuture<String> fut = compute(prj).applyAsync(clrJob, (String)null);
 
         waitForExecution(fut);
 
         cnt.set(0);
 
-        compute(prj).apply(clrJob, (String) null);
+        compute(prj).apply(clrJob, (String)null);
 
         waitForValue(cnt, 1);
     }
@@ -607,8 +605,10 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
 
         long threshold = System.currentTimeMillis() + WAIT_TIMEOUT;
 
-        do synchronized (mux) {
-            mux.wait(sleep);
+        do {
+            synchronized (mux) {
+                mux.wait(sleep);
+            }
         }
         while (fut != null && !fut.isDone() && !fut.isCancelled() && threshold > System.currentTimeMillis());
 

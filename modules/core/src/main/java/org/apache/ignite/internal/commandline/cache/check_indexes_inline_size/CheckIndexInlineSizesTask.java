@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -30,12 +31,12 @@ import org.jetbrains.annotations.Nullable;
  * Task for check secondary indexes inline size on the different nodes.
  */
 @GridInternal
-public class CheckIndexInlineSizesTask extends VisorMultiNodeTask<Void, CheckIndexInlineSizesResult, CheckIndexInlineSizesResult> {
+public class CheckIndexInlineSizesTask extends VisorMultiNodeTask<NoArg, CheckIndexInlineSizesResult, CheckIndexInlineSizesResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<Void, CheckIndexInlineSizesResult> job(Void arg) {
+    @Override protected VisorJob<NoArg, CheckIndexInlineSizesResult> job(NoArg arg) {
         return new CheckIndexInlineSizesJob(arg, debug);
     }
 
@@ -72,7 +73,7 @@ public class CheckIndexInlineSizesTask extends VisorMultiNodeTask<Void, CheckInd
     /**
      * Job for check secondary indexes inline size on the different nodes.
      */
-    private static class CheckIndexInlineSizesJob extends VisorJob<Void, CheckIndexInlineSizesResult> {
+    private static class CheckIndexInlineSizesJob extends VisorJob<NoArg, CheckIndexInlineSizesResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -80,17 +81,17 @@ public class CheckIndexInlineSizesTask extends VisorMultiNodeTask<Void, CheckInd
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected CheckIndexInlineSizesJob(@Nullable Void arg, boolean debug) {
+        protected CheckIndexInlineSizesJob(@Nullable NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected CheckIndexInlineSizesResult run(@Nullable Void arg) throws IgniteException {
-            Map<String, Integer> indexNameToInlineSize = ignite.context().query().secondaryIndexesInlineSize();
+        @Override protected CheckIndexInlineSizesResult run(@Nullable NoArg arg) throws IgniteException {
+            Map<String, Integer> idxNameToInlineSize = ignite.context().query().secondaryIndexesInlineSize();
 
             CheckIndexInlineSizesResult res = new CheckIndexInlineSizesResult();
 
-            res.addResult(ignite.localNode().id(), indexNameToInlineSize);
+            res.addResult(ignite.localNode().id(), idxNameToInlineSize);
 
             return res;
         }

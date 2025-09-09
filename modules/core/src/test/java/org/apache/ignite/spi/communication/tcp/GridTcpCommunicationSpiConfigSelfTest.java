@@ -21,7 +21,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -30,13 +29,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridTestMessage;
@@ -50,7 +48,9 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import sun.net.util.IPAddressUtil;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
@@ -157,17 +157,17 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
     @Test
     @WithSystemProperty(key = "IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK", value = "true")
     public void testSendToNonInitializedTcpCommSpi() throws Exception {
-        ListeningTestLogger listeningLogger = new ListeningTestLogger(log);
+        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
         LogListener npeLsnr = LogListener.matches("NullPointerException")
             .andMatches("InboundConnectionHandler.onMessageSent").build();
 
-        listeningLogger.registerListener(npeLsnr);
+        listeningLog.registerListener(npeLsnr);
 
         GridTestNode sendingNode = new GridTestNode();
         sendingNode.order(0);
         GridSpiTestContext sendingCtx = initSpiContext();
 
-        TcpCommunicationSpi sendingSpi = initializeSpi(sendingCtx, sendingNode, listeningLogger, false);
+        TcpCommunicationSpi sendingSpi = initializeSpi(sendingCtx, sendingNode, listeningLog, false);
         spisToStop.add(sendingSpi);
 
         sendingSpi.onContextInitialized(sendingCtx);
@@ -189,14 +189,15 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         receiverCtx.metricsRegistryProducer((name) -> {
             try {
                 Thread.sleep(100);
-            } catch (Exception ignored) {
+            }
+            catch (Exception ignored) {
                 // No-op.
             }
 
-            return new MetricRegistry(name, null, null, new NullLogger());
+            return new MetricRegistryImpl(name, null, null, new NullLogger());
         });
 
-        TcpCommunicationSpi receiverSpi = initializeSpi(receiverCtx, receiverNode, listeningLogger, true);
+        TcpCommunicationSpi receiverSpi = initializeSpi(receiverCtx, receiverNode, listeningLog, true);
         spisToStop.add(receiverSpi);
 
         receiverCtx.remoteNodes().add(sendingNode);
@@ -211,7 +212,8 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         IgniteInternalFuture initFut = GridTestUtils.runAsync(() -> {
             try {
                 receiverSpi.onContextInitialized(receiverCtx);
-            } catch (Exception ignored) {
+            }
+            catch (Exception ignored) {
                 // No-op.
             }
         });
@@ -249,7 +251,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
 
         MessageFactoryProvider testMsgFactory = factory -> factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
 
-        ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactory[]{new GridIoMessageFactory(), testMsgFactory}));
+        ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory(), testMsgFactory}));
 
         ctx.setLocalNode(node);
 
@@ -279,16 +281,8 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
             new InetSocketAddress(0).getAddress()
         );
 
-        String host = addrs.get2().iterator().next();
-
-        String ip = null;
-
-        for (String addr : addrs.get1()) {
-            InetAddress inetAddr = U.resolveLocalHost(addr);
-
-            if (!inetAddr.isLoopbackAddress() && !inetAddr.isAnyLocalAddress())
-                ip = addr;
-        }
+        String host = findHostName(addrs.get2());
+        String ip = findIpAddr(addrs.get1());
 
         assertNotNull("addrs=" + addrs, ip);
 
@@ -299,8 +293,12 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         locHost = ip;
         checkHostNamesAttr(startGrid(nodeIdx++), false, true);
 
-        locHost = host;
-        checkHostNamesAttr(startGrid(nodeIdx++), false, false);
+        // If found host name, then check it.
+        if (host != null) {
+            locHost = host;
+
+            checkHostNamesAttr(startGrid(nodeIdx++), false, false);
+        }
 
         locHost = null;
         checkHostNamesAttr(startGrid(nodeIdx++), true, false);
@@ -322,10 +320,12 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
     @Test
     @WithSystemProperty(key = IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES, value = "true")
     public void testNotEmptyHostNameAttr() throws Exception {
-        InetSocketAddress inetSockAddr = new InetSocketAddress(0);
+        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(
+            new InetSocketAddress(0).getAddress()
+        );
 
-        String ip = inetSockAddr.getHostName();
-        String host = U.resolveLocalAddresses(inetSockAddr.getAddress()).get2().iterator().next();
+        String host = findHostName(addrs.get2());
+        String ip = findIpAddr(addrs.get1());
 
         log.info("Testing ip=" + ip + " host=" + host);
 
@@ -334,11 +334,53 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         locHost = ip;
         checkHostNamesAttr(startGrid(nodeIdx++), false, false);
 
-        locHost = host;
-        checkHostNamesAttr(startGrid(nodeIdx++), false, false);
+        // If found host name, then check it.
+        if (host != null) {
+            locHost = host;
+            checkHostNamesAttr(startGrid(nodeIdx++), false, false);
+        }
 
         locHost = null;
         checkHostNamesAttr(startGrid(nodeIdx++), true, false);
+    }
+
+    /** */
+    @Test
+    public void testFindingAddresses() throws Exception {
+        Collection<String> addrs = F.asList(
+            "0.0.0.0",
+            "127.0.0.1",
+            "::1",
+            "192.168.1.1",
+            "fe80::1%lo0",
+            "2001:db8::ff00:42:8329",
+            "localhost",
+            "abcd"
+        );
+
+        assertEquals("192.168.1.1", findIpAddr(addrs));
+        assertEquals("localhost", findHostName(addrs));
+    }
+
+    /** @return Non-loopback IP. */
+    private String findIpAddr(Collection<String> addrs) throws Exception {
+        for (String addr : addrs) {
+            InetAddress inetAddr = U.resolveLocalHost(addr);
+
+            if (!inetAddr.isLoopbackAddress() && !inetAddr.isAnyLocalAddress())
+                return addr;
+        }
+
+        throw new IllegalArgumentException("No IP address in the list: " + addrs);
+    }
+
+    /** @return Host name, or {@code null} if all addresses are IPs. */
+    private @Nullable String findHostName(Collection<String> addrs) {
+        return addrs.stream()
+            .filter(addr ->
+                !(IPAddressUtil.isIPv4LiteralAddress(addr) || IPAddressUtil.isIPv6LiteralAddress(addr)))
+            .findFirst()
+            .orElse(null);
     }
 
     /**

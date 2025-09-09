@@ -23,13 +23,13 @@ import org.apache.maven.plugin.surefire.log.api.ConsoleLogger;
 import org.apache.maven.plugin.surefire.report.ConsoleReporter;
 import org.apache.maven.plugin.surefire.report.TestSetStats;
 import org.apache.maven.plugin.surefire.report.WrappedReportEntry;
+import org.apache.maven.surefire.api.report.ReportEntry;
+import org.apache.maven.surefire.api.report.TestSetReportEntry;
 import org.apache.maven.surefire.extensions.StatelessTestsetInfoConsoleReportEventListener;
-import org.apache.maven.surefire.report.ReportEntry;
-import org.apache.maven.surefire.report.TestSetReportEntry;
-import org.apache.maven.surefire.shade.common.org.apache.maven.shared.utils.logging.MessageBuilder;
-import org.apache.maven.surefire.shade.common.org.apache.maven.shared.utils.logging.MessageUtils;
+import org.apache.maven.surefire.shared.utils.logging.MessageBuilder;
+import org.apache.maven.surefire.shared.utils.logging.MessageUtils;
 
-import static org.apache.maven.surefire.report.CategorizedReportEntry.GROUP_PREFIX;
+import static org.apache.maven.surefire.api.report.CategorizedReportEntry.GROUP_PREFIX;
 
 /** */
 public class TestSuiteAwareTestsetReporter extends SurefireStatelessTestsetInfoReporter {
@@ -38,7 +38,7 @@ public class TestSuiteAwareTestsetReporter extends SurefireStatelessTestsetInfoR
         ConsoleLogger log) {
         return new ConsoleReporter(log, false, false) {
             /** */
-            public void testSetStarting(TestSetReportEntry report) {
+            @Override public void testSetStarting(TestSetReportEntry report) {
                 MessageBuilder builder = MessageUtils.buffer();
 
                 JUnitTeamcityReporter.suite = concatenateWithTestGroup(builder, report);
@@ -51,8 +51,7 @@ public class TestSuiteAwareTestsetReporter extends SurefireStatelessTestsetInfoR
     /**
      * @see TestSetStats#concatenateWithTestGroup(MessageBuilder, ReportEntry, boolean)
      */
-    private static String concatenateWithTestGroup(MessageBuilder builder, ReportEntry report)
-    {
+    private static String concatenateWithTestGroup(MessageBuilder builder, ReportEntry report) {
         String testCls = report.getNameWithGroup();
 
         int idxOfGrp = testCls.indexOf(GROUP_PREFIX);

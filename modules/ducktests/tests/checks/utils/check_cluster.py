@@ -46,7 +46,6 @@ def mock_session_ctx(*, cluster_size=None):
     return sess_ctx
 
 
-# pylint: disable=no-self-use
 class CheckClusterParametrization:
     """
     Checks custom @cluster parametrization.

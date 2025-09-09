@@ -20,20 +20,21 @@ package org.apache.ignite.cache.websession;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.ModifiedExpiryPolicy;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -42,6 +43,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -60,7 +62,6 @@ import org.apache.ignite.transactions.Transaction;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -288,7 +289,7 @@ public class WebSessionFilter implements Filter {
 
         log = webSesIgnite.log();
 
-        marshaller = webSesIgnite.configuration().getMarshaller();
+        marshaller = ((IgniteEx)webSesIgnite).context().marshaller();
 
         initCache();
 
@@ -344,10 +345,6 @@ public class WebSessionFilter implements Filter {
         if (!cacheCfg.isEagerTtl())
             throw new IgniteException("Cache for web sessions cannot operate with lazy TTL. " +
                 "Consider setting eagerTtl to true for cache: " + cacheName);
-
-        if (cacheCfg.getCacheMode() == LOCAL)
-            U.quietAndWarn(webSesIgnite.log(), "Using LOCAL cache for web sessions caching " +
-                "(this is only OK in test mode): " + cacheName);
 
         if (cacheCfg.getCacheMode() == PARTITIONED && cacheCfg.getAtomicityMode() != ATOMIC)
             U.quietAndWarn(webSesIgnite.log(), "Using " + cacheCfg.getAtomicityMode() + " atomicity for web sessions " +
@@ -486,7 +483,7 @@ public class WebSessionFilter implements Filter {
         HttpSession ses = httpReq.getSession(false);
 
         if (ses != null && ses instanceof WebSession) {
-            Collection<T2<String, Object>> updates = ((WebSession) ses).updates();
+            Collection<T2<String, Object>> updates = ((WebSession)ses).updates();
 
             if (updates != null)
                 updateAttributes(transformSessionId(sesId), updates, ses.getMaxInactiveInterval());
@@ -1012,7 +1009,7 @@ public class WebSessionFilter implements Filter {
 
                 if (create) {
                     try {
-                        ses = createSessionV2((HttpServletRequest) getRequest());
+                        ses = createSessionV2((HttpServletRequest)getRequest());
                     }
                     catch (IOException e) {
                         throw new IgniteException(e);
@@ -1032,11 +1029,11 @@ public class WebSessionFilter implements Filter {
 
         /** {@inheritDoc} */
         @Override public String changeSessionId() {
-            final HttpServletRequest req = (HttpServletRequest) getRequest();
+            final HttpServletRequest req = (HttpServletRequest)getRequest();
 
             final String newId = req.changeSessionId();
 
-            if (!F.eq(newId, ses.getId())) {
+            if (!Objects.equals(newId, ses.getId())) {
                 try {
                     ses = createSessionV2(ses, newId);
                 }
@@ -1056,7 +1053,7 @@ public class WebSessionFilter implements Filter {
 
             final String newId = req.getSession(false).getId();
 
-            if (!F.eq(newId, ses.getId())) {
+            if (!Objects.equals(newId, ses.getId())) {
                 try {
                     ses = createSessionV2(ses, newId);
                 }

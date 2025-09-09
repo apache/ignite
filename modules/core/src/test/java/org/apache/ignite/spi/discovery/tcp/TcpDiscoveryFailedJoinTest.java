@@ -26,7 +26,6 @@ import java.net.SocketException;
 import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.DummyQueryIndexing;
@@ -72,7 +71,6 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(finder);
         discoSpi.setNetworkTimeout(2_000);
-        discoSpi.setForceServerMode(gridName.contains("client") && gridName.contains("server"));
 
         cfg.setDiscoverySpi(discoSpi);
 
@@ -130,9 +128,6 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
 
         assertStartFailed("server-47503");
 
-        // Client in server mode.
-        assertStartFailed("client_server-47503");
-
         // Regular client starts normally.
         startClientGrid("client-47503");
     }
@@ -149,9 +144,6 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         startGrid("server-47502");
 
         assertStartFailed("server-47503");
-
-        // Client in server mode.
-        assertStartFailed("client_server-47503");
 
         // Regular client starts normally.
         startClientGrid("client-47503");
@@ -204,20 +196,6 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
             long timeout) throws IOException {
             if (sock.getPort() != FAIL_PORT)
                 super.writeToSocket(sock, msg, data, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            if (sock.getPort() != FAIL_PORT)
-                super.writeToSocket(sock, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(ClusterNode node, Socket sock, OutputStream out,
-            TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
-            if (sock.getPort() != FAIL_PORT)
-                super.writeToSocket(node, sock, out, msg, timeout);
         }
 
         /** {@inheritDoc} */

@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -315,8 +315,8 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
 
         final Collection<GridRunningQueryInfo> finalQueries = queries;
 
-        for (GridRunningQueryInfo query : finalQueries)
-            qryProc.cancelQueries(Collections.singleton(query.id()));
+        for (GridRunningQueryInfo qry : finalQueries)
+            qryProc.cancelLocalQueries(Collections.singleton(qry.id()));
 
         int n = 100;
 

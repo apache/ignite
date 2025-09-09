@@ -45,12 +45,16 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
+import static org.apache.ignite.internal.binary.BinaryUtils.DFLT_IGNITE_USE_BINARY_ARRAYS;
 
 /**
  * Abstract data types coverage  test.
@@ -144,17 +148,21 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
     @Parameterized.Parameter(8)
     public boolean persistenceEnabled;
 
+    /** */
+    @Parameterized.Parameter(9)
+    public boolean useBinaryArrays;
+
     /**
      * @return Test parameters.
      */
     @Parameterized.Parameters(name = "atomicityMode={1}, cacheMode={2}, ttlFactory={3}, backups={4}," +
-        " evictionFactory={5}, onheapCacheEnabled={6}, writeSyncMode={7}, persistenceEnabled={8}")
+        " evictionFactory={5}, onheapCacheEnabled={6}, writeSyncMode={7}, persistenceEnabled={8}, useBinaryArrays={9}")
     public static Collection parameters() {
         Set<Object[]> params = new HashSet<>();
 
         Object[] baseParamLine = {
             null, CacheAtomicityMode.ATOMIC, CacheMode.PARTITIONED, null, 2, null,
-            false, CacheWriteSynchronizationMode.FULL_SYNC, false};
+            false, CacheWriteSynchronizationMode.FULL_SYNC, false, DFLT_IGNITE_USE_BINARY_ARRAYS};
 
         Object[] paramLine = null;
 
@@ -176,14 +184,12 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
         assert paramLine != null;
 
-        if ((paramLine[1]) != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
-            for (Factory ttlFactory : TTL_FACTORIES) {
-                paramLine = Arrays.copyOf(baseParamLine, baseParamLine.length);
+        for (Factory ttlFactory : TTL_FACTORIES) {
+            paramLine = Arrays.copyOf(baseParamLine, baseParamLine.length);
 
-                paramLine[3] = ttlFactory;
+            paramLine[3] = ttlFactory;
 
-                params.add(paramLine);
-            }
+            params.add(paramLine);
         }
 
         for (int backups : new int[] {0, 1, 2}) {
@@ -226,10 +232,34 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
             params.add(paramLine);
         }
 
+        for (boolean useTypedArrays : BOOLEANS) {
+            paramLine = Arrays.copyOf(baseParamLine, baseParamLine.length);
+
+            paramLine[9] = useTypedArrays;
+
+            params.add(paramLine);
+        }
+
         for (Object[] pLine : params)
             pLine[0] = UUID.randomUUID();
 
         return params;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
+        BinaryUtils.initUseBinaryArrays();
+
+        super.beforeTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
+        BinaryUtils.initUseBinaryArrays();
     }
 
     /** {@inheritDoc} */

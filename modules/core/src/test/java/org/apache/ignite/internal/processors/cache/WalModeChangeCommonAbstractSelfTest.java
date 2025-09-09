@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -244,12 +244,12 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
         }
         catch (Exception e) {
             if (jdbc) {
-                e = (Exception) e.getCause();
+                e = (Exception)e.getCause();
 
                 assert e instanceof SQLException : e.getClass().getName();
             }
             else
-                assert F.eq(errCls, e.getClass());
+                assert Objects.equals(errCls, e.getClass());
 
             if (errMsg != null) {
                 assert e.getMessage() != null;

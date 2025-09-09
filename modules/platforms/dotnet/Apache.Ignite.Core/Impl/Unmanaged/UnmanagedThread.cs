@@ -27,6 +27,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// </summary>
     internal static class UnmanagedThread
     {
+        /** */
+        private static readonly Func<IntPtr, int> SetThreadExitCallbackDelegate;
+
+        /** */
+        private static readonly Action<int> RemoveThreadExitCallbackDelegate;
+
+        /** */
+        private static readonly Action<int, IntPtr> EnableCurrentThreadExitEventDelegate;
+
         /// <summary>
         /// Delegate for <see cref="SetThreadExitCallback"/>.
         /// </summary>
@@ -36,9 +45,61 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Initializes the <see cref="UnmanagedThread"/> class.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static UnmanagedThread()
         {
             NativeLibraryUtils.SetDllImportResolvers();
+
+            if (Os.IsWindows)
+            {
+                SetThreadExitCallbackDelegate = SetThreadExitCallbackWindows;
+                RemoveThreadExitCallbackDelegate = RemoveThreadExitCallbackWindows;
+                EnableCurrentThreadExitEventDelegate = EnableCurrentThreadExitEventWindows;
+            }
+            else if (Os.IsMacOs)
+            {
+                SetThreadExitCallbackDelegate = SetThreadExitCallbackMacOs;
+                RemoveThreadExitCallbackDelegate = RemoveThreadExitCallbackMacOs;
+                EnableCurrentThreadExitEventDelegate = EnableCurrentThreadExitEventMacOs;
+            }
+            else if (Os.IsLinux)
+            {
+                if (Os.IsMono)
+                {
+                    SetThreadExitCallbackDelegate = SetThreadExitCallbackMono;
+                    RemoveThreadExitCallbackDelegate = RemoveThreadExitCallbackMono;
+                    EnableCurrentThreadExitEventDelegate = EnableCurrentThreadExitEventMono;
+                }
+                else
+                {
+                    unsafe
+                    {
+                        // Depending on the Linux distro, use either libcoreclr or libpthread.
+                        try
+                        {
+                            int tlsIndex;
+
+                            CheckResult(NativeMethodsLinuxLibcoreclr.pthread_key_create(new IntPtr(&tlsIndex), IntPtr.Zero));
+                            CheckResult(NativeMethodsLinuxLibcoreclr.pthread_key_delete(tlsIndex));
+
+                            SetThreadExitCallbackDelegate = SetThreadExitCallbackLibcoreclr;
+                            RemoveThreadExitCallbackDelegate = RemoveThreadExitCallbackLibcoreclr;
+                            EnableCurrentThreadExitEventDelegate = EnableCurrentThreadExitEventLibcoreclr;
+                        }
+                        catch (EntryPointNotFoundException)
+                        {
+                            SetThreadExitCallbackDelegate = SetThreadExitCallbackLibpthread;
+                            RemoveThreadExitCallbackDelegate = RemoveThreadExitCallbackLibpthread;
+                            EnableCurrentThreadExitEventDelegate = EnableCurrentThreadExitEventLibpthread;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("Unsupported OS: " + Environment.OSVersion);
+            }
         }
 
         /// <summary>
@@ -47,45 +108,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <param name="callbackPtr">
         /// Pointer to a callback function that matches <see cref="ThreadExitCallback"/>.
         /// </param>
-        public static unsafe int SetThreadExitCallback(IntPtr callbackPtr)
+        public static int SetThreadExitCallback(IntPtr callbackPtr)
         {
             Debug.Assert(callbackPtr != IntPtr.Zero);
 
-            if (Os.IsWindows)
-            {
-                var res = NativeMethodsWindows.FlsAlloc(callbackPtr);
-
-                if (res == NativeMethodsWindows.FLS_OUT_OF_INDEXES)
-                {
-                    throw new InvalidOperationException("FlsAlloc failed: " + Marshal.GetLastWin32Error());
-                }
-
-                return res;
-            }
-
-            if (Os.IsMacOs)
-            {
-                int tlsIndex;
-                var res = NativeMethodsMacOs.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr);
-
-                NativeMethodsLinux.CheckResult(res);
-
-                return tlsIndex;
-            }
-
-            if (Os.IsLinux)
-            {
-                int tlsIndex;
-                var res = Os.IsMono
-                    ? NativeMethodsMono.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr)
-                    : NativeMethodsLinux.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr);
-
-                NativeMethodsLinux.CheckResult(res);
-
-                return tlsIndex;
-            }
-
-            throw new InvalidOperationException("Unsupported OS: " + Environment.OSVersion);
+            return SetThreadExitCallbackDelegate(callbackPtr);
         }
 
         /// <summary>
@@ -95,32 +122,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <param name="callbackId">Callback id returned from <see cref="SetThreadExitCallback"/>.</param>
         public static void RemoveThreadExitCallback(int callbackId)
         {
-            if (Os.IsWindows)
-            {
-                var res = NativeMethodsWindows.FlsFree(callbackId);
-
-                if (!res)
-                {
-                    throw new InvalidOperationException("FlsFree failed: " + Marshal.GetLastWin32Error());
-                }
-            }
-            else if (Os.IsMacOs)
-            {
-                var res = NativeMethodsMacOs.pthread_key_delete(callbackId);
-                NativeMethodsLinux.CheckResult(res);
-            }
-            else if (Os.IsLinux)
-            {
-                var res = Os.IsMono
-                    ? NativeMethodsMono.pthread_key_delete(callbackId)
-                    : NativeMethodsLinux.pthread_key_delete(callbackId);
-
-                NativeMethodsLinux.CheckResult(res);
-            }
-            else
-            {
-                throw new InvalidOperationException("Unsupported OS: " + Environment.OSVersion);
-            }
+            RemoveThreadExitCallbackDelegate(callbackId);
         }
 
         /// <summary>
@@ -130,32 +132,171 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             Debug.Assert(threadLocalValue != IntPtr.Zero);
 
-            // Store any value so that destructor callback is fired.
-            if (Os.IsWindows)
-            {
-                var res = NativeMethodsWindows.FlsSetValue(callbackId, threadLocalValue);
+            EnableCurrentThreadExitEventDelegate(callbackId, threadLocalValue);
+        }
 
-                if (!res)
-                {
-                    throw new InvalidOperationException("FlsSetValue failed: " + Marshal.GetLastWin32Error());
-                }
-            }
-            else if (Os.IsMacOs)
-            {
-                var res = NativeMethodsMacOs.pthread_setspecific(callbackId, threadLocalValue);
-                NativeMethodsLinux.CheckResult(res);
-            }
-            else if (Os.IsLinux)
-            {
-                var res = Os.IsMono
-                    ? NativeMethodsMono.pthread_setspecific(callbackId, threadLocalValue)
-                    : NativeMethodsLinux.pthread_setspecific(callbackId, threadLocalValue);
+        /// <summary>
+        /// Sets the thread exit callback.
+        /// </summary>
+        private static unsafe int SetThreadExitCallbackMacOs(IntPtr callbackPtr)
+        {
+            int tlsIndex;
+            var res = NativeMethodsMacOs.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr);
 
-                NativeMethodsLinux.CheckResult(res);
-            }
-            else
+            CheckResult(res);
+
+            return tlsIndex;
+        }
+
+        /// <summary>
+        /// Sets the thread exit callback.
+        /// </summary>
+        private static int SetThreadExitCallbackWindows(IntPtr callbackPtr)
+        {
+            var res = NativeMethodsWindows.FlsAlloc(callbackPtr);
+
+            if (res == NativeMethodsWindows.FLS_OUT_OF_INDEXES)
             {
-                throw new InvalidOperationException("Unsupported OS: " + Environment.OSVersion);
+                throw new InvalidOperationException("FlsAlloc failed: " + Marshal.GetLastWin32Error());
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Sets the thread exit callback.
+        /// </summary>
+        private static unsafe int SetThreadExitCallbackMono(IntPtr callbackPtr)
+        {
+            int tlsIndex;
+
+            CheckResult(NativeMethodsMono.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr));
+
+            return tlsIndex;
+        }
+
+        /// <summary>
+        /// Sets the thread exit callback.
+        /// </summary>
+        private static unsafe int SetThreadExitCallbackLibcoreclr(IntPtr callbackPtr)
+        {
+            int tlsIndex;
+
+            CheckResult(NativeMethodsLinuxLibcoreclr.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr));
+
+            return tlsIndex;
+        }
+
+        /// <summary>
+        /// Sets the thread exit callback.
+        /// </summary>
+        private static unsafe int SetThreadExitCallbackLibpthread(IntPtr callbackPtr)
+        {
+            int tlsIndex;
+
+            CheckResult(NativeMethodsLinuxLibpthread.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr));
+
+            return tlsIndex;
+        }
+
+        /// <summary>
+        /// Removes thread exit callback that has been set with <see cref="SetThreadExitCallback"/>.
+        /// </summary>
+        private static void RemoveThreadExitCallbackLibpthread(int callbackId)
+        {
+            CheckResult(NativeMethodsLinuxLibpthread.pthread_key_delete(callbackId));
+        }
+
+        /// <summary>
+        /// Removes thread exit callback that has been set with <see cref="SetThreadExitCallback"/>.
+        /// </summary>
+        private static void RemoveThreadExitCallbackLibcoreclr(int callbackId)
+        {
+            CheckResult(NativeMethodsLinuxLibcoreclr.pthread_key_delete(callbackId));
+        }
+
+        /// <summary>
+        /// Removes thread exit callback that has been set with <see cref="SetThreadExitCallback"/>.
+        /// </summary>
+        private static void RemoveThreadExitCallbackMono(int callbackId)
+        {
+            CheckResult(NativeMethodsMono.pthread_key_delete(callbackId));
+        }
+
+        /// <summary>
+        /// Removes thread exit callback that has been set with <see cref="SetThreadExitCallback"/>.
+        /// </summary>
+        private static void RemoveThreadExitCallbackMacOs(int callbackId)
+        {
+            CheckResult(NativeMethodsMacOs.pthread_key_delete(callbackId));
+        }
+
+        /// <summary>
+        /// Removes thread exit callback that has been set with <see cref="SetThreadExitCallback"/>.
+        /// </summary>
+        private static void RemoveThreadExitCallbackWindows(int callbackId)
+        {
+            var res = NativeMethodsWindows.FlsFree(callbackId);
+
+            if (!res)
+            {
+                throw new InvalidOperationException("FlsFree failed: " + Marshal.GetLastWin32Error());
+            }
+        }
+
+        /// <summary>
+        /// Enables thread exit event for current thread.
+        /// </summary>
+        private static void EnableCurrentThreadExitEventLibpthread(int callbackId, IntPtr threadLocalValue)
+        {
+            CheckResult(NativeMethodsLinuxLibpthread.pthread_setspecific(callbackId, threadLocalValue));
+        }
+
+        /// <summary>
+        /// Enables thread exit event for current thread.
+        /// </summary>
+        private static void EnableCurrentThreadExitEventLibcoreclr(int callbackId, IntPtr threadLocalValue)
+        {
+            CheckResult(NativeMethodsLinuxLibcoreclr.pthread_setspecific(callbackId, threadLocalValue));
+        }
+
+        /// <summary>
+        /// Enables thread exit event for current thread.
+        /// </summary>
+        private static void EnableCurrentThreadExitEventMono(int callbackId, IntPtr threadLocalValue)
+        {
+            CheckResult(NativeMethodsMono.pthread_setspecific(callbackId, threadLocalValue));
+        }
+
+        /// <summary>
+        /// Enables thread exit event for current thread.
+        /// </summary>
+        private static void EnableCurrentThreadExitEventMacOs(int callbackId, IntPtr threadLocalValue)
+        {
+            CheckResult(NativeMethodsMacOs.pthread_setspecific(callbackId, threadLocalValue));
+        }
+
+        /// <summary>
+        /// Enables thread exit event for current thread.
+        /// </summary>
+        private static void EnableCurrentThreadExitEventWindows(int callbackId, IntPtr threadLocalValue)
+        {
+            var res = NativeMethodsWindows.FlsSetValue(callbackId, threadLocalValue);
+
+            if (!res)
+            {
+                throw new InvalidOperationException("FlsSetValue failed: " + Marshal.GetLastWin32Error());
+            }
+        }
+
+        /// <summary>
+        /// Checks native call result.
+        /// </summary>
+        private static void CheckResult(int res)
+        {
+            if (res != 0)
+            {
+                throw new InvalidOperationException("Native call failed: " + res);
             }
         }
 
@@ -185,7 +326,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Linux imports.
         /// </summary>
-        private static class NativeMethodsLinux
+        private static class NativeMethodsLinuxLibcoreclr
         {
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
             [DllImport("libcoreclr.so")]
@@ -198,17 +339,24 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
             [DllImport("libcoreclr.so")]
             public static extern int pthread_setspecific(int key, IntPtr value);
+        }
 
-            /// <summary>
-            /// Checks native call result.
-            /// </summary>
-            public static void CheckResult(int res)
-            {
-                if (res != 0)
-                {
-                    throw new InvalidOperationException("Native call failed: " + res);
-                }
-            }
+        /// <summary>
+        /// Linux imports.
+        /// </summary>
+        private static class NativeMethodsLinuxLibpthread
+        {
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
+            [DllImport("libpthread.so")]
+            public static extern int pthread_key_create(IntPtr key, IntPtr destructorCallback);
+
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
+            [DllImport("libpthread.so")]
+            public static extern int pthread_key_delete(int key);
+
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
+            [DllImport("libpthread.so")]
+            public static extern int pthread_setspecific(int key, IntPtr value);
         }
 
         /// <summary>

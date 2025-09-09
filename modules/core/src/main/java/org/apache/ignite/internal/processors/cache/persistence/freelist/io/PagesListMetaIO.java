@@ -39,10 +39,10 @@ public class PagesListMetaIO extends PageIO {
     private static final int NEXT_META_PAGE_OFF = CNT_OFF + 2;
 
     /** */
-    private static final int ITEMS_OFF = NEXT_META_PAGE_OFF + 8;
+    public static final int ITEMS_OFF = NEXT_META_PAGE_OFF + 8;
 
     /** */
-    private static final int ITEM_SIZE = 10;
+    public static final int ITEM_SIZE = 10;
 
     /** */
     public static final IOVersions<PagesListMetaIO> VERSIONS = new IOVersions<>(
@@ -78,6 +78,7 @@ public class PagesListMetaIO extends PageIO {
      */
     private void setCount(long pageAddr, int cnt) {
         assert cnt >= 0 && cnt <= Short.MAX_VALUE : cnt;
+        assertPageType(pageAddr);
 
         PageUtils.putShort(pageAddr, CNT_OFF, (short)cnt);
     }
@@ -95,6 +96,8 @@ public class PagesListMetaIO extends PageIO {
      * @param metaPageId Next meta page ID.
      */
     public void setNextMetaPageId(long pageAddr, long metaPageId) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, NEXT_META_PAGE_OFF, metaPageId);
     }
 
@@ -115,6 +118,7 @@ public class PagesListMetaIO extends PageIO {
      */
     public int addTails(int pageSize, long pageAddr, int bucket, PagesList.Stripe[] tails, int tailsOff) {
         assert bucket >= 0 && bucket <= Short.MAX_VALUE : bucket;
+        assertPageType(pageAddr);
 
         int cnt = getCount(pageAddr);
         int cap = getCapacity(pageSize, pageAddr);
@@ -176,7 +180,7 @@ public class PagesListMetaIO extends PageIO {
      * @param pageAddr Page address.
      * @return Maximum number of items which can be stored in buffer.
      */
-    private int getCapacity(int pageSize, long pageAddr) {
+    public int getCapacity(int pageSize, long pageAddr) {
         return (pageSize - ITEMS_OFF) / ITEM_SIZE;
     }
 
@@ -204,5 +208,10 @@ public class PagesListMetaIO extends PageIO {
             sb.a("\n\t\tbucket=").a(e.getKey()).a(", list=").a(e.getValue());
 
         sb.a("\n\t}\n]");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return (getCapacity(pageSize, pageAddr) - getCount(pageAddr)) * ITEM_SIZE;
     }
 }

@@ -345,7 +345,7 @@ public class GridConcurrentWeakHashSet<E> implements Set<E> {
     private void removeStale() {
         WeakReferenceElement<E> ref;
 
-        while ((ref = (WeakReferenceElement<E>) gcQ.poll()) != null) {
+        while ((ref = (WeakReferenceElement<E>)gcQ.poll()) != null) {
             store.remove(ref);
 
             onGc(ref.get());

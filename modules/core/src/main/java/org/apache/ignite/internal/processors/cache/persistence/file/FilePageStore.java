@@ -734,7 +734,7 @@ public class FilePageStore implements PageStore {
                     }
 
                     // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.
-                    assert skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, pageSize) == 0 :
+                    assert skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, getCrcSize(pageId, pageBuf)) == 0 :
                         "CRC hasn't been calculated, crc=0";
 
                     assert pageBuf.position() == 0 : pageBuf.position();
@@ -805,7 +805,7 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public long pageOffset(long pageId) {
-        return (long) PageIdUtils.pageIndex(pageId) * pageSize + headerSize();
+        return (long)PageIdUtils.pageIndex(pageId) * pageSize + headerSize();
     }
 
     /** {@inheritDoc} */

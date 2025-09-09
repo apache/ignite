@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.util.function.LongUnaryOperator;
+import java.util.function.LongBinaryOperator;
 import org.apache.ignite.configuration.PageReplacementMode;
 import org.apache.ignite.internal.util.GridUnsafe;
 
@@ -44,7 +44,7 @@ public class ClockPageReplacementFlags {
         pagesCnt = totalPagesCnt;
         flagsPtr = memPtr;
 
-        GridUnsafe.setMemory(flagsPtr, (totalPagesCnt + 7) >> 3, (byte)0);
+        GridUnsafe.zeroMemory(flagsPtr, (totalPagesCnt + 7) >> 3);
     }
 
     /**
@@ -109,7 +109,7 @@ public class ClockPageReplacementFlags {
      * @param pageIdx Page index.
      */
     public void clearFlag(int pageIdx) {
-        compareAndSwapFlag(pageIdx, flags -> flags & ~(1L << pageIdx));
+        compareAndSwapFlag(pageIdx, (flags, idx) -> flags & ~(1L << idx));
     }
 
     /**
@@ -118,7 +118,7 @@ public class ClockPageReplacementFlags {
      * @param pageIdx Page index.
      */
     public void setFlag(int pageIdx) {
-        compareAndSwapFlag(pageIdx, flags -> flags | (1L << pageIdx));
+        compareAndSwapFlag(pageIdx, (flags, idx) -> flags | (1L << idx));
     }
 
     /**
@@ -127,7 +127,7 @@ public class ClockPageReplacementFlags {
      * @param pageIdx Page index.
      * @param func Function to apply to flags.
      */
-    private void compareAndSwapFlag(int pageIdx, LongUnaryOperator func) {
+    private void compareAndSwapFlag(int pageIdx, LongBinaryOperator func) {
         long ptr = flagsPtr + ((pageIdx >> 3) & (~7L));
 
         long oldFlags;
@@ -135,7 +135,7 @@ public class ClockPageReplacementFlags {
 
         do {
             oldFlags = GridUnsafe.getLong(ptr);
-            newFlags = func.applyAsLong(oldFlags);
+            newFlags = func.applyAsLong(oldFlags, pageIdx);
 
             if (oldFlags == newFlags)
                 return;

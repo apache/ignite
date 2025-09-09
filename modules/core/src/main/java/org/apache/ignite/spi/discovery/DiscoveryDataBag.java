@@ -38,13 +38,13 @@ public class DiscoveryDataBag {
      * Facade interface representing {@link DiscoveryDataBag} object with discovery data from joining node.
      */
     public interface JoiningNodeDiscoveryData {
-        /** */
+        /** @return ID of the joining node. */
         UUID joiningNodeId();
 
-        /** */
+        /** @return Whether joining node provided discovery data. */
         boolean hasJoiningNodeData();
 
-        /** */
+        /** @return Joining node data. */
         Serializable joiningNodeData();
     }
 
@@ -52,13 +52,13 @@ public class DiscoveryDataBag {
      * Facade interface representing {@link DiscoveryDataBag} object with discovery data collected in the grid.
      */
     public interface GridDiscoveryData {
-        /** */
+        /** @return ID fo the joining node. */
         UUID joiningNodeId();
 
-        /** */
+        /** @return Common for all cluster nodes discovery data that is sent to the joining node. */
         Serializable commonData();
 
-        /** */
+        /** @return Discovery data that is mapped to the particular cluster node and sent to the joining node. */
         Map<UUID, Serializable> nodeSpecificData();
     }
 
@@ -293,23 +293,20 @@ public class DiscoveryDataBag {
         nodeSpecificData.putAll(nodeSpecData);
     }
 
-    /**
-     *
-     */
+    /** @return Discovery data for each Ignite component that is sent to the cluster nodes by joining node. */
     public Map<Integer, Serializable> joiningNodeData() {
         return joiningNodeData;
     }
 
     /**
-     *
+     * @return Discovery data for each Ignite component that is aggregated from the cluster nodes and sent to the
+     * joining node.
      */
     public Map<Integer, Serializable> commonData() {
         return commonData;
     }
 
-    /**
-     *
-     */
+    /** @return Discovery data that belongs to the current cluster node and is sent to the joining node. */
     @Nullable public Map<Integer, Serializable> localNodeSpecificData() {
         return nodeSpecificData.get(DEFAULT_KEY);
     }

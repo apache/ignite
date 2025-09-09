@@ -29,7 +29,6 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion, V_2_8_0
 
 
-# pylint: disable=W0223
 class BaselineTests(IgniteTest):
     """
     Tests baseline command
@@ -191,8 +190,9 @@ class BaselineTests(IgniteTest):
             cluster_state="INACTIVE",
             version=IgniteVersion(version),
             data_storage=DataStorageConfiguration(
-                default=DataRegionConfiguration(name='persistent', persistent=True),
-                regions=[DataRegionConfiguration(name='in-memory', persistent=False, max_size=100 * 1024 * 1024)]
+                default=DataRegionConfiguration(name='persistent', persistence_enabled=True),
+                regions=[DataRegionConfiguration(name='in-memory', persistence_enabled=False,
+                                                 max_size=100 * 1024 * 1024)]
             )
         )
 

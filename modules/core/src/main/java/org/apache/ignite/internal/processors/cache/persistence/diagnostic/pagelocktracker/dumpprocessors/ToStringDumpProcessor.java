@@ -66,11 +66,11 @@ class ToStringDumpProcessor {
     /** Helper class for track lock/unlock count. */
     private static class LockState {
         /** */
-            int readlock;
+        int readlock;
 
         /** */
-            int writelock;
-        }
+        int writelock;
+    }
 
     /** */
     private String operationToString(int op) {

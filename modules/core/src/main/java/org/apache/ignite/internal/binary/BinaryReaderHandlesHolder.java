@@ -20,7 +20,14 @@ package org.apache.ignite.internal.binary;
 /**
  * Holder for handles.
  */
-public interface BinaryReaderHandlesHolder {
+interface BinaryReaderHandlesHolder {
+    /**
+     * Set handle.
+     *
+     * @param obj Object.
+     */
+    public void setHandle(Object obj);
+
     /**
      * Set handle.
      *
@@ -43,4 +50,7 @@ public interface BinaryReaderHandlesHolder {
      * @return Handles.
      */
     public BinaryReaderHandles handles();
+
+    /** */
+    public boolean isEmpty();
 }

@@ -50,7 +50,7 @@ The table below lists all the link:https://en.wikipedia.org/wiki/SQLSTATE[ANSI S
 
 |0A000|Requested operation is not supported.
 
-|40001|Concurrent update conflict. See link:transactions/mvcc#concurrent-updates[Concurrent Updates].
+|40001|Concurrent update conflict.
 
 |42000|Query parsing exception.
 

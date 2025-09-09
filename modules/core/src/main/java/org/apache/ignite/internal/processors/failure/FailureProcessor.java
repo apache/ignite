@@ -31,7 +31,8 @@ import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.CorruptedPersistenceException;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.CorruptedDataStructureException;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE;
+import static org.apache.ignite.internal.util.IgniteUtils.validateRamUsage;
 
 /**
  * General failure processing API
@@ -46,6 +48,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAILURE_HANDLER_RE
 public class FailureProcessor extends GridProcessorAdapter {
     /** @see IgniteSystemProperties#IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE */
     public static final int DFLT_FAILURE_HANDLER_RESERVE_BUFFER_SIZE = 64 * 1024;
+
+    /** OOM fix recommendation message. */
+    private static final String OOM_FIX_RECOMMENDATION_LOG_MSG = "Insufficient Java heap space. The following Ignite" +
+        " configuration problems have been detected that may caused the node failure: ";
 
     /** Value of the system property that enables threads dumping on failure. */
     private final boolean igniteDumpThreadsOnFailure =
@@ -178,23 +184,42 @@ public class FailureProcessor extends GridProcessorAdapter {
                 "[hnd=" + hnd + ", failureCtx=" + failureCtx + ']', failureCtx.error());
         }
 
-        if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
-            reserveBuf = null;
+        if (X.hasCause(failureCtx.error(), OutOfMemoryError.class)) {
+            if (reserveBuf != null)
+                reserveBuf = null;
 
-        if (X.hasCause(failureCtx.error(), CorruptedPersistenceException.class))
-            log.error("A critical problem with persistence data structures was detected." +
-                " Please make backup of persistence storage and WAL files for further analysis." +
-                " Persistence storage path: " + ctx.config().getDataStorageConfiguration().getStoragePath() +
-                " WAL path: " + ctx.config().getDataStorageConfiguration().getWalPath() +
-                " WAL archive path: " + ctx.config().getDataStorageConfiguration().getWalArchivePath());
+            String validationResult = validateRamUsage(ctx);
+
+            if (validationResult != null)
+                log.error(OOM_FIX_RECOMMENDATION_LOG_MSG + validationResult, failureCtx.error());
+        }
+
+        CorruptedDataStructureException corruptedDataStructureEx =
+            X.cause(failureCtx.error(), CorruptedDataStructureException.class);
+
+        if (corruptedDataStructureEx != null) {
+            CacheGroupContext grpCtx = ctx.cache().cacheGroup(corruptedDataStructureEx.groupId());
+
+            if (grpCtx != null && grpCtx.dataRegion() != null) {
+                if (grpCtx.dataRegion().config().isPersistenceEnabled()) {
+                    log.error("A critical problem with persistence data structures was detected." +
+                        " Please make backup of persistence storage and WAL files for further analysis." +
+                        " Persistence storage path: " + ctx.config().getDataStorageConfiguration().getStoragePath() +
+                        " WAL path: " + ctx.config().getDataStorageConfiguration().getWalPath() +
+                        " WAL archive path: " + ctx.config().getDataStorageConfiguration().getWalArchivePath());
+                }
+                else
+                    log.error("A critical problem with in-memory data structures was detected.");
+            }
+        }
 
         if (igniteDumpThreadsOnFailure && !throttleThreadDump(failureCtx.type()))
             U.dumpThreads(log, !failureTypeIgnored(failureCtx, hnd));
 
-        DiagnosticProcessor diagnosticProcessor = ctx.diagnostic();
+        DiagnosticProcessor diagnosticProc = ctx.diagnostic();
 
-        if (diagnosticProcessor != null)
-            diagnosticProcessor.onFailure(failureCtx);
+        if (diagnosticProc != null)
+            diagnosticProc.onFailure(failureCtx);
 
         boolean invalidated = hnd.onFailure(ignite, failureCtx);
 
@@ -226,7 +251,7 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (dumpThreadsTrottlingTimeout <= 0)
             return false;
 
-        long curr = U.currentTimeMillis();
+        long curr = System.currentTimeMillis();
 
         Long last = threadDumpPerFailureTypeTs.get(type);
 

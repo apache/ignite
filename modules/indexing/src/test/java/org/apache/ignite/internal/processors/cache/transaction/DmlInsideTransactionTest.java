@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transaction;
 
+import java.util.Objects;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -25,7 +26,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -66,10 +66,10 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
     public void testDmlInTransactionByDefault() throws Exception {
         prepareIgnite();
 
-        for (String dmlQuery : DML_QUERIES) {
-            runDmlSqlFieldsQueryInTransactionTest(dmlQuery, false, false);
+        for (String dmlQry : DML_QUERIES) {
+            runDmlSqlFieldsQueryInTransactionTest(dmlQry, false, false);
 
-            runDmlSqlFieldsQueryInTransactionTest(dmlQuery, true, false);
+            runDmlSqlFieldsQueryInTransactionTest(dmlQry, true, false);
         }
     }
 
@@ -83,10 +83,10 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
     public void testDmlInTransactionInDisabledCompatibilityMode() throws Exception {
         prepareIgnite();
 
-        for (String dmlQuery : DML_QUERIES) {
-            runDmlSqlFieldsQueryInTransactionTest(dmlQuery, false, false);
+        for (String dmlQry : DML_QUERIES) {
+            runDmlSqlFieldsQueryInTransactionTest(dmlQry, false, false);
 
-            runDmlSqlFieldsQueryInTransactionTest(dmlQuery, true, false);
+            runDmlSqlFieldsQueryInTransactionTest(dmlQry, true, false);
         }
     }
 
@@ -100,10 +100,10 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
     public void testDmlInTransactionInCompatibilityMode() throws Exception {
         prepareIgnite();
 
-        for (String dmlQuery : DML_QUERIES) {
-            runDmlSqlFieldsQueryInTransactionTest(dmlQuery, false, true);
+        for (String dmlQry : DML_QUERIES) {
+            runDmlSqlFieldsQueryInTransactionTest(dmlQry, false, true);
 
-            runDmlSqlFieldsQueryInTransactionTest(dmlQuery, true, true);
+            runDmlSqlFieldsQueryInTransactionTest(dmlQry, true, true);
         }
     }
 
@@ -116,12 +116,12 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
     public void testDmlNotInTransaction() throws Exception {
         prepareIgnite();
 
-        for (String dmlQuery : DML_QUERIES) {
-            grid(0).cache(CACHE_PERSON).query(new SqlFieldsQuery(dmlQuery));
+        for (String dmlQry : DML_QUERIES) {
+            grid(0).cache(CACHE_PERSON).query(new SqlFieldsQuery(dmlQry));
 
             grid(0).cache(CACHE_PERSON).clear();
 
-            grid(0).cache(CACHE_PERSON).query(new SqlFieldsQuery(dmlQuery).setLocal(true));
+            grid(0).cache(CACHE_PERSON).query(new SqlFieldsQuery(dmlQry).setLocal(true));
         }
     }
 
@@ -149,8 +149,8 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
      * @param isAllowed true in case DML should work inside transaction, false otherwise.
      */
     private void runDmlSqlFieldsQueryInTransactionTest(String dmlQry, boolean isLocal, boolean isAllowed) {
-        SqlFieldsQuery query = new SqlFieldsQuery(dmlQry).setLocal(isLocal);
-        runDmlInTransactionTest(query, isAllowed);
+        SqlFieldsQuery qry = new SqlFieldsQuery(dmlQry).setLocal(isLocal);
+        runDmlInTransactionTest(qry, isAllowed);
     }
 
     /**
@@ -212,7 +212,7 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            return obj instanceof PersonKey && (F.eq(id, ((PersonKey)obj).id));
+            return obj instanceof PersonKey && (Objects.equals(id, ((PersonKey)obj).id));
         }
     }
 

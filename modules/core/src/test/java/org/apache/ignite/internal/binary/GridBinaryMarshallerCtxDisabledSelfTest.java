@@ -28,10 +28,10 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -47,12 +47,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
     public void testObjectExchange() throws Exception {
         BinaryMarshaller marsh = new BinaryMarshaller();
         marsh.setContext(new MarshallerContextWithNoStorage());
-
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        BinaryContext context = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
-
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", context, cfg);
+        marsh.setBinaryContext(U.binaryContext(marsh, new IgniteConfiguration()));
 
         SimpleObject simpleObj = new SimpleObject();
 
@@ -134,14 +129,27 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return new JdkMarshaller();
+            return Marshallers.jdk();
         }
     }
 
     /**
      */
     private enum TestEnum {
-        A, B, C, D, E
+        /** */
+        A,
+
+        /** */
+        B,
+
+        /** */
+        C,
+
+        /** */
+        D,
+
+        /** */
+        E
     }
 
     /**
@@ -165,6 +173,7 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
         /** */
         private TestEnum[] enumArr;
 
+        /** */
         private SimpleObject otherObj;
 
         /** {@inheritDoc} */
@@ -175,29 +184,29 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            SimpleObject object = (SimpleObject)o;
+            SimpleObject obj = (SimpleObject)o;
 
-            if (b != object.b)
+            if (b != obj.b)
                 return false;
 
-            if (c != object.c)
+            if (c != obj.c)
                 return false;
 
-            if (!Arrays.equals(bArr, object.bArr))
-                return false;
-
-            // Probably incorrect - comparing Object[] arrays with Arrays.equals
-            if (!Arrays.equals(objArr, object.objArr))
-                return false;
-
-            if (enumVal != object.enumVal)
+            if (!Arrays.equals(bArr, obj.bArr))
                 return false;
 
             // Probably incorrect - comparing Object[] arrays with Arrays.equals
-            if (!Arrays.equals(enumArr, object.enumArr))
+            if (!Arrays.equals(objArr, obj.objArr))
                 return false;
 
-            return !(otherObj != null ? !otherObj.equals(object.otherObj) : object.otherObj != null);
+            if (enumVal != obj.enumVal)
+                return false;
+
+            // Probably incorrect - comparing Object[] arrays with Arrays.equals
+            if (!Arrays.equals(enumArr, obj.enumArr))
+                return false;
+
+            return !(otherObj != null ? !otherObj.equals(obj.otherObj) : obj.otherObj != null);
         }
     }
 

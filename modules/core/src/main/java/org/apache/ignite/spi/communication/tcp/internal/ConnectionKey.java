@@ -106,7 +106,7 @@ public class ConnectionKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ConnectionKey key = (ConnectionKey) o;
+        ConnectionKey key = (ConnectionKey)o;
 
         return idx == key.idx && nodeId.equals(key.nodeId);
     }

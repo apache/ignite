@@ -31,14 +31,42 @@ class CommunicationSpi(metaclass=ABCMeta):
         Type of CommunicationSpi.
         """
 
+    @property
+    @abstractmethod
+    def class_name(self):
+        """
+        Class name of CommunicationSpi.
+        """
+
 
 class TcpCommunicationSpi(CommunicationSpi):
     """
     TcpCommunicationSpi.
     """
-    def __init__(self, port=47100, port_range=100):
-        self.port = port
-        self.port_range = port_range
+
+    def __init__(self,
+                 local_port=47100,
+                 local_port_range=100,
+                 idle_connection_timeout: int = None,
+                 socket_write_timeout: int = None,
+                 selectors_count: int = None,
+                 connections_per_node: int = None,
+                 use_paired_connections: bool = None,
+                 message_queue_limit: int = None,
+                 unacknowledged_messages_buffer_size: int = None):
+        self.local_port = local_port
+        self.local_port_range = local_port_range
+        self.idle_connection_timeout: int = idle_connection_timeout
+        self.socket_write_timeout: int = socket_write_timeout
+        self.selectors_count: int = selectors_count
+        self.connections_per_node: int = connections_per_node
+        self.use_paired_connections: bool = use_paired_connections
+        self.message_queue_limit: int = message_queue_limit
+        self.unacknowledged_messages_buffer_size: int = unacknowledged_messages_buffer_size
+
+    @property
+    def class_name(self):
+        return "org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi"
 
     @property
     def type(self):

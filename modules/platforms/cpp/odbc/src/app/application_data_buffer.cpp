@@ -1195,6 +1195,14 @@ namespace ignite
                 return ApplyOffset(reslen, sizeof(*reslen));
             }
 
+
+            template<typename T, typename V>
+            inline V LoadPrimitive(const void* data) {
+                T res = T();
+                std::memcpy(&res, data, sizeof(res));
+                return static_cast<V>(res);
+            }
+
             template<typename T>
             T ApplicationDataBuffer::GetNum() const
             {
@@ -1235,62 +1243,62 @@ namespace ignite
 
                     case OdbcNativeType::AI_SIGNED_TINYINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const signed char*>(GetData()));
+                        res = LoadPrimitive<int8_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_BIT:
                     case OdbcNativeType::AI_UNSIGNED_TINYINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const unsigned char*>(GetData()));
+                        res = LoadPrimitive<uint8_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_SIGNED_SHORT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const signed short*>(GetData()));
+                        res = LoadPrimitive<int16_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_UNSIGNED_SHORT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const unsigned short*>(GetData()));
+                        res = LoadPrimitive<uint16_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_SIGNED_LONG:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const signed long*>(GetData()));
+                        res = LoadPrimitive<int32_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_UNSIGNED_LONG:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const unsigned long*>(GetData()));
+                        res = LoadPrimitive<uint32_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_SIGNED_BIGINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const int64_t*>(GetData()));
+                        res = LoadPrimitive<int64_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_UNSIGNED_BIGINT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const uint64_t*>(GetData()));
+                        res = LoadPrimitive<uint64_t, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_FLOAT:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const float*>(GetData()));
+                        res = LoadPrimitive<float, T>(GetData());
                         break;
                     }
 
                     case OdbcNativeType::AI_DOUBLE:
                     {
-                        res = static_cast<T>(*reinterpret_cast<const double*>(GetData()));
+                        res = LoadPrimitive<double, T>(GetData());
                         break;
                     }
 

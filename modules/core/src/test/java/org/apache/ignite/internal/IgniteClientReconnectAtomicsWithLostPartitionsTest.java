@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
+import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -222,15 +223,59 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAtomicSequenceAddAngGet() throws Exception {
+        testAtomicSequenceReconnectClusterRestart("atomic-sequence-addAndGet", atomic -> atomic.addAndGet(5L));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAtomicSequenceGetAngAdd() throws Exception {
+        testAtomicSequenceReconnectClusterRestart("atomic-sequence-getAndAdd", atomic -> atomic.getAndAdd(5L));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAtomicSequenceIncrementAndGet() throws Exception {
+        testAtomicSequenceReconnectClusterRestart(
+            "atomic-sequence-incrementAndGet",
+            atomic -> {
+                // Need to execute twice at least. See AtomicConfiguration.setAtomicSequenceReserveSize.
+                atomic.incrementAndGet();
+                atomic.incrementAndGet();
+            });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAtomicSequenceGetAndIncrement() throws Exception {
+        testAtomicSequenceReconnectClusterRestart(
+            "atomic-sequence-getAndIncrement",
+            atomic -> {
+                // Need to execute twice at least. See AtomicConfiguration.setAtomicSequenceReserveSize.
+                atomic.getAndIncrement();
+                atomic.getAndIncrement();
+            });
+    }
+
+    /**
      * Tests atomic long operation provided by the the given {@code clo}.
      *
      * @param atomicName Name of atomic long.
-     * @param clo Closure that represents an operation.
+     * @param op Closure that represents an operation.
      * @throws Exception If failed.
      */
     private void testAtomicLongReconnectClusterRestart(
         String atomicName,
-        final IgniteInClosure<IgniteAtomicLong> clo
+        final IgniteInClosure<IgniteAtomicLong> op
     ) throws Exception {
         Ignite client = grid(serverCount());
 
@@ -244,21 +289,9 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
 
         // Restart the cluster without waiting for rebalancing.
         // It should lead to data loss because there are no backups in the atomic configuration.
-        for (int i = 0; i < serverCount(); ++i) {
-            grid(i).close();
+        restartClusterWithoutRebalancing();
 
-            startGrid(i);
-        }
-
-        GridTestUtils.assertThrows(
-            log,
-            () -> {
-                clo.apply(atomic);
-
-                return null;
-            },
-            IgniteException.class,
-            "Failed to find atomic long: " + atomicName);
+        checkAtomicOperation(atomic, op, "Failed to find atomic long: " + atomicName);
 
         assertTrue("Atomic long instance should be removed.", atomic.removed());
 
@@ -271,12 +304,12 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
      * Tests atomic reference operation provided by the the given {@code clo}.
      *
      * @param atomicName Name of atomic.
-     * @param clo Closure that represents an operation.
+     * @param op Closure that represents an operation.
      * @throws Exception If failed.
      */
     private void testAtomicReferenceReconnectClusterRestart(
         String atomicName,
-        final IgniteInClosure<IgniteAtomicReference<Long>> clo
+        final IgniteInClosure<IgniteAtomicReference<Long>> op
     ) throws Exception {
         Ignite client = grid(serverCount());
 
@@ -290,21 +323,9 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
 
         // Restart the cluster without waiting for rebalancing.
         // It should lead to data loss because there are no backups in the atomic configuration.
-        for (int i = 0; i < serverCount(); ++i) {
-            grid(i).close();
+        restartClusterWithoutRebalancing();
 
-            startGrid(i);
-        }
-
-        GridTestUtils.assertThrows(
-            log,
-            () -> {
-                clo.apply(atomic);
-
-                return null;
-            },
-            IgniteException.class,
-            "Failed to find atomic reference with given name: " + atomicName);
+        checkAtomicOperation(atomic, op, "Failed to find atomic reference with given name: " + atomicName);
 
         assertTrue("Atomic instance should be removed.", atomic.removed());
 
@@ -340,23 +361,10 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
         assertEquals(initVal, atomic.get().get1());
         assertEquals(initStamp, atomic.get().get2());
 
-        // Restart the cluster without waiting for rebalancing.
         // It should lead to data loss because there are no backups in the atomic configuration.
-        for (int i = 0; i < serverCount(); ++i) {
-            grid(i).close();
+        restartClusterWithoutRebalancing();
 
-            startGrid(i);
-        }
-
-        GridTestUtils.assertThrows(
-            log,
-            () -> {
-                op.apply(atomic);
-
-                return null;
-            },
-            IgniteException.class,
-            "Failed to find atomic stamped with given name: " + atomicName);
+        checkAtomicOperation(atomic, op, "Failed to find atomic stamped with given name: " + atomicName);
 
         assertTrue("Atomic instance should be removed.", atomic.removed());
 
@@ -368,5 +376,78 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
         assertEquals(initStamp, recreatedAtomic.stamp());
         assertEquals(initVal, recreatedAtomic.get().get1());
         assertEquals(initStamp, recreatedAtomic.get().get2());
+    }
+
+    /**
+     * Tests atomic sequence operation provided by the the given {@code clo}.
+     *
+     * @param atomicName Name of atomic sequnce.
+     * @param op Closure that represents an operation.
+     * @throws Exception If failed.
+     */
+    private void testAtomicSequenceReconnectClusterRestart(
+        String atomicName,
+        final IgniteInClosure<IgniteAtomicSequence> op
+    ) throws Exception {
+        Ignite client = grid(serverCount());
+
+        assertTrue(client.cluster().localNode().isClient());
+
+        AtomicConfiguration atomicCfg = new AtomicConfiguration()
+            .setBackups(0)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setAtomicSequenceReserveSize(1);
+
+        final IgniteAtomicSequence atomic = client.atomicSequence(atomicName, atomicCfg, 1L, true);
+
+        assertNotNull(atomic);
+
+        assertEquals("Unexpected initial value.", 1L, atomic.get());
+
+        // It should lead to data loss because there are no backups in the atomic configuration.
+        restartClusterWithoutRebalancing();
+
+        checkAtomicOperation(atomic, op, "Failed to find atomic sequence with the given name: " + atomicName);
+
+        assertTrue("Atomic sequnce instance should be removed.", atomic.removed());
+
+        IgniteAtomicSequence recreatedAtomicLong = client.atomicSequence(atomicName, atomicCfg, 100L, true);
+
+        assertEquals("Unexpected initial value.", 100L, recreatedAtomicLong.get());
+    }
+
+    /**
+     * Restarts the cluster without waiting for rebalancing.
+     *
+     * @throws Exception If failed.
+     */
+    private void restartClusterWithoutRebalancing() throws Exception {
+        // Restart the cluster without waiting for rebalancing.
+        // It should lead to data loss because there are no backups in the atomic configuration.
+        for (int i = 0; i < serverCount(); ++i) {
+            grid(i).close();
+
+            startGrid(i);
+        }
+    }
+
+    /**
+     * Checks that the operation that is represented by the given {@code clo} throws {@link IgniteException}.
+     *
+     * @param atomic Atomic data structure to be tested.
+     * @param clo Represent concrete operation.
+     * @param expMsg Expected exception message.
+     * @param <T> Type of atomic data structure.
+     */
+    private <T> void checkAtomicOperation(T atomic, IgniteInClosure<T> clo, String expMsg) {
+        GridTestUtils.assertThrows(
+            log,
+            () -> {
+                clo.apply(atomic);
+
+                return null;
+            },
+            IgniteException.class,
+            expMsg);
     }
 }

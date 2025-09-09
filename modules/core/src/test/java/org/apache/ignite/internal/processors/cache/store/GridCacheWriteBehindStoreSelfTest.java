@@ -485,6 +485,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
         });
     }
 
+    /** */
     private void hashToIndexAdvancedDistributionAssertion(int hash, int size) {
         int idx = store.resolveFlusherByKeyHash(hash);
 

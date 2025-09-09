@@ -23,8 +23,9 @@
 #include <dirent.h>
 #include <dlfcn.h>
 #include <glob.h>
-#include <unistd.h>
 #include <ftw.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include <ignite/common/utils.h>
 
@@ -124,7 +125,7 @@ namespace ignite
             return ostr;
         }
 
-        IGNITE_IMPORT_EXPORT unsigned GetRandSeed()
+        unsigned GetRandSeed()
         {
             timespec ts;
 
@@ -135,6 +136,23 @@ namespace ignite
             res ^= static_cast<unsigned>(getpid());
 
             return res;
+        }
+
+        std::string GetLastSystemError()
+        {
+            int errorCode = errno;
+
+            std::string errorDetails;
+            if (errorCode != 0)
+            {
+                char errBuf[1024] = { 0 };
+
+                const char* res = strerror_r(errorCode, errBuf, sizeof(errBuf));
+                if (res)
+                    errorDetails.assign(res);
+            }
+
+            return errorDetails;
         }
     }
 }

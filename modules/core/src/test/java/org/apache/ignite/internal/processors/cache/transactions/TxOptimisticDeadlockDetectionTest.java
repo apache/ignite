@@ -179,6 +179,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
 
                 assertTrue(client.configuration().isClientMode());
 
+                awaitCacheOnClient(client, ccfg.getName());
+
                 client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
             }
         }
@@ -285,7 +287,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
 
                 Ignite ignite = ignite(clientTx ? threadNum - 1 + txCnt : threadNum - 1);
 
-                IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
+                IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME);
 
                 List<Object> keys = keySets.get(threadNum - 1);
 

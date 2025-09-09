@@ -32,6 +32,7 @@ import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,7 +47,6 @@ import java.util.function.Function;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -358,9 +358,9 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     @Test
     public void testSQLTimestampDataType() throws Exception {
         checkBasicCacheOperations(
-            new Dated(Timestamp.valueOf(LocalDateTime.now()), "yyyy-MM-dd HH:mm:ss.SSS"),
-            new Dated(Timestamp.valueOf(LocalDateTime.now()), "yyyy-MM-dd HH:mm:ss.SSSS"),
-            new Dated(Timestamp.valueOf(LocalDateTime.now()), "yyyy-MM-dd HH:mm:ss.SSSSSS"));
+            new Dated(Timestamp.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)), "yyyy-MM-dd HH:mm:ss.SSS"),
+            new Dated(Timestamp.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)), "yyyy-MM-dd HH:mm:ss.SSSS"),
+            new Dated(Timestamp.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)), "yyyy-MM-dd HH:mm:ss.SSSSSS"));
     }
 
     /**
@@ -404,7 +404,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
         // so that EqualsBuilder.reflectionEquals returns false.
         // As a result in case of BigDecimal data type Objects.equals is used.
         // Same is about BigInteger.
-        BiFunction<Object, Object, Boolean> equalsProcessor =
+        BiFunction<Object, Object, Boolean> equalsProc =
             originalValItem instanceof BigDecimal || originalValItem instanceof BigInteger ?
                 Objects::equals :
                 (lhs, rhs) -> EqualsBuilder.reflectionEquals(
@@ -418,8 +418,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
 
         Class<?> dataType = originalValItem.getClass();
 
-        IgniteEx ignite =
-            (cacheMode == CacheMode.LOCAL || writeSyncMode == CacheWriteSynchronizationMode.PRIMARY_SYNC) ?
+        IgniteEx ignite = writeSyncMode == CacheWriteSynchronizationMode.PRIMARY_SYNC ?
                 grid(0) :
                 grid(new Random().nextInt(NODES_CNT));
 
@@ -447,8 +446,8 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
             Object sqlStrKey;
 
             if (keyValEntry.getKey() instanceof SqlStrConvertedValHolder) {
-                originalKey = ((SqlStrConvertedValHolder) keyValEntry.getKey()).originalVal();
-                sqlStrKey = ((SqlStrConvertedValHolder) keyValEntry.getKey()).sqlStrVal();
+                originalKey = ((SqlStrConvertedValHolder)keyValEntry.getKey()).originalVal();
+                sqlStrKey = ((SqlStrConvertedValHolder)keyValEntry.getKey()).sqlStrVal();
             }
             else {
                 originalKey = keyValEntry.getKey();
@@ -464,7 +463,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
 
             // Check SELECT query.
             try (PreparedStatement stmt = prepareStatement(cacheName, "SELECT * FROM " + tblName)) {
-                checkQuery(converterToSqlExpVal, equalsProcessor, originalVal.getClass(), originalKey, originalVal, stmt);
+                checkQuery(converterToSqlExpVal, equalsProc, originalVal.getClass(), originalKey, originalVal, stmt);
             }
 
             // Check SELECT query with where clause.
@@ -475,13 +474,13 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
                     else
                         stmt.setObject(1, originalKey);
 
-                    checkQuery(converterToSqlExpVal, equalsProcessor, originalVal.getClass(), originalKey, originalVal, stmt);
+                    checkQuery(converterToSqlExpVal, equalsProc, originalVal.getClass(), originalKey, originalVal, stmt);
                 }
             }
             else {
                 try (PreparedStatement stmt = prepareStatement(cacheName, "SELECT * FROM " + tblName
                     + " WHERE _key = " + sqlStrKey)) {
-                    checkQuery(converterToSqlExpVal, equalsProcessor, originalVal.getClass(), originalKey, originalVal, stmt);
+                    checkQuery(converterToSqlExpVal, equalsProc, originalVal.getClass(), originalKey, originalVal, stmt);
                 }
             }
 
@@ -522,16 +521,16 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
             try {
                 if (writeSyncMode == CacheWriteSynchronizationMode.FULL_ASYNC &&
                     !waitForCondition(new GridAbsPredicateX() {
-                                          @Override public boolean applyx() throws IgniteCheckedException {
-                                              try {
-                                                  return !stmt.executeQuery().next();
-                                              }
-                                              catch (SQLException e) {
-                                                  throw new IgniteCheckedException(e);
-                                              }
-                                          }
-                                      },
-                        TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE))
+                        @Override public boolean applyx() throws IgniteCheckedException {
+                            try {
+                                return !stmt.executeQuery().next();
+                            }
+                            catch (SQLException e) {
+                                throw new IgniteCheckedException(e);
+                            }
+                        }
+                    },
+                    TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE))
                     fail("Deleted data are still retrievable via SELECT.");
             }
             catch (GridClosureException e) {
@@ -565,16 +564,15 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
         try {
             if (writeSyncMode == CacheWriteSynchronizationMode.FULL_ASYNC &&
                 !waitForCondition(new GridAbsPredicateX() {
-                                      @Override public boolean applyx() throws IgniteCheckedException {
-                                          try {
-                                              return stmt.executeQuery().next();
-                                          }
-                                          catch (SQLException e) {
-                                              throw new IgniteCheckedException(e);
-                                          }
-                                      }
-                                  },
-                    TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE))
+                    @Override public boolean applyx() throws IgniteCheckedException {
+                        try {
+                            return stmt.executeQuery().next();
+                        }
+                        catch (SQLException e) {
+                            throw new IgniteCheckedException(e);
+                        }
+                    }
+                }, TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE))
                 fail("Unable to retrieve data via SELECT.");
         }
         catch (GridClosureException e) {

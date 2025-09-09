@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -67,7 +68,6 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setSlowClientQueueLimit(50);
-        commSpi.setSharedMemoryPort(-1);
         commSpi.setIdleConnectionTimeout(300_000);
         commSpi.setConnectionsPerNode(1);
 
@@ -77,6 +77,9 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
         dbCfg.setPageSize(16 * 1024);
 
         cfg.setDataStorageConfiguration(dbCfg);
+
+        // Will be used to handle segmentation instead of NoOpFailureHandler.
+        cfg.setSegmentationPolicy(SegmentationPolicy.STOP);
 
         return cfg;
     }
@@ -123,7 +126,7 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(Event evt) {
                     assertEquals("Unexpected event: " + evt, evt.type(), EventType.EVT_NODE_FAILED);
 
-                    DiscoveryEvent evt0 = (DiscoveryEvent) evt;
+                    DiscoveryEvent evt0 = (DiscoveryEvent)evt;
 
                     assertEquals(slowClientNode, evt0.eventNode());
                     assertEquals(6L, evt0.topologyVersion());

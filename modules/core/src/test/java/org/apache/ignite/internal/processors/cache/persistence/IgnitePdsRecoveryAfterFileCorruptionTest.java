@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -42,18 +43,20 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * This test generates WAL & Page Store with N pages, then rewrites pages with zeroes and tries to acquire all pages.
@@ -75,10 +78,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);
         ccfg.setAffinity(new RendezvousAffinityFunction(true, 1));
 
-        if (MvccFeatureChecker.forcedMvcc())
-            ccfg.setRebalanceDelay(Long.MAX_VALUE);
-        else
-            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
@@ -91,7 +91,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                     .setPersistenceEnabled(true)
                     .setName(policyName))
             .setWalMode(WALMode.LOG_ONLY)
-            .setCheckpointFrequency(500)
+            .setWalSegmentSize(1024 * 1024)
             .setAlwaysWriteFullPages(true);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -119,8 +119,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
     @Test
     public void testPageRecoveryAfterFileCorruption() throws Exception {
         IgniteEx ig = startGrid(0);
-
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ig.cache(cacheName);
 
@@ -175,8 +174,38 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         stopAllGrids();
 
         ig = startGrid(0);
+        ig.cluster().state(ClusterState.ACTIVE);
 
-        ig.cluster().active(true);
+        checkRestore(ig, pages);
+
+        // It is necessary to clear the current WAL history to make sure that the restored pages have been saved.
+        GridCacheSharedContext<Object, Object> cctx = ig.context().cache().context();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
+        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cctx.wal();
+
+        // Force checkpoint.
+        dbMgr.enableCheckpoints(true).get(getTestTimeout());
+
+        dbMgr.checkpointReadLock();
+
+        try {
+            WALPointer lastWalPtr = dbMgr.checkpointHistory().lastCheckpoint().checkpointMark();
+
+            // Move current WAL segment into the archive.
+            wal.log(new CheckpointRecord(null), RolloverType.NEXT_SEGMENT);
+            assertTrue(waitForCondition(() -> wal.lastArchivedSegment() >= lastWalPtr.index(), getTestTimeout()));
+
+            wal.truncate(lastWalPtr);
+            dbMgr.onWalTruncated(lastWalPtr);
+        }
+        finally {
+            dbMgr.checkpointReadUnlock();
+        }
+
+        stopAllGrids();
+
+        ig = startGrid(0);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         checkRestore(ig, pages);
     }
@@ -317,7 +346,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
             }
         }
 
-        Collection<FullPageId> pageIds = mem.beginCheckpoint(new GridFinishedFuture());
+        Collection<FullPageId> pageIds = mem.beginCheckpoint(() -> Boolean.TRUE);
 
         info("Acquired pages for checkpoint: " + pageIds.size());
 
@@ -329,10 +358,10 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
             AtomicLong write = new AtomicLong();
 
             PageStoreWriter pageStoreWriter = (fullPageId, buf, tag) -> {
-                int groupId = fullPageId.groupId();
+                int grpId = fullPageId.groupId();
                 long pageId = fullPageId.pageId();
 
-                for (int j = PageIO.COMMON_HEADER_END; j < mem.realPageSize(groupId); j += 4)
+                for (int j = PageIO.COMMON_HEADER_END; j < mem.realPageSize(grpId); j += 4)
                     assertEquals(j + (int)pageId, buf.getInt(j));
 
                 buf.rewind();
@@ -354,7 +383,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
                 if (pageIds.contains(fullId)) {
                     long cpStart = System.nanoTime();
 
-                    mem.checkpointWritePage(fullId, tmpBuf, pageStoreWriter, null);
+                    mem.checkpointWritePage(fullId, tmpBuf, pageStoreWriter, null, false);
 
                     long cpEnd = System.nanoTime();
 

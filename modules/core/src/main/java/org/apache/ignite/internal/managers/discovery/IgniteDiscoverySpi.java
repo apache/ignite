@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 /**
@@ -44,22 +43,9 @@ public interface IgniteDiscoverySpi extends DiscoverySpi {
     public void clientReconnect();
 
     /**
-     * @param feature Feature to check.
-     * @return {@code true} if all nodes support the given feature.
-     */
-    public boolean allNodesSupport(IgniteFeatures feature);
-
-    /**
      * For TESTING only.
      */
     public void simulateNodeFailure();
-
-    /**
-     * For TESTING only.
-     *
-     * @param lsnr Listener.
-     */
-    public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr);
 
     /**
      * @return {@code True} if supports communication error resolve.

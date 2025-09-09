@@ -18,13 +18,13 @@
 package org.apache.ignite.testframework.junits;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import javax.cache.CacheException;
 import javax.management.MBeanServer;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
-import org.apache.ignite.DataStorageMetrics;
-import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
@@ -51,36 +50,50 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
+import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite mock.
  */
-public class IgniteMock implements Ignite {
+public class IgniteMock implements IgniteEx {
     /** Ignite name */
     private final String name;
 
@@ -108,6 +121,9 @@ public class IgniteMock implements Ignite {
     /** */
     private BinaryContext ctx;
 
+    /** */
+    private final GridKernalContext kernalCtx;
+
     /**
      * Mock values
      *
@@ -127,6 +143,17 @@ public class IgniteMock implements Ignite {
         this.home = home;
         this.name = name;
         this.staticCfg = staticCfg;
+
+        try {
+            kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null) {
+                @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
+                    return new GridInternalSubscriptionProcessor(this);
+                }
+            };
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -146,7 +173,6 @@ public class IgniteMock implements Ignite {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setMarshaller(marshaller);
         cfg.setNodeId(nodeId);
         cfg.setMBeanServer(jmx);
         cfg.setIgniteHome(home);
@@ -163,12 +189,105 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCluster cluster() {
+    @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable <K, V> IgniteInternalCache<K, V> cachex(String name) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteInternalCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
+        CacheConfiguration<K, V> cacheCfg,
+        boolean sql
+    ) throws CacheException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean destroyCache0(String cacheName, boolean sql) throws CacheException {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean eventUserRecordable(int type) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean allEventsUserRecordable(int[] types) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isJmxRemoteEnabled() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isRestartEnabled() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClusterEx cluster() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable String latestVersion() {
+        return "";
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterNode localNode() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridKernalContext context() {
+        return kernalCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isRebalanceEnabled() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteSet<T> set(
+        String name,
+        int cacheId,
+        boolean collocated,
+        boolean separated
+    ) throws IgniteException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCommandRegistry commandsRegistry() {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteMetrics metrics() {
         return null;
     }
 
@@ -324,15 +443,29 @@ public class IgniteMock implements Ignite {
             return binaryMock;
 
         if (ctx == null) {
+            IgniteConfiguration cfg = configuration();
+
+            BinaryConfiguration bcfg = cfg.getBinaryConfiguration() == null ? new BinaryConfiguration() : cfg.getBinaryConfiguration();
+
             /** {@inheritDoc} */
-            ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), configuration(), new NullLogger()) {
+            ctx = new BinaryContext(
+                BinaryUtils.cachingMetadataHandler(),
+                (BinaryMarshaller)marshaller,
+                cfg.getIgniteInstanceName(),
+                cfg.getClassLoader(),
+                bcfg.getSerializer(),
+                bcfg.getIdMapper(),
+                bcfg.getNameMapper(),
+                bcfg.getTypeConfigurations(),
+                CU.affinityFields(configuration()),
+                bcfg.isCompactFooter(),
+                CU::affinityFieldName,
+                NullLogger.INSTANCE
+            ) {
                 @Override public int typeId(String typeName) {
                     return typeName.hashCode();
                 }
             };
-
-            if (marshaller instanceof BinaryMarshaller)
-                ctx.configure((BinaryMarshaller)marshaller, configuration().getBinaryConfiguration());
         }
 
         binaryMock = new NoOpBinary() {
@@ -343,7 +476,7 @@ public class IgniteMock implements Ignite {
 
             /** {@inheritDoc} */
             @Override public BinaryObjectBuilder builder(String typeName) throws BinaryObjectException {
-                return new BinaryObjectBuilderImpl(ctx, typeName);
+                return BinaryObjectBuilders.builder(ctx, typeName);
             }
         };
 
@@ -378,8 +511,8 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
         @Nullable T initVal,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
@@ -393,8 +526,8 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
         @Nullable T initVal,
         @Nullable S initStamp,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
@@ -408,8 +541,8 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
         int cnt,
         boolean autoDel,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
@@ -417,8 +550,8 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public IgniteSemaphore semaphore(String name,
         int cnt,
         boolean failoverSafe,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
@@ -426,23 +559,23 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public IgniteLock reentrantLock(String name,
         boolean failoverSafe,
         boolean fair,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         int cap,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg
+    ) {
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg
+    ) {
         return null;
     }
 
@@ -477,11 +610,6 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public DataStorageMetrics dataStorageMetrics() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteEncryption encryption() {
         return null;
     }
@@ -497,6 +625,11 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<MemoryMetrics> memoryMetrics() {
         return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }
@@ -504,11 +637,6 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
         return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
-        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /**

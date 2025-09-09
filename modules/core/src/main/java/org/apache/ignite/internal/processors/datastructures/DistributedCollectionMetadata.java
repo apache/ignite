@@ -84,7 +84,7 @@ public class DistributedCollectionMetadata extends AtomicDataStructureValue {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         type = (DataStructureType)in.readObject();
-        cfg = (CollectionConfiguration) in.readObject();
-        cacheName = (String) in.readObject();
+        cfg = (CollectionConfiguration)in.readObject();
+        cacheName = (String)in.readObject();
     }
 }

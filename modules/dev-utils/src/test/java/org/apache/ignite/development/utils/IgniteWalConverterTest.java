@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
@@ -48,9 +50,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Collections.emptyList;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.development.utils.IgniteWalConverter.convert;
 import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parse;
@@ -126,23 +125,19 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
     /** @return DataStorageConfiguration. */
     private DataStorageConfiguration getDataStorageConfiguration() {
-        final DataStorageConfiguration dataStorageConfiguration = new DataStorageConfiguration()
+        return new DataStorageConfiguration()
             .setWalSegmentSize(4 * 1024 * 1024)
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointFrequency(1000)
             .setWalCompactionEnabled(true)
             .setDefaultDataRegionConfiguration(getDataRegionConfiguration());
-
-        return dataStorageConfiguration;
     }
 
     /** @return DataRegionConfiguration. */
     private DataRegionConfiguration getDataRegionConfiguration() {
-        final DataRegionConfiguration dataRegionConfiguration = new DataRegionConfiguration()
+        return new DataRegionConfiguration()
             .setPersistenceEnabled(true)
             .setMaxSize(100L * 1024 * 1024);
-
-        return dataRegionConfiguration;
     }
 
     /**
@@ -163,18 +158,15 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverter() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final String nodeFolder = createWal(list, null);
+        final NodeFileTree ft = createWal(list, null);
 
         final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
         final PrintStream out = new PrintStream(outByte);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
+            ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -184,23 +176,23 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final String result = outByte.toString();
 
-        int index = 0;
+        int idx = 0;
 
         for (Person person : list) {
             boolean find = false;
 
-            index = result.indexOf("DataRecord", index);
+            idx = result.indexOf("DataRecord", idx);
 
-            if (index > 0) {
-                index = result.indexOf("PersonKey", index + 10);
+            if (idx > 0) {
+                idx = result.indexOf("PersonKey", idx + 10);
 
-                if (index > 0) {
-                    index = result.indexOf("id=" + person.getId(), index + 9);
+                if (idx > 0) {
+                    idx = result.indexOf("id=" + person.getId(), idx + 9);
 
-                    if (index > 0) {
-                        index = result.indexOf("name=" + person.getName(), index + 4);
+                    if (idx > 0) {
+                        idx = result.indexOf("name=" + person.getName(), idx + 4);
 
-                        find = index > 0;
+                        find = idx > 0;
                     }
                 }
             }
@@ -227,18 +219,18 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithOutBinaryMeta() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        createWal(list, null);
+        NodeFileTree ft = createWal(list, null);
+
+        U.delete(ft.binaryMeta());
+        U.delete(ft.marshaller());
 
         final ByteArrayOutputStream outByte = new ByteArrayOutputStream();
 
         final PrintStream out = new PrintStream(outByte);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
+            ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            null,
-            null,
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -248,25 +240,25 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final String result = outByte.toString();
 
-        int index = 0;
+        int idx = 0;
 
         for (Person person : list) {
             boolean find = false;
 
-            index = result.indexOf("DataRecord", index);
+            idx = result.indexOf("DataRecord", idx);
 
-            if (index > 0) {
-                index = result.indexOf(" v = [", index + 10);
+            if (idx > 0) {
+                idx = result.indexOf(" v = [", idx + 10);
 
-                if (index > 0) {
-                    int start = index + 6;
+                if (idx > 0) {
+                    int start = idx + 6;
 
-                    index = result.indexOf("]", start);
+                    idx = result.indexOf("]", start);
 
-                    if (index > 0) {
-                        final String value = result.substring(start, index);
+                    if (idx > 0) {
+                        final String val = result.substring(start, idx);
 
-                        find = new String(Base64.getDecoder().decode(value)).contains(person.getName());
+                        find = new String(Base64.getDecoder().decode(val)).contains(person.getName());
                     }
                 }
             }
@@ -294,11 +286,9 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithBrokenWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final String nodeFolder = createWal(list, null);
+        final NodeFileTree ft = createWal(list, null);
 
-        final File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false);
-
-        final File wal = new File(walDir, nodeFolder + File.separator + "0000000000000000.wal");
+        final File wal = ft.walSegment(0);
 
         try (RandomAccessFile raf = new RandomAccessFile(wal, "rw")) {
             raf.seek(RecordV1Serializer.HEADER_RECORD_SIZE); // HeaderRecord
@@ -308,10 +298,10 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             boolean find = false;
 
             while (!find) {
-                int recordTypeIndex = raf.read();
+                int recordTypeIdx = raf.read();
 
-                if (recordTypeIndex > 0) {
-                    recordTypeIndex--;
+                if (recordTypeIdx > 0) {
+                    recordTypeIdx--;
 
                     final long idx = raf.readLong();
 
@@ -319,7 +309,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
                     final int len = Integer.reverseBytes(raf.readInt());
 
-                    if (recordTypeIndex == WALRecord.RecordType.DATA_RECORD_V2.index()) {
+                    if (recordTypeIdx == WALRecord.RecordType.DATA_RECORD_V2.index()) {
                         int i = 0;
 
                         int b;
@@ -351,11 +341,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final PrintStream out = new PrintStream(outByte);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            walDir,
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
+            ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -365,33 +352,33 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final String result = outByte.toString();
 
-        int index = 0;
+        int idx = 0;
 
-        int countErrorRead = 0;
+        int cntErrorRead = 0;
 
         for (Person person : list) {
             boolean find = false;
 
-            index = result.indexOf("DataRecord", index);
+            idx = result.indexOf("DataRecord", idx);
 
-            if (index > 0) {
-                index = result.indexOf("PersonKey", index + 10);
+            if (idx > 0) {
+                idx = result.indexOf("PersonKey", idx + 10);
 
-                if (index > 0) {
-                    index = result.indexOf("id=" + person.getId(), index + 9);
+                if (idx > 0) {
+                    idx = result.indexOf("id=" + person.getId(), idx + 9);
 
-                    if (index > 0) {
-                        index = result.indexOf("name=" + person.getName(), index + 4);
+                    if (idx > 0) {
+                        idx = result.indexOf("name=" + person.getName(), idx + 4);
 
-                        find = index > 0;
+                        find = idx > 0;
                     }
                 }
             }
 
             if (!find)
-                countErrorRead++;
+                cntErrorRead++;
         }
-        assertEquals(1, countErrorRead);
+        assertEquals(1, cntErrorRead);
     }
 
     /**
@@ -413,11 +400,9 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testIgniteWalConverterWithUnreadableWal() throws Exception {
         final List<Person> list = new LinkedList<>();
 
-        final String nodeFolder = createWal(list, null);
+        final NodeFileTree ft = createWal(list, null);
 
-        final File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false);
-
-        final File wal = new File(walDir, nodeFolder + File.separator + "0000000000000000.wal");
+        final File wal = ft.walSegment(0);
 
         try (RandomAccessFile raf = new RandomAccessFile(wal, "rw")) {
             raf.seek(RecordV1Serializer.HEADER_RECORD_SIZE); // HeaderRecord
@@ -425,12 +410,12 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             int find = 0;
 
             while (find < 2) {
-                int recordTypeIndex = raf.read();
+                int recordTypeIdx = raf.read();
 
-                if (recordTypeIndex > 0) {
-                    recordTypeIndex--;
+                if (recordTypeIdx > 0) {
+                    recordTypeIdx--;
 
-                    if (recordTypeIndex == WALRecord.RecordType.DATA_RECORD_V2.index()) {
+                    if (recordTypeIdx == WALRecord.RecordType.DATA_RECORD_V2.index()) {
                         find++;
 
                         if (find == 2) {
@@ -456,11 +441,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         final PrintStream out = new PrintStream(outByte);
 
         final IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            walDir,
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH, false),
+            ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_BINARY_METADATA_PATH, false), nodeFolder),
-            U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
             false,
             null,
             null, null, null, null, true, true, emptyList()
@@ -470,31 +452,31 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         final String result = outByte.toString();
 
-        int index = 0;
+        int idx = 0;
 
-        int countErrorRead = 0;
+        int cntErrorRead = 0;
 
         for (Person person : list) {
             boolean find = false;
 
-            index = result.indexOf("DataRecord", index);
+            idx = result.indexOf("DataRecord", idx);
 
-            if (index > 0) {
-                index = result.indexOf("PersonKey", index + 10);
+            if (idx > 0) {
+                idx = result.indexOf("PersonKey", idx + 10);
 
-                if (index > 0) {
-                    index = result.indexOf("id=" + person.getId(), index + 9);
+                if (idx > 0) {
+                    idx = result.indexOf("id=" + person.getId(), idx + 9);
 
-                    if (index > 0) {
-                        index = result.indexOf(person.getClass().getSimpleName(), index + 4);
+                    if (idx > 0) {
+                        idx = result.indexOf(person.getClass().getSimpleName(), idx + 4);
 
-                        if (index > 0) {
-                            index = result.indexOf("id=" + person.getId(), index + person.getClass().getSimpleName().length());
+                        if (idx > 0) {
+                            idx = result.indexOf("id=" + person.getId(), idx + person.getClass().getSimpleName().length());
 
-                            if (index > 0) {
-                                index = result.indexOf("name=" + person.getName(), index + 4);
+                            if (idx > 0) {
+                                idx = result.indexOf("name=" + person.getName(), idx + 4);
 
-                                find = index > 0;
+                                find = idx > 0;
                             }
                         }
                     }
@@ -502,10 +484,10 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             }
 
             if (!find)
-                countErrorRead++;
+                cntErrorRead++;
         }
 
-        assertEquals(9, countErrorRead);
+        assertEquals(9, cntErrorRead);
     }
 
     /**
@@ -517,7 +499,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
     public void testPages() throws Exception {
         List<T2<PageSnapshot, String>> walRecords = new ArrayList<>();
 
-        String nodeDir = createWal(new ArrayList<>(), n -> {
+        NodeFileTree ft = createWal(new ArrayList<>(), n -> {
             try (WALIterator walIter = n.context().cache().context().wal().replay(new WALPointer(0, 0, 0))) {
                 while (walIter.hasNextX()) {
                     WALRecord walRecord = walIter.nextX().get2();
@@ -531,10 +513,10 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         assertFalse(walRecords.isEmpty());
 
         File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH, false);
+
         assertTrue(U.fileCount(walDir.toPath()) > 0);
 
-        File walNodeDir = new File(walDir, nodeDir);
-        assertTrue(U.fileCount(walNodeDir.toPath()) > 0);
+        assertTrue(U.fileCount(ft.wal().toPath()) > 0);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PrintStream ps = new PrintStream(baos);
@@ -543,7 +525,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
         IgniteWalConverterArguments args = parse(
             ps,
-            "walDir=" + walDir.getAbsolutePath(),
+            "root=" + ft.root(),
+            "folderName=" + ft.folderName(),
             "pages=" + expRec.get1().fullPageId().groupId() + ':' + expRec.get1().fullPageId().pageId(),
             "skipCrc=" + true
         );
@@ -566,41 +549,41 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
      *
      * @param list Returns entities that have been added.
      * @param afterPopulateConsumer
-     * @return Node folder name.
+     * @return Ignite directories structure.
      * @throws Exception
      */
-    private String createWal(
+    private NodeFileTree createWal(
         List<Person> list,
         @Nullable IgniteThrowableConsumer<IgniteEx> afterPopulateConsumer
     ) throws Exception {
-        String nodeFolder;
+        NodeFileTree ft;
 
         try (final IgniteEx node = startGrid(0)) {
-            node.cluster().active(true);
+            node.cluster().state(ClusterState.ACTIVE);
 
-            nodeFolder = node.context().pdsFolderResolver().resolveFolders().folderName();
+            ft = node.context().pdsFolderResolver().fileTree();
 
             final IgniteCache<PersonKey, Person> cache = node.cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < 10; i++) {
                 final PersonKey key = new PersonKey(i);
 
-                final Person value;
+                final Person val;
 
                 if (i % 2 == 0)
-                    value = new Person(i, PERSON_NAME_PREFIX + i);
+                    val = new Person(i, PERSON_NAME_PREFIX + i);
                 else
-                    value = new PersonEx(i, PERSON_NAME_PREFIX + i, "Additional information " + i, "Description " + i);
+                    val = new PersonEx(i, PERSON_NAME_PREFIX + i, "Additional information " + i, "Description " + i);
 
-                cache.put(key, value);
+                cache.put(key, val);
 
-                list.add(value);
+                list.add(val);
             }
 
             if (afterPopulateConsumer != null)
                 afterPopulateConsumer.accept(node);
         }
 
-        return nodeFolder;
+        return ft;
     }
 }

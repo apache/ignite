@@ -22,8 +22,12 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
     using Apache.Ignite.Platform.Model;
 
@@ -32,6 +36,12 @@ namespace Apache.Ignite.Core.Tests.Services
     /// </summary>
     public class ServicesTypeAutoResolveTest
     {
+        /** */
+        private readonly bool _useBinaryArray;
+
+        /** Platform service name. */
+        const string PlatformSvcName = "PlatformTestService";
+
         /** */
         protected internal static readonly Employee[] Emps = new[]
         {
@@ -54,6 +64,21 @@ namespace Apache.Ignite.Core.Tests.Services
         /** */
         private IIgnite _client;
 
+        /** */
+        private IIgniteClient _thinClient;
+
+        /** */
+        public ServicesTypeAutoResolveTest()
+        {
+            // No-op.
+        }
+
+        /** */
+        public ServicesTypeAutoResolveTest(bool useBinaryArray)
+        {
+            _useBinaryArray = useBinaryArray;
+        }
+
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
@@ -67,6 +92,9 @@ namespace Apache.Ignite.Core.Tests.Services
         public void SetUp()
         {
             StartGrids();
+
+            _grid1.GetServices().DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
+            TestUtils.DeployJavaService(_grid1);
         }
 
         /// <summary>
@@ -77,6 +105,9 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             try
             {
+                _grid1.GetServices().Cancel(PlatformSvcName);
+                _grid1.GetServices().Cancel(TestUtils.JavaServiceName);
+
                 _grid1.GetServices();
 
                 TestUtils.AssertHandleRegistryIsEmpty(1000, _grid1);
@@ -96,23 +127,21 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests Java service invocation.
-        /// Types should be resolved implicitly.
+        /// Tests .Net service invocation on local node.
         /// </summary>
         [Test]
-        public void TestCallPlatformServiceLocal()
+        public void TestPlatformServiceLocal()
         {
-            const string platformSvcName = "PlatformTestService";
+            DoTestService(_grid1.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
+        }
 
-            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
-
-            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
-
-            DoTestService(svc);
-
-            DoTestDepartments(svc);
-
-            _grid1.GetServices().Cancel(platformSvcName);
+        /// <summary>
+        /// Tests .Net service invocation on remote node.
+        /// </summary>
+        [Test]
+        public void TestPlatformServiceRemote()
+        {
+            DoTestService(_client.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
         }
 
         /// <summary>
@@ -120,13 +149,9 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Types should be resolved implicitly.
         /// </summary>
         [Test]
-        public void TestCallJavaServiceDynamicProxy()
+        public void TestJavaServiceDynamicProxy()
         {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
-            var svc = _grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
-
-            DoTestService(new JavaServiceDynamicProxy(svc));
+            DoTestService(new JavaServiceDynamicProxy(_grid1.GetServices().GetDynamicServiceProxy(TestUtils.JavaServiceName, true)));
         }
 
         /// <summary>
@@ -134,18 +159,9 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Types should be resolved implicitly.
         /// </summary>
         [Test]
-        public void TestCallJavaServiceLocal()
+        public void TestJavaServiceLocal()
         {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
-
-            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
-
-            DoTestService(svc);
-
-            DoTestDepartments(svc);
-
-            _grid1.GetServices().Cancel(javaSvcName);
+            DoTestService(_grid1.GetServices().GetServiceProxy<IJavaService>(TestUtils.JavaServiceName, false));
         }
 
         /// <summary>
@@ -153,56 +169,67 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Types should be resolved implicitly.
         /// </summary>
         [Test]
-        public void TestCallJavaServiceRemote()
+        public void TestJavaServiceRemote()
         {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(_grid1);
-
-            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
-
-            DoTestService(svc);
-
-            DoTestDepartments(svc);
-
-            _grid1.GetServices().Cancel(javaSvcName);
+            DoTestService(_client.GetServices().GetServiceProxy<IJavaService>(TestUtils.JavaServiceName, false));
         }
 
         /// <summary>
-        /// Tests departments call.
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
         /// </summary>
-        private void DoTestDepartments(IJavaService svc)
+        [Test]
+        public void TestJavaServiceThinClient()
+        {
+            DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(TestUtils.JavaServiceName));
+        }
+
+        /// <summary>
+        /// Tests Platform service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestPlatformServiceThinClient()
+        {
+            DoTestService(_thinClient.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName), true);
+        }
+
+        /// <summary>
+        /// Tests service invocation.
+        /// </summary>
+        private void DoTestService(IJavaService svc, bool isPlatform = false)
         {
             Assert.IsNull(svc.testDepartments(null));
 
-            var arr = new[] {"HR", "IT"}.Select(x => new Department() {Name = x}).ToArray();
+            var arr = new[] { "HR", "IT" }.Select(x => new Department() { Name = x }).ToList();
 
             ICollection deps = svc.testDepartments(arr);
 
             Assert.NotNull(deps);
             Assert.AreEqual(1, deps.Count);
             Assert.AreEqual("Executive", deps.OfType<Department>().Select(d => d.Name).ToArray()[0]);
-        }
 
-        /// <summary>
-        /// Tests java service instance.
-        /// </summary>
-        private static void DoTestService(IJavaService svc)
-        {
             Assert.IsNull(svc.testAddress(null));
 
-            Address addr = svc.testAddress(new Address {Zip = "000", Addr = "Moscow"});
+            Address addr = svc.testAddress(new Address { Zip = "000", Addr = "Moscow" });
 
             Assert.AreEqual("127000", addr.Zip);
             Assert.AreEqual("Moscow Akademika Koroleva 12", addr.Addr);
 
-            Assert.AreEqual(42, svc.testOverload(2, Emps));
-            Assert.AreEqual(43, svc.testOverload(2, Param));
-            Assert.AreEqual(3, svc.testOverload(1, 2));
-            Assert.AreEqual(5, svc.testOverload(3, 2));
+            if (_useBinaryArray)
+            {
+                Assert.AreEqual(42, svc.testOverload(2, Emps));
+                Assert.AreEqual(43, svc.testOverload(2, Param));
+                Assert.AreEqual(3, svc.testOverload(1, 2));
+                Assert.AreEqual(5, svc.testOverload(3, 2));
+            }
 
             Assert.IsNull(svc.testEmployees(null));
 
             var emps = svc.testEmployees(Emps);
+
+            if (!isPlatform || _useBinaryArray)
+                Assert.AreEqual(typeof(Employee[]), emps.GetType());
 
             Assert.NotNull(emps);
             Assert.AreEqual(1, emps.Length);
@@ -214,16 +241,19 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var map = new Dictionary<Key, Value>();
 
-            map.Add(new Key() {Id = 1}, new Value() {Val = "value1"});
-            map.Add(new Key() {Id = 2}, new Value() {Val = "value2"});
+            map.Add(new Key() { Id = 1 }, new Value() { Val = "value1" });
+            map.Add(new Key() { Id = 2 }, new Value() { Val = "value2" });
 
             var res = svc.testMap(map);
 
             Assert.NotNull(res);
             Assert.AreEqual(1, res.Count);
-            Assert.AreEqual("value3", ((Value)res[new Key() {Id = 3}]).Val);
+            Assert.AreEqual("value3", ((Value)res[new Key() { Id = 3 }]).Val);
 
             var accs = svc.testAccounts();
+
+            if (!isPlatform || _useBinaryArray)
+                Assert.AreEqual(typeof(Account[]), accs.GetType());
 
             Assert.NotNull(accs);
             Assert.AreEqual(2, accs.Length);
@@ -234,14 +264,26 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var users = svc.testUsers();
 
+            if (!isPlatform || _useBinaryArray)
+                Assert.AreEqual(typeof(User[]), users.GetType());
+
             Assert.NotNull(users);
             Assert.AreEqual(2, users.Length);
             Assert.AreEqual(1, users[0].Id);
-            Assert.AreEqual(ACL.Allow, users[0].Acl);
+            Assert.AreEqual(ACL.ALLOW, users[0].Acl);
             Assert.AreEqual("admin", users[0].Role.Name);
+            Assert.AreEqual(AccessLevel.SUPER, users[0].Role.AccessLevel);
             Assert.AreEqual(2, users[1].Id);
-            Assert.AreEqual(ACL.Deny, users[1].Acl);
+            Assert.AreEqual(ACL.DENY, users[1].Acl);
             Assert.AreEqual("user", users[1].Role.Name);
+            Assert.AreEqual(AccessLevel.USER, users[1].Role.AccessLevel);
+
+            var users2 = svc.testRoundtrip(users);
+
+            Assert.NotNull(users2);
+
+            if (_useBinaryArray)
+                Assert.AreEqual(typeof(User[]), users2.GetType());
         }
 
         /// <summary>
@@ -264,6 +306,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 "client_work");
 
             _client = Ignition.Start(cfg);
+            _thinClient = Ignition.StartClient(GetClientConfiguration());
         }
 
         /// <summary>
@@ -286,11 +329,46 @@ namespace Apache.Ignite.Core.Tests.Services
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springConfigUrl,
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    NameMapper = new BinaryBasicNameMapper {NamespacePrefix = "org.", NamespaceToLower = true}
-                }
+                BinaryConfiguration = BinaryConfiguration(),
+                LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null
             };
+        }
+
+        /// <summary>
+        /// Gets the client configuration.
+        /// </summary>
+        private IgniteClientConfiguration GetClientConfiguration()
+        {
+            var port = IgniteClientConfiguration.DefaultPort;
+
+            return new IgniteClientConfiguration
+            {
+                Endpoints = new List<string> {IPAddress.Loopback + ":" + port},
+                SocketTimeout = TimeSpan.FromSeconds(15),
+                Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace}),
+                BinaryConfiguration = BinaryConfiguration()
+            };
+        }
+
+        /** */
+        private BinaryConfiguration BinaryConfiguration()
+        {
+            return new BinaryConfiguration
+            {
+                NameMapper = new BinaryBasicNameMapper { NamespacePrefix = "org.", NamespaceToLower = true }
+            };
+        }
+    }
+
+    /// <summary>
+    /// Tests checks ability to execute service method without explicit registration of parameter type.
+    /// </summary>
+    public class ServicesTypeAutoResolveTestBinaryArrays : ServicesTypeAutoResolveTest
+    {
+        /** */
+        public ServicesTypeAutoResolveTestBinaryArrays() : base(true)
+        {
+            // No-op.
         }
     }
 }

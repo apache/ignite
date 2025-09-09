@@ -26,13 +26,15 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.assertions.AlwaysAssertion;
 import org.apache.ignite.testframework.assertions.Assertion;
-import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 
 /**
  * Base class for tests which use a {@link RollingRestartThread} to stop and start
  * remote grid JVMs for failover testing.
  */
 public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractTest {
+    /** */
+    public static final int CLI_IDX = 42;
+
     /** Thread that shuts down and restarts Grid nodes for this test. */
     protected static volatile RollingRestartThread rollingRestartThread;
 
@@ -84,12 +86,10 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (isFirstGrid(igniteInstanceName)) {
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(CLI_IDX))) {
             cfg.setClientMode(true);
 
             assert cfg.getDiscoverySpi() instanceof TcpDiscoverySpi;
-
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         }
 
         cfg.setCacheConfiguration(getCacheConfiguration());
@@ -103,16 +103,12 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
     protected abstract CacheConfiguration<?, ?> getCacheConfiguration();
 
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        // the +1 includes this JVM (the client)
-        startGrids(serverCount() + 1);
+        startGrids(serverCount());
+
+        startClientGrid(CLI_IDX);
 
         rollingRestartThread = new RollingRestartThread();
 
@@ -183,7 +179,7 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void run() {
-            Ignite ignite = grid(0);
+            Ignite ignite = grid(CLI_IDX);
 
             ignite.log().info(getName() + ": started.");
 
@@ -295,24 +291,7 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
          * @see GridRollingRestartAbstractTest#grid(int)
          */
         protected void stopGrid(int idx) {
-            Ignite remote = grid(idx);
-
-            assert remote instanceof IgniteProcessProxy : remote;
-
-            IgniteProcessProxy proc = (IgniteProcessProxy) remote;
-
-            int pid = proc.getProcess().getPid();
-
-            try {
-                grid(0).log().info(String.format("Killing grid id %d with PID %d", idx, pid));
-
-                IgniteProcessProxy.kill(proc.name());
-
-                grid(0).log().info(String.format("Grid id %d with PID %d stopped", idx, pid));
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            GridRollingRestartAbstractTest.this.stopGrid(idx);
         }
     }
 }

@@ -53,27 +53,33 @@ public class UploadBenchmarkArguments implements StreamerParams {
             "Additional url parameters (space separated key=value) for special JDBC connection that only uploads data. ")
     private List<String> uploadJdbcParams = Collections.emptyList();
 
+    /** */
     @Parameter(names = {"--sql-copy-packet-size"},
         description = "Upload benchmark only: use custom packet_size (in bytes) for copy command.")
     private Long copyPacketSize = null;
 
+    /** */
     @Parameter(names = {"--streamer-node-buf-size"},
         description = "Streamer benchmarks only: Set streamer's perNodeBufferSize property")
     private Integer streamerNodeBufSize = null;
 
+    /** */
     @Parameter(names = {"--streamer-node-par-ops"},
         description = "Streamer benchmarks only: Set streamer's perNodeParallelOperations property")
     private Integer streamerNodeParOps = null;
 
+    /** */
     @Parameter(names = {"--streamer-local-batch-size"},
         description = "Streamer benchmarks only: collect entries before passing to java streamer api." +
             "If set to 1, than entries will be passed directly.")
     private Integer streamerLocBatchSize = null;
 
+    /** */
     @Parameter(names = {"--streamer-allow-overwrite"}, arity = 1,
         description = "Streamer benchmarks only: set allowOverwrite streamer parameter.")
     private Boolean streamerAllowOverwrite = null;
 
+    /** */
     @Parameter(names = {"--streamer-ordered"}, arity = 1,
         description = "Streamer benchmarks only: set streamer ordered flag.")
     private boolean streamerOrdered = false;

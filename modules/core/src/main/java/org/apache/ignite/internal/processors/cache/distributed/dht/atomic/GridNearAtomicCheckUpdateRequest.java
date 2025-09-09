@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  */
 public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Cache message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -100,11 +97,6 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 6;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -112,7 +104,7 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -120,13 +112,13 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong(futId))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeInt("partId", partId))
+                if (!writer.writeInt(partId))
                     return false;
 
                 writer.incrementState();
@@ -140,15 +132,12 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                futId = reader.readLong("futId");
+                futId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -156,7 +145,7 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 5:
-                partId = reader.readInt("partId");
+                partId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -165,7 +154,7 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicCheckUpdateRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

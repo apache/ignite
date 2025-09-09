@@ -56,7 +56,8 @@ public class PartitionUpdateCounterErrorWrapper implements PartitionUpdateCounte
     @Override public long reserve(long delta) {
         try {
             return delegate.reserve(delta);
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             SB sb = new SB();
 
             sb.a("Failed to increment HWM ")
@@ -146,6 +147,11 @@ public class PartitionUpdateCounterErrorWrapper implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
+    @Override public long highestAppliedCounter() {
+        return delegate.highestAppliedCounter();
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public byte[] getBytes() {
         return delegate.getBytes();
     }
@@ -173,6 +179,11 @@ public class PartitionUpdateCounterErrorWrapper implements PartitionUpdateCounte
     /** {@inheritDoc} */
     @Override public PartitionUpdateCounter copy() {
         return new PartitionUpdateCounterErrorWrapper(partId, delegate.copy());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object comparableState() {
+        return delegate.comparableState();
     }
 
     /** {@inheritDoc} */

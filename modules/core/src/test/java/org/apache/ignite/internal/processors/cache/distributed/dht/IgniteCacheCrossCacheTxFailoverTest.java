@@ -32,14 +32,12 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -77,15 +75,6 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
 
     /** */
     private static final long TEST_TIME = 3 * 60_000;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -206,6 +195,8 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
         try {
             ignite0.createCache(cacheConfiguration(CACHE1, cacheMode, 256));
             ignite0.createCache(cacheConfiguration(CACHE2, cacheMode, sameAff ? 256 : 128));
+
+            awaitCacheOnClient(grid(GRID_CNT - 1), CACHE2);
 
             final AtomicInteger threadIdx = new AtomicInteger();
 

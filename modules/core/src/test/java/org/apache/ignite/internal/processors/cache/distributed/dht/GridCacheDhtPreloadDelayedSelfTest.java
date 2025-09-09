@@ -30,6 +30,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -138,7 +140,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g0 = startGrid(0);
 
         if (persistenceEnabled())
-            g0.cluster().active(true);
+            g0.cluster().state(ClusterState.ACTIVE);
 
         int cnt = KEY_CNT;
 
@@ -228,7 +230,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g0 = startGrid(0);
 
         if (persistenceEnabled())
-            g0.cluster().active(true);
+            g0.cluster().state(ClusterState.ACTIVE);
 
         int cnt = KEY_CNT;
 
@@ -311,7 +313,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g0 = startGrid(0);
 
         if (persistenceEnabled())
-            g0.cluster().active(true);
+            g0.cluster().state(ClusterState.ACTIVE);
 
         int cnt = KEY_CNT;
 
@@ -361,7 +363,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                 if (persistenceEnabled()) {
                     if (i == 0)
-                        grid(0).cluster().active(true);
+                        grid(0).cluster().state(ClusterState.ACTIVE);
                     else
                         resetBaselineTopology();
                 }
@@ -386,7 +388,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                             Collection<ClusterNode> nodes = affinityNodes(g, p);
 
-                            Collection<UUID> nodeIds = U.nodeIds(nodes);
+                            Collection<UUID> nodeIds = ClusterNodeFunc.nodeIds(nodes);
 
                             assert nodeIds.contains(nodeId) : "Invalid affinity mapping [nodeId=" + nodeId +
                                 ", part=" + p + ", state=" + state + ", igniteInstanceName=" +
@@ -414,7 +416,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
             IgniteEx crd = startGrid(0);
 
             if (persistenceEnabled())
-                crd.cluster().active(true);
+                crd.cluster().state(ClusterState.ACTIVE);
         }
         finally {
             stopAllGrids();
@@ -434,7 +436,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(cnt);
 
         if (persistenceEnabled())
-            grid(0).cluster().active(true);
+            grid(0).cluster().state(ClusterState.ACTIVE);
 
         U.sleep(2000);
 

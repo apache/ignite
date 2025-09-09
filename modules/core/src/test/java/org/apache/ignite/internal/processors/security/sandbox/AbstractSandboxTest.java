@@ -32,11 +32,12 @@ import java.util.PropertyPermission;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
@@ -57,7 +58,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     protected static final String CLNT_FORBIDDEN_WRITE_PROP = "clnt_forbidden";
 
     /** Test property name. */
-    private static final String PROP_NAME = "test.sandbox.property";
+    protected static final String PROP_NAME = "test.sandbox.property";
 
     /** Test property value. */
     private static final String PROP_VALUE = "propertyValue";
@@ -100,17 +101,17 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
 
     /** */
     protected void prepareCluster() throws Exception {
-        Ignite srv = startGrid(SRV, ALLOW_ALL, false);
+        Ignite srv = startGrid(SRV, ALL_PERMISSIONS, false);
 
         Permissions perms = new Permissions();
 
         perms.add(new PropertyPermission(PROP_NAME, "write"));
 
-        startGrid(CLNT_ALLOWED_WRITE_PROP, ALLOW_ALL, perms, true);
+        startGrid(CLNT_ALLOWED_WRITE_PROP, ALL_PERMISSIONS, perms, true);
 
-        startGrid(CLNT_FORBIDDEN_WRITE_PROP, ALLOW_ALL, true);
+        startGrid(CLNT_FORBIDDEN_WRITE_PROP, ALL_PERMISSIONS, true);
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
     }
 
     /**
@@ -127,7 +128,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     /**
      * @param r RunnableX that that runs {@link AbstractSandboxTest#controlAction()}.
      */
-    protected void runForbiddenOperation(GridTestUtils.RunnableX r, Class<? extends Throwable> cls) {
+    protected void runForbiddenOperation(RunnableX r, Class<? extends Throwable> cls) {
         System.clearProperty(PROP_NAME);
 
         assertThrowsWithCause(r, cls);

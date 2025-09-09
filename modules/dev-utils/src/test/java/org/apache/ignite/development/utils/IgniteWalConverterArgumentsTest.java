@@ -23,10 +23,12 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.stream.LongStream;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,9 +37,11 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static java.nio.charset.Charset.defaultCharset;
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parse;
 import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parsePageId;
 import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parsePageIds;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.corruptedPagesFile;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -85,39 +89,31 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checking whether fields "walDir" or "walArchiveDir" are mandatory.
+     * Checking whether fields "root" or "folderName" are mandatory.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testRequiredWalDir() throws Exception {
+    public void testRequiredRootDir() throws Exception {
         assertThrows(log, () -> {
             parse(System.out, new String[] {"pageSize=4096"});
-        }, IgniteException.class, "The paths to the WAL files are not specified.");
+        }, IgniteException.class, "The paths to the node files are not specified.");
+
+        assertThrows(log, () -> {
+            parse(System.out, new String[] {"pageSize=4096", "root=."});
+        }, IgniteException.class, "The paths to the node files are not specified.");
     }
 
     /**
-     * Checking whether field "walDir" are incorrect.
+     * Checking whether field "root" are incorrect.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testIncorrectWalDir() throws Exception {
+    public void testIncorrectRootDir() throws Exception {
         assertThrows(log, () -> {
-            parse(System.out, new String[] {"walDir=non_existing_path"});
-        }, IgniteException.class, "Incorrect path to dir with wal files: non_existing_path");
-    }
-
-    /**
-     * Checking whether field "walArchiveDir" are incorrect.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testIncorrectWalArchiveDir() throws Exception {
-        assertThrows(log, () -> {
-            parse(System.out, new String[] {"walArchiveDir=non_existing_path"});
-        }, IgniteException.class, "Incorrect path to dir with archive wal files: non_existing_path");
+            parse(System.out, new String[] {"root=non_existing_path", "folderName=unknown"});
+        }, IgniteException.class, "Incorrect path to the root dir: non_existing_path");
     }
 
     /**
@@ -127,57 +123,18 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIncorrectPageSize() throws Exception {
-        assertThrows(log, () -> {
+        withFileTree(ft -> assertThrows(log, () -> {
             final File wal = File.createTempFile("wal", "");
             wal.deleteOnExit();
 
             final String[] args = {
-                "walDir=" + wal.getAbsolutePath(),
+                "root=" + ft.root().getAbsolutePath(),
+                "folderName=test",
                 "pageSize=not_integer"
             };
 
             parse(System.out, args);
-        }, IgniteException.class, "Incorrect page size. Error parse: not_integer");
-    }
-
-    /**
-     * Checking whether field "binaryMetadataFileStoreDir" are incorrect.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testIncorrectBinaryMetadataFileStoreDir() throws Exception {
-        assertThrows(log, () -> {
-            final File wal = File.createTempFile("wal", "");
-            wal.deleteOnExit();
-
-            final String[] args = {
-                "walDir=" + wal.getAbsolutePath(),
-                "binaryMetadataFileStoreDir=non_existing_path"
-            };
-
-            parse(System.out, args);
-        }, IgniteException.class, "Incorrect path to dir with binary meta files: non_existing_path");
-    }
-
-    /**
-     * Checking whether field "marshallerMappingFileStoreDir" are incorrect.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testIncorrectMarshallerMappingFileStoreDir() throws Exception {
-        assertThrows(log, () -> {
-            final File wal = File.createTempFile("wal", "");
-            wal.deleteOnExit();
-
-            final String[] args = {
-                "walDir=" + wal.getAbsolutePath(),
-                "marshallerMappingFileStoreDir=non_existing_path"
-            };
-
-            parse(System.out, args);
-        }, IgniteException.class, "Incorrect path to dir with marshaller files: non_existing_path");
+        }, IgniteException.class, "Incorrect page size. Error parse: not_integer"));
     }
 
     /**
@@ -346,27 +303,27 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDefault() throws IOException {
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+    public void testDefault() throws Exception {
+        withFileTree(ft -> {
+            final String[] args = {
+                "root=" + ft.root().getAbsolutePath(),
+                "folderName=" + ft.folderName()
+            };
 
-        final String[] args = {
-            "walDir=" + wal.getAbsolutePath()
-        };
+            final IgniteWalConverterArguments parseArgs = parse(System.out, args);
 
-        final IgniteWalConverterArguments parseArgs = parse(System.out, args);
+            Assert.assertEquals(4096, parseArgs.getPageSize());
+            Assert.assertNotNull(parseArgs.getFileTree());
+            Assert.assertTrue(parseArgs.isKeepBinary());
+            Assert.assertTrue(parseArgs.getRecordTypes().isEmpty());
+            Assert.assertNull(parseArgs.getFromTime());
+            Assert.assertNull(parseArgs.getToTime());
+            Assert.assertNull(parseArgs.getRecordContainsText());
+            Assert.assertEquals(ProcessSensitiveData.SHOW, parseArgs.getProcessSensitiveData());
+            Assert.assertFalse(parseArgs.isPrintStat());
+            Assert.assertFalse(parseArgs.isSkipCrc());
+        });
 
-        Assert.assertEquals(4096, parseArgs.getPageSize());
-        Assert.assertNull(parseArgs.getBinaryMetadataFileStoreDir());
-        Assert.assertNull(parseArgs.getMarshallerMappingFileStoreDir());
-        Assert.assertTrue(parseArgs.isKeepBinary());
-        Assert.assertTrue(parseArgs.getRecordTypes().isEmpty());
-        Assert.assertNull(parseArgs.getFromTime());
-        Assert.assertNull(parseArgs.getToTime());
-        Assert.assertNull(parseArgs.getRecordContainsText());
-        Assert.assertEquals(ProcessSensitiveData.SHOW, parseArgs.getProcessSensitiveData());
-        Assert.assertFalse(parseArgs.isPrintStat());
-        Assert.assertFalse(parseArgs.isSkipCrc());
     }
 
     /**
@@ -375,23 +332,16 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testParse() throws IOException {
-        final File wal = File.createTempFile("wal", "");
-        wal.deleteOnExit();
+    public void testParse() throws Exception {
+        NodeFileTree ft = new NodeFileTree(new File(U.defaultWorkDirectory()), "test");
 
-        final File walArchive = File.createTempFile("wal_archive", "");
-        walArchive.deleteOnExit();
-
-        final File binaryMetadataDir = new File(System.getProperty("java.io.tmpdir"));
-
-        final File marshallerDir = binaryMetadataDir;
+        ft.wal().mkdirs();
+        ft.walArchive().mkdirs();
 
         final String[] args = {
-            "walDir=" + wal.getAbsolutePath(),
-            "walArchiveDir=" + walArchive.getAbsolutePath(),
+            "root=" + U.defaultWorkDirectory(),
+            "folderName=test",
             "pageSize=2048",
-            "binaryMetadataFileStoreDir=" + binaryMetadataDir.getAbsolutePath(),
-            "marshallerMappingFileStoreDir=" + marshallerDir.getAbsolutePath(),
             "keepBinary=false",
             "recordTypes=DATA_RECORD_V2,TX_RECORD",
             "walTimeFromMillis=1575158400000",
@@ -402,11 +352,9 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
             "skipCrc=true"};
 
         final IgniteWalConverterArguments parseArgs = parse(System.out, args);
-        Assert.assertEquals(wal, parseArgs.getWalDir());
-        Assert.assertEquals(walArchive, parseArgs.getWalArchiveDir());
+        Assert.assertEquals(ft.wal(), parseArgs.getFileTree().wal());
+        Assert.assertEquals(ft.walArchive(), parseArgs.getFileTree().walArchive());
         Assert.assertEquals(2048, parseArgs.getPageSize());
-        Assert.assertEquals(binaryMetadataDir, parseArgs.getBinaryMetadataFileStoreDir());
-        Assert.assertEquals(marshallerDir, parseArgs.getMarshallerMappingFileStoreDir());
         Assert.assertFalse(parseArgs.isKeepBinary());
         Assert.assertTrue(parseArgs.getRecordTypes().contains(WALRecord.RecordType.DATA_RECORD_V2));
         Assert.assertTrue(parseArgs.getRecordTypes().contains(WALRecord.RecordType.TX_RECORD));
@@ -443,6 +391,9 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
             assertThrows(log, () -> parsePageId(v), IllegalArgumentException.class, null);
 
         assertEquals(new T2<>(1, 1L), parsePageId("1:1"));
+        assertEquals(new T2<>(-1, 1L), parsePageId("-1:1"));
+        assertEquals(new T2<>(1, -1L), parsePageId("1:-1"));
+        assertEquals(new T2<>(-1, -1L), parsePageId("-1:-1"));
     }
 
     /**
@@ -472,6 +423,15 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
 
             U.writeStringToFile(f, U.nl() + "2:2", defaultCharset().toString(), true);
             assertEqualsCollections(F.asList(new T2<>(1, 1L), new T2<>(2, 2L)), parsePageIds(f));
+
+            U.writeStringToFile(f, U.nl() + "-1:1", defaultCharset().toString(), true);
+            U.writeStringToFile(f, U.nl() + "1:-1", defaultCharset().toString(), true);
+            U.writeStringToFile(f, U.nl() + "-1:-1", defaultCharset().toString(), true);
+
+            assertEqualsCollections(
+                F.asList(new T2<>(1, 1L), new T2<>(2, 2L), new T2<>(-1, 1L), new T2<>(1, -1L), new T2<>(-1, -1L)),
+                parsePageIds(f)
+            );
         }
         finally {
             assertTrue(U.delete(f));
@@ -489,7 +449,11 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
         assertThrows(log, () -> parsePageIds("1:1", "a:b"), IllegalArgumentException.class, null);
 
         assertEqualsCollections(F.asList(new T2<>(1, 1L)), parsePageIds("1:1"));
-        assertEqualsCollections(F.asList(new T2<>(1, 1L), new T2<>(2, 2L)), parsePageIds("1:1", "2:2"));
+
+        assertEqualsCollections(
+            F.asList(new T2<>(1, 1L), new T2<>(2, 2L), new T2<>(-1, 1L), new T2<>(1, -1L), new T2<>(-1, -1L)),
+            parsePageIds("1:1", "2:2", "-1:1", "1:-1", "-1:-1")
+        );
     }
 
     /**
@@ -498,42 +462,38 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testParsePagesArgument() throws IOException {
-        File walDir = new File(System.getProperty("java.io.tmpdir"), "walDir");
+    public void testParsePagesArgument() throws Exception {
+        withFileTree(ft -> {
+            assertTrue(ft.wal().exists());
 
-        try {
-            assertTrue(walDir.mkdir());
-
-            String walDirStr = "walDir=" + walDir.getAbsolutePath();
+            String root = "root=" + ft.root().getAbsolutePath();
+            String folderName = "folderName=" + ft.folderName();
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             PrintStream ps = new PrintStream(baos);
 
-            assertThrows(log, () -> parse(ps, walDirStr, "pages=1"), IllegalArgumentException.class, null);
-            assertThrows(log, () -> parse(ps, walDirStr, "pages="), IllegalArgumentException.class, null);
+            assertThrows(log, () -> parse(ps, root, folderName, "pages=1"), IllegalArgumentException.class, null);
+            assertThrows(log, () -> parse(ps, root, folderName, "pages="), IllegalArgumentException.class, null);
 
-            assertEqualsCollections(F.asList(new T2<>(1, 1L)), parse(ps, walDirStr, "pages=1:1").getPages());
+            assertEqualsCollections(F.asList(new T2<>(1, 1L)), parse(ps, root, folderName, "pages=1:1").getPages());
 
             File f = new File(System.getProperty("java.io.tmpdir"), "test");
 
             try {
                 String pagesFileStr = "pages=" + f.getAbsolutePath();
 
-                assertThrows(log, () -> parse(ps, walDirStr, pagesFileStr), IllegalArgumentException.class, null);
+                assertThrows(log, () -> parse(ps, root, folderName, pagesFileStr), IllegalArgumentException.class, null);
 
                 assertTrue(f.createNewFile());
-                assertTrue(parse(ps, walDirStr, pagesFileStr).getPages().isEmpty());
+                assertTrue(parse(ps, root, folderName, pagesFileStr).getPages().isEmpty());
 
                 U.writeStringToFile(f, "1:1", defaultCharset().toString(), false);
-                assertEqualsCollections(F.asList(new T2<>(1, 1L)), parse(ps, walDirStr, pagesFileStr).getPages());
+                assertEqualsCollections(F.asList(new T2<>(1, 1L)), parse(ps, root, folderName, pagesFileStr).getPages());
             }
             finally {
                 assertTrue(U.delete(f));
             }
-        }
-        finally {
-            assertTrue(U.delete(walDir));
-        }
+        });
     }
 
     /**
@@ -542,13 +502,13 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
      * @throws IOException If failed.
      */
     @Test
-    public void testCorruptedPagesFile() throws IOException {
-        File tmpDir = new File(System.getProperty("java.io.tmpdir"), getName());
+    public void testCorruptedPagesFile() throws Exception {
+        withFileTree(ft -> {
+            int grpId = 10;
+            long[] pageIds = {20, 40};
 
-        try {
-            T2<Integer, Long>[] pages = new T2[] {new T2<>(10, 20L), new T2(30, 40L)};
+            File f = corruptedPagesFile(ft.root().toPath(), new RandomAccessFileIOFactory(), grpId, pageIds);
 
-            File f = DiagnosticProcessor.corruptedPagesFile(tmpDir.toPath(), new RandomAccessFileIOFactory(), pages);
             assertTrue(f.exists());
             assertTrue(f.isFile());
             assertTrue(f.length() > 0);
@@ -557,14 +517,29 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
             PrintStream ps = new PrintStream(baos);
 
             IgniteWalConverterArguments args =
-                parse(ps, "walDir=" + tmpDir.getAbsolutePath(), "pages=" + f.getAbsolutePath());
+                parse(ps, "root=" + ft.root().getAbsolutePath(), "folderName=test", "pages=" + f.getAbsolutePath());
 
             assertNotNull(args.getPages());
-            assertEqualsCollections(F.asList(pages), args.getPages());
+
+            assertEqualsCollections(
+                LongStream.of(pageIds).mapToObj(pageId -> new T2<>(grpId, pageId)).collect(toList()),
+                args.getPages()
+            );
+        });
+    }
+
+    /** */
+    private void withFileTree(ConsumerX<NodeFileTree> check) throws Exception {
+        NodeFileTree ft = nodeFileTree("test");
+
+        ft.wal().mkdirs();
+        ft.binaryMeta().mkdirs();
+
+        try {
+            check.accept(ft);
         }
         finally {
-            if (tmpDir.exists())
-                assertTrue(U.delete(tmpDir));
+            U.delete(ft.root());
         }
     }
 }

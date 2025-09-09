@@ -44,6 +44,7 @@ namespace
     const bool testCollocated = true;
     const bool testLazy = true;
     const bool testSkipReducerOnUpdate = true;
+    const EngineMode::Type testEngineMode = EngineMode::H2;
 
     const std::string testAddressStr = testServerHost + ':' + ignite::common::LexicalCast<std::string>(testServerPort);
 
@@ -187,6 +188,7 @@ void CheckConnectionConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.IsCollocated(), testCollocated);
     BOOST_CHECK_EQUAL(cfg.IsLazy(), testLazy);
     BOOST_CHECK_EQUAL(cfg.IsSkipReducerOnUpdate(), testSkipReducerOnUpdate);
+    BOOST_CHECK_EQUAL(cfg.GetEngineMode(), testEngineMode);
 
     BOOST_CHECK(!cfg.IsDsnSet());
     BOOST_CHECK(!cfg.IsHostSet());
@@ -209,6 +211,7 @@ void CheckConnectionConfig(const Configuration& cfg)
                 << "enforce_join_order=" << BoolToStr(testEnforceJoinOrder) << ';'
                 << "lazy=" << BoolToStr(testLazy) << ';'
                 << "page_size=" << testPageSize << ';'
+                << "query_engine=" << EngineMode::ToString(testEngineMode) << ';'
                 << "replicated_only=" << BoolToStr(testReplicatedOnly) << ';'
                 << "schema=" << testSchemaName << ';'
                 << "skip_reducer_on_update=" << BoolToStr(testReplicatedOnly) << ';';
@@ -251,6 +254,7 @@ BOOST_AUTO_TEST_CASE(CheckTestValuesNotEquealDefault)
     BOOST_CHECK_NE(testCollocated, Configuration::DefaultValue::collocated);
     BOOST_CHECK_NE(testLazy, Configuration::DefaultValue::lazy);
     BOOST_CHECK_NE(testSkipReducerOnUpdate, Configuration::DefaultValue::skipReducerOnUpdate);
+    BOOST_CHECK_NE(testEngineMode, Configuration::DefaultValue::engineMode);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
@@ -268,6 +272,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
                 << "REPLICATED_ONLY=" << BoolToStr(testReplicatedOnly, false) << ';'
                 << "PAGE_SIZE=" << testPageSize << ';'
                 << "SCHEMA=" << testSchemaName << ';'
+                << "query_engine=" << EngineMode::ToString(testEngineMode) << ';'
                 << "SKIP_REDUCER_ON_UPDATE=" << BoolToStr(testSkipReducerOnUpdate, false);
 
     const std::string& connectStr = constructor.str();
@@ -292,6 +297,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringLowercase)
                 << "replicated_only=" << BoolToStr(testReplicatedOnly) << ';'
                 << "collocated=" << BoolToStr(testCollocated) << ';'
                 << "schema=" << testSchemaName << ';'
+                << "QUERY_ENGINE=" << ignite::common::ToUpper(EngineMode::ToString(testEngineMode)) << ';'
                 << "skip_reducer_on_update=" << BoolToStr(testSkipReducerOnUpdate);
 
     const std::string& connectStr = constructor.str();
@@ -316,6 +322,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringZeroTerminated)
                 << "distributed_joins=" << BoolToStr(testDistributedJoins) << ';'
                 << "enforce_join_order=" << BoolToStr(testEnforceJoinOrder) << ';'
                 << "schema=" << testSchemaName << ';'
+                << "query_engine=" << EngineMode::ToString(testEngineMode) << ';'
                 << "skip_reducer_on_update=" << BoolToStr(testSkipReducerOnUpdate);
 
     std::string connectStr = constructor.str();
@@ -342,6 +349,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringMixed)
                 << "Replicated_Only=" << BoolToStr(testReplicatedOnly, false) << ';'
                 << "Collocated=" << BoolToStr(testCollocated) << ';'
                 << "Schema=" << testSchemaName << ';'
+                << "Query_Engine=" << EngineMode::ToString(testEngineMode) << ';'
                 << "Skip_Reducer_On_Update=" << BoolToStr(testSkipReducerOnUpdate);
 
     const std::string& connectStr = constructor.str();
@@ -366,6 +374,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringWhitepaces)
                 << "  REPLICATED_ONLY=   " << BoolToStr(testReplicatedOnly, false) << ';'
                 << "ENFORCE_JOIN_ORDER=   " << BoolToStr(testEnforceJoinOrder, false) << "  ;"
                 << "SCHEMA = \n\r" << testSchemaName << ';'
+                << " QUERY_ENGINE = \n" << EngineMode::ToString(testEngineMode) << " ;"
                 << " skip_reducer_on_update=" << BoolToStr(testSkipReducerOnUpdate, false);
 
     const std::string& connectStr = constructor.str();

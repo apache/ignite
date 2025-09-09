@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -26,21 +26,18 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Cache object and version.
  */
 public class CacheVersionedValue implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Value. */
+    @Order(value = 0, method = "value")
     @GridToStringInclude
     private CacheObject val;
 
     /** Cache version. */
+    @Order(value = 1, method = "version")
     @GridToStringInclude
     private GridCacheVersion ver;
 
@@ -66,10 +63,24 @@ public class CacheVersionedValue implements Message {
     }
 
     /**
+     * @param ver New cache version.
+     */
+    public void version(GridCacheVersion ver) {
+        this.ver = ver;
+    }
+
+    /**
      * @return Cache object.
      */
     public CacheObject value() {
         return val;
+    }
+
+    /**
+     * @param val New value.
+     */
+    public void value(CacheObject val) {
+        this.val = val;
     }
 
     /**
@@ -103,71 +114,8 @@ public class CacheVersionedValue implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMessage("val", val))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeMessage("ver", ver))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                val = reader.readMessage("val");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                ver = reader.readMessage("ver");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(CacheVersionedValue.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 102;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

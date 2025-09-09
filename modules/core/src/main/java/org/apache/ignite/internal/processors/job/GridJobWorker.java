@@ -26,6 +26,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -80,17 +81,19 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.CANCELLED;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FAILED;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FINISHED;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.QUEUED;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.RUNNING;
+import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.SUSPENDED;
 
 /**
  * Job worker.
  */
 public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** Per-thread held flag. */
-    private static final ThreadLocal<Boolean> HOLD = new ThreadLocal<Boolean>() {
-        @Override protected Boolean initialValue() {
-            return false;
-        }
-    };
+    private static final ThreadLocal<Boolean> HOLD = ThreadLocal.withInitial(() -> false);
 
     /** Static logger to avoid re-creation. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -179,7 +182,17 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** Security context. */
     private final SecurityContext secCtx;
 
+    /** Job status. */
+    private volatile ComputeJobStatusEnum status = QUEUED;
+
     /**
+     * Supplier of timeout interrupt {@link GridJobWorker workers} after {@link GridJobWorker#cancel cancel} im mills.
+     */
+    private final LongSupplier jobInterruptTimeoutSupplier;
+
+    /**
+     * Constructor.
+     *
      * @param ctx Kernal context.
      * @param dep Grid deployment.
      * @param createTime Create time.
@@ -194,6 +207,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param partsReservation Reserved partitions (must be released at the job finish).
      * @param reqTopVer Affinity topology version of the job request.
      * @param execName Custom executor name.
+     * @param jobInterruptTimeoutSupplier Supplier of timeout interrupt
+     *      {@link GridJobWorker workers} after {@link GridJobWorker#cancel cancel} im mills.
      */
     GridJobWorker(
         GridKernalContext ctx,
@@ -209,10 +224,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         GridJobHoldListener holdLsnr,
         GridReservable partsReservation,
         AffinityTopologyVersion reqTopVer,
-        String execName) {
+        String execName,
+        LongSupplier jobInterruptTimeoutSupplier
+    ) {
         super(ctx.igniteInstanceName(), "grid-job-worker", ctx.log(GridJobWorker.class));
 
-        assert ctx != null;
         assert ses != null;
         assert jobCtx != null;
         assert taskNode != null;
@@ -233,13 +249,14 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.partsReservation = partsReservation;
         this.reqTopVer = reqTopVer;
         this.execName = execName;
+        this.jobInterruptTimeoutSupplier = jobInterruptTimeoutSupplier;
 
         if (job != null)
             this.job = job;
 
         log = U.logger(ctx, logRef, this);
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         UUID locNodeId = ctx.discovery().localNode().id();
 
@@ -442,8 +459,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         boolean res;
 
-        if (res = holdLsnr.onHeld(this))
+        if (res = holdLsnr.onHeld(this)) {
             held.incrementAndGet();
+
+            status = SUSPENDED;
+        }
 
         return res;
     }
@@ -477,6 +497,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
             // Inject resources.
             ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
+
+            // Event notification.
+            evtLsnr.onJobQueued(this);
 
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
@@ -512,6 +535,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         startTime = U.currentTimeMillis();
 
         isStarted = true;
+
+        status = RUNNING;
 
         // Event notification.
         evtLsnr.onJobStarted(this);
@@ -565,8 +590,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 super.cancel();
 
             if (!skipNtf) {
-                if (holdLsnr.onUnheld(this))
-                    held.decrementAndGet();
+                if (holdLsnr.onUnheld(this)) {
+                    if (held.decrementAndGet() == 0)
+                        status = RUNNING;
+                }
                 else {
                     if (log.isDebugEnabled())
                         log.debug("Ignoring job execution (job was not held).");
@@ -642,7 +669,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             U.error(log, msg, e);
 
                             ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-                        } else if (log.isDebugEnabled())
+                        }
+                        else if (log.isDebugEnabled())
                             U.error(log, msg, e);
                     }
 
@@ -744,8 +772,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      */
     public void cancel(boolean sys) {
         try {
-            super.cancel();
-
             final ComputeJob job0 = job;
 
             if (sys)
@@ -755,14 +781,18 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 if (log.isDebugEnabled())
                     log.debug("Cancelling job: " + ses);
 
-                U.wrapThreadLoader(dep.classLoader(), new IgniteRunnable() {
-                    @Override public void run() {
-                        try (OperationSecurityContext c = ctx.security().withContext(secCtx)) {
-                            job0.cancel();
-                        }
+                status = CANCELLED;
+
+                U.wrapThreadLoader(dep.classLoader(), (IgniteRunnable)() -> {
+                    try (OperationSecurityContext c = ctx.security().withContext(secCtx)) {
+                        job0.cancel();
                     }
                 });
             }
+
+            // Interrupting only when all 'cancelled' flags are set.
+            // This allows the 'job' to determine it's a cancellation.
+            super.cancel();
 
             if (!internal && ctx.event().isRecordable(EVT_JOB_CANCELLED))
                 recordEvent(EVT_JOB_CANCELLED, "Job was cancelled: " + job0);
@@ -812,9 +842,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param ex Error.
      * @param sndReply If {@code true}, reply will be sent.
      */
-    void finishJob(@Nullable Object res,
+    void finishJob(
+        @Nullable Object res,
         @Nullable IgniteException ex,
-        boolean sndReply) {
+        boolean sndReply
+    ) {
         finishJob(res, ex, sndReply, false);
     }
 
@@ -824,11 +856,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param sndReply If {@code true}, reply will be sent.
      * @param retry If {@code true}, retry response will be sent.
      */
-    void finishJob(@Nullable Object res,
+    void finishJob(
+        @Nullable Object res,
         @Nullable IgniteException ex,
         boolean sndReply,
-        boolean retry)
-    {
+        boolean retry
+    ) {
         // Avoid finishing a job more than once from different threads.
         if (!finishing.compareAndSet(false, true))
             return;
@@ -857,6 +890,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         U.warn(log, "Failed to reply to sender node because it left grid [nodeId=" + taskNode.id() +
                             ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job + ']');
 
+                        status = FAILED;
+
                         // Record job reply failure.
                         if (!internal && ctx.event().isRecordable(EVT_JOB_FAILED))
                             evts = addEvent(evts, EVT_JOB_FAILED, "Job reply failed (task node left grid): " + job);
@@ -871,7 +906,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
                             Map<Object, Object> attrs = jobCtx.getAttributes();
 
-                            // Try serialize response, and if exception - return to client.
+                            // Try to serialize response, and if exception - return to client.
                             if (!loc) {
                                 try {
                                     resBytes = U.marshal(marsh, res);
@@ -922,6 +957,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             }
 
                             if (ex != null) {
+                                status = FAILED;
+
                                 if (isStarted) {
                                     // Job failed.
                                     if (!internal && ctx.event().isRecordable(EVT_JOB_FAILED))
@@ -932,8 +969,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                     evts = addEvent(evts, EVT_JOB_REJECTED, "Job has not been started " +
                                         "[ex=" + ex + ", job=" + job + ']');
                             }
-                            else if (!internal && ctx.event().isRecordable(EVT_JOB_FINISHED))
-                                evts = addEvent(evts, EVT_JOB_FINISHED, /*no message for success. */null);
+                            else {
+                                status = FINISHED;
+
+                                if (!internal && ctx.event().isRecordable(EVT_JOB_FINISHED))
+                                    evts = addEvent(evts, EVT_JOB_FINISHED, /*no message for success. */null);
+                            }
 
                             GridJobExecuteResponse jobRes = new GridJobExecuteResponse(
                                 ctx.localNodeId(),
@@ -1004,6 +1045,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 }
                 else {
                     if (ex != null) {
+                        status = FAILED;
+
                         if (isStarted) {
                             if (!internal && ctx.event().isRecordable(EVT_JOB_FAILED))
                                 evts = addEvent(evts, EVT_JOB_FAILED, "Job failed due to exception [ex=" + ex +
@@ -1013,13 +1056,21 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             evts = addEvent(evts, EVT_JOB_REJECTED, "Job has not been started [ex=" + ex +
                                 ", job=" + job + ']');
                     }
-                    else if (!internal && ctx.event().isRecordable(EVT_JOB_FINISHED))
-                        evts = addEvent(evts, EVT_JOB_FINISHED, /*no message for success. */null);
+                    else {
+                        status = FINISHED;
+
+                        if (!internal && ctx.event().isRecordable(EVT_JOB_FINISHED))
+                            evts = addEvent(evts, EVT_JOB_FINISHED, /*no message for success. */null);
+                    }
                 }
             }
-            // Job timed out.
-            else if (!internal && ctx.event().isRecordable(EVT_JOB_FAILED))
-                evts = addEvent(evts, EVT_JOB_FAILED, "Job failed due to timeout: " + job);
+            else {
+                // Job timed out.
+                status = FAILED;
+
+                if (!internal && ctx.event().isRecordable(EVT_JOB_FAILED))
+                    evts = addEvent(evts, EVT_JOB_FAILED, "Job failed due to timeout: " + job);
+            }
         }
         finally {
             if (evts != null) {
@@ -1101,6 +1152,13 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         return ctx.discovery().node(uid) == null || !ctx.discovery().pingNodeNoError(uid);
     }
 
+    /**
+     * @return Job status.
+     */
+    ComputeJobStatusEnum status() {
+        return status;
+    }
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         IgniteUuid jobId = ses.getJobId();
@@ -1108,6 +1166,64 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         assert jobId != null;
 
         return jobId.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onCancel(boolean firstCancelRequest) {
+        if (firstCancelRequest)
+            handleCancel();
+        else {
+            if (log.isDebugEnabled()) {
+                Thread runner = runner();
+
+                log.debug(String.format(
+                    "Worker cancellation is ignored [jobId=%s, interrupted=%s]",
+                    getJobId(),
+                    runner == null ? "unknown" : runner.isInterrupted()
+                ));
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onCancelledBeforeWorkerScheduled() {
+        // To ensure that the worker does not hang if the cancellation was before the start of its execution.
+        handleCancel();
+    }
+
+    /**
+     * Handles the cancellation of the worker.
+     */
+    private void handleCancel() {
+        long timeout = jobInterruptTimeoutSupplier.getAsLong();
+
+        if (timeout > 0) {
+            ctx.timeout().addTimeoutObject(
+                new JobWorkerInterruptionTimeoutObject(this, U.currentTimeMillis() + timeout)
+            );
+
+            if (log.isDebugEnabled()) {
+                log.debug(String.format(
+                    "Worker will be interrupted later [jobId=%s, timeout=%s]",
+                    getJobId(),
+                    U.humanReadableDuration(timeout)
+                ));
+            }
+        }
+        else {
+            Thread runner = runner();
+
+            if (runner != null)
+                runner.interrupt();
+
+            if (log.isDebugEnabled()) {
+                log.debug(String.format(
+                    "Worker is interrupted on cancel [jobId=%s, interrupted=%s]",
+                    getJobId(),
+                    runner == null ? "unknown" : runner.isInterrupted()
+                ));
+            }
+        }
     }
 
     /** {@inheritDoc} */

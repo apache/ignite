@@ -27,6 +27,9 @@ public class SqlConfiguration {
     /** Default SQL query history size. */
     public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
 
+    /** Default SQL plan history size. */
+    public static final int DFLT_SQL_PLAN_HISTORY_SIZE = 1000;
+
     /** Default query timeout. */
     public static final long DFLT_QRY_TIMEOUT = 0;
 
@@ -45,8 +48,14 @@ public class SqlConfiguration {
     /** SQL query history size. */
     private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
 
+    /** SQL plan history size. */
+    private int sqlPlanHistSize = -1;
+
     /** Enable validation of key & values against sql schema. */
     private boolean validationEnabled;
+
+    /** SQL query engines configuration. */
+    private QueryEngineConfiguration[] enginesConfiguration;
 
     /**
      * Defines the default query timeout.
@@ -105,6 +114,30 @@ public class SqlConfiguration {
     }
 
     /**
+     * Number of SQL plan history elements to keep in memory. If not provided, then default value {@code -1} applies when
+     * the indexing module is in use and {@link #DFLT_SQL_PLAN_HISTORY_SIZE} is used for other engines. If provided value
+     * is less or equals 0, then gathering SQL plan history will be switched off.
+     *
+     * @return SQL plan history size.
+     */
+    public int getSqlPlanHistorySize() {
+        return sqlPlanHistSize;
+    }
+
+    /**
+     * Sets number of SQL plan history elements kept in memory. If not explicitly set, then default value {@code -1}
+     * applies when the indexing module is in use and {@link #DFLT_SQL_PLAN_HISTORY_SIZE} is used for other engines.
+     *
+     * @param size Number of SQL plan history elements kept in memory.
+     * @return {@code this} for chaining.
+     */
+    public SqlConfiguration setSqlPlanHistorySize(int size) {
+        sqlPlanHistSize = size;
+
+        return this;
+    }
+
+    /**
      * Gets SQL schemas to be created on node startup.
      * <p>
      * See {@link #setSqlSchemas(String...)} for more information.
@@ -155,18 +188,18 @@ public class SqlConfiguration {
     }
 
     /**
-     * Is key & value validation enabled.
+     * Is key &amp; value validation enabled.
      *
-     * @return {@code true} When key & value shall be validated against SQL schema.
+     * @return {@code true} When key &amp; value shall be validated against SQL schema.
      */
     public boolean isValidationEnabled() {
         return validationEnabled;
     }
 
     /**
-     * Enable/disable key & value validation.
+     * Enable/disable key &amp; value validation.
      *
-     * @param validationEnabled {@code true} When key & value shall be validated against SQL schema.
+     * @param validationEnabled {@code true} When key &amp; value shall be validated against SQL schema.
      * Default value is {@code false}.
      * @return {@code this} for chaining.
      */
@@ -174,6 +207,35 @@ public class SqlConfiguration {
         this.validationEnabled = validationEnabled;
 
         return this;
+    }
+
+    /**
+     * Sets query engines configuration.
+     * <p>
+     * There are several engines to execute SQL queries can be configured. If configured more than one engine, exact
+     * engine to execute the query can be chosen in run-time by {@code queryEngine} JDBC connection property or by
+     * {@code QUERY_ENGINE('engineName')} SQL query hint. If no query engine is explicitly chosen, default query engine
+     * will be used (see {@link QueryEngineConfiguration#setDefault(boolean)}).
+     * <p>
+     * When this property is not set, the query engine cannot be chosen in run-time, and the engine provided by the
+     * ignite-indexing module will be used for all queries.
+     *
+     * @param enginesConfiguration Query engines configuration.
+     * @return {@code this} for chaining.
+     */
+    public SqlConfiguration setQueryEnginesConfiguration(QueryEngineConfiguration... enginesConfiguration) {
+        this.enginesConfiguration = enginesConfiguration == null ? null : enginesConfiguration.clone();
+
+        return this;
+    }
+
+    /**
+     * Gets query engines configuration.
+     *
+     * @return Query engines configuration.
+     */
+    public QueryEngineConfiguration[] getQueryEnginesConfiguration() {
+        return enginesConfiguration == null ? null : enginesConfiguration.clone();
     }
 
     /** {@inheritDoc} */

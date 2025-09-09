@@ -21,9 +21,8 @@ import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -43,12 +42,6 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         ccfg.setBackups(1);
 
         cfg.setCacheConfiguration(ccfg);
-
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(commSpi);
 
         return cfg;
     }
@@ -79,7 +72,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class BrokenMessage extends AffinityTopologyVersion {
+    private static class BrokenMessage extends IgniteDiagnosticMessage {
         /** */
         private boolean fail = true;
 

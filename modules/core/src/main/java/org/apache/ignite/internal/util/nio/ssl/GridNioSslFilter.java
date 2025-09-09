@@ -26,7 +26,7 @@ import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.util.nio.GridNioException;
@@ -82,6 +82,9 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** Whether direct mode is used. */
     private boolean directMode;
 
+    /** Exception during onSessionOpened */
+    @Nullable private Exception onSessionOpenedException;
+
     /** Metric that indicates sessions count that were rejected due to SSL errors. */
     @Nullable private final IntMetricImpl rejectedSesCnt;
 
@@ -102,7 +105,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log,
-        @Nullable MetricRegistry mreg
+        @Nullable MetricRegistryImpl mreg
     ) {
         super("SSL filter");
 
@@ -187,8 +190,11 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         if (sslMeta == null) {
             try {
                 engine = sslCtx.createSSLEngine();
-            } catch (IllegalArgumentException e) {
-                throw new IgniteCheckedException("Failed connect to cluster. Check SSL configuration.", e);
+            }
+            catch (IllegalArgumentException e) {
+                IgniteCheckedException ex = new IgniteCheckedException("Failed connect to cluster. Check SSL configuration.", e);
+                onSessionOpenedException = ex;
+                throw ex;
             }
 
             boolean clientMode = !ses.accepted();
@@ -224,14 +230,15 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         }
 
         try {
-            GridNioSslHandler hnd = new GridNioSslHandler(this,
+            GridNioSslHandler hnd = new GridNioSslHandler(
+                this,
                 ses,
                 engine,
                 directBuf,
                 order,
                 log,
                 handshake,
-                sslMeta.encodedBuffer());
+                sslMeta);
 
             sslMeta.handler(hnd);
 
@@ -246,21 +253,16 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
                 long startTime = System.nanoTime();
 
-                fut.listen(f -> handshakeDuration.value(U.nanosToMillis(System.nanoTime() - startTime)));
+                fut.listen(() -> handshakeDuration.value(U.nanosToMillis(System.nanoTime() - startTime)));
             }
 
             hnd.handshake();
 
-            ByteBuffer alreadyDecoded = sslMeta.decodedBuffer();
-
-            if (alreadyDecoded != null)
-                proceedMessageReceived(ses, alreadyDecoded);
+            processApplicationBuffer(ses, hnd.getApplicationBuffer());
         }
         catch (SSLException e) {
+            onSessionOpenedException = e;
             U.error(log, "Failed to start SSL handshake (will close inbound connection): " + ses, e);
-
-            if (rejectedSesCnt != null)
-                rejectedSesCnt.increment();
 
             ses.close();
         }
@@ -271,8 +273,12 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         try {
             GridNioFutureImpl<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
 
-            if (fut != null)
-                fut.onDone(new IgniteCheckedException("SSL handshake failed (connection closed)."));
+            if (fut != null) {
+                if (rejectedSesCnt != null)
+                    rejectedSesCnt.increment();
+
+                fut.onDone(new IgniteCheckedException("SSL handshake failed (connection closed).", onSessionOpenedException));
+            }
 
             if (ses.meta(SSL_META.ordinal()) == null)
                 return;
@@ -392,14 +398,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             if (hnd.isHandshakeFinished())
                 hnd.flushDeferredWrites();
 
-            ByteBuffer appBuf = hnd.getApplicationBuffer();
-
-            appBuf.flip();
-
-            if (appBuf.hasRemaining())
-                proceedMessageReceived(ses, appBuf);
-
-            appBuf.compact();
+            processApplicationBuffer(ses, hnd.getApplicationBuffer());
 
             if (hnd.isInboundDone() && !hnd.isOutboundDone()) {
                 if (log.isDebugEnabled())
@@ -409,14 +408,21 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             }
         }
         catch (SSLException e) {
-            if (rejectedSesCnt != null)
-                rejectedSesCnt.increment();
-
             throw new GridNioException("Failed to decode SSL data: " + ses, e);
         }
         finally {
             hnd.unlock();
         }
+    }
+
+    /** */
+    private void processApplicationBuffer(GridNioSession ses, ByteBuffer appBuffer) throws IgniteCheckedException {
+        appBuffer.flip();
+
+        if (appBuffer.hasRemaining())
+            proceedMessageReceived(ses, appBuffer);
+
+        appBuffer.compact();
     }
 
     /** {@inheritDoc} */

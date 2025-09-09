@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +49,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lifecycle.LifecycleAware;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -429,38 +429,39 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         Collection<K> remaining = null;
 
         for (K key : keys) {
-            StatefulValue<K, V> val;
+            StatefulValue<K, V> statefulVal;
 
             if (writeCoalescing)
-                val = writeCache.get(key);
+                statefulVal = writeCache.get(key);
             else
-                val = flusher(key).flusherWriteMap.get(key);
+                statefulVal = flusher(key).flusherWriteMap.get(key);
 
-            if (val != null) {
-                val.readLock().lock();
+            if (statefulVal != null) {
+                statefulVal.readLock().lock();
 
                 try {
                     StoreOperation op;
 
-                    V value;
+                    V val;
 
-                    if (writeCoalescing && val.nextOperation() != null) {
-                        op = val.nextOperation();
+                    if (writeCoalescing && statefulVal.nextOperation() != null) {
+                        op = statefulVal.nextOperation();
 
-                        value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
-                    } else {
-                        op = val.operation();
+                        val = (op == StoreOperation.PUT) ? statefulVal.nextEntry().getValue() : null;
+                    }
+                    else {
+                        op = statefulVal.operation();
 
-                        value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
+                        val = (op == StoreOperation.PUT) ? statefulVal.entry().getValue() : null;
                     }
 
                     if (op == StoreOperation.PUT)
-                        loaded.put(key, value);
+                        loaded.put(key, val);
                     else
                         assert op == StoreOperation.RMV : op;
                 }
                 finally {
-                    val.readLock().unlock();
+                    statefulVal.readLock().unlock();
                 }
             }
             else {
@@ -488,44 +489,45 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             log.debug(S.toString("Store load",
                 "key", key, true));
 
-        StatefulValue<K, V> val;
+        StatefulValue<K, V> statefulVal;
 
         if (writeCoalescing)
-            val = writeCache.get(key);
+            statefulVal = writeCache.get(key);
         else
-            val = flusher(key).flusherWriteMap.get(key);
+            statefulVal = flusher(key).flusherWriteMap.get(key);
 
-        if (val != null) {
-            val.readLock().lock();
+        if (statefulVal != null) {
+            statefulVal.readLock().lock();
 
             try {
                 StoreOperation op;
 
-                V value;
+                V val;
 
-                if (writeCoalescing && val.nextOperation() != null) {
-                    op = val.nextOperation();
+                if (writeCoalescing && statefulVal.nextOperation() != null) {
+                    op = statefulVal.nextOperation();
 
-                    value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
-                } else {
-                    op = val.operation();
+                    val = (op == StoreOperation.PUT) ? statefulVal.nextEntry().getValue() : null;
+                }
+                else {
+                    op = statefulVal.operation();
 
-                    value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
+                    val = (op == StoreOperation.PUT) ? statefulVal.entry().getValue() : null;
                 }
 
                 switch (op) {
                     case PUT:
-                        return value;
+                        return val;
 
                     case RMV:
                         return null;
 
                     default:
-                        assert false : "Unexpected operation: " + val.status();
+                        assert false : "Unexpected operation: " + statefulVal.status();
                 }
             }
             finally {
-                val.readLock().unlock();
+                statefulVal.readLock().unlock();
             }
         }
 
@@ -575,7 +577,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
     /** {@inheritDoc} */
     @Override public void sessionEnd(boolean commit) {
-        // No-op.
+        // To prevent connection leaks, we must call CacheStore#sessionEnd
+        // on stores that manage connections themselves.
+        store.sessionEnd(commit);
     }
 
     /** {@inheritDoc} */
@@ -766,7 +770,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 assert val.status() == ValueStatus.PENDING || val.status() == ValueStatus.PENDING_AND_UPDATED;
 
                 batch.put(e.getKey(), val.entry());
-            } finally {
+            }
+            finally {
                 val.readLock().unlock();
             }
         }
@@ -990,7 +995,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
         /** Start flusher thread */
         protected void start() {
-            thread = new IgniteThread(this);
+            thread = U.newThread(this);
             thread.start();
         }
 
@@ -1531,15 +1536,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
 
         /**
-         * Awaits a signal on flush condition.
-         *
-         * @throws IgniteInterruptedCheckedException If thread was interrupted.
-         */
-        private void waitForFlush() throws IgniteInterruptedCheckedException {
-            U.await(flushCond);
-        }
-
-        /**
          * Signals flush condition.
          */
         @SuppressWarnings({"SignalWithoutCorrespondingAwait"})
@@ -1557,7 +1553,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             StatefulValue other = (StatefulValue)o;
 
-            return F.eq(val, other.val) && F.eq(valStatus, other.valStatus);
+            return Objects.equals(val, other.val) && Objects.equals(valStatus, other.valStatus);
         }
 
         /** {@inheritDoc} */

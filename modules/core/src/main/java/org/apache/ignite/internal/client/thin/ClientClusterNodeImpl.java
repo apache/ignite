@@ -23,10 +23,11 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
 /**
  * Thin client implementation of {@link ClusterNode}.
@@ -56,9 +57,6 @@ class ClientClusterNodeImpl implements ClusterNode {
     /** Is local. For thin-client this flag is {@code true} for node to which client is connected. */
     private final boolean isLoc;
 
-    /** Is daemon. */
-    private final boolean isDaemon;
-
     /** Is client. */
     private final boolean isClient;
 
@@ -85,7 +83,6 @@ class ClientClusterNodeImpl implements ClusterNode {
         this.order = order;
         this.ver = ver;
         this.isLoc = isLoc;
-        this.isDaemon = isDaemon;
         this.isClient = isClient;
     }
 
@@ -140,18 +137,13 @@ class ClientClusterNodeImpl implements ClusterNode {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        return isDaemon;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isClient() {
         return isClient;
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        return F.eqNodes(this, o);
+        return eqNodes(this, o);
     }
 
     /** {@inheritDoc} */

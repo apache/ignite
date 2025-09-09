@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -43,7 +44,7 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
         for (int i = 0; i < SF.applyLB(5, 2); i++) {
             startGrids(3);
             IgniteEx ignite = grid(1);
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             awaitPartitionMapExchange();
 
@@ -65,7 +66,7 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
         for (int i = 0; i < SF.applyLB(5, 2); i++) {
             startGrids(2);
             IgniteEx ignite = grid(1);
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             awaitPartitionMapExchange();
 

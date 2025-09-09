@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public JavaServiceDynamicProxy(dynamic svc)
         {
             _svc = svc;
-        } 
+        }
 
         /** <inheritDoc /> */
         public bool isCancelled()
@@ -272,7 +272,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public ServicesTest.PlatformComputeBinarizable testBinarizable(ServicesTest.PlatformComputeBinarizable x)
+        public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x)
         {
             return _svc.testBinarizable(x);
         }
@@ -290,7 +290,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public ServicesTest.PlatformComputeBinarizable[] testBinarizableArray(ServicesTest.PlatformComputeBinarizable[] x)
+        public PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] x)
         {
             return _svc.testBinarizableArray(x);
         }
@@ -393,6 +393,24 @@ namespace Apache.Ignite.Core.Tests.Services
         public void sleep(long delayMs)
         {
             _svc.sleep(delayMs);
+        }
+
+        /** <inheritDoc /> */
+        public object testRoundtrip(object x)
+        {
+            return x;
+        }
+
+        /** <inheritDoc /> */
+        public object contextAttribute(string name)
+        {
+            return _svc.contextAttribute(name);
+        }
+
+        /** <inheritDoc /> */
+        public int testInterception(int val)
+        {
+            return _svc.testInterception(val);
         }
     }
 }

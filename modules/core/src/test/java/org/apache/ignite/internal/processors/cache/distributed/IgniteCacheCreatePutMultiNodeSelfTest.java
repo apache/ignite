@@ -27,11 +27,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -41,15 +38,6 @@ import org.junit.Test;
 public class IgniteCacheCreatePutMultiNodeSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 4;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -86,18 +74,8 @@ public class IgniteCacheCreatePutMultiNodeSelfTest extends GridCommonAbstractTes
 
                                 IgniteCache<Integer, Integer> cache = getCache(ignite, cacheName);
 
-                                for (int i = 0; i < 100; i++) {
-                                    while (true) {
-                                        try {
-                                            cache.getAndPut(i, i);
-
-                                            break;
-                                        }
-                                        catch (Exception e) {
-                                            MvccFeatureChecker.assertMvccWriteConflict(e);
-                                        }
-                                    }
-                                }
+                                for (int i = 0; i < 100; i++)
+                                    cache.getAndPut(i, i);
 
                                 barrier.await();
 

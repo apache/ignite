@@ -24,27 +24,91 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_LOG_THRES
 
 /**
  * Throttling policy, encapsulates logic of delaying write operations.
+ * <p>
+ * There are two resources that get (or might get) consumed when writing:
+ * <ul>
+ *     <li>
+ *         <b>Checkpoint Buffer</b> where a page is placed when, being under checkpoint, it gets written
+ *     </li>
+ *     <li>
+ *         <b>Clean pages</b> which get dirtied when writes occur
+ *     </li>
+ * </ul>
+ * Both resources are limited in size. Both are freed when checkpoint finishes. This means that, if writers
+ * write too fast, they can consume any of these two resources before we have a chance to finish a checkpoint.
+ * If this happens, the cluster fails or stalls.
+ * <p>
+ * Write throttling solves this problem by slowing down the writers to a rate at which they do not exhaust
+ * any of the two resources.
+ * <p>
+ * An alternative to just slowing down is to wait in a loop till the resource we're after gets freed, and
+ * only then allow the write to happen. The problem with this approach is that we cannot wait in a loop/sleep
+ * under a write lock, so the logic would be a lot more complicated. Maybe in the future we'll follow this path,
+ * but for now, a simpler approach of just throttling is used (see below).
+ * <p>
+ * If we just slow writers down by throttling their writes, AND we have enough Checkpoint Buffer and pages in
+ * segments to take some load bursts, we are fine. Under such assumptions, it does not matter whether we throttle
+ * a writer thread before acquiring write lock or after it gets released; in the current implementation, this
+ * happens after write lock gets released (because it was considered simpler to implement).
+ * <p>
+ * The actual throttling happens when a page gets marked dirty by calling {@link #onMarkDirty(boolean)}.
+ * <p>
+ * There are two additional methods for interfacing with other parts of the system:
+ * <ul>
+ *     <li>{@link #checkpointBufferThrottledThreadsWakeupThreshold()} which is called to check if it's a time to wake up
+ *     throttled threads.</li>
+ *     <li>{@link #wakeupThrottledThreads()} which wakes up the threads currently being throttled; in the current
+ *     implementation, it is called  when Checkpoint Buffer utilization falls
+ *     below {@link #checkpointBufferThrottledThreadsWakeupThreshold()}.</li>
+ *     <li>{@link #isCpBufferOverflowThresholdExceeded()} which is called by a checkpointer to see whether the Checkpoint Buffer is
+ *     in a danger zone and, if yes, it starts to prioritize writing pages from the Checkpoint Buffer over
+ *     pages from the normal checkpoint sequence.</li>
+ * </ul>
  */
 public interface PagesWriteThrottlePolicy {
-    /** @see IgniteSystemProperties#IGNITE_THROTTLE_LOG_THRESHOLD */
+    /**
+     * @see IgniteSystemProperties#IGNITE_THROTTLE_LOG_THRESHOLD
+     */
     static int DFLT_THROTTLE_LOG_THRESHOLD = 10;
 
-    /** Max park time. */
-    public long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(
+    /**
+     * Max park time.
+     */
+    long LOGGING_THRESHOLD = TimeUnit.SECONDS.toNanos(
         IgniteSystemProperties.getInteger(IGNITE_THROTTLE_LOG_THRESHOLD, DFLT_THROTTLE_LOG_THRESHOLD));
 
     /**
+     * Checkpoint buffer danger fulfill bound.
+     */
+    float CP_BUF_DANGER_THRESHOLD = 2f / 3;
+
+    /**
+     * Checkpoint buffer fulfill bound to start throttling (fill rate based implementation).
+     */
+    float CP_BUF_THROTTLING_THRESHOLD_FILL_RATE = 1f / 4;
+
+    /**
+     * Checkpoint buffer fulfill bound to wake up throttled threads (exponential backoff implemetation).
+     */
+    float CP_BUF_WAKEUP_THRESHOLD_EXP_BACKOFF = 1f / 2;
+
+    /**
+     * Checkpoint buffer fulfill bound to wake up throttled threads (fill rate based implemetation).
+     */
+    float CP_BUF_WAKEUP_THRESHOLD_FILL_RATE = 1f / 5;
+
+    /**
      * Callback to apply throttling delay.
+     *
      * @param isPageInCheckpoint flag indicating if current page is in scope of current checkpoint.
      */
     void onMarkDirty(boolean isPageInCheckpoint);
 
     /**
-     * Callback to try wakeup throttled threads.
+     * Callback to wakeup throttled threads. Invoked when the Checkpoint Buffer use drops below a certain
+     * threshold.
      */
-    default void tryWakeupThrottledThreads() {
-        // No-op.
-    }
+    void wakeupThrottledThreads();
 
     /**
      * Callback to notify throttling policy checkpoint was started.
@@ -57,9 +121,17 @@ public interface PagesWriteThrottlePolicy {
     void onFinishCheckpoint();
 
     /**
-     * @return {@code True} if throttling should be enabled, and {@code False} otherwise.
+     * Whether Checkpoint Buffer is currently close to exhaustion.
+     *
+     * @return {@code true} if measures like throttling to protect Checkpoint Buffer should be applied,
+     * and {@code false} otherwise.
      */
-    default boolean shouldThrottle() {
-        return false;
-    }
+    boolean isCpBufferOverflowThresholdExceeded();
+
+    /**
+     * Checkpoint buffer threshold (pages count) to wake up throttled threads.
+     *
+     * @return Checkpoint buffer throttled threads wakeup threshold.
+     */
+    int checkpointBufferThrottledThreadsWakeupThreshold();
 }

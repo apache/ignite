@@ -45,6 +45,9 @@ namespace Apache.Ignite.Core.Tests.Services
         private bool _cancelled;
 
         /** */
+        private IServiceContext _context;
+
+        /** */
         public PlatformTestService()
         {
             // No-Op.
@@ -60,18 +63,23 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public void Init(IServiceContext context)
         {
+            _context = context;
             _initialized = true;
         }
 
         /** <inheritDoc /> */
         public void Execute(IServiceContext context)
         {
+            Assert.IsTrue(_context == context);
+
             _executed = true;
         }
 
         /** <inheritDoc /> */
         public void Cancel(IServiceContext context)
         {
+            Assert.IsTrue(_context == context);
+
             _cancelled = true;
         }
 
@@ -361,9 +369,9 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public ServicesTest.PlatformComputeBinarizable testBinarizable(ServicesTest.PlatformComputeBinarizable x)
+        public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x)
         {
-            return x == null ? null : new ServicesTest.PlatformComputeBinarizable { Field = x.Field + 1};
+            return x == null ? null : new PlatformComputeBinarizable { Field = x.Field + 1};
         }
 
         /** <inheritDoc /> */
@@ -375,8 +383,7 @@ namespace Apache.Ignite.Core.Tests.Services
             for (int i = 0; i < x.Length; i++)
                 x[i] = x[i] == null
                     ? null
-                    : new ServicesTest.PlatformComputeBinarizable
-                        {Field = ((ServicesTest.PlatformComputeBinarizable) x[i]).Field + 1};
+                    : new PlatformComputeBinarizable {Field = ((PlatformComputeBinarizable) x[i]).Field + 1};
 
             return x;
         }
@@ -394,10 +401,10 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public ServicesTest.PlatformComputeBinarizable[] testBinarizableArray(ServicesTest.PlatformComputeBinarizable[] x)
+        public PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] x)
         {
             // ReSharper disable once CoVariantArrayConversion
-            return (ServicesTest.PlatformComputeBinarizable[])testBinarizableArrayOfObjects(x);
+            return (PlatformComputeBinarizable[])testBinarizableArrayOfObjects(x);
         }
 
         /** <inheritDoc /> */
@@ -410,8 +417,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             foreach (var x in arg)
             {
-                res.Add(new ServicesTest.PlatformComputeBinarizable
-                    {Field = ((ServicesTest.PlatformComputeBinarizable) x).Field + 1});
+                res.Add(new PlatformComputeBinarizable {Field = ((PlatformComputeBinarizable) x).Field + 1});
             }
 
             return res;
@@ -525,8 +531,8 @@ namespace Apache.Ignite.Core.Tests.Services
         public User[] testUsers()
         {
             return new[] {
-                new User {Id = 1, Acl = ACL.Allow, Role = new Role {Name = "admin"}},
-                new User {Id = 2, Acl = ACL.Deny, Role = new Role {Name = "user"}}
+                new User {Id = 1, Acl = ACL.ALLOW, Role = new Role {Name = "admin", AccessLevel = AccessLevel.SUPER}},
+                new User {Id = 2, Acl = ACL.DENY, Role = new Role {Name = "user", AccessLevel = AccessLevel.USER}}
             };
         }
 
@@ -616,6 +622,24 @@ namespace Apache.Ignite.Core.Tests.Services
         public void sleep(long delayMs)
         {
             throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
+        public object testRoundtrip(object x)
+        {
+            return x;
+        }
+
+        /** <inheritDoc /> */
+        public object contextAttribute(string name)
+        {
+            return _context.CurrentCallContext.GetAttribute(name);
+        }
+
+        /** <inheritDoc /> */
+        public int testInterception(int val)
+        {
+            return val;
         }
     }
 }

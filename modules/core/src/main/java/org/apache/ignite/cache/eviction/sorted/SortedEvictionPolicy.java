@@ -302,7 +302,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
             if (obj == null || this.getClass() != obj.getClass())
                 return false;
 
-            Holder<K, V> h = (Holder<K, V>) obj;
+            Holder<K, V> h = (Holder<K, V>)obj;
 
             return Objects.equals(entry, h.entry) && abs(order) == abs(h.order);
         }

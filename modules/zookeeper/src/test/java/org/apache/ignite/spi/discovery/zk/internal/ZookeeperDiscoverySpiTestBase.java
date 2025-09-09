@@ -41,7 +41,6 @@ import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
@@ -71,10 +69,11 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
@@ -377,7 +376,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (!dfltConsistenId)
             cfg.setConsistentId(igniteInstanceName);
 
-        ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
+        ZookeeperDiscoverySpi zkSpi = auth != null ? new TestAuthZookeeperDiscoverySpi() : new ZookeeperDiscoverySpi();
 
         if (joinTimeout != 0)
             zkSpi.setJoinTimeout(joinTimeout);
@@ -387,25 +386,8 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         zkSpi.setClientReconnectDisabled(clientReconnectDisabled);
 
         // Set authenticator for basic sanity tests.
-        if (auth != null) {
+        if (auth != null)
             zkSpi.setAuthenticator(auth.apply());
-
-            zkSpi.setInternalListener(new IgniteDiscoverySpiInternalListener() {
-                @Override public void beforeJoin(ClusterNode locNode, IgniteLogger log) {
-                    ZookeeperClusterNode locNode0 = (ZookeeperClusterNode)locNode;
-
-                    Map<String, Object> attrs = new HashMap<>(locNode0.getAttributes());
-
-                    attrs.put(ATTR_SECURITY_CREDENTIALS, new SecurityCredentials(null, null, igniteInstanceName));
-
-                    locNode0.setAttributes(attrs);
-                }
-
-                @Override public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg) {
-                    return false;
-                }
-            });
-        }
 
         spis.put(igniteInstanceName, zkSpi);
 
@@ -502,15 +484,13 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (!isMultiJvm())
             cfg.setLocalEventListeners(lsnrs);
 
-        if (persistence) {
-            DataStorageConfiguration memCfg = new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).
-                    setPersistenceEnabled(true))
-                .setPageSize(1024)
-                .setWalMode(WALMode.LOG_ONLY);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).
+                setPersistenceEnabled(persistence))
+            .setPageSize(1024)
+            .setWalMode(WALMode.LOG_ONLY);
 
-            cfg.setDataStorageConfiguration(memCfg);
-        }
+        cfg.setDataStorageConfiguration(memCfg);
 
         if (testCommSpi)
             cfg.setCommunicationSpi(new ZkTestCommunicationSpi());
@@ -529,6 +509,9 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             cfg.setCommunicationFailureResolver(commFailureRslvr.apply());
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
+        // Will be used to handle segmentation.
+        cfg.setSegmentationPolicy(SegmentationPolicy.STOP);
 
         return cfg;
     }
@@ -725,7 +708,11 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             int connIdx
         ) throws IgniteCheckedException {
             if (failure && !matrix.hasConnection(getLocalNode(), node)) {
-                processSessionCreationError(node, null, new IgniteCheckedException("Test", new SocketTimeoutException()));
+                ((GridNioServerWrapper)U.field(this, "nioSrvWrapper")).processSessionCreationError(
+                        node,
+                        null,
+                        new IgniteCheckedException("Test", new SocketTimeoutException())
+                );
 
                 return null;
             }
@@ -931,6 +918,18 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             }
 
             return false;
+        }
+    }
+
+    /** */
+    private static class TestAuthZookeeperDiscoverySpi extends ZookeeperDiscoverySpi {
+        /** */
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+            ((IgniteEx)ignite).context().addNodeAttribute(
+                ATTR_SECURITY_CREDENTIALS,
+                new SecurityCredentials(null, null, igniteInstanceName));
+
+            super.spiStart(igniteInstanceName);
         }
     }
 }

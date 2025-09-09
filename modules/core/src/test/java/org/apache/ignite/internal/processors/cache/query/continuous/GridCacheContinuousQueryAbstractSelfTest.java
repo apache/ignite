@@ -60,10 +60,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -72,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -82,8 +79,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -122,21 +117,13 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             cacheCfg.setRebalanceMode(ASYNC);
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
             cacheCfg.setNearConfiguration(nearConfiguration());
-
-            if (atomicityMode() != TRANSACTIONAL_SNAPSHOT) {
-                cacheCfg.setCacheStoreFactory(new StoreFactory()); // TODO IGNITE-8582 enable for tx snapshot.
-                cacheCfg.setReadThrough(true); // TODO IGNITE-8582 enable for tx snapshot.
-                cacheCfg.setWriteThrough(true); // TODO IGNITE-8582 enable for tx snapshot.
-            }
-            else
-                cacheCfg.setIndexedTypes(Integer.class, Integer.class);
-
+            cacheCfg.setCacheStoreFactory(new StoreFactory());
+            cacheCfg.setReadThrough(true);
+            cacheCfg.setWriteThrough(true);
             cfg.setCacheConfiguration(cacheCfg);
         }
 
         cfg.setIncludeEventTypes(EVTS_ALL);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         return cfg;
     }
@@ -213,12 +200,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }, 3000);
 
         for (int i = 0; i < gridCount(); i++) {
-            GridKernalContext ctx = grid(i).context();
-            GridContinuousProcessor proc = ctx.continuous();
+            GridContinuousProcessor proc = grid(i).context().continuous();
 
-            final int locInfosCnt = ctx.service() instanceof GridServiceProcessor ? 1 : 0;
-
-            assertEquals(String.valueOf(i), locInfosCnt, ((Map)U.field(proc, "locInfos")).size());
+            assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "rmtInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "startFuts")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "stopFuts")).size());
@@ -406,9 +390,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      */
     @Test
     public void testTwoQueryListener() throws Exception {
-        if (cacheMode() == LOCAL)
-            return;
-
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, Integer> cache1 = grid(1).cache(DEFAULT_CACHE_NAME);
 
@@ -487,9 +468,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      */
     @Test
     public void testRestartQuery() throws Exception {
-        if (cacheMode() == LOCAL)
-            return;
-
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final int parts = grid(0).affinity(DEFAULT_CACHE_NAME).partitions();
@@ -1289,10 +1267,10 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
 
         qry.setRemoteFilter(evt -> {
-                FILTERED.put(evt.getKey(), evt.getValue());
+            FILTERED.put(evt.getKey(), evt.getValue());
 
-                return bypassFilter;
-            });
+            return bypassFilter;
+        });
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry)) {
             checkLsnrAndFilterResults(setLocLsnr, bypassFilter, listened);
@@ -1375,6 +1353,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      *
      */
     private static class StoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
         @Override public CacheStore create() {
             return new TestStore();
         }

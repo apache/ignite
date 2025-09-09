@@ -42,7 +42,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 public @interface PlatformServiceMethod {
     /**
-     * Method name in corresponding platform service.
+     * @return Method name in corresponding platform service.
      */
     String value();
 }

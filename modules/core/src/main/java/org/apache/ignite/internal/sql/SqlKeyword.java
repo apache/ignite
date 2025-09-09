@@ -19,8 +19,8 @@ package org.apache.ignite.internal.sql;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;
+import java.util.Objects;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * SQL keyword constants.
@@ -44,11 +44,17 @@ public class SqlKeyword {
     /** Keyword: SERVICE. */
     public static final String SERVICE = "SERVICE";
 
+    /** Keyword: CLIENT. */
+    public static final String CLIENT = "CLIENT";
+
     /** Keyword: ALTER. */
     public static final String ALTER = "ALTER";
 
     /** Keyword: ALLOW_OVERWRITE */
     public static final String ALLOW_OVERWRITE = "ALLOW_OVERWRITE";
+
+    /** Keyword: AS. */
+    public static final String AS = "AS";
 
     /** Keyword: ASC. */
     public static final String ASC = "ASC";
@@ -106,6 +112,9 @@ public class SqlKeyword {
 
     /** Keyword: DECIMAL. */
     public static final String DECIMAL = "DECIMAL";
+
+    /** Keyword: DELIMITER. */
+    public static final String DELIMITER = "DELIMITER";
 
     /** Keyword: DESC. */
     public static final String DESC = "DESC";
@@ -191,6 +200,9 @@ public class SqlKeyword {
     /** Keyword: NOT. */
     public static final String NOT = "NOT";
 
+    /** Keyword: NULLSTRING. */
+    public static final String NULLSTRING = "NULLSTRING";
+
     /** Keyword: NUMBER. */
     public static final String NUMBER = "NUMBER";
 
@@ -269,6 +281,9 @@ public class SqlKeyword {
     /** Keyword: TRANSACTION. */
     public static final String TRANSACTION = "TRANSACTION";
 
+    /** Keyword: TRIM. */
+    public static final String TRIM = "TRIM";
+
     /** Keyword: UNIQUE. */
     public static final String UNIQUE = "UNIQUE";
 
@@ -320,6 +335,18 @@ public class SqlKeyword {
     /** Keyword: REFRESH. */
     public static final String REFRESH = "REFRESH";
 
+    /** Keyword: OR. */
+    public static final String OR = "OR";
+
+    /** Keyword: REPLACE. */
+    public static final String REPLACE = "REPLACE";
+
+    /** Keyword: VIEW. */
+    public static final String VIEW = "VIEW";
+
+    /** Keyword: SELECT. */
+    public static final String SELECT = "SELECT";
+
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;
 
@@ -328,8 +355,8 @@ public class SqlKeyword {
 
         try {
             for (Field field : SqlKeyword.class.getDeclaredFields()) {
-                if (F.eq(String.class, field.getType())) {
-                    String val = (String) field.get(null);
+                if (Objects.equals(String.class, field.getType())) {
+                    String val = (String)field.get(null);
 
                     KEYWORDS.add(val);
                 }

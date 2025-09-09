@@ -25,14 +25,11 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -70,8 +67,6 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
             c.setCacheConfiguration(cc);
         }
 
-        ((TcpDiscoverySpi)c.getDiscoverySpi()).setForceServerMode(true);
-
         return c;
     }
 
@@ -92,18 +87,6 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     @Test
     public void testPartitionedTransactionalNearEvictionMaxSize() throws Exception {
         atomicityMode = TRANSACTIONAL;
-        cacheMode = PARTITIONED;
-
-        checkNearEvictionMaxSize();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187,https://issues.apache.org/jira/browse/IGNITE-7956")
-    @Test
-    public void testPartitionedMvccTransactionalNearEvictionMaxSize() throws Exception {
-        atomicityMode = TRANSACTIONAL_SNAPSHOT;
         cacheMode = PARTITIONED;
 
         checkNearEvictionMaxSize();
@@ -134,21 +117,9 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187,https://issues.apache.org/jira/browse/IGNITE-7956")
-    @Test
-    public void testReplicatedMvccTransactionalNearEvictionMaxSize() throws Exception {
-        atomicityMode = TRANSACTIONAL_SNAPSHOT;
-        cacheMode = REPLICATED;
-
-        checkNearEvictionMaxSize();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     private void checkNearEvictionMaxSize() throws Exception {
-        startClientGrid(0);
         startGridsMultiThreaded(1, GRID_COUNT - 1);
+        startClientGrid(0);
 
         try {
             NearCacheConfiguration nearCfg = new NearCacheConfiguration();

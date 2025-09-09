@@ -32,6 +32,8 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues.wrapWithP2PFailure;
+
 /**
  * Job to put entries to cache on affinity node.
  */
@@ -143,6 +145,9 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
                 receiver.receive(cache, col);
 
             return null;
+        }
+        catch (NoClassDefFoundError e) {
+            throw wrapWithP2PFailure(e);
         }
         finally {
             if (ignoreDepOwnership)

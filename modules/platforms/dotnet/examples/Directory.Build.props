@@ -20,7 +20,7 @@
         <RunAnalyzers>false</RunAnalyzers>
     </PropertyGroup>
 
-    <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Core.dll')">
+    <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)..\bin\net6.0\Apache.Ignite.Core.dll')">
         <IgniteBinaryDistro>true</IgniteBinaryDistro>
     </PropertyGroup>
 
@@ -30,16 +30,16 @@
     </PropertyGroup>
 
     <ItemGroup Condition="$(IgniteDevMode) == 'true'">
-        <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
-        <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Linq\Apache.Ignite.Linq.DotNetCore.csproj" />
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Linq\Apache.Ignite.Linq.csproj" />
     </ItemGroup>
 
     <ItemGroup Condition="$(IgniteBinaryDistro) == 'true' And $(IgniteDevMode) == ''">
         <Reference Include="Apache.Ignite.Core">
-            <HintPath>$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Core.dll</HintPath>
+            <HintPath>$(MSBuildThisFileDirectory)..\bin\net6.0\Apache.Ignite.Core.dll</HintPath>
         </Reference>
         <Reference Include="Apache.Ignite.Linq">
-            <HintPath>$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Linq.dll</HintPath>
+            <HintPath>$(MSBuildThisFileDirectory)..\bin\net6.0\Apache.Ignite.Linq.dll</HintPath>
         </Reference>
     </ItemGroup>
 

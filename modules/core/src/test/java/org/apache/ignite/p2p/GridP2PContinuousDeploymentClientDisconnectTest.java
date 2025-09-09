@@ -107,7 +107,7 @@ public class GridP2PContinuousDeploymentClientDisconnectTest extends GridCommonA
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        testLog = new ListeningTestLogger(true, log);
+        testLog = new ListeningTestLogger(log);
 
         startGrid(0);
 
@@ -215,7 +215,7 @@ public class GridP2PContinuousDeploymentClientDisconnectTest extends GridCommonA
     @Test
     public void testContinuousQueryRemoteTransformer() throws Exception {
         Class<Factory<IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, String>>> rmtTransformerFactoryCls =
-            (Class<Factory<IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, String>>>) getExternalClassLoader()
+            (Class<Factory<IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, String>>>)getExternalClassLoader()
                 .loadClass(REMOTE_TRANSFORMER_FACTORY_CLS_NAME);
 
         ContinuousQueryWithTransformer<Integer, Integer, String> qry = new ContinuousQueryWithTransformer<Integer, Integer, String>()
@@ -252,7 +252,7 @@ public class GridP2PContinuousDeploymentClientDisconnectTest extends GridCommonA
     @Test
     public void testEventRemoteFilter() throws Exception {
         final Class<IgnitePredicate<Event>> evtFilterCls =
-            (Class<IgnitePredicate<Event>>) getExternalClassLoader().loadClass(EVT_REMOTE_FILTER_CLS_NAME);
+            (Class<IgnitePredicate<Event>>)getExternalClassLoader().loadClass(EVT_REMOTE_FILTER_CLS_NAME);
 
         LogListener lsnr = LogListener.matches(
             "Failed to unmarshal deployable object."
@@ -289,7 +289,7 @@ public class GridP2PContinuousDeploymentClientDisconnectTest extends GridCommonA
     @Test
     public void testMessageRemoteListen() throws Exception {
         Class<IgniteBiPredicate<UUID, String>> rmtLsnrCls =
-            (Class<IgniteBiPredicate<UUID, String>>) getExternalClassLoader().loadClass(MSG_REMOTE_LSNR_CLS_NAME);
+            (Class<IgniteBiPredicate<UUID, String>>)getExternalClassLoader().loadClass(MSG_REMOTE_LSNR_CLS_NAME);
 
         LogListener lsnr = LogListener.matches(
             "Failed to unmarshal deployable object."

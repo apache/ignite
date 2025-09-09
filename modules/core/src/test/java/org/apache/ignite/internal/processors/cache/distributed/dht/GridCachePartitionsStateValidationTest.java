@@ -36,6 +36,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -98,8 +99,8 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
      */
     @Test
     public void testValidationIfPartitionCountersAreInconsistent() throws Exception {
-        IgniteEx ignite = (IgniteEx) startGrids(2);
-        ignite.cluster().active(true);
+        IgniteEx ignite = (IgniteEx)startGrids(2);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -134,7 +135,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
         // Reopen https://issues.apache.org/jira/browse/IGNITE-10766 if starts failing with forced MVCC
 
         IgniteEx ignite = startGrids(4);
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -159,26 +160,29 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
         for (int it = 0; it < 10; it++) {
             SingleMessageInterceptorCommunicationSpi spi =
-                (SingleMessageInterceptorCommunicationSpi) ignite.configuration().getCommunicationSpi();
+                (SingleMessageInterceptorCommunicationSpi)ignite.configuration().getCommunicationSpi();
             spi.clear();
 
             // Stop load future.
             final AtomicBoolean stop = new AtomicBoolean();
 
             // Run atomic load.
-            IgniteInternalFuture atomicLoadFuture = GridTestUtils.runMultiThreadedAsync(() -> {
+            IgniteInternalFuture atomicLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
                 int k = 0;
 
                 while (!stop.get()) {
                     k++;
                     try {
                         atomicCache.put(k, k);
-                    } catch (Exception ignored) {}
+                    }
+                    catch (Exception ignored) {
+                        // Ignore.
+                    }
                 }
             }, 1, "atomic-load");
 
             // Run tx load.
-            IgniteInternalFuture txLoadFuture = GridTestUtils.runMultiThreadedAsync(() -> {
+            IgniteInternalFuture txLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
                 final int txOps = 5;
 
                 while (!stop.get()) {
@@ -193,7 +197,9 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
                         tx.commit();
                     }
-                    catch (Exception ignored) { }
+                    catch (Exception ignored) {
+                        // Ignore.
+                    }
                 }
             }, 4, "tx-load");
 
@@ -204,17 +210,17 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
             spi.blockFullMessage();
 
             // Trigger exchange.
-            IgniteInternalFuture nodeStopFuture = GridTestUtils.runAsync(() -> stopGrid(3));
+            IgniteInternalFuture nodeStopFut = GridTestUtils.runAsync(() -> stopGrid(3));
 
             try {
                 spi.waitUntilAllSingleMessagesAreSent();
 
-                List<GridDhtPartitionsSingleMessage> interceptedMessages = spi.getMessages();
+                List<GridDhtPartitionsSingleMessage> interceptedMsgs = spi.getMessages();
 
                 // Associate each message with existing node UUID.
-                Map<UUID, GridDhtPartitionsSingleMessage> messagesMap = new HashMap<>();
-                for (int i = 0; i < interceptedMessages.size(); i++)
-                    messagesMap.put(grid(i + 1).context().localNodeId(), interceptedMessages.get(i));
+                Map<UUID, GridDhtPartitionsSingleMessage> msgsMap = new HashMap<>();
+                for (int i = 0; i < interceptedMsgs.size(); i++)
+                    msgsMap.put(grid(i + 1).context().localNodeId(), interceptedMsgs.get(i));
 
                 GridDhtPartitionsStateValidator validator =
                     new GridDhtPartitionsStateValidator(ignite.context().cache().context());
@@ -222,24 +228,24 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
                 // Validate partition update counters. If counters are not consistent, exception will be thrown.
                 validator.validatePartitionsUpdateCounters(
                     ignite.cachex(atomicCacheName).context().topology(),
-                    messagesMap,
+                    msgsMap,
                     Collections.emptySet()
                 );
                 validator.validatePartitionsUpdateCounters(
                     ignite.cachex(txCacheName).context().topology(),
-                    messagesMap,
+                    msgsMap,
                     Collections.emptySet()
                 );
-
-            } finally {
+            }
+            finally {
                 // Stop load and resume exchange.
                 spi.unblockFullMessage();
 
                 stop.set(true);
 
-                atomicLoadFuture.get();
-                txLoadFuture.get();
-                nodeStopFuture.get();
+                atomicLoadFut.get();
+                txLoadFut.get();
+                nodeStopFut.get();
             }
 
             // Return grid to initial state.
@@ -274,8 +280,8 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-            if (((GridIoMessage) msg).message() instanceof GridDhtPartitionsSingleMessage) {
-                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) ((GridIoMessage) msg).message();
+            if (((GridIoMessage)msg).message() instanceof GridDhtPartitionsSingleMessage) {
+                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)((GridIoMessage)msg).message();
 
                 // We're interesting for only exchange messages and when node is stopped.
                 if (singleMsg.exchangeId() != null && singleMsg.exchangeId().isLeft() && !singleMsg.client()) {
@@ -287,12 +293,14 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
             }
 
             try {
-                if (((GridIoMessage) msg).message() instanceof GridDhtPartitionsFullMessage) {
+                if (((GridIoMessage)msg).message() instanceof GridDhtPartitionsFullMessage) {
                     if (blockFullMsgLatch != null)
                         blockFullMsgLatch.await();
                 }
             }
-            catch (Exception ignored) { }
+            catch (Exception ignored) {
+                // Ignore.
+            }
 
             super.sendMessage(node, msg, ackC);
         }

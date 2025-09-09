@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -37,9 +36,6 @@ import org.jetbrains.annotations.Nullable;
 public class GridIoMessage implements Message, SpanTransport {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
-
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Policy. */
     private byte plc;
@@ -71,8 +67,7 @@ public class GridIoMessage implements Message, SpanTransport {
     private byte[] span;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Default constructor.
      */
     public GridIoMessage() {
         // No-op.
@@ -199,7 +194,7 @@ public class GridIoMessage implements Message, SpanTransport {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -207,49 +202,49 @@ public class GridIoMessage implements Message, SpanTransport {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("msg", msg))
+                if (!writer.writeMessage(msg))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("ordered", ordered))
+                if (!writer.writeBoolean(ordered))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByte("plc", plc))
+                if (!writer.writeByte(plc))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeBoolean("skipOnTimeout", skipOnTimeout))
+                if (!writer.writeBoolean(skipOnTimeout))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("span", span))
+                if (!writer.writeByteArray(span))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("timeout", timeout))
+                if (!writer.writeLong(timeout))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeByteArray("topicBytes", topicBytes))
+                if (!writer.writeByteArray(topicBytes))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeInt("topicOrd", topicOrd))
+                if (!writer.writeInt(topicOrd))
                     return false;
 
                 writer.incrementState();
@@ -263,12 +258,9 @@ public class GridIoMessage implements Message, SpanTransport {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                msg = reader.readMessage("msg");
+                msg = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -276,7 +268,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 1:
-                ordered = reader.readBoolean("ordered");
+                ordered = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -284,7 +276,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 2:
-                plc = reader.readByte("plc");
+                plc = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -292,7 +284,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 3:
-                skipOnTimeout = reader.readBoolean("skipOnTimeout");
+                skipOnTimeout = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -300,7 +292,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 4:
-                span = reader.readByteArray("span");
+                span = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -308,7 +300,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 5:
-                timeout = reader.readLong("timeout");
+                timeout = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -316,7 +308,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 6:
-                topicBytes = reader.readByteArray("topicBytes");
+                topicBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -324,7 +316,7 @@ public class GridIoMessage implements Message, SpanTransport {
                 reader.incrementState();
 
             case 7:
-                topicOrd = reader.readInt("topicOrd");
+                topicOrd = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -333,16 +325,11 @@ public class GridIoMessage implements Message, SpanTransport {
 
         }
 
-        return reader.afterMessageRead(GridIoMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 8;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
         return 8;
     }
 

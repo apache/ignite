@@ -17,13 +17,14 @@
 
 package org.apache.ignite.testframework.junits;
 
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Assert;
 
 /**
  * Provides the basic functionality of {@link Assert} methods in org.junit package.
  * Corresponding methods must be used in all ignite tests where necessary.
  */
-class JUnitAssertAware {
+public class JUnitAssertAware {
     /** See {@link Assert#assertTrue(String, boolean)} javadocs. */
     protected static void assertTrue(String msg, boolean cond) {
         Assert.assertTrue(msg, cond);
@@ -202,5 +203,20 @@ class JUnitAssertAware {
     /** See {@link Assert#assertNotSame(String, Object, Object)} javadocs. */
     protected static void assertNotSame(String msg, Object exp, Object actual) {
         Assert.assertNotSame(msg, exp, actual);
+    }
+
+    /** Check arrays equality as well as objects equality. */
+    protected static void assertEqualsArraysAware(Object exp, Object actual) {
+        assertEqualsArraysAware(null, exp, actual);
+    }
+
+    /** Check arrays equality as well as objects equality. */
+    protected static void assertEqualsArraysAware(String msg, Object exp, Object actual) {
+        if (exp instanceof Object[] && actual instanceof Object[])
+            Assert.assertArrayEquals((Object[])exp, (Object[])actual);
+        else if (U.isPrimitiveArray(exp) && U.isPrimitiveArray(actual))
+            Assert.assertArrayEquals(new Object[] {exp}, new Object[] {actual}); // Hack to compare primitive arrays.
+        else
+            Assert.assertEquals(exp, actual);
     }
 }

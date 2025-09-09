@@ -239,7 +239,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 if (marshMapLatch.getCount() > 0) {
                     try {
                         U.await(marshMapLatch);
-                    } catch (IgniteInterruptedCheckedException e) {
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
                         U.error(log, "Marshaller is not initialized.", e);
 
                         onSessionClosed(ses);
@@ -336,13 +337,13 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         if (!(msg instanceof GridClientTaskRequest))
             return false;
 
-        GridClientTaskRequest taskRequest = (GridClientTaskRequest)msg;
+        GridClientTaskRequest taskReq = (GridClientTaskRequest)msg;
 
         try {
-            return U.hasAnnotation(U.forName(taskRequest.taskName(), null), InterruptibleVisorTask.class);
+            return U.hasAnnotation(U.forName(taskReq.taskName(), null), InterruptibleVisorTask.class);
         }
         catch (ClassNotFoundException e) {
-            log.warning("Task closure can't be found: [task=" + taskRequest.taskName() + ']', e);
+            log.warning("Task closure can't be found: [task=" + taskReq.taskName() + ']', e);
 
             return false;
         }

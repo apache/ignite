@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -73,6 +75,18 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
         typeName = meta.getParameterTypeName(order);
         typeClass = meta.getParameterClassName(order);
         mode = meta.getParameterMode(order);
+    }
+
+    /** */
+    public JdbcParameterMeta(GridQueryFieldMetadata meta) {
+        isNullable = meta.nullability();
+        signed = true;
+        precision = meta.precision();
+        scale = meta.scale();
+        type = JdbcThinUtils.type(meta.fieldTypeName());
+        typeName = JdbcThinUtils.typeName(meta.fieldTypeName());
+        typeClass = meta.fieldTypeName();
+        mode = ParameterMetaData.parameterModeIn;
     }
 
     /**
@@ -133,7 +147,7 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         writer.writeInt(isNullable);
@@ -148,7 +162,7 @@ public class JdbcParameterMeta implements JdbcRawBinarylizable {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         isNullable = reader.readInt();

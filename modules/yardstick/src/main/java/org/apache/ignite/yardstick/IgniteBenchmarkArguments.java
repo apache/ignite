@@ -148,10 +148,6 @@ public class IgniteBenchmarkArguments {
     private boolean collocated;
 
     /** */
-    @Parameter(names = {"-stripe", "--singleStripe"}, description = "Generate keys belonging to single stripe per node")
-    private boolean singleStripe;
-
-    /** */
     @Parameter(names = {"-jdbc", "--jdbcUrl"}, description = "JDBC url")
     private String jdbcUrl;
 
@@ -254,6 +250,10 @@ public class IgniteBenchmarkArguments {
     private int cachesCnt = 1;
 
     /** */
+    @Parameter(names = {"-opc", "--operationsPerCache"}, description = "Number of cache operations")
+    private int opsPerCache = 1;
+
+    /** */
     @Parameter(names = {"-pds", "--persistentStore"}, description = "Persistent store flag")
     private boolean persistentStoreEnabled;
 
@@ -288,18 +288,10 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     private int clientNodesAfterId = -1;
 
+    /** */
     @ParametersDelegate
     @GridToStringInclude
     public UploadBenchmarkArguments upload = new UploadBenchmarkArguments();
-
-    /** */
-    @Parameter(names = {"--mvcc-contention-range", "--mvccContentionRange"},
-        description = "Mvcc benchmark specific: " +
-            "Size of range of table keys that should be used in query. " +
-            "Should be less than 'range'. " +
-            "Useful together with 'sqlRange' to control, how often key contentions of sql operations occur.")
-    @GridToStringInclude
-    public long mvccContentionRange = 10_000;
 
     /** See {@link #selectCommand()}. */
     @Parameter(names = {"--select-command"})
@@ -467,6 +459,7 @@ public class IgniteBenchmarkArguments {
         return range;
     }
 
+    /** */
     public void setRange(int newVal) {
         range = newVal;
     }
@@ -553,13 +546,6 @@ public class IgniteBenchmarkArguments {
      */
     public boolean collocated() {
         return collocated;
-    }
-
-    /**
-     * @return Generate keys for single stripe per node.
-     */
-    public boolean singleStripe() {
-        return singleStripe;
     }
 
     /**
@@ -739,13 +725,6 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
-     * @return Mvcc contention range.
-     */
-    public long mvccContentionRange() {
-        return mvccContentionRange;
-    }
-
-    /**
      * @return What type of SQL SELECT queries to execute. It affects what type of field will present in the WHERE
      * clause: PK, indexed value field, etc.
      * @see SelectCommand
@@ -814,6 +793,13 @@ public class IgniteBenchmarkArguments {
      */
     public Map<String, String> systemProperties() {
         return sysProps;
+    }
+
+    /**
+     * @return Operations per cache.
+     */
+    public int opsPerCache() {
+        return opsPerCache;
     }
 
     /** {@inheritDoc} */

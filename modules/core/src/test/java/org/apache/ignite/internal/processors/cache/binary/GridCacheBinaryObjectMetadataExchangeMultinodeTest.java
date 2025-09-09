@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -76,8 +75,6 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
 
         if (applyDiscoveryHook && discoveryHook != null)
             ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).discoveryHook(discoveryHook);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -185,7 +182,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             @Override public Object call() throws Exception {
                 barrier.await(MAX_AWAIT, TimeUnit.MILLISECONDS);
 
-                return ((BinaryObject) ignite2.cache(DEFAULT_CACHE_NAME).withKeepBinary().get(1)).field("f1");
+                return ((BinaryObject)ignite2.cache(DEFAULT_CACHE_NAME).withKeepBinary().get(1)).field("f1");
             }
         });
 
@@ -211,7 +208,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             }
         }).get();
 
-        int fld = ((BinaryObject) ignite0.cache(DEFAULT_CACHE_NAME).withKeepBinary().get(1)).field(intFieldName);
+        int fld = ((BinaryObject)ignite0.cache(DEFAULT_CACHE_NAME).withKeepBinary().get(1)).field(intFieldName);
 
         assertEquals(fld, 101);
 
@@ -308,11 +305,11 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         discoveryHook = new DiscoveryHook() {
             @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof MetadataUpdateProposedMessage) {
-                    if (((MetadataUpdateProposedMessage) customMsg).typeId() == BINARY_TYPE_ID)
+                    if (((MetadataUpdateProposedMessage)customMsg).typeId() == BINARY_TYPE_ID)
                         GridTestUtils.setFieldValue(customMsg, "typeId", 1);
                 }
                 else if (customMsg instanceof MetadataUpdateAcceptedMessage) {
-                    if (((MetadataUpdateAcceptedMessage) customMsg).typeId() == BINARY_TYPE_ID)
+                    if (((MetadataUpdateAcceptedMessage)customMsg).typeId() == BINARY_TYPE_ID)
                         GridTestUtils.setFieldValue(customMsg, "typeId", 1);
                 }
             }

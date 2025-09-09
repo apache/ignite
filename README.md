@@ -1,6 +1,6 @@
 # Apache Ignite
 
-<a href="https://ignite.apache.org/"><img src="https://github.com/apache/ignite-website/blob/master/images/ignite_logo_full.svg" hspace="20"/></a>
+<a href="https://ignite.apache.org/"><img src="https://github.com/apache/ignite-website/blob/master/assets/images/apache_ignite_logo.svg" hspace="20"/></a>
 
 [![Build Status](https://travis-ci.org/apache/ignite.svg?branch=master)](https://travis-ci.org/apache/ignite)
 [![GitHub](https://img.shields.io/github/license/apache/ignite?color=blue)](https://www.apache.org/licenses/LICENSE-2.0.html)
@@ -9,13 +9,19 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/apache/ignite)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ApacheIgnite?style=social)](https://twitter.com/ApacheIgnite)
 
+## Ignite 2.x and 3.x
+
+* This repository is Ignite 2
+* See [apache/ignite-3](https://github.com/apache/ignite-3) for Ignite 3
+* Both versions are actively developed
+
 ## What is Apache Ignite?
 
 Apache Ignite is a distributed database for high-performance computing with in-memory speed.
 
 <p align="center">
     <a href="https://ignite.apache.org">
-        <img src="https://github.com/apache/ignite-website/blob/master/images/png-diagrams/ignite_cluster.png" width="400px"/>
+        <img src="https://github.com/apache/ignite-website/blob/master/docs/2.9.0/images/ignite_clustering.png" width="400px"/>
     </a>
 </p>
 
@@ -23,7 +29,6 @@ Apache Ignite is a distributed database for high-performance computing with in-m
 * [JavaDoc](https://ignite.apache.org/releases/latest/javadoc/)
 * [C#/.NET APIs](https://ignite.apache.org/releases/latest/dotnetdoc/api/)
 * [C++ APIs](https://ignite.apache.org/releases/latest/cppdoc/)
-* [Scala APIs](https://ignite.apache.org/releases/latest/scaladoc/scalar/index.html)
 
 ## Multi-Tier Storage
 
@@ -47,8 +52,6 @@ Apache Ignite comes with a ANSI-99 compliant, horizontally scalable, and fault-t
 
 [Read More](https://ignite.apache.org/features/sql.html)
 
-## Machine Learning and High-Performance Computing
-[Apache Ignite Machine Learning](https://ignite.apache.org/features/machinelearning.html) is a set of simple, scalable, and efficient tools that allow building predictive machine learning models without costly data transfers. The rationale for adding machine and deep learning to Apache Ignite is quite simple. Today's data scientists have to deal with two major factors that keep ML from mainstream adoption.
-
+## High-Performance Computing
 High-performance computing (HPC) is the ability to process data and perform complex calculations at high speeds. Using Apache Ignite as a [high-performance compute cluster](https://ignite.apache.org/use-cases/hpc.html), you can turn a group of commodity machines or a cloud environment into a distributed supercomputer of interconnected Ignite nodes. Ignite enables speed and scale by processing records in memory and reducing network utilization with APIs for data and compute-intensive calculations. Those APIs implement the MapReduce paradigm and allow you to run arbitrary tasks across the cluster of nodes.
 

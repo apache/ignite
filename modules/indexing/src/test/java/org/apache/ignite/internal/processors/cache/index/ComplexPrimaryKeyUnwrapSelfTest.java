@@ -161,6 +161,49 @@ public class ComplexPrimaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest 
     }
 
     /**
+     * Test single column PK without wrapping calculate correct inline size.
+     */
+    @Test
+    public void testInlineSizeNoWrap() {
+        executeSql("DROP TABLE IF EXISTS TABLE1");
+        executeSql("CREATE TABLE IF NOT EXISTS TABLE1 ( " +
+            "  id varchar(15), " +
+            "  col varchar(100), " +
+            "  PRIMARY KEY(id) ) ");
+        assertEquals(18, executeSql(
+            "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'TABLE1' and IS_PK = true").get(0).get(0));
+    }
+
+    /**
+     * Test single column PK with wrapping calculate correct inline size.
+     */
+    @Test
+    public void testInlineSizeWrap() {
+        executeSql("DROP TABLE IF EXISTS TABLE1");
+        executeSql("CREATE TABLE IF NOT EXISTS TABLE1 ( " +
+            "  id varchar(15), " +
+            "  col varchar(100), " +
+            "  PRIMARY KEY(id) )  WITH \"wrap_key=true\"");
+        assertEquals(18, executeSql(
+            "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'TABLE1' and IS_PK = true").get(0).get(0));
+    }
+
+    /**
+     * Test two column PK with wrapping calculate correct inline size.
+     */
+    @Test
+    public void testInlineSizeWrap2() {
+        executeSql("DROP TABLE IF EXISTS TABLE1");
+        executeSql("CREATE TABLE IF NOT EXISTS TABLE1 ( " +
+            "  id varchar(15), " +
+            "  id2 uuid, " +
+            "  col varchar(100), " +
+            "  PRIMARY KEY(id, id2) )  WITH \"wrap_key=true\"");
+        assertEquals(35, executeSql(
+            "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'TABLE1' and IS_PK = true").get(0).get(0));
+    }
+
+    /**
      * Check using PK indexes for few cases.
      *
      * @param tblName Name of table which should be checked to using PK indexes.

@@ -46,15 +46,15 @@ public class SqlJdbcExample {
             // Create database objects.
             try (Statement stmt = conn.createStatement()) {
                 // Create reference City table based on REPLICATED template.
-                stmt.executeUpdate("CREATE TABLE city (id LONG PRIMARY KEY, name VARCHAR) " +
+                stmt.executeUpdate("CREATE TABLE city (id BIGINT PRIMARY KEY, name VARCHAR) " +
                     "WITH \"template=replicated\"");
 
                 // Create table based on PARTITIONED template with one backup.
-                stmt.executeUpdate("CREATE TABLE person (id LONG, name VARCHAR, city_id LONG, " +
+                stmt.executeUpdate("CREATE TABLE person (id BIGINT, name VARCHAR, city_id BIGINT, " +
                     "PRIMARY KEY (id, city_id)) WITH \"backups=1, affinity_key=city_id\"");
 
                 // Create an index.
-                stmt.executeUpdate("CREATE INDEX on Person (city_id)");
+                stmt.executeUpdate("CREATE INDEX person_idx ON Person (city_id)");
             }
 
             print("Created database objects.");

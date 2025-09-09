@@ -35,7 +35,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -61,7 +60,6 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(new BinaryMarshaller());
         cfg.setIncludeEventTypes(EventType.EVTS_CACHE);
 
         if (getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName)) {
@@ -86,7 +84,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
-        List<QueryEntity> queryEntities = new ArrayList<>();
+        List<QueryEntity> qryEntities = new ArrayList<>();
 
         QueryEntity entity = new QueryEntity();
 
@@ -112,9 +110,9 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
         entity.setIndexes(indexes);
 
-        queryEntities.add(entity);
+        qryEntities.add(entity);
 
-        ccfg.setQueryEntities(queryEntities);
+        ccfg.setQueryEntities(qryEntities);
         return ccfg;
     }
 

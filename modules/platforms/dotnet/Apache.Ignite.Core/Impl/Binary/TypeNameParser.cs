@@ -56,11 +56,31 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="TypeNameParser" /> class.
+        /// </summary>
+        private TypeNameParser(string typeName)
+        {
+            _typeName = typeName;
+            NameStart = 0;
+            NameEnd = typeName.Length - 1;
+
+            AssemblyStart = -1;
+            AssemblyEnd = -1;
+            ArrayStart = -1;
+        }
+
+        /// <summary>
         /// Parses the specified type name.
         /// </summary>
         public static TypeNameParser Parse(string typeName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
+
+            if (typeName.Contains("\\"))
+            {
+                // Do not parse compiler-generated special names, return as is.
+                return new TypeNameParser(typeName);
+            }
 
             int pos = 0;
 

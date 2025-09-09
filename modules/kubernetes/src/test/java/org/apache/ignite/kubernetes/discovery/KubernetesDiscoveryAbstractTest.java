@@ -131,8 +131,7 @@ public abstract class KubernetesDiscoveryAbstractTest extends GridCommonAbstract
 
     /** */
     protected final KubernetesConnectionConfiguration prepareConfiguration()
-            throws IOException
-    {
+            throws IOException {
         File account = File.createTempFile("kubernetes-test-account", "");
         FileWriter fw = new FileWriter(account);
         fw.write("account-token");

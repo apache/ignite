@@ -412,21 +412,25 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /** */
     @Test
     public void testPartitionedTablesUsingReplicatedCache() {
         doTestPartitionedTablesUsingReplicatedCache(1, false);
     }
 
+    /** */
     @Test
     public void testPartitionedTablesUsingReplicatedCacheSegmented() {
         doTestPartitionedTablesUsingReplicatedCache(7, false);
     }
 
+    /** */
     @Test
     public void testPartitionedTablesUsingReplicatedCacheClient() {
         doTestPartitionedTablesUsingReplicatedCache(1, true);
     }
 
+    /** */
     @Test
     public void testPartitionedTablesUsingReplicatedCacheSegmentedClient() {
         doTestPartitionedTablesUsingReplicatedCache(7, true);
@@ -519,6 +523,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /** */
     @SuppressWarnings("SuspiciousMethodCalls")
     @Test
     public void testExists() {
@@ -1792,7 +1797,6 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /**
      *
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1886")
     @Test
     public void testFunctionNpe() {
         IgniteCache<Integer, User> userCache = ignite(0).createCache(
@@ -2019,10 +2023,10 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             ignite(0).getOrCreateCache(cacheConfig(cacheName, true, Integer.class, AvgDataTypes.class));
 
         // avg 13.125; int avg 13
-        double value[] = new double[] {1, 5, 7, 8, 10.5, 13.5, 20, 40};
+        double val[] = new double[] {1, 5, 7, 8, 10.5, 13.5, 20, 40};
 
-        for (int i = 0; i < value.length; i++) {
-            Number v = value[i];
+        for (int i = 0; i < val.length; i++) {
+            Number v = val[i];
 
             cache.put(i, new AvgDataTypes(
                 v.byteValue(),

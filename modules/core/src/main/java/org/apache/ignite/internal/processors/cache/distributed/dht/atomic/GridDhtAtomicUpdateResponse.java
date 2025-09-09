@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
@@ -39,9 +38,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT atomic cache backup update response.
  */
 public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -60,7 +56,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     private int partId;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtAtomicUpdateResponse() {
         // No-op.
@@ -172,7 +168,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -180,25 +176,25 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeMessage("errs", errs))
+                if (!writer.writeMessage(errs))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong(futId))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("nearEvicted", nearEvicted, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(nearEvicted, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeInt("partId", partId))
+                if (!writer.writeInt(partId))
                     return false;
 
                 writer.incrementState();
@@ -212,15 +208,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                errs = reader.readMessage("errs");
+                errs = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -228,7 +221,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
                 reader.incrementState();
 
             case 5:
-                futId = reader.readLong("futId");
+                futId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -236,7 +229,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
                 reader.incrementState();
 
             case 6:
-                nearEvicted = reader.readCollection("nearEvicted", MessageCollectionItemType.MSG);
+                nearEvicted = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -244,7 +237,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
                 reader.incrementState();
 
             case 7:
-                partId = reader.readInt("partId");
+                partId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -253,17 +246,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
 
         }
 
-        return reader.afterMessageRead(GridDhtAtomicUpdateResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 39;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 8;
     }
 
     /** {@inheritDoc} */

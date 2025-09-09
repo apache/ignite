@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAtomicOnheapFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAtomicOnheapMultiNodeFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedCopyOnReadDisabledMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFilteredPutSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFullApiMultithreadedSelfTest;
@@ -65,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePar
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeP2PDisabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeWithGroupFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNearOnlyNoPrimaryFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedOnheapFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedOnheapMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.CacheReplicatedRendezvousAffinityExcludeNeighborsMultiNodeFullApiSelfTest;
@@ -77,11 +75,6 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeP2PDisabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNearOnlyMultiNodeFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicWithGroupFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiMultithreadedSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalWithGroupFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.extended.GridActivateExtensionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -91,8 +84,6 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    GridCacheLocalFullApiSelfTest.class,
-    GridCacheLocalAtomicFullApiSelfTest.class,
     GridCacheReplicatedFullApiSelfTest.class,
     GridCachePartitionedFullApiSelfTest.class,
     GridCacheAtomicFullApiSelfTest.class,
@@ -106,10 +97,6 @@ import org.junit.runners.Suite;
     GridCachePartitionedAtomicOnheapFullApiSelfTest.class,
     GridCachePartitionedNearDisabledOnheapFullApiSelfTest.class,
     GridCachePartitionedNearDisabledAtomicOnheapFullApiSelfTest.class,
-
-    // No primary.
-    GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest.class,
-    GridCachePartitionedNearOnlyNoPrimaryFullApiSelfTest.class,
 
     // Multi-node.
     GridCacheReplicatedMultiNodeFullApiSelfTest.class,
@@ -156,15 +143,12 @@ import org.junit.runners.Suite;
     GridCacheAtomicOnheapMultiNodeFullApiSelfTest.class,
 
     // Multithreaded.
-    GridCacheLocalFullApiMultithreadedSelfTest.class,
     GridCacheReplicatedFullApiMultithreadedSelfTest.class,
     GridCachePartitionedFullApiMultithreadedSelfTest.class,
 
     // Other.
     GridCacheClearSelfTest.class,
 
-    GridCacheLocalWithGroupFullApiSelfTest.class,
-    GridCacheLocalAtomicWithGroupFullApiSelfTest.class,
     GridCacheAtomicMultiNodeWithGroupFullApiSelfTest.class,
     GridCacheAtomicNearEnabledMultiNodeWithGroupFullApiSelfTest.class,
     GridCachePartitionedMultiNodeWithGroupFullApiSelfTest.class,

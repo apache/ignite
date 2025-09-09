@@ -118,7 +118,7 @@ public class MovingPartitionIsEvictedDuringClearingTest extends GridCommonAbstra
         IgniteEx g2 = startGrid(2, new DependencyResolver() {
             @Override public <T> T resolve(T instance) {
                 if (instance instanceof GridDhtPartitionTopologyImpl) {
-                    GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl) instance;
+                    GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)instance;
 
                     top.partitionFactory(new GridDhtPartitionTopologyImpl.PartitionFactory() {
                         @Override public GridDhtLocalPartition create(
@@ -170,7 +170,7 @@ public class MovingPartitionIsEvictedDuringClearingTest extends GridCommonAbstra
     /**
      * @param size Size.
      */
-    private void validadate(int size) {
+    private void validadate(int size) throws Exception {
         assertPartitionsSame(idleVerify(grid(0), DEFAULT_CACHE_NAME));
 
         for (Ignite grid : G.allGrids())

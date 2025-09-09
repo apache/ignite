@@ -18,14 +18,31 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -36,6 +53,13 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * Test correct clean up cache configuration data after destroying cache.
  */
 public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest {
+    /** */
+    @Override public IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        return super.getConfiguration(instanceName)
+            .setFailureHandler(new StopNodeFailureHandler())
+            .setCommunicationSpi(new TestRecordingCommunicationSpi());
+    }
+    
     /**
      *  Test destroy non grouped caches.
      *
@@ -45,7 +69,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
     public void testDestroyCaches() throws Exception {
         Ignite ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         startCachesDynamically(ignite);
 
@@ -61,7 +85,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
     public void testDestroyGroupCaches() throws Exception {
         Ignite ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         startGroupCachesDynamically(ignite);
 
@@ -78,7 +102,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
     public void testDestroyCachesAbruptly() throws Exception {
         Ignite ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         startCachesDynamically(ignite);
 
@@ -95,7 +119,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
     public void testDestroyGroupCachesAbruptly() throws Exception {
         Ignite ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         startGroupCachesDynamically(ignite);
 
@@ -107,28 +131,20 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
      */
     @Test
     public void testDestroyCacheOperationNotBlockingCheckpointTest() throws Exception {
-        doTestDestroyCacheOperationNotBlockingCheckpointTest(false);
-    }
-
-    /**
-     * Tests if a checkpoint is not blocked forever by concurrent cache destroying (local).
-     */
-    @Test
-    public void testDestroyCacheOperationNotBlockingCheckpointTest_LocalCache() throws Exception {
-        doTestDestroyCacheOperationNotBlockingCheckpointTest(true);
+        doTestDestroyCacheOperationNotBlockingCheckpointTest();
     }
 
     /**
      *
      */
-    private void doTestDestroyCacheOperationNotBlockingCheckpointTest(boolean loc) throws Exception {
+    private void doTestDestroyCacheOperationNotBlockingCheckpointTest() throws Exception {
         final IgniteEx ignite = startGrids(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
-        startGroupCachesDynamically(ignite, loc);
+        startGroupCachesDynamically(ignite);
 
-        loadCaches(ignite, !loc);
+        loadCaches(ignite, true);
 
         // It's important to clear cache in group having > 1 caches.
         final String cacheName = cacheName(0);
@@ -184,11 +200,68 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
             return null;
         });
 
-        if (loc)
-            ignite.cache(cacheName).close();
-        else
-            ignite.destroyCache(cacheName);
+        ignite.destroyCache(cacheName);
 
         fut.get();
+    }
+
+    /**
+     * Tests correctness of concurrent cache destroy and implicit tx`s.
+     */
+    @Test
+    public void cacheDestroyWithConcImplicitTx() throws Exception {
+        final IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
+
+        crd.cluster().state(ClusterState.ACTIVE);
+
+        crd.createCache(new CacheConfiguration(DEFAULT_CACHE_NAME)
+            .setBackups(1).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).setGroupName("test"));
+
+        // Cache group with multiple caches are important here, in this case cache removals are not so rapid.
+        crd.createCache(new CacheConfiguration(DEFAULT_CACHE_NAME + "_1")
+            .setBackups(1).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).setGroupName("test"));
+
+        Set<Integer> pkeys = new TreeSet<>();
+        try (final IgniteDataStreamer<Object, Object> streamer = crd.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < 100; i++) {
+                streamer.addData(i, i);
+
+                if (crd.affinity(DEFAULT_CACHE_NAME).isPrimary(crd.localNode(), i))
+                    pkeys.add(i);
+            }
+        }
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(crd);
+
+        spi.blockMessages(GridDhtTxPrepareRequest.class, getTestIgniteInstanceName(1));
+
+        List<IgniteFuture<Boolean>> asyncRmFut = new ArrayList<>(100);
+
+        for (Integer pkey : pkeys)
+            asyncRmFut.add(crd.cache(DEFAULT_CACHE_NAME).removeAsync(pkey));
+
+        spi.blockMessages(GridDhtPartitionsFullMessage.class, getTestIgniteInstanceName(1));
+
+        IgniteInternalFuture destr = GridTestUtils.runAsync(() -> grid(1).destroyCache(DEFAULT_CACHE_NAME));
+
+        spi.waitForBlocked();
+
+        spi.stopBlock(true, (msg) -> msg.ioMessage().message() instanceof GridDhtPartitionsFullMessage);
+
+        spi.stopBlock();
+
+        destr.get();
+
+        // A little bit untipattern approach here, just because of async remapping, check
+        // GridNearOptimisticTxPrepareFutureAdapter.prepareOnTopology.
+        // With redefined Failure handler we still need the same approach: wait some time and checks that it not raises.
+        assertFalse(GridTestUtils.waitForCondition(() -> G.allGrids().size() < 3, 5_000));
+
+        try {
+            asyncRmFut.forEach(f -> f.get(getTestTimeout() / 2));
+        }
+        catch (CacheException ignore) {
+            // No op.
+        }
     }
 }

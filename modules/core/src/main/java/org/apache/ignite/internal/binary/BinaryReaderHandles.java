@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Reader handles.
  */
-public class BinaryReaderHandles {
+class BinaryReaderHandles {
     /** Mode: empty. */
     private static final int MODE_EMPTY = 0;
 
@@ -55,7 +55,7 @@ public class BinaryReaderHandles {
                 return null;
 
             case MODE_SINGLE:
-                 return pos == singlePos ? (T)data : null;
+                return pos == singlePos ? (T)data : null;
 
             default:
                 assert mode == MODE_MULTIPLE;
@@ -102,5 +102,10 @@ public class BinaryReaderHandles {
 
                 data0.put(pos, obj);
         }
+    }
+
+    /** */
+    public boolean isEmpty() {
+        return mode == MODE_EMPTY;
     }
 }

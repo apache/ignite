@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -27,8 +26,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
-
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 
 /**
  *
@@ -47,6 +44,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
     /** {@inheritDoc} */
     @Override public final void storeByOffset(long pageAddr, int off, CacheSearchRow row) {
         assert row.link() != 0;
+        assertPageType(pageAddr);
 
         PageUtils.putLong(pageAddr, off, row.link());
         off += 8;
@@ -58,23 +56,6 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
             assert row.cacheId() != CU.UNDEFINED_CACHE_ID : row;
 
             PageUtils.putInt(pageAddr, off, row.cacheId());
-            off += 4;
-        }
-
-        if (storeMvccVersion()) {
-            long mvccCrd = row.mvccCoordinatorVersion();
-            long mvccCntr = row.mvccCounter();
-            int opCntr = row.mvccOperationCounter();
-
-            assert mvccVersionIsValid(mvccCrd, mvccCntr, opCntr);
-
-            PageUtils.putLong(pageAddr, off, mvccCrd);
-            off += 8;
-
-            PageUtils.putLong(pageAddr, off, mvccCntr);
-            off += 8;
-
-            PageUtils.putInt(pageAddr, off, opCntr);
         }
     }
 
@@ -86,22 +67,6 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
 
         int cacheId = storeCacheId() ? getCacheId(pageAddr, idx) : CU.UNDEFINED_CACHE_ID;
 
-        if (storeMvccVersion()) {
-            long mvccCrd = getMvccCoordinatorVersion(pageAddr, idx);
-            long mvccCntr = getMvccCounter(pageAddr, idx);
-            int opCntr = getMvccOperationCounter(pageAddr, idx);
-
-            assert mvccVersionIsValid(mvccCrd, mvccCntr, opCntr);
-
-            return ((CacheDataTree)tree).rowStore().mvccRow(cacheId,
-                hash,
-                link,
-                CacheDataRowAdapter.RowData.KEY_ONLY,
-                mvccCrd,
-                mvccCntr,
-                opCntr);
-        }
-
         return ((CacheDataTree)tree).rowStore().keySearchRow(cacheId, hash, link);
     }
 
@@ -110,8 +75,10 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         int dstIdx,
         BPlusIO<CacheSearchRow> srcIo,
         long srcPageAddr,
-        int srcIdx)
-    {
+        int srcIdx
+    ) {
+        assertPageType(dstPageAddr);
+
         RowLinkIO rowIo = ((RowLinkIO)srcIo);
 
         long link = rowIo.getLink(srcPageAddr, srcIdx);
@@ -131,23 +98,6 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
             assert cacheId != CU.UNDEFINED_CACHE_ID;
 
             PageUtils.putInt(dstPageAddr, off, cacheId);
-            off += 4;
-        }
-
-        if (storeMvccVersion()) {
-            long mvccCrd = rowIo.getMvccCoordinatorVersion(srcPageAddr, srcIdx);
-            long mvccCntr = rowIo.getMvccCounter(srcPageAddr, srcIdx);
-            int opCntr = rowIo.getMvccOperationCounter(srcPageAddr, srcIdx);
-
-            assert MvccUtils.mvccVersionIsValid(mvccCrd, mvccCntr, opCntr);
-
-            PageUtils.putLong(dstPageAddr, off, mvccCrd);
-            off += 8;
-
-            PageUtils.putLong(dstPageAddr, off, mvccCntr);
-            off += 8;
-
-            PageUtils.putInt(dstPageAddr, off, opCntr);
         }
     }
 
@@ -165,6 +115,8 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
 
     /** {@inheritDoc} */
     @Override public void visit(long pageAddr, IgniteInClosure<CacheSearchRow> c) {
+        assertPageType(pageAddr);
+
         int cnt = getCount(pageAddr);
 
         for (int i = 0; i < cnt; i++)
@@ -175,13 +127,6 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
      * @return {@code True} if cache ID has to be stored.
      */
     protected boolean storeCacheId() {
-        return false;
-    }
-
-    /**
-     * @return {@code True} if mvcc version has to be stored.
-     */
-    protected boolean storeMvccVersion() {
         return false;
     }
 }

@@ -145,12 +145,12 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
     @Test
     public void testProcessedPartitionComparator() {
         List<T3<Long, Long, GroupPartitionId>> exp = F.asList(
-            new T3<>(0L, 0L, new GroupPartitionId(0, 0)),
+            new T3<>(0L, 2L, new GroupPartitionId(0, 0)),
             new T3<>(0L, 1L, new GroupPartitionId(0, 0)),
             new T3<>(1L, 1L, new GroupPartitionId(0, 0)),
-            new T3<>(1L, 2L, new GroupPartitionId(0, 0)),
-            new T3<>(1L, 2L, new GroupPartitionId(1, 0)),
-            new T3<>(1L, 2L, new GroupPartitionId(1, 1))
+            new T3<>(1L, 0L, new GroupPartitionId(0, 0)),
+            new T3<>(1L, 0L, new GroupPartitionId(1, 0)),
+            new T3<>(1L, 0L, new GroupPartitionId(1, 1))
         );
 
         TreeSet<T3<Long, Long, GroupPartitionId>> act = new TreeSet<>(processedPartitionComparator());
@@ -205,7 +205,7 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
 
         TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS = 150L;
 
-        setRootLoggerDebugLevel();
+        setLoggerDebugLevel();
 
         startGrid(0, (UnaryOperator<IgniteConfiguration>)cfg -> {
             cfg.setGridLogger(new ListeningTestLogger(log, startPartRestore, progressPartRestore, finishPartRestore));

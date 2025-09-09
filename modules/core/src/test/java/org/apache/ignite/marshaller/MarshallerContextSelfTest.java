@@ -20,7 +20,6 @@ package org.apache.ignite.marshaller;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +27,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static java.nio.file.Files.readAllBytes;
@@ -77,9 +78,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClassName() throws Exception {
-        MarshallerContextImpl marshCtx = new MarshallerContextImpl(null, null);
-
-        marshCtx.onMarshallerProcessorStarted(ctx, null);
+        MarshallerContextImpl marshCtx = marshallerContext();
 
         MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
@@ -103,13 +102,11 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultiplatformMappingsCollecting() throws Exception {
-        String nonJavaClassName = "random.platform.Mapping";
+        String nonJavaClsName = "random.platform.Mapping";
 
-        MarshallerContextImpl marshCtx = new MarshallerContextImpl(null, null);
+        MarshallerContextImpl marshCtx = marshallerContext();
 
-        marshCtx.onMarshallerProcessorStarted(ctx, null);
-
-        MarshallerMappingItem item = new MarshallerMappingItem((byte) 2, 101, nonJavaClassName);
+        MarshallerMappingItem item = new MarshallerMappingItem((byte)2, 101, nonJavaClsName);
 
         marshCtx.onMappingProposed(item);
 
@@ -129,7 +126,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(nonJavaMappings.get(101));
 
-        assertEquals(nonJavaClassName, nonJavaMappings.get(101).className());
+        assertEquals(nonJavaClsName, nonJavaMappings.get(101).className());
     }
 
     /**
@@ -140,13 +137,13 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultiplatformMappingsDistributing() throws Exception {
-        String nonJavaClassName = "random.platform.Mapping";
+        String nonJavaClsName = "random.platform.Mapping";
 
         Ignite grid0 = startGrid(0);
 
         MarshallerContextImpl marshCtx0 = ((IgniteKernal)grid0).context().marshallerContext();
 
-        MarshallerMappingItem item = new MarshallerMappingItem((byte) 2, 101, nonJavaClassName);
+        MarshallerMappingItem item = new MarshallerMappingItem((byte)2, 101, nonJavaClsName);
 
         marshCtx0.onMappingProposed(item);
 
@@ -156,7 +153,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         MarshallerContextImpl marshCtx1 = ((IgniteKernal)grid1).context().marshallerContext();
 
-        assertEquals(nonJavaClassName, marshCtx1.getClassName((byte) 2, 101));
+        assertEquals(nonJavaClsName, marshCtx1.getClassName((byte)2, 101));
     }
 
     /**
@@ -164,10 +161,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOnUpdated() throws Exception {
-        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false);
-        MarshallerContextImpl ctx = new MarshallerContextImpl(null, null);
-
-        ctx.onMarshallerProcessorStarted(this.ctx, null);
+        MarshallerContextImpl ctx = marshallerContext();
 
         MarshallerMappingItem item1 = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
@@ -176,9 +170,11 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         // Wait until marshaller context write class to file.
         U.sleep(2_000);
 
-        checkFileName("java.lang.String", Paths.get(workDir + "/1.classname0"));
+        SharedFileTree sft = sharedFileTree();
 
-        MarshallerMappingItem item2 = new MarshallerMappingItem((byte) 2, 2, "Random.Class.Name");
+        checkFileName("java.lang.String", new File(sft.marshaller(), "1.classname0").toPath());
+
+        MarshallerMappingItem item2 = new MarshallerMappingItem((byte)2, 2, "Random.Class.Name");
 
         ctx.onMappingProposed(item2);
         ctx.onMappingAccepted(item2);
@@ -186,7 +182,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         execSvc.shutdown();
 
         if (execSvc.awaitTermination(1000, TimeUnit.MILLISECONDS))
-            checkFileName("Random.Class.Name", Paths.get(workDir + "/2.classname2"));
+            checkFileName("Random.Class.Name", new File(sft.marshaller(), "2.classname2").toPath());
         else
             fail("Failed to wait for executor service to shutdown");
     }
@@ -197,15 +193,13 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheStructure0() throws Exception {
-        MarshallerContextImpl ctx = new MarshallerContextImpl(null, null);
-
-        ctx.onMarshallerProcessorStarted(this.ctx, null);
+        MarshallerContextImpl ctx = marshallerContext();
 
         MarshallerMappingItem item1 = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
         ctx.onMappingAccepted(item1);
 
-        MarshallerMappingItem item2 = new MarshallerMappingItem((byte) 2, 2, "Random.Class.Name");
+        MarshallerMappingItem item2 = new MarshallerMappingItem((byte)2, 2, "Random.Class.Name");
 
         ctx.onMappingProposed(item2);
 
@@ -231,15 +225,13 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheStructure1() throws Exception {
-        MarshallerContextImpl ctx = new MarshallerContextImpl(null, null);
-
-        ctx.onMarshallerProcessorStarted(this.ctx, null);
+        MarshallerContextImpl ctx = marshallerContext();
 
         MarshallerMappingItem item1 = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
         ctx.onMappingAccepted(item1);
 
-        MarshallerMappingItem item2 = new MarshallerMappingItem((byte) 1, 2, "Random.Class.Name");
+        MarshallerMappingItem item2 = new MarshallerMappingItem((byte)1, 2, "Random.Class.Name");
 
         ctx.onMappingProposed(item2);
 
@@ -270,5 +262,15 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         assert fileContent != null && fileContent.length > 0;
 
         assertEquals(expected, new String(fileContent));
+    }
+
+    /** */
+    private @NotNull MarshallerContextImpl marshallerContext() throws IgniteCheckedException {
+        MarshallerContextImpl mctx = new MarshallerContextImpl(null, null);
+
+        mctx.setMarshallerMappingFileStoreDir(sharedFileTree().marshaller());
+        mctx.onMarshallerProcessorStarted(ctx, null);
+
+        return mctx;
     }
 }

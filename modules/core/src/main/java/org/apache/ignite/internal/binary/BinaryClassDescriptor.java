@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -45,20 +46,21 @@ import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
+import static org.apache.ignite.internal.util.CommonUtils.isLambda;
 
 /**
  * Binary class descriptor.
  */
-public class BinaryClassDescriptor {
+class BinaryClassDescriptor {
     /** */
     @GridToStringExclude
     private final BinaryContext ctx;
@@ -231,8 +233,8 @@ public class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) && !QueryUtils.isGeometryClass(cls)) {
-            U.warnDevOnly(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
+        if (useOptMarshaller && userType && !CommonUtils.isIgnite(cls) && !CommonUtils.isJdk(cls) && !QueryUtils.isGeometryClass(cls)) {
+            CommonUtils.warnDevOnly(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
                 "used instead and class instances will be deserialized on the server. Please ensure that all nodes " +
@@ -318,61 +320,72 @@ public class BinaryClassDescriptor {
                 // Must not use constructor to honor transient fields semantics.
                 ctor = null;
 
-                Map<Object, BinaryFieldAccessor> fields0;
+                if (isLambda(cls)) {
+                    if (!Serializable.class.isAssignableFrom(cls))
+                        throw new BinaryObjectException("Lambda is not serializable: " + cls);
 
-                if (BinaryUtils.FIELDS_SORTED_ORDER) {
-                    fields0 = new TreeMap<>();
-
-                    stableFieldsMeta = metaDataEnabled ? new TreeMap<String, BinaryFieldMetadata>() : null;
+                    // We don't need fields for serializable lambdas, because we resort to SerializedLambda.
+                    fields = null;
+                    stableFieldsMeta = null;
+                    stableSchema = null;
                 }
                 else {
-                    fields0 = new LinkedHashMap<>();
+                    Map<Object, BinaryFieldAccessor> fields0;
 
-                    stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, BinaryFieldMetadata>() : null;
-                }
+                    if (BinaryUtils.FIELDS_SORTED_ORDER) {
+                        fields0 = new TreeMap<>();
 
-                Set<String> duplicates = duplicateFields(cls);
+                        stableFieldsMeta = metaDataEnabled ? new TreeMap<>() : null;
+                    }
+                    else {
+                        fields0 = new LinkedHashMap<>();
 
-                Collection<String> names = new HashSet<>();
-                Collection<Integer> ids = new HashSet<>();
+                        stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<>() : null;
+                    }
 
-                for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-                    for (Field f : c.getDeclaredFields()) {
-                        if (serializeField(f)) {
-                            f.setAccessible(true);
+                    Set<String> duplicates = duplicateFields(cls);
 
-                            String name = f.getName();
+                    Collection<String> names = new HashSet<>();
+                    Collection<Integer> ids = new HashSet<>();
 
-                            if (duplicates.contains(name))
-                                name = BinaryUtils.qualifiedFieldName(c, name);
+                    for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+                        for (Field f : c.getDeclaredFields()) {
+                            if (serializeField(f)) {
+                                f.setAccessible(true);
 
-                            boolean added = names.add(name);
+                                String name = f.getName();
 
-                            assert added : name;
+                                if (duplicates.contains(name))
+                                    name = BinaryUtils.qualifiedFieldName(c, name);
 
-                            int fieldId = this.mapper.fieldId(typeId, name);
+                                boolean added = names.add(name);
 
-                            if (!ids.add(fieldId))
-                                throw new BinaryObjectException("Duplicate field ID: " + name);
+                                assert added : name;
 
-                            BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
+                                int fieldId = this.mapper.fieldId(typeId, name);
 
-                            fields0.put(name, fieldInfo);
+                                if (!ids.add(fieldId))
+                                    throw new BinaryObjectException("Duplicate field ID: " + name);
 
-                            if (metaDataEnabled)
-                                stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo));
+                                BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
+
+                                fields0.put(name, fieldInfo);
+
+                                if (metaDataEnabled)
+                                    stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo));
+                            }
                         }
                     }
+
+                    fields = fields0.values().toArray(new BinaryFieldAccessor[fields0.size()]);
+
+                    BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
+
+                    for (BinaryFieldAccessor field : fields)
+                        schemaBuilder.addField(field.id);
+
+                    stableSchema = schemaBuilder.build();
                 }
-
-                fields = fields0.values().toArray(new BinaryFieldAccessor[fields0.size()]);
-
-                BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
-
-                for (BinaryFieldAccessor field : fields)
-                    schemaBuilder.addField(field.id);
-
-                stableSchema = schemaBuilder.build();
 
                 intfs = null;
 
@@ -388,9 +401,9 @@ public class BinaryClassDescriptor {
         Method writeReplaceMthd;
 
         if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) {
-            readResolveMtd = U.findInheritableMethod(cls, "readResolve");
+            readResolveMtd = CommonUtils.findInheritableMethod(cls, "readResolve");
 
-            writeReplaceMthd = U.findInheritableMethod(cls, "writeReplace");
+            writeReplaceMthd = CommonUtils.findInheritableMethod(cls, "writeReplace");
         }
         else {
             readResolveMtd = null;
@@ -525,13 +538,6 @@ public class BinaryClassDescriptor {
     }
 
     /**
-     * @return Schema.
-     */
-    BinarySchema schema() {
-        return stableSchema;
-    }
-
-    /**
      * @return Whether typeId has been successfully registered by MarshallerContext or not.
      */
     public boolean registered() {
@@ -656,147 +662,153 @@ public class BinaryClassDescriptor {
                     break;
 
                 case DECIMAL:
-                    writer.doWriteDecimal((BigDecimal)obj);
+                    writer.writeDecimal((BigDecimal)obj);
 
                     break;
 
                 case STRING:
-                    writer.doWriteString((String)obj);
+                    writer.writeString((String)obj);
 
                     break;
 
                 case UUID:
-                    writer.doWriteUuid((UUID)obj);
+                    writer.writeUuid((UUID)obj);
 
                     break;
 
                 case DATE:
-                    writer.doWriteDate((Date)obj);
+                    writer.writeDate((Date)obj);
 
                     break;
 
                 case TIMESTAMP:
-                    writer.doWriteTimestamp((Timestamp)obj);
+                    writer.writeTimestamp((Timestamp)obj);
 
                     break;
 
                 case TIME:
-                    writer.doWriteTime((Time)obj);
+                    writer.writeTime((Time)obj);
 
                     break;
 
                 case BYTE_ARR:
-                    writer.doWriteByteArray((byte[])obj);
+                    writer.writeByteArray((byte[])obj);
 
                     break;
 
                 case SHORT_ARR:
-                    writer.doWriteShortArray((short[])obj);
+                    writer.writeShortArray((short[])obj);
 
                     break;
 
                 case INT_ARR:
-                    writer.doWriteIntArray((int[])obj);
+                    writer.writeIntArray((int[])obj);
 
                     break;
 
                 case LONG_ARR:
-                    writer.doWriteLongArray((long[])obj);
+                    writer.writeLongArray((long[])obj);
 
                     break;
 
                 case FLOAT_ARR:
-                    writer.doWriteFloatArray((float[])obj);
+                    writer.writeFloatArray((float[])obj);
 
                     break;
 
                 case DOUBLE_ARR:
-                    writer.doWriteDoubleArray((double[])obj);
+                    writer.writeDoubleArray((double[])obj);
 
                     break;
 
                 case CHAR_ARR:
-                    writer.doWriteCharArray((char[])obj);
+                    writer.writeCharArray((char[])obj);
 
                     break;
 
                 case BOOLEAN_ARR:
-                    writer.doWriteBooleanArray((boolean[])obj);
+                    writer.writeBooleanArray((boolean[])obj);
 
                     break;
 
                 case DECIMAL_ARR:
-                    writer.doWriteDecimalArray((BigDecimal[])obj);
+                    writer.writeDecimalArray((BigDecimal[])obj);
 
                     break;
 
                 case STRING_ARR:
-                    writer.doWriteStringArray((String[])obj);
+                    writer.writeStringArray((String[])obj);
 
                     break;
 
                 case UUID_ARR:
-                    writer.doWriteUuidArray((UUID[])obj);
+                    writer.writeUuidArray((UUID[])obj);
 
                     break;
 
                 case DATE_ARR:
-                    writer.doWriteDateArray((Date[])obj);
+                    writer.writeDateArray((Date[])obj);
 
                     break;
 
                 case TIMESTAMP_ARR:
-                    writer.doWriteTimestampArray((Timestamp[])obj);
+                    writer.writeTimestampArray((Timestamp[])obj);
 
                     break;
 
                 case TIME_ARR:
-                    writer.doWriteTimeArray((Time[])obj);
+                    writer.writeTimeArray((Time[])obj);
 
                     break;
 
                 case OBJECT_ARR:
-                    writer.doWriteObjectArray((Object[])obj);
+                    if (BinaryUtils.isBinaryArray(obj))
+                        writer.writeBinaryArray(((BinaryArray)obj));
+                    else
+                        writer.writeObjectArray((Object[])obj);
 
                     break;
 
                 case COL:
-                    writer.doWriteCollection((Collection<?>)obj);
+                    writer.writeCollection((Collection<?>)obj);
 
                     break;
 
                 case MAP:
-                    writer.doWriteMap((Map<?, ?>)obj);
+                    writer.writeMap((Map<?, ?>)obj);
 
                     break;
 
                 case ENUM:
-                    writer.doWriteEnum((Enum<?>)obj);
+                    writer.writeEnum((Enum<?>)obj);
 
                     break;
 
                 case BINARY_ENUM:
-                    writer.doWriteBinaryEnum((BinaryEnumObjectImpl)obj);
+                    writer.writeBinaryEnum((BinaryEnumObjectImpl)obj);
 
                     break;
 
                 case ENUM_ARR:
-                    writer.doWriteEnumArray((Object[])obj);
+                    if (BinaryUtils.isBinaryArray(obj))
+                        writer.writeBinaryArray(((BinaryArray)obj));
+                    else
+                        writer.doWriteEnumArray((Object[])obj);
 
                     break;
 
                 case CLASS:
-                    writer.doWriteClass((Class)obj);
+                    writer.writeClass((Class)obj);
 
                     break;
 
                 case PROXY:
-                    writer.doWriteProxy((Proxy)obj, intfs);
+                    writer.writeProxy((Proxy)obj, intfs);
 
                     break;
 
                 case BINARY_OBJ:
-                    writer.doWriteBinaryObject((BinaryObjectImpl)obj);
+                    writer.writeBinaryObject((BinaryObjectImpl)obj);
 
                     break;
 
@@ -892,7 +904,7 @@ public class BinaryClassDescriptor {
             else
                 msg = "Failed to serialize object [typeId=" + typeId + ']';
 
-            U.error(ctx.log(), msg, e);
+            CommonUtils.error(ctx.log(), msg, e);
 
             throw new BinaryObjectException(msg, e);
         }
@@ -966,7 +978,7 @@ public class BinaryClassDescriptor {
             else
                 msg = "Failed to deserialize object [typeId=" + typeId + ']';
 
-            U.error(ctx.log(), msg, e);
+            CommonUtils.error(ctx.log(), msg, e);
 
             throw new BinaryObjectException(msg, e);
         }
@@ -1072,6 +1084,11 @@ public class BinaryClassDescriptor {
         }
     }
 
+    /** */
+    Constructor<?> ctor() {
+        return ctor;
+    }
+
     /**
      * @param cls Class.
      * @return Constructor.
@@ -1082,7 +1099,7 @@ public class BinaryClassDescriptor {
         assert cls != null;
 
         try {
-            Constructor<?> ctor = U.forceEmptyConstructor(cls);
+            Constructor<?> ctor = CommonUtils.forceEmptyConstructor(cls);
 
             if (ctor == null)
                 throw new BinaryObjectException("Failed to find empty constructor for class: " + cls.getName());

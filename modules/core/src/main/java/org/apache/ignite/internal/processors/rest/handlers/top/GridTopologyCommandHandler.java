@@ -27,12 +27,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.client.GridClientCacheMode;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocol;
@@ -52,16 +52,16 @@ import org.apache.ignite.spi.IgnitePortProtocol;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CACHE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_ADDRS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_HOST_NAMES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOGY;
+import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
 
 /**
  * Command handler for API requests.
@@ -101,8 +101,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         switch (req.command()) {
             case TOPOLOGY: {
-                Collection<ClusterNode> allNodes = F.concat(false,
-                    ctx.discovery().allNodes(), ctx.discovery().daemonNodes());
+                Collection<ClusterNode> allNodes = ctx.discovery().allNodes();
 
                 Collection<GridClientNodeBean> top =
                     new ArrayList<>(allNodes.size());
@@ -189,7 +188,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         GridClientCacheBean cacheBean = new GridClientCacheBean();
 
         cacheBean.setName(ccfg.getName());
-        cacheBean.setMode(GridClientCacheMode.valueOf(ccfg.getCacheMode().toString()));
+        cacheBean.setMode(CacheMode.valueOf(ccfg.getCacheMode().toString()));
         cacheBean.setSqlSchema(ccfg.getSqlSchema());
 
         return cacheBean;
@@ -291,7 +290,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             Map<String, Object> attrs = new HashMap<>(node.attributes());
 
             attrs.remove(ATTR_CACHE);
-            attrs.remove(ATTR_TX_CONFIG);
+            attrs.remove(ATTR_TX_SERIALIZABLE_ENABLED);
             attrs.remove(ATTR_SECURITY_SUBJECT_V2);
             attrs.remove(ATTR_SECURITY_CREDENTIALS);
             attrs.remove(ATTR_BINARY_CONFIGURATION);
@@ -300,7 +299,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             for (Iterator<Map.Entry<String, Object>> i = attrs.entrySet().iterator(); i.hasNext();) {
                 Map.Entry<String, Object> e = i.next();
 
-                if (!e.getKey().startsWith("org.apache.ignite.") && !e.getKey().startsWith("plugins.") &&
+                if (!e.getKey().startsWith(IGNITE_PKG) && !e.getKey().startsWith("plugins.") &&
                     System.getProperty(e.getKey()) == null) {
                     i.remove();
 
@@ -308,10 +307,10 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 if (e.getValue() != null) {
-                  if (e.getValue().getClass().isEnum() || e.getValue() instanceof InetAddress)
-                      e.setValue(e.getValue().toString());
-                  else if (e.getValue().getClass().isArray() && !ATTR_IGNITE_FEATURES.equals(e.getKey()))
-                      i.remove();
+                    if (e.getValue().getClass().isEnum() || e.getValue() instanceof InetAddress)
+                        e.setValue(e.getValue().toString());
+                    else if (e.getValue().getClass().isArray())
+                        i.remove();
                 }
             }
 

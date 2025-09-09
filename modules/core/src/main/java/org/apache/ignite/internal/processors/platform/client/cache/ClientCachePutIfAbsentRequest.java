@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -31,15 +32,19 @@ public class ClientCachePutIfAbsentRequest extends ClientCacheKeyValueRequest {
      *
      * @param reader Reader.
      */
-    public ClientCachePutIfAbsentRequest(BinaryRawReaderEx reader) {
+    public ClientCachePutIfAbsentRequest(BinaryReaderEx reader) {
         super(reader);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
+    @Override public ClientResponse process0(ClientConnectionContext ctx) {
         boolean res = cache(ctx).putIfAbsent(key(), val());
 
         return new ClientBooleanResponse(requestId(), res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
+        return chainFuture(cache(ctx).putIfAbsentAsync(key(), val()), v -> new ClientBooleanResponse(requestId(), v));
     }
 }

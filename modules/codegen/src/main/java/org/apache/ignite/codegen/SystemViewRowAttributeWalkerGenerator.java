@@ -36,9 +36,11 @@ import org.apache.ignite.internal.managers.systemview.SystemViewMBean;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnConfigurationView;
+import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnGlobalDataView;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnLocalDataView;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnPartitionDataView;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
 import org.apache.ignite.spi.systemview.view.BaselineNodeView;
 import org.apache.ignite.spi.systemview.view.BinaryMetadataView;
@@ -46,26 +48,26 @@ import org.apache.ignite.spi.systemview.view.CacheGroupIoView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.spi.systemview.view.ClientConnectionAttributeView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.apache.ignite.spi.systemview.view.ConfigurationView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
+import org.apache.ignite.spi.systemview.view.MetricsView;
 import org.apache.ignite.spi.systemview.view.NodeAttributeView;
 import org.apache.ignite.spi.systemview.view.NodeMetricsView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
+import org.apache.ignite.spi.systemview.view.PagesTimestampHistogramView;
 import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
-import org.apache.ignite.spi.systemview.view.SqlIndexView;
+import org.apache.ignite.spi.systemview.view.SnapshotView;
+import org.apache.ignite.spi.systemview.view.SqlPlanHistoryView;
 import org.apache.ignite.spi.systemview.view.SqlQueryHistoryView;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
-import org.apache.ignite.spi.systemview.view.SqlSchemaView;
-import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
-import org.apache.ignite.spi.systemview.view.SqlTableView;
-import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
-import org.apache.ignite.spi.systemview.view.SqlViewView;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
@@ -79,9 +81,12 @@ import org.apache.ignite.spi.systemview.view.datastructures.QueueView;
 import org.apache.ignite.spi.systemview.view.datastructures.ReentrantLockView;
 import org.apache.ignite.spi.systemview.view.datastructures.SemaphoreView;
 import org.apache.ignite.spi.systemview.view.datastructures.SetView;
-
-import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
-import static org.apache.ignite.codegen.MessageCodeGenerator.INDEXING_SRC_DIR;
+import org.apache.ignite.spi.systemview.view.sql.SqlIndexView;
+import org.apache.ignite.spi.systemview.view.sql.SqlSchemaView;
+import org.apache.ignite.spi.systemview.view.sql.SqlTableColumnView;
+import org.apache.ignite.spi.systemview.view.sql.SqlTableView;
+import org.apache.ignite.spi.systemview.view.sql.SqlViewColumnView;
+import org.apache.ignite.spi.systemview.view.sql.SqlViewView;
 
 /**
  * Application for code generation of {@link SystemViewRowAttributeWalker}.
@@ -91,6 +96,9 @@ import static org.apache.ignite.codegen.MessageCodeGenerator.INDEXING_SRC_DIR;
  * @see SystemViewMBean
  */
 public class SystemViewRowAttributeWalkerGenerator {
+    /** */
+    private static final String DFLT_SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
+
     /** Methods that should be excluded from specific {@link SystemViewRowAttributeWalker}. */
     private static final Set<String> SYS_METHODS = new HashSet<>(Arrays.asList("equals", "hashCode", "toString",
         "getClass"));
@@ -102,6 +110,7 @@ public class SystemViewRowAttributeWalkerGenerator {
     public static final String TAB = "    ";
 
     /**
+     * @param args Command line arguments.
      * @throws Exception If generation failed.
      */
     public static void main(String[] args) throws Exception {
@@ -113,12 +122,14 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(ComputeTaskView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ComputeJobView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ClientConnectionView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ClientConnectionAttributeView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(TransactionView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ContinuousQueryView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ClusterNodeView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ScanQueryView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(SqlQueryView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(SqlQueryHistoryView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlPlanHistoryView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(StripedExecutorTaskView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(PagesListView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(CachePagesListView.class, DFLT_SRC_DIR);
@@ -139,17 +150,22 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(NodeAttributeView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(NodeMetricsView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(CacheGroupIoView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SnapshotView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetricsView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(PagesTimestampHistogramView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ConfigurationView.class, DFLT_SRC_DIR);
 
-        gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(SqlViewView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(SqlIndexView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(SqlTableColumnView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(SqlViewColumnView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(SqlSchemaView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlTableView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlViewView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlIndexView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlTableColumnView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlViewColumnView.class, DFLT_SRC_DIR);
 
-        gen.generateAndWrite(StatisticsColumnConfigurationView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(StatisticsColumnLocalDataView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(StatisticsColumnPartitionDataView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnConfigurationView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnLocalDataView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnGlobalDataView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnPartitionDataView.class, DFLT_SRC_DIR);
     }
 
     /**
@@ -161,14 +177,14 @@ public class SystemViewRowAttributeWalkerGenerator {
      * @throws IOException If generation failed.
      */
     private <T> void generateAndWrite(Class<T> clazz, String srcRoot) throws IOException {
-        File walkerClass = new File(srcRoot + '/' + WALKER_PACKAGE.replaceAll("\\.", "/") + '/' +
+        File walkerCls = new File(srcRoot + '/' + WALKER_PACKAGE.replaceAll("\\.", "/") + '/' +
             clazz.getSimpleName() + "Walker.java");
 
         Collection<String> code = generate(clazz);
 
-        walkerClass.createNewFile();
+        walkerCls.createNewFile();
 
-        try (FileWriter writer = new FileWriter(walkerClass)) {
+        try (FileWriter writer = new FileWriter(walkerCls)) {
             for (String line : code) {
                 writer.write(line);
                 writer.write('\n');

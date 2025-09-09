@@ -17,34 +17,31 @@
 
 package org.apache.ignite.internal.managers.checkpoint;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * This class defines checkpoint request.
  */
 public class GridCheckpointRequest implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
+    @Order(value = 0, method = "sessionId")
     private IgniteUuid sesId;
 
     /** */
+    @Order(1)
     @GridToStringInclude(sensitive = true)
     private String key;
 
     /** */
+    @Order(value = 2, method = "checkpointSpi")
     private String cpSpi;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridCheckpointRequest() {
         // No-op.
@@ -68,22 +65,43 @@ public class GridCheckpointRequest implements Message {
     /**
      * @return Session ID.
      */
-    public IgniteUuid getSessionId() {
+    public IgniteUuid sessionId() {
         return sesId;
+    }
+
+    /**
+     * @param sesId Session ID.
+     */
+    public void sessionId(IgniteUuid sesId) {
+        this.sesId = sesId;
     }
 
     /**
      * @return Checkpoint key.
      */
-    public String getKey() {
+    public String key() {
         return key;
+    }
+
+    /**
+     * @param key Checkpoint key.
+     */
+    public void key(String key) {
+        this.key = key;
     }
 
     /**
      * @return Checkpoint SPI.
      */
-    public String getCheckpointSpi() {
+    public String checkpointSpi() {
         return cpSpi;
+    }
+
+    /**
+     * @param cpSpi Checkpoint SPI.
+     */
+    public void checkpointSpi(String cpSpi) {
+        this.cpSpi = cpSpi;
     }
 
     /** {@inheritDoc} */
@@ -92,85 +110,8 @@ public class GridCheckpointRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString("cpSpi", cpSpi))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeString("key", key))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeIgniteUuid("sesId", sesId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                cpSpi = reader.readString("cpSpi");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                key = reader.readString("key");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                sesId = reader.readIgniteUuid("sesId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridCheckpointRequest.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 7;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

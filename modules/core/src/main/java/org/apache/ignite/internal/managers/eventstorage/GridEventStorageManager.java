@@ -85,6 +85,8 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_EVENT;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.localNode;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 
 /**
  * Grid event storage SPI manager.
@@ -95,9 +97,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
     /** Busy lock to control activity of threads. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
-
-    /** Is local node daemon? */
-    private final boolean isDaemon;
 
     /** Recordable events arrays length. */
     private final int len;
@@ -139,9 +138,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public GridEventStorageManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getEventStorageSpi());
 
-        marsh = ctx.config().getMarshaller();
-
-        isDaemon = ctx.isDaemon();
+        marsh = ctx.marshaller();
 
         int[] cfgInclEvtTypes0 = ctx.config().getIncludeEventTypes();
 
@@ -271,6 +268,11 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
 
+        Map<IgnitePredicate<? extends Event>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
+
+        if (evtLsnrs != null)
+            U.stopLifecycleAware(log, evtLsnrs.keySet());
+
         if (log.isDebugEnabled())
             log.debug(stopInfo());
     }
@@ -280,8 +282,12 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         Map<IgnitePredicate<? extends Event>, int[]> evtLsnrs = ctx.config().getLocalEventListeners();
 
         if (evtLsnrs != null) {
-            for (IgnitePredicate<? extends Event> lsnr : evtLsnrs.keySet())
+            Set<IgnitePredicate<? extends Event>> lsnrs = evtLsnrs.keySet();
+
+            for (IgnitePredicate<? extends Event> lsnr : lsnrs)
                 addLocalEventListener(lsnr, evtLsnrs.get(lsnr));
+
+            U.startLifecycleAware(lsnrs);
         }
 
         startSpi();
@@ -336,8 +342,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     U.gridEventName(type));
             }
 
-            // Override user recordable settings for daemon node.
-            if ((isDaemon || isUserRecordable(type)) && !isHiddenEvent(type)) {
+            // Override user recordable settings.
+            if (isUserRecordable(type) && !isHiddenEvent(type)) {
                 try {
                     getSpi().record(evt);
                 }
@@ -1140,9 +1146,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      */
     private void sendMessage(Collection<? extends ClusterNode> nodes, GridTopic topic,
         GridEventStorageMessage msg, byte plc) throws IgniteCheckedException {
-        ClusterNode locNode = F.find(nodes, null, F.localNode(ctx.localNodeId()));
+        ClusterNode locNode = F.find(nodes, null, localNode(ctx.localNodeId()));
 
-        Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(ctx.localNodeId()));
+        Collection<? extends ClusterNode> rmtNodes = F.view(nodes, remoteNodes(ctx.localNodeId()));
 
         if (locNode != null)
             ctx.io().sendToGridTopic(locNode, topic, msg, plc);

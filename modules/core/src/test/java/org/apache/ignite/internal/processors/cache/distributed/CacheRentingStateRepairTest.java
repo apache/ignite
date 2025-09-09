@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -114,7 +115,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
             g0.cluster().baselineAutoAdjustEnabled(false);
             startGrid(1);
 
-            g0.cluster().active(true);
+            g0.cluster().state(ClusterState.ACTIVE);
 
             awaitPartitionMapExchange();
 
@@ -146,22 +147,22 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
             assertTrue("Failed to wait for partition eviction: reservedPart=" + part.id() + ", otherParts=" +
                 top.localPartitions().stream().map(p -> "[id=" + p.id() + ", state=" + p.state() + ']').collect(Collectors.toList()),
                 waitForCondition(() -> {
-                for (int i = 0; i < parts.size(); i++) {
-                    if (delayEvictPart == i)
-                        continue; // Skip reserved partition.
+                    for (int i = 0; i < parts.size(); i++) {
+                        if (delayEvictPart == i)
+                            continue; // Skip reserved partition.
 
-                    Integer p = parts.get(i);
+                        Integer p = parts.get(i);
 
-                    @Nullable GridDhtLocalPartition locPart = top.localPartition(p);
+                        @Nullable GridDhtLocalPartition locPart = top.localPartition(p);
 
-                    assertNotNull(locPart);
+                        assertNotNull(locPart);
 
-                    if (locPart.state() != GridDhtPartitionState.EVICTED)
-                        return false;
-                }
+                        if (locPart.state() != GridDhtPartitionState.EVICTED)
+                            return false;
+                    }
 
-                return true;
-            }, 5000));
+                    return true;
+                }, 5000));
 
             /**
              * Force renting state before node stop.
@@ -246,7 +247,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
             IgniteEx g0 = startGrids(2);
 
             g0.cluster().baselineAutoAdjustEnabled(false);
-            g0.cluster().active(true);
+            g0.cluster().state(ClusterState.ACTIVE);
 
             awaitPartitionMapExchange();
 

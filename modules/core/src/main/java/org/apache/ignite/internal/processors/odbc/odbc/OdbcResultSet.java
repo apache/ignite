@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 /**
@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
  */
 public class OdbcResultSet {
     /** Cursor. */
-    private final QueryCursorImpl<List<?>> cursor;
+    private final QueryCursorEx<List<?>> cursor;
 
     /** Current iterator. */
     private Iterator iter;
@@ -47,9 +47,9 @@ public class OdbcResultSet {
      * @param ver Client version.
      */
     OdbcResultSet(FieldsQueryCursor<List<?>> cursor, ClientListenerProtocolVersion ver) {
-        assert cursor instanceof QueryCursorImpl;
+        assert cursor instanceof QueryCursorEx;
 
-        this.cursor = (QueryCursorImpl<List<?>>)cursor;
+        this.cursor = (QueryCursorEx<List<?>>)cursor;
         this.ver = ver;
 
         if (this.cursor.isQuery()) {

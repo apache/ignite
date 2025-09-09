@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -26,6 +25,7 @@ import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -37,11 +37,11 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -85,7 +85,7 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
 
         Ignite ig = startGrid();
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         try (IgniteDataStreamer<Integer, byte[]> st = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
             st.allowOverwrite(true);
@@ -114,13 +114,9 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
     public void testStandAloneIterator() throws Exception {
         IgniteEx ig = grid();
 
-        IgniteWriteAheadLogManager wal = ig.context().cache().context().wal();
+        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
-        File walArchiveDir = U.field(wal, "walArchiveDir");
-
-        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
-
-        doTest(wal, iteratorFactory.iterator(walArchiveDir));
+        doTest(ig.context().pdsFolderResolver().fileTree(), iterFactory.iterator(ig.context().pdsFolderResolver().fileTree().walArchive()));
     }
 
     /**
@@ -132,44 +128,42 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
 
         IgniteWriteAheadLogManager wal = ig.context().cache().context().wal();
 
-        doTest(wal, wal.replay(null));
+        doTest(ig.context().pdsFolderResolver().fileTree(), wal.replay(null));
     }
 
     /**
      *
-     * @param walMgr WAL manager.
+     * @param ft Node file tree.
      * @param it WAL iterator.
      * @throws IOException If IO exception.
      * @throws IgniteCheckedException If WAL iterator failed.
      */
-    private void doTest(IgniteWriteAheadLogManager walMgr, WALIterator it) throws IOException, IgniteCheckedException {
-        File walArchiveDir = U.field(walMgr, "walArchiveDir");
+    private void doTest(NodeFileTree ft, WALIterator it) throws IOException, IgniteCheckedException {
+        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
 
-        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
-
-        List<FileDescriptor> descs = iteratorFactory.resolveWalFiles(
+        List<FileDescriptor> descs = iterFactory.resolveWalFiles(
             new IteratorParametersBuilder()
-                .filesOrDirs(walArchiveDir)
+                .filesOrDirs(ft.walArchive())
         );
 
-        int maxIndex = descs.size() - 1;
-        int minIndex = 1;
+        int maxIdx = descs.size() - 1;
+        int minIdx = 1;
 
-        int corruptedIdx = current().nextInt(minIndex, maxIndex);
+        int corruptedIdx = current().nextInt(minIdx, maxIdx);
 
         log.info("Corrupted segment with idx:" + corruptedIdx);
 
         WALPointer corruptedPtr = corruptedWAlSegmentFile(
             descs.get(corruptedIdx),
             new RandomAccessFileIOFactory(),
-            iteratorFactory
+            iterFactory
         );
 
         log.info("Should fail on ptr " + corruptedPtr);
 
         WALPointer lastReadPtr = null;
 
-        boolean exception = false;
+        boolean ex = false;
 
         try (WALIterator it0 = it) {
             while (it0.hasNextX()) {
@@ -181,12 +175,12 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
         catch (IgniteCheckedException e) {
             if (e.getMessage().contains("WAL tail reached in archive directory, WAL segment file is corrupted")
                 || e.getMessage().contains("WAL tail reached not in the last available segment"))
-                exception = true;
+                ex = true;
         }
 
         Assert.assertNotNull(lastReadPtr);
 
-        if (!exception) {
+        if (!ex) {
             fail("Last read ptr=" + lastReadPtr + ", corruptedPtr=" + corruptedPtr);
         }
     }

@@ -18,101 +18,120 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Partition mapping associated with the group of caches.
+ * Partitions mapping associated with a group of caches. This group may contain caches from different cache groups,
+ * the grouping criteria is - the same mapping and default or non-default affinity function flag.
  */
 class ClientCachePartitionAwarenessGroup {
-    /** Binary processor. */
-    CacheObjectBinaryProcessorImpl proc;
+    /** Partition mapping. If {@code null} then cache must be excluded in partition awareness usage (e.g. REPLICATED cache).  */
+    private final @Nullable ClientCachePartitionMapping mapping;
 
-    /** Partition mapping. */
-    private final ClientCachePartitionMapping mapping;
+    /** {@code true} if the RendezvousAffinityFunction is used with the default affinity key mapper. */
+    private final boolean dfltAffinity;
 
     /** Descriptor of the associated caches. */
-    private HashMap<Integer, CacheConfiguration> cacheCfgs;
+    private final Map<Integer, CacheConfiguration<?, ?>> cacheCfgs = new HashMap<>();
 
     /**
-     * @param proc Binary processor.
      * @param mapping Partition mapping.
-     * @param cacheDesc Descriptor of the initial cache.
+     * @param dfltAffinity {@code true} if the default affinity or a custom affinity mapper was used.
      */
-    public ClientCachePartitionAwarenessGroup(CacheObjectBinaryProcessorImpl proc, ClientCachePartitionMapping mapping,
-                                              DynamicCacheDescriptor cacheDesc) {
-        this.proc = proc;
+    public ClientCachePartitionAwarenessGroup(@Nullable ClientCachePartitionMapping mapping, boolean dfltAffinity) {
         this.mapping = mapping;
-
-        int cacheId = cacheDesc.cacheId();
-        CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
-
-        cacheCfgs = new HashMap<>();
-        cacheCfgs.put(cacheId, ccfg);
-    }
-
-    /**
-     * Check if the mapping is compatible to a mapping of the group.
-     * @param mapping Affinity mapping.
-     * @return True if compatible.
-     */
-    public boolean isCompatible(ClientCachePartitionMapping mapping) {
-        // All unapplicable caches go to the same single group, so they are all compatible one to another.
-        if (this.mapping == null || mapping == null)
-            return this.mapping == mapping;
-
-        // Now we need to compare mappings themselves.
-        return mapping.isCompatible(mapping);
+        this.dfltAffinity = dfltAffinity;
     }
 
     /**
      * Write mapping using binary writer.
-     * @param writer Writer.
+     *
+     * @param proc Binary processor.
+     * @param writer Binary Writer.
+     * @param cpctx Protocol context.
      */
-    public void write(BinaryRawWriter writer) {
-        writer.writeBoolean(mapping != null);
+    public void write(CacheObjectBinaryProcessorImpl proc, BinaryRawWriter writer, ClientProtocolContext cpctx) {
+        boolean isPartitionAwarenessApplicable = mapping != null;
+
+        writer.writeBoolean(isPartitionAwarenessApplicable);
 
         writer.writeInt(cacheCfgs.size());
 
-        for (Map.Entry<Integer, CacheConfiguration> entry: cacheCfgs.entrySet()) {
-            writer.writeInt(entry.getKey());
+        if (isPartitionAwarenessApplicable) {
+            for (Map.Entry<Integer, CacheConfiguration<?, ?>> entry: cacheCfgs.entrySet()) {
+                writer.writeInt(entry.getKey());
 
-            if (mapping == null)
-                continue;
-
-            CacheConfiguration ccfg = entry.getValue();
-            CacheKeyConfiguration[] keyCfgs = ccfg.getKeyConfiguration();
-
-            if (keyCfgs == null) {
-                writer.writeInt(0);
-
-                continue;
+                writeCacheKeyConfiguration(writer, proc, entry.getValue().getKeyConfiguration());
             }
 
-            writer.writeInt(keyCfgs.length);
-
-            for (CacheKeyConfiguration keyCfg : keyCfgs) {
-                int keyTypeId = proc.typeId(keyCfg.getTypeName());
-                int affinityKeyFieldId = proc.binaryContext().fieldId(keyTypeId, keyCfg.getAffinityKeyFieldName());
-
-                writer.writeInt(keyTypeId);
-                writer.writeInt(affinityKeyFieldId);
-            }
-        }
-
-        if (mapping != null)
             mapping.write(writer);
+
+            if (cpctx.isFeatureSupported(ClientBitmaskFeature.ALL_AFFINITY_MAPPINGS))
+                writer.writeBoolean(dfltAffinity);
+        }
+        else {
+            for (int cacheId : cacheCfgs.keySet())
+                writer.writeInt(cacheId);
+        }
     }
 
     /**
-     * Add cache to affinity group.
-     * @param desc Cache descriptor.
+     * Add caches to the same affinity group.
+     * @param descs Cache descriptors.
      */
-    public void addCache(DynamicCacheDescriptor desc) {
-        cacheCfgs.put(desc.cacheId(), desc.cacheConfiguration());
+    public void addAll(List<DynamicCacheDescriptor> descs) {
+        for (DynamicCacheDescriptor desc : descs)
+            cacheCfgs.putIfAbsent(desc.cacheId(), desc.cacheConfiguration());
+    }
+
+    /** */
+    private static void writeCacheKeyConfiguration(
+        BinaryRawWriter writer,
+        CacheObjectBinaryProcessorImpl binProc,
+        CacheKeyConfiguration[] keyCfgs
+    ) {
+        if (keyCfgs == null) {
+            writer.writeInt(0);
+
+            return;
+        }
+
+        writer.writeInt(keyCfgs.length);
+
+        for (CacheKeyConfiguration keyCfg : keyCfgs) {
+            int keyTypeId = binProc.typeId(keyCfg.getTypeName());
+            int affKeyFieldId = binProc.binaryContext().fieldId(keyTypeId, keyCfg.getAffinityKeyFieldName());
+
+            writer.writeInt(keyTypeId);
+            writer.writeInt(affKeyFieldId);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        ClientCachePartitionAwarenessGroup grp = (ClientCachePartitionAwarenessGroup)o;
+
+        return dfltAffinity == grp.dfltAffinity && Objects.equals(mapping, grp.mapping);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(mapping, dfltAffinity);
     }
 }

@@ -17,10 +17,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
@@ -30,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -43,7 +42,7 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -51,7 +50,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 
 /**
  *
@@ -163,7 +161,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         IgniteEx ig = (IgniteEx)startGrids(3);
 
         ig.cluster().baselineAutoAdjustEnabled(false);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 
@@ -189,13 +187,10 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
 
-        String nodeFolderName = ig.context().pdsFolderResolver().resolveFolders().folderName();
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-        File walDir = new File(dbDir, "wal");
-        File archiveDir = new File(walDir, "archive");
-        File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0) + ZIP_SUFFIX);
+        File walSegment = ft.zipWalArchiveSegment(0);
+        File cacheDir = ft.defaultCacheStorage(ig.cachex(CACHE_NAME).configuration());
 
         // Allow compressor to compress WAL segments.
         assertTrue(GridTestUtils.waitForCondition(walSegment::exists, 15_000));
@@ -204,15 +199,11 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        File nodeLfsDir = new File(dbDir, nodeFolderName);
-        File cpMarkersDir = new File(nodeLfsDir, "cp");
-
-        File[] cpMarkers = cpMarkersDir.listFiles();
+        File[] cpMarkers = ft.checkpoint().listFiles();
 
         assertNotNull(cpMarkers);
         assertTrue(cpMarkers.length > 0);
 
-        File cacheDir = new File(nodeLfsDir, "cache-" + CACHE_NAME);
         File[] lfsFiles = cacheDir.listFiles();
 
         assertNotNull(lfsFiles);
@@ -258,7 +249,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrids(2);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         resetBaselineTopology();
 
@@ -298,7 +289,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         IgniteEx ig = (IgniteEx)startGrid(getTestIgniteInstanceName(0), optimize(icfg), null);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 
@@ -339,15 +330,11 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         assertTrue(System.currentTimeMillis() - start < 15_000);
 
-        String nodeFolderName = ig.context().pdsFolderResolver().resolveFolders().folderName();
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
         stopAllGrids();
 
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-        File walDir = new File(dbDir, "wal");
-        File archiveDir = new File(walDir, "archive");
-        File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0));
+        File walSegment = ft.walArchiveSegment(0);
 
         assertTrue("" + walSegment.length(), walSegment.length() < 200_000_000);
     }
@@ -360,7 +347,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         compactionEnabled = false;
 
         IgniteEx ig = startGrid(0);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 
@@ -376,18 +363,14 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
 
-        String nodeFolderName = ig.context().pdsFolderResolver().resolveFolders().folderName();
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
         stopAllGrids();
 
         int emptyIdx = 5;
 
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-        File walDir = new File(dbDir, "wal");
-        File archiveDir = new File(walDir, "archive");
-        File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(emptyIdx));
-        File zippedWalSegment = new File(nodeArchiveDir, FileDescriptor.fileName(emptyIdx + 1) + ZIP_SUFFIX);
+        File walSegment = ft.walArchiveSegment(emptyIdx);
+        File zippedWalSegment = ft.zipWalArchiveSegment(emptyIdx + 1);
 
         long start = U.currentTimeMillis();
         do {
@@ -408,29 +391,22 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         compactionEnabled = true;
 
         ig = startGrid(0);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         // Allow compressor to compress WAL segments.
         assertTrue(GridTestUtils.waitForCondition(zippedWalSegment::exists, 15_000));
 
-        File[] compressedSegments = nodeArchiveDir.listFiles(new FilenameFilter() {
-            @Override public boolean accept(File dir, String name) {
-                return name.endsWith(".wal.zip");
-            }
-        });
+        File[] compressedSegments = ft.walArchive().listFiles(NodeFileTree::walCompactedSegment);
 
         long maxIdx = -1;
-        for (File f : compressedSegments) {
-            String idxPart = f.getName().substring(0, f.getName().length() - ".wal.zip".length());
-
-            maxIdx = Math.max(maxIdx, Long.parseLong(idxPart));
-        }
+        for (File f : compressedSegments)
+            maxIdx = Math.max(maxIdx, ft.walSegmentIndex(f.toPath()));
 
         System.out.println("Max compressed index: " + maxIdx);
         assertTrue(maxIdx > emptyIdx);
 
         if (!walSegment.exists()) {
-            File[] list = nodeArchiveDir.listFiles();
+            File[] list = ft.walArchive().listFiles();
 
             Arrays.sort(list);
 
@@ -450,7 +426,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     @Test
     public void testSeekingStartInCompactedSegment() throws Exception {
         IgniteEx ig = startGrids(3);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 
@@ -465,13 +441,9 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
 
-        String nodeFolderName = ig.context().pdsFolderResolver().resolveFolders().folderName();
+        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-        File nodeLfsDir = new File(dbDir, nodeFolderName);
-        File cpMarkersDir = new File(nodeLfsDir, "cp");
-
-        Set<String> cpMarkersToSave = Arrays.stream(cpMarkersDir.listFiles()).map(File::getName).collect(toSet());
+        Set<String> cpMarkersToSave = Arrays.stream(ft.checkpoint().listFiles()).map(File::getName).collect(toSet());
 
         assertTrue(cpMarkersToSave.size() >= 2);
 
@@ -502,9 +474,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
         ig.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
 
-        File nodeArchiveDir = dbDir.toPath().resolve(Paths.get("wal", "archive", nodeFolderName)).toFile();
-        File unzippedWalSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0));
-        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0) + ZIP_SUFFIX);
+        File unzippedWalSegment = ft.walArchiveSegment(0);
+        File walSegment = ft.zipWalArchiveSegment(0);
 
         // Allow compressor to compress WAL segments.
         assertTrue(GridTestUtils.waitForCondition(() -> !unzippedWalSegment.exists(), 15_000));
@@ -512,14 +483,15 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         assertTrue(walSegment.exists());
         assertTrue(walSegment.length() < WAL_SEGMENT_SIZE / 2); // Should be compressed at least in half.
 
+        File cacheDir = ft.defaultCacheStorage(ig.cachex(CACHE_NAME).configuration());
+
         stopAllGrids();
 
-        File[] cpMarkers = cpMarkersDir.listFiles((dir, name) -> !cpMarkersToSave.contains(name));
+        File[] cpMarkers = ft.checkpoint().listFiles((dir, name) -> !cpMarkersToSave.contains(name));
 
         assertNotNull(cpMarkers);
         assertTrue(cpMarkers.length > 0);
 
-        File cacheDir = new File(nodeLfsDir, "cache-" + CACHE_NAME);
         File[] lfsFiles = cacheDir.listFiles();
 
         assertNotNull(lfsFiles);

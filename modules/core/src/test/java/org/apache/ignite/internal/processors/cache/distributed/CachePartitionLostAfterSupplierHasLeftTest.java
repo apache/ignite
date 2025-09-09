@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -51,6 +52,7 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossWithPersistenceTest.checkLostPartitionAcrossCluster;
 
 /**
  * Test scenario: last supplier has left while a partition on demander is cleared before sending first demand request.
@@ -239,7 +241,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
 
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(2);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, String> cache0 = crd.cache(DEFAULT_CACHE_NAME);
 
@@ -288,6 +290,10 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
 
         assertEquals(PARTS_CNT, lostParts2.size());
 
+        // Check that all lost partitions have the same state on all cluster nodes.
+        for (Integer lostPart : lostParts2)
+            checkLostPartitionAcrossCluster(DEFAULT_CACHE_NAME, lostPart);
+
         spi1.stopBlock();
 
         g0.resetLostPartitions(Collections.singletonList(DEFAULT_CACHE_NAME));
@@ -308,7 +314,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
     private void doTestPartitionLostWhileClearing(int cnt, int mode) throws Exception {
         IgniteEx crd = startGrids(cnt);
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         int partId = -1;
         int idx0 = 0;
@@ -339,7 +345,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
         TestRecordingCommunicationSpi.spi(grid(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionSupplyMessage) {
-                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage) msg;
+                    GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
 
                     return msg0.groupId() == CU.cacheId(DEFAULT_CACHE_NAME);
                 }
@@ -380,11 +386,11 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
 
             if (mode == 1) {
                 crd = startGrids(cnt);
-                crd.cluster().active(true);
+                crd.cluster().state(ClusterState.ACTIVE);
             }
             else if (mode == 2) {
                 crd = startGrid(idx1);
-                crd.cluster().active(true);
+                crd.cluster().state(ClusterState.ACTIVE);
 
                 startGrid(idx0);
             }

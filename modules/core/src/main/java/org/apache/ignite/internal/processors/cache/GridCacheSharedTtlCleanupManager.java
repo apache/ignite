@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
@@ -112,7 +111,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
 
             cleanupWorker = new CleanupWorker();
 
-            new IgniteThread(cleanupWorker).start();
+            U.newThread(cleanupWorker).start();
         }
         finally {
             lock.unlock();
@@ -164,6 +163,12 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                         cctx.exchange().affinityReadyFuture(AffinityTopologyVersion.ZERO).get();
                     }
                     catch (IgniteCheckedException ex) {
+                        if (cctx.kernalContext().isStopping()) {
+                            isCancelled.set(true);
+
+                            return; // Node is stopped before affinity has prepared.
+                        }
+
                         throw new IgniteException("Failed to wait for initialization topology [err="
                             + ex.getMessage() + ']', ex);
                     }
@@ -214,13 +219,13 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
             }
             catch (Throwable t) {
                 if (X.hasCause(t, NodeStoppingException.class)) {
-                    isCancelled = true; // Treat node stopping as valid worker cancellation.
+                    isCancelled.set(true); // Treat node stopping as valid worker cancellation.
 
                     return;
                 }
 
                 if (!(t instanceof IgniteInterruptedCheckedException || t instanceof InterruptedException)) {
-                    if (isCancelled)
+                    if (isCancelled.get())
                         return;
 
                     err = t;
@@ -229,7 +234,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                 throw t;
             }
             finally {
-                if (err == null && !isCancelled)
+                if (err == null && !isCancelled.get())
                     err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)

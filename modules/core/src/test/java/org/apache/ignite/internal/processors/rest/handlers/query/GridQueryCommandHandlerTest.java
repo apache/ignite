@@ -59,15 +59,15 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
 
         QueryCommandHandler cmdHnd = new QueryCommandHandler(ctx);
 
-        Collection<GridRestCommand> commands = cmdHnd.supportedCommands();
+        Collection<GridRestCommand> cmds = cmdHnd.supportedCommands();
 
-        assertEquals(5, commands.size());
+        assertEquals(5, cmds.size());
 
-        assertTrue(commands.contains(GridRestCommand.EXECUTE_SQL_QUERY));
-        assertTrue(commands.contains(GridRestCommand.EXECUTE_SQL_FIELDS_QUERY));
-        assertTrue(commands.contains(GridRestCommand.EXECUTE_SCAN_QUERY));
-        assertTrue(commands.contains(GridRestCommand.FETCH_SQL_QUERY));
-        assertTrue(commands.contains(GridRestCommand.CLOSE_SQL_QUERY));
+        assertTrue(cmds.contains(GridRestCommand.EXECUTE_SQL_QUERY));
+        assertTrue(cmds.contains(GridRestCommand.EXECUTE_SQL_FIELDS_QUERY));
+        assertTrue(cmds.contains(GridRestCommand.EXECUTE_SCAN_QUERY));
+        assertTrue(cmds.contains(GridRestCommand.FETCH_SQL_QUERY));
+        assertTrue(cmds.contains(GridRestCommand.CLOSE_SQL_QUERY));
     }
 
     /**
@@ -81,9 +81,9 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
 
         QueryCommandHandler cmdHnd = new QueryCommandHandler(ctx);
 
-        Collection<GridRestCommand> commands = cmdHnd.supportedCommands();
+        Collection<GridRestCommand> cmds = cmdHnd.supportedCommands();
 
-        assertFalse(commands.contains(GridRestCommand.LOG));
+        assertFalse(cmds.contains(GridRestCommand.LOG));
     }
 
     /**
@@ -153,7 +153,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
         assertNotNull(resp.result().getResponse());
 
-        CacheQueryResult res = (CacheQueryResult) resp.result().getResponse();
+        CacheQueryResult res = (CacheQueryResult)resp.result().getResponse();
 
         assertTrue(res.getLast());
     }

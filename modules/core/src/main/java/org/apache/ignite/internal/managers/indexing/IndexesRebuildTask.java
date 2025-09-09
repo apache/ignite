@@ -68,14 +68,14 @@ public class IndexesRebuildTask {
 
         String cacheName = cctx.name();
 
-        if (pageStore == null || !pageStore.hasIndexStore(cctx.groupId())) {
-            boolean mvccEnabled = cctx.mvccEnabled();
+        boolean recreate = pageStore == null || !pageStore.hasIndexStore(cctx.groupId());
 
+        if (recreate) {
             // If there are no index store, rebuild all indexes.
-            clo = row -> cctx.queries().store(row, null, mvccEnabled);
+            clo = row -> cctx.queries().store(row, null, false);
         }
         else {
-            Collection<InlineIndex> toRebuild = cctx.kernalContext().indexProcessor().treeIndexes(cctx, !force);
+            Collection<InlineIndex> toRebuild = cctx.kernalContext().indexProcessor().treeIndexes(cctx.name(), !force);
 
             if (F.isEmpty(toRebuild))
                 return null;
@@ -86,12 +86,23 @@ public class IndexesRebuildTask {
         // Closure prepared, do rebuild.
         cctx.kernalContext().query().markAsRebuildNeeded(cctx, true);
 
+        IgniteLogger log = cctx.kernalContext().grid().log();
+
+        if (recreate) {
+            cctx.kernalContext().query().markIndexRecreate(cctx);
+
+            cctx.group().indexWalEnabled(false);
+
+            if (log.isInfoEnabled()) {
+                log.info("WAL disabled for index partition " +
+                    "[name=" + cctx.group().cacheOrGroupName() + ", id=" + cctx.groupId() + ']');
+            }
+        }
+
         GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
 
         // To avoid possible data race.
         GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
-
-        IgniteLogger log = cctx.kernalContext().grid().log();
 
         // An internal future for the ability to cancel index rebuilding.
         SchemaIndexCacheFuture intRebFut = new SchemaIndexCacheFuture(cancelTok);
@@ -101,10 +112,10 @@ public class IndexesRebuildTask {
         // Check that the previous rebuild is completed.
         assert prevIntRebFut == null;
 
-        cctx.kernalContext().query().onStartRebuildIndexes(cctx);
+        cctx.kernalContext().query().onStartRebuildIndexes(cctx, recreate);
 
-        rebuildCacheIdxFut.listen(fut -> {
-            Throwable err = fut.error();
+        rebuildCacheIdxFut.listen(() -> {
+            Throwable err = rebuildCacheIdxFut.error();
 
             if (err == null) {
                 try {
@@ -121,6 +132,28 @@ public class IndexesRebuildTask {
                 cctx.kernalContext().query().onFinishRebuildIndexes(cctx);
 
             idxRebuildFuts.remove(cctx.cacheId(), intRebFut);
+
+            if (recreate) {
+                boolean recreateContinues = false;
+
+                for (GridCacheContext<?, ?> cctx0 : cctx.group().caches()) {
+                    if (idxRebuildFuts.containsKey(cctx0.cacheId())) {
+                        recreateContinues = true;
+
+                        break;
+                    }
+                }
+
+                if (!recreateContinues) {
+                    cctx.group().indexWalEnabled(true);
+
+                    if (log.isInfoEnabled()) {
+                        log.info("WAL enabled for index partition " +
+                            "[name=" + cctx.group().cacheOrGroupName() + ", id=" + cctx.group().groupId() + ']');
+                    }
+                }
+            }
+
             intRebFut.onDone(err);
 
             outRebuildCacheIdxFut.onDone(err);

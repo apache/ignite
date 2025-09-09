@@ -28,12 +28,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -48,14 +50,19 @@ import org.junit.runners.model.Statement;
  */
 public class ThreadNameValidationTest extends GridCommonAbstractTest {
 
+    static {
+        // Make sure that log4j init happens before we fill #defaultThreadFactoryCountBeforeTest.
+        initLoggingSubsystem();
+    }
+
     /** {@link Executors.DefaultThreadFactory} count before test. */
-    private static transient int defaultThreadFactoryCountBeforeTest;
+    private static int defaultThreadFactoryCountBeforeTest;
 
     /** {@link Thread#threadInitNumber} count before test. */
-    private static transient int anonymousThreadCountBeforeTest;
+    private static int anonymousThreadCountBeforeTest;
 
     /** Sequence for sets objects. */
-    private static final transient AtomicLong SEQUENCE = new AtomicLong();
+    private static final AtomicLong SEQUENCE = new AtomicLong();
 
     /** */
     private static final TestRule beforeAllTestRule = (base, description) -> new Statement() {
@@ -74,6 +81,14 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
 
     /** */
     private Set<Long> externalAnonymousThreads;
+
+    /**
+     * Makes sure that Log4j logging subsystem is initialized. This method must be invoked before
+     * #defaultThreadFactoryCountBeforeTest is filled as Log4j initialization creates a default thread factory.
+     */
+    private static void initLoggingSubsystem() {
+        new GridTestLog4jLogger();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -122,7 +137,8 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
             assertEquals("Thread without specific name detected",
                 anonymousThreadCountBeforeTest, getAnonymousThreadCount());
 
-        } finally {
+        }
+        finally {
             System.clearProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY);
 
             super.afterTest();
@@ -141,7 +157,7 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
         validateThreadNames();
 
         IgniteEx ignite = startGrids(1);
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ignite.createCache(DEFAULT_CACHE_NAME);
 
@@ -172,8 +188,7 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
         Arrays.stream(threadMXBean.dumpAllThreads(false, false))
             .filter(t -> t.getThreadName().startsWith("Thread-")
                 && !externalAnonymousThreads.contains(t.getThreadId()))
-            .forEach(threadInfo ->
-            {
+            .forEach(threadInfo -> {
                 StringBuilder sb = new StringBuilder();
                 sb.append("Thread with default name detected. StackTrace: ");
 
@@ -191,8 +206,8 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
      * @return count
      */
     private static int getDefaultPoolCount() throws ReflectiveOperationException {
-        Class<?> defaultThreadFacktory = Class.forName("java.util.concurrent.Executors$DefaultThreadFactory");
-        Field poolNumber = defaultThreadFacktory.getDeclaredField("poolNumber");
+        Class<?> dfltThreadFacktory = Class.forName("java.util.concurrent.Executors$DefaultThreadFactory");
+        Field poolNumber = dfltThreadFacktory.getDeclaredField("poolNumber");
         poolNumber.setAccessible(true);
         AtomicInteger counter = (AtomicInteger)poolNumber.get(null);
         return counter.get();
@@ -214,8 +229,8 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
         /** Id. */
         long id;
 
-        String name;
         /** Name. */
+        String name;
 
         /**
          * Constructor.

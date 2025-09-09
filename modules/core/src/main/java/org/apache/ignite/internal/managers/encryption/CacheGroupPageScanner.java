@@ -23,18 +23,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -51,8 +47,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-import org.apache.ignite.thread.OomExceptionHandler;
 
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 
@@ -61,9 +55,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.MB;
  * Scans a range of pages and marks them as dirty to re-encrypt them with the last encryption key on disk.
  */
 public class CacheGroupPageScanner implements CheckpointListener {
-    /** Thread prefix for scanning tasks. */
-    private static final String REENCRYPT_THREAD_PREFIX = "reencrypt";
-
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -78,9 +69,6 @@ public class CacheGroupPageScanner implements CheckpointListener {
 
     /** Collection of groups waiting for a checkpoint. */
     private final Collection<GroupScanTask> cpWaitGrps = new ConcurrentLinkedQueue<>();
-
-    /** Single-threaded executor to run cache group scan task. */
-    private final ThreadPoolExecutor singleExecSvc;
 
     /** Number of pages that is scanned during reencryption under checkpoint lock. */
     private final int batchSize;
@@ -104,7 +92,6 @@ public class CacheGroupPageScanner implements CheckpointListener {
         if (ctx.clientNode() || !CU.isPersistenceEnabled(dsCfg)) {
             batchSize = -1;
             limiter = null;
-            singleExecSvc = null;
 
             return;
         }
@@ -114,17 +101,6 @@ public class CacheGroupPageScanner implements CheckpointListener {
         limiter = new BasicRateLimiter(calcPermits(rateLimit, dsCfg));
 
         batchSize = dsCfg.getEncryptionConfiguration().getReencryptionBatchSize();
-
-        singleExecSvc = new IgniteThreadPoolExecutor(REENCRYPT_THREAD_PREFIX,
-            ctx.igniteInstanceName(),
-            1,
-            1,
-            IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
-            new LinkedBlockingQueue<>(),
-            GridIoPolicy.SYSTEM_POOL,
-            new OomExceptionHandler(ctx));
-
-        singleExecSvc.allowCoreThreadTimeOut(true);
     }
 
     /** {@inheritDoc} */
@@ -215,11 +191,12 @@ public class CacheGroupPageScanner implements CheckpointListener {
             }
 
             grps.put(grpId, grpScanTask);
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
 
-        singleExecSvc.submit(() -> schedule0(grpScanTask));
+        ctx.pools().getReencryptionExecutorService().submit(() -> schedule0(grpScanTask));
 
         return grpScanTask;
     }
@@ -242,7 +219,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
                 log.info("Scheduled reencryption [grp=" + grpScanTask.group().cacheOrGroupName() + "]");
 
             grpScanTask.checkComplete();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             grpScanTask.onDone(e);
         }
     }
@@ -268,10 +246,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
 
             for (GroupScanTask grpScanTask : grps.values())
                 grpScanTask.cancel();
-
-            if (singleExecSvc != null)
-                singleExecSvc.shutdownNow();
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
     }
@@ -324,7 +300,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
                     partStates[Math.min(partId, partStates.length - 1)] = pagesCnt;
                 }
             });
-        } finally {
+        }
+        finally {
             ctx.cache().context().database().checkpointReadUnlock();
         }
 
@@ -491,7 +468,7 @@ public class CacheGroupPageScanner implements CheckpointListener {
          * @param partId Partition ID.
          */
         private void schedulePartitionScan(int partId) {
-            singleExecSvc.submit(() -> scanPartition(partId));
+            ctx.pools().getReencryptionExecutorService().submit(() -> scanPartition(partId));
         }
 
         /**
@@ -557,12 +534,14 @@ public class CacheGroupPageScanner implements CheckpointListener {
                 }
 
                 parts.remove(partId);
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 if (X.hasCause(t, NodeStoppingException.class))
                     onCancelled();
                 else
                     onDone(t);
-            } finally {
+            }
+            finally {
                 checkComplete();
 
                 if (log.isDebugEnabled()) {

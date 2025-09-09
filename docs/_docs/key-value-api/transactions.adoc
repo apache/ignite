@@ -85,6 +85,11 @@ include::code-snippets/cpp/src/transactions.cpp[tag=transactions-execution,inden
 
 --
 
+[WARNING]
+====
+It is critical that an Ignite Transaction be `closed` regardless of its commit state. This ensures that all resources are released and the transaction is no longer bound to the current thread. Therefore, the `try-with-resource` statement is highly recommended when working with transactions.
+====
+
 ////
 == Two-Phase-Commit
 
@@ -106,8 +111,7 @@ All combinations of concurrency modes and isolation levels are allowed. Below is
 
 In `PESSIMISTIC` transactions, locks are acquired during the first read or write access (depending on the isolation level) and held by the transaction until it is committed or rolled back. In this mode locks are acquired on primary nodes first and then promoted to backup nodes during the prepare stage. The following isolation levels can be configured with the `PESSIMISTIC` concurrency mode:
 
-* `READ_COMMITTED` - Data is read without a lock and is never cached in the transaction itself. The data may be read from a backup node if this is allowed in the cache configuration. In this isolation mode you can have the so-called Non-Repeatable Reads
-* because a concurrent transaction can change the data when you are reading the data twice in your transaction. The lock is only acquired at the time of first write access (this includes `EntryProcessor` invocation). This means that an entry that has been read during the transaction may have a different value by the time the transaction is committed. No exception is thrown in this case.
+* `READ_COMMITTED` - Data is read without a lock and is never cached in the transaction itself. The data may be read from a backup node if this is allowed in the cache configuration. In this isolation mode you can have the so-called Non-Repeatable Reads because a concurrent transaction can change the data when you are reading the data twice in your transaction. The lock is only acquired at the time of first write access (this includes `EntryProcessor` invocation). This means that an entry that has been read during the transaction may have a different value by the time the transaction is committed. No exception is thrown in this case.
 
 * `REPEATABLE_READ` - Entry lock is acquired and data is fetched from the primary node on the first read or write access and stored in the local transactional map. All consecutive access to the same data is local and returns the last read or updated transaction value. This means no other concurrent transactions can make changes to the locked data, and you are getting Repeatable Reads for your transaction.
 

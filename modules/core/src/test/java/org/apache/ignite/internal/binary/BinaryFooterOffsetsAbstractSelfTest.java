@@ -22,8 +22,7 @@ import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -48,23 +47,18 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), new NullLogger());
-
         marsh = new BinaryMarshaller();
-
-        IgniteConfiguration iCfg = new IgniteConfiguration();
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(TestObject.class.getName())));
-
         bCfg.setCompactFooter(compactFooter());
-
-        iCfg.setBinaryConfiguration(bCfg);
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
+        ctx = U.binaryContext(marsh, new IgniteConfiguration().setBinaryConfiguration(bCfg));
+
+        marsh.setBinaryContext(ctx);
     }
 
     /**

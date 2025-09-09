@@ -34,8 +34,6 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -156,7 +154,7 @@ abstract class TcpDiscoveryImpl {
         log = spi.log;
 
         if (spi.ignite() instanceof IgniteEx)
-            tracing = ((IgniteEx) spi.ignite()).context().tracing();
+            tracing = ((IgniteEx)spi.ignite()).context().tracing();
         else
             tracing = new NoopTracing();
     }
@@ -252,12 +250,6 @@ abstract class TcpDiscoveryImpl {
      * @return Collection of remote nodes.
      */
     public abstract Collection<ClusterNode> getRemoteNodes();
-
-    /**
-     * @param feature Feature to check.
-     * @return {@code true} if all nodes support the given feature, {@code false} otherwise.
-     */
-    public abstract boolean allNodesSupport(IgniteFeatures feature);
 
     /**
      * @param nodeId Node id.
@@ -395,50 +387,6 @@ abstract class TcpDiscoveryImpl {
         long tsNanos);
 
     /**
-     * @throws IgniteSpiException If failed.
-     */
-    protected final void registerLocalNodeAddress() throws IgniteSpiException {
-        long spiJoinTimeout = spi.getJoinTimeout();
-
-        // Make sure address registration succeeded.
-        // ... but limit it if join timeout is configured.
-        long startNanos = spiJoinTimeout > 0 ? System.nanoTime() : 0;
-
-        while (true) {
-            try {
-                spi.ipFinder.initializeLocalAddresses(
-                    U.resolveAddresses(spi.getAddressResolver(), locNode.socketAddresses()));
-
-                // Success.
-                break;
-            }
-            catch (IllegalStateException e) {
-                throw new IgniteSpiException("Failed to register local node address with IP finder: " +
-                    locNode.socketAddresses(), e);
-            }
-            catch (IgniteSpiException e) {
-                LT.error(log, e, "Failed to register local node address in IP finder on start " +
-                    "(retrying every " + spi.getReconnectDelay() + " ms; " +
-                    "change 'reconnectDelay' to configure the frequency of retries).");
-            };
-
-            if (spiJoinTimeout > 0 && U.millisSinceNanos(startNanos) > spiJoinTimeout)
-                throw new IgniteSpiException(
-                    "Failed to register local addresses with IP finder within join timeout " +
-                        "(make sure IP finder configuration is correct, and operating system firewalls are disabled " +
-                        "on all host machines, or consider increasing 'joinTimeout' configuration property) " +
-                        "[joinTimeout=" + spiJoinTimeout + ']');
-
-            try {
-                U.sleep(spi.getReconnectDelay());
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                throw new IgniteSpiException("Thread has been interrupted.", e);
-            }
-        }
-    }
-
-    /**
      * @param ackTimeout Acknowledgement timeout.
      * @return {@code True} if acknowledgement timeout is less or equal to
      * maximum acknowledgement timeout, {@code false} otherwise.
@@ -466,8 +414,7 @@ abstract class TcpDiscoveryImpl {
                 msg.cacheMetrics().get(nodeId) : Collections.emptyMap();
 
             if (endTimeMetricsSizeProcessWait <= U.currentTimeMillis()
-                && cacheMetrics.size() >= METRICS_QNT_WARN)
-            {
+                && cacheMetrics.size() >= METRICS_QNT_WARN) {
                 log.warning("The Discovery message has metrics for " + cacheMetrics.size() + " caches.\n" +
                     "To prevent Discovery blocking use -DIGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE=true option.");
 

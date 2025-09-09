@@ -21,14 +21,15 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteJdbcThinDataSource;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import sun.misc.Signal;
 
 /**
@@ -36,7 +37,7 @@ import sun.misc.Signal;
  */
 public abstract class IgniteAwareApplication {
     /** Logger. */
-    protected static final Logger log = LogManager.getLogger(IgniteAwareApplication.class.getName());
+    protected static final Logger log = LogManager.getLogger(IgniteAwareApplication.class);
 
     /** App inited. */
     private static final String APP_INITED = "IGNITE_APPLICATION_INITIALIZED";
@@ -70,6 +71,9 @@ public abstract class IgniteAwareApplication {
 
     /** Client. */
     protected IgniteClient client;
+
+    /** Thin JDBC DataSource. */
+    protected IgniteJdbcThinDataSource thinJdbcDataSource;
 
     /** Cfg path. */
     protected String cfgPath;

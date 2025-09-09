@@ -32,9 +32,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
  */
 @IgniteCodeGeneratingFail
 public class NodeIdMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message body size (with message type) in bytes. */
     static final int MESSAGE_SIZE = 16;
 
@@ -65,21 +62,6 @@ public class NodeIdMessage implements Message {
      */
     public byte[] nodeIdBytes() {
         return nodeIdBytes;
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @return Marshalled node ID bytes with direct message type.
-     */
-    public static byte[] nodeIdBytesWithType(UUID nodeId) {
-        byte[] nodeIdBytesWithType = new byte[MESSAGE_FULL_SIZE];
-
-        nodeIdBytesWithType[0] = (byte)(TcpCommunicationSpi.NODE_ID_MSG_TYPE & 0xFF);
-        nodeIdBytesWithType[1] = (byte)((TcpCommunicationSpi.NODE_ID_MSG_TYPE >> 8) & 0xFF);
-
-        U.uuidToBytes(nodeId, nodeIdBytesWithType, 2);
-
-        return nodeIdBytesWithType;
     }
 
     /** {@inheritDoc} */
@@ -116,11 +98,6 @@ public class NodeIdMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return TcpCommunicationSpi.NODE_ID_MSG_TYPE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 0;
     }
 
     /** {@inheritDoc} */

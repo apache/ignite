@@ -35,22 +35,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
@@ -69,9 +64,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
     /** Near cache name. */
     private static String CACHE_NAME_NEAR = "cache_near";
-
-    /** Local cache name. */
-    private static String CACHE_NAME_LOC = "cache_local";
 
     /** Memory configuration to be used on client nodes with local caches. */
     private static DataStorageConfiguration memCfg;
@@ -101,8 +93,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
             iCfg.setDataStorageConfiguration(memCfg);
         }
-
-        ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
 
         iCfg.setCacheConfiguration();
 
@@ -182,20 +172,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return local config
-     */
-    private CacheConfiguration getLocalConfig() {
-        CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setName(CACHE_NAME_LOC);
-        cfg.setCacheMode(LOCAL);
-        cfg.setNearConfiguration(null);
-        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        return cfg;
-    }
-
-    /**
      * Test Double Destroy.
      *
      * @throws Exception If failed.
@@ -216,6 +192,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     private void dhtDestroy() throws Exception {
         grid(0).getOrCreateCache(getDhtConfig());
+
+        awaitCacheOnClient(grid(2), getDhtConfig().getName());
 
         assertNull(grid(0).cache(CACHE_NAME_DHT).get(KEY_VAL));
 
@@ -258,6 +236,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     private void clientDestroy() throws Exception {
         grid(0).getOrCreateCache(getClientConfig());
 
+        awaitCacheOnClient(grid(2), getClientConfig().getName());
+
         assertNull(grid(0).cache(CACHE_NAME_CLIENT).get(KEY_VAL));
 
         grid(0).cache(CACHE_NAME_CLIENT).put(KEY_VAL, KEY_VAL);
@@ -284,8 +264,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearDoubleDestroy() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         startGridsMultiThreaded(gridCount());
 
         nearDestroy();
@@ -300,6 +278,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     private void nearDestroy() throws Exception {
         grid(0).getOrCreateCache(getNearConfig());
+
+        awaitCacheOnClient(grid(2), getNearConfig().getName());
 
         grid(2).getOrCreateNearCache(CACHE_NAME_NEAR, new NearCacheConfiguration());
 
@@ -321,44 +301,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test Double Destroy.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalDoubleDestroy() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        startGridsMultiThreaded(gridCount());
-
-        localDestroy();
-
-        localDestroy();
-    }
-
-    /**
-     * Test Local Destroy.
-     *
-     * @throws Exception If failed.
-     */
-    private void localDestroy() throws Exception {
-        grid(0).getOrCreateCache(getLocalConfig());
-
-        assert grid(0).cache(CACHE_NAME_LOC).get(KEY_VAL) == null;
-        assert grid(1).cache(CACHE_NAME_LOC).get(KEY_VAL) == null;
-
-        grid(0).cache(CACHE_NAME_LOC).put(KEY_VAL, KEY_VAL + 0);
-        grid(1).cache(CACHE_NAME_LOC).put(KEY_VAL, KEY_VAL + 1);
-
-        assert grid(0).cache(CACHE_NAME_LOC).get(KEY_VAL).equals(KEY_VAL + 0);
-        assert grid(1).cache(CACHE_NAME_LOC).get(KEY_VAL).equals(KEY_VAL + 1);
-
-        grid(0).cache(CACHE_NAME_LOC).destroy();
-
-        assertNull(grid(0).cache(CACHE_NAME_LOC));
-    }
-
-    /**
      * Test Dht close.
      *
      * @throws Exception If failed.
@@ -368,6 +310,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(gridCount());
 
         IgniteCache<Integer, Integer> dhtCache0 = grid(0).getOrCreateCache(getDhtConfig());
+
+        awaitCacheOnClient(grid(2), getDhtConfig().getName());
 
         final Integer key = primaryKey(dhtCache0);
 
@@ -453,6 +397,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 3; i++) {
             try (IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getDhtConfig())) {
+                awaitCacheOnClient(grid(2), getDhtConfig().getName());
+
                 IgniteCache<String, String> cache1 = grid(1).cache(CACHE_NAME_DHT);
                 IgniteCache<String, String> cache2 = grid(2).cache(CACHE_NAME_DHT);
 
@@ -488,6 +434,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(gridCount());
 
         IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getClientConfig());
+
+        awaitCacheOnClient(grid(2), getClientConfig().getName());
 
         assert cache0.get(KEY_VAL) == null;
 
@@ -599,11 +547,11 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearClose() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         startGridsMultiThreaded(gridCount());
 
         IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getNearConfig());
+
+        awaitCacheOnClient(grid(2), getNearConfig().getName());
 
         // GridDhtTxPrepareRequest requests to Client node will be counted.
         CountingTxRequestsToClientNodeTcpCommunicationSpi.nodeFilter = grid(2).context().localNodeId();
@@ -675,13 +623,13 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearCloseWithTry() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         startGridsMultiThreaded(gridCount());
 
         String curVal = null;
 
         grid(0).getOrCreateCache(getNearConfig());
+
+        awaitCacheOnClient(grid(2), getNearConfig().getName());
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
@@ -705,97 +653,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
                 assert cache0.get(KEY_VAL).equals(curVal);
                 assert cache1.get(KEY_VAL).equals(curVal);
                 assert cache2.get(KEY_VAL).equals(curVal);
-            }
-        }
-    }
-
-    /**
-     * Test Local close.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalClose() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        memCfg = new DataStorageConfiguration();
-
-        startGridsMultiThreaded(gridCount());
-
-        grid(0).getOrCreateCache(getLocalConfig());
-
-        assert grid(0).cache(CACHE_NAME_LOC).get(KEY_VAL) == null;
-        assert grid(1).cache(CACHE_NAME_LOC).get(KEY_VAL) == null;
-
-        grid(0).cache(CACHE_NAME_LOC).put(KEY_VAL, KEY_VAL + 0);
-        grid(1).cache(CACHE_NAME_LOC).put(KEY_VAL, KEY_VAL + 1);
-
-        assert grid(0).cache(CACHE_NAME_LOC).get(KEY_VAL).equals(KEY_VAL + 0);
-        assert grid(1).cache(CACHE_NAME_LOC).get(KEY_VAL).equals(KEY_VAL + 1);
-
-        // Local close. Same as Local destroy.
-
-        IgniteCache<Object, Object> cache = grid(1).cache(CACHE_NAME_LOC);
-
-        cache.close();
-
-        checkUsageFails(cache);
-
-        assertNull(grid(1).cache(CACHE_NAME_LOC));
-
-        // Local creation after closed.
-
-        AffinityTopologyVersion topVer = grid(1).context().cache().context().exchange().lastTopologyFuture().get();
-
-        IgniteInternalFuture<?> fut = grid(0).context().cache().context().exchange().affinityReadyFuture(topVer);
-
-        if (fut != null)
-            fut.get();
-
-        grid(0).getOrCreateCache(getLocalConfig());
-
-        grid(0).cache(CACHE_NAME_LOC).put(KEY_VAL, KEY_VAL + "recreated0");
-        grid(1).cache(CACHE_NAME_LOC).put(KEY_VAL, KEY_VAL + "recreated1");
-        grid(2).cache(CACHE_NAME_LOC).put(KEY_VAL, KEY_VAL + "recreated2");
-
-        assert grid(0).cache(CACHE_NAME_LOC).get(KEY_VAL).equals(KEY_VAL + "recreated0");
-        assert grid(1).cache(CACHE_NAME_LOC).get(KEY_VAL).equals(KEY_VAL + "recreated1");
-        assert grid(2).cache(CACHE_NAME_LOC).get(KEY_VAL).equals(KEY_VAL + "recreated2");
-    }
-
-    /**
-     * Test Local close.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalCloseWithTry() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        memCfg = new DataStorageConfiguration();
-
-        startGridsMultiThreaded(gridCount());
-
-        String curVal = null;
-
-        for (int i = 0; i < 3; i++) {
-            try (IgniteCache<String, String> cache2 = grid(2).getOrCreateCache(getLocalConfig())) {
-                IgniteCache<String, String> cache0 = grid(0).cache(CACHE_NAME_LOC);
-                IgniteCache<String, String> cache1 = grid(1).cache(CACHE_NAME_LOC);
-
-                assert cache0.get(KEY_VAL) == null;
-                assert cache1.get(KEY_VAL) == null;
-                assert cache2.get(KEY_VAL) == null;
-
-                curVal = KEY_VAL + curVal;
-
-                cache0.put(KEY_VAL, curVal + 1);
-                cache1.put(KEY_VAL, curVal + 2);
-                cache2.put(KEY_VAL, curVal + 3);
-
-                assert cache0.get(KEY_VAL).equals(curVal + 1);
-                assert cache1.get(KEY_VAL).equals(curVal + 2);
-                assert cache2.get(KEY_VAL).equals(curVal + 3);
             }
         }
     }

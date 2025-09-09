@@ -34,6 +34,7 @@ public class GridMetadataAwareAdapterLoadTest extends GridCommonAbstractTest {
         super(/*start grid*/false);
     }
 
+    /** */
     private static final String KEY_VALUE = "test";
 
     /**
@@ -58,6 +59,7 @@ public class GridMetadataAwareAdapterLoadTest extends GridCommonAbstractTest {
         doTest(6, "no meta         ", dic);
     }
 
+    /** */
     public void doTest(int c, String message, String[] dic) throws IgniteInterruptedCheckedException {
         UUID[] uuids = new UUID[10];
 
@@ -84,12 +86,12 @@ public class GridMetadataAwareAdapterLoadTest extends GridCommonAbstractTest {
                         case -1:
                             for (int j = 9; j >= 0; j--)
                                 //entry.addMeta(uuids[j], dic[i]);
-                            entry.addMeta(j, dic[i]);
+                                entry.addMeta(j, dic[i]);
                             break;
                         case 0:
                             for (int j = 2; j >= 0; j--)
                                 //entry.addMeta(uuids[j], dic[i]);
-                            entry.addMeta(j, dic[i]);
+                                entry.addMeta(j, dic[i]);
                             break;
                         case 1:
                             //entry.addMeta(uuids[0], dic[i]);

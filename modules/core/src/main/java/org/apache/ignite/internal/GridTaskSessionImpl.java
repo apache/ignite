@@ -30,8 +30,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
+import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.compute.ComputeTaskSessionScope;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -42,6 +44,12 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.unmodifiableCollection;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Task session.
@@ -74,7 +82,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** */
     private Collection<ComputeJobSibling> siblings;
 
-    /** */
+    /** Guarded by {@link #mux}. */
     private Map<Object, Object> attrs;
 
     /** */
@@ -101,7 +109,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** */
     private final AtomicInteger usage = new AtomicInteger(1);
 
-    /** */
+    /** Task supports session attributes and checkpoints (there is {@link ComputeTaskSessionFullSupport}). */
     private final boolean fullSup;
 
     /** */
@@ -120,6 +128,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final String execName;
 
     /**
+     * Nodes on which the jobs of the task will be executed.
+     * Guarded by {@link #mux}.
+     */
+    @Nullable private List<UUID> jobNodes;
+
+    /** Security context of the user who created the session, {@code null} if security is not enabled. */
+    @Nullable private final SecurityContext secCtx;
+
+    /**
+     * Constructor.
+     *
      * @param taskNodeId Task node ID.
      * @param taskName Task name.
      * @param dep Deployment.
@@ -135,6 +154,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param fullSup Session full support enabled flag.
      * @param internal Internal task flag.
      * @param execName Custom executor name.
+     * @param secCtx Security context of the user who created the session, {@code null} if security is not enabled.
      */
     public GridTaskSessionImpl(
         UUID taskNodeId,
@@ -151,7 +171,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         GridKernalContext ctx,
         boolean fullSup,
         boolean internal,
-        @Nullable String execName) {
+        @Nullable String execName,
+        @Nullable SecurityContext secCtx
+    ) {
         assert taskNodeId != null;
         assert taskName != null;
         assert sesId != null;
@@ -169,7 +191,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.sesId = sesId;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.siblings = siblings != null ? Collections.unmodifiableCollection(siblings) : null;
+        this.siblings = siblings != null ? unmodifiableCollection(siblings) : null;
         this.ctx = ctx;
 
         if (attrs != null && !attrs.isEmpty()) {
@@ -183,6 +205,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.execName = execName;
 
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
+
+        this.secCtx = secCtx;
     }
 
     /** {@inheritDoc} */
@@ -191,13 +215,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /**
+     * Checks that the task supports session attributes and checkpoints
+     * (there is {@link ComputeTaskSessionFullSupport}).
      *
+     * @throws IllegalStateException If not supported.
      */
     protected void checkFullSupport() {
-        if (!fullSup)
+        if (!fullSup) {
             throw new IllegalStateException("Sessions attributes and checkpoints are disabled by default " +
                 "for better performance (to enable, annotate task class with " +
-                "@ComputeTaskSessionFullSupport annotation).");
+                "@" + ComputeTaskSessionFullSupport.class.getSimpleName() + " annotation).");
+        }
     }
 
     /**
@@ -359,7 +387,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         checkFullSupport();
 
         if (keys.isEmpty())
-            return Collections.emptyMap();
+            return emptyMap();
 
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
@@ -518,7 +546,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      */
     public void setJobSiblings(Collection<ComputeJobSibling> siblings) {
         synchronized (mux) {
-            this.siblings = Collections.unmodifiableCollection(siblings);
+            this.siblings = unmodifiableCollection(siblings);
         }
     }
 
@@ -534,7 +562,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
             tmp.addAll(this.siblings);
             tmp.addAll(siblings);
 
-            this.siblings = Collections.unmodifiableCollection(tmp);
+            this.siblings = unmodifiableCollection(tmp);
         }
     }
 
@@ -606,7 +634,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         checkFullSupport();
 
         synchronized (mux) {
-            return attrs == null || attrs.isEmpty() ? Collections.emptyMap() : U.sealMap(attrs);
+            return attrs == null || attrs.isEmpty() ? emptyMap() : U.sealMap(attrs);
         }
     }
 
@@ -759,7 +787,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         checkFullSupport();
 
         try {
-            return (T) ctx.checkpoint().loadCheckpoint(ses, key);
+            return (T)ctx.checkpoint().loadCheckpoint(ses, key);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -800,9 +828,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public Collection<UUID> getTopology() {
         if (topPred != null)
-           return F.viewReadOnly(ctx.discovery().allNodes(), F.node2id(), topPred);
+            return F.viewReadOnly(ctx.discovery().allNodes(), node2id(), topPred);
 
-        return top != null ? top : F.nodeIds(ctx.discovery().allNodes());
+        return top != null ? top : nodeIds(ctx.discovery().allNodes());
     }
 
     /**
@@ -912,6 +940,49 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      */
     @Nullable public String executorName() {
         return execName;
+    }
+
+    /**
+     * Sets nodes on which the jobs of the task will be executed.
+     *
+     * @param jobNodes Nodes on which the jobs of the task will be executed.
+     */
+    public void jobNodes(Collection<UUID> jobNodes) {
+        synchronized (mux) {
+            this.jobNodes = F.isEmpty(jobNodes) ? emptyList() : new ArrayList<>(jobNodes);
+        }
+    }
+
+    /**
+     * @return Nodes on which the jobs of the task will be executed.
+     */
+    public List<UUID> jobNodesSafeCopy() {
+        synchronized (mux) {
+            return F.isEmpty(jobNodes) ? emptyList() : new ArrayList<>(jobNodes);
+        }
+    }
+
+    /**
+     * @return All session attributes, without checks.
+     */
+    public Map<Object, Object> attributesSafeCopy() {
+        synchronized (mux) {
+            return F.isEmpty(attrs) ? emptyMap() : new HashMap<>(attrs);
+        }
+    }
+
+    /**
+     * @return Security context of the task initiator, {@code null} if security is not enabled.
+     */
+    public SecurityContext initiatorSecurityContext() {
+        return secCtx;
+    }
+
+    /**
+     * @return User who created the session, {@code null} if security is not enabled.
+     */
+    public Object login() {
+        return secCtx == null ? null : secCtx.subject().login();
     }
 
     /** {@inheritDoc} */

@@ -20,25 +20,28 @@ package org.apache.ignite.compatibility.persistence;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 
 /**
  * Super class for all persistence compatibility tests.
  */
 public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteCompatibilityAbstractTest {
-    /** Persistence directories. */
-    private static final List<String> PERSISTENCE_DIRS = Arrays.asList(DFLT_STORE_DIR, "binary_meta", "cp", "marshaller");
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        for (String dirName : PERSISTENCE_DIRS) {
-            File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), dirName, true);
+        Consumer<File> recreate = dir -> {
+            U.delete(dir);
+
+            assertTrue(dir.mkdirs());
+        };
+
+        for (File dir : persistenceDirs()) {
+            recreate.accept(dir);
 
             if (!CompatibilityTestsUtils.isDirectoryEmpty(dir)) {
                 throw new IllegalStateException("Directory is not empty and can't be cleaned: " +
@@ -54,7 +57,15 @@ public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteC
         //protection if test failed to finish, e.g. by error
         stopAllGrids();
 
-        for (String dir : PERSISTENCE_DIRS)
-            U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), dir, false));
+        persistenceDirs().forEach(U::delete);
+    }
+
+    /** */
+    private List<File> persistenceDirs() {
+        return Arrays.asList(
+            sharedFileTree().db(),
+            sharedFileTree().binaryMetaRoot(),
+            sharedFileTree().marshaller(),
+            new File(sharedFileTree().root(), SharedFsCheckpointSpi.DFLT_ROOT));
     }
 }

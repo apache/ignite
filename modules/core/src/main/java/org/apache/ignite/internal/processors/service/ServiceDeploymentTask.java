@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -44,7 +43,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -56,6 +54,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SERVICES;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SERVICE_POOL;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Services deployment task.
@@ -134,7 +133,7 @@ class ServiceDeploymentTask {
         this.depId = depId;
         this.ctx = ctx;
 
-        srvcProc = (IgniteServiceProcessor)ctx.service();
+        srvcProc = ctx.service();
         log = ctx.log(getClass());
     }
 
@@ -215,21 +214,21 @@ class ServiceDeploymentTask {
                 else {
                     assert evtType == EVT_NODE_JOINED || evtType == EVT_NODE_LEFT || evtType == EVT_NODE_FAILED;
 
-                    final ClusterNode eventNode = evt.eventNode();
+                    final ClusterNode evtNode = evt.eventNode();
 
                     final Map<IgniteUuid, ServiceInfo> deployedServices = srvcProc.deployedServices();
 
                     if (evtType == EVT_NODE_LEFT || evtType == EVT_NODE_FAILED) {
                         deployedServices.forEach((srvcId, desc) -> {
-                            if (desc.topologySnapshot().containsKey(eventNode.id()) ||
-                                (desc.cacheName() != null && !eventNode.isClient())) // If affinity service
+                            if (desc.topologySnapshot().containsKey(evtNode.id()) ||
+                                (desc.cacheName() != null && !evtNode.isClient())) // If affinity service
                                 toDeploy.put(srvcId, desc);
                         });
                     }
                     else {
                         toDeploy.putAll(deployedServices);
 
-                        toDeploy.putAll(srvcProc.servicesReceivedFromJoin(eventNode.id()));
+                        toDeploy.putAll(srvcProc.servicesReceivedFromJoin(evtNode.id()));
                     }
                 }
 
@@ -242,7 +241,7 @@ class ServiceDeploymentTask {
                     return;
                 }
 
-                depActions = new ServiceDeploymentActions();
+                depActions = new ServiceDeploymentActions(ctx);
 
                 depActions.servicesToDeploy(toDeploy);
             }
@@ -298,7 +297,7 @@ class ServiceDeploymentTask {
         });
 
         if (!depActions.servicesToDeploy().isEmpty()) {
-            final Collection<UUID> evtTopNodes = F.nodeIds(ctx.discovery().nodes(evtTopVer));
+            final Collection<UUID> evtTopNodes = nodeIds(ctx.discovery().nodes(evtTopVer));
 
             depActions.servicesToDeploy().forEach((srvcId, desc) -> {
                 try {
@@ -429,7 +428,7 @@ class ServiceDeploymentTask {
     protected void onReceiveSingleDeploymentsMessage(UUID snd, ServiceSingleNodeDeploymentResultBatch msg) {
         assert depId.equals(msg.deploymentId()) : "Wrong message's deployment process id, msg=" + msg;
 
-        initCrdFut.listen((IgniteInClosure<IgniteInternalFuture<?>>)fut -> {
+        initCrdFut.listen(() -> {
             if (isCompleted())
                 return;
 
@@ -454,7 +453,7 @@ class ServiceDeploymentTask {
     protected void onReceiveFullDeploymentsMessage(ServiceClusterDeploymentResultBatch msg) {
         assert depId.equals(msg.deploymentId()) : "Wrong message's deployment process id, msg=" + msg;
 
-        initTaskFut.listen((IgniteInClosure<IgniteInternalFuture<?>>)fut -> {
+        initTaskFut.listen(() -> {
             if (isCompleted())
                 return;
 
@@ -698,7 +697,7 @@ class ServiceDeploymentTask {
      * @param nodeId Left node id.
      */
     protected void onNodeLeft(UUID nodeId) {
-        initTaskFut.listen((IgniteInClosure<IgniteInternalFuture<?>>)fut -> {
+        initTaskFut.listen(() -> {
             if (isCompleted())
                 return;
 

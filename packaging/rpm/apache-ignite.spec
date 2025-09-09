@@ -3,6 +3,7 @@
 %define _libdir /usr/lib
 %define _log %{_var}/log
 %define _sharedstatedir /var/lib
+%define _binaries_in_noarch_packages_terminate_build 0
 
 
 #-------------------------------------------------------------------------------
@@ -11,14 +12,14 @@
 #
 
 Name:             apache-ignite
-Version:          2.11.0
+Version:          2.16.0
 Release:          1
 Summary:          Apache Ignite In-Memory Computing, Database and Caching Platform
 Group:            Development/System
 License:          ASL 2.0
 URL:              https://ignite.apache.org/
 Source:           %{name}-%{version}-bin.zip
-Requires:         java-1.8.0, chkconfig
+Requires:         java-11, chkconfig
 Requires(pre):    shadow-utils
 Provides:         %{name}
 AutoReq:          no
@@ -44,7 +45,7 @@ in-memory speeds at petabyte scale
 #
 # Preinstall scripts
 # $1 can be:
-#     1 - Initial install 
+#     1 - Initial install
 #     2 - Upgrade
 #
 
@@ -82,10 +83,7 @@ case $1 in
         setPermissions
 
         # Install alternatives
-        # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
-        #update-alternatives --install %{_bindir}/ignitevisorcmd ignitevisorcmd %{_datadir}/%{name}/bin/ignitevisorcmd.sh 0
-        #update-alternatives --auto ignitevisorcmd
-        #update-alternatives --display ignitevisorcmd
+        # Commented out until ignitesqlline is ready to work from any user
         #update-alternatives --install %{_bindir}/ignitesqlline ignitesqlline %{_datadir}/%{name}/bin/sqlline.sh 0
         #update-alternatives --auto ignitesqlline
         #update-alternatives --display ignitesqlline
@@ -133,9 +131,7 @@ case $1 in
         stopIgniteNodes
 
         # Remove alternatives
-        # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
-        #update-alternatives --remove ignitevisorcmd /usr/share/%{name}/bin/ignitevisorcmd.sh
-        #update-alternatives --display ignitevisorcmd || true
+        # Commented out until ignitesqlline is ready to work from any user
         #update-alternatives --remove ignitesqlline /usr/share/%{name}/bin/sqlline.sh
         #update-alternatives --display ignitesqlline || true
         ;;
@@ -202,7 +198,6 @@ mkdir -p %{buildroot}%{_bindir}
 # Copy nessessary files and remove *.bat files
 cp -rf benchmarks bin platforms %{buildroot}%{_datadir}/%{name}
 cp -rf docs/* examples %{buildroot}%{_datadir}/doc/%{name}-%{version}
-mv -f %{buildroot}%{_datadir}/%{name}/bin/ignitevisorcmd.sh %{buildroot}%{_datadir}/doc/%{name}-%{version}/bin/
 find %{buildroot}%{_datadir}/%{name}/ -name *.bat -exec rm -rf {} \;
 
 # Copy libs to /usr/lib and map them to IGNITE_HOME
@@ -266,6 +261,15 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 # Changelog
 #
 
+* Fri Sep 09 2022 Taras Ledkov <tledkov@apache.org> - 2.13.0-1
+- Updated Apache Ignite to version 2.14.0
+
+* Thu Apr 07 2022 Nikita Amelchev <namelchev@apache.org> - 2.13.0-1
+- Updated Apache Ignite to version 2.13.0
+
+* Thu Oct 21 2021 Nikita Amelchev <namelchev@apache.org> - 2.12.0-1
+- Updated Apache Ignite to version 2.12.0
+
 * Fri Jul 09 2021 Alexey Gidaspov <olive.crow@gmail.com> - 2.11.0-1
 - Updated Apache Ignite to version 2.11.0
 
@@ -301,4 +305,3 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 
 * Wed Jan 17 2018 Peter Ivanov <mr.weider@gmail.com> - 2.4.0-1
 - Initial package release
-

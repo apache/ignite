@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
@@ -76,6 +77,30 @@ public interface PerformanceStatisticsHandler {
         long physicalReads);
 
     /**
+     * Count of rows processed by query.
+     *
+     * @param nodeId Node id.
+     * @param type Cache query type.
+     * @param qryNodeId Originating node id.
+     * @param id Query id.
+     * @param action Action with rows.
+     * @param rows Number of rows processed.
+     */
+    void queryRows(UUID nodeId, GridCacheQueryType type, UUID qryNodeId, long id, String action, long rows);
+
+    /**
+     * Custom query property.
+     *
+     * @param nodeId Node id.
+     * @param type Cache query type.
+     * @param qryNodeId Originating node id.
+     * @param id Query id.
+     * @param name Query property name.
+     * @param val Query property value.
+     */
+    void queryProperty(UUID nodeId, GridCacheQueryType type, UUID qryNodeId, long id, String name, String val);
+
+    /**
      * @param nodeId Node id.
      * @param sesId Session id.
      * @param taskName Task name.
@@ -107,6 +132,7 @@ public interface PerformanceStatisticsHandler {
      * @param walCpRecordFsyncDuration Wal cp record fsync duration.
      * @param writeCpEntryDuration Write checkpoint entry duration.
      * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
+     * @param recoveryDataWriteDuration Recovery data write duration.
      * @param totalDuration Total duration in milliseconds.
      * @param cpStartTime Checkpoint start time in milliseconds.
      * @param pagesSize Pages size.
@@ -125,6 +151,7 @@ public interface PerformanceStatisticsHandler {
         long walCpRecordFsyncDuration,
         long writeCpEntryDuration,
         long splitAndSortCpPagesDuration,
+        long recoveryDataWriteDuration,
         long totalDuration,
         long cpStartTime,
         int pagesSize,
@@ -138,4 +165,12 @@ public interface PerformanceStatisticsHandler {
      * @param duration Duration in milliseconds.
      */
     void pagesWriteThrottle(UUID nodeId, long endTime, long duration);
+
+    /**
+     * @param id Node id.
+     * @param name Name of system view.
+     * @param schema Attributes of system view.
+     * @param row System view row.
+     */
+    void systemView(UUID id, String name, List<String> schema, List<Object> row);
 }

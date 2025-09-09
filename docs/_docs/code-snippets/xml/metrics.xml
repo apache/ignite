@@ -23,9 +23,6 @@
                 <!-- tag::jmx-exporter[] -->
                 <bean class="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"/>
                 <!-- end::jmx-exporter[] -->
-                <!-- tag::sql-exporter[] -->
-                <bean class="org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi"/>
-                <!-- end::sql-exporter[] -->
                 <!-- tag::log-exporter[] -->
                 <bean class="org.apache.ignite.spi.metric.log.LogExporterSpi"/>
                 <!-- end::log-exporter[] -->

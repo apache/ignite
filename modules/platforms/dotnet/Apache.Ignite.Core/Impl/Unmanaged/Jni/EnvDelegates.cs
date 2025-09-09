@@ -34,6 +34,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             IntPtr env, IntPtr clazz, IntPtr methodId, long* argsPtr);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        internal delegate int CallStaticIntMethod(
+            IntPtr env, IntPtr clazz, IntPtr methodId, long* argsPtr);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate IntPtr NewGlobalRef(IntPtr env, IntPtr lobj);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -55,6 +59,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate IntPtr NewStringUtf(IntPtr env, IntPtr utf);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        internal delegate IntPtr NewString(IntPtr env, IntPtr utf, int len);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate IntPtr ExceptionOccurred(IntPtr env);
@@ -91,6 +98,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         internal delegate void ReleaseStringChars(IntPtr env, IntPtr jstring, IntPtr chars);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        internal delegate IntPtr GetStringCritical(IntPtr env, IntPtr jstring, byte* isCopy);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        internal delegate void ReleaseStringCritical(IntPtr env, IntPtr jstring, IntPtr chars);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate IntPtr GetStringUtfChars(IntPtr env, IntPtr jstring, byte* isCopy);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -98,6 +111,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate int GetStringUtfLength(IntPtr env, IntPtr jstring);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        internal delegate int GetStringLength(IntPtr env, IntPtr jstring);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate JniResult RegisterNatives(IntPtr env, IntPtr clazz,

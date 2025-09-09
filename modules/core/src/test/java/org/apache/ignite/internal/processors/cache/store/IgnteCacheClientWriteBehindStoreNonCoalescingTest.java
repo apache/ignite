@@ -71,11 +71,16 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean writeBehindEnabled() { return true; }
+    @Override protected boolean writeBehindEnabled() {
+        return true;
+    }
 
     /** {@inheritDoc} */
-    @Override protected boolean writeBehindCoalescing() { return false; }
+    @Override protected boolean writeBehindCoalescing() {
+        return false;
+    }
 
+    /** */
     private static Random rnd = new Random();
 
     /**
@@ -155,7 +160,7 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
             Object oldVal = storeMap.put(entry.getKey(), entry.getValue());
 
             if (oldVal != null) {
-                Integer oldInt = (Integer) oldVal;
+                Integer oldInt = (Integer)oldVal;
                 Integer newInt = (Integer)entry.getValue();
 
                 assertTrue(

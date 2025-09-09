@@ -134,7 +134,7 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        func = (PlatformAffinityFunction) in.readObject();
+        func = (PlatformAffinityFunction)in.readObject();
     }
 
     /**

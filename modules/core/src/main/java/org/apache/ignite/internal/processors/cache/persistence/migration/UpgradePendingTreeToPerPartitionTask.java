@@ -129,17 +129,17 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
 
         db.checkpointReadLock();
         try {
-            IndexStorage indexStorage = ((GridCacheOffheapManager)grp.offheap()).getIndexStorage();
+            IndexStorage idxStorage = ((GridCacheOffheapManager)grp.offheap()).getIndexStorage();
 
             //TODO: IGNITE-5874: replace with some check-method to avoid unnecessary page allocation.
-            RootPage pendingRootPage = indexStorage.allocateIndex(PENDING_ENTRIES_TREE_NAME);
+            RootPage pendingRootPage = idxStorage.allocateIndex(PENDING_ENTRIES_TREE_NAME);
 
             if (pendingRootPage.isAllocated()) {
                 log.info("No pending tree found for cache group: [grpId=" + grp.groupId() +
                     ", grpName=" + grp.name() + ']');
 
                 // Nothing to do here as just allocated tree is obviously empty.
-                indexStorage.dropIndex(PENDING_ENTRIES_TREE_NAME);
+                idxStorage.dropIndex(PENDING_ENTRIES_TREE_NAME);
 
                 return;
             }
@@ -305,7 +305,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                 assert PageIO.getVersion(pageAddr) != 0;
 
                 IgniteCacheOffheapManager.CacheDataStore store =
-                    grp.offheap().dataStore(grp.isLocal() ? null : grp.topology().localPartition(partition));
+                    grp.offheap().dataStore(grp.topology().localPartition(partition));
 
                 if (store == null) {
                     log.warning("Failed to move old-version pending entry " +

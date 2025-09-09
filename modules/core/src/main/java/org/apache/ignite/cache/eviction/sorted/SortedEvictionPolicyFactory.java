@@ -55,12 +55,16 @@ public class SortedEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFac
     public SortedEvictionPolicyFactory() {
     }
 
-    /** */
+    /** @param maxSize Maximum allowed size of cache before entry will start getting evicted. */
     public SortedEvictionPolicyFactory(int maxSize) {
         setMaxSize(maxSize);
     }
 
-    /** */
+    /**
+     * @param maxSize Maximum allowed size of cache before entry will start getting evicted.
+     * @param batchSize Batch size.
+     * @param maxMemSize Maximum allowed cache size in bytes.
+     */
     public SortedEvictionPolicyFactory(int maxSize, int batchSize, long maxMemSize) {
         setMaxSize(maxSize);
         setBatchSize(batchSize);
@@ -86,13 +90,13 @@ public class SortedEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFac
 
     /** {@inheritDoc} */
     @Override public SortedEvictionPolicy<K, V> create() {
-        SortedEvictionPolicy<K, V> policy = new SortedEvictionPolicy<>(comp);
+        SortedEvictionPolicy<K, V> plc = new SortedEvictionPolicy<>(comp);
 
-        policy.setBatchSize(getBatchSize());
-        policy.setMaxMemorySize(getMaxMemorySize());
-        policy.setMaxSize(getMaxSize());
+        plc.setBatchSize(getBatchSize());
+        plc.setMaxMemorySize(getMaxMemorySize());
+        plc.setMaxSize(getMaxSize());
 
-        return policy;
+        return plc;
     }
 
 }

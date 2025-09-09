@@ -39,270 +39,239 @@ public interface MessageWriter {
     public void setBuffer(ByteBuffer buf);
 
     /**
-     * Sets type of message currently written.
-     *
-     * @param msgCls Message type.
-     */
-    public void setCurrentWriteClass(Class<? extends Message> msgCls);
-
-    /**
      * Writes message header.
      *
      * @param type Message type.
-     * @param fieldCnt Fields count.
      * @return {@code true} if successfully. Otherwise returns {@code false}.
      */
-    public boolean writeHeader(short type, byte fieldCnt);
+    public boolean writeHeader(short type);
 
     /**
      * Writes {@code byte} value.
      *
-     * @param name Field name.
      * @param val {@code byte} value.
      * @return Whether value was fully written.
      */
-    public boolean writeByte(String name, byte val);
+    public boolean writeByte(byte val);
 
     /**
      * Writes {@code short} value.
      *
-     * @param name Field name.
      * @param val {@code short} value.
      * @return Whether value was fully written.
      */
-    public boolean writeShort(String name, short val);
+    public boolean writeShort(short val);
 
     /**
      * Writes {@code int} value.
      *
-     * @param name Field name.
      * @param val {@code int} value.
      * @return Whether value was fully written.
      */
-    public boolean writeInt(String name, int val);
+    public boolean writeInt(int val);
 
     /**
      * Writes {@code long} value.
      *
-     * @param name Field name.
      * @param val {@code long} value.
      * @return Whether value was fully written.
      */
-    public boolean writeLong(String name, long val);
+    public boolean writeLong(long val);
 
     /**
      * Writes {@code float} value.
      *
-     * @param name Field name.
      * @param val {@code float} value.
      * @return Whether value was fully written.
      */
-    public boolean writeFloat(String name, float val);
+    public boolean writeFloat(float val);
 
     /**
      * Writes {@code double} value.
      *
-     * @param name Field name.
      * @param val {@code double} value.
      * @return Whether value was fully written.
      */
-    public boolean writeDouble(String name, double val);
+    public boolean writeDouble(double val);
 
     /**
      * Writes {@code char} value.
      *
-     * @param name Field name.
      * @param val {@code char} value.
      * @return Whether value was fully written.
      */
-    public boolean writeChar(String name, char val);
+    public boolean writeChar(char val);
 
     /**
      * Writes {@code boolean} value.
      *
-     * @param name Field name.
      * @param val {@code boolean} value.
      * @return Whether value was fully written.
      */
-    public boolean writeBoolean(String name, boolean val);
+    public boolean writeBoolean(boolean val);
 
     /**
      * Writes {@code byte} array.
      *
-     * @param name Field name.
      * @param val {@code byte} array.
      * @return Whether array was fully written.
      */
-    public boolean writeByteArray(String name, byte[] val);
+    public boolean writeByteArray(byte[] val);
 
     /**
      * Writes {@code byte} array.
      *
-     * @param name Field name.
      * @param val {@code byte} array.
      * @param off Offset.
      * @param len Length.
      * @return Whether array was fully written.
      */
-    public boolean writeByteArray(String name, byte[] val, long off, int len);
+    public boolean writeByteArray(byte[] val, long off, int len);
 
     /**
      * Writes {@code short} array.
      *
-     * @param name Field name.
      * @param val {@code short} array.
      * @return Whether array was fully written.
      */
-    public boolean writeShortArray(String name, short[] val);
+    public boolean writeShortArray(short[] val);
 
     /**
      * Writes {@code int} array.
      *
-     * @param name Field name.
      * @param val {@code int} array.
      * @return Whether array was fully written.
      */
-    public boolean writeIntArray(String name, int[] val);
+    public boolean writeIntArray(int[] val);
 
     /**
      * Writes {@code long} array.
      *
-     * @param name Field name.
      * @param val {@code long} array.
      * @return Whether array was fully written.
      */
-    public boolean writeLongArray(String name, long[] val);
+    public boolean writeLongArray(long[] val);
 
     /**
      * Writes {@code long} array.
      *
-     * @param name Field name.
      * @param val {@code long} array.
      * @param len Length.
      * @return Whether array was fully written.
      */
-    public boolean writeLongArray(String name, long[] val, int len);
+    public boolean writeLongArray(long[] val, int len);
 
     /**
      * Writes {@code float} array.
      *
-     * @param name Field name.
      * @param val {@code float} array.
      * @return Whether array was fully written.
      */
-    public boolean writeFloatArray(String name, float[] val);
+    public boolean writeFloatArray(float[] val);
 
     /**
      * Writes {@code double} array.
      *
-     * @param name Field name.
      * @param val {@code double} array.
      * @return Whether array was fully written.
      */
-    public boolean writeDoubleArray(String name, double[] val);
+    public boolean writeDoubleArray(double[] val);
 
     /**
      * Writes {@code char} array.
      *
-     * @param name Field name.
      * @param val {@code char} array.
      * @return Whether array was fully written.
      */
-    public boolean writeCharArray(String name, char[] val);
+    public boolean writeCharArray(char[] val);
 
     /**
      * Writes {@code boolean} array.
      *
-     * @param name Field name.
      * @param val {@code boolean} array.
      * @return Whether array was fully written.
      */
-    public boolean writeBooleanArray(String name, boolean[] val);
+    public boolean writeBooleanArray(boolean[] val);
 
     /**
      * Writes {@link String}.
      *
-     * @param name Field name.
      * @param val {@link String}.
      * @return Whether value was fully written.
      */
-    public boolean writeString(String name, String val);
+    public boolean writeString(String val);
 
     /**
      * Writes {@link BitSet}.
      *
-     * @param name Field name.
      * @param val {@link BitSet}.
      * @return Whether value was fully written.
      */
-    public boolean writeBitSet(String name, BitSet val);
+    public boolean writeBitSet(BitSet val);
 
     /**
      * Writes {@link UUID}.
      *
-     * @param name Field name.
      * @param val {@link UUID}.
      * @return Whether value was fully written.
      */
-    public boolean writeUuid(String name, UUID val);
+    public boolean writeUuid(UUID val);
 
     /**
      * Writes {@link IgniteUuid}.
      *
-     * @param name Field name.
      * @param val {@link IgniteUuid}.
      * @return Whether value was fully written.
      */
-    public boolean writeIgniteUuid(String name, IgniteUuid val);
+    public boolean writeIgniteUuid(IgniteUuid val);
 
     /**
      * Writes {@link AffinityTopologyVersion}.
      *
-     * @param name Field name.
      * @param val {@link AffinityTopologyVersion}.
      * @return Whether value was fully written.
      */
-    public boolean writeAffinityTopologyVersion(String name, AffinityTopologyVersion val);
+    public boolean writeAffinityTopologyVersion(AffinityTopologyVersion val);
 
     /**
      * Writes nested message.
      *
-     * @param name Field name.
      * @param val Message.
      * @return Whether value was fully written.
      */
-    public boolean writeMessage(String name, Message val);
+    public boolean writeMessage(Message val);
 
     /**
      * Writes array of objects.
      *
-     * @param name Field name.
      * @param arr Array of objects.
      * @param itemType Array component type.
+     * @param <T> Type of the objects that array contains.
      * @return Whether array was fully written.
      */
-    public <T> boolean writeObjectArray(String name, T[] arr, MessageCollectionItemType itemType);
+    public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType);
 
     /**
      * Writes collection.
      *
-     * @param name Field name.
      * @param col Collection.
      * @param itemType Collection item type.
+     * @param <T> Type of the objects that collection contains.
      * @return Whether value was fully written.
      */
-    public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType);
+    public <T> boolean writeCollection(Collection<T> col, MessageCollectionItemType itemType);
 
     /**
      * Writes map.
      *
-     * @param name Field name.
      * @param map Map.
      * @param keyType Map key type.
      * @param valType Map value type.
+     * @param <K> Initial key types of the map to write.
+     * @param <V> Initial value types of the map to write.
      * @return Whether value was fully written.
      */
-    public <K, V> boolean writeMap(String name, Map<K, V> map, MessageCollectionItemType keyType,
+    public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
         MessageCollectionItemType valType);
 
     /**

@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -28,7 +29,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,7 +56,7 @@ public class SchemaOperationManager {
     private Collection<UUID> nodeIds;
 
     /** Node results. */
-    private Map<UUID, SchemaOperationException> nodeRess;
+    private Map<UUID, T2<SchemaOperationException, Boolean>> nodeRess;
 
     /** Current coordinator node. */
     private ClusterNode crd;
@@ -132,9 +133,9 @@ public class SchemaOperationManager {
 
         synchronized (mux) {
             if (isLocalCoordinator())
-                onNodeFinished(ctx.localNodeId(), err);
+                onNodeFinished(ctx.localNodeId(), err, worker.nop());
             else
-                qryProc.sendStatusMessage(crd.id(), operationId(), err);
+                qryProc.sendStatusMessage(crd.id(), operationId(), err, worker.nop());
         }
     }
 
@@ -144,28 +145,29 @@ public class SchemaOperationManager {
      * @param nodeId Node ID.
      * @param err Error.
      */
-    public void onNodeFinished(UUID nodeId, @Nullable SchemaOperationException err) {
+    public void onNodeFinished(UUID nodeId, @Nullable SchemaOperationException err, boolean nop) {
         synchronized (mux) {
             assert isLocalCoordinator();
 
             if (nodeRess.containsKey(nodeId)) {
                 if (log.isDebugEnabled())
                     log.debug("Received duplicate result [opId=" + operationId() + ", nodeId=" + nodeId +
-                        ", err=" + err + ']');
+                        ", err=" + err + ", nop=" + nop + ']');
 
                 return;
             }
 
             if (nodeIds.contains(nodeId)) {
                 if (log.isDebugEnabled())
-                    log.debug("Received result [opId=" + operationId() + ", nodeId=" + nodeId + ", err=" + err + ']');
+                    log.debug("Received result [opId=" + operationId() + ", nodeId=" + nodeId + ", err=" + err +
+                        ", nop=" + nop + ']');
 
-                nodeRess.put(nodeId, err);
+                nodeRess.put(nodeId, new T2<>(err, nop));
             }
             else {
                 if (log.isDebugEnabled())
                     log.debug("Received result from non-tracked node (joined after operation started, will ignore) " +
-                        "[opId=" + operationId() + ", nodeId=" + nodeId + ", err=" + err + ']');
+                        "[opId=" + operationId() + ", nodeId=" + nodeId + ", err=" + err + ", nop=" + nop + ']');
             }
 
             checkFinished();
@@ -182,7 +184,7 @@ public class SchemaOperationManager {
         synchronized (mux) {
             assert crd != null;
 
-            if (F.eq(nodeId, crd.id())) {
+            if (Objects.equals(nodeId, crd.id())) {
                 // Coordinator has left!
                 crd = curCrd;
 
@@ -217,22 +219,27 @@ public class SchemaOperationManager {
             if (nodeIds.size() == nodeRess.size()) {
                 // Initiate finish request.
                 SchemaOperationException err = null;
+                boolean nop = false;
 
-                for (Map.Entry<UUID, SchemaOperationException> nodeRes : nodeRess.entrySet()) {
-                    if (nodeRes.getValue() != null) {
-                        err = nodeRes.getValue();
+                for (Map.Entry<UUID, T2<SchemaOperationException, Boolean>> nodeRes : nodeRess.entrySet()) {
+                    err = nodeRes.getValue().get1();
 
+                    if (err != null)
                         break;
-                    }
+
+                    nop |= nodeRes.getValue().get2();
                 }
 
                 if (log.isDebugEnabled())
                     log.debug("Collected all results, about to send finish message [opId=" + operationId() +
-                        ", err=" + err + ']');
+                        ", err=" + err + ", nop=" + nop + ']');
+
+                // In case of no-op operation results from all nodes must be the same.
+                assert err != null || !nop || nodeRess.entrySet().stream().allMatch(e -> e.getValue().get2()) : nodeRess;
 
                 crdFinished = true;
 
-                qryProc.onCoordinatorFinished(worker.operation(), err);
+                qryProc.onCoordinatorFinished(worker.operation(), err, nop);
             }
         }
     }

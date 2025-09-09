@@ -18,11 +18,10 @@
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
 import java.util.Collection;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
@@ -73,7 +72,7 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
      *
      * @param reader Data reader.
      */
-    public ClientDataStreamerStartRequest(BinaryReaderExImpl reader) {
+    public ClientDataStreamerStartRequest(BinaryReaderEx reader) {
         super(reader);
 
         cacheId = reader.readInt();
@@ -99,14 +98,14 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
             boolean skipStore = (flags & SKIP_STORE) != 0;
 
             // Don't use thread buffer for a one-off streamer operation.
-            boolean useThreadBuffer = !close;
+            boolean useThreadBuf = !close;
 
             if (perNodeBufferSize >= 0)
                 dataStreamer.perNodeBufferSize(perNodeBufferSize);
             else if (entries != null && !entries.isEmpty() && close)
                 dataStreamer.perNodeBufferSize(entries.size());
 
-            if (perThreadBufferSize >= 0 && useThreadBuffer)
+            if (perThreadBufferSize >= 0 && useThreadBuf)
                 dataStreamer.perThreadBufferSize(perThreadBufferSize);
 
             dataStreamer.allowOverwrite(allowOverwrite);
@@ -117,7 +116,7 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
                 dataStreamer.receiver(createReceiver(ctx.kernalContext(), receiverObj, receiverPlatform, keepBinary));
 
             if (entries != null)
-                dataStreamer.addDataInternal(entries, useThreadBuffer);
+                dataStreamer.addDataInternal(entries, useThreadBuf);
 
             if (flush)
                 dataStreamer.flush();
@@ -126,7 +125,8 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
                 dataStreamer.close();
 
                 return new ClientLongResponse(requestId(), 0);
-            } else {
+            }
+            else {
                 long rsrcId = ctx.resources().put(new ClientDataStreamerHandle(dataStreamer));
 
                 return new ClientLongResponse(requestId(), rsrcId);

@@ -24,6 +24,7 @@
 #include <map>
 
 #include <windows.h>
+#include <tlhelp32.h>
 
 #include "ignite/common/common.h"
 namespace ignite
@@ -600,6 +601,65 @@ namespace ignite
                 /** Event handle. */
                 HANDLE handle;
             };
+
+            /**
+             * Thread.
+             */
+            class IGNITE_IMPORT_EXPORT Thread
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                Thread();
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~Thread();
+
+                /**
+                 * Run thread.
+                 */
+                virtual void Run() = 0;
+
+                /**
+                 * Start thread.
+                 */
+                virtual void Start();
+
+                /**
+                 * Join thread.
+                 */
+                virtual void Join();
+
+            private:
+                IGNITE_NO_COPY_ASSIGNMENT(Thread);
+
+                /**
+                 * Routine.
+                 * @param lpParam Param.
+                 * @return Return code.
+                 */
+                static DWORD WINAPI ThreadRoutine(LPVOID lpParam);
+
+                /** Thread handle. */
+                HANDLE handle;
+            };
+
+            /**
+             * Get number of logical processors in system.
+             *
+             * @return Number of logical processors.
+             */
+            IGNITE_IMPORT_EXPORT uint32_t GetNumberOfProcessors();
+
+            /**
+             * Get current processor thread count.
+             *
+             * @return Current processor thread count.
+             */
+            IGNITE_IMPORT_EXPORT int32_t GetThreadsCount();
         }
     }
 }

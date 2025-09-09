@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,9 +39,9 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -106,9 +107,10 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
         File tmpDir = new File(System.getProperty("java.io.tmpdir"), getName());
 
         try {
-            T2<Integer, Long>[] pages = new T2[] {new T2<>(10, 20L), new T2<>(30, 40L)};
+            int grpId = 10;
+            long[] pageIds = {20, 40};
 
-            File f = corruptedPagesFile(tmpDir.toPath(), new RandomAccessFileIOFactory(), pages);
+            File f = corruptedPagesFile(tmpDir.toPath(), new RandomAccessFileIOFactory(), grpId, pageIds);
 
             assertTrue(f.exists());
             assertTrue(f.isFile());
@@ -118,7 +120,7 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
 
             try (BufferedReader br = new BufferedReader(new FileReader(f))) {
                 List<String> lines = br.lines().collect(toList());
-                List<String> pageStrs = Arrays.stream(pages).map(t2 -> t2.get1() + ":" + t2.get2()).collect(toList());
+                List<String> pageStrs = LongStream.of(pageIds).mapToObj(pageId -> grpId + ":" + pageId).collect(toList());
 
                 assertEqualsCollections(lines, pageStrs);
             }
@@ -196,7 +198,7 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
         listeningTestLog.registerListener(logLsnr);
 
         n.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR,
-            new CorruptedTreeException("Test ex", null, anyPageId.get1(), DEFAULT_CACHE_NAME, anyPageId.get2())));
+            new CorruptedTreeException("Test ex", null, DEFAULT_CACHE_NAME, anyPageId.get1(), anyPageId.get2())));
 
         assertTrue(logLsnr.check());
 
@@ -241,12 +243,12 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
     @Nullable private File[] expWalDirs(IgniteEx n) {
         FileWriteAheadLogManager walMgr = walMgr(n);
 
-        if (walMgr != null) {
-            SegmentRouter sr = walMgr.getSegmentRouter();
-            assertNotNull(sr);
+        NodeFileTree ft = n.context().pdsFolderResolver().fileTree();
 
-            File workDir = sr.getWalWorkDir();
-            return sr.hasArchive() ? F.asArray(workDir, sr.getWalArchiveDir()) : F.asArray(workDir);
+        if (walMgr != null) {
+            assertNotNull(walMgr.getSegmentRouter());
+
+            return ft.walArchiveEnabled() ? F.asArray(ft.wal(), ft.walArchive()) : F.asArray(ft.wal());
         }
 
         return null;

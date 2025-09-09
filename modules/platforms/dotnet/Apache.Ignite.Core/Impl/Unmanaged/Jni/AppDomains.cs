@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#if !NETCOREAPP
+#pragma warning disable 3019
 namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the default application domain.
         /// </summary>
-        public static _AppDomain GetDefaultAppDomain()
+        public static object GetDefaultAppDomain()
         {
             if (Os.IsMono)
             {
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
                 Debug.Assert(prop != null);
 
-                return (_AppDomain) prop.GetValue(null, null);
+                return prop.GetValue(null, null);
             }
 
             object objHost;
@@ -82,8 +82,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             var runtime = (ICLRRuntimeInfo) host.GetRuntime(versString, ref IID_CLRRuntimeInfo);
 
             bool started;
-            uint flags;
-            runtime.IsStarted(out started, out flags);
+            uint unused;
+            runtime.IsStarted(out started, out unused);
             Debug.Assert(started);
 
             var rtHost = (ICorRuntimeHost) runtime.GetInterface(ref CLSID_CorRuntimeHost, ref IID_CorRuntimeHost);
@@ -131,8 +131,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             void GetConfiguration(out IntPtr config);
             void Start();
             void Stop();
-            void CreateDomain(string name, object identity, out _AppDomain domain);
+            void CreateDomain(string name, object identity, out object domain);
             void GetDefaultDomain(out _AppDomain domain);
+        }
+
+        [CLSCompliant(false)]
+        [Guid("05F696DC-2B29-3663-AD8B-C4389CF2A713")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        [ComVisible(true)]
+        private interface _AppDomain
+        {
+            // No-op.
         }
 
         private static class NativeMethods
@@ -143,4 +152,3 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         }
     }
 }
-#endif

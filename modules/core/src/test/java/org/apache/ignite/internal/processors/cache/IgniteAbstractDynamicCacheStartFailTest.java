@@ -63,11 +63,18 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests the recovery after a dynamic cache start failure.
@@ -553,6 +560,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         checkCacheOperations(clientNode.cache(EXISTING_CACHE_NAME));
     }
 
+    /** */
     @Test
     public void testConcurrentClientNodeJoins() throws Exception {
         final int clientCnt = 3;
@@ -609,6 +617,62 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         checkCacheOperations(cache);
     }
 
+    /** */
+    @Test
+    public void testStartAndStopFailedCache() throws Exception {
+        IgniteEx client = startClientGrid(gridCount());
+
+        awaitPartitionMapExchange();
+
+        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(grid(1));
+
+        // Block partition map exchange related to the start of a new cache.
+        spi1.blockMessages((node, msg) -> msg instanceof GridDhtPartitionsSingleMessage);
+
+        IgniteInternalFuture<?> startFut = GridTestUtils.runAsync(() -> {
+            // Create a new cache that should lead to an error during PME.
+            CacheConfiguration<?, ?> cfg =
+                createCacheConfigsWithBrokenCacheStore(true, 0, 0, 1, false).get(0);
+
+            cfg.setName(DYNAMIC_CACHE_NAME);
+
+            // It is expected that the process of creating the cache will be failed.
+            client.getOrCreateCache(cfg);
+        });
+
+        // Make sure that PME is blocked.
+        spi1.waitForBlocked();
+
+        AffinityTopologyVersion currVer = grid(0).context().discovery().topologyVersionEx();
+        AffinityTopologyVersion expVer = currVer.nextMinorVersion();
+
+        // Make sure that client has processed a create cache request before destroying it.
+        awaitCacheOnClient(client, DYNAMIC_CACHE_NAME);
+
+        // Let's try to destroy the cache that is being started.
+        IgniteInternalFuture<?> stopFut = GridTestUtils.runAsync(() -> client.destroyCache(DYNAMIC_CACHE_NAME));
+
+        // Wait for the next minor topology version. It means DynamicCacheChangeBatch was processed by disco thread.
+        assertTrue(
+            "Failed to wait for DynamicCacheChangeBatch message (destroy)",
+            waitForCondition(() -> grid(0).context().discovery().topologyVersionEx().equals(expVer), getTestTimeout()));
+
+        // Unblock the process of creating the cache.
+        spi1.stopBlock();
+
+        // Creating a new cache should throw CacheException.
+        assertThrowsWithCause(() -> startFut.get(getTestTimeout()), CacheException.class);
+
+        stopFut.get(getTestTimeout());
+    }
+
+    /**
+     * Initiates creating new caches from the given {@code initiatorId} node and
+     * it is expected that creating caches results in error.
+     *
+     * @param cfgs Cache configurations.
+     * @param initiatorId Node index that to be used to initiate cache start.
+     */
     protected void testDynamicCacheStart(final Collection<CacheConfiguration> cfgs, final int initiatorId) {
         assert initiatorId < gridCount();
 
@@ -628,14 +692,16 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration res = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (mbSrv == null)
-            mbSrv = new FailureMBeanServer(res.getMBeanServer());
+            mbSrv = new FailureMBeanServer(cfg.getMBeanServer());
 
-        res.setMBeanServer(mbSrv);
+        cfg.setMBeanServer(mbSrv);
 
-        return res;
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -771,8 +837,11 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
             cfg.setName(cacheName);
 
-            if (i == unluckyCfg)
+            if (i == unluckyCfg) {
+                cfg.setNodeFilter(new AnyNodeMXFilter());
+
                 mbSrv.cache(cacheName);
+            }
 
             cfgs.add(cfg);
         }
@@ -813,15 +882,37 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
      *
      */
     public static class Value {
+        /** */
         @QuerySqlField
         private final int fieldVal;
 
+        /** */
         public Value(int fieldVal) {
             this.fieldVal = fieldVal;
         }
 
+        /** */
         public int getValue() {
             return fieldVal;
+        }
+    }
+
+    /**
+     * 'MXBean'-named interface to register mx bean at dynamic cache creation to simulate failure.
+     *
+     * @see GridCacheProcessor#registerMbean(Object, String, boolean)
+     */
+    public interface UUIDMXBean {
+        // No-op.
+    }
+
+    /**
+     * Empty filter used to register mxbean at dynamic cache creation to simalate failure.
+     */
+    public static class AnyNodeMXFilter implements IgnitePredicate<ClusterNode>, UUIDMXBean {
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode clusterNode) {
+            return true;
         }
     }
 

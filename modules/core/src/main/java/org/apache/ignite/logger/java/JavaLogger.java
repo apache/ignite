@@ -24,17 +24,19 @@ import java.net.URL;
 import java.util.UUID;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import java.util.logging.StreamHandler;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.logging.Level.FINE;
@@ -95,7 +97,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware {
+public class JavaLogger implements IgniteLoggerEx {
     /** */
     public static final String DFLT_CONFIG_PATH = "config/java.util.logging.properties";
 
@@ -115,6 +117,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
 
     /** Path to configuration file. */
     @GridToStringExclude
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private String cfg;
 
     /** Quiet flag. */
@@ -132,7 +135,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
      * Creates new logger.
      */
     public JavaLogger() {
-        this(!isConfigured());
+        this(true);
     }
 
     /**
@@ -190,19 +193,39 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
      * Creates new logger with given implementation.
      *
      * @param impl Java Logging implementation to use.
+     * @param configure Configure logger.
      */
-    public JavaLogger(final Logger impl) {
+    public JavaLogger(final Logger impl, boolean configure) {
         assert impl != null;
 
-        configure(impl);
+        if (configure)
+            configure(impl);
+        else
+            this.impl = impl;
 
         quiet = quiet0;
     }
 
+    /**
+     * Creates new logger with given parameters.
+     *
+     * @param impl Java Logging implementation to use.
+     * @param cfg Path to configuration.
+     */
+    private JavaLogger(Logger impl, String cfg) {
+        this(impl, true);
+
+        if (cfg != null)
+            this.cfg = cfg;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
-        return new JavaLogger(ctgr == null ? Logger.getLogger("") : Logger.getLogger(
-            ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr)));
+        return new JavaLogger(ctgr == null
+            ? Logger.getLogger("")
+            : Logger.getLogger(ctgr instanceof Class
+                ? ((Class<?>)ctgr).getName()
+                : String.valueOf(ctgr)), cfg);
     }
 
     /**
@@ -234,8 +257,8 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
 
             defaultConfiguration();
 
-            boolean quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
-            boolean useConsoleAppender = Boolean.valueOf(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"));
+            boolean quiet = Boolean.parseBoolean(System.getProperty(IGNITE_QUIET, "true"));
+            boolean useConsoleAppender = Boolean.parseBoolean(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"));
 
             if (useConsoleAppender) {
                 ConsoleHandler consoleHnd = findHandler(impl, ConsoleHandler.class);
@@ -337,6 +360,21 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
         return fileName(fileHnd);
     }
 
+    /** {@inheritDoc} */
+    @Override public void addConsoleAppender(boolean clearOutput) {
+        impl.addHandler(new StreamHandler(System.out, new Formatter() {
+            @Override public String format(LogRecord record) {
+                return record.getMessage() + U.nl();
+            }
+        }));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void flush() {
+        for (Handler h : impl.getHandlers())
+            h.flush();
+    }
+
     /**
      * @param fileHnd File handler.
      * @return Current log file or {@code null} if it can not be retrieved from file handler.
@@ -365,9 +403,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
     }
 
     /** {@inheritDoc} */
-    @Override public void setApplicationAndNode(@Nullable String application, UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
-
+    @Override public void setApplicationAndNode(@Nullable String application, @Nullable UUID nodeId) {
         if (this.nodeId != null)
             return;
 
@@ -390,11 +426,6 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
         catch (IgniteCheckedException | IOException e) {
             throw new RuntimeException("Failed to enable file handler.", e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID getNodeId() {
-        return nodeId;
     }
 
     /**

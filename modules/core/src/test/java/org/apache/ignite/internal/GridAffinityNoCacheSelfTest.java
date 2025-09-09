@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -72,13 +71,13 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     private void checkAffinityProxyNoCache(Object key) {
         IgniteEx ignite = grid(0);
 
-        final Affinity<Object> affinity = ignite.affinity("noCache");
+        final Affinity<Object> aff = ignite.affinity("noCache");
 
-        assertFalse("Affinity proxy instance expected", affinity instanceof GridCacheAffinityImpl);
+        assertFalse("Affinity proxy instance expected", aff instanceof GridCacheAffinityImpl);
 
         final ClusterNode n = ignite.cluster().localNode();
 
-        assertAffinityMethodsException(affinity, key, n);
+        assertAffinityMethodsException(aff, key, n);
     }
 
     /**
@@ -109,9 +108,9 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Affinity<Object> affinity = grid.affinity(cacheName);
+        Affinity<Object> aff = grid.affinity(cacheName);
 
-        assertTrue(affinity instanceof GridCacheAffinityImpl);
+        assertTrue(aff instanceof GridCacheAffinityImpl);
 
         final ClusterNode n = grid.cluster().localNode();
 
@@ -238,6 +237,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
             return value(ctx, cpy, null);
         }
 
+        /** {@inheritDoc} */
         @Override public <T> @Nullable T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
             A.notNull(ctx, "ctx");
 
@@ -260,7 +260,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException {
             return 0;
         }
 
@@ -281,7 +281,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+        @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
             throw new UnsupportedOperationException();
         }
 
@@ -313,11 +313,6 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public short directType() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
             throw new UnsupportedOperationException();
         }
     }

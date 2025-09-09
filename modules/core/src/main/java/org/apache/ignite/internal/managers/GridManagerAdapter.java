@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -47,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
@@ -365,18 +363,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return ctx.discovery().localNode();
                     }
 
-                    @Override public Collection<ClusterNode> remoteDaemonNodes() {
-                        final Collection<ClusterNode> all = ctx.discovery().daemonNodes();
-
-                        return !localNode().isDaemon() ?
-                            all :
-                            F.view(all, new IgnitePredicate<ClusterNode>() {
-                                @Override public boolean apply(ClusterNode n) {
-                                    return n.isDaemon();
-                                }
-                            });
-                    }
-
                     @Nullable @Override public ClusterNode node(UUID nodeId) {
                         A.notNull(nodeId, "nodeId");
 
@@ -394,7 +380,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         }
                     }
 
-                    @Override public void send(ClusterNode node, Serializable msg, String topic)
+                    @Override public void send(ClusterNode node, Object msg, String topic)
                         throws IgniteSpiException {
                         A.notNull(node, "node");
                         A.notNull(msg, "msg");

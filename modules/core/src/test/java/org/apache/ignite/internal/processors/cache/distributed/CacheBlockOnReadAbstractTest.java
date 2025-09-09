@@ -46,6 +46,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.ExchangeActions.CacheActionDa
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -77,7 +79,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -315,7 +316,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             baseline.add(startGrid(idx++));
 
         // Activate cluster.
-        baseline.get(0).cluster().active(true);
+        baseline.get(0).cluster().state(ClusterState.ACTIVE);
 
         // Start server nodes in activated cluster.
         for (int i = 0; i < serversCount(); i++)
@@ -343,7 +344,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         clients.clear();
 
-        grid(0).cluster().active(false);
+        grid(0).cluster().state(ClusterState.INACTIVE);
 
         stopAllGrids();
 
@@ -1273,7 +1274,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override protected void execute() {
-            Set<String> loggedMessages = new HashSet<>();
+            Set<String> loggedMsgs = new HashSet<>();
 
             while (!Thread.currentThread().isInterrupted()) {
                 long prevTs = System.currentTimeMillis();
@@ -1297,7 +1298,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
                     else {
                         readOperationsFailed.incrementAndGet();
 
-                        if (loggedMessages.add(e.getMessage()))
+                        if (loggedMsgs.add(e.getMessage()))
                             log.error("Error during read operation execution", e);
 
                         continue;

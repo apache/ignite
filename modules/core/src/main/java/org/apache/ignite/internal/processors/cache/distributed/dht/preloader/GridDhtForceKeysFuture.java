@@ -42,9 +42,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -65,6 +62,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 
 /**
  * Force keys request future.
@@ -235,8 +233,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         boolean ret = false;
 
         if (mappings != null) {
-            assert !cctx.mvccEnabled(); // Should not happen when MVCC enabled.
-
             ClusterNode loc = cctx.localNode();
 
             int curTopVer = topCntr.get();
@@ -358,7 +354,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             assert pick != null;
 
             if (!cctx.rebalanceEnabled() && loc.id().equals(pick.id()))
-                pick = F.first(F.view(owners, F.remoteNodes(loc.id())));
+                pick = F.first(F.view(owners, remoteNodes(loc.id())));
 
             if (pick == null) {
                 if (log.isTraceEnabled())
@@ -538,10 +534,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                         if (entry.initialValue(
                             info.value(),
                             info.version(),
-                            cctx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
-                            cctx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
-                            cctx.mvccEnabled() ? ((MvccVersionAware)entry).mvccTxState() : TxState.NA,
-                            cctx.mvccEnabled() ? ((MvccUpdateVersionAware)entry).newMvccTxState() : TxState.NA,
                             info.ttl(),
                             info.expireTime(),
                             true,

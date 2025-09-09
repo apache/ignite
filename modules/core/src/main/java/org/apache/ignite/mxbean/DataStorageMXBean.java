@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
  * An MX bean allowing to monitor and tune persistence.
  */
 public interface DataStorageMXBean {
+    /** @return ZIP compression level to WAL compaction. */
     @MXBeanDescription("ZIP compression level to WAL compaction.")
     int getWalCompactionLevel();
 

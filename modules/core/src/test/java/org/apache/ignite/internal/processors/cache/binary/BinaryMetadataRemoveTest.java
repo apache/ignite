@@ -35,11 +35,9 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.DiscoverySpiListener;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -59,22 +57,13 @@ public class BinaryMetadataRemoveTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi;
-
         final GridTestUtils.DiscoveryHook discoveryHook0 = discoveryHook;
 
         if (discoveryHook0 != null) {
-            discoSpi = new TcpDiscoverySpi() {
-                @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-                    if (discoveryHook0 != null)
-                        super.setListener(GridTestUtils.DiscoverySpiListenerWrapper.wrap(lsnr, discoveryHook0));
-                }
-            };
-        }
-        else
-            discoSpi = new TcpDiscoverySpi();
+            assert cfg.getDiscoverySpi() instanceof TestTcpDiscoverySpi;
 
-        cfg.setDiscoverySpi(discoSpi);
+            ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).discoveryHook(discoveryHook0);
+        }
 
         cfg.setCacheConfiguration(new CacheConfiguration().setName(CACHE_NAME));
 
@@ -116,11 +105,11 @@ public class BinaryMetadataRemoveTest extends GridCommonAbstractTest {
     public void testRemoveNotExistentType() {
         for (Ignite testNode : G.allGrids()) {
             GridTestUtils.assertThrows(log, () -> {
-                    ((IgniteEx)testNode).context().cacheObjects().removeType(
-                        ((IgniteEx)testNode).context().cacheObjects().typeId("NotExistentType"));
+                ((IgniteEx)testNode).context().cacheObjects().removeType(
+                    ((IgniteEx)testNode).context().cacheObjects().typeId("NotExistentType"));
 
-                    return null;
-                },
+                return null;
+            },
                 IgniteException.class, "Failed to remove metadata, type not found");
         }
     }

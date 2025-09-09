@@ -17,24 +17,25 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.h2.QueryTable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.h2.value.Value;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * H2 Value message factory.
  */
 public class GridH2ValueMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
-    @Override public void registerAll(IgniteMessageFactory factory) {
+    @Override public void registerAll(MessageFactory factory) {
         factory.register((short)-4, () -> GridH2Null.INSTANCE);
         factory.register((short)-5, GridH2Boolean::new);
         factory.register((short)-6, GridH2Byte::new);
@@ -63,23 +64,18 @@ public class GridH2ValueMessageFactory implements MessageFactoryProvider {
         factory.register((short)-54, QueryTable::new);
         factory.register((short)-55, GridH2DmlRequest::new);
         factory.register((short)-56, GridH2DmlResponse::new);
-        factory.register((short)-57, GridH2SelectForUpdateTxDetails::new);
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public Message create(short type) {
-        throw new UnsupportedOperationException();
     }
 
     /**
      * @param src Source values.
-     * @param dst Destination collection.
      * @param cnt Number of columns to actually send.
      * @return Destination collection.
      * @throws IgniteCheckedException If failed.
      */
-    public static Collection<Message> toMessages(Collection<Value[]> src, Collection<Message> dst, int cnt)
+    public static Collection<Message> toMessages(Collection<Value[]> src, int cnt)
         throws IgniteCheckedException {
+        List<Message> dst = new ArrayList<>(src.size() * cnt);
+
         for (Value[] row : src) {
             assert row.length >= cnt;
 

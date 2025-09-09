@@ -78,7 +78,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
-        assertEquals(4, allMemPlcs.size());
+        assertEquals(3, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
     }
@@ -95,7 +95,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
-        assertEquals(5, allMemPlcs.size());
+        assertEquals(4, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
@@ -117,7 +117,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
-        assertEquals(4, allMemPlcs.size());
+        assertEquals(3, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
@@ -142,7 +142,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
-        assertEquals(5, allMemPlcs.size());
+        assertEquals(4, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
@@ -226,7 +226,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
      * @param plcName Policy name.
      */
     private void verifyCacheMemoryPolicy(IgniteCache cache, String plcName) {
-        GridCacheContext ctx = ((IgniteCacheProxy) cache).context();
+        GridCacheContext ctx = ((IgniteCacheProxy)cache).context();
 
         assertEquals(plcName, ctx.dataRegion().config().getName());
     }

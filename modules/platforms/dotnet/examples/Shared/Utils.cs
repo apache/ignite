@@ -68,7 +68,8 @@ namespace Apache.Ignite.Examples.Shared
                 JvmOptions = new[]
                 {
                     "-DIGNITE_QUIET=true",
-                    "-DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true"
+                    "-DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true",
+                    "-DIGNITE_UPDATE_NOTIFIER=false"
                 },
                 Logger = new ConsoleLogger
                 {

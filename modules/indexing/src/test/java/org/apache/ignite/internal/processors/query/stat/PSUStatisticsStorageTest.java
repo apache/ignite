@@ -39,11 +39,11 @@ public class PSUStatisticsStorageTest extends StatisticsStorageAbstractTest {
      * 3) partially remove necessarily for the query statistics and check that query plan will be changed
      * 4) partially collect statistics for extra column and check that query plan still unable to get all statistics
      *      it wants
-     * 5) partially collect statistics for the necessarily column and check that the query plan will restore to optimal
+     * 5) partially collect statistics for the necсessarily column and check that the query plan will restore to optimal
      */
     @Test
     public void testPartialDeletionCollection() throws Exception {
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         IgniteEx ign = grid(0);
 
@@ -51,6 +51,8 @@ public class PSUStatisticsStorageTest extends StatisticsStorageAbstractTest {
         checkOptimalPlanChosenForDifferentIndexes(ign, new String[]{"SMALL_B"}, SQL, NO_HINTS);
 
         // 2) partially remove statistics for one extra column and check chat the rest statistics still can be used
+        log.info("Dropping statistics by A column...");
+
         statisticsMgr(0).dropStatistics(new StatisticsTarget("PUBLIC", "SMALL", "A"));
 
         assertTrue(GridTestUtils.waitForCondition(
@@ -61,6 +63,8 @@ public class PSUStatisticsStorageTest extends StatisticsStorageAbstractTest {
         checkOptimalPlanChosenForDifferentIndexes(ign, new String[]{"SMALL_B"}, SQL, NO_HINTS);
 
         // 3) partially remove necessarily for the query statistics and check that query plan will be changed
+        log.info("Dropping statistics by B column...");
+
         statisticsMgr(0).dropStatistics(new StatisticsTarget(SCHEMA, "SMALL", "B"));
 
         assertTrue(GridTestUtils.waitForCondition(
@@ -82,13 +86,15 @@ public class PSUStatisticsStorageTest extends StatisticsStorageAbstractTest {
         // 4) partially collect statistics for extra column and check that query plan still unable to get all statistics
         // it wants
 
-        collectStatistics(new StatisticsTarget(SCHEMA, "SMALL", "A"));
+        log.info("Recollecting statistics by A column...");
+
+        collectStatistics(StatisticsType.GLOBAL, new StatisticsTarget(SCHEMA, "SMALL", "A"));
 
         checkOptimalPlanChosenForDifferentIndexes(ign, new String[]{"SMALL_C"}, SQL, NO_HINTS);
 
         // 5) partially collect statistics for the necessarily column
         // and check that the query plan will restore to optimal
-        collectStatistics(new StatisticsTarget(SCHEMA, "SMALL", "B"));
+        collectStatistics(StatisticsType.GLOBAL, new StatisticsTarget(SCHEMA, "SMALL", "B"));
 
         checkOptimalPlanChosenForDifferentIndexes(ign, new String[]{"SMALL_B"}, SQL, NO_HINTS);
     }

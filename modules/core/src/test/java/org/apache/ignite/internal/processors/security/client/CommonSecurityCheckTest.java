@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.security.client;
 
-import java.util.Arrays;
 import java.util.Map;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.SslMode;
@@ -25,15 +24,12 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.UserAttributesFactory;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -44,9 +40,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * Common parent for security tests for thin client.
@@ -54,7 +51,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 @RunWith(JUnit4.class)
 public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
     /** */
-    protected final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
+    protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
     protected boolean fail;
@@ -72,7 +69,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
     protected TestSecurityData[] clientData() {
         return new TestSecurityData[]{new TestSecurityData(CLIENT,
             SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-                .appendSystemPermissions(ADMIN_OPS, CACHE_CREATE)
+                .appendSystemPermissions(ADMIN_OPS, CACHE_CREATE, ADMIN_CLUSTER_STATE)
                 .build()
         )};
     }
@@ -90,7 +87,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
 
         cfg.setPluginProviders(getPluginProvider(name));
 
-        SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
+        SslContextFactory sslFactory = (SslContextFactory)GridTestUtils.sslFactory();
 
         cfg.setSslContextFactory(sslFactory);
         cfg.setConnectorConfiguration(new ConnectorConfiguration()
@@ -121,23 +118,6 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
     }
 
     /**
-     * @return Grid client configuration.
-     */
-    protected GridClientConfiguration getGridClientConfiguration() {
-        Map<String, String> userAttrs = new UserAttributesFactory().create();
-
-        if (fail)
-            userAttrs.clear();
-
-        return new GridClientConfiguration()
-            .setSslContextFactory(getClientSslContextFactory()::create)
-            .setRouters(Arrays.asList("127.0.0.1:11211", "127.0.0.1:11212"))
-            .setSecurityCredentialsProvider(
-                new SecurityCredentialsBasicProvider(new SecurityCredentials(CLIENT, "")))
-            .setUserAttributes(userAttrs);
-    }
-
-    /**
      * @return Client configuration.
      */
     protected ClientConfiguration getClientConfiguration() {
@@ -154,7 +134,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
      * @return SSL context factory for clients.
      */
     @NotNull protected SslContextFactory getClientSslContextFactory() {
-        SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
+        SslContextFactory sslFactory = (SslContextFactory)GridTestUtils.sslFactory();
 
         sslFactory.setKeyStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.client.path"))
             .getAbsolutePath());
@@ -167,7 +147,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
      * @return Plugin provider.
      */
     protected PluginProvider<?> getPluginProvider(String name) {
-        return new TestAdditionalSecurityPluginProvider(name, null, ALLOW_ALL,
+        return new TestAdditionalSecurityPluginProvider(name, null, ALL_PERMISSIONS,
             globalAuth, true, clientData());
     }
 }

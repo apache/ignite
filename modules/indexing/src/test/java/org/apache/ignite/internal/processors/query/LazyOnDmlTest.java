@@ -99,7 +99,7 @@ public class LazyOnDmlTest extends AbstractIndexingCommonTest {
         GridQueryProcessor.idxCls = CheckLazyIndexing.class;
 
         startGrids(3);
-   }
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -185,7 +185,7 @@ public class LazyOnDmlTest extends AbstractIndexingCommonTest {
     /**
      */
     public void checkUpdateNotLazy(String sql) throws Exception {
-        try (AutoCloseable checker = CheckLazyIndexing.checkLazy(atomicityMode == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)) {
+        try (AutoCloseable checker = CheckLazyIndexing.checkLazy(false)) {
             List<List<?>> res = sql(sql).getAll();
 
             // Check that all rows updates only ones.

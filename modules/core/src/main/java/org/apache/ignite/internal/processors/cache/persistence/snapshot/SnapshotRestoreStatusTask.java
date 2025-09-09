@@ -17,31 +17,71 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.snapshot.SnapshotStatusTask;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Snapshot restore status task.
+ *
+ * @deprecated Use {@link SnapshotStatusTask} instead.
  */
 @GridInternal
-class SnapshotRestoreStatusTask extends SnapshotRestoreManagementTask {
+@Deprecated
+class SnapshotRestoreStatusTask extends ComputeTaskAdapter<String, Boolean> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected ComputeJob makeJob(String snpName) {
-        return new ComputeJobAdapter() {
-            /** Auto-injected grid instance. */
-            @IgniteInstanceResource
-            private transient IgniteEx ignite;
+    @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
+        List<ClusterNode> subgrid,
+        String snpName
+    ) throws IgniteException {
+        Map<ComputeJob, ClusterNode> map = U.newHashMap(subgrid.size());
 
-            @Override public Boolean execute() throws IgniteException {
-                return ignite.context().cache().context().snapshotMgr().isRestoring(snpName);
-            }
-        };
+        for (ClusterNode node : subgrid) {
+            map.put(new ComputeJobAdapter() {
+                @IgniteInstanceResource
+                private transient IgniteEx ignite;
+
+                @Override public Boolean execute() throws IgniteException {
+                    return ignite.context().cache().context().snapshotMgr().isRestoring(snpName);
+                }
+            }, node);
+        }
+
+        return map;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
+        boolean ret = false;
+
+        for (ComputeJobResult r : results) {
+            if (r.getException() != null)
+                throw new IgniteException("Failed to execute job [nodeId=" + r.getNode().id() + ']', r.getException());
+
+            ret |= Boolean.TRUE.equals(r.getData());
+        }
+
+        return ret;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+        // Handle all exceptions during the `reduce` operation.
+        return ComputeJobResultPolicy.WAIT;
     }
 }

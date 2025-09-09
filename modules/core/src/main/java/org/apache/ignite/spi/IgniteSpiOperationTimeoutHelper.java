@@ -67,10 +67,22 @@ public class IgniteSpiOperationTimeoutHelper {
                 timeout = absoluteThreshold;
 
             timeoutThreshold = timeout;
-        } else {
+        }
+        else {
             // Save absolute threshold if it is set.
             timeoutThreshold = absoluteThreshold > 0 ? absoluteThreshold : 0;
         }
+    }
+
+    /**
+     * Creates timeout helper with an absolute time threshold. Sets {@code timeoutEnabled} to {@code false}.
+     *
+     * @param timeout Timeout in milliseconds.
+     */
+    public IgniteSpiOperationTimeoutHelper(long timeout) {
+        timeoutEnabled = false;
+
+        timeoutThreshold = System.nanoTime() + U.millisToNanos(timeout);
     }
 
     /**
@@ -110,7 +122,7 @@ public class IgniteSpiOperationTimeoutHelper {
      * @param e Exception to check.
      * @return {@code True} if given exception is a timeout. {@code False} otherwise.
      */
-    public boolean checkFailureTimeoutReached(Exception e) {
+    public static boolean checkFailureTimeoutReached(Exception e) {
         return X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class);
     }
 }

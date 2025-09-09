@@ -28,14 +28,9 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
-import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
-import org.apache.ignite.testframework.GridTestUtils.RunnableX;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -47,7 +42,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_SET_STATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /** Tests that security information specified in cache create/destroy events belongs to the operation initiator. */
 public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSecurityContextTest {
@@ -74,7 +69,7 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
     /** Tests cache create/destroy event security context in case operation is initiated from the {@link IgniteClient}. */
     @Test
     public void testIgniteClient() throws Exception {
-        operationInitiatorLogin = "thin_client";
+        operationInitiatorLogin = THIN_CLIENT_LOGIN;
 
         ClientConfiguration cfg = new ClientConfiguration()
             .setAddresses(Config.SERVER)
@@ -98,29 +93,12 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
         }
     }
 
-    /** Tests cache create/destroy event security context in case operation is initiated from the {@link GridClient}. */
-    @Test
-    public void testGridClient() throws Exception {
-        operationInitiatorLogin = "grid_client";
-
-        GridClientConfiguration cfg = new GridClientConfiguration()
-            .setServers(singletonList("127.0.0.1:11211"))
-            .setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(new SecurityCredentials(operationInitiatorLogin, "")));
-
-        grid("crd").createCache(cacheConfiguration());
-
-        try (GridClient cli = GridClientFactory.start(cfg)) {
-            checkCacheEvents(() -> cli.state().state(INACTIVE, true), EVT_CACHE_STOPPED);
-            checkCacheEvents(() -> cli.state().state(ACTIVE, true), EVT_CACHE_STARTED);
-        }
-    }
-
     /** Tests cache create/destroy event security context in case operation is initiated from the REST client. */
     @Test
     public void testRestClient() throws Exception {
         String cacheName = "rest_client_cache";
 
-        operationInitiatorLogin = "rest_client";
+        operationInitiatorLogin = REST_CLIENT_LOGIN;
 
         checkCacheEvents(() -> sendRestRequest(GET_OR_CREATE_CACHE, cacheName, null), EVT_CACHE_STARTED);
         checkCacheEvents(() -> sendRestRequest(DESTROY_CACHE, cacheName, null), EVT_CACHE_STOPPED);
@@ -167,7 +145,7 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
         checkCacheEvents(
             () -> startGrid(getConfiguration(
                 operationInitiatorLogin,
-                    new TestSecurityPluginProvider(operationInitiatorLogin, "", ALLOW_ALL, false))
+                    new TestSecurityPluginProvider(operationInitiatorLogin, "", ALL_PERMISSIONS, false))
                 .setClientMode(isClient)
                 .setCacheConfiguration(cacheConfiguration()))
                 .close(),

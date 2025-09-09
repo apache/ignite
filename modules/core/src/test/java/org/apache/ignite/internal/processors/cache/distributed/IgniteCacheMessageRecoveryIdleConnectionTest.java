@@ -36,7 +36,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -57,7 +56,6 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setIdleConnectionTimeout(IDLE_TIMEOUT);
-        commSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -82,14 +80,6 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
     @Test
     public void testCacheOperationsIdleConnectionCloseTx() throws Exception {
         cacheOperationsIdleConnectionClose(TRANSACTIONAL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCacheOperationsIdleConnectionCloseMvccTx() throws Exception {
-        cacheOperationsIdleConnectionClose(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**

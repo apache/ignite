@@ -215,8 +215,7 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     private void doTestContinuousQueryPendingBufferLimit(
         IgniteBiPredicate<ClusterNode, Message> locBlockPred,
         int pendingLimit
-    ) throws Exception
-    {
+    ) throws Exception {
         AtomicInteger keys = new AtomicInteger();
 
         IgniteEx locIgnite = startGrid(0);

@@ -27,11 +27,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -84,7 +86,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     public void testMultithreadedUpdate() throws Exception {
         multithreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridTestClassLoader classLoader = new GridTestClassLoader(
+                GridTestClassLoader clsLdr = new GridTestClassLoader(
                     InternalExecutor.class.getName(),
                     MarshallerContextImpl.class.getName(),
                     MarshallerContextImpl.CombinedMap.class.getName(),
@@ -93,9 +95,9 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
                     MarshallerMappingTransport.class.getName()
                 );
 
-                Thread.currentThread().setContextClassLoader(classLoader);
+                Thread.currentThread().setContextClassLoader(clsLdr);
 
-                Class clazz = classLoader.loadClass(InternalExecutor.class.getName());
+                Class clazz = clsLdr.loadClass(InternalExecutor.class.getName());
 
                 Object internelExecutor = clazz.newInstance();
 
@@ -131,8 +133,6 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         assertTrue(InternalExecutor.counter.get() == 0);
 
         assertTrue(!innerLog.contains("Exception"));
-
-        assertTrue(innerLog.contains("File already locked"));
     }
 
     /**
@@ -148,13 +148,15 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         public void executeTest(GridTestLog4jLogger log, GridKernalContext ctx) throws Exception {
             counter.incrementAndGet();
 
-            MarshallerContextImpl marshallerContext = new MarshallerContextImpl(null, null);
-            marshallerContext.onMarshallerProcessorStarted(ctx, null);
+            MarshallerContextImpl marshallerCtx = new MarshallerContextImpl(null, null);
+
+            marshallerCtx.setMarshallerMappingFileStoreDir(new SharedFileTree(U.defaultWorkDirectory()).marshaller());
+            marshallerCtx.onMarshallerProcessorStarted(ctx, null);
 
             MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
             for (int i = 0; i < 400; i++)
-                marshallerContext.onMappingAccepted(item);
+                marshallerCtx.onMappingAccepted(item);
         }
     }
 

@@ -28,13 +28,14 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
+import org.apache.ignite.cache.query.CacheEntryEventAdapter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -144,7 +145,7 @@ public class ClientCacheEntryListenerHandler<K, V> implements NotificationListen
     /** {@inheritDoc} */
     @Override public void acceptNotification(ByteBuffer payload, Exception err) {
         if (err == null && payload != null) {
-            BinaryInputStream in = BinaryByteBufferInputStream.create(payload);
+            BinaryInputStream in = BinaryStreams.inputStream(payload);
 
             int cnt = in.readInt();
 
@@ -210,7 +211,7 @@ public class ClientCacheEntryListenerHandler<K, V> implements NotificationListen
     /**
      *
      */
-    private static class CacheEntryEventImpl<K, V> extends CacheEntryEvent<K, V> {
+    private static class CacheEntryEventImpl<K, V> extends CacheEntryEventAdapter<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -221,17 +222,17 @@ public class ClientCacheEntryListenerHandler<K, V> implements NotificationListen
         private final V oldVal;
 
         /** Value. */
-        private final V val;
+        private final V newVal;
 
         /**
          *
          */
-        private CacheEntryEventImpl(Cache<K, V> src, EventType evtType, K key, V oldVal, V val) {
+        private CacheEntryEventImpl(Cache<K, V> src, EventType evtType, K key, V oldVal, V newVal) {
             super(src, evtType);
 
             this.key = key;
             this.oldVal = oldVal;
-            this.val = val;
+            this.newVal = newVal;
         }
 
         /** {@inheritDoc} */
@@ -240,8 +241,8 @@ public class ClientCacheEntryListenerHandler<K, V> implements NotificationListen
         }
 
         /** {@inheritDoc} */
-        @Override public V getValue() {
-            return val;
+        @Override protected V getNewValue() {
+            return newVal;
         }
 
         /** {@inheritDoc} */
@@ -252,14 +253,6 @@ public class ClientCacheEntryListenerHandler<K, V> implements NotificationListen
         /** {@inheritDoc} */
         @Override public boolean isOldValueAvailable() {
             return oldVal != null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> T unwrap(Class<T> clazz) {
-            if (clazz.isAssignableFrom(getClass()))
-                return clazz.cast(this);
-
-            throw new IllegalArgumentException("Unwrapping to class is not supported: " + clazz);
         }
     }
 }

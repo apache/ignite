@@ -16,6 +16,10 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
@@ -24,16 +28,20 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetricsImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.MetricsMxBean;
+import org.apache.ignite.spi.systemview.view.PagesTimestampHistogramView;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
@@ -112,10 +120,16 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private final LongAdderMetric readPages;
 
     /** */
+    private final LongAdderMetric readPagesTime;
+
+    /** */
     private final LongAdderMetric writtenPages;
 
     /** */
     private final LongAdderMetric replacedPages;
+
+    /** */
+    private final LongAdderMetric pageReplaceTime;
 
     /** */
     private final AtomicLongMetric offHeapSize;
@@ -160,6 +174,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
 
+    /** Histogram of cold/hot pages. */
+    @Nullable
+    private final PeriodicHistogramMetricImpl pageTsHistogram;
+
     /**
      * Same as {@link #DataRegionMetricsImpl(DataRegionConfiguration, GridKernalContext, DataRegionMetricsProvider)}
      * but uses a no-op implementation for the {@link DataRegionMetricsProvider}.
@@ -199,10 +217,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         subInts = dataRegionCfg.getMetricsSubIntervalCount();
 
-        MetricRegistry mreg = metricRegistry();
+        MetricRegistryImpl mreg = metricRegistry();
 
         allocRate = mreg.hitRateMetric("AllocationRate",
-            "Allocation rate (pages per second) averaged across rateTimeInternal.",
+            "Allocation rate (pages per second) averaged across rateTimeInterval.",
             60_000,
             5);
 
@@ -230,11 +248,17 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         readPages = mreg.longAdderMetric("PagesRead",
             "Number of pages read from last restart.");
 
+        readPagesTime = mreg.longAdderMetric("PagesReadTime",
+            "Total pages read time in nanoseconds since last restart.");
+
         writtenPages = mreg.longAdderMetric("PagesWritten",
             "Number of pages written from last restart.");
 
         replacedPages = mreg.longAdderMetric("PagesReplaced",
             "Number of pages replaced from last restart.");
+
+        pageReplaceTime = mreg.longAdderMetric("PagesReplaceTime",
+            "Total pages replace time in nanoseconds since last restart.");
 
         offHeapSize = mreg.longMetric("OffHeapSize",
             "Offheap size in bytes.");
@@ -257,6 +281,20 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         mreg.longMetric("MaxSize", "Maximum memory region size in bytes defined by its data region.")
             .value(dataRegionCfg.getMaxSize());
 
+        if (persistenceEnabled) {
+            // Reserve 1 sec, page ts can be slightly lower than currentTimeMillis, due to applied to ts mask. This
+            // reservation mainly affects only tests (we can check buckets more predictevely).
+            long startTs = U.currentTimeMillis() - 1000L;
+            String name = MetricUtils.metricName(mreg.name(), "PageTimestampHistogram");
+            String desc = "Histogram of pages last access time";
+
+            pageTsHistogram = new PeriodicHistogramMetricImpl(startTs, name, desc);
+
+            mreg.register(pageTsHistogram);
+        }
+        else
+            pageTsHistogram = null;
+
         dataRegionPageMetrics = PageMetricsImpl.builder(mreg)
             .totalPagesCallback(new LongAdderWithDelegateMetric.Delegate() {
                 @Override public void increment() {
@@ -277,7 +315,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * Retrieves the {@link MetricRegistry} for this data region.
      */
-    private MetricRegistry metricRegistry() {
+    private MetricRegistryImpl metricRegistry() {
         String registryName = MetricUtils.metricName(DATAREGION_METRICS_PREFIX, dataRegionCfg.getName());
         return kernalCtx.metric().registry(registryName);
     }
@@ -293,13 +331,18 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     }
 
     /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        return getTotalAllocatedPages() * pageMem.systemPageSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getTotalUsedPages() {
         return getTotalAllocatedPages() - dataRegionMetricsProvider.emptyDataPages();
     }
 
     /** {@inheritDoc} */
-    @Override public long getTotalAllocatedSize() {
-        return getTotalAllocatedPages() * (persistenceEnabled ? pageMem.pageSize() : pageMem.systemPageSize());
+    @Override public long getTotalUsedSize() {
+        return getTotalUsedPages() * pageMem.systemPageSize();
     }
 
     /** {@inheritDoc} */
@@ -332,11 +375,31 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        long freeSpace = dataRegionMetricsProvider.partiallyFilledPagesFreeSpace();
+        long totalUsedSize = getTotalUsedSize();
 
-        long totalAllocated = getPageSize() * getTotalAllocatedPages();
+        if (totalUsedSize == 0)
+            return 0;
 
-        return totalAllocated != 0 ? (float)(totalAllocated - freeSpace) / totalAllocated : 0f;
+        long freeSpaceInPages = dataRegionMetricsProvider.partiallyFilledPagesFreeSpace();
+
+        return (float)(totalUsedSize - freeSpaceInPages) / totalUsedSize;
+    }
+
+    /**
+     * Calculates the number of bytes, occupied by data. Unlike {@link #getTotalUsedSize} it also takes into account the
+     * empty space in non-empty pages.
+     */
+    private long getSizeUsedByData() {
+        // Total amount of bytes occupied by all pages.
+        long totalSpace = getTotalAllocatedSize();
+
+        // Amount of free bytes in fragmented data pages.
+        long partiallyFreeSpace = dataRegionMetricsProvider.partiallyFilledPagesFreeSpace();
+
+        // Amount of bytes in empty data pages.
+        long emptySpace = dataRegionMetricsProvider.emptyDataPages() * pageMem.systemPageSize();
+
+        return totalSpace - partiallyFreeSpace - emptySpace;
     }
 
     /** {@inheritDoc} */
@@ -469,24 +532,30 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     }
 
     /**
-     * Updates pageReplaceRate metric.
+     * Updates page replacement metrics.
      */
-    public void updatePageReplaceRate(long pageAge) {
+    public void onPageReplaced(long pageAge, long nanos) {
         if (metricsEnabled) {
             pageReplaceRate.increment();
 
             pageReplaceAge.add(pageAge);
 
             replacedPages.increment();
+
+            pageReplaceTime.add(nanos);
         }
     }
 
     /**
      * Updates page read.
+     *
+     * @param nanos Time consumed by page reading.
      */
-    public void onPageRead() {
-        if (metricsEnabled)
+    public void onPageRead(long nanos) {
+        if (metricsEnabled) {
             readPages.increment();
+            readPagesTime.add(nanos);
+        }
     }
 
     /**
@@ -531,14 +600,14 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             return pageMetrics;
 
         synchronized (cacheGrpMetricsLock) {
-            IntMap<PageMetrics> localCacheGrpMetrics = cacheGrpMetrics;
+            IntMap<PageMetrics> locCacheGrpMetrics = cacheGrpMetrics;
 
             // double check
-            PageMetrics doubleCheckPageMetrics = localCacheGrpMetrics.get(cacheGrpId);
+            PageMetrics doubleCheckPageMetrics = locCacheGrpMetrics.get(cacheGrpId);
             if (doubleCheckPageMetrics != null)
                 return doubleCheckPageMetrics;
 
-            IntMap<PageMetrics> copy = new IntHashMap<>(localCacheGrpMetrics);
+            IntMap<PageMetrics> copy = new IntHashMap<>(locCacheGrpMetrics);
 
             PageMetrics newMetrics = Optional.of(kernalCtx)
                 // both cache and group descriptor can be null
@@ -562,7 +631,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      */
     private PageMetrics createCacheGrpPageMetrics(String cacheGrpName) {
         String registryName = MetricUtils.cacheGroupMetricsRegistryName(cacheGrpName);
-        MetricRegistry registry = kernalCtx.metric().registry(registryName);
+        MetricRegistryImpl registry = kernalCtx.metric().registry(registryName);
 
         return PageMetricsImpl.builder(registry)
             .totalPagesCallback(delegate(dataRegionPageMetrics.totalPages()))
@@ -619,6 +688,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      */
     public void enableMetrics() {
         metricsEnabled = true;
+
+        if (pageTsHistogram != null)
+            pageTsHistogram.reset(getPhysicalMemoryPages());
     }
 
     /**
@@ -626,6 +698,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      */
     public void disableMetrics() {
         metricsEnabled = false;
+
+        if (pageTsHistogram != null)
+            pageTsHistogram.reset(0);
     }
 
     /**
@@ -645,19 +720,35 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.register("PagesFillFactor",
             this::getPagesFillFactor,
-            "The percentage of the used space.");
+            "Returns the ratio of space occupied by user and system data to the size of all pages that contain " +
+                "this data");
+
+        mreg.register("SizeUsedByData",
+            this::getSizeUsedByData,
+            "Returns the number of bytes, occupied by data. Similar to TotalUsedSize, but it also takes into " +
+                "account the empty space in non-empty pages");
 
         mreg.register("PhysicalMemoryPages",
             this::getPhysicalMemoryPages,
-            "Number of pages residing in physical RAM.");
+            "Number of pages residing in physical RAM");
 
         mreg.register("OffheapUsedSize",
             this::getOffheapUsedSize,
-            "Offheap used size in bytes.");
+            "Offheap used size in bytes");
+
+        // TotalAllocatedPages metrics is registered by PageMetrics
 
         mreg.register("TotalAllocatedSize",
             this::getTotalAllocatedSize,
             "Gets a total size of memory allocated in the data region, in bytes");
+
+        mreg.register("TotalUsedPages",
+            this::getTotalUsedPages,
+            "Gets an amount of non-empty pages allocated in the data region");
+
+        mreg.register("TotalUsedSize",
+            this::getTotalUsedSize,
+            "Gets an amount of bytes, occupied by non-empty pages allocated in the data region");
 
         mreg.register("PhysicalMemorySize",
             this::getPhysicalMemorySize,
@@ -696,7 +787,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             return;
 
         if (rateTimeInterval / subInts < 10)
-            subInts = (int) rateTimeInterval / 10;
+            subInts = (int)rateTimeInterval / 10;
 
         allocRate.reset(rateTimeInterval, subInts);
         evictRate.reset(rateTimeInterval, subInts);
@@ -711,8 +802,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         largeEntriesPages.reset();
         dirtyPages.reset();
         readPages.reset();
+        readPagesTime.reset();
         writtenPages.reset();
         replacedPages.reset();
+        pageReplaceTime.reset();
         offHeapSize.reset();
         checkpointBufSize.reset();
         allocRate.reset();
@@ -738,5 +831,48 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         if (metricsEnabled)
             totalThrottlingTime.add(time);
+    }
+
+    /**
+     * Increment count of pages with given last access time.
+     *
+     * @param ts Last access timestamp.
+     */
+    public void incrementPagesWithTimestamp(long ts) {
+        if (metricsEnabled && pageTsHistogram != null)
+            pageTsHistogram.increment(ts);
+    }
+
+    /**
+     * Decrement count of pages with given last access time.
+     *
+     * @param ts Last access timestamp.
+     */
+    public void decrementPagesWithTimestamp(long ts) {
+        if (metricsEnabled && pageTsHistogram != null)
+            pageTsHistogram.decrement(ts);
+    }
+
+    /**
+     * Creates pages timestamp histogram view.
+     */
+    public Collection<PagesTimestampHistogramView> pagesTimestampHistogramView() {
+        if (!metricsEnabled || pageTsHistogram == null)
+            return Collections.emptyList();
+
+        IgniteBiTuple<long[], long[]> hist = pageTsHistogram.histogram();
+
+        long[] bounds = hist.get1();
+        long[] vals = hist.get2();
+
+        List<PagesTimestampHistogramView> list = new ArrayList<>(vals.length);
+
+        for (int i = 0; i < vals.length - 1; i++)
+            list.add(new PagesTimestampHistogramView(getName(), bounds[i], bounds[i + 1], vals[i]));
+
+        list.add(new PagesTimestampHistogramView(getName(), bounds[vals.length - 1],
+            U.currentTimeMillis(), vals[vals.length - 1]));
+
+        return list;
     }
 }

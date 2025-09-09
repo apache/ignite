@@ -23,8 +23,8 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-public class IgniteCacheScanPredicateDeploymentSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheScanPredicateDeploymentSelfTest extends AbstractTransactionalQueryTest {
     /** Test value. */
     protected static final String TEST_PREDICATE = "org.apache.ignite.tests.p2p.CacheDeploymentAlwaysTruePredicate";
 
@@ -51,6 +51,11 @@ public class IgniteCacheScanPredicateDeploymentSelfTest extends GridCommonAbstra
         cfg.setConnectorConfiguration(null);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void init() throws Exception {
+        // No-op
     }
 
     /**
@@ -69,6 +74,7 @@ public class IgniteCacheScanPredicateDeploymentSelfTest extends GridCommonAbstra
         return cfg;
     }
 
+    /** */
     protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
@@ -87,17 +93,26 @@ public class IgniteCacheScanPredicateDeploymentSelfTest extends GridCommonAbstra
 
             // It is important that there are no too many keys.
             for (int i = 0; i < 1; i++)
-                cache.put(i, i);
+                put(grid(3), cache, i, i);
 
             Class predCls = grid(3).configuration().getClassLoader().loadClass(TEST_PREDICATE);
 
             IgniteBiPredicate<Object, Object> pred = (IgniteBiPredicate<Object, Object>)predCls.newInstance();
 
-            List<Cache.Entry<Object, Object>> all = cache.query(new ScanQuery<>(pred)).getAll();
+            RunnableX check = () -> {
+                List<Cache.Entry<Object, Object>> all = cache.query(new ScanQuery<>(pred)).getAll();
 
-            assertEquals(1, all.size());
+                assertEquals(1, all.size());
+            };
+
+            if (txMode == TestTransactionMode.NONE)
+                check.run();
+            else
+                txAction(grid(3), check);
         }
         finally {
+            clearTransaction();
+
             stopAllGrids();
         }
     }

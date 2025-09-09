@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -51,13 +52,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -169,7 +168,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         IgniteEx ig = startClientGrid("client");
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         for (TransactionConcurrency conc : TransactionConcurrency.values()) {
             for (TransactionIsolation iso : TransactionIsolation.values())
@@ -186,7 +185,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         IgniteEx ig = startClientGrid("client");
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         for (TransactionConcurrency conc : TransactionConcurrency.values()) {
             for (TransactionIsolation iso : TransactionIsolation.values())
@@ -199,13 +198,11 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOptimisticTxMappedOnPMETopology() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
-
         startGridsMultiThreaded(1);
 
         Ignite client = startClientGrid("client");
 
-        client.cluster().active(true);
+        client.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange(true, true, null);
 
@@ -263,9 +260,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         Ignite ig,
         boolean runConc
     ) throws Exception {
-        if ((conc == TransactionConcurrency.OPTIMISTIC) && (MvccFeatureChecker.forcedMvcc()))
-            return;
-
         if (log.isInfoEnabled()) {
             log.info("Starting runTxOnCacheStop " +
                 "[concurrency=" + conc + ", isolation=" + iso + ", blockPrepareRequests=" + !runConc + ']');
@@ -342,15 +336,13 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOptimisticTransactionsOnCacheDestroy() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc());
-
         startGridsMultiThreaded(3);
 
         ArrayList<Ignite> clients = new ArrayList<>();
         for (int ci = 0; ci < 2; ++ci)
             clients.add(startClientGrid("client-" + ci));
 
-        clients.get(0).cluster().active(true);
+        clients.get(0).cluster().state(ClusterState.ACTIVE);
 
         for (TransactionIsolation iso : TransactionIsolation.values()) {
             grid(0).getOrCreateCaches(createCacheConfigurations());
@@ -514,9 +506,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void runCacheStopInMidTx(TransactionConcurrency conc, TransactionIsolation iso, Ignite ig) throws Exception {
-        if ((conc == TransactionConcurrency.OPTIMISTIC) && (MvccFeatureChecker.forcedMvcc()))
-            return;
-
         if (log.isInfoEnabled())
             log.info("Starting runCacheStopInMidTx [concurrency=" + conc + ", isolation=" + iso + ']');
 

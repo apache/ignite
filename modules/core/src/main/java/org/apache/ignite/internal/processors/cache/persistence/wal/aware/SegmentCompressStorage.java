@@ -69,9 +69,6 @@ class SegmentCompressStorage {
      * @param compressedIdx Index of compressed segment.
      */
     synchronized void onSegmentCompressed(long compressedIdx) {
-        if (log.isInfoEnabled())
-            log.info("Segment compressed notification [idx=" + compressedIdx + ']');
-
         if (compressedIdx > lastMaxCompressedIdx)
             lastMaxCompressedIdx = compressedIdx;
 
@@ -82,8 +79,29 @@ class SegmentCompressStorage {
         else
             this.lastCompressedIdx = lastMaxCompressedIdx;
 
+        notifyAll();
+
         if (compressedIdx > lastEnqueuedToCompressIdx)
             lastEnqueuedToCompressIdx = compressedIdx;
+    }
+
+    /**
+     * Method will wait activation of particular WAL segment index.
+     *
+     * @param awaitIdx absolute index {@link #lastCompressedIdx()}} to become true.
+     * @throws IgniteInterruptedCheckedException if interrupted.
+     */
+    public synchronized void awaitSegmentCompressed(long awaitIdx) throws IgniteInterruptedCheckedException {
+        while (lastCompressedIdx() < awaitIdx && !interrupted) {
+            try {
+                wait(2000);
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedCheckedException(e);
+            }
+        }
+
+        checkInterrupted();
     }
 
     /**
@@ -139,8 +157,8 @@ class SegmentCompressStorage {
      */
     synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
         while (lastEnqueuedToCompressIdx < lastAbsArchivedIdx && compactionEnabled) {
-            if (log.isInfoEnabled())
-                log.info("Enqueuing segment for compression [idx=" + (lastEnqueuedToCompressIdx + 1) + ']');
+            if (log.isDebugEnabled())
+                log.debug("Enqueuing segment for compression [idx=" + (lastEnqueuedToCompressIdx + 1) + ']');
 
             segmentsToCompress.add(++lastEnqueuedToCompressIdx);
         }

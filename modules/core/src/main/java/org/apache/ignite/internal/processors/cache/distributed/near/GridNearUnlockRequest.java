@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -28,11 +27,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Near cache unlock request.
  */
 public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearUnlockRequest() {
         // No-op.
@@ -55,7 +51,7 @@ public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -68,23 +64,15 @@ public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
-        return reader.afterMessageRead(GridNearUnlockRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 57;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 9;
     }
 
     /** {@inheritDoc} */

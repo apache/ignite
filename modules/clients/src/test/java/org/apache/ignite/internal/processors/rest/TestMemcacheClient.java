@@ -31,10 +31,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -75,7 +76,7 @@ final class TestMemcacheClient {
     private final IgniteLogger log = new JavaLogger();
 
     /** JDK marshaller. */
-    private final Marshaller jdkMarshaller = new JdkMarshaller();
+    private final Marshaller jdkMarshaller = Marshallers.jdk();
 
     /** Socket. */
     private final Socket sock;
@@ -419,7 +420,7 @@ final class TestMemcacheClient {
         packet[0] = (byte)0x80;
         packet[1] = cmd.operationCode();
 
-        U.shortToBytes((short) keyData.length(), packet, 2);
+        U.shortToBytes((short)keyData.length(), packet, 2);
 
         packet[4] = (byte)(extrasLength);
 
@@ -444,13 +445,13 @@ final class TestMemcacheClient {
         }
 
         if (cacheNameBytes != null)
-            U.arrayCopy(cacheNameBytes, 0, packet, HDR_LEN + cmd.extrasLength(), cacheNameLength);
+            GridUnsafe.arrayCopy(cacheNameBytes, 0, packet, HDR_LEN + cmd.extrasLength(), cacheNameLength);
 
         if (keyData.getBytes() != null)
-            U.arrayCopy(keyData.getBytes(), 0, packet, HDR_LEN + extrasLength, keyData.length());
+            GridUnsafe.arrayCopy(keyData.getBytes(), 0, packet, HDR_LEN + extrasLength, keyData.length());
 
         if (valData.getBytes() != null)
-            U.arrayCopy(valData.getBytes(), 0, packet, HDR_LEN + extrasLength + keyData.length(), valData.length());
+            GridUnsafe.arrayCopy(valData.getBytes(), 0, packet, HDR_LEN + extrasLength + keyData.length(), valData.length());
 
         return packet;
     }
@@ -649,17 +650,17 @@ final class TestMemcacheClient {
             flags |= BOOLEAN_FLAG;
         }
         else if (obj instanceof Integer) {
-            bytes = U.intToBytes((Integer) obj);
+            bytes = U.intToBytes((Integer)obj);
 
             flags |= INT_FLAG;
         }
         else if (obj instanceof Long) {
-            bytes = U.longToBytes((Long) obj);
+            bytes = U.longToBytes((Long)obj);
 
             flags |= LONG_FLAG;
         }
         else if (obj instanceof Date) {
-            bytes = U.longToBytes(((Date) obj).getTime());
+            bytes = U.longToBytes(((Date)obj).getTime());
 
             flags |= DATE_FLAG;
         }
@@ -669,12 +670,12 @@ final class TestMemcacheClient {
             flags |= BYTE_FLAG;
         }
         else if (obj instanceof Float) {
-            bytes = U.intToBytes(Float.floatToIntBits((Float) obj));
+            bytes = U.intToBytes(Float.floatToIntBits((Float)obj));
 
             flags |= FLOAT_FLAG;
         }
         else if (obj instanceof Double) {
-            bytes = U.longToBytes(Double.doubleToLongBits((Double) obj));
+            bytes = U.longToBytes(Double.doubleToLongBits((Double)obj));
 
             flags |= DOUBLE_FLAG;
         }
@@ -774,6 +775,7 @@ final class TestMemcacheClient {
             return success;
         }
 
+        /** */
         Object key() {
             return key;
         }
@@ -787,6 +789,7 @@ final class TestMemcacheClient {
         }
     }
 
+    /** */
     private static class Data {
         /** Bytes. */
         private final byte[] bytes;

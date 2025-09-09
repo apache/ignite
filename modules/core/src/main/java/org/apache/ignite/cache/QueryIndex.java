@@ -21,10 +21,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Objects;
-
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -304,12 +302,12 @@ public class QueryIndex implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        QueryIndex index = (QueryIndex)o;
+        QueryIndex idx = (QueryIndex)o;
 
-        return inlineSize == index.inlineSize &&
-            F.eq(name, index.name) &&
-            F.eq(fields, index.fields) &&
-            type == index.type;
+        return inlineSize == idx.inlineSize &&
+            Objects.equals(name, idx.name) &&
+            Objects.equals(fields, idx.fields) &&
+            type == idx.type;
     }
 
     /** {@inheritDoc} */

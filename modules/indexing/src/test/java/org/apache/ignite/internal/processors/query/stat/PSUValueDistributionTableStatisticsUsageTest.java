@@ -78,7 +78,8 @@ public class PSUValueDistributionTableStatisticsUsageTest extends StatisticsAbst
                 smallNulls = "null";
                 bigNulls = null;
                 valAdd = 0;
-            } else {
+            }
+            else {
                 smallNulls = String.format("'small%d'", i);
                 bigNulls = String.format("'%s%d'", bigVal, i);
                 valAdd = 1;
@@ -89,7 +90,7 @@ public class PSUValueDistributionTableStatisticsUsageTest extends StatisticsAbst
         }
         sql("INSERT INTO sized(id, small, big) VALUES(" + BIG_SIZE + ", null, null)");
 
-        collectStatistics("sized");
+        collectStatistics(StatisticsType.GLOBAL, "sized");
     }
 
     /**
@@ -102,6 +103,7 @@ public class PSUValueDistributionTableStatisticsUsageTest extends StatisticsAbst
     }
 
     // TODO create Ignite mirror ticket and set it here
+    /** */
     @Ignore("https://ggsystems.atlassian.net/browse/GG-31183")
     @Test
     public void selectNotNullCond() {
@@ -132,6 +134,7 @@ public class PSUValueDistributionTableStatisticsUsageTest extends StatisticsAbst
         checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{"SIZED_SMALL_NULLS"}, sql2, new String[1][]);
     }
 
+    /** */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-14813")
     @Test
     public void selectWithValueSizeCond() {

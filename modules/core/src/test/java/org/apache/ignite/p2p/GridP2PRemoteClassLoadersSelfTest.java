@@ -84,14 +84,15 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             ClassLoader tstClsLdr =
                 new GridTestClassLoader(
                     Collections.<String, String>emptyMap(), getClass().getClassLoader(),
+                    GridP2PRemoteClassLoadersSelfTest.class.getName(),
                     GridP2PRemoteTestTask.class.getName(), GridP2PRemoteTestTask1.class.getName(),
                     GridP2PRemoteTestJob.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task1 =
-                (Class<? extends ComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PRemoteTestTask.class.getName());
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr.loadClass(GridP2PRemoteTestTask.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task2 =
-                (Class<? extends ComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PRemoteTestTask1.class.getName());
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr.loadClass(GridP2PRemoteTestTask1.class.getName());
 
             Object res1 = ignite1.compute().execute(task1.newInstance(), null);
 
@@ -136,19 +137,21 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             ClassLoader tstClsLdr1 =
                 new GridTestClassLoader(
                     Collections.EMPTY_MAP, getClass().getClassLoader(),
+                    GridP2PRemoteClassLoadersSelfTest.class.getName(),
                     GridP2PRemoteTestTask.class.getName(), GridP2PRemoteTestJob.class.getName()
                 );
 
             ClassLoader tstClsLdr2 =
                 new GridTestClassLoader(
                     Collections.EMPTY_MAP, getClass().getClassLoader(),
+                    GridP2PRemoteClassLoadersSelfTest.class.getName(),
                     GridP2PRemoteTestTask1.class.getName(), GridP2PRemoteTestJob.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task1 =
-                (Class<? extends ComputeTask<?, ?>>) tstClsLdr1.loadClass(GridP2PRemoteTestTask.class.getName());
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr1.loadClass(GridP2PRemoteTestTask.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task2 =
-                (Class<? extends ComputeTask<?, ?>>) tstClsLdr2.loadClass(GridP2PRemoteTestTask1.class.getName());
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr2.loadClass(GridP2PRemoteTestTask1.class.getName());
 
             Object res1 = ignite1.compute().execute(task1.newInstance(), null);
 

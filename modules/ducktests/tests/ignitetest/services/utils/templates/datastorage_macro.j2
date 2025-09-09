@@ -15,25 +15,35 @@
  limitations under the License.
 #}
 
+{% import 'misc_macro.j2' as misc_utils %}
+
 {% macro data_storage(config) %}
     {% if config %}
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
-                {% if config.max_wal_archive_size %}
-                    <property name="maxWalArchiveSize" value="{{ config.max_wal_archive_size }}"/>
+                {% for name, value in config._asdict().items() %}
+                {% if value != None %}
+                    {% if name == 'default' %}
+                        <property name="defaultDataRegionConfiguration">
+                            {{ data_region(value) }}
+                        </property>
+                    {% elif name == 'regions' %}
+                        <property name="dataRegionConfigurations">
+                            <list>
+                            {% for region in value %}
+                                {{ data_region(region) }}
+                            {% endfor %}
+                            </list>
+                        </property>
+                    {% elif name == 'default_warm_up_configuration' %}
+                        <property name="defaultWarmUpConfiguration">
+                            {{ misc_utils.bean(value) }}
+                        </property>
+                    {% else %}
+                        <property name="{{ name | snake_to_camel }}" value="{{ value }}"/>
+                    {% endif %}
                 {% endif %}
-                <property name="defaultDataRegionConfiguration">
-                    {{ data_region(config.default) }}
-                </property>
-                {% if config.regions %}
-                    <property name="dataRegionConfigurations">
-                        <list>
-                        {% for region in config.regions %}
-                            {{ data_region(region) }}
-                        {% endfor %}
-                        </list>
-                    </property>
-                {% endif %}
+                {% endfor %}
             </bean>
         </property>
     {% endif %}
@@ -41,9 +51,16 @@
 
 {% macro data_region(config) %}
     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
-        <property name="name" value="{{ config.name }}"/>
-        <property name="persistenceEnabled" value="{{ config.persistent }}"/>
-        <property name="initialSize" value="{{ config.init_size }}"/>
-        <property name="maxSize" value="{{ config.max_size }}"/>
+        {% for name, value in config._asdict().items() %}
+        {% if value != None %}
+            {% if name == 'warm_up_configuration' %}
+                <property name="warmUpConfiguration">
+                    {{ misc_utils.bean(value) }}
+                </property>
+            {% else %}
+                <property name="{{ name | snake_to_camel }}" value="{{ value }}"/>
+            {% endif %}
+        {% endif %}
+        {% endfor %}
     </bean>
 {% endmacro %}

@@ -36,6 +36,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -162,7 +163,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             IgniteInternalCache<?, ?> encrypted0 = grid0.cachex(cacheName);
 
-            int grpId = CU.cacheGroupId(cacheName, ccfg.getGroupName());
+            int grpId = CU.cacheGroupId(ccfg);
 
             assertNotNull(encrypted0);
 
@@ -257,7 +258,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
         IgniteEx grid1 = startGrid(GRID_1);
 
-        grid0.cluster().active(true);
+        grid0.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 

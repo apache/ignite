@@ -146,13 +146,15 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Default size of a memory chunk reserved for system cache initially.
         /// </summary>
+        [Obsolete("Use SystemDataRegionConfiguration.DefaultInitialSize")]
         public const long DefaultSystemRegionInitialSize = 40 * 1024 * 1024;
-
+        
         /// <summary>
         /// Default max size of a memory chunk for the system cache.
         /// </summary>
+        [Obsolete("Use SystemDataRegionConfiguration.DefaultMaxSize")]
         public const long DefaultSystemRegionMaxSize = 100 * 1024 * 1024;
-
+        
         /// <summary>
         /// The default page size.
         /// </summary>
@@ -196,8 +198,6 @@ namespace Apache.Ignite.Core.Configuration
             CheckpointWriteOrder = DefaultCheckpointWriteOrder;
             WriteThrottlingEnabled = DefaultWriteThrottlingEnabled;
             WalCompactionEnabled = DefaultWalCompactionEnabled;
-            SystemRegionInitialSize = DefaultSystemRegionInitialSize;
-            SystemRegionMaxSize = DefaultSystemRegionMaxSize;
             PageSize = DefaultPageSize;
             WalAutoArchiveAfterInactivity = DefaultWalAutoArchiveAfterInactivity;
             WalForceArchiveTimeout = DefaultWalAutoArchiveAfterInactivity;
@@ -237,8 +237,10 @@ namespace Apache.Ignite.Core.Configuration
             WalCompactionEnabled = reader.ReadBoolean();
             MaxWalArchiveSize = reader.ReadLong();
 
+#pragma warning disable 618
             SystemRegionInitialSize = reader.ReadLong();
             SystemRegionMaxSize = reader.ReadLong();
+#pragma warning restore 618
             PageSize = reader.ReadInt();
             ConcurrencyLevel = reader.ReadInt();
             WalAutoArchiveAfterInactivity = reader.ReadLongAsTimespan();
@@ -259,6 +261,11 @@ namespace Apache.Ignite.Core.Configuration
             if (reader.ReadBoolean())
             {
                 DefaultDataRegionConfiguration = new DataRegionConfiguration(reader);
+            }
+
+            if (reader.ReadBoolean())
+            {
+                SystemDataRegionConfiguration = new SystemDataRegionConfiguration(reader);
             }
         }
 
@@ -293,8 +300,10 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteBoolean(WalCompactionEnabled);
             writer.WriteLong(MaxWalArchiveSize);
 
+#pragma warning disable 618
             writer.WriteLong(SystemRegionInitialSize);
             writer.WriteLong(SystemRegionMaxSize);
+#pragma warning restore 618
             writer.WriteInt(PageSize);
             writer.WriteInt(ConcurrencyLevel);
             writer.WriteTimeSpanAsLong(WalAutoArchiveAfterInactivity);
@@ -327,6 +336,16 @@ namespace Apache.Ignite.Core.Configuration
             {
                 writer.WriteBoolean(true);
                 DefaultDataRegionConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
+            if (SystemDataRegionConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                SystemDataRegionConfiguration.Write(writer);
             }
             else
             {
@@ -428,7 +447,7 @@ namespace Apache.Ignite.Core.Configuration
 
         /// <summary>
         /// Gets or sets a value indicating whether to enable data storage metrics.
-        /// See <see cref="IIgnite.GetDataStorageMetrics"/>.
+        /// See <see cref="IIgnite.GetMemoryMetrics()"/>.
         /// </summary>
         public bool MetricsEnabled { get; set; }
 
@@ -477,14 +496,40 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets the size of a memory chunk reserved for system needs.
         /// </summary>
-        [DefaultValue(DefaultSystemRegionInitialSize)]
-        public long SystemRegionInitialSize { get; set; }
+        [DefaultValue(SystemDataRegionConfiguration.DefaultInitialSize)]
+        [Obsolete("Use SystemDataRegionConfiguration.InitialSize")]
+        public long SystemRegionInitialSize
+        {
+            get => SystemDataRegionConfiguration?.InitialSize ?? SystemDataRegionConfiguration.DefaultInitialSize;
+            set
+            {
+                if (SystemDataRegionConfiguration == null)
+                {
+                    SystemDataRegionConfiguration = new SystemDataRegionConfiguration();
+                }
+
+                SystemDataRegionConfiguration.InitialSize = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the maximum memory region size reserved for system needs.
         /// </summary>
-        [DefaultValue(DefaultSystemRegionMaxSize)]
-        public long SystemRegionMaxSize { get; set; }
+        [DefaultValue(SystemDataRegionConfiguration.DefaultMaxSize)]
+        [Obsolete("Use SystemDataRegionConfiguration.MaxSize")]
+        public long SystemRegionMaxSize
+        {
+            get => SystemDataRegionConfiguration?.MaxSize ?? SystemDataRegionConfiguration.DefaultMaxSize;
+            set
+            {
+                if (SystemDataRegionConfiguration == null)
+                {
+                    SystemDataRegionConfiguration = new SystemDataRegionConfiguration();
+                }
+
+                SystemDataRegionConfiguration.MaxSize = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the size of the memory page.
@@ -534,5 +579,10 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the default region configuration.
         /// </summary>
         public DataRegionConfiguration DefaultDataRegionConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the system region configuration.
+        /// </summary>
+        public SystemDataRegionConfiguration SystemDataRegionConfiguration { get; set; }
     }
 }

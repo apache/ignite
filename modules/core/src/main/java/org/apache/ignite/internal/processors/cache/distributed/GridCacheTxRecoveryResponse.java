@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -34,9 +33,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Transactions recovery check response.
  */
 public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
     private IgniteUuid futId;
 
@@ -51,7 +47,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
     private IgniteTxState txState;
 
     /**
-     * Empty constructor required by {@link Externalizable}
+     * Empty constructor.
      */
     public GridCacheTxRecoveryResponse() {
         // No-op.
@@ -110,7 +106,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txRecoveryMessageLogger();
     }
 
@@ -122,7 +118,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -130,19 +126,19 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeIgniteUuid(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeBoolean("success", success))
+                if (!writer.writeBoolean(success))
                     return false;
 
                 writer.incrementState();
@@ -156,15 +152,12 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 8:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -172,7 +165,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
                 reader.incrementState();
 
             case 9:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -180,7 +173,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
                 reader.incrementState();
 
             case 10:
-                success = reader.readBoolean("success");
+                success = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -189,17 +182,12 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
 
         }
 
-        return reader.afterMessageRead(GridCacheTxRecoveryResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 17;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 11;
     }
 
     /** {@inheritDoc} */

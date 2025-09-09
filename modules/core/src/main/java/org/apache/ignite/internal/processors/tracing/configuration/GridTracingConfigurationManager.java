@@ -123,8 +123,8 @@ public class GridTracingConfigurationManager implements TracingConfigurationMana
     /** {@inheritDoc} */
     @Override public void set(
         @NotNull TracingConfigurationCoordinates coordinates,
-        @NotNull TracingConfigurationParameters parameters)
-    {
+        @NotNull TracingConfigurationParameters parameters
+    ) {
         HashMap<TracingConfigurationCoordinates, TracingConfigurationParameters> newTracingConfiguration =
             new HashMap<>(tracingConfiguration);
 

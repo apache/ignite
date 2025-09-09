@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -62,7 +63,7 @@ public class RebalanceIteratorLargeEntriesOOMTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected List<String> additionalRemoteJvmArgs() {
-        return Arrays.asList("-Xmx256m", "-Xms256m");
+        return Arrays.asList("-Xmx512m", "-Xms512m", "-XX:+HeapDumpOnOutOfMemoryError");
     }
 
     /** {@inheritDoc} */
@@ -101,6 +102,8 @@ public class RebalanceIteratorLargeEntriesOOMTest extends GridCommonAbstractTest
 
         GridTestUtils.runMultiThreaded((Integer idx) -> {
             try (IgniteDataStreamer<Object, Object> streamer = client.dataStreamer(REPLICATED_CACHE_NAME)) {
+                streamer.timeout(TimeUnit.MINUTES.toMillis(1));
+
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 byte[] buf = new byte[PAYLOAD_SIZE];

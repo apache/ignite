@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Collections;
@@ -31,6 +33,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -42,6 +45,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -51,11 +55,13 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -64,26 +70,29 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
-import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
-import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static java.util.Objects.nonNull;
+import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Default snapshot manager test.
  */
 public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** The size of value array to fit 3 pages. */
-    private static final int SIZE_FOR_FIT_3_PAGES = 12008;
+    private static final int SIZE_FOR_FIT_3_PAGES = PAGE_SIZE * 2 + PAGE_SIZE / 2;
 
     /** Listenning logger. */
     private ListeningTestLogger listenLog;
+
+    /** Number of threads being used to perform snapshot operation. */
+    private Integer snapshotThreadPoolSize;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -96,72 +105,10 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         if (listenLog != null)
             cfg.setGridLogger(listenLog);
 
+        if (nonNull(snapshotThreadPoolSize))
+            cfg.setSnapshotThreadPoolSize(snapshotThreadPoolSize);
+
         return cfg;
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testSnapshotLocalPartitions() throws Exception {
-        IgniteEx ig = startGridsWithCache(1, 4096, key -> new Account(key, key),
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME));
-
-        for (int i = 4096; i < 8192; i++) {
-            ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, i) {
-                @Override public String toString() {
-                    return "_" + super.toString();
-                }
-            });
-        }
-
-        GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
-        IgniteSnapshotManager mgr = snp(ig);
-
-        // Collection of pairs group and appropriate cache partition to be snapshot.
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx,
-            SNAPSHOT_NAME,
-            F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
-            mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME));
-
-        snpFut.get();
-
-        File cacheWorkDir = ((FilePageStoreManager)ig.context()
-            .cache()
-            .context()
-            .pageStore())
-            .cacheWorkDir(dfltCacheCfg);
-
-        // Checkpoint forces on cluster deactivation (currently only single node in cluster),
-        // so we must have the same data in snapshot partitions and those which left
-        // after node stop.
-        stopGrid(ig.name());
-
-        // Calculate CRCs.
-        IgniteConfiguration cfg = ig.context().config();
-        PdsFolderSettings settings = ig.context().pdsFolderResolver().resolveFolders();
-        String nodePath = databaseRelativePath(settings.folderName());
-        File binWorkDir = binaryWorkDir(cfg.getWorkDirectory(), settings.folderName());
-        File marshWorkDir = mappingFileStoreWorkDir(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
-        File snpBinWorkDir = binaryWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath(), settings.folderName());
-        File snpMarshWorkDir = mappingFileStoreWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
-
-        final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
-        final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(
-            FilePageStoreManager.cacheWorkDir(U.resolveWorkDirectory(mgr.snapshotLocalDir(SNAPSHOT_NAME)
-                    .getAbsolutePath(),
-                nodePath,
-                false),
-                cacheDirName(dfltCacheCfg)));
-
-        assertEquals("Partitions must have the same CRC after file copying and merging partition delta files",
-            origPartCRCs, snpPartCRCs);
-        assertEquals("Binary object mappings must be the same for local node and created snapshot",
-            calculateCRC32Partitions(binWorkDir), calculateCRC32Partitions(snpBinWorkDir));
-        assertEquals("Marshaller meta mast be the same for local node and created snapshot",
-            calculateCRC32Partitions(marshWorkDir), calculateCRC32Partitions(snpMarshWorkDir));
-
-        File snpWorkDir = mgr.snapshotTmpDir();
-
-        assertEquals("Snapshot working directory must be cleaned after usage", 0, snpWorkDir.listFiles().length);
     }
 
     /**
@@ -176,6 +123,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotLocalPartitionMultiCpWithLoad() throws Exception {
         int valMultiplier = 2;
+        int afterSnpValMultiplier = 3;
+
         CountDownLatch slowCopy = new CountDownLatch(1);
 
         // Start grid node with data before each test.
@@ -201,17 +150,24 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             }
         }, 5, "cache-loader-");
 
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
+
         // Register task but not schedule it on the checkpoint.
-        SnapshotFutureTask snpFutTask = mgr.registerSnapshotTask(SNAPSHOT_NAME,
+        SnapshotFutureTask snpFutTask = (SnapshotFutureTask)mgr.registerSnapshotTask(
+            sft,
             cctx.localNodeId(),
+            null,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
+            encryption,
             false,
-            new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME)) {
-                @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+            false,
+            false,
+            new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(sft)) {
+                @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
                     try {
                         U.await(slowCopy);
 
-                        delegate.sendPart0(part, cacheDirName, pair, length);
+                        delegate.sendPart0(from, to, storagePath, pair, length);
                     }
                     catch (IgniteInterruptedCheckedException e) {
                         throw new IgniteException(e);
@@ -261,7 +217,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
             // Change data after snapshot.
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-                ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, 3 * i));
+                ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, afterSnpValMultiplier * i));
 
             // Snapshot on the next checkpoint must copy page to delta file before write it to a partition.
             forceCheckpoint(ig);
@@ -306,11 +262,13 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteSnapshotManager mgr = snp(ig);
 
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
+
         mgr.ioFactory(new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 FileIO fileIo = ioFactory.create(file, modes);
 
-                if (file.getName().equals(IgniteSnapshotManager.partDeltaFileName(0)))
+                if (file.getName().equals(sft.partDeltaFile(dfltCacheCfg, 0).getName()))
                     return new FileIODecorator(fileIo) {
                         @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
                             if (throwCntr.incrementAndGet() == 3)
@@ -325,9 +283,10 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         });
 
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
-            SNAPSHOT_NAME,
+            sft,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
-            mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME));
+            encryption,
+            mgr.localSnapshotSenderFactory().apply(sft));
 
         // Check the right exception thrown.
         assertThrowsAnyCause(log,
@@ -347,16 +306,19 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteSnapshotManager mgr0 = snp(ig);
 
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
+
         IgniteInternalFuture<?> fut = startLocalSnapshotTask(ig.context().cache().context(),
-            SNAPSHOT_NAME,
+            sft,
             parts,
+            encryption,
             new DelegateSnapshotSender(log, mgr0.snapshotExecutorService(),
-                mgr0.localSnapshotSenderFactory().apply(SNAPSHOT_NAME)) {
-                @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                mgr0.localSnapshotSenderFactory().apply(sft)) {
+                @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException(err_msg + pair);
 
-                    delegate.sendPart0(part, cacheDirName, pair, length);
+                    delegate.sendPart0(from, to, storagePath, pair, length);
                 }
             });
 
@@ -382,15 +344,18 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         CountDownLatch cpLatch = new CountDownLatch(1);
 
+        SnapshotFileTree sft = snapshotFileTree(ig, SNAPSHOT_NAME);
+
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
-            SNAPSHOT_NAME,
+            sft,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
-            new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME)) {
-                @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+            encryption,
+            new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(sft)) {
+                @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
                     try {
                         U.await(cpLatch);
 
-                        delegate.sendPart0(part, cacheDirName, pair, length);
+                        delegate.sendPart0(from, to, storagePath, pair, length);
                     }
                     catch (IgniteInterruptedCheckedException e) {
                         throw new IgniteException(e);
@@ -436,15 +401,15 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         fut.get();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Map<Integer, Value> iterated = new HashMap<>();
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(ignite.context(),
+        try (GridCloseableIterator<CacheDataRow> iter = partitionRowIterator(snp(ignite),
             SNAPSHOT_NAME,
-            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
-            ccfg.getName(),
-            0)
+            ccfg,
+            0,
+            ignite.context().encryption())
         ) {
             CacheObjectContext coctx = ignite.cachex(ccfg.getName()).context().cacheObjectContext();
 
@@ -480,15 +445,17 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(2,
             dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 1)), keys);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        ignite = grid(ignite.affinity(dfltCacheCfg.getName()).mapPartitionToNode(0));
+
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         int rows = 0;
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(ignite.context(),
+        try (GridCloseableIterator<CacheDataRow> iter = partitionRowIterator(snp(ignite),
             SNAPSHOT_NAME,
-            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
-            dfltCacheCfg.getName(),
-            0)
+            dfltCacheCfg,
+            0,
+            ignite.context().encryption())
         ) {
             CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
 
@@ -516,22 +483,26 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithoutCache(2);
 
-        assertEquals(DFLT_PAGE_SIZE, ignite.configuration().getDataStorageConfiguration().getPageSize());
+        assertEquals(PAGE_SIZE, ignite.configuration().getDataStorageConfiguration().getPageSize());
 
         for (int i = 0; i < keys; i++)
             ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[SIZE_FOR_FIT_3_PAGES]));
 
+        int part = 0;
+
+        ignite = grid(ignite.affinity(ccfg.getName()).mapPartitionToNode(part));
+
         forceCheckpoint();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         int rows = 0;
 
-        try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(ignite.context(),
+        try (GridCloseableIterator<CacheDataRow> iter = partitionRowIterator(snp(ignite),
             SNAPSHOT_NAME,
-            ignite.context().pdsFolderResolver().resolveFolders().folderName(),
-            dfltCacheCfg.getName(),
-            0)
+            dfltCacheCfg,
+            part,
+            ignite.context().encryption())
         ) {
             CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
 
@@ -595,7 +566,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         beforeCpEnter.await(testTimeout, TimeUnit.MILLISECONDS);
 
-        IgniteFuture<Void> snpFut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> snpFut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         // Wait until the snapshot task checkpoint listener is registered.
         assertTrue(GridTestUtils.waitForCondition(lsnr::check, testTimeout));
@@ -605,6 +576,74 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         // Make sure the snapshot has been taken.
         snpFut.get(testTimeout);
+
+        checkSnapshot(SNAPSHOT_NAME, null);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotThreadPoolSizeUsage() throws Exception {
+        snapshotThreadPoolSize = 6;
+
+        IgniteEx ig = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        createAndCheckSnapshot(ig, SNAPSHOT_NAME, null, TIMEOUT);
+
+        ThreadMXBean tMb = ManagementFactory.getThreadMXBean();
+
+        long snpRunningThreads = LongStream.of(tMb.getAllThreadIds()).mapToObj(tMb::getThreadInfo)
+            .filter(info -> info.getThreadName().startsWith(SNAPSHOT_RUNNER_THREAD_PREFIX)).count();
+
+        assertEquals(snapshotThreadPoolSize.longValue(), snpRunningThreads);
+    }
+
+    /**
+     * Tests that full-copy and incremental snapshots log correctly.
+     *
+     * @throws Exception If fails.
+     * */
+    @Test
+    public void testFullSnapshotCreationLog() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+        listenLog = new ListeningTestLogger(log);
+
+        final int entriesCnt = 4;
+
+        LogListener matchStart = LogListener.matches("Cluster-wide snapshot operation started: ").times(entriesCnt).build();
+        listenLog.registerListener(matchStart);
+
+        LogListener matchFinish = LogListener.matches("Cluster-wide snapshot operation finished successfully: ").times(entriesCnt).build();
+        listenLog.registerListener(matchFinish);
+
+        LogListener matchFullParams = LogListener.matches("incremental=false, incIdx=-1").times(2).build();
+        listenLog.registerListener(matchFullParams);
+
+        LogListener matchIncParams = LogListener.matches("incremental=true").times(2 * (entriesCnt - 1)).build();
+        listenLog.registerListener(matchIncParams);
+
+        LogListener noMatchParams = LogListener.matches("incremental=true, incIdx=-1").build();
+        listenLog.registerListener(noMatchParams);
+
+        IgniteEx ignite = startGrid(getConfiguration().setConsistentId(null));
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        cache.put(0, 0);
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        for (int i = 1; i < entriesCnt; i++) {
+            cache.put(i, i);
+            ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
+        }
+
+        ignite.close();
+
+        assertTrue(matchStart.check());
+        assertTrue(matchFinish.check());
+        assertTrue(matchFullParams.check());
+        assertTrue(matchIncParams.check());
+        assertFalse(noMatchParams.check());
     }
 
     /**
@@ -616,33 +655,67 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * @param snpName Unique snapshot name.
-     * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
-     * @param snpSndr Sender which used for snapshot sub-task processing.
-     * @return Future which will be completed when snapshot is done.
+     * @param mgr Snapshot manager.
+     * @param snpName Snapshot name.
+     * @param ccfg Cache configuration.
+     * @param partId Partition id.
+     * @param encrKeyProvider Encryption keys provider to create encrypted IO. If {@code null}, no encrypted IO is used.
+     * @return Iterator over partition.
+     * @throws IgniteCheckedException If and error occurs.
      */
-    private static SnapshotFutureTask startLocalSnapshotTask(
-        GridCacheSharedContext<?, ?> cctx,
+    private static GridCloseableIterator<CacheDataRow> partitionRowIterator(
+        IgniteSnapshotManager mgr,
         String snpName,
-        Map<Integer, Set<Integer>> parts,
-        SnapshotSender snpSndr
+        CacheConfiguration<?, ?> ccfg,
+        int partId,
+        @Nullable EncryptionCacheKeyProvider encrKeyProvider
     ) throws IgniteCheckedException {
-        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts, false, snpSndr);
+        GridCacheSharedContext<?, ?> cctx = GridTestUtils.getFieldValue(mgr, IgniteSnapshotManager.class, "cctx");
 
-        snpFutTask.start();
+        SnapshotFileTree sft = new SnapshotFileTree(cctx.kernalContext(), snpName, null);
 
-        // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
-        // due to checkpoint already running and we need to schedule the next one
-        // right after current will be completed.
-        cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
+        if (!sft.root().exists())
+            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + sft.root().getAbsolutePath());
 
-        snpFutTask.started().get();
+        if (!sft.nodeStorage().exists())
+            throw new IgniteCheckedException("Consistent id directory doesn't exists: " + sft.nodeStorage().getAbsolutePath());
 
-        return snpFutTask;
+        File snpPart = sft.partitionFile(ccfg, partId);
+
+        String grpName = CU.cacheOrGroupName(ccfg);
+        int grpId = CU.cacheId(grpName);
+
+        FilePageStoreManager storeMgr = GridTestUtils.getFieldValue(mgr, IgniteSnapshotManager.class, "storeMgr");
+
+        FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
+                        encrKeyProvider == null || encrKeyProvider.getActiveKey(grpId) == null ? null : encrKeyProvider).
+                createPageStore(getTypeByPartId(partId),
+                        snpPart::toPath,
+                        val -> {});
+
+        GridCloseableIterator<CacheDataRow> partIter = mgr.partitionRowIterator(cctx.kernalContext(), grpName, partId, pageStore);
+
+        return new GridCloseableIteratorAdapter<CacheDataRow>() {
+            /** {@inheritDoc} */
+            @Override protected CacheDataRow onNext() throws IgniteCheckedException {
+                return partIter.nextX();
+            }
+
+            /** {@inheritDoc} */
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                return partIter.hasNextX();
+            }
+
+            /** {@inheritDoc} */
+            @Override protected void onClose() {
+                U.closeQuiet(pageStore);
+            }
+        };
     }
 
     /** */
     private static class ZeroPartitionAffinityFunction extends RendezvousAffinityFunction {
+        /** {@inheritDoc} */
         @Override public int partition(Object key) {
             return 0;
         }

@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -58,9 +59,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Class is responsible to create and manage instances of distributed latches {@link Latch}.
  */
 public class ExchangeLatchManager {
-    /** Version since latch management is available. */
-    private static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.5.0");
-
     /**
      * Exchange latch V2 protocol introduces following optimization: Joining nodes are explicitly excluded from possible
      * latch participants.
@@ -117,7 +115,7 @@ public class ExchangeLatchManager {
         this.discovery = ctx.discovery();
         this.io = ctx.io();
 
-        if (!ctx.clientNode() && !ctx.isDaemon()) {
+        if (!ctx.clientNode()) {
             ctx.io().addMessageListener(GridTopic.TOPIC_EXCHANGE, (nodeId, msg, plc) -> {
                 if (msg instanceof LatchAckMessage)
                     processAck(nodeId, (LatchAckMessage)msg);
@@ -284,7 +282,7 @@ public class ExchangeLatchManager {
             Collection<ClusterNode> histNodes = discovery.topology(topVer.topologyVersion());
 
             if (histNodes != null)
-                return histNodes.stream().filter(n -> !n.isClient() && !n.isDaemon() && discovery.alive(n))
+                return histNodes.stream().filter(n -> !n.isClient() && discovery.alive(n))
                     .collect(Collectors.toList());
             else
                 throw new IgniteException("Topology " + topVer + " not found in discovery history. "
@@ -298,12 +296,7 @@ public class ExchangeLatchManager {
      * @return Collection of alive server nodes with latch functionality.
      */
     private Collection<ClusterNode> getLatchParticipants(AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> aliveNodes = aliveNodesForTopologyVer(topVer);
-
-        List<ClusterNode> participantNodes = aliveNodes
-            .stream()
-            .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
-            .collect(Collectors.toList());
+        List<ClusterNode> participantNodes = new ArrayList<>(aliveNodesForTopologyVer(topVer));
 
         if (canSkipJoiningNodes(topVer))
             return excludeJoinedNodes(participantNodes, topVer);
@@ -335,7 +328,6 @@ public class ExchangeLatchManager {
 
         List<ClusterNode> applicableNodes = aliveNodes
             .stream()
-            .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
             .sorted(Comparator.comparing(ClusterNode::order))
             .collect(Collectors.toList());
 
@@ -595,7 +587,7 @@ public class ExchangeLatchManager {
             permits = new AtomicInteger(participants.size());
 
             // Send final acks when latch is completed.
-            complete.listen(f -> {
+            complete.listen(() -> {
                 for (ClusterNode node : participants)
                     sendAck(node.id(), latchId(), true);
             });

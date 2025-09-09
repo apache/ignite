@@ -36,6 +36,9 @@ public class VisorIdAndTagViewTaskResult extends IgniteDataTransferObject {
     /** */
     private String tag;
 
+    /** */
+    private String clusterName;
+
     /** Default constructor. */
     public VisorIdAndTagViewTaskResult() {
         // No-op.
@@ -44,22 +47,26 @@ public class VisorIdAndTagViewTaskResult extends IgniteDataTransferObject {
     /**
      * @param id Cluster ID.
      * @param tag Cluster tag.
+     * @param clusterName Cluster name.
      */
-    public VisorIdAndTagViewTaskResult(UUID id, String tag) {
+    public VisorIdAndTagViewTaskResult(UUID id, String tag, String clusterName) {
         this.id = id;
         this.tag = tag;
+        this.clusterName = clusterName;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeObject(id);
         out.writeObject(tag);
+        out.writeObject(clusterName);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         id = (UUID)in.readObject();
         tag = (String)in.readObject();
+        clusterName = (String)in.readObject();
     }
 
     /** */
@@ -70,5 +77,10 @@ public class VisorIdAndTagViewTaskResult extends IgniteDataTransferObject {
     /** */
     public String tag() {
         return tag;
+    }
+
+    /** */
+    public String clusterName() {
+        return clusterName;
     }
 }

@@ -64,7 +64,6 @@ class TxPrepType(IntEnum):
     MULTIKEY = 2
 
 
-# pylint: disable=W0223
 class CellularAffinity(IgniteTest):
     """
     Tests Cellular Affinity scenarios.
@@ -142,10 +141,6 @@ class CellularAffinity(IgniteTest):
 
         checker.run()
 
-    # pylint: disable=R0912
-    # pylint: disable=R0914
-    # pylint: disable=no-member
-    # pylint: disable=too-many-statements
     @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(stop_type=[StopType.DROP_NETWORK, StopType.SIGKILL, StopType.SIGTERM],
@@ -155,7 +150,7 @@ class CellularAffinity(IgniteTest):
         """
         Tests Cellular switch tx latency.
         """
-        cluster_size = len(self.test_context.cluster)
+        cluster_size = self.available_cluster_size
 
         cells_amount = math.floor((cluster_size - self.ZOOKEPER_CLUSTER_SIZE) / (self.NODES_PER_CELL + 1))
 
@@ -288,7 +283,6 @@ class CellularAffinity(IgniteTest):
                     "warmup": 10000},
             modules=modules, startup_timeout_sec=180)
 
-    # pylint: disable=too-many-arguments
     def start_cell_with_prepared_txs(
             self, version, cell_id, discovery_spi, modules, col_cnt=0, noncol_cnt=0, multi_cnt=0):
         """
@@ -316,7 +310,6 @@ class CellularAffinity(IgniteTest):
 
         return nodes, prepared_tx_streamer
 
-    # pylint: disable=too-many-arguments
     def start_cell(self, version, jvm_opts, discovery_spi=None, modules=None, nodes_cnt=NODES_PER_CELL):
         """
         Starts cell.

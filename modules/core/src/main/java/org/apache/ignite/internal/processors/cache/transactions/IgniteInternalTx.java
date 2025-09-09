@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -478,7 +477,7 @@ public interface IgniteInternalTx {
      * @return Current value for the key within transaction.
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
-     @Nullable public GridTuple<CacheObject> peek(
+    @Nullable public GridTuple<CacheObject> peek(
          GridCacheContext ctx,
          boolean failFast,
          KeyCacheObject key) throws GridCacheFilterFailedException;
@@ -656,14 +655,24 @@ public interface IgniteInternalTx {
     @Nullable public String label();
 
     /**
-     * @param mvccSnapshot Mvcc snapshot.
+     * @return ID of incremental snapshot after which this transaction commits, {@code null} if snapshot isn't running.
      */
-    public void mvccSnapshot(MvccSnapshot mvccSnapshot);
+    public @Nullable UUID incrementalSnapshotId();
 
     /**
-     * @return Mvcc snapshot.
+     * @param id ID of incremental snapshot after which this transaction commits, {@code null} if snapshot isn't running.
      */
-    public MvccSnapshot mvccSnapshot();
+    public void incrementalSnapshotId(@Nullable UUID id);
+
+    /**
+     * @return Application attributes.
+     */
+    public @Nullable Map<String, String> applicationAttributes();
+
+    /**
+     * @param appAttrs Application attributes.
+     */
+    public void applicationAttributes(Map<String, String> appAttrs);
 
     /**
      * @return Transaction counters.

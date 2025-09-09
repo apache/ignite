@@ -36,9 +36,6 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
  */
 public class ClusterMetricsUpdateMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private byte[] nodeMetrics;
 
     /** */
@@ -85,7 +82,7 @@ public class ClusterMetricsUpdateMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -93,13 +90,13 @@ public class ClusterMetricsUpdateMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap("allNodesMetrics", allNodesMetrics, MessageCollectionItemType.UUID, BYTE_ARR))
+                if (!writer.writeMap(allNodesMetrics, MessageCollectionItemType.UUID, BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("nodeMetrics", nodeMetrics))
+                if (!writer.writeByteArray(nodeMetrics))
                     return false;
 
                 writer.incrementState();
@@ -113,12 +110,9 @@ public class ClusterMetricsUpdateMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                allNodesMetrics = reader.readMap("allNodesMetrics", MessageCollectionItemType.UUID, BYTE_ARR, false);
+                allNodesMetrics = reader.readMap(MessageCollectionItemType.UUID, BYTE_ARR, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -126,7 +120,7 @@ public class ClusterMetricsUpdateMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                nodeMetrics = reader.readByteArray("nodeMetrics");
+                nodeMetrics = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -135,17 +129,12 @@ public class ClusterMetricsUpdateMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(ClusterMetricsUpdateMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 133;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

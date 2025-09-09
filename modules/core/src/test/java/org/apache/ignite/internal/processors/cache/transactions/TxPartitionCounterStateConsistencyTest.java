@@ -169,6 +169,97 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     }
 
     /**
+     * There is a key that was removed while a primary node was stopped.
+     * After restart a primary node there is a full rebalance with clearing.
+     * So the remove operation was not writen to WAL. Also the partition was not chekpointed.
+     * After second restart a primary node need to repeat the partition clearing to clear the key.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPartitionConsistencyNotRebalancedRemoveOpWithPrimaryRestart() throws Exception {
+        testPartitionConsistencyNotRebalancedRemoveOpWithNodeRestart(true);
+    }
+
+    /**
+     * There is a key that was removed while a backup node was stopped.
+     * After restart a backup node there is a full rebalance with clearing.
+     * So the remove operation was not writen to WAL. Also the partition was not chekpointed.
+     * After second restart a backup node need to repeat the partition clearing to clear the key.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPartitionConsistencyNotRebalancedRemoveOpWithBackupRestart() throws Exception {
+        testPartitionConsistencyNotRebalancedRemoveOpWithNodeRestart(false);
+    }
+
+    /**
+     * @param primary Restart primary or backup node.
+     * @throws Exception If failed.
+     */
+    public void testPartitionConsistencyNotRebalancedRemoveOpWithNodeRestart(boolean primary) throws Exception {
+        backups = 1;
+
+        Ignite srv = startGridsMultiThreaded(2);
+
+        IgniteEx client = startGrid("client");
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        List<Integer> cacheKeys;
+
+        if (primary)
+            cacheKeys = primaryKeys(srv.cache(DEFAULT_CACHE_NAME), partitions() * 4);
+        else
+            cacheKeys = backupKeys(srv.cache(DEFAULT_CACHE_NAME), partitions() * 4, 0);
+
+        List<Integer> partKeys = new ArrayList<>();
+
+        int partId = -1;
+
+        for (Integer key : cacheKeys) {
+            if (partId == -1 || srv.affinity(DEFAULT_CACHE_NAME).partition(key) == partId) {
+                if (partId == -1)
+                    partId = srv.affinity(DEFAULT_CACHE_NAME).partition(key);
+
+                partKeys.add(key);
+
+                if (partKeys.size() == 3)
+                    break;
+            }
+        }
+
+        assertTrue("Failed to find the required number of keys.", partKeys.size() == 3);
+
+        if (log().isInfoEnabled())
+            log().info("partKeys: " + partKeys);
+
+        for (int i = 0; i < 2; i++) {
+            if (i == 0)
+                cache.put(partKeys.get(0), 1234567);
+
+            stopGrid(true, srv.name());
+
+            awaitPartitionMapExchange();
+
+            if (i == 0) {
+                cache.remove(partKeys.get(0));
+                cache.put(partKeys.get(1), 112233);
+            }
+
+            startGrid(srv.name());
+
+            awaitPartitionMapExchange(true, true, null);
+
+            if (i == 0)
+                cache.put(partKeys.get(2), 7654321);
+        }
+
+        assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
+    }
+
+    /**
      * Test primary-backup partitions consistency while restarting primary node under load.
      */
     @Test
@@ -225,7 +316,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         Ignite prim = startGrids(srvNodes);
 
-        prim.cluster().active(true);
+        prim.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = prim.cache(DEFAULT_CACHE_NAME);
 
@@ -289,7 +380,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         Ignite prim = startGrids(srvNodes);
 
-        prim.cluster().active(true);
+        prim.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = prim.cache(DEFAULT_CACHE_NAME);
 
@@ -487,7 +578,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         Ignite crd = startGrids(SERVER_NODES);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         int[] primaryParts = crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(crd.cluster().localNode());
 
@@ -521,7 +612,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         startGrid(1);
         startNodeWithBlockingSupplying(2);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(crd);
         TestRecordingCommunicationSpi spi2 = TestRecordingCommunicationSpi.spi(ignite(2));
@@ -642,7 +733,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         Ignite crd = startGridsMultiThreaded(SERVER_NODES);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         Ignite client = startClientGrid(CLIENT_GRID_NAME);
 
@@ -725,7 +816,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         startGrid(1);
         startGrid(2);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         Ignite client = startClientGrid(CLIENT_GRID_NAME);
 
@@ -840,7 +931,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         crd.cluster().baselineAutoAdjustEnabled(false);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         // Same name pattern as in test configuration.
         String consistentId = "node" + getTestIgniteInstanceName(3);
@@ -1005,7 +1096,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     public void testLateAffinityChangeDuringExchange() throws Exception {
         backups = 2;
         Ignite crd = startGridsMultiThreaded(3);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -1019,7 +1110,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         TestRecordingCommunicationSpi.spi(grid(1)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionsSingleMessage) {
-                    GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage) msg;
+                    GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage)msg;
 
                     return msg0.exchangeId() == null && msg0.partitions().get(CU.cacheId(DEFAULT_CACHE_NAME)).
                         topologyVersion().equals(new AffinityTopologyVersion(4, 0));
@@ -1042,14 +1133,14 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             crd.cache(DEFAULT_CACHE_NAME).put(p, p + 1);
 
         IgniteConfiguration cfg2 = getConfiguration(getTestIgniteInstanceName(2));
-        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi) cfg2.getCommunicationSpi();
+        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi)cfg2.getCommunicationSpi();
         spi2.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 if (msg instanceof GridDhtPartitionDemandMessage)
                     return true; // Prevent any rebalancing to avoid switching partitions to owning.
 
                 if (msg instanceof GridDhtPartitionsSingleMessage) {
-                    GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage) msg;
+                    GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage)msg;
 
                     return msg0.exchangeId() != null &&
                         msg0.exchangeId().topologyVersion().equals(new AffinityTopologyVersion(5, 0));
@@ -1158,7 +1249,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         final IgniteEx crd = startGrids(nodes);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         List<Integer> primaryKeys = primaryKeys(crd.cache(DEFAULT_CACHE_NAME), 1024);
 
@@ -1197,7 +1288,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         prim.cluster().baselineAutoAdjustEnabled(false);
 
-        prim.cluster().active(true);
+        prim.cluster().state(ClusterState.ACTIVE);
 
         for (int p = 0; p < partitions(); p++) {
             prim.cache(DEFAULT_CACHE_NAME).put(p, p);
@@ -1290,9 +1381,9 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
                 DataRecord rec = (DataRecord)tup.get2();
 
-                assertEquals(1, rec.writeEntries().size());
+                assertEquals(1, rec.entryCount());
 
-                DataEntry entry = rec.writeEntries().get(0);
+                DataEntry entry = rec.get(0);
 
                 assertEquals(op.get1(),
                     entry.key().value(internalCache(ig, DEFAULT_CACHE_NAME).context().cacheObjectContext(), false));

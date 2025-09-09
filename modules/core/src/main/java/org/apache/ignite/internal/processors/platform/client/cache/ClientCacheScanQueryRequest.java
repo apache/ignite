@@ -23,7 +23,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
@@ -36,7 +36,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * Scan query request.
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
+public class ClientCacheScanQueryRequest extends ClientCacheQueryRequest implements ClientTxAwareRequest {
     /** Local flag. */
     private final boolean loc;
 
@@ -57,7 +57,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
      *
      * @param reader Reader.
      */
-    public ClientCacheScanQueryRequest(BinaryRawReaderEx reader) {
+    public ClientCacheScanQueryRequest(BinaryReaderEx reader) {
         super(reader);
 
         filterObj = reader.readObjectDetached();
@@ -74,13 +74,17 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteCache cache = filterPlatform == ClientPlatform.JAVA && !isKeepBinary() ? rawCache(ctx) : cache(ctx);
+        IgniteCache<Object, Object> cache = filterPlatform == ClientPlatform.JAVA && !isKeepBinary() ?
+            rawCache(ctx) : cache(ctx);
 
         ScanQuery qry = new ScanQuery()
             .setLocal(loc)
             .setPageSize(pageSize)
             .setPartition(part)
             .setFilter(createFilter(ctx.kernalContext(), filterObj, filterPlatform));
+
+        if (part != null)
+            updateAffinityMetrics(ctx, part);
 
         ctx.incrementCursors();
 

@@ -43,8 +43,8 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -52,6 +52,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.IgniteMetrics;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
@@ -61,6 +63,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.customName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
@@ -72,9 +75,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  * @see MetricRegistry
  */
 public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricManager {
-    /** Class name for a SQL view metrics exporter. */
-    public static final String SQL_SPI = "org.apache.ignite.internal.processors.metric.sql.SqlViewMetricExporterSpi";
-
     /** Metrics update frequency. */
     private static final long METRICS_UPDATE_FREQ = 3000;
 
@@ -138,6 +138,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Whether cluster is in fully rebalanced state metric name. */
     public static final String REBALANCED = "Rebalanced";
 
+    /** Custom metrics registry name. */
+    public static final String CUSTOM_METRICS = "custom";
+
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
 
@@ -189,6 +192,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
 
+    /** */
+    private final SunOperatingSystemMXBeanAccessor sunOs;
+
+    /** */
+    private final IgniteMetrics customMetrics;
+
     /**
      * @param ctx Kernal context.
      */
@@ -196,7 +205,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         super(ctx, ((Supplier<MetricExporterSpi[]>)() -> {
             MetricExporterSpi[] spi = ctx.config().getMetricExporterSpi();
 
-            if (!IgniteComponentType.INDEXING.inClassPath())
+            if (!IgniteComponentType.INDEXING.inClassPath() && !IgniteComponentType.QUERY_ENGINE.inClassPath())
                 return spi;
 
             MetricExporterSpi[] spiWithSql = new MetricExporterSpi[spi != null ? spi.length + 1 : 1];
@@ -204,15 +213,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             if (!F.isEmpty(spi))
                 System.arraycopy(spi, 0, spiWithSql, 0, spi.length);
 
-            try {
-                spiWithSql[spiWithSql.length - 1] = U.newInstance(SQL_SPI);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            spiWithSql[spiWithSql.length - 1] = new SqlViewMetricExporterSpi();
 
             return spiWithSql;
         }).get());
+
+        sunOs = sunOperatingSystemMXBeanAccessor();
 
         ctx.addNodeAttribute(ATTR_PHY_RAM, totalSysMemory());
 
@@ -222,7 +228,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         heap.update(mem.getHeapMemoryUsage());
         nonHeap.update(mem.getNonHeapMemoryUsage());
 
-        MetricRegistry sysreg = registry(SYS_METRICS);
+        MetricRegistryImpl sysreg = registry(SYS_METRICS);
 
         gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, GC_CPU_LOAD_DESCRIPTION);
         cpuLoad = sysreg.doubleMetric(CPU_LOAD, CPU_LOAD_DESCRIPTION);
@@ -236,7 +242,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
 
-        MetricRegistry pmeReg = registry(PME_METRICS);
+        MetricRegistryImpl pmeReg = registry(PME_METRICS);
 
         long[] pmeBounds = new long[] {500, 1000, 5000, 30000};
 
@@ -245,6 +251,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
+
+        customMetrics = new CustomMetricsImpl();
     }
 
     /** {@inheritDoc} */
@@ -259,6 +267,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         startSpi();
 
+        // In case standalone kernal start.
+        if (ctx.internalSubscriptionProcessor() == null)
+            return;
+
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
             new DistributedMetastorageLifecycleListener() {
                 /** {@inheritDoc} */
@@ -267,10 +279,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
                     try {
                         metastorage.iterate(HITRATE_CFG_PREFIX, (name, val) -> onHitRateConfigChanged(
-                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) val));
+                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long)val));
 
                         metastorage.iterate(HISTOGRAM_CFG_PREFIX, (name, val) -> onHistogramConfigChanged(
-                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) val));
+                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[])val));
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -278,11 +290,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
                     metastorage.listen(n -> n.startsWith(HITRATE_CFG_PREFIX),
                         (name, oldVal, newVal) -> onHitRateConfigChanged(
-                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) newVal));
+                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long)newVal));
 
                     metastorage.listen(n -> n.startsWith(HISTOGRAM_CFG_PREFIX),
                         (name, oldVal, newVal) -> onHistogramConfigChanged(
-                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) newVal));
+                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[])newVal));
                 }
 
                 /** {@inheritDoc} */
@@ -306,11 +318,13 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param name Group name.
      * @return Group of metrics.
      */
-    public MetricRegistry registry(String name) {
-        return (MetricRegistry)registries.computeIfAbsent(name, n -> {
-            MetricRegistry mreg = new MetricRegistry(name,
-                mname -> readFromMetastorage(metricName(HITRATE_CFG_PREFIX, mname)),
-                mname -> readFromMetastorage(metricName(HISTOGRAM_CFG_PREFIX, mname)),
+    public MetricRegistryImpl registry(String name) {
+        boolean custom = name.startsWith(CUSTOM_METRICS);
+
+        return (MetricRegistryImpl)registries.computeIfAbsent(name, n -> {
+            MetricRegistryImpl mreg = new MetricRegistryImpl(name,
+                custom ? null : mname -> readFromMetastorage(metricName(HITRATE_CFG_PREFIX, mname)),
+                custom ? null : mname -> readFromMetastorage(metricName(HISTOGRAM_CFG_PREFIX, mname)),
                 log);
 
             notifyListeners(mreg, metricRegCreationLsnrs, log);
@@ -336,6 +350,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** @return Custom metrics. */
+    public IgniteMetrics custom() {
+        return customMetrics;
     }
 
     /** {@inheritDoc} */
@@ -425,6 +444,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
+        ensureMetricRegistered(name, HitRateMetric.class);
+
         metastorage.write(metricName(HITRATE_CFG_PREFIX, name), rateTimeInterval);
     }
 
@@ -443,6 +464,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
+        ensureMetricRegistered(name, HistogramMetric.class);
+
         metastorage.write(metricName(HISTOGRAM_CFG_PREFIX, name), bounds);
     }
 
@@ -451,7 +474,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      *
      * @param name Metric name.
      * @param rateTimeInterval New rateTimeInterval.
-     * @see HistogramMetricImpl#reset(long[])
+     * @see HitRateMetric#reset(long)
      */
     private void onHitRateConfigChanged(String name, @Nullable Long rateTimeInterval) {
         if (rateTimeInterval == null)
@@ -477,12 +500,18 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (bounds == null)
             return;
 
-        HistogramMetricImpl m = find(name, HistogramMetricImpl.class);
+        ConfigurableHistogramMetric m = find(name, ConfigurableHistogramMetric.class);
 
         if (m == null)
             return;
 
-        m.reset(bounds);
+        try {
+            m.bounds(bounds);
+        }
+        catch (RuntimeException e) {
+            // Can't throw exceptions here since method is invoked by metastorage listener.
+            log.error("Error during histogram bounds reconfiguration", e);
+        }
     }
 
     /**
@@ -490,7 +519,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param type Metric type.
      * @return Metric.
      */
-    private <T extends Metric> T find(String name, Class<T> type) {
+    public <T extends Metric> T find(String name, Class<T> type) {
         A.notNull(name, "name");
 
         T2<String, String> splitted = fromFullName(name);
@@ -513,13 +542,13 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             return null;
         }
 
-        if (!m.getClass().isAssignableFrom(type)) {
+        if (!type.isAssignableFrom(m.getClass())) {
             log.error("Metric '" + name + "' has wrong type[type=" + m.getClass().getSimpleName() + ']');
 
             return null;
         }
 
-        return (T) m;
+        return (T)m;
     }
 
     /**
@@ -559,18 +588,55 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         }
     }
 
+    /** */
+    private <T extends Metric> void ensureMetricRegistered(String name, Class<T> cls) {
+        if (find(name, cls) == null)
+            throw new IgniteException("Failed to find registered metric with specified name [metricName=" + name + ']');
+    }
+
     /**
      * @return Total system memory.
      */
     private long totalSysMemory() {
         try {
-            com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
-
             return sunOs.getTotalPhysicalMemorySize();
         }
         catch (RuntimeException ignored) {
             return -1;
         }
+    }
+
+    /** @return Accessor for {@link com.sun.management.OperatingSystemMXBean}. */
+    private SunOperatingSystemMXBeanAccessor sunOperatingSystemMXBeanAccessor() {
+        try {
+            if (os instanceof com.sun.management.OperatingSystemMXBean) {
+                com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean)os;
+
+                return new SunOperatingSystemMXBeanAccessor() {
+                    @Override public long getProcessCpuTime() {
+                        return sunOs.getProcessCpuTime();
+                    }
+
+                    @Override public long getTotalPhysicalMemorySize() {
+                        return sunOs.getTotalPhysicalMemorySize();
+                    }
+                };
+            }
+        }
+        catch (@SuppressWarnings("ErrorNotRethrown") NoClassDefFoundError ignored) {
+            log.warning("The 'com.sun.management.OperatingSystemMXBean' class is not available for class loader. " +
+                "System/JVM memory and CPU statistics may be not available.");
+        }
+
+        return new SunOperatingSystemMXBeanAccessor() {
+            @Override public long getProcessCpuTime() {
+                return U.<Long>property(os, "processCpuTime");
+            }
+
+            @Override public long getTotalPhysicalMemorySize() {
+                return U.<Long>property(os, "totalPhysicalMemorySize");
+            }
+        };
     }
 
     /** */
@@ -625,8 +691,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             long cpuTime;
 
             try {
-                com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
-
                 cpuTime = sunOs.getProcessCpuTime();
             }
             catch (RuntimeException ignored) {
@@ -671,11 +735,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         private final AtomicLongMetric max;
 
         /**
-         * @param group Metric registry.
+         * @param grp Metric registry.
          * @param metricNamePrefix Metric name prefix.
          */
-        public MemoryUsageMetrics(String group, String metricNamePrefix) {
-            MetricRegistry mreg = registry(group);
+        public MemoryUsageMetrics(String grp, String metricNamePrefix) {
+            MetricRegistryImpl mreg = registry(grp);
 
             this.init = mreg.longMetric(metricName(metricNamePrefix, "init"), null);
             this.used = mreg.longMetric(metricName(metricNamePrefix, "used"), null);
@@ -689,6 +753,33 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             used.value(usage.getUsed());
             committed.value(usage.getCommitted());
             max.value(usage.getMax());
+        }
+    }
+
+    /** Accessor for {@link com.sun.management.OperatingSystemMXBean} methods. */
+    private interface SunOperatingSystemMXBeanAccessor {
+        /** @see com.sun.management.OperatingSystemMXBean#getProcessCpuTime() */
+        long getProcessCpuTime();
+
+        /** @see com.sun.management.OperatingSystemMXBean#getTotalPhysicalMemorySize() */
+        long getTotalPhysicalMemorySize();
+    }
+
+    /** Custom metrics impl. */
+    private class CustomMetricsImpl implements IgniteMetrics {
+        /** {@inheritDoc} */
+        @Override public MetricRegistry getOrCreate(String registryName) {
+            return registry(customName(registryName));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove(String registryName) {
+            GridMetricManager.this.remove(customName(registryName), false);
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<ReadOnlyMetricRegistry> iterator() {
+            return F.viewReadOnly(registries.values(), r -> r, r -> MetricUtils.customMetric(r.name())).iterator();
         }
     }
 }

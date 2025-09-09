@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= Java Thin Client
+= Java Thin Client [[java_thin_client]]
 
 :sourceCodeFile: {javaCodeDir}/JavaThinClient.java
 == Overview
@@ -75,15 +75,29 @@ include::{sourceCodeFile}[tag=connect-to-many-nodes,indent=0]
 
 Note that the code above provides a failover mechanism in case of server node failures. Refer to the <<Handling Node Failures>> section for more information.
 
-== Partition Awareness
+== Partition Awareness [partition_awareness]
 
 include::includes/partition-awareness.adoc[]
+
+Partition awareness functionality helps to avoid an additional network hop in the following scenarios:
+
+1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on those operations within explicit transactions (initiated via ClientTransaction#txStart() described in <<Transactions>> section).
+
+2. ScanQuery and IndexQuery accept a partition number as a parameter with which the query is routed to a particular server node that stores the requested data. Refer to <<Executing Scan Queries>> and link:key-value-api/using-cache-queries#executing-index-queries[Executing Index Queries] sections for more information.
 
 The following code sample illustrates how to use the partition awareness feature with the java thin client.
 
 [source, java]
 ----
 include::{sourceCodeFile}[tag=partition-awareness,indent=0]
+----
+
+The code sample below shows how to use a custom cache key to partition mapping function to enable affinity awareness on
+a thin client side if the cache already exists in a cluster or/and was created with custom AffinityFunction or AffinityKeyMapper.
+
+[source, java]
+----
+include::{sourceCodeFile}[tag=partition-awareness-with-mapper,indent=0]
 ----
 
 If a list of server nodes is dynamically changing or scaling, then it is possible to configure the connection with custom implementation of `ClientAddressFinder`. It should provide a number of current server addresses every time a client asks for them.
@@ -100,7 +114,12 @@ The code snippet shows how an example implementation might look like if you want
 * The `fetchServerAddress()` is a custom function that dynamically provides server addresses.
 * Configure client with `ClientConfiguration.setAddressFinder(finder)`.
 
-Also, you can check a real example of the interface implementation. `ThinClientKubernetesAddressFinder` is created to handle scalable Kubernetes environment.
+Also, you can check a link:https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/client/ClientKubernetesPutGetExample.java#L50[real example] of the interface implementation. `ThinClientKubernetesAddressFinder` is created to handle scalable Kubernetes environment.
+
+[NOTE]
+====
+Partition Awareness also enables link:../services/services.adoc#service_awareness[Service Awareness]
+====
 
 == Using Key-Value API
 
@@ -131,10 +150,30 @@ The following code snippet demonstrates how to execute basic cache operations fr
 include::{sourceCodeFile}[tag=key-value-operations,indent=0]
 -------------------------------------------------------------------------------
 
-=== Executing Scan Queries
-Use the `ScanQuery<K, V>` class to get a set of entries that satisfy a given condition. The thin client sends the query to the cluster node where it is executed as a normal link:key-value-api/using-scan-queries[scan query].
+=== Entry Processor
 
-The query condition is specified by an `IgniteBiPredicate<K, V>` object that is passed to the query constructor as an argument. The predicate is applied on the server side. If you don't provide any predicate, the query returns all cache entries.
+An entry processor is used to process cache entries on the nodes where they are stored. An entry processor does not require the entry to be transferred to the client in order to perform an operation on it. The operation is performed remotely, and only the results are transmitted to the client.
+
+Define an entry processor as follows:
+
+[source, java]
+----
+include::{sourceCodeFile}[tags=entry-processor-class,indent=0]
+----
+
+NOTE: The classes of the entry processors must be available on the server nodes of the cluster.
+
+Then invoke the entry processor:
+
+[source, java]
+----
+include::{sourceCodeFile}[tags=entry-processor,indent=0]
+----
+
+=== Executing Scan Queries
+Use the `ScanQuery<K, V>` class to get a set of entries that satisfy a given condition. The thin client sends the query to the cluster node where it is executed as a regular link:key-value-api/using-cache-queries[scan query].
+
+The query condition is specified by an `IgniteBiPredicate<K, V>` object that is passed to the query constructor as an argument. The predicate is applied on the server side. If there is no predicate provided, the query returns all cache entries.
 
 NOTE: The classes of the predicates must be available on the server nodes of the cluster.
 
@@ -241,7 +280,7 @@ interface is the entry-point to the APIs that can be used as follows:
 
 * Get or change the state of a cluster
 * Get a list of all cluster nodes
-* Create logical groups our of cluster nodes and use other Ignite APIs to perform certain operations on the group
+* Create logical groups of cluster nodes and use other Ignite APIs to perform certain operations on the group
 
 Use the instance of `IgniteClient` to obtain a reference to the `ClientCluster` interface:
 [source, java]

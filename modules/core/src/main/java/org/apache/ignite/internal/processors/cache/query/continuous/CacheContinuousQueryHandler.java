@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +53,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -82,6 +85,8 @@ import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static javax.cache.event.EventType.EXPIRED;
+import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.toCountersMap;
@@ -378,9 +383,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         initLocalListener(locLsnr, ctx);
 
         if (initFut == null) {
-            initFut = p2pUnmarshalFut.chain((fut) -> {
+            initFut = p2pUnmarshalFut.chain(() -> {
                 try {
-                    fut.get();
+                    p2pUnmarshalFut.get();
 
                     initRemoteFilter(getEventFilter0(), ctx);
 
@@ -422,21 +427,21 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             @Override public void onBeforeRegister() {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-                if (cctx != null && !cctx.isLocal())
+                if (cctx != null)
                     cctx.topology().readLock();
             }
 
             @Override public void onAfterRegister() {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-                if (cctx != null && !cctx.isLocal())
+                if (cctx != null)
                     cctx.topology().readUnlock();
             }
 
             @Override public void onRegister() {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-                if (cctx != null && !cctx.isLocal())
+                if (cctx != null)
                     locInitUpdCntrs = toCountersMap(cctx.topology().localUpdateCounters(false));
             }
 
@@ -448,7 +453,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 boolean primary,
                 final boolean recordIgniteEvt,
                 GridDhtAtomicAbstractUpdateFuture fut) {
-                if (ignoreExpired && evt.getEventType() == EventType.EXPIRED)
+                if (ignoreExpired && evt.getEventType() == EXPIRED)
                     return;
 
                 if (log.isDebugEnabled())
@@ -458,9 +463,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                 // Check that cache stopped.
                 if (cctx == null)
-                    return;
-
-                if (!needNotify(false, cctx, -1, -1, evt))
                     return;
 
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.
@@ -572,9 +574,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (skipCtx == null)
                     skipCtx = new CounterSkipContext(part, cntr, topVer);
 
-                if (!needNotify(true, cctx, part, cntr, null))
-                    return skipCtx;
-
                 if (loc) {
                     assert !locOnly;
 
@@ -586,7 +585,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                                 @Override public void run() {
                                     try {
                                         notifyLocalListener(evts, getTransformer());
-                                    } catch (IgniteCheckedException ex) {
+                                    }
+                                    catch (IgniteCheckedException ex) {
                                         U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY),
                                             "Failed to notify local listener.", ex);
                                     }
@@ -598,7 +598,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                                 @Override public void run() {
                                     try {
                                         notifyLocalListener(evts, getTransformer());
-                                    } catch (IgniteCheckedException ex) {
+                                    }
+                                    catch (IgniteCheckedException ex) {
                                         U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY),
                                             "Failed to notify local listener.", ex);
                                     }
@@ -659,38 +660,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             @Override public boolean isPrimaryOnly() {
                 return locOnly && !skipPrimaryCheck;
             }
-
-            /**
-             * Checks whether it is need to notify listeners.
-             *
-             * @param skipEvt {@code True} if this is a skip counter event.
-             * @param cctx Cache context.
-             * @param part Partition id.
-             * @param cntr Update counter.
-             * @param evt CQ event.
-             * @return {@code True} if notification should happen immediately, or {@code false} if it should be delayed.
-             */
-            private boolean needNotify(boolean skipEvt,
-                GridCacheContext cctx,
-                int part,
-                long cntr,
-                CacheContinuousQueryEvent evt) {
-                assert !skipEvt || evt == null;
-                assert skipEvt || part == -1 && cntr == -1; // part == -1 && cntr == -1 means skip counter.
-
-                if (!cctx.mvccEnabled() || cctx.isLocal())
-                    return true;
-
-                assert locInitUpdCntrs != null;
-
-                cntr = skipEvt ? cntr : evt.getPartitionUpdateCounter();
-                part = skipEvt ? part : evt.partitionId();
-
-                T2<Long, Long> initCntr = locInitUpdCntrs.get(part);
-
-                // Do not notify listener if entry was updated before the query is started.
-                return initCntr == null || cntr >= initCntr.get2();
-            }
         };
 
         CacheContinuousQueryManager mgr = manager(ctx);
@@ -701,7 +670,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         RegisterStatus regStatus = mgr.registerListener(routineId, lsnr, internal);
 
         if (regStatus == RegisterStatus.REGISTERED)
-            initFut.listen(res -> sendQueryExecutedEvent());
+            initFut.listen(this::sendQueryExecutedEvent);
 
         return regStatus;
     }
@@ -854,14 +823,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     void waitTopologyFuture(GridKernalContext ctx) throws IgniteCheckedException {
         GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-        if (!cctx.isLocal()) {
-            AffinityTopologyVersion topVer = initTopVer;
+        AffinityTopologyVersion topVer = initTopVer;
 
-            cacheContext(ctx).shared().exchange().affinityReadyFuture(topVer).get();
+        cacheContext(ctx).shared().exchange().affinityReadyFuture(topVer).get();
 
-            for (int partId = 0; partId < cacheContext(ctx).affinity().partitions(); partId++)
-                getOrCreatePartitionRecovery(ctx, partId, topVer);
-        }
+        for (int partId = 0; partId < cacheContext(ctx).affinity().partitions(); partId++)
+            getOrCreatePartitionRecovery(ctx, partId, topVer);
     }
 
     /** {@inheritDoc} */
@@ -1036,6 +1003,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         try {
             if (notify && getEventFilter() != null)
                 notify = getEventFilter().evaluate(evt);
+        }
+        catch (NoClassDefFoundError e) {
+            P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(e);
         }
         catch (Exception e) {
             U.error(log, "CacheEntryEventFilter failed: " + e);
@@ -1215,10 +1185,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             else if (initUpdCntrs != null)
                 partCntrs = initUpdCntrs.get(partId);
 
-            rec = new CacheContinuousQueryPartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer,
-                partCntrs != null ? partCntrs.get2() : null);
-
-            CacheContinuousQueryPartitionRecovery oldRec = rcvs.putIfAbsent(partId, rec);
+            T2<Long, Long> partCntrs0 = partCntrs;
+            CacheContinuousQueryPartitionRecovery oldRec = rcvs.computeIfAbsent(partId, k ->
+                    new CacheContinuousQueryPartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer,
+                            partCntrs0 != null ? partCntrs0.get2() : null));
 
             if (oldRec != null)
                 rec = oldRec;
@@ -1381,26 +1351,43 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         routineId,
                         t.get1());
 
+                    Set<UUID> sentToNodes = t.get2().size() > 1 ? new HashSet<>() : null;
+
                     for (AffinityTopologyVersion topVer : t.get2()) {
-                        for (ClusterNode node : ctx.discovery().cacheGroupAffinityNodes(cctx.groupId(), topVer)) {
-                            if (!node.isLocal()) {
-                                try {
-                                    cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
-                                }
-                                catch (ClusterTopologyCheckedException ignored) {
-                                    IgniteLogger log = ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY);
+                        if (topVer == null)
+                            topVer = AffinityTopologyVersion.NONE;
 
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to send acknowledge message, node left " +
-                                            "[msg=" + msg + ", node=" + node + ']');
-                                }
-                                catch (IgniteCheckedException e) {
-                                    IgniteLogger log = ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY);
+                        try {
+                            for (ClusterNode node : ctx.discovery().cacheGroupAffinityNodes(cctx.groupId(), topVer)) {
+                                if (!node.isLocal()) {
+                                    // Try to send the same message only once per node.
+                                    if (sentToNodes != null && !sentToNodes.add(nodeId))
+                                        continue;
 
-                                    U.error(log, "Failed to send acknowledge message " +
-                                        "[msg=" + msg + ", node=" + node + ']', e);
+                                    try {
+                                        cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
+                                    }
+                                    catch (ClusterTopologyCheckedException ignored) {
+                                        IgniteLogger log = ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY);
+
+                                        if (log.isDebugEnabled())
+                                            log.debug("Failed to send acknowledge message, node left " +
+                                                "[msg=" + msg + ", node=" + node + ']');
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        IgniteLogger log = ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY);
+
+                                        U.error(log, "Failed to send acknowledge message " +
+                                            "[msg=" + msg + ", node=" + node + ']', e);
+                                    }
                                 }
                             }
+                        }
+                        catch (Throwable t) {
+                            U.warn(log, "Failed to send acknowledge message [msg=" + msg +
+                                ", topVer=" + topVer + ']', t);
+
+                            throw t;
                         }
                     }
                 }
@@ -1598,11 +1585,27 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         CacheContinuousQueryEvent<? extends K, ? extends V> evt) {
         Object transVal = transform(trans, evt);
 
+        CacheObject cacheObj = transVal == null ? null : cacheContext(ctx).toCacheObject(transVal);
+
+        EventType type = evt.entry().eventType();
+
+        CacheObject oldVal;
+        CacheObject newVal;
+
+        if (type == EXPIRED || type == REMOVED) {
+            newVal = null;
+            oldVal = cacheObj;
+        }
+        else {
+            newVal = cacheObj;
+            oldVal = null;
+        }
+
         return new CacheContinuousQueryEntry(evt.entry().cacheId(),
             evt.entry().eventType(),
             null,
-            transVal == null ? null : cacheContext(ctx).toCacheObject(transVal),
-            null,
+            newVal,
+            oldVal,
             evt.entry().isKeepBinary(),
             evt.entry().partition(),
             evt.entry().updateCounter(),
@@ -1624,10 +1627,18 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         try {
             transVal = trans.apply(evt);
         }
+        catch (NoClassDefFoundError e) {
+            P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(e);
+        }
         catch (Exception e) {
             U.error(log, e);
         }
 
         return transVal;
+    }
+
+    /** */
+    Map<Integer, CacheContinuousQueryEventBuffer> partitionContinuesQueryEntryBuffers() {
+        return Collections.unmodifiableMap(entryBufs);
     }
 }

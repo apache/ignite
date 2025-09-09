@@ -20,20 +20,18 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -121,12 +119,17 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      */
     protected OP getOp() {
         switch (RAND.nextInt(3)) {
-            case 0: { return OP.READ; }
-            case 1: { return OP.WRITE; }
-            case 2: { return OP.REMOVE; }
+            case 0:
+                return OP.READ;
+            case 1:
+                return OP.WRITE;
+            case 2:
+                return OP.REMOVE;
 
             // Should never be reached.
-            default: { assert false; return null; }
+            default:
+                assert false;
+                return null;
         }
     }
 
@@ -195,7 +198,8 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                             break;
                         }
 
-                        default: { assert false; }
+                        default:
+                            assert false;
                     }
                 }
 
@@ -210,9 +214,6 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
 
                     throw e;
                 }
-            }
-            catch (CacheException e) {
-                MvccFeatureChecker.assertMvccWriteConflict(e);
             }
             catch (Throwable e) {
                 log.error("Unexpected error: " + e, e);
@@ -300,7 +301,8 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                             break;
                         }
 
-                        default: { assert false; }
+                        default:
+                            assert false;
                     }
                 }
 
@@ -371,12 +373,12 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                         else {
                             String v2 = cache.get(i);
 
-                            if (!F.eq(v2, v1)) {
+                            if (!Objects.equals(v2, v1)) {
                                 v1 = this.<Integer, String>jcache(0).get(i);
                                 v2 = cache.get(i);
                             }
 
-                            assert F.eq(v2, v1) :
+                            assert Objects.equals(v2, v1) :
                                 "Invalid cached value [key=" + i + ", v1=" + v1 + ", v2=" + v2 + ", grid=" + j + ']';
                         }
                     }

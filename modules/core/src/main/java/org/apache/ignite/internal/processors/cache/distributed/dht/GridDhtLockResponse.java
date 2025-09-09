@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -43,14 +41,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT cache lock response.
  */
 public class GridDhtLockResponse extends GridDistributedLockResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Evicted readers. */
-    @GridToStringInclude
-    @GridDirectCollection(IgniteTxKey.class)
-    private Collection<IgniteTxKey> nearEvicted;
-
     /** Mini ID. */
     private IgniteUuid miniId;
 
@@ -64,7 +54,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     private List<GridCacheEntryInfo> preloadEntries;
 
     /**
-     * Empty constructor (required by {@link Externalizable}).
+     * Empty constructor.
      */
     public GridDhtLockResponse() {
         // No-op.
@@ -91,7 +81,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param err Error.
-     * @param addDepInfo
+     * @param addDepInfo Deployment info.
      */
     public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId,
         Throwable err, boolean addDepInfo) {
@@ -100,20 +90,6 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         assert miniId != null;
 
         this.miniId = miniId;
-    }
-
-    /**
-     * @return Evicted readers.
-     */
-    public Collection<IgniteTxKey> nearEvicted() {
-        return nearEvicted;
-    }
-
-    /**
-     * @param nearEvicted Evicted readers.
-     */
-    public void nearEvicted(Collection<IgniteTxKey> nearEvicted) {
-        this.nearEvicted = nearEvicted;
     }
 
     /**
@@ -137,7 +113,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @return Invalid partitions.
      */
     public Collection<Integer> invalidPartitions() {
-        return invalidParts == null ? Collections.<Integer>emptySet() : invalidParts;
+        return invalidParts == null ? Collections.emptySet() : invalidParts;
     }
 
     /**
@@ -158,35 +134,22 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @return Collection of preload entries.
      */
     public Collection<GridCacheEntryInfo> preloadEntries() {
-        return preloadEntries == null ? Collections.<GridCacheEntryInfo>emptyList() : preloadEntries;
+        return preloadEntries == null ? Collections.emptyList() : preloadEntries;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (nearEvicted != null) {
-            for (IgniteTxKey key : nearEvicted)
-                key.prepareMarshal(cctx);
-        }
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (preloadEntries != null)
             marshalInfos(preloadEntries, cctx.shared(), cctx.cacheObjectContext());
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (nearEvicted != null) {
-            for (IgniteTxKey key : nearEvicted)
-                key.finishUnmarshal(cctx, ldr);
-        }
 
         if (preloadEntries != null)
             unmarshalInfos(preloadEntries, ctx.cacheContext(cacheId), ldr);
@@ -200,7 +163,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -208,25 +171,19 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
 
         switch (writer.state()) {
             case 11:
-                if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
+                if (!writer.writeCollection(invalidParts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeIgniteUuid(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection("nearEvicted", nearEvicted, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeCollection("preloadEntries", preloadEntries, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(preloadEntries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -240,15 +197,12 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 11:
-                invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
+                invalidParts = reader.readCollection(MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -256,7 +210,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 12:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -264,15 +218,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 13:
-                nearEvicted = reader.readCollection("nearEvicted", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                preloadEntries = reader.readCollection("preloadEntries", MessageCollectionItemType.MSG);
+                preloadEntries = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -281,17 +227,12 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
 
         }
 
-        return reader.afterMessageRead(GridDhtLockResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 31;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 15;
     }
 
     /** {@inheritDoc} */

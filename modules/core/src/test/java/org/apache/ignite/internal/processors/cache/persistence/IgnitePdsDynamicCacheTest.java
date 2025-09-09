@@ -21,11 +21,11 @@ import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Test;
 
 /**
@@ -87,7 +86,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
 
         Ignite ignite = ignite(0);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();
 
@@ -96,10 +95,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
 
-        if (MvccFeatureChecker.forcedMvcc())
-            ccfg1.setRebalanceDelay(Long.MAX_VALUE);
-        else
-            ccfg1.setRebalanceMode(CacheRebalanceMode.NONE);
+        ccfg1.setRebalanceMode(CacheRebalanceMode.NONE);
 
         CacheConfiguration ccfg2 = new CacheConfiguration();
 
@@ -108,21 +104,10 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
         ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg2.setIndexedTypes(Integer.class, Value.class);
-
-        if (MvccFeatureChecker.forcedMvcc())
-            ccfg2.setRebalanceDelay(Long.MAX_VALUE);
-        else
-            ccfg2.setRebalanceMode(CacheRebalanceMode.NONE);
-
-        CacheConfiguration ccfg3 = new CacheConfiguration();
-
-        ccfg3.setName("cache3");
-        ccfg3.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        ccfg3.setCacheMode(CacheMode.LOCAL);
+        ccfg2.setRebalanceMode(CacheRebalanceMode.NONE);
 
         ignite.createCache(ccfg1);
         ignite.createCache(ccfg2);
-        ignite.createCache(ccfg3).put(2, 3);
 
         int iterations = 20;
 
@@ -137,14 +122,11 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
 
             ignite = ignite(0);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             ignite.getOrCreateCache(ccfg1);
 
             ignite.getOrCreateCache(ccfg2);
-
-            assertEquals(1, ignite.cache(ccfg3.getName()).size());
-            assertEquals(3, ignite.cache(ccfg3.getName()).get(2));
 
             ignite.destroyCache(ccfg2.getName());
 
@@ -161,7 +143,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
     public void testDynamicCacheSavingOnNewNode() throws Exception {
         Ignite ignite = startGrid(0);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -189,7 +171,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
         startGrid(0);
         ignite = startGrid(1);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         cache = ignite.cache(DEFAULT_CACHE_NAME);
 

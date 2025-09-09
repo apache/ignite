@@ -163,62 +163,57 @@ Apache Ignite ODBC Driver was officially tested on:
 
 == Building ODBC Driver
 
-Ignite is shipped with pre-built installers for both 32- and 64-bit versions of the driver for Windows. So if you just want to install ODBC driver on Windows you may go straight to the <<Installing ODBC Driver>> section for installation instructions.
+Ignite is shipped with pre-built installers for both 32- and 64-bit versions of the driver for Windows.
+So if you just want to install ODBC driver on Windows, you may go straight to the <<Installing ODBC Driver>>
+section for installation instructions.
 
-If you use Linux you will still need to build ODBC driver before you can install it. So if you are using Linux or if you still want to build the driver by yourself for Windows, then keep reading.
-
-Ignite ODBC Driver source code is shipped as part of the Ignite package and it should be built before usage.
-
-Since the ODBC Driver is written in {cpp}, it is shipped as part of Ignite {cpp} and depends on some of the {cpp} libraries. More specifically, it depends on the `utils` and `binary` Ignite libraries. This means that you will need to build them prior to building the ODBC driver itself.
-
-We assume here that you are using the binary Ignite release. If you are using the source release, instead of `%IGNITE_HOME%\platforms\cpp` path you should use `%IGNITE_HOME%\modules\platforms\cpp` throughout.
+For Linux, you will still need to build an ODBC driver before installing it.
+So if you are using Linux or still want to build the driver yourself for Windows, refer to the next section.
 
 === Building on Windows
 
-You will need MS Visual Studio 2010 or later to be able to build the ODBC driver on Windows. Once you have it, open Ignite solution `%IGNITE_HOME%\platforms\cpp\project\vs\ignite.sln` (or `ignite_86.sln` if you are running 32-bit platform), left-click on odbc project in the "Solution Explorer" and choose "Build". Visual Studio will automatically detect and build all the necessary dependencies.
+To start with, install the dependencies below:
 
-The path to the .sln file may vary depending on whether you're building from source files or binaries. If you don't see your .sln file in `%IGNITE_HOME%\platforms\cpp\project\vs\`, try looking in `%IGNITE_HOME%\modules\platforms\cpp\project\vs\`.
+* MS Visual C++ (10.0 and up), g++ (4.4.0 and up)
+* OpenSSL (32-bit or 64-bit versions)
+* CMake 3.6+
+* http://wixtoolset.org[WiX Toolset] and add it to `%Path%`.
 
-NOTE: If you are using VS 2015 or later (MSVC 14.0 or later), you need to add `legacy_stdio_definitions.lib` as an additional library to odbc project linker's settings in order to be able to build the project. To add this library to the linker input in the IDE, open the context menu for the project node, choose `Properties`, then in the `Project Properties` dialog box, choose `Linker`, and edit the `Linker Input` to add `legacy_stdio_definitions.lib` to the semi-colon-separated list.
+Then, perform the following:
 
-Once the build process is complete, you can find `ignite.odbc.dll` in `%IGNITE_HOME%\platforms\cpp\project\vs\x64\Release` for the 64-bit version and in `%IGNITE_HOME%\platforms\cpp\project\vs\Win32\Release` for the 32-bit version.
-
-NOTE: Be sure to use the corresponding driver (32-bit or 64-bit) for your system.
-
-=== Building installers on Windows
-
-Once you have built driver binaries you may want to build installers for easier installation. Ignite uses link:http://wixtoolset.org[WiX Toolset] to generate ODBC installers, so to build them you'll need to download and install WiX. Make sure you have added the `bin` directory of the WiX Toolset to your PATH variable.
-
-Once everything is ready, open a terminal and navigate to the directory `%IGNITE_HOME%\platforms\cpp\odbc\install`. Execute the following commands one by one to build installers:
-
+. Navigate to the `%IGNITE_HOME%\platforms\cpp` folder.
+. Build drivers and installers using the following steps:
 
 [tabs]
 --
 tab:64-bit driver[]
 [source,shell]
 ----
-candle.exe ignite-odbc-amd64.wxs
-light.exe -ext WixUIExtension ignite-odbc-amd64.wixobj
+mkdir cmake-build-release-64
+cmake .. -DWITH_CORE=OFF -DWITH_ODBC=ON -DWITH_ODBC_MSI=ON -DCMAKE_GENERATOR_PLATFORM=x64 -DOPENSSL_ROOT_DIR=<openssl 64-bit install dir> -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..\install\amd64
+cmake --build . --target install --config Release
 ----
 
 tab:32-bit driver[]
-[source,shell]
+[source,bat]
 ----
-candle.exe ignite-odbc-x86.wxs
-light.exe -ext WixUIExtension ignite-odbc-x86.wixobj
+mkdir cmake-build-release-32
+cmake .. -DWITH_CORE=OFF -DWITH_ODBC=ON -DWITH_ODBC_MSI=ON -DCMAKE_GENERATOR_PLATFORM=Win32 -DOPENSSL_ROOT_DIR=<openssl 32-bit install dir> -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..\install\x86
+cmake --build . --target install --config Release
 ----
 --
 
-As a result, `ignite-odbc-amd64.msi` and `ignite-odbc-x86.msi` files should appear in the directory. You can use them to install your freshly built drivers.
+As a result, `ignite-odbc-amd64.msi` and `ignite-odbc-x86.msi` files should appear
+in `%IGNITE_HOME%\platforms\cpp\install\amd64\bin` and `%IGNITE_HOME%\platforms\cpp\install\x86\bin` directories respectively.
 
 === Building on Linux
 
-On a Linux-based operating system, you will need to install an ODBC Driver Manager of your choice to be able to build and use the Ignite ODBC Driver. The ODBC Driver has been tested with link:http://www.unixodbc.org[UnixODBC].
+On a Linux-based operating system, you will need to install an ODBC Driver Manager of your choice to be able
+to build and use the Ignite ODBC Driver. The ODBC Driver has been tested with link:http://www.unixodbc.org[UnixODBC].
 
 ==== Prerequisites
-include::includes/cpp-linux-build-prerequisites.adoc[]
+include::includes/cpp-odbc-linux-build-prerequisites.adoc[]
 
-NOTE: The JDK is used only during the build process and not by the ODBC driver itself.
 
 ==== Building ODBC driver
 - Create a build directory for cmake. We'll refer to it as `${CPP_BUILD_DIR}`
@@ -231,7 +226,7 @@ tab:Ubuntu[]
 [source,bash,subs="attributes,specialchars"]
 ----
 cd ${CPP_BUILD_DIR}
-cmake -DCMAKE_BUILD_TYPE=Release -DWITH_ODBC=ON ${IGNITE_HOME}/platforms/cpp -DCMAKE_INSTALL_PREFIX=${CPP_INSTALL_DIR}
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_CORE=OFF -DWITH_ODBC=ON ${IGNITE_HOME}/platforms/cpp -DCMAKE_INSTALL_PREFIX=${CPP_INSTALL_DIR}
 make
 sudo make install
 ----
@@ -240,8 +235,8 @@ tab:CentOS/RHEL[]
 [source,shell,subs="attributes,specialchars"]
 ----
 cd ${CPP_BUILD_DIR}
-cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_ODBC=ON  ${IGNITE_HOME}/platforms/cpp -DCMAKE_INSTALL_PREFIX=${CPP_INSTALL_DIR}
-make 
+cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_CORE=OFF -DWITH_ODBC=ON  ${IGNITE_HOME}/platforms/cpp -DCMAKE_INSTALL_PREFIX=${CPP_INSTALL_DIR}
+make
 sudo make install
 ----
 

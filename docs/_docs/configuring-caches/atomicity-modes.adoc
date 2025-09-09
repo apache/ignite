@@ -47,18 +47,6 @@ For more information about transactions, see link:key-value-api/transactions[Per
 [discrete]
 === Performance Considerations
 The `TRANSACTIONAL` mode adds a performance cost to cache operations and should be enabled only if you need transactions.
-====
-
-| TRANSACTIONAL_SNAPSHOT
-
-a| An experimental mode that implements multiversion concurrency control (MVCC) and supports both key-value transactions and SQL transactions. See link:transactions/mvcc[Multiversion Concurrency Control] for details about and limitations of this mode.
-
-[WARNING]
-====
-MVCC implementation is in beta and should not be considered for production.
-====
-
-
 |===
 
 

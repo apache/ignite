@@ -44,9 +44,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-
 /**
  * TCP protocol test.
  */
@@ -76,7 +73,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        client.shutdown();
+        client.close();
 
         grid().cache(DEFAULT_CACHE_NAME).clear();
         grid().cache(CACHE_NAME).clear();
@@ -104,17 +101,11 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @param cacheName Cache name.
      * @return Cache configuration.
-     * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
-        CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setCacheMode(LOCAL);
-        cfg.setName(cacheName);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setStatisticsEnabled(true);
-
-        return cfg;
+    private static CacheConfiguration<?, ?> cacheConfiguration(@NotNull String cacheName) {
+        return defaultCacheConfiguration()
+            .setName(cacheName)
+            .setStatisticsEnabled(true);
     }
 
     /**
@@ -405,9 +396,9 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> jcacheDft = grid().cache(DEFAULT_CACHE_NAME);
         IgniteCache<Object, Object> jcacheName = grid().cache(CACHE_NAME);
 
-        jcacheDft.localMxBean().clear();
+        jcacheDft.clearStatistics();
 
-        jcacheName.localMxBean().clear();
+        jcacheName.clearStatistics();
 
         jcacheDft.put("key1", "val");
         jcacheDft.put("key2", "val");

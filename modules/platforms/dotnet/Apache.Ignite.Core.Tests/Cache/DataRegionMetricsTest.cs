@@ -73,7 +73,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                     RegionWithMetrics,
                     RegionWithMetricsAndPersistence,
                     "sysMemPlc",
-                    "TxLog",
                     "volatileDsMemPlc"
                 },
                 names,
@@ -102,7 +101,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);
             AssertMetricsAreEmpty(sysMetrics);
 
-            var volatileMetrics = metrics[6];
+            var volatileMetrics = metrics[5];
             Assert.AreEqual("volatileDsMemPlc", volatileMetrics.Name);
             AssertMetricsAreEmpty(volatileMetrics);
 
@@ -147,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.Greater(metrics.TotalAllocatedPages, isPersistent ? 0 : 1000);
             Assert.Greater(metrics.PhysicalMemoryPages, isPersistent ? 0 : 1000);
             Assert.AreEqual(metrics.TotalAllocatedSize,
-                metrics.TotalAllocatedPages * (metrics.PageSize + (isPersistent ? 0 : PageOverhead)));
+                metrics.TotalAllocatedPages * (metrics.PageSize + (isPersistent ? PersistentPageOverhead : PageOverhead)));
             Assert.AreEqual(metrics.PhysicalMemorySize,
                 metrics.PhysicalMemoryPages * (metrics.PageSize + (isPersistent ? PersistentPageOverhead : PageOverhead)));
             Assert.Greater(metrics.OffHeapSize, metrics.PhysicalMemoryPages);

@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Interface to compute hash codes for new binary objects and compare them for equality.
  */
-public interface BinaryIdentityResolver {
+interface BinaryIdentityResolver {
     /**
      * Compute hash code for binary object.
      *

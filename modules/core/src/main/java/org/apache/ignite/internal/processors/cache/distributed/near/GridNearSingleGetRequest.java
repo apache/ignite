@@ -25,9 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
@@ -37,9 +35,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class GridNearSingleGetRequest extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private static final int READ_THROUGH_FLAG_MASK = 0x01;
 
@@ -82,11 +77,8 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     /** Transaction label. */
     private @Nullable String txLbl;
 
-    /** */
-    private MvccSnapshot mvccSnapshot;
-
     /**
-     * Empty constructor required for {@link Message}.
+     * Empty constructor.
      */
     public GridNearSingleGetRequest() {
         // No-op.
@@ -107,7 +99,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      * @param needVer {@code True} if entry version is needed.
      * @param addDepInfo Deployment info.
      * @param txLbl Transaction label.
-     * @param mvccSnapshot MVCC snapshot.
      */
     public GridNearSingleGetRequest(
         int cacheId,
@@ -123,8 +114,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         boolean needVer,
         boolean addDepInfo,
         boolean recovery,
-        @Nullable String txLbl,
-        MvccSnapshot mvccSnapshot
+        @Nullable String txLbl
     ) {
         assert key != null;
 
@@ -137,7 +127,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
         this.txLbl = txLbl;
-        this.mvccSnapshot = mvccSnapshot;
 
         if (readThrough)
             flags |= READ_THROUGH_FLAG_MASK;
@@ -153,13 +142,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
         if (recovery)
             flags |= RECOVERY_FLAG_MASK;
-    }
-
-    /**
-     * @return Mvcc version.
-     */
-    @Nullable public MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
     }
 
     /**
@@ -265,23 +247,23 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         assert key != null;
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         prepareMarshalCacheObject(key, cctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         assert key != null;
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
     }
@@ -290,15 +272,12 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                accessTtl = reader.readLong("accessTtl");
+                accessTtl = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -306,7 +285,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 5:
-                createTtl = reader.readLong("createTtl");
+                createTtl = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -314,7 +293,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 6:
-                flags = reader.readByte("flags");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -322,7 +301,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 7:
-                futId = reader.readLong("futId");
+                futId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -330,7 +309,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 8:
-                key = reader.readMessage("key");
+                key = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -338,7 +317,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 9:
-                mvccSnapshot = reader.readMessage("mvccSnapshot");
+                taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -346,7 +325,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 10:
-                taskNameHash = reader.readInt("taskNameHash");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -354,15 +333,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 11:
-                topVer = reader.readAffinityTopologyVersion("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                txLbl = reader.readString("txLbl");
+                txLbl = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -371,7 +342,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
         }
 
-        return reader.afterMessageRead(GridNearSingleGetRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -382,7 +353,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -390,55 +361,49 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeLong("accessTtl", accessTtl))
+                if (!writer.writeLong(accessTtl))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("createTtl", createTtl))
+                if (!writer.writeLong(createTtl))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong(futId))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage(key))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeString("txLbl", txLbl))
+                if (!writer.writeString(txLbl))
                     return false;
 
                 writer.incrementState();
@@ -456,11 +421,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     /** {@inheritDoc} */
     @Override public short directType() {
         return 116;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 13;
     }
 
     /** {@inheritDoc} */

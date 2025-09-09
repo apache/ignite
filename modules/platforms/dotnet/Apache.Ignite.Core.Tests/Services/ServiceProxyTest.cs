@@ -24,9 +24,9 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Services;
+    using Apache.Ignite.Core.Platform;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
 
@@ -214,7 +214,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestBinarizableMarshallingException()
         {
             var prx = GetProxy();
-                
+
             var ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionBinarizableMethod(false, false));
 
             if (KeepBinary)
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 inStream.WriteBool(SrvKeepBinary);  // WriteProxyMethod does not do this, but Java does
 
                 ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method.Name,
-                    method, args, PlatformType.DotNet);
+                    method, args, PlatformType.DotNet, null);
 
                 inStream.SynchronizeOutput();
 
@@ -293,10 +293,12 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 2) call InvokeServiceMethod
                 string mthdName;
                 object[] mthdArgs;
+                IServiceCallContext unused;
 
-                ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs);
+                ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs, out unused);
 
-                var result = ServiceProxyInvoker.InvokeServiceMethod(_svc, mthdName, mthdArgs);
+                var result = ServiceProxyInvoker.InvokeServiceMethod(
+                    new ServiceContext(_svc, null, null), mthdName, mthdArgs);
 
                 ServiceProxySerializer.WriteInvocationResult(outStream, _marsh, result.Key, result.Value);
 
@@ -339,7 +341,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface.
         /// </summary>
-        public interface ITestIgniteService : ITestIgniteServiceProperties
+        public interface ITestIgniteService : ITestIgniteServiceProperties, IService
         {
             /** */
             void VoidMethod();
@@ -585,6 +587,24 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 return -arg;
             }
+
+            /** <inheritdoc /> */
+            public void Init(IServiceContext context)
+            {
+                throw new NotImplementedException();
+            }
+
+            /** <inheritdoc /> */
+            public void Execute(IServiceContext context)
+            {
+                throw new NotImplementedException();
+            }
+
+            /** <inheritdoc /> */
+            public void Cancel(IServiceContext context)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         /// <summary>
@@ -758,7 +778,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestBinarizableMethods()
         {
             var prx = GetProxy();
-            
+
             var obj = new TestBinarizableClass { Prop = "PropValue" };
             var portObj = Binary.ToBinary<IBinaryObject>(obj);
 

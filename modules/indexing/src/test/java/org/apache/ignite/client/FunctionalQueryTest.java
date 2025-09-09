@@ -37,11 +37,14 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -51,7 +54,7 @@ import static org.junit.Assert.assertNotNull;
 public class FunctionalQueryTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /**
      * Tested API:
@@ -164,9 +167,9 @@ public class FunctionalQueryTest {
                 )).setSchema("PUBLIC")
             ).getAll();
 
-            final int KEY_COUNT = 10;
+            final int KEY_CNT = 10;
 
-            for (int i = 0; i < KEY_COUNT; ++i) {
+            for (int i = 0; i < KEY_CNT; ++i) {
                 int key = i;
                 Person val = new Person(key, "Person " + i);
 
@@ -189,7 +192,7 @@ public class FunctionalQueryTest {
                     .setPageSize(1)
             ).getAll();
 
-            assertEquals(KEY_COUNT, rows.size());
+            assertEquals(KEY_CNT, rows.size());
         }
     }
 
@@ -295,6 +298,22 @@ public class FunctionalQueryTest {
 
             GridTestUtils.assertThrowsAnyCause(null, () -> client.query(qry).getAll(),
                     ClientException.class, "Illegal partition");
+        }
+    }
+
+    /** */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testEmptyQuery() {
+        try (IgniteEx srv = (IgniteEx)Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+        ) {
+            SqlFieldsQuery empty = new SqlFieldsQuery("");
+
+            assertThrows(null, () -> srv.context().query().querySqlFields(empty, false).getAll(),
+                SqlParseException.class, "Failed to parse SQL");
+
+            assertThrows(null, () -> client.query(empty).getAll(), ClientException.class, "Failed to parse SQL");
         }
     }
 

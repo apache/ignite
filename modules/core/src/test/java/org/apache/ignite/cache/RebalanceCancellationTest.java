@@ -273,7 +273,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
 
         // Trigger rebalancing.
         IgniteConfiguration cfg1 = getConfiguration(getTestIgniteInstanceName(1));
-        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi) cfg1.getCommunicationSpi();
+        TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi)cfg1.getCommunicationSpi();
         spi2.blockMessages(TestRecordingCommunicationSpi.blockDemandMessageForGroup(CU.cacheId(cache0Name)));
 
         GridTestUtils.runAsync(new Callable<Void>() {
@@ -386,7 +386,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite0 = startGrids(NODES_CNT);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         ignite0.cluster().baselineAutoAdjustEnabled(false);
 
@@ -455,7 +455,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
         IgniteEx ignite0 = startGrids(NODES_CNT);
         IgniteEx filteredNode = startGrid(getTestIgniteInstanceName(NODES_CNT) + FILTERED_NODE_SUFFIX);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         grid(1).close();
 
@@ -552,16 +552,16 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
 
         communicationSpi.blockMessages((node, msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage) {
-                GridDhtPartitionDemandMessage demandMessage = (GridDhtPartitionDemandMessage)msg;
+                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
 
-                if (CU.cacheId(DEFAULT_CACHE_NAME) != demandMessage.groupId()
-                    && CU.cacheId(MEM_REGION_CACHE) != demandMessage.groupId())
+                if (CU.cacheId(DEFAULT_CACHE_NAME) != demandMsg.groupId()
+                    && CU.cacheId(MEM_REGION_CACHE) != demandMsg.groupId())
                     return false;
 
                 info("Message was caught: " + msg.getClass().getSimpleName()
-                    + " rebalanceId = " + U.field(demandMessage, "rebalanceId")
+                    + " rebalanceId = " + U.field(demandMsg, "rebalanceId")
                     + " to: " + node.consistentId()
-                    + " by cache id: " + demandMessage.groupId());
+                    + " by cache id: " + demandMsg.groupId());
 
                 return true;
             }

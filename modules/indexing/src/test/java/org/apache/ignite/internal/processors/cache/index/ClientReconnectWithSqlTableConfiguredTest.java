@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -114,7 +115,7 @@ public class ClientReconnectWithSqlTableConfiguredTest extends AbstractIndexingC
         IgniteEx client1 = startClientGrid(2);
         IgniteEx client2 = startClientGrid(3);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         client1.getOrCreateCache(createCacheConfiguration("test-cl1"));
         client2.getOrCreateCache(createCacheConfiguration("test-cl2"));
@@ -145,21 +146,21 @@ public class ClientReconnectWithSqlTableConfiguredTest extends AbstractIndexingC
 
         AffinityTopologyVersion topVer = new AffinityTopologyVersion(3, 1);
 
-        AtomicReference<GridDhtPartitionsExchangeFuture> lastFinishedFuture = new AtomicReference<>();
+        AtomicReference<GridDhtPartitionsExchangeFuture> lastFinishedFut = new AtomicReference<>();
 
         assertTrue("Could not wait for autoactivation.", GridTestUtils.waitForCondition(() -> {
             for (GridDhtPartitionsExchangeFuture fut : client1.context().cache().context().exchange().exchangeFutures()) {
                 if (fut.isDone() && fut.topologyVersion().equals(topVer)) {
-                    lastFinishedFuture.set(fut);
+                    lastFinishedFut.set(fut);
                     return true;
                 }
             }
             return false;
         }, 15_000));
 
-        log.info(">>>>> lastFinishedFuture ver=" + lastFinishedFuture.get().topologyVersion());
+        log.info(">>>>> lastFinishedFuture ver=" + lastFinishedFut.get().topologyVersion());
 
-        Throwable t = U.field(lastFinishedFuture.get(), "exchangeLocE");
+        Throwable t = U.field(lastFinishedFut.get(), "exchangeLocE");
 
         assertNull("Unexpected exception on client node [exc=" + t + ']', t);
     }

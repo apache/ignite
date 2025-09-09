@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.authentication;
 
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -71,7 +71,7 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+        recreateDefaultDb();
     }
 
     /** {@inheritDoc} */
@@ -88,7 +88,7 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
     public void test1kUsersNodeRestartServer() throws Exception {
         startGrid(0);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         IgniteSecurity sec = grid(0).context().security();
 

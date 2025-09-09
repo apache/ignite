@@ -24,12 +24,12 @@ import java.util.UUID;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsStateValidator;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
@@ -61,14 +61,14 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         Mockito.when(topologyMock.groupId()).thenReturn(0);
         Mockito.when(topologyMock.partitions()).thenReturn(3);
 
-        List<GridDhtLocalPartition> localPartitions = Lists.newArrayList(
+        List<GridDhtLocalPartition> locPartitions = Lists.newArrayList(
             partitionMock(0, 1, 1),
             partitionMock(1, 2, 2),
             partitionMock(2, 3, 3)
         );
 
-        Mockito.when(topologyMock.localPartitions()).thenReturn(localPartitions);
-        Mockito.when(topologyMock.currentLocalPartitions()).thenReturn(localPartitions);
+        Mockito.when(topologyMock.localPartitions()).thenReturn(locPartitions);
+        Mockito.when(topologyMock.currentLocalPartitions()).thenReturn(locPartitions);
     }
 
     /**
@@ -88,7 +88,10 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
      * @param sizesMap Sizes map.
      * @return Message with specified {@code countersMap} and {@code sizeMap}.
      */
-    private GridDhtPartitionsSingleMessage from(@Nullable Map<Integer, T2<Long, Long>> countersMap, @Nullable Map<Integer, Long> sizesMap) {
+    private GridDhtPartitionsSingleMessage from(
+        @Nullable CachePartitionPartialCountersMap countersMap,
+        @Nullable Map<Integer, Long> sizesMap
+    ) {
         GridDhtPartitionsSingleMessage msg = new GridDhtPartitionsSingleMessage();
 
         if (countersMap != null)
@@ -109,10 +112,10 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         UUID ignoreNode = UUID.randomUUID();
 
         // For partitions 0 and 2 we have inconsistent update counters.
-        Map<Integer, T2<Long, Long>> updateCountersMap = new HashMap<>();
-        updateCountersMap.put(0, new T2<>(2L, 2L));
-        updateCountersMap.put(1, new T2<>(2L, 2L));
-        updateCountersMap.put(2, new T2<>(5L, 5L));
+        CachePartitionPartialCountersMap cntrMap = new CachePartitionPartialCountersMap(3);
+        cntrMap.add(0, 2L, 2L);
+        cntrMap.add(1, 2L, 2L);
+        cntrMap.add(2, 5L, 5L);
 
         // For partitions 0 and 2 we have inconsistent cache sizes.
         Map<Integer, Long> cacheSizesMap = new HashMap<>();
@@ -121,15 +124,15 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         cacheSizesMap.put(2, 2L);
 
         // Form single messages map.
-        Map<UUID, GridDhtPartitionsSingleMessage> messages = new HashMap<>();
-        messages.put(remoteNode, from(updateCountersMap, cacheSizesMap));
-        messages.put(ignoreNode, from(updateCountersMap, cacheSizesMap));
+        Map<UUID, GridDhtPartitionsSingleMessage> msgs = new HashMap<>();
+        msgs.put(remoteNode, from(cntrMap, cacheSizesMap));
+        msgs.put(ignoreNode, from(cntrMap, cacheSizesMap));
 
         GridDhtPartitionsStateValidator validator = new GridDhtPartitionsStateValidator(cctxMock);
 
         // (partId, (nodeId, updateCounter))
         Map<Integer, Map<UUID, Long>> result =
-            validator.validatePartitionsUpdateCounters(topologyMock, messages, Sets.newHashSet(ignoreNode));
+            validator.validatePartitionsUpdateCounters(topologyMock, msgs, Sets.newHashSet(ignoreNode));
 
         // Check that validation result contains all necessary information.
         Assert.assertEquals(2, result.size());
@@ -150,10 +153,10 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         UUID ignoreNode = UUID.randomUUID();
 
         // For partitions 0 and 2 we have inconsistent update counters.
-        Map<Integer, T2<Long, Long>> updateCountersMap = new HashMap<>();
-        updateCountersMap.put(0, new T2<>(2L, 2L));
-        updateCountersMap.put(1, new T2<>(2L, 2L));
-        updateCountersMap.put(2, new T2<>(5L, 5L));
+        CachePartitionPartialCountersMap cntrMap = new CachePartitionPartialCountersMap(3);
+        cntrMap.add(0, 2L, 2L);
+        cntrMap.add(1, 2L, 2L);
+        cntrMap.add(2, 5L, 5L);
 
         // For partitions 0 and 2 we have inconsistent cache sizes.
         Map<Integer, Long> cacheSizesMap = new HashMap<>();
@@ -162,14 +165,14 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         cacheSizesMap.put(2, 2L);
 
         // Form single messages map.
-        Map<UUID, GridDhtPartitionsSingleMessage> messages = new HashMap<>();
-        messages.put(remoteNode, from(updateCountersMap, cacheSizesMap));
-        messages.put(ignoreNode, from(updateCountersMap, cacheSizesMap));
+        Map<UUID, GridDhtPartitionsSingleMessage> msgs = new HashMap<>();
+        msgs.put(remoteNode, from(cntrMap, cacheSizesMap));
+        msgs.put(ignoreNode, from(cntrMap, cacheSizesMap));
 
         GridDhtPartitionsStateValidator validator = new GridDhtPartitionsStateValidator(cctxMock);
 
         // (partId, (nodeId, cacheSize))
-        Map<Integer, Map<UUID, Long>> result = validator.validatePartitionsSizes(topologyMock, messages, Sets.newHashSet(ignoreNode));
+        Map<Integer, Map<UUID, Long>> result = validator.validatePartitionsSizes(topologyMock, msgs, Sets.newHashSet(ignoreNode));
 
         // Check that validation result contains all necessary information.
         Assert.assertEquals(2, result.size());

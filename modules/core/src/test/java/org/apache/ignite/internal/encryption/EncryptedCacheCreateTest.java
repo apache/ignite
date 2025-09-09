@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import com.google.common.primitives.Bytes;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -31,7 +32,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -56,7 +56,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
         startGrid(1);
 
-        igniteEx.cluster().active(true);
+        igniteEx.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
     }
@@ -145,7 +145,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
         final boolean[] plainBytesFound = {false};
 
-        Files.walk(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false).toPath())
+        Files.walk(sharedFileTree().db().toPath())
             .filter(Files::isRegularFile)
             .forEach(f -> {
                 try {
@@ -160,7 +160,8 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
                     plainBytesFound[0] = plainBytesFound[0] || Bytes.indexOf(fileBytes, plainValBytes) != -1;
 
-                } catch (IOException e) {
+                }
+                catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             });

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -29,10 +28,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -44,7 +41,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -127,8 +123,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
 
-        cfg.setMarshaller(new BinaryMarshaller());
-
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
             new DataRegionConfiguration().setMaxSize(128L * 1024 * 1024));
 
@@ -169,20 +163,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 128));
 
         return ccfg;
-    }
-
-    /**
-     * @return Local cache configuration with a pre-configured index.
-     */
-    CacheConfiguration<KeyClass, ValueClass> localCacheConfiguration() {
-        CacheConfiguration<KeyClass, ValueClass> res = cacheConfiguration();
-
-        res.getQueryEntities().iterator().next().setIndexes(Collections.singletonList(
-            new QueryIndex(FIELD_NAME_2_ESCAPED, true, IDX_NAME_LOCAL)));
-
-        res.setCacheMode(CacheMode.LOCAL);
-
-        return res;
     }
 
     /**
@@ -472,7 +452,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     /**
      * Node filter.
      */
-    protected static class NodeFilter implements IgnitePredicate<ClusterNode>, Serializable {
+    protected static class NodeFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 

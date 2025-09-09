@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager.EmptyResult;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager.KeyChangeFuture;
@@ -43,7 +42,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 
-import static org.apache.ignite.internal.IgniteFeatures.CACHE_GROUP_KEY_CHANGE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_FINISH;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_PREPARE;
 
@@ -108,10 +106,7 @@ class GroupKeyChangeProcess {
      */
     public IgniteFuture<Void> start(Collection<String> cacheOrGrpNames) {
         if (ctx.clientNode())
-            throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
-
-        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), CACHE_GROUP_KEY_CHANGE))
-            throw new IllegalStateException("Not all nodes in the cluster support this operation.");
+            throw new UnsupportedOperationException("Client nodes can not perform this operation.");
 
         if (!ctx.state().clusterState().state().active())
             throw new IgniteException("Operation was rejected. The cluster is inactive.");
@@ -128,15 +123,15 @@ class GroupKeyChangeProcess {
 
         int n = 0;
 
-        for (String cacheOrGroupName : cacheOrGrpNames) {
-            CacheGroupDescriptor grpDesc = ctx.cache().cacheGroupDescriptor(CU.cacheId(cacheOrGroupName));
+        for (String cacheOrGrpName : cacheOrGrpNames) {
+            CacheGroupDescriptor grpDesc = ctx.cache().cacheGroupDescriptor(CU.cacheId(cacheOrGrpName));
 
             if (grpDesc == null) {
-                DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(cacheOrGroupName);
+                DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(cacheOrGrpName);
 
                 if (cacheDesc == null) {
                     throw new IgniteException("Cache group key change was rejected. " +
-                        "Cache or group \"" + cacheOrGroupName + "\" doesn't exists");
+                        "Cache or group \"" + cacheOrGrpName + "\" doesn't exists");
                 }
 
                 int grpId = cacheDesc.groupId();
@@ -145,19 +140,19 @@ class GroupKeyChangeProcess {
 
                 if (grpDesc.sharedGroup()) {
                     throw new IgniteException("Cache group key change was rejected. " +
-                        "Cache or group \"" + cacheOrGroupName + "\" is a part of group \"" +
+                        "Cache or group \"" + cacheOrGrpName + "\" is a part of group \"" +
                         grpDesc.groupName() + "\". Provide group name instead of cache name for shared groups.");
                 }
             }
 
             if (!grpDesc.config().isEncryptionEnabled()) {
                 throw new IgniteException("Cache group key change was rejected. " +
-                    "Cache or group \"" + cacheOrGroupName + "\" is not encrypted.");
+                    "Cache or group \"" + cacheOrGrpName + "\" is not encrypted.");
             }
 
             if (ctx.encryption().reencryptionInProgress(grpDesc.groupId())) {
                 throw new IgniteException("Cache group key change was rejected. " +
-                    "Cache group reencryption is in progress [grp=" + cacheOrGroupName + "]");
+                    "Cache group reencryption is in progress [grp=" + cacheOrGrpName + "]");
             }
 
             grpIds[n] = grpDesc.groupId();
@@ -195,6 +190,12 @@ class GroupKeyChangeProcess {
         if (inProgress()) {
             return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
                 "The previous change was not completed."));
+        }
+
+        if (ctx.cache().context().snapshotMgr().isSnapshotCreating()
+            || ctx.cache().context().snapshotMgr().isRestoring()) {
+            return new GridFinishedFuture<>(new IgniteException("Cache group key change was rejected. " +
+                "Snapshot operation is in progress."));
         }
 
         this.req = req;
@@ -267,7 +268,7 @@ class GroupKeyChangeProcess {
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPrepare(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
+    private void finishPrepare(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
         if (!err.isEmpty()) {
             if (req != null && req.requestId().equals(id))
                 req = null;
@@ -294,9 +295,11 @@ class GroupKeyChangeProcess {
 
             if (!ctx.clientNode())
                 ctx.encryption().changeCacheGroupKeyLocal(req.groupIds(), req.keyIds(), req.keys());
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             return new GridFinishedFuture<>(e);
-        } finally {
+        }
+        finally {
             this.req = null;
         }
 
@@ -310,7 +313,7 @@ class GroupKeyChangeProcess {
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPerform(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
+    private void finishPerform(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
         completeFuture(id, err, fut);
     }
 
@@ -320,7 +323,7 @@ class GroupKeyChangeProcess {
      * @param fut Key change future.
      * @return {@code True} if future was completed by this call.
      */
-    private boolean completeFuture(UUID reqId, Map<UUID, Exception> err, GroupKeyChangeFuture fut) {
+    private boolean completeFuture(UUID reqId, Map<UUID, Throwable> err, GroupKeyChangeFuture fut) {
         boolean isInitiator = fut != null && fut.id().equals(reqId);
 
         if (!isInitiator || fut.isDone())

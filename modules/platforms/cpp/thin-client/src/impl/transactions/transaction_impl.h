@@ -170,7 +170,7 @@ namespace ignite
                      * @throw IgniteError on error.
                      */
                     template<typename ReqT, typename RspT>
-                    void SendTxMessage(const ReqT& req, RspT& rsp);
+                    void SendTxMessage(ReqT& req, RspT& rsp);
 
                     /** Data channel to use. */
                     SP_DataChannel channel;

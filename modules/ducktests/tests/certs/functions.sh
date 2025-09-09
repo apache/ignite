@@ -29,7 +29,7 @@ function makeRoot() {
     rm -f "${ALIAS}.pem"
 
     keytool -genkeypair -keystore "${ALIAS}.jks" -alias "${ALIAS}" -dname "${DNAME}" -ext bc:c -storepass "${PSWD}" \
-     -keypass "${PSWD}" -noprompt -v
+     -keypass "${PSWD}" -storetype JKS -keyalg RSA -noprompt -v
 
     keytool -keystore "${ALIAS}.jks" -storepass "${PSWD}" -keypass "${PSWD}" -alias "${ALIAS}" -exportcert \
      -rfc -file "${ALIAS}.pem" -v
@@ -50,14 +50,14 @@ function makeCA() {
     rm -f "${ALIAS}.pem"
 
     keytool -genkeypair -keystore "${ALIAS}.jks" -alias "${ALIAS}" -dname "${DNAME}" -ext bc:c -storepass "${PSWD}" \
-     -keypass "${PSWD}" -noprompt -v
+     -keypass "${PSWD}" -storetype JKS -keyalg RSA -noprompt -v
 
     keytool -storepass "${PSWD}" -keypass "${PSWD}" -keystore "${ALIAS}.jks" -certreq -alias "${ALIAS}" \
       | keytool -storepass "${PSWD}" -keypass "${PSWD}" -keystore "${ROOT}.jks" -gencert -alias "${ROOT}" \
       -ext BC=0 -rfc -outfile "${ALIAS}.pem" -v
 
     keytool -keystore "${ALIAS}.jks" -storepass "${PSWD}" -keypass "${PSWD}" -importcert -alias "${ROOT}" \
-    -file "${ROOT}.pem"  -noprompt -v
+    -file "${ROOT}.pem" -noprompt -v
     keytool -keystore "${ALIAS}.jks" -storepass "${PSWD}" -keypass "${PSWD}" -importcert -alias "${ALIAS}" \
     -file "${ALIAS}.pem" -noprompt -v
 }
@@ -78,7 +78,7 @@ function mkCert() {
     rm -f "${ALIAS}.csr"
 
     keytool -genkeypair -keystore "${ALIAS}.jks" -alias "${ALIAS}" -dname "${DNAME}" -keyalg RSA -keysize 2048 \
-     -keypass "${PSWD}" -storepass "${PSWD}" -noprompt -v || error
+     -keypass "${PSWD}" -storepass "${PSWD}" -storetype JKS -noprompt -v || error
 
     keytool -storepass "${PSWD}" -keystore "${ALIAS}.jks" -certreq -alias "${ALIAS}" -file "${ALIAS}.csr" -v || error
 
@@ -98,7 +98,7 @@ function makeTruststore() {
     # shellcheck disable=SC2068
     for cert in $@ ; do
       keytool -keystore truststore.jks -importcert -alias "${cert}" -storepass 123456 -file "${cert}.pem" \
-       -noprompt -v || error
+       -storetype JKS -noprompt -v || error
 
     done
 }

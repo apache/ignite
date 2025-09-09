@@ -59,6 +59,8 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
 
     /** {@inheritDoc} */
     @Override public void setPendingTreeRoot(long pageAddr, long listRoot) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, PENDING_TREE_ROOT_OFF, listRoot);
     }
 
@@ -74,6 +76,8 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
      * @param listRoot List root.
      */
     @Override public void setPartitionMetaStoreReuseListRoot(long pageAddr, long listRoot) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, PART_META_REUSE_LIST_ROOT_OFF, listRoot);
     }
 
@@ -92,6 +96,8 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
     @Override public boolean setGapsLink(long pageAddr, long link) {
+        assertPageType(pageAddr);
+
         if (getGapsLink(pageAddr) == link)
             return false;
 

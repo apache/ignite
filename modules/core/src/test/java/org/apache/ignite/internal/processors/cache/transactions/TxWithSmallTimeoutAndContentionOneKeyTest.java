@@ -27,22 +27,21 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
+import org.apache.ignite.internal.management.cache.PartitionKey;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -107,9 +106,6 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @return Random transaction type.
      */
     protected TransactionConcurrency transactionConcurrency() {
-        if (MvccFeatureChecker.forcedMvcc())
-            return PESSIMISTIC;
-
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         return random.nextBoolean() ? OPTIMISTIC : PESSIMISTIC;
@@ -119,9 +115,6 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @return Random transaction isolation level.
      */
     protected TransactionIsolation transactionIsolation() {
-        if (MvccFeatureChecker.forcedMvcc())
-            return REPEATABLE_READ;
-
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
         switch (random.nextInt(3)) {
@@ -152,13 +145,11 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      */
     @Test
     public void test() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10455", MvccFeatureChecker.forcedMvcc());
-
         startGrids(4);
 
         IgniteEx igClient = startClientGrid(getConfiguration("client").setConsistentId("Client"));
 
-        igClient.cluster().active(true);
+        igClient.cluster().state(ClusterState.ACTIVE);
 
         AtomicBoolean stop = new AtomicBoolean(false);
 
@@ -211,7 +202,7 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
 
         f.get();
 
-        IdleVerifyResultV2 idleVerifyResult = idleVerify(igClient, DEFAULT_CACHE_NAME);
+        IdleVerifyResult idleVerifyResult = idleVerify(igClient, DEFAULT_CACHE_NAME);
 
         log.info("Current counter value:" + cnt.get());
 
@@ -238,13 +229,13 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
      * @param conflicts Conflicts map.
      * @param sb String builder.
      */
-    private void buildConflicts(String msg, SB sb, Map<PartitionKeyV2, List<PartitionHashRecordV2>> conflicts) {
+    private void buildConflicts(String msg, SB sb, Map<PartitionKey, List<PartitionHashRecord>> conflicts) {
         sb.a(msg);
 
-        for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : conflicts.entrySet()) {
+        for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : conflicts.entrySet()) {
             sb.a(entry.getKey()).a("\n");
 
-            for (PartitionHashRecordV2 rec : entry.getValue())
+            for (PartitionHashRecord rec : entry.getValue())
                 sb.a("\t").a(rec).a("\n");
         }
 

@@ -30,8 +30,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
-import org.junit.Before;
 
 /**
  * Abstract class for tests of service deployment process.
@@ -39,12 +37,6 @@ import org.junit.Before;
 public abstract class ServiceDeploymentProcessAbstractTest extends GridCommonAbstractTest {
     /** Timeout to avoid tests hang. */
     protected static final long TEST_FUTURE_WAIT_TIMEOUT = 60_000;
-
-    /** */
-    @Before
-    public void check() {
-        Assume.assumeTrue(isEventDrivenServiceProcessorEnabled());
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

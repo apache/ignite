@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.CAX;
@@ -31,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -54,19 +52,6 @@ public class GridJobServicesAddNodeTest extends GridCommonAbstractTest {
         startGrid(2);
 
         assertEquals(2, grid(1).cluster().nodes().size());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setSharedMemoryPort(-1);
-
-        c.setCommunicationSpi(commSpi);
-
-        return c;
     }
 
     /**
@@ -145,11 +130,13 @@ public class GridJobServicesAddNodeTest extends GridCommonAbstractTest {
         @Override public Boolean call() throws Exception {
             try {
                 return ignite.services().serviceDescriptors().iterator().hasNext();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 e.printStackTrace();
 
                 return false;
-            } finally {
+            }
+            finally {
                 Thread.sleep(10);
             }
         }

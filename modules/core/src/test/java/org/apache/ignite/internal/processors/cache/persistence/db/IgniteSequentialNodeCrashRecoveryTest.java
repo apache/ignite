@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
@@ -141,7 +143,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
     public void testCrashOnCheckpointAfterLogicalRecovery() throws Exception {
         IgniteEx g = startGrid(0);
 
-        g.cluster().active(true);
+        g.cluster().state(ClusterState.ACTIVE);
 
         g.getOrCreateCache(new CacheConfiguration<>("cache")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
@@ -241,8 +243,8 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         dbMgr.checkpointReadLock();
         try {
             //Moving free list pages to offheap.
-            for (CacheGroupContext group : g.context().cache().cacheGroups()) {
-                ((GridCacheOffheapManager)group.offheap()).onMarkCheckpointBegin(new DummyCheckpointContext());
+            for (CacheGroupContext grp : g.context().cache().cacheGroups()) {
+                ((GridCacheOffheapManager)grp.offheap()).onMarkCheckpointBegin(new DummyCheckpointContext());
             }
         }
         finally {
@@ -302,11 +304,6 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public boolean nextSnapshot() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> finishedStateFut() {
             return null;
         }
@@ -317,7 +314,12 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public boolean needToSnapshot(String cacheOrGrpName) {
+        @Override public void walFlush(boolean flush) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean walFlush() {
             return false;
         }
 
@@ -391,7 +393,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegate = new RandomAccessFileIOFactory().create(file, modes);
 
-            if (file.getName().contains("part-"))
+            if (NodeFileTree.partitionFile(file))
                 return new CheckingFileIO(file, delegate, forbiddenPages);
 
             return delegate;

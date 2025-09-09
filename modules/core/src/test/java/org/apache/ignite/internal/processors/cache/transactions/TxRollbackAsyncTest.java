@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -53,10 +54,13 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.management.tx.TxCommandArg;
+import org.apache.ignite.internal.management.tx.TxInfo;
+import org.apache.ignite.internal.management.tx.TxTask;
+import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxEnlistRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -68,24 +72,17 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.tx.VisorTxInfo;
-import org.apache.ignite.internal.visor.tx.VisorTxOperation;
-import org.apache.ignite.internal.visor.tx.VisorTxTask;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static java.lang.Thread.interrupted;
@@ -170,7 +167,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(1, GRID_CNT - 1);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
     }
@@ -204,8 +201,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRollbackSimple() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
-
         startClient();
 
         for (Ignite ignite : G.allGrids()) {
@@ -302,6 +297,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         catch (Exception ignore) {
             // Expected.
         }
+
+        // Cleanup context for further cache operations.
+        tx.close();
 
         checkFutures();
     }
@@ -476,8 +474,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEnlistManyReadOptimistic() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc()); // Optimistic transactions are not supported by MVCC.
-
         testEnlistMany(false, SERIALIZABLE, OPTIMISTIC);
     }
 
@@ -486,8 +482,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEnlistManyWriteOptimistic() throws Exception {
-        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc()); // Optimistic transactions are not supported by MVCC.
-
         testEnlistMany(true, SERIALIZABLE, OPTIMISTIC);
     }
 
@@ -539,9 +533,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
 
-        boolean mvcc = MvccFeatureChecker.forcedMvcc();
-
-        Class msgCls = mvcc ? GridNearTxEnlistRequest.class : GridNearLockRequest.class;
+        Class msgCls = GridNearLockRequest.class;
 
         spi.blockMessages(msgCls, prim.name());
 
@@ -668,8 +660,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         for (Ignite ignite : G.allGrids())
             perNodeTxs.put(ignite, new ArrayBlockingQueue<>(1000));
 
-        boolean mvcc = MvccFeatureChecker.forcedMvcc();
-
         IgniteInternalFuture<?> txFut = multithreadedAsync(() -> {
             while (!stop.get()) {
                 int nodeId = r.nextInt(GRID_CNT + 1);
@@ -677,8 +667,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 // Choose random node to start tx on.
                 Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
 
-                TransactionConcurrency conc = mvcc ? PESSIMISTIC : TC_VALS[r.nextInt(TC_VALS.length)];
-                TransactionIsolation isolation = mvcc ? REPEATABLE_READ : TI_VALS[r.nextInt(TI_VALS.length)];
+                TransactionConcurrency conc = TC_VALS[r.nextInt(TC_VALS.length)];
+                TransactionIsolation isolation = TI_VALS[r.nextInt(TI_VALS.length)];
 
                 // Timeout is necessary otherwise deadlock is possible due to randomness of lock acquisition.
                 long timeout = r.nextInt(50) + 50;
@@ -997,19 +987,20 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         U.awaitQuiet(tx2Latch);
 
         // Rollback tx using kill task.
-        VisorTxTaskArg arg =
-            new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, null, null, null, null);
+        TxCommandArg arg = new TxCommandArg();
 
-        Map<ClusterNode, VisorTxTaskResult> res = client.compute(client.cluster().forPredicate(F.alwaysTrue())).
-            execute(new VisorTxTask(), new VisorTaskArgument<>(client.cluster().localNode().id(), arg, false));
+        arg.kill(true);
+
+        Map<ClusterNode, TxTaskResult> res = client.compute(client.cluster().forPredicate(F.alwaysTrue())).
+            execute(new TxTask(), new VisorTaskArgument<>(client.cluster().localNode().id(), arg, false)).result();
 
         int expCnt = 0;
 
-        for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+        for (Map.Entry<ClusterNode, TxTaskResult> entry : res.entrySet()) {
             if (entry.getValue().getInfos().isEmpty())
                 continue;
 
-            for (VisorTxInfo info : entry.getValue().getInfos()) {
+            for (TxInfo info : entry.getValue().getInfos()) {
                 log.info(info.toUserString());
 
                 expCnt++;

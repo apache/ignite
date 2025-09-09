@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CUSTOM_METRICS;
 
 /**
  * Utility class to build or parse metric name in dot notation.
@@ -41,20 +48,43 @@ public class MetricUtils {
     /** Histogram name divider. */
     public static final char HISTOGRAM_NAME_DIVIDER = '_';
 
+    /** Name prefix of a custom metric. */
+    private static final String CUSTOM_METRICS_PREF = CUSTOM_METRICS + SEPARATOR;
+
+    /** Custom metric name pattern. Permits empty string, spaces, tabs, dot at the start or end, consiquent dots. */
+    private static final Pattern CUSTOM_NAME_PATTERN = Pattern.compile("(?!\\.)(?!.*\\.$)(?!.*\\.\\.)(?!.*[\\s]+.*).+");
+
     /**
-     * Builds metric name. Each parameter will separated by '.' char.
+     * Chechs and builds metric name.
      *
      * @param names Metric name parts.
      * @return Metric name.
      */
     public static String metricName(String... names) {
-        assert names != null;
-        assert ensureAllNamesNotEmpty(names);
+        assert names != null && names.length > 0 : "Metric name must consist of at least one element.";
 
-        if (names.length == 1)
-            return names[0];
+        boolean custom = customMetric(names[0]);
+
+        for (int i = 0; i < names.length; i++) {
+            if (F.isEmpty(names[i]) || (custom && !CUSTOM_NAME_PATTERN.matcher(names[i]).matches())) {
+                throw new IllegalArgumentException("Illegal metric or registry name: '" + names[i] + "'. Spaces, " +
+                    "nulls, empty name or name parts are not allowed.");
+            }
+        }
 
         return String.join(SEPARATOR, names);
+    }
+
+    /**
+     * @return {@code True} if {@code name} is or start with the custom metric prefix.
+     */
+    public static boolean customMetric(String name) {
+        return name != null && (name.startsWith(CUSTOM_METRICS_PREF) || name.equals(CUSTOM_METRICS));
+    }
+
+    /** Adds {@link GridMetricManager#CUSTOM_METRICS} to {@code name}. */
+    public static String customName(String name) {
+        return metricName(CUSTOM_METRICS, name);
     }
 
     /**
@@ -64,10 +94,21 @@ public class MetricUtils {
      * @return Array consist of registry name and metric name.
      */
     public static T2<String, String> fromFullName(String name) {
-        return new T2<>(
-            name.substring(0, name.lastIndexOf(SEPARATOR)),
-            name.substring(name.lastIndexOf(SEPARATOR) + 1)
-        );
+        int metricNamePos = name.lastIndexOf(SEPARATOR);
+
+        String regName;
+        String metricName;
+
+        if (metricNamePos == -1) {
+            regName = name;
+            metricName = "";
+        }
+        else {
+            regName = name.substring(0, metricNamePos);
+            metricName = name.substring(metricNamePos + 1);
+        }
+
+        return new T2<>(regName, metricName);
     }
 
     /**
@@ -131,19 +172,6 @@ public class MetricUtils {
     }
 
     /**
-     * Asserts all arguments are not empty.
-     *
-     * @param names Names.
-     * @return True.
-     */
-    private static boolean ensureAllNamesNotEmpty(String... names) {
-        for (int i = 0; i < names.length; i++)
-            assert names[i] != null && !names[i].isEmpty() : i + " element is empty [" + String.join(".", names) + "]";
-
-        return true;
-    }
-
-    /**
      * Generates histogram bucket names.
      *
      * Example of metric names if bounds are 10,100:
@@ -187,5 +215,23 @@ public class MetricUtils {
         return name
             .replaceAll("([A-Z])", "_$1")
             .replaceAll('\\' + SEPARATOR, "_").toUpperCase();
+    }
+
+    /**
+     * Extract attributes for system view.
+     *
+     * @param sysView System view.
+     * @return Attributes map.
+     */
+    public static Map<String, Class<?>> systemViewAttributes(SystemView<?> sysView) {
+        Map<String, Class<?>> attrs = new LinkedHashMap<>(sysView.walker().count());
+
+        sysView.walker().visitAll(new SystemViewRowAttributeWalker.AttributeVisitor() {
+            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+                attrs.put(name, clazz);
+            }
+        });
+
+        return attrs;
     }
 }

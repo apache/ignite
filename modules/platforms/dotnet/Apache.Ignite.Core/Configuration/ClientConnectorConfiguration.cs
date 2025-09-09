@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Default SQL connector thread pool size.
         /// </summary>
         public static readonly int DefaultThreadPoolSize = IgniteConfiguration.DefaultThreadPoolSize;
-        
+
         /// <summary>
         /// Default idle timeout.
         /// </summary>
@@ -132,7 +132,8 @@ namespace Apache.Ignite.Core.Configuration
                 ThinClientConfiguration = new ThinClientConfiguration
                 {
                     MaxActiveTxPerConnection = reader.ReadInt(),
-                    MaxActiveComputeTasksPerConnection = reader.ReadInt()
+                    MaxActiveComputeTasksPerConnection = reader.ReadInt(),
+                    SendServerExceptionStackTraceToClient = reader.ReadBoolean()
                 };
             }
         }
@@ -143,7 +144,7 @@ namespace Apache.Ignite.Core.Configuration
         internal void Write(IBinaryRawWriter writer)
         {
             Debug.Assert(writer != null);
-            
+
             writer.WriteString(Host);
             writer.WriteInt(Port);
             writer.WriteInt(PortRange);
@@ -166,6 +167,7 @@ namespace Apache.Ignite.Core.Configuration
                 writer.WriteBoolean(true);
                 writer.WriteInt(ThinClientConfiguration.MaxActiveTxPerConnection);
                 writer.WriteInt(ThinClientConfiguration.MaxActiveComputeTasksPerConnection);
+                writer.WriteBoolean(ThinClientConfiguration.SendServerExceptionStackTraceToClient);
             }
             else
             {
@@ -224,7 +226,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the size of the thread pool.
         /// </summary>
         public int ThreadPoolSize { get; set; }
-        
+
         /// <summary>
         /// Gets or sets idle timeout for client connections on the server side.
         /// If no packets come within idle timeout, the connection is closed by the server.

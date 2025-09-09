@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -105,19 +106,20 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
     public void testManyCachesAndNotManyPuts() throws Exception {
         try {
             IgniteEx ignite = startGrid(0);
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             log.info("Saving initial data to caches");
 
             for (int g = 0; g < GROUPS; g++) {
                 for (int c = 0; c < CACHES_IN_GRP; c++) {
-                    ignite.cache("dummyCache" + c + "." + g)
-                        .putAll(new TreeMap<Long, Long>() {{
-                            for (int j = 0; j < PARTS; j++) {
-                                // to fill each partition cache with at least 1 element
-                                put((long)j, (long)j);
-                            }
-                        }});
+                    TreeMap<Long, Long> data = new TreeMap<>();
+
+                    for (int j = 0; j < PARTS; j++) {
+                        // to fill each partition cache with at least 1 element
+                        data.put((long)j, (long)j);
+                    }
+
+                    ignite.cache("dummyCache" + c + "." + g).putAll(data);
                 }
             }
 

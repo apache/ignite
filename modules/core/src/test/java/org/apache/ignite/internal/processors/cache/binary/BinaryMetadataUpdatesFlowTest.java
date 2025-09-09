@@ -35,7 +35,6 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
@@ -127,8 +126,6 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
             cfg.setMetricsUpdateFrequency(1000);
         }
 
-        cfg.setMarshaller(new BinaryMarshaller());
-
         cfg.setClientMode("client".equals(gridName) || getTestIgniteInstanceIndex(gridName) >= GRID_CNT);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
@@ -199,11 +196,11 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         discoveryHook = new DiscoveryHook() {
             @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof MetadataUpdateProposedMessage) {
-                    if (((MetadataUpdateProposedMessage) customMsg).typeId() == BINARY_TYPE_ID)
+                    if (((MetadataUpdateProposedMessage)customMsg).typeId() == BINARY_TYPE_ID)
                         GridTestUtils.setFieldValue(customMsg, "typeId", 1);
                 }
                 else if (customMsg instanceof MetadataUpdateAcceptedMessage) {
-                    if (((MetadataUpdateAcceptedMessage) customMsg).typeId() == BINARY_TYPE_ID)
+                    if (((MetadataUpdateAcceptedMessage)customMsg).typeId() == BINARY_TYPE_ID)
                         GridTestUtils.setFieldValue(customMsg, "typeId", 1);
                 }
             }

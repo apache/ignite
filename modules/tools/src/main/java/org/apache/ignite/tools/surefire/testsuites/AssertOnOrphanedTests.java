@@ -23,7 +23,7 @@ import java.util.Set;
  * Assert if Ignite repository contains some orphaned (non-suited) tests.
  */
 public class AssertOnOrphanedTests {
-    /** */
+    /** @param args Command line arguments. */
     public static void main(String[] args) throws Exception {
         OrphanedTestCollection orphanedTestCollection = new OrphanedTestCollection();
 

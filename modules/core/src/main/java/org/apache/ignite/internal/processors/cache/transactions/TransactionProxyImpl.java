@@ -26,10 +26,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -144,7 +146,16 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
      */
     private void leave() {
         try {
-            CU.unwindEvicts(cctx);
+            GridIntList cacheIds = tx.txState().cacheIds();
+
+            for (int i = 0; i < cacheIds.size(); i++) {
+                int cacheId = cacheIds.get(i);
+
+                GridCacheContext<K, V> ctx = cctx.cacheContext(cacheId);
+
+                if (ctx != null)
+                    CU.unwindEvicts(ctx);
+            }
 
             tx.leaveSystemSection();
         }
@@ -308,6 +319,8 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     @Override public void commit() {
         Span span = MTC.span();
 
+        IgniteException ex = null;
+
         try (TraceSurroundings ignored =
                  MTC.support(cctx.kernalContext().tracing().create(TX_COMMIT, span))) {
             enter();
@@ -321,15 +334,28 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
                     commitFut.get();
             }
             catch (IgniteCheckedException e) {
-                throw U.convertException(e);
+                ex = U.convertException(e);
             }
             finally {
+                try {
+                    cctx.endTx(tx);
+                }
+                catch (IgniteCheckedException e) {
+                    if (ex == null)
+                        ex = U.convertException(e);
+                    else
+                        ex.addSuppressed(e);
+                }
+
                 leave();
             }
         }
         finally {
             span.end();
         }
+
+        if (ex != null)
+            throw ex;
     }
 
     /** {@inheritDoc} */
@@ -379,6 +405,8 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     @Override public void rollback() {
         Span span = MTC.span();
 
+        IgniteException ex = null;
+
         try (TraceSurroundings ignored =
                  MTC.support(cctx.kernalContext().tracing().create(TX_ROLLBACK, span))) {
             enter();
@@ -392,15 +420,28 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
                     rollbackFut.get();
             }
             catch (IgniteCheckedException e) {
-                throw U.convertException(e);
+                ex = U.convertException(e);
             }
             finally {
+                try {
+                    cctx.endTx(tx);
+                }
+                catch (IgniteCheckedException e) {
+                    if (ex == null)
+                        ex = U.convertException(e);
+                    else
+                        ex.addSuppressed(e);
+                }
+
                 leave();
             }
         }
         finally {
             span.end();
         }
+
+        if (ex != null)
+            throw ex;
     }
 
     /** {@inheritDoc} */

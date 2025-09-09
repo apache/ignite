@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -57,6 +56,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
     /** */
     private static final String VALUE = createValue();
 
+    /** */
     public static final CachePeekMode[] ALL_PEEK_MODES = new CachePeekMode[] {CachePeekMode.ALL};
 
     /** */
@@ -94,8 +94,6 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
     @Test
     public void testEvictions() throws Exception {
         try {
-            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
-
             final Ignite ignite1 = startGrid(1);
 
             final IgniteCache<Integer, Object> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);

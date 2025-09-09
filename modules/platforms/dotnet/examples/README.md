@@ -6,15 +6,15 @@
 
 # Requirements
 
-* [.NET Core 2.1+](https://dotnet.microsoft.com/download/dotnet-core)
-* [JDK 8](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html) or [JDK 11](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
+* [.NET 6 SDK](https://dotnet.microsoft.com/download/dotnet-core)
+* [JDK 11](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
 
 Windows, Linux, and macOS are supported.
 
 # Download Examples
 
 * NuGet: 
-  * `dotnet new --install Apache.Ignite.Examples`
+  * `dotnet new install Apache.Ignite.Examples`
   * `dotnet new ignite-examples`  
 * Ignite website: https://ignite.apache.org/download.cgi
 * git: `git clone https://github.com/apache/ignite --depth=1`, `cd ignite/modules/platforms/dotnet/examples`

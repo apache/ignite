@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservationKey;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservationManager;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -318,11 +320,11 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
         final GridReduceQueryExecutor rdcQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec");
         final ReducePartitionMapper mapper = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "mapper");
 
-        final IgniteLogger logger = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "log");
+        final IgniteLogger rdcQryExecLog = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "log");
         final GridKernalContext ctx = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "ctx");
 
         GridTestUtils.setFieldValue(rdcQryExec, "mapper",
-            new ReducePartitionMapper(ctx, logger) {
+            new ReducePartitionMapper(ctx, rdcQryExecLog) {
                 @Override public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds,
                     AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly) {
                     final ReducePartitionMapResult res = super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
@@ -353,11 +355,11 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
         final GridReduceQueryExecutor rdcQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec");
         final ReducePartitionMapper mapper = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "mapper");
 
-        final IgniteLogger logger = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "log");
+        final IgniteLogger rdcQryExecLog = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "log");
         final GridKernalContext ctx = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "ctx");
 
         GridTestUtils.setFieldValue(rdcQryExec, "mapper",
-            new ReducePartitionMapper(ctx, logger) {
+            new ReducePartitionMapper(ctx, rdcQryExecLog) {
                 @Override public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds,
                     AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly) {
                     final ReducePartitionMapResult res = super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);

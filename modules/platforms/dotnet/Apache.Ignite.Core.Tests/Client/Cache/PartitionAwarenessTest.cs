@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
-    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Client.DataStructures;
     using NUnit.Framework;
 
     /// <summary>
@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         private const int ServerCount = 3;
 
         /** */
-        private ICacheClient<int, int> _cache;
+        protected ICacheClient<int, int> _cache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PartitionAwarenessTest"/> class.
@@ -126,11 +126,17 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         [Test]
-        public void CachePut_UserDefinedTypeWithAffinityKey_ThrowsIgniteException()
+        [TestCase(1, 1)]
+        [TestCase(2, 0)]
+        [TestCase(3, 0)]
+        [TestCase(4, 1)]
+        [TestCase(5, 1)]
+        [TestCase(6, 2)]
+        public void CachePut_UserDefinedTypeWithAffinityKey_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
         {
             // Note: annotation-based configuration is not supported on Java side.
             // Use manual configuration instead.
-            var cacheClientConfiguration = new CacheClientConfiguration("c_custom_key_aff")
+            var cacheClientConfiguration = new CacheClientConfiguration(TestUtils.TestName)
             {
                 KeyConfiguration = new List<CacheKeyConfiguration>
                 {
@@ -140,50 +146,109 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     }
                 }
             };
+
             var cache = Client.GetOrCreateCache<TestKeyWithAffinity, int>(cacheClientConfiguration);
 
-            var ex = Assert.Throws<IgniteException>(() => cache.Put(new TestKeyWithAffinity(1, "1"), 1));
-
-            var expected = string.Format("Affinity keys are not supported. Object '{0}' has an affinity key.",
-                typeof(TestKeyWithAffinity));
-
-            Assert.AreEqual(expected, ex.Message);
+            cache.Put(new TestKeyWithAffinity(key, Guid.NewGuid().ToString()), key);
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("Put"));
         }
 
         [Test]
-        public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToNewNode()
+        [TestCase(1, 1)]
+        [TestCase(2, 0)]
+        [TestCase(3, 0)]
+        [TestCase(4, 1)]
+        [TestCase(5, 1)]
+        [TestCase(6, 2)]
+        public void CachePut_UserDefinedTypeWithAffinityKeyBinarizable_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
         {
-            // Warm-up.
-            Assert.AreEqual(1, _cache.Get(1));
-
-            // Before topology change.
-            Assert.AreEqual(12, _cache.Get(12));
-            Assert.AreEqual(1, GetClientRequestGridIndex());
-
-            Assert.AreEqual(14, _cache.Get(14));
-            Assert.AreEqual(2, GetClientRequestGridIndex());
-
-            // After topology change.
-            var cfg = GetIgniteConfiguration();
-            cfg.AutoGenerateIgniteInstanceName = true;
-
-            using (Ignition.Start(cfg))
+            var cacheClientConfiguration = new CacheClientConfiguration(TestUtils.TestName)
             {
-                TestUtils.WaitForTrueCondition(() =>
+                KeyConfiguration = new List<CacheKeyConfiguration>
                 {
-                    // Keys 12 and 14 belong to a new node now (-1).
-                    Assert.AreEqual(12, _cache.Get(12));
-                    if (GetClientRequestGridIndex() != -1)
+                    new CacheKeyConfiguration(typeof(TestKeyWithAffinityBinarizable))
                     {
-                        return false;
+                        AffinityKeyFieldName = "id"
                     }
+                }
+            };
 
-                    Assert.AreEqual(14, _cache.Get(14));
-                    Assert.AreEqual(-1, GetClientRequestGridIndex());
+            var cache = Client.GetOrCreateCache<TestKeyWithAffinityBinarizable, int>(cacheClientConfiguration);
 
-                    return true;
-                }, 3000);
-            }
+            cache.Put(new TestKeyWithAffinityBinarizable(key, Guid.NewGuid().ToString()), key);
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("Put"));
+        }
+
+        [Test]
+        public void CachePut_UserDefinedTypeWithAffinityKeyBinarizable_SkipKey_LogsWarningAndBypassesPartitionAwareness()
+        {
+            var cacheClientConfiguration = new CacheClientConfiguration(TestUtils.TestName)
+            {
+                KeyConfiguration = new List<CacheKeyConfiguration>
+                {
+                    new CacheKeyConfiguration(typeof(TestKeyWithAffinityBinarizable))
+                    {
+                        AffinityKeyFieldName = "id"
+                    }
+                }
+            };
+
+            var cache = Client.GetOrCreateCache<TestKeyWithAffinityBinarizable, int>(cacheClientConfiguration);
+
+            var logger = (ListLogger)Client.GetConfiguration().Logger;
+            logger.Clear();
+
+            cache.Put(new TestKeyWithAffinityBinarizable(123, Guid.NewGuid().ToString(), skipKey: true), 123);
+
+            Assert.AreEqual(
+                "Failed to compute partition awareness hash code for type " +
+                "'Apache.Ignite.Core.Tests.Client.Cache.TestKeyWithAffinityBinarizable'",
+                logger.Entries.Single().Message);
+        }
+
+        [Test]
+        [TestCase(1, 0)]
+        [TestCase(2, 0)]
+        [TestCase(3, 0)]
+        [TestCase(4, 2)]
+        [TestCase(5, 2)]
+        [TestCase(6, 1)]
+        public void CachePut_UserDefinedTypeWithUserTypeAffinityKey_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
+        {
+            var cacheClientConfiguration = new CacheClientConfiguration(TestUtils.TestName)
+            {
+                KeyConfiguration = new List<CacheKeyConfiguration>
+                {
+                    new CacheKeyConfiguration(typeof(TestKeyWithUserObjectAffinity))
+                    {
+                        AffinityKeyFieldName = "_key"
+                    }
+                }
+            };
+
+            var cache = Client.GetOrCreateCache<TestKeyWithUserObjectAffinity, int>(cacheClientConfiguration);
+
+            var keyObj = new TestKeyWithUserObjectAffinity(new TestKey(key, key.ToString()), Guid.NewGuid().ToString());
+            cache.Put(keyObj, key);
+
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("Put"));
+        }
+
+        [Test]
+        public void CachePut_MultidimensionalArrayKey_LogsWarningAndBypassesPartitionAwareness()
+        {
+            var logger = (ListLogger)Client.GetConfiguration().Logger;
+            logger.Clear();
+
+            var cache = Client.GetOrCreateCache<int[,], int>(TestUtils.TestName);
+
+            // Two operations, single warning.
+            cache.Put(new int[1, 1], 1);
+            cache.Put(new int[2, 2], 2);
+
+            Assert.AreEqual(
+                "Failed to compute partition awareness hash code for type 'System.Int32[,]'",
+                logger.Entries.Single().Message);
         }
 
         [Test]
@@ -460,18 +525,105 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(gridIdx, GetClientRequestGridIndex("Start", RequestNamePrefixStreamer));
         }
 
+        [Test]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 0)]
+        [TestCase("default-grp-replicated", null, CacheMode.Replicated, 2)]
+        [TestCase("custom-grp-partitioned", "testAtomicLong", CacheMode.Partitioned, 1)]
+        [TestCase("custom-grp-replicated", "testAtomicLong", CacheMode.Replicated, 0)]
+        public void AtomicLong_RequestIsRoutedToPrimaryNode(
+            string name, string groupName, CacheMode cacheMode, int gridIdx)
+        {
+            var cfg = new AtomicClientConfiguration
+            {
+                GroupName = groupName,
+                CacheMode = cacheMode
+            };
+
+            var atomicLong = Client.GetAtomicLong(name, cfg, 1, true);
+
+            // Warm up.
+            atomicLong.Read();
+            ClearLoggers();
+
+            // Test.
+            atomicLong.Read();
+
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("ValueGet", "datastructures.ClientAtomicLong"));
+        }
+
+        [Test]
+        [TestCase("default-grp-partitioned-set", null, CacheMode.Partitioned, 1, 1)]
+        [TestCase("default-grp-partitioned-set", null, CacheMode.Partitioned, 2, 0)]
+        [TestCase("default-grp-partitioned-set", null, CacheMode.Partitioned, 3, 0)]
+        [TestCase("default-grp-partitioned-set", null, CacheMode.Partitioned, 4, 1)]
+        [TestCase("custom-grp-partitioned-set", "testIgniteSet1", CacheMode.Partitioned, 1, 1)]
+        [TestCase("custom-grp-partitioned-set", "testIgniteSet1", CacheMode.Partitioned, 3, 0)]
+        public void IgniteSet_RequestIsRoutedToPrimaryNode(
+            string name, string groupName, CacheMode cacheMode, int item, int gridIdx)
+        {
+            var cfg = new CollectionClientConfiguration
+            {
+                GroupName = groupName,
+                CacheMode = cacheMode,
+                Backups = 1
+            };
+
+            var igniteSet = Client.GetIgniteSet<int>(name, cfg);
+
+            // Warm up.
+            igniteSet.Add(0);
+            ClearLoggers();
+
+            // Test.
+            igniteSet.Add(item);
+
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("ValueAdd", "datastructures.ClientIgniteSet"));
+        }
+
+        [Test]
+        [TestCase("default-grp-partitioned-set-2", null, CacheMode.Partitioned, 1, 0)]
+        [TestCase("default-grp-partitioned-set-2", null, CacheMode.Partitioned, 2, 0)]
+        [TestCase("default-grp-partitioned-set-2", null, CacheMode.Partitioned, 3, 0)]
+        [TestCase("default-grp-partitioned-set-2", null, CacheMode.Partitioned, 4, 0)]
+        [TestCase("custom-grp-partitioned-set-2", "testIgniteSetColocated1", CacheMode.Partitioned, 1, 1)]
+        [TestCase("custom-grp-partitioned-set-2", "testIgniteSetColocated1", CacheMode.Partitioned, 2, 1)]
+        [TestCase("custom-grp-partitioned-set-2", "testIgniteSetColocated1", CacheMode.Partitioned, 3, 1)]
+        public void IgniteSetColocated_RequestIsRoutedToPrimaryNode(
+            string name, string groupName, CacheMode cacheMode, int item, int gridIdx)
+        {
+            var cfg = new CollectionClientConfiguration
+            {
+                GroupName = groupName,
+                CacheMode = cacheMode,
+                Colocated = true,
+                Backups = 1
+            };
+
+            var igniteSet = Client.GetIgniteSet<int>(name, cfg);
+
+            // Warm up.
+            igniteSet.Add(0);
+            ClearLoggers();
+
+            // Test.
+            igniteSet.Add(1);
+
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("ValueAdd", "datastructures.ClientIgniteSet"));
+        }
+
         protected override IgniteClientConfiguration GetClientConfiguration()
         {
             var cfg = base.GetClientConfiguration();
 
             cfg.EnablePartitionAwareness = true;
+            cfg.EnableClusterDiscovery = false;
             cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 1));
             cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 2));
 
             return cfg;
         }
 
-        private int GetClientRequestGridIndex(string message = null, string prefix = null)
+        protected int GetClientRequestGridIndex(string message = null, string prefix = null)
         {
             message = message ?? "Get";
 

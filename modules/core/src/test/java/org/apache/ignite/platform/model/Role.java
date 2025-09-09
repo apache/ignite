@@ -17,14 +17,20 @@
 
 package org.apache.ignite.platform.model;
 
+import java.util.Objects;
+
 /** Test value object. */
 public class Role {
     /** */
     String name;
 
     /** */
-    public Role(String name) {
+    AccessLevel accessLevel;
+
+    /** */
+    public Role(String name, AccessLevel accessLevel) {
         this.name = name;
+        this.accessLevel = accessLevel;
     }
 
     /** */
@@ -35,5 +41,28 @@ public class Role {
     /** */
     public void setName(String name) {
         this.name = name;
+    }
+
+    /** */
+    public AccessLevel getAccessLevel() {
+        return accessLevel;
+    }
+
+    /** */
+    public void setAccessLevel(AccessLevel accessLevel) {
+        this.accessLevel = accessLevel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Role role = (Role)o;
+        return Objects.equals(name, role.name) && accessLevel == role.accessLevel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(name, accessLevel);
     }
 }

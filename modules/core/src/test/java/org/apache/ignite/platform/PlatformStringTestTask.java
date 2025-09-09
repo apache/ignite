@@ -48,6 +48,7 @@ public class PlatformStringTestTask extends ComputeTaskAdapter<String, String> {
      * Job.
      */
     private static class StringTestTaskJob extends ComputeJobAdapter {
+        /** */
         private final String arg;
 
         /**

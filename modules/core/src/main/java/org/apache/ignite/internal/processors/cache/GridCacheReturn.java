@@ -264,9 +264,9 @@ public class GridCacheReturn implements Externalizable, Message {
             // These exceptions mean that we should register class and call EntryProcessor again.
             if (err != null) {
                 if (err instanceof UnregisteredClassException)
-                    throw (UnregisteredClassException) err;
+                    throw (UnregisteredClassException)err;
                 else if (err instanceof UnregisteredBinaryTypeException)
-                    throw (UnregisteredBinaryTypeException) err;
+                    throw (UnregisteredBinaryTypeException)err;
             }
 
             CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
@@ -401,7 +401,7 @@ public class GridCacheReturn implements Externalizable, Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -409,31 +409,31 @@ public class GridCacheReturn implements Externalizable, Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("cacheId", cacheId))
+                if (!writer.writeInt(cacheId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("cacheObj", cacheObj))
+                if (!writer.writeMessage(cacheObj))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeBoolean("invokeRes", invokeRes))
+                if (!writer.writeBoolean(invokeRes))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeCollection("invokeResCol", invokeResCol, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(invokeResCol, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeBoolean("success", success))
+                if (!writer.writeBoolean(success))
                     return false;
 
                 writer.incrementState();
@@ -447,12 +447,9 @@ public class GridCacheReturn implements Externalizable, Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                cacheId = reader.readInt("cacheId");
+                cacheId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -460,7 +457,7 @@ public class GridCacheReturn implements Externalizable, Message {
                 reader.incrementState();
 
             case 1:
-                cacheObj = reader.readMessage("cacheObj");
+                cacheObj = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -468,7 +465,7 @@ public class GridCacheReturn implements Externalizable, Message {
                 reader.incrementState();
 
             case 2:
-                invokeRes = reader.readBoolean("invokeRes");
+                invokeRes = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -476,7 +473,7 @@ public class GridCacheReturn implements Externalizable, Message {
                 reader.incrementState();
 
             case 3:
-                invokeResCol = reader.readCollection("invokeResCol", MessageCollectionItemType.MSG);
+                invokeResCol = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -484,7 +481,7 @@ public class GridCacheReturn implements Externalizable, Message {
                 reader.incrementState();
 
             case 4:
-                success = reader.readBoolean("success");
+                success = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -493,12 +490,7 @@ public class GridCacheReturn implements Externalizable, Message {
 
         }
 
-        return reader.afterMessageRead(GridCacheReturn.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 5;
+        return true;
     }
 
     /** {@inheritDoc} */

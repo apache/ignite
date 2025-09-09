@@ -4,9 +4,12 @@ Apache Ignite REST-HTTP Module
 Apache Ignite REST-HTTP module provides Jetty-based server which can be used to execute tasks and/or cache commands
 in grid using REST approach via HTTP protocol.
 
-To enable REST-HTTP module when starting a standalone node, move 'optional/ignite-rest-http' folder to
-'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
+To enable REST-HTTP module when starting a standalone node, move 'optional/ignite-rest-http' and 'optional/ignite-json'
+folders to 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
+
+The module depends on third-party libraries that use the slf4j facade for logging.
+You can set up an underlying logging framework yourself.
 
 Importing REST-HTTP Module In Maven Project
 -------------------------------------------

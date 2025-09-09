@@ -17,10 +17,18 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+
 /**
  * List of settings that affects key types of index keys.
  */
-public class IndexKeyTypeSettings {
+public class IndexKeyTypeSettings implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Whether inlining POJO keys as hash is supported. */
     private boolean inlineObjHash = true;
 
@@ -70,12 +78,30 @@ public class IndexKeyTypeSettings {
     }
 
     /** */
-    public boolean binaryUnsigned() { return binaryUnsigned; }
+    public boolean binaryUnsigned() {
+        return binaryUnsigned;
+    }
 
     /** */
     public IndexKeyTypeSettings binaryUnsigned(boolean binaryUnsigned) {
         this.binaryUnsigned = binaryUnsigned;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeBoolean(inlineObjHash);
+        out.writeBoolean(inlineObjSupported);
+        out.writeBoolean(strOptimizedCompare);
+        out.writeBoolean(binaryUnsigned);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        inlineObjHash = in.readBoolean();
+        inlineObjSupported = in.readBoolean();
+        strOptimizedCompare = in.readBoolean();
+        binaryUnsigned = in.readBoolean();
     }
 }

@@ -20,6 +20,9 @@ package org.apache.ignite.internal.client.thin;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.EnumSet;
+import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientServices;
+import org.apache.ignite.cluster.ClusterState;
 
 /**
  * Defines supported bitmask features for thin client.
@@ -36,6 +39,9 @@ public enum ProtocolBitmaskFeature {
      */
     CLUSTER_STATES(2),
 
+    /** Client discovery. */
+    CLUSTER_GROUP_GET_NODES_ENDPOINTS(3),
+
     /** Cluster groups. */
     CLUSTER_GROUPS(4),
 
@@ -46,7 +52,51 @@ public enum ProtocolBitmaskFeature {
     DEFAULT_QRY_TIMEOUT(6),
 
     /** Additional SqlFieldsQuery properties: partitions, updateBatchSize */
-    QRY_PARTITIONS_BATCH_SIZE(7);
+    QRY_PARTITIONS_BATCH_SIZE(7),
+
+    /** Binary configuration retrieval. */
+    BINARY_CONFIGURATION(8),
+
+    /** Handle of {@link ClientServices#serviceDescriptors()}. */
+    GET_SERVICE_DESCRIPTORS(9),
+
+    /** Invoke service methods with caller context. */
+    SERVICE_INVOKE_CALLCTX(10),
+
+    /** Handle OP_HEARTBEAT and OP_GET_IDLE_TIMEOUT. */
+    HEARTBEAT(11),
+
+    /** Data replication operations: {@link TcpClientCache#putAllConflict}, {@link TcpClientCache#removeAllConflict}. */
+    DATA_REPLICATION_OPERATIONS(12),
+
+    /** Send all mappings to the client including non-default affinity functions. */
+    ALL_AFFINITY_MAPPINGS(13),
+
+    /** IndexQuery. */
+    INDEX_QUERY(14),
+
+    /** IndexQuery limit. */
+    INDEX_QUERY_LIMIT(15),
+
+    /** Service topology. */
+    SERVICE_TOPOLOGY(16),
+
+    /** Cache invoke/invokeAll operations. */
+    CACHE_INVOKE(17),
+
+    /** Transaction aware queries. */
+    TX_AWARE_QUERIES(18),
+
+    /** Force deactivation flag. See {@link org.apache.ignite.client.ClientCluster#state(ClusterState, boolean)}. */
+    FORCE_DEACTIVATION_FLAG(19),
+
+    /**
+     * Cache storages.
+     *
+     * @see ClientCacheConfiguration#setStoragePaths(String...)
+     * @see ClientCacheConfiguration#setIndexPath(String)
+     */
+    CACHE_STORAGES(20);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

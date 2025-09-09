@@ -126,7 +126,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         private volatile long currentOwnerThreadId;
 
         /** UUID of this node. */
-        private final UUID thisNode;
+        private volatile UUID thisNode;
 
         /** FailoverSafe flag. */
         private final boolean failoverSafe;
@@ -320,6 +320,13 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         }
 
         /**
+         * @param nodeId Node ID.
+         */
+        protected void setThisNode(UUID nodeId) {
+            thisNode = nodeId;
+        }
+
+        /**
          * Returns true if node that owned the locked failed before call to unlock.
          *
          * @return true if any node failed while owning the lock.
@@ -364,7 +371,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
             if (interruptAll)
                 return true;
 
-            final Thread current = Thread.currentThread();
+            final Thread cur = Thread.currentThread();
 
             boolean failed = false;
 
@@ -372,10 +379,10 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
             // Wait for lock to reach stable state.
             while (c != 0) {
-                UUID currentOwner = currentOwnerNode;
+                UUID curOwner = currentOwnerNode;
 
-                if (currentOwner != null) {
-                    failed = ctx.discovery().node(currentOwner) == null;
+                if (curOwner != null) {
+                    failed = ctx.discovery().node(curOwner) == null;
 
                     break;
                 }
@@ -385,10 +392,10 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
             // Check if lock is released or current owner failed.
             if (c == 0 || failed) {
-                if (compareAndSetGlobalState(0, acquires, current, fair)) {
+                if (compareAndSetGlobalState(0, acquires, cur, fair)) {
 
                     // Not used for synchronization (we use ThreadID), but updated anyway.
-                    setExclusiveOwnerThread(current);
+                    setExclusiveOwnerThread(cur);
 
                     while (!isHeldExclusively() && !interruptAll)
                         Thread.yield();
@@ -407,8 +414,8 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
                 return true;
             }
 
-            if (fair && !isQueued(current))
-                synchronizeQueue(false, current);
+            if (fair && !isQueued(cur))
+                synchronizeQueue(false, cur);
 
             return false;
         }
@@ -488,10 +495,12 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
         // Methods relayed from outer class
 
+        /** */
         final int getHoldCount() {
             return isHeldExclusively() ? getState() : 0;
         }
 
+        /** */
         final boolean isLocked() throws IgniteCheckedException {
             return getState() != 0 || cacheView.get(key).get() != 0;
         }
@@ -598,6 +607,9 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
                                 LinkedList<UUID> nodes = val.getNodes();
 
                                 if (!cancelled) {
+                                    if (sync.waitingThreads.contains(thread.getId()) && nodes.contains(thisNode))
+                                        return true;
+
                                     nodes.add(thisNode);
 
                                     val.setChanged(false);
@@ -805,6 +817,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
             }
         }
 
+        /** */
         synchronized boolean checkIncomingSignals(GridCacheLockState state) {
             if (state.getSignals() == null)
                 return false;
@@ -1111,7 +1124,8 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
                 sync.release(0);
             }
 
-        } finally {
+        }
+        finally {
             updateLock.unlock();
         }
     }
@@ -1134,6 +1148,11 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         finally {
             updateLock.unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReconnected(UUID nodeId) {
+        sync.setThisNode(nodeId);
     }
 
     /** {@inheritDoc} */
@@ -1269,6 +1288,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         }
     }
 
+    /** */
     @NotNull @Override public Condition newCondition() {
         throw new UnsupportedOperationException("IgniteLock does not allow creation of nameless conditions. ");
     }
@@ -1388,6 +1408,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         }
     }
 
+    /** */
     @Override public boolean isFailoverSafe() {
         try {
             initializeReentrantLock();
@@ -1399,6 +1420,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
         }
     }
 
+    /** */
     @Override public boolean isFair() {
         try {
             initializeReentrantLock();

@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-#include <ignite/impl/cache/query/query_argument.h>
+#include <ignite/impl/writable_object.h>
 #include <ignite/binary/binary_raw_writer.h>
 
 namespace ignite
@@ -96,7 +96,7 @@ namespace ignite
                 {
                     args.reserve(other.args.size());
 
-                    typedef std::vector<impl::cache::query::QueryArgumentBase*>::const_iterator Iter;
+                    typedef std::vector<impl::WritableObjectBase*>::const_iterator Iter;
 
                     for (Iter i = other.args.begin(); i != other.args.end(); ++i)
                         args.push_back((*i)->Copy());
@@ -124,7 +124,7 @@ namespace ignite
                  */
                 ~SqlFieldsQuery()
                 {
-                    typedef std::vector<impl::cache::query::QueryArgumentBase*>::const_iterator Iter;
+                    typedef std::vector<impl::WritableObjectBase*>::const_iterator Iter;
 
                     for (Iter it = args.begin(); it != args.end(); ++it)
                         delete *it;
@@ -205,7 +205,9 @@ namespace ignite
                 /**
                  * Set local flag.
                  *
-                 * @param loc Local flag.
+                 * @param val Value of the flag. If true, query will be
+                 *     executed only on local node, so only local entries
+                 *     will be returned as query result.
                  */
                 void SetLocal(bool loc)
                 {
@@ -303,7 +305,7 @@ namespace ignite
                 template<typename T>
                 void AddArgument(const T& arg)
                 {
-                    args.push_back(new impl::cache::query::QueryArgument<T>(arg));
+                    args.push_back(new impl::WritableObject<T>(arg));
                 }
 
                 /**
@@ -314,7 +316,7 @@ namespace ignite
                  */
                 void AddInt8ArrayArgument(const int8_t* src, int32_t len)
                 {
-                    args.push_back(new impl::cache::query::QueryInt8ArrayArgument(src, len));
+                    args.push_back(new impl::WritableObjectInt8Array(src, len));
                 }
 
                 /**
@@ -322,7 +324,7 @@ namespace ignite
                  */
                 void ClearArguments()
                 {
-                    std::vector<impl::cache::query::QueryArgumentBase*>::iterator iter;
+                    std::vector<impl::WritableObjectBase*>::iterator iter;
                     for (iter = args.begin(); iter != args.end(); ++iter)
                         delete *iter;
 
@@ -367,7 +369,7 @@ namespace ignite
 
                     writer.WriteInt32(static_cast<int32_t>(args.size()));
 
-                    std::vector<impl::cache::query::QueryArgumentBase*>::const_iterator it;
+                    std::vector<impl::WritableObjectBase*>::const_iterator it;
 
                     for (it = args.begin(); it != args.end(); ++it)
                         (*it)->Write(writer);
@@ -411,7 +413,7 @@ namespace ignite
                 bool lazy;
 
                 /** Arguments. */
-                std::vector<impl::cache::query::QueryArgumentBase*> args;
+                std::vector<impl::WritableObjectBase*> args;
             };
         }
     }    

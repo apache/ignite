@@ -18,19 +18,26 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -103,16 +110,16 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
-        String walPath = ignite.configuration().getDataStorageConfiguration().getWalPath();
-        String walArchivePath = ignite.configuration().getDataStorageConfiguration().getWalArchivePath();
+        File walPath = ignite.context().pdsFolderResolver().fileTree().wal();
+        File walArchive = ignite.context().pdsFolderResolver().fileTree().walArchive();
 
         // Stop grid so there are no ongoing wal records (BLT update and something else maybe).
         stopGrid(0);
 
         WALIterator replayIter = new IgniteWalIteratorFactory(log).iterator(
             lastWalPtr.next(),
-            new File(walArchivePath),
-            new File(walPath)
+            walArchive,
+            walPath
         );
 
         replayIter.forEach(walPtrAndRecordPair -> {
@@ -127,5 +134,73 @@ public class WalOnNodeStartTest extends GridCommonAbstractTest {
                 assertThat(PageIO.T_PART_META, not(equalTo(PageIO.getType(data))));
             }
         });
+    }
+
+    /** Test WAL reformat with resize on node start. */
+    @Test
+    public void testWalReformatWithResize() throws Exception {
+        int walSize = 10 * (int)U.MB;
+
+        IgniteConfiguration cfg = getConfiguration();
+        cfg.getDataStorageConfiguration().setWalSegmentSize(walSize);
+        cfg.getDataStorageConfiguration().setWalMode(WALMode.FSYNC);
+
+        IgniteEx ignite = startGrid(cfg);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
+
+        stopAllGrids();
+
+        File[] wals = ft.walSegments();
+
+        assertEquals(cfg.getDataStorageConfiguration().getWalSegments(), wals.length);
+
+        for (File wal : wals)
+            assertEquals(walSize, wal.length());
+
+        // Change WAL segment size.
+        walSize *= 2;
+
+        cfg = getConfiguration();
+        cfg.getDataStorageConfiguration().setWalSegmentSize(walSize);
+        cfg.getDataStorageConfiguration().setWalMode(WALMode.FSYNC);
+        cfg.getDataStorageConfiguration().setFileIOFactory(new WorkDirCheckingFileIOFactory(ft.wal(), ft.walArchive()));
+
+        startGrid(cfg);
+
+        stopAllGrids();
+
+        wals = ft.walSegments();
+
+        assertEquals(cfg.getDataStorageConfiguration().getWalSegments(), wals.length);
+
+        for (File wal : wals)
+            assertEquals(walSize, wal.length());
+    }
+
+    /** */
+    private static class WorkDirCheckingFileIOFactory extends RandomAccessFileIOFactory {
+        /** */
+        private final File walWorkDir;
+
+        /** */
+        private final File walArchiveDir;
+
+        /** */
+        private WorkDirCheckingFileIOFactory(File walWorkDir, File walArchiveDir) {
+            this.walWorkDir = walWorkDir;
+            this.walArchiveDir = walArchiveDir;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            // Ensure that reformated temp files created in the same dir as original WAL segments.
+            if (NodeFileTree.walTmpSegment(file) && !walArchiveDir.equals(file.getParentFile()))
+                assertEquals(walWorkDir, file.getParentFile());
+
+            return super.create(file, modes);
+        }
     }
 }

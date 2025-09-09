@@ -175,9 +175,11 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable RootPage findCacheIndex(Integer cacheId, String idxName, int segment)
-        throws IgniteCheckedException
-    {
+    @Override public @Nullable RootPage findCacheIndex(
+        Integer cacheId,
+        String idxName,
+        int segment
+    ) throws IgniteCheckedException {
         idxName = maskCacheIndexName(cacheId, idxName, segment);
 
         byte[] idxNameBytes = idxName.getBytes(UTF_8);
@@ -543,6 +545,8 @@ public class IndexStorageImpl implements IndexStorage {
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(long buf, int off, IndexItem row) throws IgniteCheckedException {
+            assertPageType(buf);
+
             storeRow(buf, off, row);
         }
 
@@ -552,6 +556,8 @@ public class IndexStorageImpl implements IndexStorage {
             BPlusIO<IndexItem> srcIo,
             long srcPageAddr,
             int srcIdx) throws IgniteCheckedException {
+            assertPageType(dstPageAddr);
+
             storeRow(dstPageAddr, offset(dstIdx), srcPageAddr, ((IndexIO)srcIo).getOffset(srcPageAddr, srcIdx));
         }
 

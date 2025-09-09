@@ -17,10 +17,12 @@
 
 package org.apache.ignite.spi.indexing;
 
-import java.util.HashSet;
+import java.util.BitSet;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +37,7 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
     private final AffinityTopologyVersion topVer;
 
     /** Partitions. */
-    private final HashSet<Integer> parts;
+    private final BitSet parts;
 
     /**
      * Treat replicated as partitioned.
@@ -69,10 +71,10 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
         if (F.isEmpty(partsArr))
             parts = null;
         else {
-            parts = new HashSet<>();
+            parts = new BitSet();
 
             for (int part : partsArr)
-                parts.add(part);
+                parts.set(part);
         }
 
         this.treatReplicatedAsPartitioned = treatReplicatedAsPartitioned;
@@ -93,6 +95,11 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
     /** {@inheritDoc} */
     @Nullable @Override public IndexingQueryCacheFilter forCache(String cacheName) {
         final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
+
+        if (cache == null) {
+            throw new IgniteSQLException("Failed to find cache [cacheName=" + cacheName + ']',
+                IgniteQueryErrorCode.TABLE_NOT_FOUND);
+        }
 
         // REPLICATED -> nothing to filter (explicit partitions are not supported).
         if (cache.context().isReplicated() && !treatReplicatedAsPartitioned)

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.service.GridServiceContinuousQueryR
 import org.apache.ignite.internal.processors.service.GridServiceDeployClusterReadOnlyModeTest;
 import org.apache.ignite.internal.processors.service.GridServiceDeploymentCompoundFutureSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceDeploymentExceptionPropagationTest;
+import org.apache.ignite.internal.processors.service.GridServiceMetricsTest;
 import org.apache.ignite.internal.processors.service.GridServicePackagePrivateSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorBatchDeploySelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeConfigSelfTest;
@@ -37,12 +38,11 @@ import org.apache.ignite.internal.processors.service.GridServiceProxyNodeStopSel
 import org.apache.ignite.internal.processors.service.GridServiceProxyTopologyInitializationTest;
 import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceCallContextTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceCallInterceptorTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersJdkMarshallerTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingDefaultMarshallerTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingJdkMarshallerTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentFailureTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
@@ -98,11 +98,8 @@ import org.junit.runners.Suite;
     ServiceDeploymentOutsideBaselineTest.class,
 
     IgniteServiceDeploymentClassLoadingDefaultMarshallerTest.class,
-    IgniteServiceDeploymentClassLoadingJdkMarshallerTest.class,
-    IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest.class,
     IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class,
-    IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class,
-    IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class,
+    IgniteServiceDeploymentFailureTest.class,
 
     GridServiceDeploymentExceptionPropagationTest.class,
     ServiceDeploymentProcessingOnCoordinatorLeftTest.class,
@@ -119,6 +116,9 @@ import org.junit.runners.Suite;
     GridServiceProxyTopologyInitializationTest.class,
     GridServiceDeployClusterReadOnlyModeTest.class,
     GridServiceClusterReadOnlyModeTest.class,
+    IgniteServiceCallContextTest.class,
+    GridServiceMetricsTest.class,
+    IgniteServiceCallInterceptorTest.class
 })
 public class IgniteServiceGridTestSuite {
     /** */

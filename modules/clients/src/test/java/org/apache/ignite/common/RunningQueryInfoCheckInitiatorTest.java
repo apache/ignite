@@ -34,6 +34,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -78,7 +79,7 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
         startGrid(0);
         startClientGrid(1);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -226,8 +227,8 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
             final UUID grid0NodeId = grid(0).cluster().localNode().id();
 
             GridTestUtils.runAsync(() -> {
-                    try (Connection conn = DriverManager.getConnection(
-                        CFG_URL_PREFIX + "nodeId=" + grid0NodeId + "@modules/clients/src/test/config/jdbc-security-config.xml")) {
+                    try (Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "lazy=false:nodeId="
+                        + grid0NodeId + "@modules/clients/src/test/config/jdbc-security-config.xml")) {
                         try (Statement stmt = conn.createStatement()) {
                             stmt.execute(sql);
                         }
@@ -255,21 +256,21 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
         final AtomicBoolean end = new AtomicBoolean();
 
         IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
-                try (Connection conn = DriverManager.getConnection(
-                    "jdbc:ignite:thin://127.0.0.1:" + clientPort(grid(0)) + "/?user=ignite&password=ignite")) {
-                    try (Statement stmt = conn.createStatement()) {
-                        stmt.execute("CREATE TABLE T (ID INT PRIMARY KEY, VAL INT)");
+            try (Connection conn = DriverManager.getConnection(
+                "jdbc:ignite:thin://127.0.0.1:" + clientPort(grid(0)) + "/?user=ignite&password=ignite")) {
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("CREATE TABLE T (ID INT PRIMARY KEY, VAL INT)");
 
-                        stmt.execute("SET STREAMING ON");
+                    stmt.execute("SET STREAMING ON");
 
-                        for (int i = 0; !end.get(); ++i)
-                            stmt.execute("INSERT INTO T VALUES(" + i + " , 0)");
-                    }
+                    for (int i = 0; !end.get(); ++i)
+                        stmt.execute("INSERT INTO T VALUES(" + i + " , 0)");
                 }
-                catch (SQLException e) {
-                    log.error("Unexpected exception", e);
-                }
-            });
+            }
+            catch (SQLException e) {
+                log.error("Unexpected exception", e);
+            }
+        });
 
         Consumer<String> initiatorChecker = initiatorId -> {
             assertTrue("Invalid initiator ID: " + initiatorId,
@@ -363,13 +364,14 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
 
     /** */
     private static int clientPort(IgniteEx ign) {
-        return ign.context().sqlListener().port();
+        return ign.context().clientListener().port();
     }
 
     /**
      * Utility class with custom SQL functions.
      */
     public static class TestSQLFunctions {
+        /** */
         static final Phaser ph = new Phaser(2);
 
         /**

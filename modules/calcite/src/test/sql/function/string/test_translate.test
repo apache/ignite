@@ -1,0 +1,19 @@
+# name: test/sql/function/string/test_translate.test
+# description: Just simple test to check support of TRANSLATE function.
+# group: [string]
+
+
+query T
+select translate('1sd8','18', '31')
+----
+3sd1
+
+query T
+SELECT TRANSLATE('2*[3+4]/{7-2}', '[]{}', '()()')
+----
+2*(3+4)/(7-2)
+
+query T
+SELECT TRANSLATE( '+91 25-2469782464','0123456789-+','6789012345+-' )
+----
+-57 81+8025348020

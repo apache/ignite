@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import javax.cache.Cache;
@@ -134,9 +135,6 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
         for (boolean wrt : new boolean[] {false, true}) {
             for (boolean annot : new boolean[] {false, true}) {
-                res.add(buildCacheConfiguration(CacheMode.LOCAL, CacheAtomicityMode.ATOMIC, false, wrt, annot));
-                res.add(buildCacheConfiguration(CacheMode.LOCAL, CacheAtomicityMode.TRANSACTIONAL, false, wrt, annot));
-
                 res.add(buildCacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, false, wrt, annot));
                 res.add(buildCacheConfiguration(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, false, wrt, annot));
 
@@ -1029,7 +1027,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
                 assertTrue(ex.getMessage().contains(ERR_MSG));
 
-                assertEquals(isLocalAtomic() ? expAtomicCacheSize : 0, cache.size());
+                assertEquals(0, cache.size());
             }
         });
     }
@@ -1127,21 +1125,13 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
         for (CacheConfiguration ccfg : cacheConfigurations()) {
             String cacheName = ccfg.getName();
 
-            if (ccfg.getCacheMode() == CacheMode.LOCAL) {
-                grid(NODE_CLIENT).cache(cacheName).clear();
+            if (ccfg.getCacheMode() == CacheMode.PARTITIONED && ccfg.getNearConfiguration() != null) {
+                IgniteCache cache = grid(NODE_CLIENT).getOrCreateNearCache(cacheName, ccfg.getNearConfiguration());
 
-                for (int node = 0; node < NODE_COUNT; node++)
-                    grid(node).cache(cacheName).clear();
+                cache.clear();
             }
-            else {
-                if (ccfg.getCacheMode() == CacheMode.PARTITIONED && ccfg.getNearConfiguration() != null) {
-                    IgniteCache cache = grid(NODE_CLIENT).getOrCreateNearCache(cacheName, ccfg.getNearConfiguration());
 
-                    cache.clear();
-                }
-
-                grid(NODE_CLIENT).cache(cacheName).clear();
-            }
+            grid(NODE_CLIENT).cache(cacheName).clear();
         }
 
         executeSql("DROP TABLE test IF EXISTS");
@@ -1159,7 +1149,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
     /** */
     private void checkNodeState(IgniteEx node, String schemaName, String tableName, String fieldName) {
-        String cacheName = F.eq(schemaName, QueryUtils.DFLT_SCHEMA) ?
+        String cacheName = Objects.equals(schemaName, QueryUtils.DFLT_SCHEMA) ?
             QueryUtils.createTableCacheName(schemaName, tableName) : schemaName;
 
         DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(cacheName);
@@ -1173,7 +1163,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
         QueryEntity entity = null;
 
         for (QueryEntity e : schema.entities()) {
-            if (F.eq(tableName, e.getTableName())) {
+            if (Objects.equals(tableName, e.getTableName())) {
                 entity = e;
 
                 break;
@@ -1218,7 +1208,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
             Person other = (Person)o;
 
-            return F.eq(other.name, name) && other.age == age;
+            return Objects.equals(other.name, name) && other.age == age;
         }
     }
 
@@ -1272,13 +1262,6 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
             this.cache = cache;
             this.concurrency = concurrency;
             this.isolation = isolation;
-        }
-
-        /** */
-        protected boolean isLocalAtomic() {
-            CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
-
-            return cfg.getCacheMode() == CacheMode.LOCAL && cfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC;
         }
 
         /** */

@@ -33,6 +33,20 @@ public class SqlKillServiceCommand implements SqlCommand {
     /** Service name. */
     private String name;
 
+    /**
+     * Default constructor.
+     */
+    public SqlKillServiceCommand() {
+        // No-op.
+    }
+
+    /**
+     * @param name Service name.
+     */
+    public SqlKillServiceCommand(String name) {
+        this.name = name;
+    }
+
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         if (lex.shift()) {

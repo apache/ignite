@@ -29,15 +29,41 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.ACTIVE_COUNT_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.COMPLETED_TASK_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.CORE_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_SHUTDOWN_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_TERMINATED_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_TERMINATING_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.KEEP_ALIVE_TIME_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.LARGEST_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.MAX_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.POOL_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.QUEUE_SIZE_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.REJ_HND_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_COUNT_DESC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME_HISTOGRAM_BUCKETS;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.THRD_FACTORY_DESC;
 
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
  */
-public class IgniteStripedThreadPoolExecutor implements ExecutorService {
-    /** */
-    private final ExecutorService[] execs;
+public class IgniteStripedThreadPoolExecutor implements ExecutorService, MetricsAwareExecutorService {
+    /** Stripe pools. */
+    private final IgniteThreadPoolExecutor[] execs;
+
+    /** Task execution time metric. */
+    @GridToStringExclude
+    private volatile HistogramMetricImpl execTime;
 
     /**
      * Create striped thread pool.
@@ -49,6 +75,7 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
      * terminate if no tasks arrive within the keep-alive time.
      * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
      * that excess idle threads will wait for new tasks before terminating.
+     * @param eHnd Uncaught exception handler.
      */
     public IgniteStripedThreadPoolExecutor(
         int concurrentLvl,
@@ -57,7 +84,8 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
         UncaughtExceptionHandler eHnd,
         boolean allowCoreThreadTimeOut,
         long keepAliveTime) {
-        execs = new ExecutorService[concurrentLvl];
+        execs = new IgniteThreadPoolExecutor[concurrentLvl];
+        execTime = new HistogramMetricImpl(TASK_EXEC_TIME, TASK_COUNT_DESC, TASK_EXEC_TIME_HISTOGRAM_BUCKETS);
 
         ThreadFactory factory = new IgniteThreadFactory(igniteInstanceName, threadNamePrefix, eHnd);
 
@@ -67,7 +95,8 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
                 1,
                 keepAliveTime,
                 new LinkedBlockingQueue<>(),
-                factory);
+                factory,
+                execTime);
 
             executor.allowCoreThreadTimeOut(allowCoreThreadTimeOut);
 
@@ -188,6 +217,135 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
     /** {@inheritDoc} */
     @Override public void execute(Runnable cmd) {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerMetrics(MetricRegistryImpl mreg) {
+        mreg.register("ActiveCount", this::activeCount, ACTIVE_COUNT_DESC);
+        mreg.register("CompletedTaskCount", this::completedTaskCount, COMPLETED_TASK_DESC);
+        mreg.intMetric("CorePoolSize", CORE_SIZE_DESC).value(execs.length);
+        mreg.register("LargestPoolSize", this::largestPoolSize, LARGEST_SIZE_DESC);
+        mreg.intMetric("MaximumPoolSize", MAX_SIZE_DESC).value(execs.length);
+        mreg.register("PoolSize", this::poolSize, POOL_SIZE_DESC);
+        mreg.register("TaskCount", this::taskCount, TASK_COUNT_DESC);
+        mreg.register("QueueSize", this::queueSize, QUEUE_SIZE_DESC);
+        mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(execs[0].getKeepAliveTime(TimeUnit.MILLISECONDS));
+        mreg.register("Shutdown", this::isShutdown, IS_SHUTDOWN_DESC);
+        mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
+        mreg.register("Terminating", this::terminating, IS_TERMINATING_DESC);
+        mreg.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC)
+            .value(execs[0].getRejectedExecutionHandler().getClass().getName());
+        mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC)
+            .value(execs[0].getThreadFactory().getClass().getName());
+
+        HistogramMetricImpl execTime0 = execTime;
+
+        execTime = new HistogramMetricImpl(metricName(mreg.name(), TASK_EXEC_TIME), execTime0);
+
+        mreg.register(execTime);
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            exec.executionTimeMetric(execTime);
+    }
+
+    /**
+     * @return Returns true if this executor is in the process of terminating after shutdown or shutdownNow but has not
+     * completely terminated.
+     */
+    private boolean terminating() {
+        for (IgniteThreadPoolExecutor exec : execs) {
+            if (!exec.isTerminating())
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return Size of the task queue used by executor.
+     */
+    private int queueSize() {
+        int queueSize = 0;
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            queueSize += exec.getQueue().size();
+
+        return queueSize;
+    }
+
+    /**
+     * @return {@code True} if task queue is empty..
+     */
+    public boolean queueEmpty() {
+        for (IgniteThreadPoolExecutor exec : execs) {
+            if (!exec.getQueue().isEmpty())
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return Approximate total number of tasks that have ever been scheduled for execution. Because the states of
+     * tasks and threads may change dynamically during computation, the returned value is only an approximation.
+     */
+    private long taskCount() {
+        long taskCnt = 0;
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            taskCnt += exec.getTaskCount();
+
+        return taskCnt;
+    }
+
+    /**
+     * @return Approximate total number of tasks that have completed execution. Because the states of tasks and threads
+     * may change dynamically during computation, the returned value is only an approximation, but one that does not
+     * ever decrease across successive calls.
+     */
+    public long completedTaskCount() {
+        long completedTaskCnt = 0;
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            completedTaskCnt += exec.getCompletedTaskCount();
+
+        return completedTaskCnt;
+    }
+
+    /**
+     * @return Approximate number of threads that are actively executing tasks.
+     */
+    public int activeCount() {
+        int activeCnt = 0;
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            activeCnt += exec.getActiveCount();
+
+        return activeCnt;
+    }
+
+    /**
+     * @return current number of threads in the pool.
+     */
+    public int poolSize() {
+        int poolSize = 0;
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            poolSize += exec.getPoolSize();
+
+        return poolSize;
+    }
+
+    /**
+     * @return Largest number of threads that have ever simultaneously been in the pool.
+     */
+    private int largestPoolSize() {
+        int largestPoolSize = 0;
+
+        for (IgniteThreadPoolExecutor exec : execs)
+            largestPoolSize += exec.getLargestPoolSize();
+
+        return largestPoolSize;
     }
 
     /** {@inheritDoc} */

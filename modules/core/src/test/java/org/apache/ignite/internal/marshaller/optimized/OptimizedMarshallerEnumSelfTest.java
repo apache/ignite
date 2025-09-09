@@ -17,38 +17,22 @@
 
 package org.apache.ignite.internal.marshaller.optimized;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.Marshallers;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  *
  */
-public class OptimizedMarshallerEnumSelfTest {
-
-    private String igniteHome = System.getProperty("user.dir");
-
-    private final IgniteLogger rootLog = new GridTestLog4jLogger(false);
+public class OptimizedMarshallerEnumSelfTest extends GridCommonAbstractTest {
 
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testEnumSerialisation() throws Exception {
-        OptimizedMarshaller marsh = new OptimizedMarshaller();
-
-        MarshallerContextTestImpl context = new MarshallerContextTestImpl();
-
-        context.onMarshallerProcessorStarted(newContext(), null);
-
-        marsh.setContext(context);
+        Marshaller marsh = initTestMarshallerContext(Marshallers.optimized());
 
         byte[] bytes = marsh.marshal(TestEnum.Bond);
 
@@ -58,34 +42,33 @@ public class OptimizedMarshallerEnumSelfTest {
         assertEquals(TestEnum.Bond.desc, unmarshalled.desc);
     }
 
-    private GridKernalContext newContext() throws IgniteCheckedException {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        cfg.setIgniteHome(igniteHome);
-        cfg.setClientMode(false);
-
-        return new GridTestKernalContext(rootLog.getLogger(OptimizedMarshallerEnumSelfTest.class), cfg);
-    }
-
+    /** */
     private enum TestEnum {
+        /** */
         Equity("Equity") {
+            /** {@inheritDoc} */
             @Override public String getTestString() {
                 return "eee";
             }
         },
 
+        /** */
         Bond("Bond") {
+            /** {@inheritDoc} */
             @Override public String getTestString() {
                 return "qqq";
             }
         };
 
+        /** */
         public final String desc;
 
+        /** */
         TestEnum(String desc) {
             this.desc = desc;
         }
 
+        /** */
         public abstract String getTestString();
     }
 }

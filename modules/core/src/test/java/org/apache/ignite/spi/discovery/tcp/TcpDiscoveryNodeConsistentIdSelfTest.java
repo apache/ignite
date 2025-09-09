@@ -70,6 +70,6 @@ public class TcpDiscoveryNodeConsistentIdSelfTest extends GridCommonAbstractTest
      * @return Discovery port.
      */
     private int getDiscoveryPort(Ignite ignite) {
-        return ((TcpDiscoveryNode) ignite.cluster().localNode()).discoveryPort();
+        return ((TcpDiscoveryNode)ignite.cluster().localNode()).discoveryPort();
     }
 }

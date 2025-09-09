@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -81,7 +82,7 @@ public class CacheObjectUtils {
      * @param keepBinary Keep binary flag.
      * @return Unwrapped collection.
      */
-    public static Collection<Object> unwrapBinariesIfNeeded(CacheObjectValueContext ctx, Collection<Object> col,
+    public static Collection<Object> unwrapBinariesIfNeeded(CacheObjectValueContext ctx, Collection<?> col,
         boolean keepBinary) {
         return unwrapBinariesIfNeeded(ctx, col, keepBinary, true);
     }
@@ -92,7 +93,7 @@ public class CacheObjectUtils {
      * @param cpy Copy flag.
      * @return Unwrapped collection.
      */
-    private static Collection<Object> unwrapKnownCollection(CacheObjectValueContext ctx, Collection<Object> col,
+    private static Collection<Object> unwrapKnownCollection(CacheObjectValueContext ctx, Collection<?> col,
         boolean keepBinary, boolean cpy) {
         Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 
@@ -133,7 +134,7 @@ public class CacheObjectUtils {
      * @param cpy Copy value flag.
      * @return Unwrapped collection.
      */
-    private static Collection<Object> unwrapBinariesIfNeeded(CacheObjectValueContext ctx, Collection<Object> col,
+    private static Collection<Object> unwrapBinariesIfNeeded(CacheObjectValueContext ctx, Collection<?> col,
         boolean keepBinary, boolean cpy) {
         Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 
@@ -177,7 +178,7 @@ public class CacheObjectUtils {
      * @param ldr Class loader, used for deserialization from binary representation.
      * @return Unwrapped object.
      */
-    private static Object unwrapBinary(
+    public static Object unwrapBinary(
         CacheObjectValueContext ctx,
         Object o,
         boolean keepBinary,
@@ -187,7 +188,7 @@ public class CacheObjectUtils {
         if (o == null)
             return o;
 
-        while (BinaryUtils.knownCacheObject(o)) {
+        while (o instanceof CacheObject) {
             CacheObject co = (CacheObject)o;
 
             if (!co.isPlatformType() && keepBinary)
@@ -201,8 +202,10 @@ public class CacheObjectUtils {
             return unwrapKnownCollection(ctx, (Collection<Object>)o, keepBinary, cpy);
         else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, keepBinary, cpy);
-        else if (o instanceof Object[])
+        else if (o instanceof Object[] && !BinaryUtils.useBinaryArrays())
             return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
+        else if (BinaryUtils.isBinaryArray(o) && !keepBinary)
+            return ((BinaryObject)o).deserialize(ldr);
 
         return o;
     }

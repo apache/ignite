@@ -19,7 +19,10 @@
 
 #include <sstream>
 
+#include <ignite/common/concurrent.h>
+
 #include <ignite/network/socket_client.h>
+#include <ignite/network/utils.h>
 
 namespace ignite
 {
@@ -52,7 +55,7 @@ namespace ignite
 
                 LPTSTR errorText = NULL;
 
-                DWORD len = FormatMessage(
+                DWORD len = FormatMessageA(
                     // use system message tables to retrieve error text
                     FORMAT_MESSAGE_FROM_SYSTEM
                     // allocate buffer on local heap for error text
@@ -64,7 +67,7 @@ namespace ignite
                     error,
                     MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                     // output
-                    reinterpret_cast<LPTSTR>(&errorText),
+                    reinterpret_cast<LPSTR>(&errorText),
                     // minimum size for output buffer
                     0,
                     // arguments - see note
@@ -131,6 +134,97 @@ namespace ignite
             bool IsSocketOperationInterrupted(int errorCode)
             {
                 return errorCode == WSAEINTR;
+            }
+
+            void TrySetSocketOptions(SOCKET socket, int bufSize, BOOL noDelay, BOOL outOfBand, BOOL keepAlive)
+            {
+                setsockopt(socket, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<char*>(&bufSize), sizeof(bufSize));
+                setsockopt(socket, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<char*>(&bufSize), sizeof(bufSize));
+
+                setsockopt(socket, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char*>(&noDelay), sizeof(noDelay));
+
+                setsockopt(socket, SOL_SOCKET, SO_OOBINLINE, reinterpret_cast<char*>(&outOfBand), sizeof(outOfBand));
+
+                int res = setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE,
+                    reinterpret_cast<char*>(&keepAlive), sizeof(keepAlive));
+
+                if (keepAlive)
+                {
+                    if (SOCKET_ERROR == res)
+                    {
+                        // There is no sense in configuring keep alive params if we failed to set up keep alive mode.
+                        return;
+                    }
+
+                    // The time in seconds the connection needs to remain idle before starts sending keepalive probes.
+                    enum { KEEP_ALIVE_IDLE_TIME = 60 };
+
+                    // The time in seconds between individual keepalive probes.
+                    enum { KEEP_ALIVE_PROBES_PERIOD = 1 };
+
+#if defined(TCP_KEEPIDLE) && defined(TCP_KEEPINTVL)
+                    // This option is available starting with Windows 10, version 1709.
+                    DWORD idleOpt = KEEP_ALIVE_IDLE_TIME;
+                    DWORD idleRetryOpt = KEEP_ALIVE_PROBES_PERIOD;
+
+                    setsockopt(socket, IPPROTO_TCP, TCP_KEEPIDLE, reinterpret_cast<char*>(&idleOpt), sizeof(idleOpt));
+
+                    setsockopt(socket, IPPROTO_TCP, TCP_KEEPINTVL,
+                               reinterpret_cast<char*>(&idleRetryOpt), sizeof(idleRetryOpt));
+
+#else // use old hardcore WSAIoctl
+                    // WinSock structure for KeepAlive timing settings
+                    struct tcp_keepalive settings = { 0 };
+                    settings.onoff = 1;
+                    settings.keepalivetime = KEEP_ALIVE_IDLE_TIME * 1000;
+                    settings.keepaliveinterval = KEEP_ALIVE_PROBES_PERIOD * 1000;
+
+                    // pointers for WinSock call
+                    DWORD bytesReturned;
+                    WSAOVERLAPPED overlapped;
+                    overlapped.hEvent = NULL;
+
+                    // Set KeepAlive settings
+                    WSAIoctl(
+                        socket,
+                        SIO_KEEPALIVE_VALS,
+                        &settings,
+                        sizeof(struct tcp_keepalive),
+                        NULL,
+                        0,
+                        &bytesReturned,
+                        &overlapped,
+                        NULL
+                    );
+#endif
+                }
+            }
+
+            bool SetNonBlockingMode(SOCKET socket, bool nonBlocking)
+            {
+                ULONG uTrueOpt = nonBlocking ? TRUE : FALSE;
+
+                return (ioctlsocket(socket, FIONBIO, &uTrueOpt) != SOCKET_ERROR);
+            }
+
+            void InitWsa()
+            {
+                static common::concurrent::CriticalSection initCs;
+                static bool networkInited = false;
+
+                if (!networkInited)
+                {
+                    common::concurrent::CsLockGuard lock(initCs);
+                    if (!networkInited)
+                    {
+                        WSADATA wsaData;
+
+                        networkInited = WSAStartup(MAKEWORD(2, 2), &wsaData) == 0;
+
+                        if (!networkInited)
+                            utils::ThrowNetworkError("Networking initialisation failed: " + sockets::GetLastSocketErrorMessage());
+                    }
+                }
             }
         }
     }

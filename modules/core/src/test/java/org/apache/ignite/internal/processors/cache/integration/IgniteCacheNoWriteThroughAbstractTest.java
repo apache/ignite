@@ -175,7 +175,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
 
             assertEquals(storeVal, storeMap.get(key));
 
-            assertEquals(storeVal + 2, (int) cache.get(key));
+            assertEquals(storeVal + 2, (int)cache.get(key));
         }
 
         Map<Integer, Integer> expData = new HashMap<>();

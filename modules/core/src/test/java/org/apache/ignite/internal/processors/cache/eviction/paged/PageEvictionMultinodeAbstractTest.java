@@ -24,7 +24,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -81,21 +80,6 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10738")
-    @Test
-    public void testPageEvictionMvcc() throws Exception {
-        for (int i = 0; i < CACHE_MODES.length; i++) {
-            CacheConfiguration<Object, Object> cfg = cacheConfig(
-                "evict" + i, null, CACHE_MODES[i], CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT,
-                CacheWriteSynchronizationMode.FULL_SYNC);
-
-            createCacheAndTestEviction(cfg);
-        }
-    }
-
-    /**
      * @param cfg Config.
      * @throws Exception If failed.
      */
@@ -126,7 +110,7 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
         System.out.println(">>> Resulting size: " + resultingSize);
 
         // Eviction started, no OutOfMemory occurred, success.
-        assertTrue(resultingSize < ENTRIES * 10 / 11);
+        assertTrue(resultingSize < ENTRIES * 71 / 77);
 
         clientGrid().destroyCache(cfg.getName());
     }

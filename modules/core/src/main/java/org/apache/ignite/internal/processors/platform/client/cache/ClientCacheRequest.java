@@ -21,6 +21,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
@@ -30,7 +31,7 @@ import org.apache.ignite.internal.processors.platform.client.IgniteClientExcepti
 /**
  * Cache request.
  */
-public class ClientCacheRequest extends ClientRequest {
+public abstract class ClientCacheRequest extends ClientRequest {
     /** "Keep binary" flag mask. */
     private static final byte KEEP_BINARY_FLAG_MASK = 0x01;
 
@@ -72,8 +73,20 @@ public class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteCache cache(ClientConnectionContext ctx) {
+    protected IgniteCache<Object, Object> cache(ClientConnectionContext ctx) {
         return rawCache(ctx).withKeepBinary();
+    }
+
+    /**
+     * Gets the internal cache implementation, with binary mode enabled.
+     *
+     * @param ctx Kernal context.
+     * @return Cache.
+     */
+    protected IgniteInternalCache<Object, Object> cachex(ClientConnectionContext ctx) {
+        String cacheName = cacheDescriptor(ctx).cacheName();
+
+        return ctx.kernalContext().grid().cachex(cacheName).keepBinary();
     }
 
     /**
@@ -109,7 +122,7 @@ public class ClientCacheRequest extends ClientRequest {
      * @param ctx Kernal context.
      * @return Cache.
      */
-    protected IgniteCache rawCache(ClientConnectionContext ctx) {
+    protected IgniteCache<Object, Object> rawCache(ClientConnectionContext ctx) {
         DynamicCacheDescriptor cacheDesc = cacheDescriptor(ctx);
 
         String cacheName = cacheDesc.cacheName();

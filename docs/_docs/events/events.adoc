@@ -128,9 +128,9 @@ Cache events are also generated when you use DML commands.
 
 | EVT_CACHE_OBJECT_READ
 | An object is read from a cache.
-This event is not emitted when you use link:key-value-api/using-scan-queries[scan queries] (use <<Cache Query Events>> to monitor scan queries).
+This event is not emitted when you use link:key-value-api/using-cache-queries[scan queries] (use <<Cache Query Events>> to monitor scan queries).
 | The node where read operation is executed.
-It can be either the primary or backup node (the latter case is only possible when link:configuring-caches/configuration-overview#readfrombackup[reading from backups is enabled]).
+It can be either the primary or backup node (the latter case is only possible when link:configuring-caches/configuration-overview#readfrombackup[reading from backups] is enabled).
 In transactional caches, the event can be generated on both the primary and backup nodes depending on the concurrency and isolation levels.
 
 | EVT_CACHE_OBJECT_REMOVED | An object is removed from a cache. |The primary and backup nodes for the entry.
@@ -171,7 +171,7 @@ There are two types of events that are related to cache queries:
 [cols="2,5,3",opts="header"]
 |===
 | Event Type | Event Description | Where Event Is Fired
-| EVT_CACHE_QUERY_OBJECT_READ | An object is read as part of a query execution. This event is generated for every object that matches the link:key-value-api/using-scan-queries#executing-scan-queries[query filter]. | The primary node of the object that is read.
+| EVT_CACHE_QUERY_OBJECT_READ | An object is read as part of a query execution. This event is generated for every object that matches the link:key-value-api/using-cache-queries#executing-scan-queries[query filter]. | The primary node of the object that is read.
 | EVT_CACHE_QUERY_EXECUTED  |  This event is generated when a query is executed. | All server nodes that host the cache.
 |===
 

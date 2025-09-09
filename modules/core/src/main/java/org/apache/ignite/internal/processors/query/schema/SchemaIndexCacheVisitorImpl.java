@@ -24,13 +24,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -100,7 +102,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             return;
         }
 
-        cctx.group().metrics().addIndexBuildCountPartitionsLeft(locParts.size());
+        cctx.cache().metrics0().addIndexBuildPartitionsLeftCount(locParts.size());
         cctx.cache().metrics0().resetIndexRebuildKeyProcessed();
 
         beforeExecute();
@@ -125,17 +127,14 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             cctx.kernalContext().pools().buildIndexExecutorService().execute(worker);
         }
 
-        buildIdxCompoundFut.listen(fut -> {
-            Throwable err = fut.error();
+        buildIdxCompoundFut.listen(() -> {
+            Throwable err = buildIdxCompoundFut.error();
 
             if (isNull(err) && collectStat && log.isInfoEnabled()) {
                 try {
-                    GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat> compoundFut =
-                        (GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat>)fut;
-
                     SchemaIndexCacheStat resStat = new SchemaIndexCacheStat();
 
-                    compoundFut.futures().stream()
+                    buildIdxCompoundFut.futures().stream()
                         .map(IgniteInternalFuture::result)
                         .filter(Objects::nonNull)
                         .forEach(resStat::accumulate);
@@ -168,20 +167,22 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         res.a("   Scanned rows " + stat.scannedKeys() + ", visited types " + stat.typeNames());
         res.a(U.nl());
 
-        final GridQueryIndexing idx = cctx.kernalContext().query().getIndexing();
+        IndexProcessor idxProc = cctx.kernalContext().indexProcessor();
 
         for (QueryTypeDescriptorImpl type : stat.types()) {
             res.a("        Type name=" + type.name());
             res.a(U.nl());
 
-            String pk = "_key_PK";
+            String pk = QueryUtils.PRIMARY_KEY_INDEX;
             String tblName = type.tableName();
 
-            res.a("            Index: name=" + pk + ", size=" + idx.indexSize(type.schemaName(), tblName, pk));
+            res.a("            Index: name=" + pk + ", size=" + idxProc.index(new IndexName(
+                cctx.cache().name(), type.schemaName(), tblName, pk)).unwrap(InlineIndex.class).totalCount());
             res.a(U.nl());
 
             for (GridQueryIndexDescriptor descriptor : type.indexes().values()) {
-                long size = idx.indexSize(type.schemaName(), tblName, descriptor.name());
+                long size = idxProc.index(new IndexName(
+                    cctx.cache().name(), type.schemaName(), tblName, pk)).unwrap(InlineIndex.class).totalCount();
 
                 res.a("            Index: name=" + descriptor.name() + ", size=" + size);
                 res.a(U.nl());

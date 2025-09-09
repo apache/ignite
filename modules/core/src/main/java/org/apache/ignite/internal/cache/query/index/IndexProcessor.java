@@ -20,6 +20,7 @@ package org.apache.ignite.internal.cache.query.index;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,9 +30,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCacheRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.defragmentation.IndexingDefragmentation;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.JavaObjectKeySerializer;
@@ -39,8 +42,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInl
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccInnerIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccLeafIO;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -49,17 +50,18 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -79,7 +81,14 @@ public class IndexProcessor extends GridProcessorAdapter {
      * Register inline IOs for sorted indexes.
      */
     static {
-        PageIO.registerH2(InnerIO.VERSIONS, LeafIO.VERSIONS, MvccInnerIO.VERSIONS, MvccLeafIO.VERSIONS);
+        registerIO();
+    }
+
+    /**
+     * Register inline IOs for sorted indexes.
+     */
+    public static void registerIO() {
+        PageIO.registerH2(InnerIO.VERSIONS, LeafIO.VERSIONS);
 
         AbstractInlineInnerIO.register();
         AbstractInlineLeafIO.register();
@@ -96,6 +105,9 @@ public class IndexProcessor extends GridProcessorAdapter {
 
     /** Row cache. */
     private final IndexRowCacheRegistry idxRowCacheRegistry = new IndexRowCacheRegistry();
+
+    /** Default key type settings. */
+    private final IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings();
 
     /**
      * Registry of all indexes. High key is a cache name, lower key is an unique index name.
@@ -124,7 +136,7 @@ public class IndexProcessor extends GridProcessorAdapter {
         else
             idxRebuild = new IndexesRebuildTask();
 
-        serializer = new JavaObjectKeySerializer(ctx.config());
+        serializer = new JavaObjectKeySerializer(U.resolveClassLoader(ctx.config()), ctx.marshaller());
     }
 
     /**
@@ -140,8 +152,8 @@ public class IndexProcessor extends GridProcessorAdapter {
         throws IgniteSpiException {
         try {
             updateIndexes(cctx.name(), newRow, prevRow, prevRowAvailable);
-
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to store row in cache", e);
         }
     }
@@ -167,10 +179,12 @@ public class IndexProcessor extends GridProcessorAdapter {
             if (err != null)
                 throw err;
 
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to store row in index", e);
 
-        } finally {
+        }
+        finally {
             ddlLock.readLock().unlock();
         }
     }
@@ -184,8 +198,8 @@ public class IndexProcessor extends GridProcessorAdapter {
     public void remove(String cacheName, @Nullable CacheDataRow prevRow) throws IgniteSpiException {
         try {
             updateIndexes(cacheName, null, prevRow, true);
-
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to remove row in cache", e);
         }
     }
@@ -240,7 +254,8 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             return idx;
 
-        } finally {
+        }
+        finally {
             ddlLock.writeLock().unlock();
         }
     }
@@ -248,11 +263,10 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * Removes an index.
      *
-     * @param cctx Cache context.
      * @param idxName Index name.
      * @param softDelete whether it's required to delete underlying structures.
      */
-    public void removeIndex(GridCacheContext<?, ?> cctx, IndexName idxName, boolean softDelete) {
+    public void removeIndex(IndexName idxName, boolean softDelete) {
         ddlLock.writeLock().lock();
 
         try {
@@ -269,7 +283,8 @@ public class IndexProcessor extends GridProcessorAdapter {
                 idxDefs.remove(idx.id());
             }
 
-        } finally {
+        }
+        finally {
             ddlLock.writeLock().unlock();
         }
     }
@@ -290,7 +305,8 @@ public class IndexProcessor extends GridProcessorAdapter {
             for (Index idx: indexes.values())
                 err = updateIndex(idx, newRow, prevRow, prevRowAvailable, err);
 
-        } finally {
+        }
+        finally {
             ddlLock.readLock().unlock();
         }
 
@@ -331,10 +347,11 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             for (Index idx: idxs) {
                 if (idx instanceof AbstractIndex)
-                    ((AbstractIndex) idx).markIndexRebuild(val);
+                    ((AbstractIndex)idx).markIndexRebuild(val);
             }
 
-        } finally {
+        }
+        finally {
             ddlLock.readLock().unlock();
         }
     }
@@ -362,21 +379,44 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * Returns collection of indexes for specified cache.
      *
-     * @param cctx Cache context.
+     * @param cacheName Cache name.
      * @return Collection of indexes for specified cache.
      */
-    public Collection<Index> indexes(GridCacheContext<?, ?> cctx) {
+    public Collection<Index> indexes(String cacheName) {
         ddlLock.readLock().lock();
 
         try {
-            Map<String, Index> idxs = cacheToIdx.get(cctx.name());
+            Map<String, Index> idxs = cacheToIdx.get(cacheName);
 
             if (idxs == null)
                 return Collections.emptyList();
 
             return idxs.values();
 
-        } finally {
+        }
+        finally {
+            ddlLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Returns index for specified name.
+     *
+     * @param idxName Index name.
+     * @return Index for specified index name or {@code null} if not found.
+     */
+    public @Nullable Index index(IndexName idxName) {
+        ddlLock.readLock().lock();
+
+        try {
+            Map<String, Index> idxs = cacheToIdx.get(idxName.cacheName());
+
+            if (idxs == null)
+                return null;
+
+            return idxs.get(idxName.fullName());
+        }
+        finally {
             ddlLock.readLock().unlock();
         }
     }
@@ -450,7 +490,6 @@ public class IndexProcessor extends GridProcessorAdapter {
      * @param pageMemory Page memory to work with.
      * @param removeId Global remove id.
      * @param reuseList Reuse list where free pages should be stored.
-     * @param mvccEnabled Whether mvcc is enabled.
      * @throws IgniteCheckedException If failed.
      */
     public void destroyOrphanIndex(
@@ -460,14 +499,13 @@ public class IndexProcessor extends GridProcessorAdapter {
         int grpId,
         PageMemory pageMemory,
         GridAtomicLong removeId,
-        ReuseList reuseList,
-        boolean mvccEnabled) throws IgniteCheckedException {
+        ReuseList reuseList) throws IgniteCheckedException {
 
         assert ctx.cache().context().database().checkpointLockIsHeldByThread();
 
         long metaPageId = page.pageId().pageId();
 
-        int inlineSize = inlineSize(page, grpId, pageMemory);
+        int inlineSize = MetaPageInfo.read(metaPageId, grpId, pageMemory).inlineSize();
 
         String grpName = ctx.cache().cacheGroup(grpId).cacheOrGroupName();
 
@@ -480,8 +518,8 @@ public class IndexProcessor extends GridProcessorAdapter {
             removeId,
             metaPageId,
             reuseList,
-            AbstractInlineInnerIO.versions(inlineSize, mvccEnabled),
-            AbstractInlineLeafIO.versions(inlineSize, mvccEnabled),
+            AbstractInlineInnerIO.versions(inlineSize),
+            AbstractInlineLeafIO.versions(inlineSize),
             PageIdAllocator.FLAG_IDX,
             ctx.failure(),
             ctx.cache().context().diagnostic().pageLockTracker()
@@ -499,35 +537,32 @@ public class IndexProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param page Root page.
-     * @param grpId Cache group id.
-     * @param pageMemory Page memory.
-     * @return Inline size.
-     * @throws IgniteCheckedException If something went wrong.
+     * @return Default key type settings.
      */
-    private int inlineSize(RootPage page, int grpId, PageMemory pageMemory) throws IgniteCheckedException {
-        long metaPageId = page.pageId().pageId();
+    public IndexKeyTypeSettings keyTypeSettings() {
+        return keyTypeSettings;
+    }
 
-        final long metaPage = pageMemory.acquirePage(grpId, metaPageId);
+    /**
+     * @return {@code true} In case of use an unwrapped PK for the index.
+     */
+    public boolean useUnwrappedPk(GridCacheContext<?, ?> cctx, String treeName) {
+        IgniteCacheDatabaseSharedManager db = cctx.shared().database();
+        db.checkpointReadLock();
 
         try {
-            long pageAddr = pageMemory.readLock(grpId, metaPageId, metaPage); // Meta can't be removed.
+            RootPage page = cctx.offheap().findRootPageForIndex(cctx.cacheId(), treeName, 0);
 
-            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
-                U.hexLong(metaPageId) + ']';
-
-            try {
-                BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
-
-                return io.getInlineSize(pageAddr);
-            }
-            finally {
-                pageMemory.readUnlock(grpId, metaPageId, metaPage);
-            }
+            return page == null ||
+                MetaPageInfo.read(page.pageId().pageId(), cctx.groupId(), cctx.dataRegion().pageMemory()).useUnwrappedPk();
+        }
+        catch (IgniteCheckedException ignore) {
+            return true;
         }
         finally {
-            pageMemory.releasePage(grpId, metaPageId, metaPage);
+            db.checkpointReadUnlock();
         }
+
     }
 
     /**
@@ -560,11 +595,11 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * Collect indexes for rebuild.
      *
-     * @param cctx Cache context.
+     * @param cacheName Cache name.
      * @param createdOnly Get only created indexes (not restored from dick).
      */
-    public List<InlineIndex> treeIndexes(GridCacheContext cctx, boolean createdOnly) {
-        Collection<Index> idxs = indexes(cctx);
+    public List<InlineIndex> treeIndexes(String cacheName, boolean createdOnly) {
+        Collection<Index> idxs = indexes(cacheName);
 
         List<InlineIndex> treeIdxs = new ArrayList<>();
 
@@ -585,5 +620,39 @@ public class IndexProcessor extends GridProcessorAdapter {
      */
     public IgniteLogger logger() {
         return log;
+    }
+
+    /**
+     * Information about secondary indexes efficient (actual) inline size.
+     *
+     * @return Map with inline sizes. The key of entry is a full index name (with schema and table name), the value of
+     * entry is a inline size.
+     */
+    public Map<String, Integer> secondaryIndexesInlineSize() {
+        Map<String, Integer> map = new HashMap<>();
+
+        ddlLock.readLock().lock();
+
+        try {
+            for (Map<String, Index> idxs : cacheToIdx.values()) {
+                for (Index idx : idxs.values()) {
+                    if (idx instanceof InlineIndex && !QueryUtils.PRIMARY_KEY_INDEX.equals(idx.name())) {
+                        InlineIndex idx0 = (InlineIndex)idx;
+                        IndexDefinition idxDef = indexDefinition(idx.id());
+                        IndexName idxName = idxDef.idxName();
+
+                        map.put(
+                            idxName.schemaName() + "#" + idxName.tableName() + "#" + idxName.idxName(),
+                            idx0.inlineSize()
+                        );
+                    }
+                }
+            }
+        }
+        finally {
+            ddlLock.readLock().unlock();
+        }
+
+        return map;
     }
 }

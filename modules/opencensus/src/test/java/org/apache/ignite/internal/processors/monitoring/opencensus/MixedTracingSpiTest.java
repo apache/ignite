@@ -32,7 +32,7 @@ import org.junit.Test;
 public class MixedTracingSpiTest extends GridCommonAbstractTest {
 
     /** */
-    private ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+    private ListeningTestLogger testLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

@@ -22,7 +22,6 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.HashSet;
-
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -122,8 +121,8 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                 Column column = columns[i++];
                 ColumnStatistics colStats = getColumnStatistics(locTblStats, column);
 
-                int index = column.getColumnId();
-                int mask = masks[index];
+                int idx = column.getColumnId();
+                int mask = masks[idx];
 
                 if (isByteFlag(mask, IndexCondition.EQUALITY)) {
                     if (i == len && getIndexType().isUnique()) {
@@ -132,8 +131,8 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                         break;
                     }
                     // Estimate by is null
-                    Value equalValue = getEqualValue(ses, column, filter);
-                    Boolean equalNull = (equalValue == null) ? null : equalValue.getType() == Value.NULL;
+                    Value equalVal = getEqualValue(ses, column, filter);
+                    Boolean equalNull = (equalVal == null) ? null : equalVal.getType() == Value.NULL;
                     rowCount = getColumnSize(colStats, rowCount, equalNull);
 
                     if (colStats != null && equalNull == Boolean.TRUE) {
@@ -148,7 +147,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                     if (colStats == null) {
                         double cardinality = (double)column.getSelectivity() / 100;
                         totalCardinality = 1 - (1 - totalCardinality) * (1 - cardinality);
-                        distinctRows = Math.round((double) rowCount * totalCardinality);
+                        distinctRows = Math.round((double)rowCount * totalCardinality);
                     }
                     else {
                         double cardinality;
@@ -156,7 +155,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                         if (nonNulls == 0)
                             cardinality = 1;
                         else
-                            cardinality = (double) colStats.distinct() / nonNulls;
+                            cardinality = (double)colStats.distinct() / nonNulls;
                         totalCardinality = 1 - (1 - totalCardinality) * (1 - cardinality);
                         distinctRows = Math.round(rowCount * totalCardinality);
                     }
@@ -224,7 +223,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
      * @return "Equal" value or {@code null} if there are no equal clause with constant expression.
      */
     private Value getEqualValue(Session ses, Column column, TableFilter filter) {
-        Value maxValue = null;
+        Value maxVal = null;
         for (IndexCondition cond : filter.getIndexConditions()) {
             if (!column.equals(cond.getColumn()))
                 continue;
@@ -234,12 +233,12 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                 Expression expr = cond.getExpression();
                 if (expr != null && expr.isConstant()) {
                     Value curVal = cond.getCurrentValue(ses);
-                    if (null == maxValue || (curVal != null || filter.getTable().compareTypeSafe(curVal, maxValue) < 0))
-                        maxValue = curVal;
+                    if (null == maxVal || (curVal != null || filter.getTable().compareTypeSafe(curVal, maxVal) < 0))
+                        maxVal = curVal;
                 }
             }
         }
-        return maxValue;
+        return maxVal;
     }
 
     /**
@@ -253,7 +252,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
     private Value getStartValue(Session ses, Column column, TableFilter filter) {
         if (filter == null)
             return null;
-        Value maxValue = null;
+        Value maxVal = null;
         for (IndexCondition cond : filter.getIndexConditions()) {
             if (!column.equals(cond.getColumn()))
                 continue;
@@ -265,12 +264,12 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                 Expression expr = cond.getExpression();
                 if (expr != null && expr.isConstant()) {
                     Value curVal = cond.getCurrentValue(ses);
-                    if (null == maxValue || (curVal != null || filter.getTable().compareTypeSafe(curVal, maxValue) < 0))
-                        maxValue = curVal;
+                    if (null == maxVal || (curVal != null || filter.getTable().compareTypeSafe(curVal, maxVal) < 0))
+                        maxVal = curVal;
                 }
             }
         }
-        return maxValue;
+        return maxVal;
     }
 
     /**
@@ -284,7 +283,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
     private Value getEndValue(Session ses, Column column, TableFilter filter) {
         if (filter == null)
             return null;
-        Value minValue = null;
+        Value minVal = null;
         for (IndexCondition cond : filter.getIndexConditions()) {
             if (!column.equals(cond.getColumn()))
                 continue;
@@ -295,12 +294,12 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                 Expression expr = cond.getExpression();
                 if (expr != null && expr.isConstant()) {
                     Value curVal = cond.getCurrentValue(ses);
-                    if (null == minValue || (curVal != null || filter.getTable().compareTypeSafe(minValue, curVal) < 0))
-                        minValue = curVal;
+                    if (null == minVal || (curVal != null || filter.getTable().compareTypeSafe(minVal, curVal) < 0))
+                        minVal = curVal;
                 }
             }
         }
-        return minValue;
+        return minVal;
     }
 
     /**
@@ -369,20 +368,20 @@ public abstract class H2IndexCostedBase extends BaseIndex {
             // Fall back to previous behaviour without statistics, even without min/max testing
             return estimatePercentFallback(min, max);
 
-        BigDecimal minValue = (min == null) ? null : getComparableValue(min);
-        BigDecimal maxValue = (max == null) ? null : getComparableValue(max);
+        BigDecimal minVal = (min == null) ? null : getComparableValue(min);
+        BigDecimal maxVal = (max == null) ? null : getComparableValue(max);
 
-        if (minValue == null && maxValue == null)
+        if (minVal == null && maxVal == null)
             return estimatePercentFallback(min, max);
 
-        BigDecimal minStat = getComparableValue(colStat.min());
-        BigDecimal maxStat = getComparableValue(colStat.max());
+        BigDecimal minStat = colStat.min();
+        BigDecimal maxStat = colStat.max();
 
         if (minStat == null || maxStat == null)
             return estimatePercentFallback(min, max);
 
-        BigDecimal start = (minValue == null || minValue.compareTo(minStat) < 0) ? minStat : minValue;
-        BigDecimal end = (maxValue == null || maxValue.compareTo(maxStat) > 0) ? maxStat : maxValue;
+        BigDecimal start = (minVal == null || minVal.compareTo(minStat) < 0) ? minStat : minVal;
+        BigDecimal end = (maxVal == null || maxVal.compareTo(maxStat) > 0) ? maxStat : maxVal;
 
         BigDecimal actual = end.subtract(start);
 
@@ -429,7 +428,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                 throw new IllegalArgumentException("Can't compare null values");
 
             case Value.BOOLEAN:
-                return new BigDecimal(value.getBoolean() ? 1 : 0);
+                return value.getBoolean() ? BigDecimal.ONE : BigDecimal.ZERO;
 
             case Value.BYTE:
                 return new BigDecimal(value.getByte());
@@ -447,10 +446,10 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                 return value.getBigDecimal();
 
             case Value.DOUBLE:
-                return new BigDecimal(value.getDouble());
+                return BigDecimal.valueOf(value.getDouble());
 
             case Value.FLOAT:
-                return new BigDecimal(value.getFloat());
+                return BigDecimal.valueOf(value.getFloat());
 
             case Value.DATE:
                 return new BigDecimal(value.getDate().getTime());
@@ -517,7 +516,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
 
         if (!isScanIndex) {
             boolean sortOrderMatches = true;
-            int coveringCount = 0;
+            int coveringCnt = 0;
             int[] sortTypes = sortOrder.getSortTypes();
 
             TableFilter tableFilter = filters == null ? null : filters[filter];
@@ -539,9 +538,9 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                     break;
                 }
 
-                IndexColumn indexCol = indexColumns[i];
+                IndexColumn idxCol = indexColumns[i];
 
-                if (!col.equals(indexCol.column)) {
+                if (!col.equals(idxCol.column)) {
                     sortOrderMatches = false;
 
                     break;
@@ -549,20 +548,20 @@ public abstract class H2IndexCostedBase extends BaseIndex {
 
                 int sortType = sortTypes[i];
 
-                if (sortType != indexCol.sortType) {
+                if (sortType != idxCol.sortType) {
                     sortOrderMatches = false;
 
                     break;
                 }
 
-                coveringCount++;
+                coveringCnt++;
             }
 
             if (sortOrderMatches)
                 // "coveringCount" makes sure that when we have two
                 // or more covering indexes, we choose the one
                 // that covers more.
-                sortingCost = 100 - coveringCount;
+                sortingCost = 100 - coveringCnt;
         }
         return sortingCost;
     }
@@ -590,7 +589,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
         boolean isScanIndex,
         HashSet<Column> allColumnsSet
     ) {
-        ObjectStatisticsImpl locTblStats = (ObjectStatisticsImpl) tbl.tableStatistics();
+        ObjectStatisticsImpl locTblStats = (ObjectStatisticsImpl)tbl.tableStatistics();
 
         if (locTblStats != null)
             rowCount = locTblStats.rowCount();
@@ -630,12 +629,15 @@ public abstract class H2IndexCostedBase extends BaseIndex {
         // If we have two indexes with the same cost, and one of the indexes can
         // satisfy the query without needing to read from the primary table
         // (scan index), make that one slightly lower cost.
-        boolean needsToReadFromScanIndex = true;
+        boolean needsToReadFromScanIdx = true;
 
         if (!isScanIndex && allColumnsSet != null && !skipColumnsIntersection && !allColumnsSet.isEmpty()) {
             boolean foundAllColumnsWeNeed = true;
 
             for (Column c : allColumnsSet) {
+                if (!c.getTable().equals(getTable()))
+                    continue;
+
                 boolean found = false;
 
                 for (Column c2 : columns) {
@@ -654,14 +656,14 @@ public abstract class H2IndexCostedBase extends BaseIndex {
             }
 
             if (foundAllColumnsWeNeed)
-                needsToReadFromScanIndex = false;
+                needsToReadFromScanIdx = false;
         }
 
         long rc;
 
         if (isScanIndex)
             rc = rowsCost + sortingCost + 20;
-        else if (needsToReadFromScanIndex)
+        else if (needsToReadFromScanIdx)
             rc = rowsCost + rowsCost + sortingCost + 20;
         else
             // The (20-x) calculation makes sure that when we pick a covering

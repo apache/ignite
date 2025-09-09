@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -35,13 +36,13 @@ import org.junit.Test;
 public class IgnitePdsMarshallerMappingRestoreOnNodeStartTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        int gridIndex = getTestIgniteInstanceIndex(gridName);
+        int gridIdx = getTestIgniteInstanceIndex(gridName);
 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         String tmpDir = System.getProperty("java.io.tmpdir");
 
-        cfg.setWorkDirectory(Paths.get(tmpDir, "srv" + gridIndex).toString());
+        cfg.setWorkDirectory(Paths.get(tmpDir, "srv" + gridIdx).toString());
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -75,7 +76,7 @@ public class IgnitePdsMarshallerMappingRestoreOnNodeStartTest extends GridCommon
 
         Ignite ignite0 = grid(0);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
@@ -87,7 +88,7 @@ public class IgnitePdsMarshallerMappingRestoreOnNodeStartTest extends GridCommon
 
         ignite0 = grid(0);
 
-        ignite0.active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         Ignite ignite1 = startGrid(1);
 

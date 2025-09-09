@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var cache = GetPersonCache().AsCacheQueryable();
 
             var res = cache.Where(x => x.Key == 1)
-                .Select(x => new { X = x.Value.AliasTest, Y = x.Value.Address.AliasTest })
+                .Select(x => new { X = x.Value.AliasTest, Y = x.Value.Address.AddressAliasTest })
                 .Single();
 
             Assert.AreEqual(new { X = -1, Y = 1 }, res);

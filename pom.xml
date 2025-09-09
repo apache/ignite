@@ -26,24 +26,23 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>1</version>
-        <relativePath>parent</relativePath>
+        <version>${revision}</version>
+        <relativePath>parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>apache-ignite</artifactId>
-    <version>2.12.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <scm>
-        <url>https://gitbox.apache.org/repos/asf/ignite.git</url>
-        <connection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</connection>
-        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
-
     <modules>
-        <module>modules/apache-license-gen</module>
+        <module>modules/checkstyle</module>
+        <module>parent</module>
+        <module>parent-internal</module>
+        <module>modules/bom</module>
         <module>modules/tools</module>
+        <module>modules/commons</module>
+        <module>modules/binary/api</module>
+        <module>modules/binary/impl</module>
+        <module>modules/unsafe</module>
         <module>modules/core</module>
         <module>modules/compress</module>
         <module>modules/dev-utils</module>
@@ -51,43 +50,28 @@
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
         <module>modules/extdata/platform</module>
+        <module>modules/extdata/pluggable</module>
         <module>modules/clients</module>
         <module>modules/spring</module>
         <module>modules/web</module>
-        <module>modules/aop</module>
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
-        <module>modules/ssh</module>
+        <module>modules/json</module>
         <module>modules/rest-http</module>
         <module>modules/jta</module>
-        <module>modules/aws</module>
-        <module>modules/log4j</module>
         <module>modules/log4j2</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/codegen</module>
-        <module>modules/gce</module>
-        <module>modules/azure</module>
-        <module>modules/cloud</module>
-        <module>modules/mesos</module>
-        <module>modules/yarn</module>
+        <module>modules/codegen2</module>
         <module>modules/zookeeper</module>
-        <module>modules/hibernate-core</module>
-        <module>modules/osgi-paxlogging</module>
-        <module>modules/osgi-karaf</module>
-        <module>modules/osgi</module>
         <module>modules/web/ignite-appserver-test</module>
         <module>modules/web/ignite-websphere-test</module>
-        <module>modules/cassandra</module>
         <module>modules/kubernetes</module>
         <module>modules/sqlline</module>
-        <module>modules/ml</module>
-        <module>modules/ml/spark-model-parser</module>
-        <module>modules/ml/xgboost-model-parser</module>
-        <module>modules/ml/catboost-model-parser</module>
-        <module>modules/ml/h2o-model-parser</module>
         <module>modules/opencensus</module>
         <module>modules/control-utility</module>
+        <module>modules/calcite</module>
     </modules>
 
     <profiles>
@@ -98,31 +82,9 @@
                 <module>modules/benchmarks</module>
                 <module>modules/compatibility</module>
                 <module>modules/ducktests</module>
-                <module>modules/geospatial</module>
-                <module>modules/hibernate-4.2</module>
-                <module>modules/hibernate-5.1</module>
-                <module>modules/hibernate-5.3</module>
+                <module>modules/numa-allocator</module>
                 <module>modules/schedule</module>
                 <module>modules/yardstick</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
-            <modules><!-- sorted alphabetically -->
-                <module>modules/scalar-2.10</module>
-                <module>modules/scalar</module>
-                <module>modules/spark</module>
-                <module>modules/spark-2.4</module>
-                <module>modules/visor-console-2.10</module>
-                <module>modules/visor-console</module>
-                <module>modules/visor-plugins</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
-            <modules> <!-- sorted alphabetically -->
             </modules>
         </profile>
 
@@ -134,41 +96,23 @@
         </profile>
 
         <profile>
-            <id>test</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
-                        <inherited>false</inherited>
-                        <executions>
-                            <execution>
-                                <id>test</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/test.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>${basedir}</outputDirectory>
-                                    <finalName>libs</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
+            <id>numa-allocator</id>
+            <modules>
+                <module>modules/numa-allocator</module>
+            </modules>
         </profile>
 
         <profile>
             <id>compatibility</id>
             <modules>
                 <module>modules/compatibility</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>build-dotnet</id>
+            <modules>
+                <module>modules/platforms/dotnet</module>
             </modules>
         </profile>
 
@@ -205,18 +149,63 @@
                                 </goals>
                                 <phase>validate</phase>
                                 <configuration>
+                                    <failOnWarnings>true</failOnWarnings>
                                     <!--
                                     For some reason maven-javadoc-plugin 3.0+ doesn't include taglet artifact from
                                     parent configuration to -tagletpath javadoc parameter.
                                     -->
                                     <tagletArtifact>
-                                        <groupId>org.apache.ignite</groupId>
+                                        <groupId>${project.groupId}</groupId>
                                         <artifactId>ignite-tools</artifactId>
                                         <version>${project.version}</version>
                                     </tagletArtifact>
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
-                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.communication.tcp.internal:org.apache.ignite.spi.discovery.zk.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
+
+                                    <excludePackageNames>
+                                    <!-- External packages, usage of -subpackages flag leads to incorrect handling of excludePackageNames. -->
+                                    <!-- https://issues.apache.org/jira/browse/MJAVADOC-797 -->
+                                        io
+                                        :io.*
+                                        :org.apache.calcite
+                                        :org.apache.calcite.*
+                                        :org.jsr166
+                                        :org.jsr166.*
+                                        :org.mindrot
+                                        :org.mindrot.*
+
+                                    <!-- For each package use 2 patterns - direct and with .* suffix. -->
+                                        :org.apache.ignite.codegen
+                                        :org.apache.ignite.codegen.*
+                                        :org.apache.ignite.examples
+                                        :org.apache.ignite.examples.*
+                                        :org.apache.ignite.internal
+                                        :org.apache.ignite.internal.*
+                                        :org.apache.ignite.schema
+                                        :org.apache.ignite.schema.*
+                                        :org.apache.ignite.tests
+                                        :org.apache.ignite.tests.*
+                                        :org.apache.ignite.tools
+                                        :org.apache.ignite.tools.*
+                                        :org.apache.ignite.util
+                                        :org.apache.ignite.util.*
+                                        :org.apache.ignite.spi.discovery.tcp.messages
+                                        :org.apache.ignite.spi.discovery.tcp.messages.*
+                                        :org.apache.ignite.spi.discovery.tcp.internal
+                                        :org.apache.ignite.spi.discovery.tcp.internal.*
+                                        :org.apache.ignite.spi.communication.tcp.internal
+                                        :org.apache.ignite.spi.communication.tcp.internal.*
+                                        :org.apache.ignite.spi.discovery.zk.internal
+                                        :org.apache.ignite.spi.discovery.zk.internal.*
+                                        :org.apache.ignite.spi.deployment.uri.scanners
+                                        :org.apache.ignite.spi.deployment.uri.scanners.*
+                                        :org.apache.ignite.spi.deployment.uri.tasks
+                                        :org.apache.ignite.spi.deployment.uri.tasks.*
+                                        :org.apache.ignite.yardstick
+                                        :org.apache.ignite.yardstick.*
+                                        :org.apache.ignite.webtest
+                                        :org.apache.ignite.webtest.*
+                                    </excludePackageNames>
                                 </configuration>
                             </execution>
                         </executions>
@@ -224,11 +213,10 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
                         <inherited>false</inherited>
                         <dependencies>
                             <dependency>
-                                <groupId>org.apache.ignite</groupId>
+                                <groupId>${project.groupId}</groupId>
                                 <artifactId>ignite-tools</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
@@ -251,7 +239,7 @@
 
                                             <taskdef name="doctask" classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask" />
 
-                                            <doctask css="dotted" dir="target/javadoc/core">
+                                            <doctask dir="target/javadoc/core">
                                                 <include name="**/*.html" />
                                                 <exclude name="overview-frame.html" />
                                                 <exclude name="allclasses-frame.html" />
@@ -269,10 +257,6 @@
         <profile>
             <id>lgpl</id>
             <modules>
-                <module>modules/hibernate-4.2</module>
-                <module>modules/hibernate-5.1</module>
-                <module>modules/hibernate-5.3</module>
-                <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>
         </profile>
@@ -309,11 +293,10 @@
                      <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
                         <inherited>false</inherited>
                         <dependencies>
                             <dependency>
-                                <groupId>org.apache.ignite</groupId>
+                                <groupId>${project.groupId}</groupId>
                                 <artifactId>ignite-tools</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
@@ -480,22 +463,6 @@
                             </execution>
 
                             <execution>
-                                <id>dependencies-visor-console</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/dependencies-visor-console.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package-${ignite.edition}/bin</outputDirectory>
-                                    <finalName>include</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
                                 <id>dependencies-sqlline</id>
                                 <phase>validate</phase>
                                 <goals>
@@ -504,22 +471,6 @@
                                 <configuration>
                                     <descriptors>
                                         <descriptor>assembly/dependencies-sqlline.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package-${ignite.edition}</outputDirectory>
-                                    <finalName>bin</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>scala-scripts</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/release-scala.xml</descriptor>
                                     </descriptors>
                                     <outputDirectory>target/release-package-${ignite.edition}</outputDirectory>
                                     <finalName>bin</finalName>
@@ -555,55 +506,6 @@
         </profile>
 
         <profile>
-            <id>scala</id>
-
-            <activation>
-                <property><name>!scala-2.10</name></property>
-            </activation>
-
-            <modules>
-                <module>modules/scalar</module>
-                <module>modules/spark</module>
-                <module>modules/visor-console</module>
-                <module>modules/visor-plugins</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>spark-2.4</id>
-
-            <activation>
-                <property><name>!scala-2.10</name></property>
-            </activation>
-
-            <modules>
-                <module>modules/spark-2.4</module>
-                <module>modules/scalar</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>scala-2.10</id>
-
-            <activation>
-                <property><name>scala-2.10</name></property>
-            </activation>
-
-            <modules>
-                <module>modules/scalar-2.10</module>
-                <module>modules/visor-console-2.10</module>
-                <module>modules/visor-plugins</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>ignored-tests</id>
-            <modules>
-                <module>modules/ignored-tests</module>
-            </modules>
-        </profile>
-
-        <profile>
             <id>examples</id>
             <modules>
                 <module>examples</module>
@@ -612,13 +514,12 @@
 
         <profile>
             <id>update-versions</id>
-            <!-- updates dotnet & cpp versions -->
+            <!-- updates versions -->
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
                         <executions>
                             <execution>
                                 <id>update-versions</id>
@@ -628,137 +529,21 @@
                                 <phase>validate</phase>
                                 <configuration>
                                     <target>
-                                        <script language="javascript">
-                                            function setClientVersion(ggVer, clientVer) {
-                                                var p = project.getProperty(ggVer);
-
-                                                var digitVer = /\d+\.\d+\.\d+/.exec(p);
-
-                                                if (digitVer != null)
-                                                {
-                                                    // Date of the last major release
-                                                    var startDate = new Date(2015,1,1);
-
-                                                    // Number of hours since the last major release
-                                                    var buildNum = Math.round((new Date() - startDate)/(3600*1000));
-                                                    var ver = digitVer[0] + "." + buildNum;
-
-                                                    project.setProperty(clientVer, ver);
-                                                }
-                                                else
-                                                    project.setProperty(clientVer, p);
-                                            }
-
-                                            function fix(dest, source) {
-                                                project.setProperty(dest, project.getProperty(source).replace("-SNAPSHOT",
-                                                ""));
-                                            }
-
-                                            fix('ignite.version.fixed', 'project.version');
-                                            fix('new.ignite.version.fixed', 'new.ignite.version');
-                                            setClientVersion('ignite.version.fixed', 'old.client.version');
-                                            setClientVersion('new.ignite.version.fixed', 'new.client.version');
-                                        </script>
-
-                                        <echo message="Update ignite.version in .NET" />
-                                        <echo message="${new.client.version}" />
+                                        <echo message="Update ignite.version in docs" />
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])" />
-                                            <substitution expression="\1${new.client.version}\3" />
-                                            <fileset dir="${basedir}/">
-                                                <include name="**/AssemblyInfo.cs" />
-                                                <include name="**/AssemblyInfo.cpp" />
+                                            <regexp pattern="(&lt;ignite\.version&gt;).+(&lt;/ignite\.version&gt;)" />
+                                            <substitution expression="\1${project.version}\2" />
+                                            <fileset dir="${project.basedir}/docs/">
+                                                <include name="_docs/code-snippets/java/pom.xml" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
-                                            <substitution expression="\1${new.ignite.version.fixed}\2" />
-                                            <fileset dir="${basedir}/">
-                                                <include name="**/AssemblyInfo.cs" />
-                                                <include name="**/AssemblyInfo.cpp" />
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <echo message="Update ignite.version in C++" />
-                                        <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(project\(.*\s)\d+\.\d+\.\d+.*?(\))" />
-                                            <substitution expression="\1${new.client.version}\2" />
-                                            <fileset dir="${basedir}/">
-                                                <include name="**/CMakeLists.txt" />
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(Version=.+)\d+\.\d+\.\d+\.\d+(.+)" />
-                                            <substitution expression="\1${new.client.version}\2" />
-                                            <fileset dir="${basedir}/">
-                                                <include name="**/*.wxs" />
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(define GG_VERSION_STR_WIN &quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;)" />
-                                            <substitution expression="\1${new.client.version}\3" />
-                                            <fileset dir="${basedir}/">
-                                                <include name="**/resource.h" />
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true" encoding="UTF-16">
-                                            <regexp pattern="(Version&quot;, &quot;)\d+\.\d+\.\d+\.\d+(&quot;)" />
-                                            <substitution expression="\1${new.client.version}\2" />
-                                            <fileset dir="${basedir}/">
-                                                <include name="**/Resource.rc" />
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <script language="javascript">
-                                            function setBinVersion(clientVer, binVer) {
-                                            var p = project.getProperty(clientVer).replace(".", ",");
-
-                                            if (p.split(',').length == 3)
-                                            project.setProperty(binVer, p + ',0');
-                                            else
-                                            project.setProperty(binVer, p);
-                                            }
-
-                                            setBinVersion('old.client.version', 'old.bin.version');
-                                            setBinVersion('new.client.version', 'new.bin.version');
-                                        </script>
-
-                                        <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(define GG_VERSION_BIN_WIN )\d,\d,\d,\d" />
-                                            <substitution expression="\1${new.bin.version}" />
-                                            <fileset dir="${basedir}/">
-                                                <include name="**/resource.h" />
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true" encoding="UTF-16">
-                                            <regexp pattern="(VERSION )\d,\d,\d,\d" />
-                                            <substitution expression="\1${new.bin.version}" />
-                                            <fileset dir="${basedir}/">
-                                                <include name="**/Resource.rc" />
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <echo message="Update ignite.version in other resource files" />
-
-                                        <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(ignite.version=).+$" />
-                                            <substitution expression="\1${new.ignite.version}" />
-                                            <fileset dir="${basedir}/">
-                                                <include name="**/ignite.properties" />
-                                            </fileset>
-                                        </replaceregexp>
-
-                                        <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(ignVer = )'.+'" />
-                                            <substitution expression="\1'${new.ignite.version}'" />
-                                            <fileset dir="${basedir}/">
-                                                <include name="**/build.gradle" />
+                                            <regexp pattern="(version: ).+" />
+                                            <substitution expression="\1${project.version}" />
+                                            <fileset dir="${project.basedir}/docs/">
+                                                <include name="_config.yml" />
                                             </fileset>
                                         </replaceregexp>
 
@@ -766,9 +551,58 @@
 
                                         <replaceregexp byline="true" encoding="UTF-8">
                                             <regexp pattern="(__version__ = ).*$"/>
-                                            <substitution expression="\1'${new.ignite.version}'" />
-                                            <fileset dir="${basedir}/">
-                                                <include name="modules/ducktests/tests/ignitetest/__init__.py" />
+                                            <substitution expression="\1'${project.version}'" />
+                                            <fileset dir="${project.basedir}/modules/ducktests/">
+                                                <include name="tests/ignitetest/__init__.py" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in C++" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(project\(.*\s)\d+\.\d+\.\d+.*?(\))" />
+                                            <substitution expression="\1${ignite.platform.full.version}\2" />
+                                            <fileset dir="${project.basedir}/modules/platforms/cpp/">
+                                                <include name="**/CMakeLists.txt" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in .NET" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])" />
+                                            <substitution expression="\1${ignite.platform.full.version}\3" />
+                                            <fileset dir="${project.basedir}/modules/platforms/dotnet/">
+                                                <include name="**/SharedAssemblyInfo.cs" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
+                                            <substitution
+                                                expression="\1${ignite.majorVersion}.${ignite.minorVersion}.${ignite.incrementalVersion}\2" />
+                                            <fileset dir="${project.basedir}/modules/platforms/dotnet/">
+                                                <include name="**/SharedAssemblyInfo.cs" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in resource files" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignite.version=).+$" />
+                                            <substitution expression="\1${project.version}" />
+                                            <fileset dir="${project.basedir}/modules/core/">
+                                                <include name="src/main/resources/ignite.properties" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in build.gradle" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignVer = ).*$"/>
+                                            <substitution expression="\1'${project.version}'" />
+                                            <fileset dir="${project.basedir}/modules/dev-utils/">
+                                                <include name="ignite-modules-test/build.gradle" />
                                             </fileset>
                                         </replaceregexp>
                                     </target>
@@ -779,7 +613,6 @@
                 </plugins>
             </build>
         </profile>
-
         <profile>
             <!--
             This profile is used to provide a check that all tests are defined in at least one suite.
@@ -799,7 +632,6 @@
                         <!-- Clean up custom surefire test provider. -->
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
                         <executions>
                             <execution>
                                 <phase>test</phase>
@@ -821,14 +653,6 @@
                         <!-- Check final list of orphaned tests. -->
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
-                        <version>1.3.2</version>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.ignite</groupId>
-                                <artifactId>ignite-tools</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                        </dependencies>
                         <executions>
                             <execution>
                                 <phase>test</phase>

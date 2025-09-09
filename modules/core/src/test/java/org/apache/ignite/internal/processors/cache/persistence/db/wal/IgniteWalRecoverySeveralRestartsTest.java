@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -44,8 +44,6 @@ import org.junit.Test;
  *
  */
 public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest {
-    /** */
-    public static final int PAGE_SIZE = 1024;
 
     /** */
     private static final int KEYS_COUNT = 100_000;
@@ -82,12 +80,9 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(500L * 1024 * 1024).setPersistenceEnabled(true))
-            .setWalMode(WALMode.LOG_ONLY)
-            .setPageSize(PAGE_SIZE);
+            .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        cfg.setMarshaller(null);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
 
@@ -117,13 +112,10 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
      */
     @Test
     public void testWalRecoverySeveralRestarts() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return;
-
         try {
             IgniteEx ignite = startGrid(1);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             Random locRandom = ThreadLocalRandom.current();
 
@@ -146,7 +138,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
 
                 ignite = startGrid(1);
 
-                ignite.active(true);
+                ignite.cluster().state(ClusterState.ACTIVE);
 
                 IgniteCache<Integer, IndexedObject> cache = ignite.cache(cacheName);
 
@@ -176,13 +168,10 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
      */
     @Test
     public void testWalRecoveryWithDynamicCache() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return;
-
         try {
             IgniteEx ignite = startGrid(1);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             CacheConfiguration<Integer, IndexedObject> dynCacheCfg = new CacheConfiguration<>();
 
@@ -213,7 +202,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
 
                 ignite = startGrid(1);
 
-                ignite.active(true);
+                ignite.cluster().state(ClusterState.ACTIVE);
 
                 ThreadLocalRandom locRandom = ThreadLocalRandom.current();
 
@@ -233,13 +222,10 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
      */
     @Test
     public void testWalRecoveryWithDynamicCacheLargeObjects() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return;
-
         try {
             IgniteEx ignite = startGrid(1);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             CacheConfiguration<Integer, IndexedObject> dynCacheCfg = new CacheConfiguration<>();
 
@@ -252,6 +238,8 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
             dynCacheCfg.setReadFromBackup(true);
 
             ignite.getOrCreateCache(dynCacheCfg);
+
+            final int PAGE_SIZE = ignite.configuration().getDataStorageConfiguration().getPageSize();
 
             try (IgniteDataStreamer<Integer, IndexedObject> dataLdr = ignite.dataStreamer("dyncache")) {
                 for (int i = 0; i < LARGE_KEYS_COUNT; ++i) {
@@ -274,7 +262,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
 
                 ignite = startGrid(1);
 
-                ignite.active(true);
+                ignite.cluster().state(ClusterState.ACTIVE);
 
                 ThreadLocalRandom locRandom = ThreadLocalRandom.current();
 

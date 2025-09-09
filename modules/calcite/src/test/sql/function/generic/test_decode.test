@@ -1,0 +1,24 @@
+# name: test/sql/function/generic/test_decode.test
+# description: Test DECODE function
+# group: [generic]
+
+
+query I
+SELECT DECODE(102, 101, 'IBM', 102, 'GRIDGAIN', 103, 'Hewlett Packard','BALL')
+----
+GRIDGAIN
+
+query T
+SELECT DECODE(108, 101, 'IBM', 102, 'GRIDGAIN', 103, 'Hewlett Packard','BALL')
+----
+BALL
+
+query T
+SELECT DECODE(NULL, 101, 'IBM', 102, 'GRIDGAIN', 103, 'Hewlett Packard','BALL')
+----
+BALL
+
+query T
+SELECT DECODE(108, 101, 'IBM', 102, 'GRIDGAIN', 103, 'Hewlett Packard')
+----
+NULL

@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
@@ -78,7 +79,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
                 return null;
             }
-        }, IllegalStateException.class, null);
+        }, IgniteException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -86,7 +87,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
                 return null;
             }
-        }, IllegalStateException.class, null);
+        }, IgniteException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -94,7 +95,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
                 return null;
             }
-        }, IllegalStateException.class, null);
+        }, IgniteException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -102,7 +103,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
                 return null;
             }
-        }, IllegalStateException.class, null);
+        }, IgniteException.class, null);
     }
 
     /**
@@ -177,7 +178,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
                 return null;
             }
-        }, IllegalStateException.class, null);
+        }, IgniteException.class, null);
 
         IgniteAtomicSequence newClientAtomicSeq = client.atomicSequence("atomicSeqRmv", 0, true);
 
@@ -328,7 +329,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
                 return null;
             }
-        }, IllegalStateException.class, null);
+        }, IgniteException.class, null);
 
         IgniteAtomicReference<String> newClientAtomicRef =
             client.atomicReference("atomicRefRemoved", "1st value", true);
@@ -491,7 +492,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
                 return null;
             }
-        }, IllegalStateException.class, null);
+        }, IgniteException.class, null);
 
         IgniteAtomicStamped newClientAtomicStamped = client.atomicStamped("atomicStampedRemoved", 0, 0, true);
 
@@ -640,7 +641,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
                 return null;
             }
-        }, IllegalStateException.class, null);
+        }, IgniteException.class, null);
 
         IgniteAtomicLong newClientAtomicLong = client.atomicLong("atomicLongRmv", 0, true);
 
@@ -801,6 +802,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
         testReentrantLockReconnect(true);
     }
 
+    /** */
     private void testReentrantLockReconnect(final boolean fair) throws Exception {
         Ignite client = grid(serverCount());
 

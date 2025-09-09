@@ -33,10 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -93,12 +90,11 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
      * @param failedNodeIds IDs of failed nodes started transaction.
      * @param txNodes Transaction mapping.
      */
-    @SuppressWarnings("ConstantConditions")
     public GridCacheTxRecoveryFuture(GridCacheSharedContext<?, ?> cctx,
         IgniteInternalTx tx,
         Set<UUID> failedNodeIds,
-        Map<UUID, Collection<UUID>> txNodes)
-    {
+        Map<UUID, Collection<UUID>> txNodes
+    ) {
         super(CU.boolReducer());
 
         this.cctx = cctx;
@@ -143,14 +139,12 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
             if (cctx.localNodeId().equals(nearNodeId)) {
                 IgniteInternalFuture<Boolean> fut = cctx.tm().txCommitted(tx.nearXidVersion());
 
-                fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                        try {
-                            onDone(fut.get());
-                        }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
-                        }
+                fut.listen(() -> {
+                    try {
+                        onDone(fut.get());
+                    }
+                    catch (IgniteCheckedException e) {
+                        onDone(e);
                     }
                 });
             }
@@ -206,7 +200,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                 boolean prepared;
 
                 try {
-                    prepared = fut == null ? true : fut.get();
+                    prepared = fut == null || fut.get();
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Check prepared transaction future failed: " + e, e);
@@ -223,27 +217,25 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                 }
             }
             else {
-                fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                        boolean prepared;
+                fut.listen(() -> {
+                    boolean prepared;
 
-                        try {
-                            prepared = fut.get();
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Check prepared transaction future failed: " + e, e);
-
-                            prepared = false;
-                        }
-
-                        if (!prepared) {
-                            onDone(false);
-
-                            markInitialized();
-                        }
-                        else
-                            proceedPrepare();
+                    try {
+                        prepared = fut.get();
                     }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Check prepared transaction future failed: " + e, e);
+
+                        prepared = false;
+                    }
+
+                    if (!prepared) {
+                        onDone(false);
+
+                        markInitialized();
+                    }
+                    else
+                        proceedPrepare();
                 });
 
                 return;
@@ -464,13 +456,8 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
             if (isMini(fut)) {
                 final MiniFuture f = (MiniFuture)fut;
 
-                if (f.nodeId().equals(nodeId)) {
-                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-                        @Override public void run() {
-                            f.onNodeLeft(nodeId);
-                        }
-                    });
-                }
+                if (f.nodeId().equals(nodeId))
+                    cctx.kernalContext().closure().runLocalSafe(() -> f.onNodeLeft(nodeId));
             }
         }
 
@@ -529,12 +516,8 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).nodeId +
-                    ", done=" + f.isDone() + "]";
-            }
-        });
+        Collection<String> futs = F.viewReadOnly(futures(),
+            (IgniteInternalFuture<?> f) -> "[node=" + ((MiniFuture)f).nodeId + ", done=" + f.isDone() + "]");
 
         return S.toString(GridCacheTxRecoveryFuture.class, this,
             "innerFuts", futs,
@@ -549,7 +532,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */
-        private UUID nodeId;
+        private final UUID nodeId;
 
         /**
          * @param nodeId Node ID.

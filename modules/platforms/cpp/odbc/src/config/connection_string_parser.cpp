@@ -23,7 +23,6 @@
 #include "ignite/odbc/ssl_mode.h"
 #include "ignite/odbc/config/connection_string_parser.h"
 #include "ignite/odbc/config/config_tools.h"
-#include "ignite/odbc/nested_tx_mode.h"
 
 namespace ignite
 {
@@ -53,7 +52,7 @@ namespace ignite
             const std::string ConnectionStringParser::Key::password               = "password";
             const std::string ConnectionStringParser::Key::uid                    = "uid";
             const std::string ConnectionStringParser::Key::pwd                    = "pwd";
-            const std::string ConnectionStringParser::Key::nestedTxMode           = "nested_tx_mode";
+            const std::string ConnectionStringParser::Key::engineMode             = "query_engine";
 
             ConnectionStringParser::ConnectionStringParser(Configuration& cfg):
                 cfg(cfg)
@@ -439,22 +438,22 @@ namespace ignite
 
                     cfg.SetPassword(value);
                 }
-                else if (lKey == Key::nestedTxMode)
+                else if (lKey == Key::engineMode)
                 {
-                    NestedTxMode::Type mode = NestedTxMode::FromString(value);
+                    EngineMode::Type mode = EngineMode::FromString(value);
 
-                    if (mode == NestedTxMode::AI_UNKNOWN)
+                    if (mode == EngineMode::UNKNOWN)
                     {
                         if (diag)
                         {
                             diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                                "Specified nested transaction mode is not supported. Default value used ('error').");
+                                "Specified SQL engine is not supported. Default value used ('error').");
                         }
 
                         return;
                     }
 
-                    cfg.SetNestedTxMode(mode);
+                    cfg.SetEngineMode(mode);
                 }
                 else if (diag)
                 {

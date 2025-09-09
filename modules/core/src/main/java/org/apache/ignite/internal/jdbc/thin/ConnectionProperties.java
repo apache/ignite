@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.sql.SQLException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
 import org.apache.ignite.internal.util.HostAndPortRange;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -166,16 +167,6 @@ public interface ConnectionProperties {
     public void setSkipReducerOnUpdate(boolean skipReducerOnUpdate);
 
     /**
-     * @return Nested transactions handling strategy.
-     */
-    public String nestedTxMode();
-
-    /**
-     * @param nestedTxMode Nested transactions handling strategy.
-     */
-    public void nestedTxMode(String nestedTxMode);
-
-    /**
      * Gets SSL connection mode.
      *
      * @return Use SSL flag.
@@ -227,7 +218,7 @@ public interface ConnectionProperties {
      *
      * @param sslCipherSuites SSL cipher suites.
      */
-     public void setSslCipherSuites(String sslCipherSuites);
+    public void setSslCipherSuites(String sslCipherSuites);
 
     /**
      * Gets algorithm that will be used to create a key manager.
@@ -558,4 +549,52 @@ public interface ConnectionProperties {
      * @param keepBinary Whether to keep binary objects in binary form.
      */
     public void setKeepBinary(boolean keepBinary);
+
+    /**
+     * @return SQL query engine name to use by a connection.
+     */
+    public String getQueryEngine();
+
+    /**
+     * Sets SQL query engine for a connection.
+     *
+     * @param qryEngine SQL Query engine name.
+     */
+    public void setQueryEngine(String qryEngine);
+
+    /**
+     * @return Transaction concurrency value.
+     */
+    public TransactionConcurrency getTransactionConcurrency();
+
+    /**
+     * Sets transaction concurrency.
+     *
+     * @param transactionConcurrency Transaction concurrecny.
+     */
+    public void setTransactionConcurrency(String transactionConcurrency);
+
+    /**
+     * @return Transaction timeout in milliseconds.
+     */
+    public int getTransactionTimeout();
+
+    /**
+     * Sets transaction timeout in milliseconds.
+     *
+     * @param transactionTimeout Transaction timeout in millicesonds.
+     */
+    public void setTransactionTimeout(int transactionTimeout) throws SQLException;
+
+    /**
+     * @return Transaction label.
+     */
+    public String getTransactionLabel();
+
+    /**
+     * Sets transaction label.
+     *
+     * @param transactionLabel Transaction label.
+     */
+    public void setTransactionLabel(String transactionLabel);
 }

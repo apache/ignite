@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(IgniteAffinityMapKeysToNodes)
 
     std::vector<int32_t> keys;
 
-	keys.reserve(10000);
+    keys.reserve(10000);
 
     for (int i = 1; i < 10000; i++)
         keys.push_back(i);

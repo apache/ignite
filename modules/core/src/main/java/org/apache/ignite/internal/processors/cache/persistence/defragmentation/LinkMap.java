@@ -222,6 +222,8 @@ public class LinkMap {
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off, LinkMapping row) {
+            assertPageType(pageAddr);
+
             PageUtils.putLong(pageAddr, off, row.getOldLink());
             PageUtils.putLong(pageAddr, off + Long.BYTES, row.getNewLink());
         }
@@ -252,6 +254,8 @@ public class LinkMap {
 
         /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off, LinkMapping row) {
+            assertPageType(pageAddr);
+
             PageUtils.putLong(pageAddr, off, row.getOldLink());
             PageUtils.putLong(pageAddr, off + Long.BYTES, row.getNewLink());
         }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.authentication;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -87,12 +88,12 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+        recreateDefaultDb();
 
         startGrids(NODES_COUNT - 1);
         startClientGrid(CLI_NODE);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 
@@ -208,9 +209,9 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
 
             try {
                 while (!restartFut.isDone()) {
-                   SecurityContext secCtx = authenticate(grid(CLI_NODE), user, "passwd_" + user);
+                    SecurityContext secCtx = authenticate(grid(CLI_NODE), user, "passwd_" + user);
 
-                   assertNotNull(secCtx);
+                    assertNotNull(secCtx);
                 }
             }
             catch (ClusterTopologyCheckedException ignored) {

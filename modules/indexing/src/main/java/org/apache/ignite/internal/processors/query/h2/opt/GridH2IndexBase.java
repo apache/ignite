@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.List;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -60,10 +61,8 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
      * Attempts to destroys index and release all the resources.
      * We use this method instead of {@link #close(Session)} because that method
      * is used by H2 internally.
-     *
-     * @param rmv Flag remove.
      */
-    public void destroy(boolean rmv) {
+    public void destroy() {
         // No-op.
     }
 
@@ -157,18 +156,6 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public void removeChildrenAndResources(Session session) {
-        // The sole purpose of this override is to pass session to table.removeIndex
-        assert table instanceof GridH2Table;
-
-        ((GridH2Table)table).removeIndex(session, this);
-
-        remove(session);
-
-        database.removeMeta(session, getId());
-    }
-
     /**
      * @return Index segments count.
      */
@@ -195,11 +182,11 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
 
         CacheObject key;
 
-        final Value keyColValue = row.getValue(QueryUtils.KEY_COL);
+        final Value keyColVal = row.getValue(QueryUtils.KEY_COL);
 
-        assert keyColValue != null;
+        assert keyColVal != null;
 
-        final Object o = keyColValue.getObject();
+        final Object o = keyColVal.getObject();
 
         if (o instanceof CacheObject)
             key = (CacheObject)o;
@@ -230,7 +217,7 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
      * @return Query context registry.
      */
     protected QueryContextRegistry queryContextRegistry() {
-        return ((GridH2Table)table).rowDescriptor().indexing().queryContextRegistry();
+        return ((GridH2Table)table).tableDescriptor().indexing().queryContextRegistry();
     }
 
 
@@ -256,5 +243,19 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
         IndexColumn.mapColumns(cols, tbl);
 
         return cols;
+    }
+
+    /**
+     * Finds an instance of an interface implemented by this object,
+     * or returns null if this object does not support that interface.
+     */
+    public <T extends Index> T unwrap(Class<T> clazz) {
+        if (clazz == null)
+            return null;
+
+        if (clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        return null;
     }
 }

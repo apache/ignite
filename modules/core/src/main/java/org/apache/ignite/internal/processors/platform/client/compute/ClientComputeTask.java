@@ -31,14 +31,15 @@ import org.apache.ignite.internal.processors.platform.client.ClientObjectNotific
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
+import org.apache.ignite.internal.processors.task.TaskExecutionOptions;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientMessageParser.OP_COMPUTE_TASK_FINISHED;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_RESULT_CACHE;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeForNodeIds;
 
 /**
  * Client compute task.
@@ -68,15 +69,20 @@ class ClientComputeTask implements ClientCloseableResource {
     /** Task closed flag. */
     private final AtomicBoolean closed = new AtomicBoolean();
 
+    /** */
+    private final boolean systemTask;
+
     /**
      * Ctor.
      *
      * @param ctx Connection context.
+     * @param sysTask {@code True} if task is system.
      */
-    ClientComputeTask(ClientConnectionContext ctx) {
+    ClientComputeTask(ClientConnectionContext ctx, boolean sysTask) {
         assert ctx != null;
 
         this.ctx = ctx;
+        this.systemTask = sysTask;
 
         log = ctx.kernalContext().log(getClass());
     }
@@ -96,19 +102,28 @@ class ClientComputeTask implements ClientCloseableResource {
 
         GridTaskProcessor task = ctx.kernalContext().task();
 
-        IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? node -> !node.isClient() :
-            F.nodeForNodeIds(nodeIds);
+        IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? node -> !node.isClient() : nodeForNodeIds(nodeIds);
 
-        task.setThreadContext(TC_SUBGRID_PREDICATE, nodePredicate);
-        task.setThreadContext(TC_TIMEOUT, timeout);
-        task.setThreadContext(TC_NO_FAILOVER, (flags & NO_FAILOVER_FLAG_MASK) != 0);
-        task.setThreadContext(TC_NO_RESULT_CACHE, (flags & NO_RESULT_CACHE_FLAG_MASK) != 0);
+        TaskExecutionOptions opts = options()
+            .asPublicRequest()
+            .withProjectionPredicate(nodePredicate)
+            .withTimeout(timeout);
 
-        taskFut = task.execute(taskName, arg);
+        if ((flags & NO_FAILOVER_FLAG_MASK) != 0)
+            opts.withFailoverDisabled();
+
+        if ((flags & NO_RESULT_CACHE_FLAG_MASK) != 0)
+            opts.withResultCacheDisabled();
+
+        taskFut = task.execute(taskName, arg, opts);
 
         // Fail fast.
-        if (taskFut.isDone() && taskFut.error() != null)
-            throw new IgniteClientException(ClientStatus.FAILED, taskFut.error().getMessage());
+        if (taskFut.isDone() && taskFut.error() != null) {
+            if (ctx.kernalContext().clientListener().sendServerExceptionStackTraceToClient())
+                throw new IgniteClientException(ClientStatus.FAILED, taskFut.error().getMessage(), taskFut.error());
+            else
+                throw new IgniteClientException(ClientStatus.FAILED, taskFut.error().getMessage());
+        }
     }
 
     /**
@@ -117,23 +132,29 @@ class ClientComputeTask implements ClientCloseableResource {
     void onResponseSent() {
         // Listener should be registered only after response for this task was sent, to ensure that client doesn't
         // receive notification before response for the task.
-        taskFut.listen(f -> {
+        taskFut.listen(() -> {
             try {
                 ClientNotification notification;
 
-                if (f.error() != null)
-                    notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, f.error().getMessage());
-                else if (f.isCancelled())
+                if (taskFut.error() != null) {
+                    String msg = ctx.kernalContext().clientListener().sendServerExceptionStackTraceToClient()
+                            ? taskFut.error().getMessage() + U.nl() + X.getFullStackTrace(taskFut.error())
+                            : taskFut.error().getMessage();
+
+                    notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, msg);
+                }
+                else if (taskFut.isCancelled())
                     notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, "Task was cancelled");
                 else
-                    notification = new ClientObjectNotification(OP_COMPUTE_TASK_FINISHED, taskId, f.result());
+                    notification = new ClientObjectNotification(OP_COMPUTE_TASK_FINISHED, taskId, taskFut.result());
 
                 ctx.notifyClient(notification);
             }
             finally {
                 // If task was explicitly closed before, resource is already released.
                 if (closed.compareAndSet(false, true)) {
-                    ctx.decrementActiveTasksCount();
+                    if (!systemTask)
+                        ctx.decrementActiveTasksCount();
 
                     ctx.resources().release(taskId);
                 }
@@ -153,7 +174,8 @@ class ClientComputeTask implements ClientCloseableResource {
      */
     @Override public void close() {
         if (closed.compareAndSet(false, true)) {
-            ctx.decrementActiveTasksCount();
+            if (!systemTask)
+                ctx.decrementActiveTasksCount();
 
             try {
                 if (taskFut != null)

@@ -125,6 +125,8 @@ public class AffinityKey<K> implements Externalizable {
      * This method is annotated with {@link AffinityKeyMapped} and will be picked up
      * by {@link GridCacheDefaultAffinityKeyMapper} automatically.
      *
+     * @param <T> Type of affinity key.
+     *
      * @return Affinity key to use for affinity mapping.
      */
     public <T> T affinityKey() {

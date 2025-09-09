@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -62,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
@@ -75,7 +73,6 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
-import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -140,19 +137,19 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** Transaction ID. */
     @GridToStringInclude
-    protected GridCacheVersion xidVer;
+    protected final GridCacheVersion xidVer;
 
     /** Entries write version. */
     @GridToStringInclude
-    protected GridCacheVersion writeVer;
+    private GridCacheVersion writeVer;
 
     /** Implicit flag. */
     @GridToStringInclude
-    protected boolean implicit;
+    protected final boolean implicit;
 
     /** Local flag. */
     @GridToStringInclude
-    protected boolean loc;
+    private final boolean loc;
 
     /** Thread ID. */
     @GridToStringInclude
@@ -160,37 +157,37 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** Transaction start time. */
     @GridToStringInclude
-    protected long startTime = U.currentTimeMillis();
+    protected final long startTime = U.currentTimeMillis();
 
     /** Transaction start time in nanoseconds to measure duration. */
-    protected long startTimeNanos;
+    private final long startTimeNanos;
 
     /** Node ID. */
     @GridToStringInclude
-    protected UUID nodeId;
+    protected final UUID nodeId;
 
     /** Cache registry. */
     @GridToStringExclude
-    protected GridCacheSharedContext<?, ?> cctx;
+    protected final GridCacheSharedContext<?, ?> cctx;
 
     /** Need return value. */
-    protected boolean needRetVal;
+    private boolean needRetVal;
 
     /** Isolation. */
     @GridToStringInclude
-    protected TransactionIsolation isolation = READ_COMMITTED;
+    protected final TransactionIsolation isolation;
 
     /** Concurrency. */
     @GridToStringInclude
-    protected TransactionConcurrency concurrency = PESSIMISTIC;
+    protected final TransactionConcurrency concurrency;
 
     /** Transaction timeout. */
     @GridToStringInclude
-    protected long timeout;
+    private long timeout;
 
     /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
     @GridToStringExclude
-    protected IgniteUuid deploymentLdrId;
+    protected final IgniteUuid deploymentLdrId;
 
     /** Invalidate flag. */
     protected volatile boolean invalidate;
@@ -199,13 +196,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private boolean sysInvalidate;
 
     /** Internal flag. */
-    protected boolean internal;
+    private boolean internal;
 
     /** System transaction flag. */
-    private boolean sys;
+    private final boolean sys;
 
     /** IO policy. */
-    private byte plc;
+    private final byte plc;
 
     /** One phase commit flag. */
     protected boolean onePhaseCommit;
@@ -235,7 +232,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private volatile boolean timedOut;
 
     /** */
-    protected int txSize;
+    protected final int txSize;
 
     /** */
     @GridToStringExclude
@@ -249,30 +246,25 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected Map<UUID, Collection<UUID>> txNodes;
 
     /** Subject ID initiated this transaction. */
-    protected UUID subjId;
+    private final UUID subjId;
 
     /** Task name hash code. */
-    protected int taskNameHash;
+    private final int taskNameHash;
 
     /** Task name. */
     protected final String taskName;
 
     /** Store used flag. */
-    protected boolean storeEnabled = true;
+    private boolean storeEnabled = true;
 
     /** UUID to consistent id mapper. */
-    protected ConsistentIdMapper consistentIdMapper;
+    protected final ConsistentIdMapper consistentIdMapper;
 
-    /** Mvcc tx update snapshot. */
-    @GridToStringInclude
-    protected volatile MvccSnapshot mvccSnapshot;
+    /** Incremental snapshot ID. */
+    private @Nullable UUID incSnpId;
 
     /** {@code True} if tx should skip adding itself to completed version map on finish. */
     private boolean skipCompletedVers;
-
-    /** Rollback finish future. */
-    @GridToStringExclude
-    private volatile IgniteInternalFuture rollbackFut;
 
     /** */
     @SuppressWarnings("unused")
@@ -281,6 +273,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** Transaction from which this transaction was copied by(if it was). */
     private GridNearTxLocal parentTx;
+
+    /** Application attributes. */
+    private @Nullable Map<String, String> appAttrs;
 
     /**
      * @param cctx Cache registry.
@@ -329,7 +324,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         this.txSize = txSize;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
-        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
+        deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         nodeId = cctx.discovery().localNode().id();
 
@@ -341,20 +336,18 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
 
         boolean needTaskName = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ) ||
-                cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_PUT) ||
-                cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
+            cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_PUT) ||
+            cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
 
         taskName = needTaskName ? cctx.kernalContext().task().resolveTaskName(taskNameHash) : null;
 
-        if (cctx.kernalContext().performanceStatistics().enabled())
-            startTimeNanos = System.nanoTime();
+        startTimeNanos = cctx.kernalContext().performanceStatistics().enabled() ? System.nanoTime() : -1;
     }
 
     /**
      * @param cctx Cache registry.
      * @param nodeId Node ID.
      * @param xidVer Transaction ID.
-     * @param startVer Start version mark.
      * @param threadId Thread ID.
      * @param sys System transaction flag.
      * @param plc IO policy.
@@ -367,7 +360,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridCacheSharedContext<?, ?> cctx,
         UUID nodeId,
         GridCacheVersion xidVer,
-        GridCacheVersion startVer,
         long threadId,
         boolean sys,
         byte plc,
@@ -390,6 +382,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         this.txSize = txSize;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        deploymentLdrId = null;
 
         implicit = false;
         loc = false;
@@ -405,8 +398,27 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         taskName = needTaskName ? cctx.kernalContext().task().resolveTaskName(taskNameHash) : null;
 
-        if (cctx.kernalContext().performanceStatistics().enabled())
-            startTimeNanos = System.nanoTime();
+        startTimeNanos = cctx.kernalContext().performanceStatistics().enabled() ? System.nanoTime() : -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID incrementalSnapshotId() {
+        return incSnpId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void incrementalSnapshotId(UUID id) {
+        incSnpId = id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Map<String, String> applicationAttributes() {
+        return appAttrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void applicationAttributes(Map<String, String> appAttrs) {
+        this.appAttrs = appAttrs;
     }
 
     /**
@@ -414,18 +426,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     public void setParentTx(GridNearTxLocal parentTx) {
         this.parentTx = parentTx;
-    }
-
-    /**
-     * @return Mvcc info.
-     */
-    @Override @Nullable public MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
-        this.mvccSnapshot = mvccSnapshot;
     }
 
     /**
@@ -512,8 +512,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             try {
                 GridCacheEntryEx entry = e.cached();
 
-                if (e.op() != NOOP)
+                if (e.op() != NOOP) {
                     entry.invalidate(xidVer);
+
+                    if (e.context().readThrough())
+                        entry.clear(xidVer, true);
+                }
             }
             catch (Throwable t) {
                 U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
@@ -596,14 +600,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         switch (status) {
             case USER_FINISH:
-                res = FINALIZING_UPD.compareAndSet(this, FinalizationStatus.NONE, FinalizationStatus.USER_FINISH);
+                res = FINALIZING_UPD.compareAndSet(this, FinalizationStatus.NONE, status);
 
                 break;
 
             case RECOVERY_FINISH:
-                FinalizationStatus old = finalizing;
-
-                res = old != FinalizationStatus.USER_FINISH && FINALIZING_UPD.compareAndSet(this, old, status);
+                res = FINALIZING_UPD.compareAndSet(this, FinalizationStatus.NONE, status) || finalizing == status;
 
                 break;
 
@@ -696,7 +698,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public Map<Integer, Set<Integer>> invalidPartitions() {
-        return invalidParts == null ? Collections.<Integer, Set<Integer>>emptyMap() : invalidParts;
+        return invalidParts == null ? Collections.emptyMap() : invalidParts;
     }
 
     /** {@inheritDoc} */
@@ -704,13 +706,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if (invalidParts == null)
             invalidParts = new HashMap<>();
 
-        Set<Integer> parts = invalidParts.get(cacheId);
-
-        if (parts == null) {
-            parts = new HashSet<>();
-
-            invalidParts.put(cacheId, parts);
-        }
+        Set<Integer> parts = invalidParts.computeIfAbsent(cacheId, k -> new HashSet<>());
 
         parts.add(part);
 
@@ -749,20 +745,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
-     * @return Rollback future.
-     */
-    public IgniteInternalFuture rollbackFuture() {
-        return rollbackFut;
-    }
-
-    /**
-     * @param fut Rollback future.
-     */
-    public void rollbackFuture(IgniteInternalFuture fut) {
-        rollbackFut = fut;
-    }
-
-    /**
      * Gets remaining allowed transaction time.
      *
      * @return Remaining transaction time. {@code 0} if timeout isn't specified. {@code -1} if time is out.
@@ -778,11 +760,18 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
-     * @return Transaction timeout exception.
+     * @return Transaction timeout exception with the message of lock acquire failure.
      */
     public final IgniteCheckedException timeoutException() {
-        return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-            "for transaction [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+        return timeoutException("Failed to acquire lock within provided timeout for transaction");
+    }
+
+    /**
+     * @param msg Message text to put to the timeout exception.
+     * @return Transaction timeout exception with the provided message.
+     */
+    public final IgniteCheckedException timeoutException(String msg) {
+        return new IgniteTxTimeoutCheckedException(msg + " [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
     }
 
     /**
@@ -880,7 +869,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public boolean ownsLockUnsafe(GridCacheEntryEx entry) {
-        GridCacheContext cacheCtx = entry.context();
+        GridCacheContext<?, ?> cacheCtx = entry.context();
 
         IgniteTxEntry txEntry = entry(entry.txKey());
 
@@ -908,7 +897,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             state = MARKED_ROLLBACK;
 
             if (log.isDebugEnabled())
-                log.debug("Changed transaction state [prev=" + prev + ", new=" + this.state + ", tx=" + this + ']');
+                log.debug("Changed transaction state [prev=" + prev + ", new=" + state + ", tx=" + this + ']');
 
             notifyAll();
         }
@@ -1136,16 +1125,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                     break;
                 }
+
+                case SUSPENDED:
                 case PREPARING: {
                     valid = prev == ACTIVE;
 
                     break;
                 }
+
                 case PREPARED: {
                     valid = prev == PREPARING;
 
                     break;
                 }
+
                 case COMMITTING: {
                     valid = prev == PREPARED;
 
@@ -1191,12 +1184,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                     break;
                 }
-
-                case SUSPENDED: {
-                    valid = prev == ACTIVE;
-
-                    break;
-                }
             }
 
             if (valid) {
@@ -1223,11 +1210,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (state != ACTIVE && state != SUSPENDED)
                     seal();
 
-                if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                    cctx.tm().setMvccState(this, state);
-
+                if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK)
                     ptr = cctx.tm().logTxRecord(this);
-                }
             }
         }
 
@@ -1284,6 +1268,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                 break;
             }
+
+            default:
+                break;
         }
     }
 
@@ -1383,7 +1370,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected void sessionEnd(final Collection<CacheStoreManager> stores, boolean commit) throws IgniteCheckedException {
         Iterator<CacheStoreManager> it = stores.iterator();
 
-        Set<CacheStore> visited = new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
+        Set<CacheStore> visited = new GridSetWrapper<>(new IdentityHashMap<>());
 
         while (it.hasNext()) {
             CacheStoreManager store = it.next();
@@ -1448,7 +1435,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                         IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false, null);
 
-                        GridCacheContext cacheCtx = e.context();
+                        GridCacheContext<?, ?> cacheCtx = e.context();
 
                         GridCacheOperation op = res.get1();
                         KeyCacheObject key = e.key();
@@ -1617,7 +1604,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         @Nullable GridCacheReturn ret) throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert txEntry.op() != TRANSFORM || !F.isEmpty(txEntry.entryProcessors()) : txEntry;
 
-        GridCacheContext cacheCtx = txEntry.context();
+        GridCacheContext<?, ?> cacheCtx = txEntry.context();
 
         assert cacheCtx != null;
 
@@ -1695,9 +1682,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 IgniteThread.onEntryProcessorEntered(true);
 
                 try {
-                    EntryProcessor<Object, Object, Object> processor = t.get1();
+                    EntryProcessor<Object, Object, Object> proc = t.get1();
 
-                    procRes = processor.process(invokeEntry, t.get2());
+                    procRes = proc.process(invokeEntry, t.get2());
 
                     val = invokeEntry.getValue();
 
@@ -1820,7 +1807,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridCacheVersionedEntryEx oldEntry = old.versionedEntry(txEntry.keepBinary());
 
         // Construct new entry info.
-        GridCacheContext entryCtx = txEntry.context();
+        GridCacheContext<?, ?> entryCtx = txEntry.context();
 
         GridCacheVersionedEntryEx newEntry = new GridCacheLazyPlainVersionedEntry(
             entryCtx,
@@ -1852,7 +1839,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
     protected boolean isNearLocallyMapped(IgniteTxEntry e, boolean primaryOnly) {
-        GridCacheContext cacheCtx = e.context();
+        GridCacheContext<?, ?> cacheCtx = e.context();
 
         if (!cacheCtx.isNear())
             return false;
@@ -1902,8 +1889,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             if (log.isDebugEnabled())
                 log.debug("Evicting dht-local entry from near cache [entry=" + cached + ", tx=" + this + ']');
 
-            if (cached != null && cached.markObsolete(xidVer))
-                return true;
+            return cached.markObsolete(xidVer);
         }
 
         return false;
@@ -1927,7 +1913,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @throws IgniteCheckedException If caches already enlisted in this transaction are not compatible with given
      *      cache (e.g. they have different stores).
      */
-    public abstract void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException;
+    public abstract void addActiveCache(GridCacheContext<?, ?> cacheCtx, boolean recovery) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public TxCounters txCounters(boolean createIfAbsent) {
@@ -2007,584 +1993,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
-     * Transaction shadow class to be used for deserialization.
-     */
-    private static class TxShadow implements IgniteInternalTx {
-        /** Xid. */
-        private final IgniteUuid xid;
-
-        /** Node ID. */
-        private final UUID nodeId;
-
-        /** Thread ID. */
-        private final long threadId;
-
-        /** Start time. */
-        private final long startTime;
-
-        /** Start time in nanoseconds. */
-        private final long startTimeNanos;
-
-        /** Transaction isolation. */
-        private final TransactionIsolation isolation;
-
-        /** Concurrency. */
-        private final TransactionConcurrency concurrency;
-
-        /** Invalidate flag. */
-        private final boolean invalidate;
-
-        /** Timeout. */
-        private final long timeout;
-
-        /** State. */
-        private final TransactionState state;
-
-        /** Rollback only flag. */
-        private final boolean rollbackOnly;
-
-        /** Implicit flag. */
-        private final boolean implicit;
-
-        /**
-         * @param xid Xid.
-         * @param nodeId Node ID.
-         * @param threadId Thread ID.
-         * @param startTime Start time.
-         * @param isolation Isolation.
-         * @param concurrency Concurrency.
-         * @param invalidate Invalidate flag.
-         * @param implicit Implicit flag.
-         * @param timeout Transaction timeout.
-         * @param state Transaction state.
-         * @param rollbackOnly Rollback-only flag.
-         */
-        TxShadow(IgniteUuid xid, UUID nodeId, long threadId, long startTime, long startTimeNanos,
-            TransactionIsolation isolation, TransactionConcurrency concurrency, boolean invalidate, boolean implicit,
-            long timeout, TransactionState state, boolean rollbackOnly) {
-            this.xid = xid;
-            this.nodeId = nodeId;
-            this.threadId = threadId;
-            this.startTime = startTime;
-            this.startTimeNanos = startTimeNanos;
-            this.isolation = isolation;
-            this.concurrency = concurrency;
-            this.invalidate = invalidate;
-            this.implicit = implicit;
-            this.timeout = timeout;
-            this.state = state;
-            this.rollbackOnly = rollbackOnly;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public MvccSnapshot mvccSnapshot() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean localResult() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid xid() {
-            return xid;
-        }
-
-        /** {@inheritDoc} */
-        @Override public UUID nodeId() {
-            return nodeId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long threadId() {
-            return threadId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long startTime() {
-            return startTime;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long startTimeNanos() {
-            return startTimeNanos;
-        }
-
-        /** {@inheritDoc} */
-        @Override public TransactionIsolation isolation() {
-            return isolation;
-        }
-
-        /** {@inheritDoc} */
-        @Override public TransactionConcurrency concurrency() {
-            return concurrency;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isInvalidate() {
-            return invalidate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean implicit() {
-            return implicit;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long timeout() {
-            return timeout;
-        }
-
-        /** {@inheritDoc} */
-        @Override public TransactionState state() {
-            return state;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isRollbackOnly() {
-            return rollbackOnly;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long timeout(long timeout) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean setRollbackOnly() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void errorWhenCommitting() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean activeCachesDeploymentEnabled() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void activeCachesDeploymentEnabled(boolean depEnabled) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object addMeta(int key, Object val) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object removeMeta(int key) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object meta(int key) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public int size() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean storeEnabled() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean storeWriteThrough() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean system() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        @Override public byte ioPolicy() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public AffinityTopologyVersion topologyVersion() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public AffinityTopologyVersion topologyVersionSnapshot() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean implicitSingle() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public AffinityTopologyVersion topologyVersion(AffinityTopologyVersion topVer) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void commitError(Throwable e) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public String label() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean empty() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean markFinalizing(FinalizationStatus status) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public FinalizationStatus finalizationStatus() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void addInvalidPartition(int cacheId, int part) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<Integer, Set<Integer>> invalidPartitions() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public GridCacheVersion ownedVersion(IgniteTxKey key) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public UUID otherNodeId() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public UUID eventNodeId() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public UUID originatingNodeId() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteTxState txState() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<UUID> masterNodeIds() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public GridCacheVersion nearXidVersion() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Map<UUID, Collection<UUID>> transactionNodes() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean ownsLock(GridCacheEntryEx entry) throws GridCacheEntryRemovedException {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean ownsLockUnsafe(GridCacheEntryEx entry) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean near() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean dht() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean colocated() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean local() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public UUID subjectId() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int taskNameHash() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean user() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasWriteKey(IgniteTxKey key) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Set<IgniteTxKey> readSet() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Set<IgniteTxKey> writeSet() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<IgniteTxEntry> allEntries() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<IgniteTxEntry> writeEntries() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<IgniteTxEntry> readEntries() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<IgniteTxKey, IgniteTxEntry> writeMap() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<IgniteTxKey, IgniteTxEntry> readMap() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<IgniteTxEntry> optimisticLockEntries() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void seal() {
-
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public IgniteTxEntry entry(IgniteTxKey key) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public GridTuple<CacheObject> peek(GridCacheContext ctx,
-            boolean failFast,
-            KeyCacheObject key) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCacheVersion xidVersion() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCacheVersion commitVersion() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void commitVersion(GridCacheVersion commitVer) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> salvageTx() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCacheVersion writeVersion() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeVersion(GridCacheVersion ver) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<IgniteInternalTx> finishFuture() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean state(TransactionState state) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void invalidate(boolean invalidate) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void systemInvalidate(boolean sysInvalidate) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isSystemInvalidate() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean timedOut() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean done() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean optimistic() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean pessimistic() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readCommitted() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean repeatableRead() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean serializable() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long remainingTime() throws IgniteTxTimeoutCheckedException {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<GridCacheVersion> alternateVersions() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean needsCompletedVersions() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void completedVersions(GridCacheVersion base, Collection committed, Collection rolledback) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean internal() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onePhaseCommit() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            return this == o || o instanceof IgniteInternalTx && xid.equals(((IgniteInternalTx)o).xid());
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return xid.hashCode();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TxShadow.class, this);
-        }
-    }
-
-    /**
      *
      */
     private static class TxFinishFuture extends GridFutureAdapter<IgniteInternalTx> {
         /** */
         @GridToStringInclude
-        private IgniteTxAdapter tx;
+        private final IgniteTxAdapter tx;
 
         /** */
         private volatile long completionTime;

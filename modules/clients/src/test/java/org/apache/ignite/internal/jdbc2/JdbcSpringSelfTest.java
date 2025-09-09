@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.sql.DataSource;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
@@ -48,15 +47,6 @@ public class JdbcSpringSelfTest extends JdbcConnectionSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMarshaller(null); // In this test we are using default Marshaller.
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsWithSpringCtx(GRID_CNT, false, configURL());
     }
@@ -64,7 +54,7 @@ public class JdbcSpringSelfTest extends JdbcConnectionSelfTest {
     /** {@inheritDoc} */
     @Test
     @Override public void testClientNodeId() throws Exception {
-        IgniteEx client = (IgniteEx) startGridWithSpringCtx(getTestIgniteInstanceName(), true, configURL());
+        IgniteEx client = (IgniteEx)startGridWithSpringCtx(getTestIgniteInstanceName(), true, configURL());
 
         UUID clientId = client.localNode().id();
 

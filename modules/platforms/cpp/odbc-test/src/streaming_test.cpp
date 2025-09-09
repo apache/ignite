@@ -262,6 +262,22 @@ struct StreamingTestSuiteFixture : odbc::OdbcTestSuite
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
+    // Performs additional checks for set streaming parameter query.
+    void ExecSetStreamingQuery(const std::string& query) {
+        SQLRETURN ret = ExecQuery(query);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        SQLSMALLINT columnCount;
+        ret = SQLNumResultCols(stmt, &columnCount);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_ASSERT(columnCount == 0);
+    }
+
     /** Node started during the test. */
     Ignite grid;
 
@@ -275,10 +291,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingSimple)
 {
     Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
 
-    SQLRETURN res = ExecQuery("set streaming on batch_size 100 flush_frequency 100");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming on batch_size 100 flush_frequency 100");
 
     InsertTestStrings(0, 10);
 
@@ -286,10 +299,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingSimple)
 
     InsertTestStrings(10, 110);
 
-    res = ExecQuery("set streaming off");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming off");
 
     BOOST_CHECK_EQUAL(cache.Size(), 110);
 
@@ -300,7 +310,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingAllOptions)
 {
     Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
 
-    SQLRETURN res = ExecQuery(
+    ExecSetStreamingQuery(
         "set streaming 1 "
         "allow_overwrite on "
         "batch_size 512 "
@@ -309,19 +319,13 @@ BOOST_AUTO_TEST_CASE(TestStreamingAllOptions)
         "flush_frequency 100 "
         "ordered");
 
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-
     InsertTestStrings(0, 10);
 
     BOOST_CHECK_EQUAL(cache.Size(), 0);
 
     InsertTestStrings(0, 512);
 
-    res = ExecQuery("set streaming off");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming off");
 
     BOOST_CHECK_EQUAL(cache.Size(), 512);
 }
@@ -330,10 +334,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingNotAllowedOverwrite)
 {
     Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
 
-    SQLRETURN res = ExecQuery("set streaming 1 allow_overwrite off batch_size 10");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 1 allow_overwrite off batch_size 10");
 
     InsertTestStrings(0, 10);
 
@@ -341,10 +342,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingNotAllowedOverwrite)
 
     InsertTestStrings(0, 10);
 
-    res = ExecQuery("set streaming off");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming off");
 
     BOOST_CHECK_EQUAL(cache.Size(), 10);
 }
@@ -353,10 +351,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingReset)
 {
     Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
 
-    SQLRETURN res = ExecQuery("set streaming 1 batch_size 100 flush_frequency 1000");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 1 batch_size 100 flush_frequency 1000");
 
     InsertTestStrings(0, 10);
 
@@ -366,10 +361,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingReset)
 
     BOOST_CHECK_EQUAL(cache.Size(), 0);
 
-    res = ExecQuery("set streaming 1 batch_size 10 flush_frequency 100");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 1 batch_size 10 flush_frequency 100");
 
     BOOST_CHECK_EQUAL(cache.Size(), 20);
 
@@ -377,10 +369,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingReset)
 
     BOOST_CHECK_EQUAL(cache.Size(), 20);
 
-    res = ExecQuery("set streaming 0");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 0");
 
     BOOST_CHECK_EQUAL(cache.Size(), 50);
 }
@@ -389,10 +378,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingClosingStatement)
 {
     Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
 
-    SQLRETURN res = ExecQuery("set streaming 1 batch_size 100 flush_frequency 1000");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 1 batch_size 100 flush_frequency 1000");
 
     InsertTestStrings(0, 10);
 
@@ -402,15 +388,12 @@ BOOST_AUTO_TEST_CASE(TestStreamingClosingStatement)
 
     BOOST_CHECK_EQUAL(cache.Size(), 0);
 
-    res = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+    SQLRETURN res = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
 
     if (res != SQL_SUCCESS)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    res = ExecQuery("set streaming 0");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 0");
 
     BOOST_CHECK_EQUAL(cache.Size(), 10);
 }
@@ -426,10 +409,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingSeveralStatements)
     if (res != SQL_SUCCESS)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    res = ExecQuery("set streaming 1 batch_size 100 flush_frequency 1000");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 1 batch_size 100 flush_frequency 1000");
 
     InsertTestStrings(0, 10);
 
@@ -441,10 +421,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingSeveralStatements)
 
     BOOST_CHECK_EQUAL(cache.Size(), 0);
 
-    res = ExecQuery("set streaming 0");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 0");
 
     BOOST_CHECK_EQUAL(cache.Size(), 50);
 
@@ -465,10 +442,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingSeveralStatementsClosing)
     if (res != SQL_SUCCESS)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    res = ExecQuery("set streaming 1 batch_size 100 flush_frequency 1000");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 1 batch_size 100 flush_frequency 1000");
 
     InsertTestStrings(0, 10);
 
@@ -497,10 +471,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingSeveralStatementsClosing)
     if (res != SQL_SUCCESS)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    res = ExecQuery("set streaming 0");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 0");
 
     BOOST_CHECK_EQUAL(cache.Size(), 50);
 }
@@ -516,10 +487,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingDifferentStatements)
     if (res != SQL_SUCCESS)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    res = ExecQuery("set streaming 1 batch_size 100 flush_frequency 1000");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 1 batch_size 100 flush_frequency 1000");
 
     InsertTestStrings2(0, 10);
 
@@ -538,10 +506,7 @@ BOOST_AUTO_TEST_CASE(TestStreamingDifferentStatements)
 
     BOOST_CHECK_EQUAL(cache.Size(), 0);
 
-    res = ExecQuery("set streaming 0");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 0");
 
     BOOST_CHECK_EQUAL(cache.Size(), 50);
 
@@ -558,20 +523,11 @@ BOOST_AUTO_TEST_CASE(TestStreamingManyObjects)
 
     Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;SCHEMA=cache");
 
-    SQLRETURN res = ExecQuery("set streaming on");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming on");
 
     InsertTestStrings(0, OBJECT_NUM);
 
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-
-    res = ExecQuery("set streaming 0");
-
-    if (res != SQL_SUCCESS)
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    ExecSetStreamingQuery("set streaming 0");
 
     BOOST_CHECK_EQUAL(cache.Size(), OBJECT_NUM);
 

@@ -255,18 +255,18 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
      * @throws Exception If failed.
      */
     private void localServerInternal(boolean async) throws Exception {
-        int messages = MSGS;
+        int msgs = MSGS;
 
         Ignite ignite = grid(SERVER_NODE_IDX);
 
-        LATCH = new CountDownLatch(messages);
+        LATCH = new CountDownLatch(msgs);
 
         ClusterGroup grp = grid(SERVER_NODE_IDX).cluster().forLocal();
 
         UUID opId = registerListener(grp);
 
         try {
-            for (int i = 0; i < messages; i++)
+            for (int i = 0; i < msgs; i++)
                 sendMessage(ignite, grp, value(i), async);
 
             assertTrue(LATCH.await(10, TimeUnit.SECONDS));
@@ -282,11 +282,11 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
      * @throws Exception If failed.
      */
     private void localListenerInternal() throws Exception {
-        int messages = MSGS;
+        int msgsCnt = MSGS;
 
         Ignite ignite = grid(SERVER_NODE_IDX);
 
-        LATCH = new CountDownLatch(messages);
+        LATCH = new CountDownLatch(msgsCnt);
 
         ClusterGroup grp = grid(SERVER_NODE_IDX).cluster().forLocal();
 
@@ -295,7 +295,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
         try {
             ignite.message(grp).localListen("localListenerTopic", c);
 
-            for (int i = 0; i < messages; i++)
+            for (int i = 0; i < msgsCnt; i++)
                 ignite.message(grp).send("localListenerTopic", value(i));
 
             assertTrue(LATCH.await(10, TimeUnit.SECONDS));
@@ -361,14 +361,14 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
      * @throws Exception If fail.
      */
     private void registerListenerAndSendMessages(Ignite ignite, ClusterGroup grp, boolean async) throws Exception {
-        int messages = MSGS;
+        int msgsCnt = MSGS;
 
-        LATCH = new CountDownLatch(grp.nodes().size() * messages);
+        LATCH = new CountDownLatch(grp.nodes().size() * msgsCnt);
 
         UUID opId = registerListener(grp);
 
         try {
-            for (int i = 0; i < messages; i++)
+            for (int i = 0; i < msgsCnt; i++)
                 sendMessage(ignite, grp, value(i), async);
 
             assertTrue(LATCH.await(10, TimeUnit.SECONDS));
@@ -390,22 +390,23 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         assert !grp.nodes().isEmpty();
 
-        int messages = MSGS;
+        int msgsCnt = MSGS;
 
-        LATCH = new CountDownLatch(grp.nodes().size() * messages);
+        LATCH = new CountDownLatch(grp.nodes().size() * msgsCnt);
 
         UUID opId = ignite.message(grp).remoteListen(MESSAGE_TOPIC, new MessageListener());
 
         try {
             List<Object> msgs = new ArrayList<>();
-            for (int i = 0; i < messages; i++)
+            for (int i = 0; i < msgsCnt; i++)
                 msgs.add(value(i));
 
             ignite.message(grp).send(MESSAGE_TOPIC, msgs);
 
             assertTrue(LATCH.await(10, TimeUnit.SECONDS));
 
-        } finally {
+        }
+        finally {
             ignite.message().stopRemoteListen(opId);
         }
 
@@ -469,14 +470,14 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
      * @throws Exception If fail.
      */
     private void registerListenerAndSendOrderedMessages(Ignite ignite, ClusterGroup grp) throws Exception {
-        int messages = MSGS;
+        int msgsCnt = MSGS;
 
-        LATCH = new CountDownLatch(grp.nodes().size() * messages);
+        LATCH = new CountDownLatch(grp.nodes().size() * msgsCnt);
 
         UUID opId = ignite.message(grp).remoteListen(MESSAGE_TOPIC, new OrderedMessageListener());
 
         try {
-            for (int i = 0; i < messages; i++)
+            for (int i = 0; i < msgsCnt; i++)
                 ignite.message(grp).sendOrdered(MESSAGE_TOPIC, value(i), 2000);
 
             assertTrue(LATCH.await(10, TimeUnit.SECONDS));

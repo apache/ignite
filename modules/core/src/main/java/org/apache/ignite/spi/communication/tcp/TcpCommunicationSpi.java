@@ -51,8 +51,6 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
-import org.apache.ignite.internal.util.nio.GridNioMessageReaderFactory;
-import org.apache.ignite.internal.util.nio.GridNioMessageWriterFactory;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -65,10 +63,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
@@ -96,9 +90,6 @@ import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnecti
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationSpiMBeanImpl;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionIndexAwareMessage;
 import org.apache.ignite.spi.communication.tcp.internal.TcpHandshakeExecutor;
-import org.apache.ignite.spi.communication.tcp.internal.shmem.ShmemAcceptWorker;
-import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -146,7 +137,6 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
  * <li>Local port range (see {@link #setLocalPortRange(int)}</li>
  * <li>Use paired connections (see {@link #setUsePairedConnections(boolean)}</li>
  * <li>Connections per node (see {@link #setConnectionsPerNode(int)})</li>
- * <li>Shared memory port (see {@link #setSharedMemoryPort(int)}</li>
  * <li>Idle connection timeout (see {@link #setIdleConnectionTimeout(long)})</li>
  * <li>Direct or heap buffer allocation (see {@link #setDirectBuffer(boolean)})</li>
  * <li>Direct or heap buffer allocation for sending (see {@link #setDirectSendBuffer(boolean)})</li>
@@ -206,10 +196,6 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
-    /** IPC error message. */
-    public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
-        "(switching to TCP, may be slower).";
-
     /** Node attribute that is mapped to node IP addresses (value is <tt>comm.tcp.addrs</tt>). */
     public static final String ATTR_ADDRS = "comm.tcp.addrs";
 
@@ -219,9 +205,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** Node attribute that is mapped to node port number (value is <tt>comm.tcp.port</tt>). */
     public static final String ATTR_PORT = "comm.tcp.port";
 
-    /** Node attribute that is mapped to node port number (value is <tt>comm.shmem.tcp.port</tt>). */
-    public static final String ATTR_SHMEM_PORT = "comm.shmem.tcp.port";
-
     /** Node attribute that is mapped to node's external addresses (value is <tt>comm.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "comm.tcp.ext-addrs";
 
@@ -230,9 +213,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
     /** Default port which node sets listener to (value is <tt>47100</tt>). */
     public static final int DFLT_PORT = 47100;
-
-    /** Default port which node sets listener for shared memory connections (value is <tt>48100</tt>). */
-    public static final int DFLT_SHMEM_PORT = -1;
 
     /** Default idle connection timeout (value is <tt>10</tt>min). */
     public static final long DFLT_IDLE_CONN_TIMEOUT = 10 * 60_000;
@@ -348,9 +328,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** Context initialization latch. */
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
 
-    /** Shared memory accept worker. */
-    private volatile ShmemAcceptWorker shmemAcceptWorker;
-
     /** Stopping flag (set to {@code true} when SPI gets stopping signal). */
     private volatile boolean stopping;
 
@@ -397,13 +374,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         this.lsnr = lsnr;
     }
 
-    /**
-     * @return Listener.
-     */
-    public CommunicationListener getListener() {
-        return lsnr;
-    }
-
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
         // Listener could be not initialized yet, but discovery thread could try to aggregate metrics.
@@ -440,42 +410,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         return metricsLsnr.receivedBytesCount();
     }
 
-    /**
-     * Gets received messages counts (grouped by type).
-     *
-     * @return Map containing message types and respective counts.
-     */
-    public Map<String, Long> getReceivedMessagesByType() {
-        return metricsLsnr.receivedMessagesByType();
-    }
-
-    /**
-     * Gets received messages counts (grouped by node).
-     *
-     * @return Map containing sender nodes and respective counts.
-     */
-    public Map<UUID, Long> getReceivedMessagesByNode() {
-        return metricsLsnr.receivedMessagesByNode();
-    }
-
-    /**
-     * Gets sent messages counts (grouped by type).
-     *
-     * @return Map containing message types and respective counts.
-     */
-    public Map<String, Long> getSentMessagesByType() {
-        return metricsLsnr.sentMessagesByType();
-    }
-
-    /**
-     * Gets sent messages counts (grouped by node).
-     *
-     * @return Map containing receiver nodes and respective counts.
-     */
-    public Map<UUID, Long> getSentMessagesByNode() {
-        return metricsLsnr.sentMessagesByNode();
-    }
-
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
         GridNioServer<Message> srv = nioSrvWrapper.nio();
@@ -486,17 +420,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
         metricsLsnr.resetMetrics();
-    }
-
-    /**
-     * @param consistentId Consistent id of the node.
-     * @param nodeId Left node ID.
-     */
-    void onNodeLeft(Object consistentId, UUID nodeId) {
-        assert nodeId != null;
-
-        metricsLsnr.onNodeLeft(consistentId);
-        clientPool.onNodeLeft(nodeId);
     }
 
     /**
@@ -638,7 +561,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         final Supplier<ClusterNode> locNodeSupplier = () -> getSpiContext().localNode();
         final Supplier<Ignite> igniteExSupplier = this::ignite;
         final Function<UUID, Boolean> pingNode = (nodeId) -> getSpiContext().pingNode(nodeId);
-        final Supplier<FailureProcessor> failureProcessorSupplier =
+        final Supplier<FailureProcessor> failureProcSupplier =
             () -> ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().failure() : null;
         final Supplier<Boolean> isStopped = () -> getSpiContext().isStopping();
 
@@ -648,7 +571,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         attributeNames = new AttributeNames(
             createSpiAttributeName(ATTR_PAIRED_CONN),
-            createSpiAttributeName(ATTR_SHMEM_PORT),
             createSpiAttributeName(ATTR_ADDRS),
             createSpiAttributeName(ATTR_HOST_NAMES),
             createSpiAttributeName(ATTR_EXT_ADDRS),
@@ -688,7 +610,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             clientPool,
             commWorker,
             connectGate,
-            failureProcessorSupplier,
+            failureProcSupplier,
             attributeNames,
             metricsLsnr,
             nioSrvWrapper,
@@ -772,13 +694,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         discoLsnr = new CommunicationDiscoveryEventListener(clientPool, metricsLsnr);
 
         try {
-            shmemSrv = resetShmemServer();
-        }
-        catch (IgniteCheckedException e) {
-            U.warn(log, "Failed to start shared memory communication server.", e);
-        }
-
-        try {
             // This method potentially resets local port to the value
             // local node was bound to.
             nioSrvWrapper.nio(nioSrvWrapper.resetNioServer());
@@ -810,7 +725,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             log.debug(configInfo("tcpNoDelay", cfg.tcpNoDelay()));
             log.debug(configInfo("sockSndBuf", cfg.socketSendBuffer()));
             log.debug(configInfo("sockRcvBuf", cfg.socketReceiveBuffer()));
-            log.debug(configInfo("shmemPort", cfg.shmemPort()));
             log.debug(configInfo("msgQueueLimit", cfg.messageQueueLimit()));
             log.debug(configInfo("connectionsPerNode", cfg.connectionsPerNode()));
 
@@ -842,67 +756,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                 "potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes " +
                 "due to message queues growth on sender and receiver sides.");
 
-        if (shmemSrv != null) {
-
-            MessageFactory msgFactory = new MessageFactory() {
-                private MessageFactory impl;
-
-                @Nullable @Override public Message create(short type) {
-                    if (impl == null)
-                        impl = getSpiContext().messageFactory();
-
-                    assert impl != null;
-
-                    return impl.create(type);
-                }
-            };
-
-            GridNioMessageWriterFactory writerFactory = new GridNioMessageWriterFactory() {
-                private MessageFormatter formatter;
-
-                @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
-                    if (formatter == null)
-                        formatter = getSpiContext().messageFormatter();
-
-                    assert formatter != null;
-
-                    ConnectionKey connKey = ses.meta(CONN_IDX_META);
-
-                    return connKey != null ? formatter.writer(connKey.nodeId()) : null;
-                }
-            };
-
-            GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
-                private MessageFormatter formatter;
-
-                @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
-                    throws IgniteCheckedException {
-                    if (formatter == null)
-                        formatter = getSpiContext().messageFormatter();
-
-                    assert formatter != null;
-
-                    ConnectionKey connKey = ses.meta(CONN_IDX_META);
-
-                    return connKey != null ? formatter.reader(connKey.nodeId(), msgFactory) : null;
-                }
-            };
-
-            shmemAcceptWorker = new ShmemAcceptWorker(
-                igniteInstanceName,
-                srvLsnr,
-                shmemSrv,
-                metricsLsnr,
-                log,
-                msgFactory,
-                writerFactory,
-                readerFactory,
-                tracing
-            );
-
-            new IgniteThread(shmemAcceptWorker).start();
-        }
-
         nioSrvWrapper.start();
 
         this.commWorker = new CommunicationWorker(
@@ -911,7 +764,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             cfg,
             attributeNames,
             clientPool,
-            failureProcessorSupplier,
+            failureProcSupplier,
             nodeGetter,
             pingNode,
             this::getExceptionRegistry,
@@ -939,10 +792,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         if (cfg.boundTcpPort() > 0)
             spiCtx.registerPort(cfg.boundTcpPort(), IgnitePortProtocol.TCP);
 
-        // SPI can start without shmem port.
-        if (cfg.boundTcpShmemPort() > 0)
-            spiCtx.registerPort(cfg.boundTcpShmemPort(), IgnitePortProtocol.TCP);
-
         spiCtx.addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         metricsLsnr = new TcpCommunicationMetricsListener(ignite, spiCtx);
@@ -956,9 +805,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         srvLsnr.metricsListener(metricsLsnr);
         clientPool.metricsListener(metricsLsnr);
         ((CommunicationDiscoveryEventListener)discoLsnr).metricsListener(metricsLsnr);
-
-        if (shmemAcceptWorker != null)
-            shmemAcceptWorker.metricsListener(metricsLsnr);
 
         ctxInitLatch.countDown();
     }
@@ -998,9 +844,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             U.cancel(commWorker);
             U.join(commWorker, log);
         }
-
-        U.cancel(shmemAcceptWorker);
-        U.join(shmemAcceptWorker, log);
 
         if (srvLsnr != null)
             srvLsnr.stop();
@@ -1221,10 +1064,17 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                 if (stopping)
                     throw new IgniteSpiException("Node is stopping.", t);
 
-                // NodeUnreachableException should not be explicitly logged. Error message will appear if inverse
-                // connection attempt fails as well.
-                if (!(t instanceof NodeUnreachableException))
-                    log.error("Failed to send message to remote node [node=" + node + ", msg=" + msg + ']', t);
+                String msgForLog = "Failed to send message to remote node [node=" + node + ", msg=" + msg + ']';
+
+                if (ClientExceptionsUtils.isClientNodeTopologyException(t, node)
+                    || ClientExceptionsUtils.isAttemptToEstablishDirectConnectionWhenOnlyInverseIsAllowed(t))
+                    log.warning(msgForLog, t);
+                else {
+                    // NodeUnreachableException should not be explicitly logged. Error message will appear if inverse
+                    // connection attempt fails as well.
+                    if (!(t instanceof NodeUnreachableException))
+                        log.error(msgForLog, t);
+                }
 
                 if (t instanceof Error)
                     throw (Error)t;
@@ -1265,32 +1115,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     }
 
     /**
-     * Process errors if TCP/IP {@link GridNioSession} creation to remote node hasn't been performed.
-     *
-     * @param node Remote node.
-     * @param addrs Remote node addresses.
-     * @param errs TCP client creation errors.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void processSessionCreationError(
-        ClusterNode node,
-        Collection<InetSocketAddress> addrs,
-        IgniteCheckedException errs
-    ) throws IgniteCheckedException {
-        nioSrvWrapper.processSessionCreationError(node, addrs, errs);
-    }
-
-    /**
-     * @param node Node.
-     * @return {@code True} if remote current node cannot receive TCP connections. Applicable for client nodes only.
-     */
-    private boolean forceClientToServerConnections(ClusterNode node) {
-        Boolean forceClientToSrvConnections = node.attribute(createSpiAttributeName(ATTR_FORCE_CLIENT_SERVER_CONNECTIONS));
-
-        return Boolean.TRUE.equals(forceClientToSrvConnections);
-    }
-
-    /**
      * @param sndId Sender ID.
      * @param msg Communication message.
      * @param msgC Closure to call when message processing finished.
@@ -1327,14 +1151,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         clientPool.forceClose();
     }
 
-    /**
-     * @param msg Error message.
-     * @param e Exception.
-     */
-    private void onException(String msg, Exception e) {
-        getExceptionRegistry().onException(msg, e);
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpCommunicationSpi.class, this);
@@ -1356,6 +1172,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
      *
      * @param b0 The first byte.
      * @param b1 The second byte.
+     * @return Message type.
      */
     public static short makeMessageType(byte b0, byte b1) {
         return (short)((b1 & 0xFF) << 8 | b0 & 0xFF);

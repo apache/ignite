@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -103,7 +104,7 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
             final int maxBlocks = SAMPLE_SIZE / BLOCK_SIZE;
 
             Key key = new Key();
-            Value value = new Value();
+            Value val = new Value();
             long date = System.nanoTime();
 
             for (int blockId = 0; blockId < maxBlocks; blockId++) {
@@ -129,15 +130,15 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
                 key.setDate(date);
                 key.setSecurityId(secId);
 
-                value.setTime(time); // BUG  in providing it via JDBC
+                val.setTime(time); // BUG  in providing it via JDBC
 
-                value.setOpen(open);
-                value.setHigh(high);
-                value.setLow(low);
-                value.setClose(close);
-                value.setMarketVWAP(marketVWAP);
+                val.setOpen(open);
+                val.setHigh(high);
+                val.setLow(low);
+                val.setClose(close);
+                val.setMarketVWAP(marketVWAP);
 
-                streamer.addData(key, value);
+                streamer.addData(key, val);
 
                 secId++; // for unique values
                 //secId = RAND.nextInt(1000);
@@ -147,7 +148,7 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
             }
             streamer.flush();
         }
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
     }
 
     /**
@@ -183,12 +184,12 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
      */
     @SuppressWarnings("unused")
     public static class Key implements Serializable {
-        @QuerySqlField(orderedGroups = {@QuerySqlField.Group(
-            name = "date_sec_idx", order = 0, descending = true)})
+        /** */
+        @QuerySqlField(orderedGroups = {@QuerySqlField.Group(name = "date_sec_idx", order = 0, descending = true)})
         private long date;
 
-        @QuerySqlField(index = true, orderedGroups = {@QuerySqlField.Group(
-            name = "date_sec_idx", order = 3)})
+        /** */
+        @QuerySqlField(index = true, orderedGroups = {@QuerySqlField.Group(name = "date_sec_idx", order = 3)})
         private int securityId;
 
         /**

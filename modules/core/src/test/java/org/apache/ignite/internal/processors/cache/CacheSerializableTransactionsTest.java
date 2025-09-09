@@ -66,7 +66,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -109,8 +108,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         return cfg;
     }
@@ -425,13 +422,13 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                 List<Integer> keys = testKeys(cache0);
 
-                final int ITERATIONS_COUNT = SF.applyLB(100, 5);
+                final int ITERATIONS_CNT = SF.applyLB(100, 5);
                 for (Integer key : keys) {
                     log.info("Test key: " + key);
 
                     Integer expVal = null;
 
-                    for (int i = 0; i < ITERATIONS_COUNT; i++) {
+                    for (int i = 0; i < ITERATIONS_CNT; i++) {
                         try (Transaction tx = txs0.txStart(OPTIMISTIC, SERIALIZABLE)) {
                             Integer val = cache0.get(key);
 
@@ -1199,6 +1196,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             try {
                 IgniteCache<Integer, Integer> cache0 = ignite0.createCache(ccfg);
+
+                F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
+                    .forEach(ignite -> awaitCacheOnClient(ignite, ccfg.getName()));
 
                 final Integer key1 = primaryKey(ignite(0).cache(cache0.getName()));
                 final Integer key2 = primaryKey(ignite(1).cache(cache0.getName()));
@@ -2576,6 +2576,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             ignite0.createCache(readCacheCcfg);
 
+            awaitCacheOnClient(ignite(SRVS), readCacheCcfg.getName());
+
             try {
                 checkNoReadLockConflict(ignite(0), ccfg.getName(), ccfg.getName(), entry, putKey);
 
@@ -2662,6 +2664,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             final AtomicInteger putKey = new AtomicInteger(1_000_000);
 
             ignite0.createCache(ccfg);
+
+            F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
+                .forEach(ignite -> awaitCacheOnClient(ignite, ccfg.getName()));
 
             try {
                 final int THREADS = 64;
@@ -2904,6 +2909,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
         ignite(0).createCache(ccfg);
 
+        F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
+            .forEach(ignite -> awaitCacheOnClient(ignite, ccfg.getName()));
+
         try {
             final int ACCOUNTS = SF.applyLB(50, 5);
             final int VAL_PER_ACCOUNT = SF.applyLB(1000, 10);
@@ -3087,6 +3095,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             Ignite client1 = ignite(SRVS);
             Ignite client2 = ignite(SRVS + 1);
 
+            awaitCacheOnClient(client1, cacheName);
+            awaitCacheOnClient(client2, cacheName);
+
             IgniteCache<Integer, Integer> cache1 = client1.createNearCache(cacheName,
                 new NearCacheConfiguration<Integer, Integer>());
             IgniteCache<Integer, Integer> cache2 = client2.createNearCache(cacheName,
@@ -3150,6 +3161,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
         try {
             Ignite ignite = ignite(SRVS);
+
+            awaitCacheOnClient(ignite, cacheName);
 
             IgniteCache<Integer, Integer> cache = ignite.createNearCache(cacheName,
                 new NearCacheConfiguration<Integer, Integer>());
@@ -3238,6 +3251,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
         try {
             Ignite ignite = ignite(SRVS);
+
+            awaitCacheOnClient(ignite, cacheName);
 
             IgniteCache<Integer, Integer> cache = ignite.createNearCache(cacheName,
                 new NearCacheConfiguration<Integer, Integer>());
@@ -3569,6 +3584,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             try {
                 IgniteCache<Integer, Integer> cache0 = ignite0.createCache(ccfg);
 
+                F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
+                    .forEach(ignite -> awaitCacheOnClient(ignite, ccfg.getName()));
+
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 for (Ignite ignite : G.allGrids()) {
@@ -3715,6 +3733,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             final List<IgniteCache<Integer, Integer>> caches = new ArrayList<>();
 
             for (Ignite client : clients) {
+                awaitCacheOnClient(client, cacheName);
+
                 if (nearCache)
                     caches.add(client.createNearCache(cacheName, new NearCacheConfiguration<Integer, Integer>()));
                 else
@@ -3829,6 +3849,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             final List<IgniteCache<Integer, Integer>> caches = new ArrayList<>();
 
             for (Ignite client : clients) {
+                awaitCacheOnClient(client, cacheName);
+
                 if (nearCache)
                     caches.add(client.createNearCache(cacheName, new NearCacheConfiguration<Integer, Integer>()));
                 else
@@ -3866,8 +3888,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                         barrier.await();
 
-                        final int ITERATIONS_COUNT = SF.applyLB(1000, 50);
-                        for (int i = 0; i < ITERATIONS_COUNT; i++) {
+                        final int ITERATIONS_CNT = SF.applyLB(1000, 50);
+                        for (int i = 0; i < ITERATIONS_CNT; i++) {
                             try {
                                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                                     Integer val1 = cache.get(key1);
@@ -3964,6 +3986,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             final List<IgniteCache<Integer, Integer>> caches = new ArrayList<>();
 
             for (Ignite client : clients) {
+                awaitCacheOnClient(client, cacheName);
+
                 if (nearCache)
                     caches.add(client.createNearCache(cacheName, new NearCacheConfiguration<Integer, Integer>()));
                 else
@@ -4112,6 +4136,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
         final String cacheName = srv.createCache(ccfg).getName();
 
+        F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
+            .forEach(ignite -> awaitCacheOnClient(ignite, ccfg.getName()));
+
         try {
             final List<Ignite> clients = clients();
 
@@ -4203,6 +4230,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                     log.info("Tx thread: " + node.name());
 
                     final IgniteTransactions txs = node.transactions();
+
+                    awaitCacheOnClient(node, cacheName);
 
                     final IgniteCache<Integer, Account> cache =
                         nearCache ? node.createNearCache(cacheName, new NearCacheConfiguration<>()) :
@@ -4748,6 +4777,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         final String cacheName =
             srv.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false)).getName();
 
+        F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
+            .forEach(ignite -> awaitCacheOnClient(ignite, cacheName));
+
         try {
             final int KEYS = SF.apply(20);
 
@@ -5046,6 +5078,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         for (int i = 0; i < SRVS + CLIENTS; i++) {
             if (skipFirst && i == 0)
                 continue;
+
+            awaitCacheOnClient(ignite(i), cacheName);
 
             IgniteCache<Object, Object> cache = ignite(i).cache(cacheName);
 

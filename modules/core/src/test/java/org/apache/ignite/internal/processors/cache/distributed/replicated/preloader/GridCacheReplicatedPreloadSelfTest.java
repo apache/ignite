@@ -42,8 +42,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -53,9 +52,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -82,9 +79,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
     /** */
     private volatile boolean extClassloadingAtCfg = false;
-
-    /** */
-    private volatile boolean useExtClassLoader = false;
 
     /** Disable p2p. */
     private volatile boolean disableP2p = false;
@@ -123,9 +117,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         if (disableP2p)
             cfg.setPeerClassLoadingEnabled(false);
 
-        if (getTestIgniteInstanceName(1).equals(igniteInstanceName) || useExtClassLoader ||
-            cfg.getMarshaller() instanceof BinaryMarshaller)
-            cfg.setClassLoader(getExternalClassLoader());
+        cfg.setClassLoader(getExternalClassLoader());
 
         if (cutromEvt) {
             int[] evts = new int[EVTS_ALL.length + 1];
@@ -226,7 +218,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             GridCacheAdapter<Integer, String> cache1 = ((IgniteKernal)g1).internalCache(DEFAULT_CACHE_NAME);
 
             // Cache rebalancing events should not be fired for this cache.
-            CacheConfiguration ccfg = cacheConfiguration(((IgniteKernal)g1).getInstanceName())
+            CacheConfiguration ccfg = cacheConfiguration(g1.name())
                 .setName(DEFAULT_CACHE_NAME + "_evts_disabled")
                 .setEventsDisabled(true);
 
@@ -322,8 +314,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             assert v2 != null;
             assert v2.toString().equals(v1.toString());
             assert !v2.getClass().getClassLoader().equals(getClass().getClassLoader());
-            assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader") ||
-                grid(2).configuration().getMarshaller() instanceof BinaryMarshaller;
 
             Object e1 = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestEnumValue").getEnumConstants()[0];
 
@@ -331,19 +321,15 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             Object e2 = cache2.get(2);
 
-            if (g1.configuration().getMarshaller() instanceof BinaryMarshaller) {
-                BinaryObject enumObj = (BinaryObject)cache2.withKeepBinary().get(2);
+            BinaryObject enumObj = (BinaryObject)cache2.withKeepBinary().get(2);
 
-                assertEquals(0, enumObj.enumOrdinal());
-                assertTrue(enumObj.type().isEnum());
-                assertTrue(enumObj instanceof BinaryEnumObjectImpl);
-            }
+            assertEquals(0, enumObj.enumOrdinal());
+            assertTrue(enumObj.type().isEnum());
+            assertTrue(BinaryUtils.isBinaryEnumObject(enumObj));
 
             assert e2 != null;
             assert e2.toString().equals(e1.toString());
             assert !e2.getClass().getClassLoader().equals(getClass().getClassLoader());
-            assert e2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader") ||
-                grid(2).configuration().getMarshaller() instanceof BinaryMarshaller;
 
             stopGrid(1);
 
@@ -360,8 +346,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             assert v3 != null;
             assert v3.toString().equals(v1.toString());
             assert !v3.getClass().getClassLoader().equals(getClass().getClassLoader());
-            assert v3.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader") ||
-                grid(3).configuration().getMarshaller() instanceof BinaryMarshaller;
         }
         finally {
             stopAllGrids();
@@ -375,7 +359,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     public void testExternalClassesAtConfiguration() throws Exception {
         try {
             extClassloadingAtCfg = true;
-            useExtClassLoader = true;
 
             Ignite g1 = startGrid(1);
 
@@ -387,9 +370,9 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Object> cache2 = g2.cache(DEFAULT_CACHE_NAME);
             IgniteCache<Integer, Object> cache3 = g3.cache(DEFAULT_CACHE_NAME);
 
-            final Class<CacheEntryListener> cls1 = (Class<CacheEntryListener>) getExternalClassLoader().
+            final Class<CacheEntryListener> cls1 = (Class<CacheEntryListener>)getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryListener");
-            final Class<CacheEntryEventSerializableFilter> cls2 = (Class<CacheEntryEventSerializableFilter>) getExternalClassLoader().
+            final Class<CacheEntryEventSerializableFilter> cls2 = (Class<CacheEntryEventSerializableFilter>)getExternalClassLoader().
                 loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryEventSerializableFilter");
 
             CacheEntryListenerConfiguration<Integer, Object> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
@@ -417,7 +400,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
         finally {
             extClassloadingAtCfg = false;
-            useExtClassLoader = false;
         }
     }
 
@@ -428,7 +410,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     public void testExternalClassesAtConfigurationDynamicStart() throws Exception {
         try {
             extClassloadingAtCfg = false;
-            useExtClassLoader = true;
 
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
@@ -453,7 +434,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
         finally {
             extClassloadingAtCfg = false;
-            useExtClassLoader = false;
         }
     }
 
@@ -464,7 +444,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     public void testExternalClassesAtConfigurationDynamicStart2() throws Exception {
         try {
             extClassloadingAtCfg = false;
-            useExtClassLoader = true;
 
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
@@ -489,7 +468,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
         finally {
             extClassloadingAtCfg = false;
-            useExtClassLoader = false;
         }
     }
 
@@ -499,7 +477,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     @Test
     public void testExternalClassesAtMessage() throws Exception {
         try {
-            useExtClassLoader = true;
             disableP2p = true;
 
             final Class cls = (Class)getExternalClassLoader().
@@ -541,7 +518,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         }
         finally {
-            useExtClassLoader = false;
             disableP2p = false;
         }
     }
@@ -551,8 +527,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testExternalClassesAtEventP2pDisabled() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         testExternalClassesAtEvent0(true);
     }
 
@@ -561,8 +535,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testExternalClassesAtEvent() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         testExternalClassesAtEvent0(false);
     }
 
@@ -571,7 +543,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     private void testExternalClassesAtEvent0(boolean p2p) throws Exception {
         try {
-            useExtClassLoader = true;
             cutromEvt = true;
 
             if (p2p)
@@ -598,7 +569,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             latch.await();
         }
         finally {
-            useExtClassLoader = false;
             cutromEvt = false;
 
             if (p2p)
@@ -747,8 +717,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultipleNodes() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10082", MvccFeatureChecker.forcedMvcc());
-
         preloadMode = ASYNC;
         batchSize = 256;
 
@@ -864,7 +832,9 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private static class EventListener implements IgnitePredicate<Event> {
+        /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
             System.out.println("Cache event: " + evt);
 

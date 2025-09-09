@@ -12,6 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 = Data Definition Language (DDL)
 
 :toclevels:
@@ -20,7 +21,14 @@ This page encompasses all data definition language (DDL) commands supported by I
 
 == CREATE TABLE
 
-Create a new table and an underlying cache.
+The command creates a new Ignite cache and defines a SQL table on top of it. The underlying cache stores the data in
+the form of key-value pairs while the table allows processing the data with SQL queries.
+
+The table will reside in the link:SQL/schemas[Schema] specified in the connection parameters. If no schema is specified,
+the `PUBLIC` will be used as a default.
+
+The `CREATE TABLE` command is synchronous. Moreover, it blocks the execution of other DDL commands that are issued before the
+`CREATE TABLE` command has finished execution. The execution of DML commands is not affected and can be performed in parallel.
 
 [source,sql]
 ----
@@ -44,57 +52,34 @@ Parameters:
 
 ** `TEMPLATE=<cache's template name>` - case-sensitive​ name of a link:configuring-caches/configuration-overview#cache-templates[cache template]. A template is an instance of the `CacheConfiguration` class registered by calling `Ignite.addCacheConfiguration()`. Use predefined `TEMPLATE=PARTITIONED` or `TEMPLATE=REPLICATED` templates to create the cache with the corresponding replication mode. The rest of the parameters will be those that are defined in the `CacheConfiguration` object. By default, `TEMPLATE=PARTITIONED` is used if the template is not specified explicitly.
 ** `BACKUPS=<number of backups>` - sets the number of link:configuring-caches/configuring-backups[partition backups]. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with `0` backup copies.
-** `ATOMICITY=<ATOMIC | TRANSACTIONAL | TRANSACTIONAL_SNAPSHOT>` - sets link:key-value-api/transactions[atomicity mode] for the underlying cache. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with the `ATOMIC` mode enabled. If `TRANSACTIONAL_SNAPSHOT` is specified, the table will link:transactions/mvcc[support transactions].
+** `ATOMICITY=<ATOMIC | TRANSACTIONAL>` - sets link:key-value-api/transactions[atomicity mode] for the underlying cache. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with the `ATOMIC` mode enabled.
 ** `WRITE_SYNCHRONIZATION_MODE=<PRIMARY_SYNC | FULL_SYNC | FULL_ASYNC>` -
 sets the write synchronization mode for the underlying cache. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with `FULL_SYNC` mode enabled.
 ** `CACHE_GROUP=<group name>` - specifies the link:configuring-caches/cache-groups[group name] the underlying cache belongs to.
 ** `AFFINITY_KEY=<affinity key column name>` - specifies an link:data-modeling/affinity-collocation[affinity key] name which is a column of the `PRIMARY KEY` constraint.
-** `CACHE_NAME=<custom name of the new cache>` - the name of the underlying cache created by the command.
+** `CACHE_NAME=<custom name of the new cache>` - the name of the underlying cache created by the command,
+or the `SQL_{SCHEMA_NAME}_{TABLE}` format will be used if the parameter not specified.
 ** `DATA_REGION=<existing data region name>` - name of the link:memory-configuration/data-regions[data region] where table entries should be stored. By default, Ignite stores all the data in a default region.
-** `KEY_TYPE=<custom name of the key type>` - sets the name of the custom key type that is used from the key-value APIs in Ignite. The name should correspond to a Java, .NET, or C++ class, or it can be a random one if link:data-modeling/data-modeling#binary-object-format[BinaryObjects] is used instead of a custom class. The number of fields and their types in the custom key type has to correspond to the `PRIMARY KEY`. Refer to the <<Description>> section below for more details.
+** `PARALLELISM=<number of SQL execution threads>` - SQL queries are executed by a single thread on each node by default, but certain scenarios can benefit from multi-threaded execution, see link:perf-and-troubleshooting/sql-tuning#query-parallelism[Query Parallelism] for details.
+** `KEY_TYPE=<custom name of the key type>` - sets the name of the custom key type that is used from the key-value APIs in Ignite. The name should correspond to a Java, .NET, or C++ class, or it can be a random one if link:data-modeling/data-modeling#binary-object-format[BinaryObjects] is used instead of a custom class. The number of fields and their types in the custom key type has to correspond to the `PRIMARY KEY`. Refer to the <<Use non-SQL API>> section below for more details.
 ** `VALUE_TYPE=<custom name of the value type of the new cache>` - sets the name of a custom value type that is used from the key-value and other non-SQL APIs in Ignite. The name should correspond to a Java, .NET, or C++ class, or it can be a random one if
-link:data-modeling/data-modeling#binary-object-format[BinaryObjects] is used instead of a custom class. The value type should include all the columns defined in the CREATE TABLE command except for those listed in the `PRIMARY KEY` constraint. Refer to the <<Description>> section below for more details.
+link:data-modeling/data-modeling#binary-object-format[BinaryObjects] is used instead of a custom class. The value type should include all the columns defined in the CREATE TABLE command except for those listed in the `PRIMARY KEY` constraint. Refer to the <<Use non-SQL API>> section below for more details.
+Also, the same `VALUE_TYPE` is required to use SQL queries over data replicated with link:extensions-and-integrations/change-data-capture-extensions[CDC].
 ** `WRAP_KEY=<true | false>` - this flag controls whether a _single column_ `PRIMARY KEY` should be wrapped in the link:data-modeling/data-modeling#binary-object-format[BinaryObjects] format or not. By default, this flag is set to false. This flag does not have any effect on the `PRIMARY KEY` with multiple columns; it always gets wrapped regardless of the value of the parameter.
 ** `WRAP_VALUE=<true | false>` - this flag controls whether a single column value of a primitive type should be wrapped in the link:data-modeling/data-modeling#binary-object-format[BinaryObjects] format or not. By default, this flag is set to true. This flag does not have any effect on the value with multiple columns; it always gets wrapped regardless of the value of the parameter. Set this parameter to false if you have a single column value and do not plan to add additional columns to the table. Note that once the parameter is set to false, you can't use the `ALTER TABLE ADD COLUMN` command for this specific table.
 
-The CREATE TABLE command creates a new Ignite cache and defines a SQL table on top of it. The cache stores the data in the form of key-value pairs while the table allows processing the data with SQL queries.
-
-The table will reside in the schema specified in the connection parameters. If no schema is specified, the PUBLIC schema will be used. See link:SQL/schemas[Schemas] for more information about schemas in Ignite.
-
-Note that the CREATE TABLE operation is synchronous and blocks the execution of other DDL commands that are issued while CREATE TABLE is still in progress. The execution of DML commands is not affected and can be performed in parallel.
-
-If you wish to access the data using the key-value APIs, then setting the `CACHE_NAME`, `KEY_TYPE`, and `VALUE_TYPE` parameters may be useful for the following reasons:
-
-- When the CREATE TABLE command is executed, the name of the cache is generated with the following format- `SQL_{SCHEMA_NAME}_{TABLE}`. Use the CACHE_NAME parameter to override the default name.
-- Additionally, the command creates two new binary types - for the key and value respectively. Ignite generates the names of the types randomly including a UUID string. This complicates the usage of these 'types' from a non-SQL API. Use KEY_TYPE and VALUE_TYPE to override the names with custom ones corresponding to your business model objects.
 
 Read more about the database architecture on the link:SQL/sql-introduction[SQL Introduction] page.
 
 
-Examples:
+=== Define Primary Key
 
-Create Person table:
+The example below shows how to create a table with `PRIMARY KEY` specified in the column definition and override cache
+related parameters. A new distributed cache `SQL_PUBLIC_PERSON` will be created (the `SQL_{SCHEMA_NAME}_{TABLE}` format
+is used for naming) which stores objects of the `Person` type that corresponds to a specific Java, .NET, C++ class or BinaryObject.
 
-[source,sql]
-----
-CREATE TABLE IF NOT EXISTS Person (
-  id int,
-  city_id int,
-  name varchar,
-  age int,
-  company varchar,
-  PRIMARY KEY (id, city_id)
-) WITH "template=partitioned,backups=1,affinity_key=city_id, key_type=PersonKey, value_type=MyPerson";
-----
-
-Once the CREATE TABLE command gets executed, the following happens:
-
-- A new distributed cache is created and named SQL_PUBLIC_PERSON. This cache stores objects of the `Person` type that corresponds to a specific Java, .NET, C++ class or BinaryObject. Furthermore, the key type (`PersonKey`) and value type (`MyPerson`) are defined explicitly assuming the data is to be processed by key-value and other non-SQL APIs.
-- SQL table/schema with all the parameters will be defined.
-- The data will be stored in the form of key-value pairs. The `PRIMARY KEY` columns will be used as the object's key; the rest of the columns will belong to the value.
-- Distributed cache related parameters are passed in the `WITH` clause of the statement. If the `WITH` clause is omitted, then the cache will be created with default parameters set in the CacheConfiguration object.
-
-The example below shows how to create the same table with `PRIMARY KEY` specified in the column definition and overrid some cache related parameters:
+The distributed cache related parameters are passed in the `WITH` clause of the statement. If the `WITH` clause is omitted,
+then the cache will be created with default parameters set in the `CacheConfiguration` object.
 
 [source,sql]
 ----
@@ -106,6 +91,82 @@ CREATE TABLE Person (
   company varchar
 ) WITH "atomicity=transactional,cachegroup=somegroup";
 ----
+
+
+=== Use non-SQL API
+
+If you wish to access the table data by the key-value or other non-SQL API, then you might be need to set the `CACHE_NAME` and
+`KEY_TYPE`, `VALUE_TYPE` parameters corresponding to your business model objects to make non-SQL APIs usage more convenient.
+
+- Use the `CACHE_NAME` parameter to override the default name with the following format `SQL_{SCHEMA_NAME}_{TABLE}`.
+- By default, the command also creates two new binary types - for the key and value respectively. Ignite in turn generates
+the names of the types randomly including a UUID string which complicates the usage of these types from a non-SQL API.
+
+The example below shows how to create a table `PERSON` and the underlying cache with the same name. The cache will store objects
+of the `Person` type with explicitly defined the key type `PersonKey` and value type `PersonValue`. The `PRIMARY KEY` columns will
+be used as the object's key, the rest of the columns will belong to the value.
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS Person (
+  id int,
+  city_id int,
+  name varchar,
+  age int,
+  company varchar,
+  PRIMARY KEY (id, city_id)
+) WITH "template=partitioned,backups=1,affinity_key=city_id,CACHE_NAME=Person,KEY_TYPE=PersonKey,VALUE_TYPE=PersonValue";
+----
+
+
+=== Use non-Upper Case Columns
+
+Ignite parses all unquoted identifiers, names of a table columns and converts them to uppercase
+during the `CREATE TABLE` command execution which, in turn, makes the command with explicitly defined key
+and value types a bit more challenging.
+
+There are a few options that might help you to deal with such a case:
+
+* Use link:SQL/sql-api[QuerySqlField] annotation. This will prevent checking the field non-UpperCase each time because of
+an alias for the column is created each time the `CREATE TABLE` command being executed.
+* Keeping in mind that column names converted each time to the upper case by default, you have to be sure that DDL fields
+and cache type fields are always match the letters case.
+
+In the example below you can see the usage of quotes for the `affKey` CamelCase field in the `CREATE TABLE` command with
+matching of the same field in the `PersonKey` cache key type.
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS Person (
+  id INT,
+  "affKey" INT,
+  val VARCHAR,
+  PRIMARY KEY (id, "affKey")
+) WITH "template=partitioned,backups=1,affinity_key=affKey,CACHE_NAME=Person,KEY_TYPE=PersonKey,VALUE_TYPE=PersonValue";
+----
+
+[source,java]
+----
+class PersonKey {
+    private int id;
+
+    /*
+     * This is a camel case field 'affKey' must match the DDL table schema, so you must be sure:
+     * - Using the quoted "affKey" field name in the DDL table definition;
+     * - Convert the 'affKey' field to the upper case 'AFFKEY' to match the DDL table definition;
+     */
+    @AffinityKeyMapped
+    private int affKey;
+
+    public PersonKey(int id, int affKey) {
+        this.id = id;
+        this.affKey = affKey;
+    }
+}
+----
+
+Note that some integrations with the Apache Ignite like the link:extensions-and-integrations/spring/spring-data[Spring Data]
+`CrudRepository` doesn't support the quoted fields to access the data.
 
 
 == ALTER TABLE
@@ -282,11 +343,11 @@ index_option := {INLINE_SIZE size | PARALLEL parallelism_level}
 
 Parameters:
 
-* `indexName` - the name of the index to be created.
+* `indexName` - the name of the index to be created. The index name must be unique per schema.
 * `ASC` - specifies ascending sort order (default).
 * `DESC` - specifies descending sort order.
 * `SPATIAL` - create the spatial index. Presently, only geometry types are supported.
-* `IF NOT EXISTS` - do not throw an error if an index with the same name already exists. The database checks indexes' names only, and does not consider columns types or count.
+* `IF NOT EXISTS` - do not throw an error if an index with the same name already exists. The database checks indexes' names only, and does not consider columns types or count. The index creation will be skipped if an index with the same name exist in the schema.
 * `index_option` - additional options for index creation:
 ** `INLINE_SIZE` - specifies index inline size in bytes. Depending on the size, Ignite will place the whole indexed value or a part of it directly into index pages, thus omitting extra calls to data pages and increasing queries' performance. Index inlining is enabled by default and the size is pre-calculated automatically based on the table structure. To disable inlining, set the size to 0 (not recommended). Refer to the link:SQL/sql-tuning#increasing-index-inline-size[Increasing Index Inline Size] section for more details.
 ** `PARALLEL` - specifies the number of threads to be used in parallel for index creation. The greater number is set, the faster the index is created and built. If the value exceeds the number of CPUs, then it will be decreased to the number of cores. If the parameter is not specified, then the number of threads is calculated as 25% of the CPU cores available.
@@ -411,6 +472,66 @@ DROP INDEX idx_person_name;
 ----
 
 
+== CREATE VIEW
+
+Creates an user definded SQL view.
+
+
+[source,sql]
+----
+CREATE [OR REPLACE] VIEW [schemaName.]viewName AS query
+----
+
+Parameters:
+
+* `schemaName` - the name of the schema, where to create view.
+* `viewName` - the name of the view to create.
+* `OR REPLACE` - replace view if a view with the specified name already exists.
+* `query` - valid SQL query.
+
+Schema changes applied by this command are persisted on disk if link:persistence/native-persistence[Ignite persistence] is enabled. Thus, the changes can survive full cluster restarts.
+
+[discrete]
+=== Examples
+Create a view:
+
+
+[source,sql]
+----
+CREATE VIEW adult AS SELECT * FROM person WHERE age >= 18;
+----
+
+
+== DROP VIEW
+
+Deletes an existing user defined SQL view.
+
+
+[source,sql]
+----
+DROP VIEW [IF EXISTS] [schemaName.]viewName
+----
+
+Parameters:
+
+* `schemaName` - the schema of the view to drop.
+* `viewName` - the name of the view to drop.
+* `IF EXISTS` - do not throw an error if a view with the specified name does not exist.
+
+Schema changes applied by this command are persisted on disk if link:persistence/native-persistence[Ignite persistence] is enabled. Thus, the changes can survive full cluster restarts.
+
+
+[discrete]
+=== Examples
+Drop a view:
+
+
+[source,sql]
+----
+DROP VIEW adult;
+----
+
+
 == CREATE USER
 
 The command creates a user with a given name and password.
@@ -517,4 +638,87 @@ Examples:
 ----
 DROP USER test;
 ----
+
+== ANALYZE
+
+The ANALYZE command collects link:SQL/sql-statistics[statistics,window=_blank].
+
+[source,sql]
+----
+ANALYZE 'schemaName'.'tableName'(column1, column2);
+----
+
+Parameters:
+
+* `schemaName` - a name of the schema to collect statistics for.
+* `tableName` - a name of the table to collect statistics for.
+* `(column1, column2)` - names of the columns to collect statistics for.
+
+image::images/svg/analyze_bnf1.svg[Embedded,opts=inline]
+
+image::images/svg/analyze_bnf2.svg[Embedded,opts=inline]
+
+When the ANALYZE command is used with `with` parameters statement, specified parameters are applied for every target. For example:
+
+[source,sql]
+----
+ANALYZE public.statistics_test, statistics_test2, statistics_test3(col3) WITH 'MAX_CHANGED_PARTITION_ROWS_PERCENT=15,NULLS=0'
+----
+
+Possible parameters:
+
+* MAX_CHANGED_PARTITION_ROWS_PERCENT - Maximum percentage of outdated rows in the table (the default value is 15%). See the link:SQL/sql-statistics#statistics-obsolescence[SQL Statistics,window=_blank] page for more details.
+* NULLS - Number of null values in column.
+* TOTAL - Total number of column values.
+* SIZE - Average size of column values (in bytes).
+* DISTINCT - Number of distinct non-null values in column.
+
+== REFRESH STATISTICS
+
+The command refreshes link:SQL/sql-statistics[statistics,window=_blank].
+
+[source,sql]
+----
+REFRESH STATISTICS 'schemaName'.'tableName'(column1, column2);
+----
+
+Parameters:
+
+* `schemaName` - a name of the schema to refresh statistics for.
+* `tableName` - a name of the table to refresh statistics for.
+* `(column1, column2)` - names of the columns to refresh statistics for.
+
+image::images/svg/refresh_bnf.svg[Embedded,opts=inline]
+
+Example:
+
+[source,sql]
+----
+REFRESH STATISTICS PRODUCTS, SALE(productId, discount)
+----
+
+== DROP STATISTICS
+
+The command drops link:SQL/sql-statistics[statistics,window=_blank].
+
+[source,sql]
+----
+DROP STATISTICS 'schemaName'.'tableName'(column1, column2);
+----
+
+Parameters:
+
+* `schemaName` - a name of the schema to drop statistics for.
+* `tableName` - a name of the table to drop statistics for.
+* `(column1, column2)` - names of the columns to drop statistics for.
+
+image::images/svg/drop_bnf.svg[Embedded,opts=inline]
+
+Example:
+
+[source,sql]
+----
+DROP STATISTICS USERS, ORDERS(customerId, productId)
+----
+
 

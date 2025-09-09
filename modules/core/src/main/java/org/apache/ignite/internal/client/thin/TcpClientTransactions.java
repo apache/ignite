@@ -20,12 +20,13 @@ package org.apache.ignite.internal.client.thin;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -98,14 +99,19 @@ class TcpClientTransactions implements ClientTransactions {
                         "protocol version %s, required version %s", protocolCtx.version(), TRANSACTIONS.verIntroduced()));
                 }
 
-                try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), req.out(), null, null)) {
+                try (BinaryWriterEx writer = BinaryUtils.writer(marsh.context(), req.out(), null)) {
                     writer.writeByte((byte)(concurrency == null ? txCfg.getDefaultTxConcurrency() : concurrency).ordinal());
                     writer.writeByte((byte)(isolation == null ? txCfg.getDefaultTxIsolation() : isolation).ordinal());
                     writer.writeLong(timeout == null ? txCfg.getDefaultTxTimeout() : timeout);
                     writer.writeString(lb);
                 }
             },
-            res -> new TcpClientTransaction(res.in().readInt(), res.clientChannel())
+            res -> new TcpClientTransaction(
+                res.in().readInt(),
+                res.clientChannel(),
+                concurrency == null ? txCfg.getDefaultTxConcurrency() : concurrency,
+                isolation == null ? txCfg.getDefaultTxIsolation() : isolation
+            )
         );
 
         threadLocTxUid.set(tx0.txUid);
@@ -192,6 +198,12 @@ class TcpClientTransactions implements ClientTransactions {
         /** Client channel. */
         private final ClientChannel clientCh;
 
+        /** */
+        private final TransactionConcurrency concurrency;
+
+        /** */
+        private final TransactionIsolation isolation;
+
         /** Transaction is closed. */
         private volatile boolean closed;
 
@@ -199,10 +211,17 @@ class TcpClientTransactions implements ClientTransactions {
          * @param id Transaction ID.
          * @param clientCh Client channel.
          */
-        private TcpClientTransaction(int id, ClientChannel clientCh) {
+        private TcpClientTransaction(
+            int id,
+            ClientChannel clientCh,
+            TransactionConcurrency concurrency,
+            TransactionIsolation isolation
+        ) {
             txUid = txCnt.incrementAndGet();
             txId = id;
             this.clientCh = clientCh;
+            this.concurrency = concurrency;
+            this.isolation = isolation;
         }
 
         /** {@inheritDoc} */
@@ -238,14 +257,14 @@ class TcpClientTransactions implements ClientTransactions {
          */
         private void endTx(boolean committed) {
             try {
-                ch.service(ClientOperation.TX_END,
+                clientCh.service(ClientOperation.TX_END,
                     req -> {
-                        if (clientCh != req.clientChannel())
-                            throw new ClientException("Transaction context has been lost due to connection errors");
-
                         req.out().writeInt(txId);
                         req.out().writeBoolean(committed);
                     }, null);
+            }
+            catch (ClientConnectionException e) {
+                throw new ClientException("Transaction context has been lost due to connection errors", e);
             }
             finally {
                 txMap.remove(txUid);
@@ -278,6 +297,16 @@ class TcpClientTransactions implements ClientTransactions {
          */
         boolean isClosed() {
             return closed;
+        }
+
+        /** */
+        public TransactionConcurrency concurrency() {
+            return concurrency;
+        }
+
+        /** */
+        public TransactionIsolation isolation() {
+            return isolation;
         }
     }
 }

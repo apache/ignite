@@ -22,6 +22,11 @@ from typing import NamedTuple
 from ignitetest.services.utils.ssl.ssl_params import SslParams
 
 
+class ThinClientConfiguration(NamedTuple):
+    max_active_compute_tasks_per_connection: int = 0
+    max_active_tx_per_connection: int = 100
+
+
 class ClientConnectorConfiguration(NamedTuple):
     """
     Ignite ClientConnectorConfiguration.
@@ -32,7 +37,5 @@ class ClientConnectorConfiguration(NamedTuple):
     use_ignite_ssl_context_factory: bool = True
     ssl_client_auth: bool = False
     ssl_params: SslParams = None
-    ssl_enabled: bool = False
-    use_ignite_ssl_context_factory: bool = True
-    ssl_client_auth: bool = False
-    ssl_params: SslParams = None
+    thin_client_configuration: ThinClientConfiguration = None
+    thread_pool_size: int = None

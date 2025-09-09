@@ -30,6 +30,12 @@ if (WIN32)
     set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()
 
+option (WITH_SANITIZERS "Build with sanitizers" OFF)
+
+if (${WITH_SANITIZERS} AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -fno-sanitize-recover=all -g")
+endif()
+
 add_subdirectory(compute-example)
 add_subdirectory(continuous-query-example)
 add_subdirectory(odbc-example)

@@ -43,10 +43,6 @@
         <!-- Set to true to enable grid-aware class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
-        <property name="marshaller">
-            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
-        </property>
-
         <!-- Enable cache events for examples. -->
         <property name="includeEventTypes">
             <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>
@@ -86,20 +82,6 @@
                 <bean parent="cache-template">
                     <property name="name" value="replicated_tx"/>
                     <property name="cacheMode" value="REPLICATED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                </bean>
-
-                  <!-- Local cache example configuration (Atomic mode). -->
-                  <bean parent="cache-template">
-                      <property name="name" value="local"/>
-                      <property name="cacheMode" value="LOCAL"/>
-                      <property name="atomicityMode" value="ATOMIC"/>
-                  </bean>
-
-                <!-- Local cache example configuration (Transactional mode). -->
-                <bean parent="cache-template">
-                    <property name="name" value="local_tx"/>
-                    <property name="cacheMode" value="LOCAL"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                 </bean>
             </list>

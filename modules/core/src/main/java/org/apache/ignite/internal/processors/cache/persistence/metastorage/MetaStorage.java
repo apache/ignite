@@ -70,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
@@ -85,9 +84,6 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
 
     /** */
     public static final int METASTORAGE_CACHE_ID = CU.cacheId(METASTORAGE_CACHE_NAME);
-
-    /** Metastorage cache directory to store data. */
-    public static final String METASTORAGE_DIR_NAME = "metastorage";
 
     /** Old special partition reserved for metastore space. */
     public static final int OLD_METASTORE_PARTITION = 0x0;
@@ -145,7 +141,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     private SortedMap<String, byte[]> lastUpdates;
 
     /** */
-    private final Marshaller marshaller = JdkMarshaller.DEFAULT;
+    private final Marshaller marshaller;
 
     /** Partition id. */
     private int partId;
@@ -164,6 +160,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
         this.dataRegion = dataRegion;
         this.readOnly = readOnly;
         log = cctx.logger(getClass());
+        marshaller = cctx.kernalContext().marshallerContext().jdkMarshaller();
     }
 
     /** */
@@ -342,39 +339,43 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
             }
         }
 
-        Map.Entry<String, byte[]> curUpdatesEntry = null;
+        // TODO rewrite synchronized after https://issues.apache.org/jira/browse/IGNITE-15472
+        synchronized (this) {
 
-        if (updatesIter != null) {
-            assert updatesIter.hasNext();
+            Map.Entry<String, byte[]> curUpdatesEntry = null;
 
-            curUpdatesEntry = updatesIter.next();
-        }
+            if (updatesIter != null) {
+                assert updatesIter.hasNext();
 
-        MetastorageSearchRow lower = new MetastorageSearchRow(keyPrefix);
+                curUpdatesEntry = updatesIter.next();
+            }
 
-        MetastorageSearchRow upper = new MetastorageSearchRow(keyPrefix + "\uFFFF");
+            MetastorageSearchRow lower = new MetastorageSearchRow(keyPrefix);
 
-        GridCursor<MetastorageDataRow> cur = tree.find(lower, upper);
+            MetastorageSearchRow upper = new MetastorageSearchRow(keyPrefix + "\uFFFF");
 
-        while (cur.next()) {
-            MetastorageDataRow row = cur.get();
+            GridCursor<MetastorageDataRow> cur = tree.find(lower, upper);
 
-            String key = row.key();
-            byte[] valBytes = partStorage.readRow(row.link());
+            while (cur.next()) {
+                MetastorageDataRow row = cur.get();
 
-            int c = 0;
+                String key = row.key();
+                byte[] valBytes = partStorage.readRow(row.link());
 
-            while (curUpdatesEntry != null && (c = curUpdatesEntry.getKey().compareTo(key)) < 0)
+                int c = 0;
+
+                while (curUpdatesEntry != null && (c = curUpdatesEntry.getKey().compareTo(key)) < 0)
+                    curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
+
+                if (curUpdatesEntry != null && c == 0)
+                    curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
+                else
+                    applyCallback(cb, unmarshal, key, valBytes);
+            }
+
+            while (curUpdatesEntry != null)
                 curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
-
-            if (curUpdatesEntry != null && c == 0)
-                curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
-            else
-                applyCallback(cb, unmarshal, key, valBytes);
         }
-
-        while (curUpdatesEntry != null)
-            curUpdatesEntry = advanceCurrentUpdatesEntry(cb, unmarshal, updatesIter, curUpdatesEntry);
     }
 
     /** */

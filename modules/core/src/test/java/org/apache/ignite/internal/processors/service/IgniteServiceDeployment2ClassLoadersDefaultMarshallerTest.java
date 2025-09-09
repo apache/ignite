@@ -24,8 +24,8 @@ import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -33,14 +33,20 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Tests that not all nodes in cluster need user's service definition (only nodes according to filter).
+ * Tests that not all nodes in cluster need user's service and interceptor definition (only nodes according to filter).
  */
 public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends GridCommonAbstractTest {
     /** */
     private static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
 
     /** */
+    private static final String NOOP_SERVICE_INTCP_NAME = "org.apache.ignite.tests.p2p.NoopServiceCallInterceptor";
+
+    /** */
     private static final String NOOP_SERVICE_2_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService2";
+
+    /** */
+    private static final String NOOP_SERVICE_INTCP_2_NAME = "org.apache.ignite.tests.p2p.NoopServiceCallInterceptor2";
 
     /** */
     private static final int GRID_CNT = 6;
@@ -82,8 +88,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        cfg.setMarshaller(marshaller());
-
         cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, igniteInstanceName));
 
         if (grp1.contains(igniteInstanceName))
@@ -93,13 +97,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
             cfg.setClassLoader(extClsLdr2);
 
         return cfg;
-    }
-
-    /**
-     * @return Marshaller.
-     */
-    protected Marshaller marshaller() {
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -115,8 +112,8 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        extClsLdr1 = new GridTestExternalClassLoader(URLS, NOOP_SERVICE_2_CLS_NAME);
-        extClsLdr2 = new GridTestExternalClassLoader(URLS, NOOP_SERVICE_CLS_NAME);
+        extClsLdr1 = new GridTestExternalClassLoader(URLS, NOOP_SERVICE_2_CLS_NAME, NOOP_SERVICE_INTCP_2_NAME);
+        extClsLdr2 = new GridTestExternalClassLoader(URLS, NOOP_SERVICE_CLS_NAME, NOOP_SERVICE_INTCP_NAME);
     }
 
     /** {@inheritDoc} */
@@ -200,15 +197,22 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
         srvCfg.setNodeFilter(new TestNodeFilter(firstGrp ? grp1 : grp2));
 
         Class<Service> srvcCls;
+        Class<ServiceCallInterceptor> interceptorCls;
 
-        if (firstGrp)
+        if (firstGrp) {
             srvcCls = (Class<Service>)extClsLdr1.loadClass(NOOP_SERVICE_CLS_NAME);
-        else
+            interceptorCls = (Class<ServiceCallInterceptor>)extClsLdr1.loadClass(NOOP_SERVICE_INTCP_NAME);
+        }
+        else {
             srvcCls = (Class<Service>)extClsLdr2.loadClass(NOOP_SERVICE_2_CLS_NAME);
+            interceptorCls = (Class<ServiceCallInterceptor>)extClsLdr2.loadClass(NOOP_SERVICE_INTCP_2_NAME);
+        }
 
         Service srvc = srvcCls.newInstance();
+        ServiceCallInterceptor interceptor = interceptorCls.newInstance();
 
         srvCfg.setService(srvc);
+        srvCfg.setInterceptors(interceptor);
 
         srvCfg.setName("TestDeploymentService" + (firstGrp ? 1 : 2));
 

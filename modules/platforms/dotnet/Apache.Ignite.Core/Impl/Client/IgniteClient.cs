@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Client.Datastream;
+    using Apache.Ignite.Core.Client.DataStructures;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Client.Transactions;
     using Apache.Ignite.Core.Datastream;
@@ -40,6 +41,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Client.Cluster;
     using Apache.Ignite.Core.Impl.Client.Compute;
     using Apache.Ignite.Core.Impl.Client.Datastream;
+    using Apache.Ignite.Core.Impl.Client.DataStructures;
     using Apache.Ignite.Core.Impl.Client.Services;
     using Apache.Ignite.Core.Impl.Client.Transactions;
     using Apache.Ignite.Core.Impl.Cluster;
@@ -305,6 +307,95 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNullOrEmpty(cacheName, "cacheName");
 
             return new DataStreamerClient<TK, TV>(_socket, cacheName, options);
+        }
+
+        /** <inheritDoc /> */
+        public IAtomicLongClient GetAtomicLong(string name, long initialValue, bool create)
+        {
+            return GetAtomicLong(name, null, initialValue, create);
+        }
+
+        /** <inheritDoc /> */
+        public IAtomicLongClient GetAtomicLong(
+            string name,
+            AtomicClientConfiguration configuration,
+            long initialValue,
+            bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            if (create)
+            {
+                _socket.DoOutInOp<object>(ClientOp.AtomicLongCreate, ctx =>
+                {
+                    var w = ctx.Writer;
+
+                    w.WriteString(name);
+                    w.WriteLong(initialValue);
+
+                    if (configuration != null)
+                    {
+                        w.WriteBoolean(true);
+                        w.WriteInt(configuration.AtomicSequenceReserveSize);
+                        w.WriteByte((byte)configuration.CacheMode);
+                        w.WriteInt(configuration.Backups);
+                        w.WriteString(configuration.GroupName);
+                    }
+                    else
+                    {
+                        w.WriteBoolean(false);
+                    }
+                }, null);
+            }
+
+            var res = new AtomicLongClient(_socket, name, configuration?.GroupName);
+
+            if (!create && res.IsClosed())
+            {
+                // Return null when specified atomic long does not exist to match thick API behavior.
+                return null;
+            }
+
+            return res;
+        }
+
+        /** <inheritDoc /> */
+        public IIgniteSetClient<T> GetIgniteSet<T>(string name, CollectionClientConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            return _socket.DoOutInOp(ClientOp.SetGetOrCreate, ctx =>
+            {
+                var w = ctx.Writer;
+
+                w.WriteString(name);
+
+                if (configuration != null)
+                {
+                    w.WriteBoolean(true);
+                    w.WriteByte((byte)configuration.AtomicityMode);
+                    w.WriteByte((byte)configuration.CacheMode);
+                    w.WriteInt(configuration.Backups);
+                    w.WriteString(configuration.GroupName);
+                    w.WriteBoolean(configuration.Colocated);
+                }
+                else
+                {
+                    w.WriteBoolean(false);
+                }
+
+            }, ctx =>
+            {
+                if (!ctx.Reader.ReadBoolean())
+                {
+                    return null;
+                }
+
+                var colocated = ctx.Reader.ReadBoolean();
+                var cacheId = ctx.Reader.ReadInt();
+
+                return new IgniteSetClient<T>(_socket, name, colocated, cacheId);
+            });
         }
 
         /** <inheritDoc /> */

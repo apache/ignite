@@ -37,26 +37,33 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.SortedIndexDescriptorFactory;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
-import static org.apache.ignite.testframework.GridTestUtils.RunnableX;
 
 /**
  * Concurrency tests for dynamic index create/drop.
@@ -215,6 +222,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         ignitionStart(clientConfiguration(4));
 
         createSqlCache(srv1);
+
+        awaitCacheOnClient(grid(4), cacheConfiguration().getName());
 
         CountDownLatch idxLatch = blockIndexing(srv1);
 
@@ -445,43 +454,66 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      */
     @Test
     public void testConcurrentCacheDestroy() throws Exception {
-        // Start complex topology.
-        Ignite srv1 = ignitionStart(serverConfiguration(1));
+        // Blocking in SchemaChangeListener is not enough for this test, create index operation should be blocked
+        // before index is actually created.
+        SchemaManager.registerIndexDescriptorFactory(QueryIndexType.SORTED, new SortedIndexDescriptorFactory(log) {
+            @Override public IndexDescriptor create(
+                GridKernalContext ctx,
+                GridQueryIndexDescriptor idxDesc,
+                TableDescriptor tbl,
+                @Nullable SchemaIndexCacheVisitor cacheVisitor
+            ) {
+                return super.create(ctx, idxDesc, tbl, clo -> {
+                    awaitIndexing(ctx.localNodeId());
 
-        ignitionStart(serverConfiguration(2));
-        ignitionStart(serverConfiguration(3, true));
+                    if (cacheVisitor != null)
+                        cacheVisitor.visit(clo);
+                });
+            }
+        });
 
-        Ignite cli = ignitionStart(clientConfiguration(4));
+        try {
+            // Start complex topology.
+            Ignite srv1 = ignitionStart(serverConfiguration(1));
 
-        // Start cache and populate it with data.
-        createSqlCache(cli);
+            ignitionStart(serverConfiguration(2));
+            ignitionStart(serverConfiguration(3, true));
 
-        put(cli, KEY_AFTER);
+            Ignite cli = ignitionStart(clientConfiguration(4));
 
-        // Start index operation and block it on coordinator.
-        CountDownLatch idxLatch = blockIndexing(srv1);
+            // Start cache and populate it with data.
+            createSqlCache(cli);
 
-        QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+            put(cli, KEY_AFTER);
 
-        final IgniteInternalFuture<?> idxFut =
-            queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false, 0);
+            // Start index operation and block it on coordinator.
+            CountDownLatch idxLatch = blockIndexing(srv1);
 
-        idxLatch.await();
+            QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-        // Start destroy cache (drop table).
-        IgniteInternalFuture<Boolean> desFut = destroySqlCacheFuture(cli);
+            final IgniteInternalFuture<?> idxFut =
+                queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false, 0);
 
-        U.sleep(2_000);
+            idxLatch.await();
 
-        assertFalse(idxFut.isDone());
-        assertFalse(desFut.isDone());
+            // Start destroy cache (drop table).
+            IgniteInternalFuture<Boolean> desFut = destroySqlCacheFuture(cli);
 
-        // Unblock indexing and see what happens.
-        unblockIndexing(srv1);
+            U.sleep(2_000);
 
-        GridTestUtils.assertThrows(log, (Callable<?>)idxFut::get, SchemaOperationException.class, null);
+            assertFalse(idxFut.isDone());
+            assertFalse(desFut.isDone());
 
-        assertTrue(desFut.get());
+            // Unblock indexing and see what happens.
+            unblockIndexing(srv1);
+
+            GridTestUtils.assertThrows(log, (Callable<?>)idxFut::get, SchemaOperationException.class, null);
+
+            assertTrue(desFut.get());
+        }
+        finally {
+            SchemaManager.unregisterIndexDescriptorFactory(QueryIndexType.SORTED);
+        }
     }
 
     /**
@@ -1089,20 +1121,18 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
         /** {@inheritDoc} */
-        @Override public void dynamicIndexCreate(@NotNull String schemaName, String tblName,
-            QueryIndexDescriptorImpl idxDesc, boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor)
-            throws IgniteCheckedException {
-            awaitIndexing(ctx.localNodeId());
+        @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
+            super.start(ctx, busyLock);
 
-            super.dynamicIndexCreate(schemaName, tblName, idxDesc, ifNotExists, cacheVisitor);
-        }
+            ctx.internalSubscriptionProcessor().registerSchemaChangeListener(new AbstractSchemaChangeListener() {
+                @Override public void onIndexCreated(String schemaName, String tblName, String idxName, IndexDescriptor idxDesc) {
+                    awaitIndexing(ctx.localNodeId());
+                }
 
-        /** {@inheritDoc} */
-        @Override public void dynamicIndexDrop(@NotNull String schemaName, String idxName, boolean ifExists)
-            throws IgniteCheckedException {
-            awaitIndexing(ctx.localNodeId());
-
-            super.dynamicIndexDrop(schemaName, idxName, ifExists);
+                @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {
+                    awaitIndexing(ctx.localNodeId());
+                }
+            });
         }
     }
 

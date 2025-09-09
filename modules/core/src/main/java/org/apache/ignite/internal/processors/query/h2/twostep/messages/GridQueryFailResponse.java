@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryRetryException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Error message.
@@ -39,15 +37,15 @@ public class GridQueryFailResponse implements Message {
     public static final byte RETRY_QUERY = 2;
 
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
+    @Order(value = 0, method = "queryRequestId")
     private long qryReqId;
 
     /** */
+    @Order(value = 1, method = "error")
     private String errMsg;
 
     /** */
+    @Order(2)
     private byte failCode;
 
     /**
@@ -81,6 +79,13 @@ public class GridQueryFailResponse implements Message {
     }
 
     /**
+     * @param qryReqId Query request ID.
+     */
+    public void queryRequestId(long qryReqId) {
+        this.qryReqId = qryReqId;
+    }
+
+    /**
      * @return Error.
      */
     public String error() {
@@ -88,10 +93,24 @@ public class GridQueryFailResponse implements Message {
     }
 
     /**
+     * @param errMsg Error.
+     */
+    public void error(String errMsg) {
+        this.errMsg = errMsg;
+    }
+
+    /**
      * @return Fail code.
      */
     public byte failCode() {
         return failCode;
+    }
+
+    /**
+     * @param failCode Fail code.
+     */
+    public void failCode(byte failCode) {
+        this.failCode = failCode;
     }
 
     /** {@inheritDoc} */
@@ -105,84 +124,7 @@ public class GridQueryFailResponse implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString("errMsg", errMsg))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByte("failCode", failCode))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong("qryReqId", qryReqId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                errMsg = reader.readString("errMsg");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                failCode = reader.readByte("failCode");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                qryReqId = reader.readLong("qryReqId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridQueryFailResponse.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 107;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 }

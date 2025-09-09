@@ -42,7 +42,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -99,7 +99,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try (Socket sock = new Socket(InetAddress.getLocalHost(), port);
                      OutputStream os = new BufferedOutputStream(sock.getOutputStream())) {
-                    Marshaller marsh = new JdkMarshaller();
+                    Marshaller marsh = Marshallers.jdk();
 
                     for (int i = 0; i < CNT; i++) {
                         byte[] msg = marsh.marshal(new Message(i));
@@ -128,7 +128,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try (Socket sock = new Socket(InetAddress.getLocalHost(), port);
                      OutputStream os = new BufferedOutputStream(sock.getOutputStream())) {
-                    Marshaller marsh = new JdkMarshaller();
+                    Marshaller marsh = Marshallers.jdk();
 
                     int[] values = new int[CNT];
                     for (int i = 0; i < CNT; i++)
@@ -199,7 +199,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try (Socket sock = new Socket(InetAddress.getLocalHost(), port);
                     OutputStream os = new BufferedOutputStream(sock.getOutputStream())) {
-                    Marshaller marsh = new JdkMarshaller();
+                    Marshaller marsh = Marshallers.jdk();
 
                     for (int i = 0; i < CNT; i++) {
                         byte[] msg = marsh.marshal(new Message(i));
@@ -294,8 +294,8 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
                 sockStmr.setMultipleTupleExtractor(new StreamMultipleTupleExtractor<Message, Integer, String>() {
                     @Override public Map<Integer, String> extract(Message msg) {
                         Map<Integer, String> answer = new HashMap<>();
-                        for (int value : msg.values) {
-                            answer.put(value, Integer.toString(value));
+                        for (int val : msg.values) {
+                            answer.put(val, Integer.toString(val));
                         }
                         return answer;
                     }

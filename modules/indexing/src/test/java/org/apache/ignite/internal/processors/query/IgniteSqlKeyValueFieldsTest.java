@@ -33,7 +33,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
@@ -81,8 +80,6 @@ public class IgniteSqlKeyValueFieldsTest extends AbstractIndexingCommonTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.setMarshaller(new BinaryMarshaller());
-
         List<CacheConfiguration> ccfgs = new ArrayList<>();
         CacheConfiguration ccfg = buildCacheConfiguration(gridName);
         if (ccfg != null)
@@ -121,6 +118,7 @@ public class IgniteSqlKeyValueFieldsTest extends AbstractIndexingCommonTest {
         super.afterTest();
     }
 
+    /** */
     private CacheConfiguration buildCacheConfiguration(String name) {
         if (name.equals(NODE_BAD_CONF_MISS_KEY_FIELD)) {
             CacheConfiguration ccfg = new CacheConfiguration(NODE_BAD_CONF_MISS_KEY_FIELD);
@@ -511,13 +509,13 @@ public class IgniteSqlKeyValueFieldsTest extends AbstractIndexingCommonTest {
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select _ver from Person where id = ?").setArgs(key));
         List<List<?>> results = cursor.getAll();
         assertEquals(1, results.size());
-        return ((GridCacheVersion) results.get(0).get(0));
+        return ((GridCacheVersion)results.get(0).get(0));
     }
 
     /** */
     private void checkInsert(IgniteCache<?, ?> cache, String qry, Object... args) throws Exception {
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(qry).setArgs(args));
-        assertEquals(1, ((Number) cursor.getAll().get(0).get(0)).intValue());
+        assertEquals(1, ((Number)cursor.getAll().get(0).get(0)).intValue());
     }
 
     /** */

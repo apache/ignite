@@ -93,7 +93,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// Updates the type structure and metadata for the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        public void UpdateWriterStructure(BinaryWriter writer)
+        /// <param name="isNewSchema">Whether the current schema is know to be new.</param>
+        public void UpdateWriterStructure(BinaryWriter writer, bool isNewSchema)
         {
             if (_curStructUpdates != null)
             {
@@ -123,6 +124,11 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                 writer.Marshaller.GetBinaryTypeHandler(_desc);
                 writer.SaveMetadata(_desc, null);
                 _desc.UpdateWriteStructure(_curStructPath, null);
+            }
+            else if (isNewSchema && _portStruct != null && !_portStruct.IsPathEnd(_curStructPath, _curStructAction))
+            {
+                // Subset of current schema is a different schema and should be saved.
+                writer.SaveMetadata(_desc, null);
             }
         }
 

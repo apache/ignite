@@ -22,9 +22,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
-import org.apache.ignite.internal.binary.BinaryReaderHandles;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 
@@ -65,13 +65,14 @@ class ClientBinaryMarshaller {
     }
 
     /**
-     * Deserializes object from input stream.
+     * Unwrap binary object.
      *
      * @param in Input stream.
-     * @param hnds Object handles.
+     * @param clazz input object class.
+     * @return Binary object.
      */
-    public <T> T deserialize(BinaryInputStream in, BinaryReaderHandles hnds) {
-        return impl.deserialize(in, null, hnds);
+    public <T> T unwrapBinary(BinaryInputStream in, Class<?> clazz) {
+        return impl.unwrapBinary(in, clazz);
     }
 
     /**
@@ -85,8 +86,7 @@ class ClientBinaryMarshaller {
      * Configure marshaller with custom Ignite Binary Object configuration.
      */
     public void setBinaryConfiguration(BinaryConfiguration binCfg) {
-        if (impl.context().configuration().getBinaryConfiguration() != binCfg)
-            impl = createImpl(binCfg);
+        impl = createImpl(binCfg);
     }
 
     /**
@@ -98,27 +98,25 @@ class ClientBinaryMarshaller {
 
     /** Create new marshaller implementation. */
     private GridBinaryMarshaller createImpl(BinaryConfiguration binCfg) {
-        IgniteConfiguration igniteCfg = new IgniteConfiguration();
-
         if (binCfg == null) {
             binCfg = new BinaryConfiguration();
 
             binCfg.setCompactFooter(false);
         }
 
-        igniteCfg.setBinaryConfiguration(binCfg);
-
-        BinaryContext ctx = new BinaryContext(metaHnd, igniteCfg, new NullLogger());
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(marshCtx);
 
-        ctx.configure(marsh, binCfg);
+        BinaryContext ctx = U.binaryContext(
+            metaHnd,
+            marsh,
+            new IgniteConfiguration().setBinaryConfiguration(binCfg),
+            NullLogger.INSTANCE
+        );
 
         ctx.registerUserTypesSchema();
 
         return new GridBinaryMarshaller(ctx);
     }
 }
-

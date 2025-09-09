@@ -38,10 +38,10 @@ public class MessageOrderLogListener extends LogListener {
      * @param messages array of messages that will be unified into ordered group.
      */
     public MessageOrderLogListener(String... messages) {
-        this(new MessageGroup(true) {{
-            for (String m : messages)
-                add(m);
-        }});
+        this.matchesGrp = new MessageGroup(true);
+
+        for (String m : messages)
+            matchesGrp.add(m);
     }
 
     /**
@@ -79,7 +79,7 @@ public class MessageOrderLogListener extends LogListener {
         private final String containedStr;
 
         /** */
-        private final GridConcurrentLinkedHashSet<MessageGroup> groups;
+        private final GridConcurrentLinkedHashSet<MessageGroup> grps;
 
         /** */
         private final GridConcurrentLinkedHashSet<MessageGroup> matched = new GridConcurrentLinkedHashSet<>();
@@ -108,7 +108,7 @@ public class MessageOrderLogListener extends LogListener {
 
             containedStr = s;
 
-            groups = s == null ? new GridConcurrentLinkedHashSet<>() : null;
+            grps = s == null ? new GridConcurrentLinkedHashSet<>() : null;
         }
 
         /**
@@ -128,7 +128,7 @@ public class MessageOrderLogListener extends LogListener {
          * @return this for chaining
          */
         public MessageGroup add(MessageGroup grp) {
-            groups.add(grp);
+            grps.add(grp);
 
             return this;
         }
@@ -138,9 +138,9 @@ public class MessageOrderLogListener extends LogListener {
             if (checked)
                 return true;
 
-            if (groups != null) {
-                for (MessageGroup group : groups) {
-                    if (!matched.contains(group) || !group.check())
+            if (grps != null) {
+                for (MessageGroup grp : grps) {
+                    if (!matched.contains(grp) || !grp.check())
                         return false;
                 }
 
@@ -158,9 +158,9 @@ public class MessageOrderLogListener extends LogListener {
 
             lastAcceptedIdx = 0;
 
-            if (groups != null) {
-                for (MessageGroup group : groups)
-                    group.reset();
+            if (grps != null) {
+                for (MessageGroup grp : grps)
+                    grp.reset();
             }
 
             for (Iterator<MessageGroup> iter = matched.iterator(); iter.hasNext();) {
@@ -192,18 +192,18 @@ public class MessageOrderLogListener extends LogListener {
                 return true;
             }
             else {
-                if (groups != null) {
+                if (grps != null) {
                     int i = 0;
 
-                    for (MessageGroup group : groups) {
+                    for (MessageGroup grp : grps) {
                         if (i < lastAcceptedIdx && ordered) {
                             i++;
 
                             continue;
                         }
 
-                        if (group.internalAccept(s)) {
-                            matched.add(group);
+                        if (grp.internalAccept(s)) {
+                            matched.add(grp);
 
                             lastAcceptedIdx = i;
 

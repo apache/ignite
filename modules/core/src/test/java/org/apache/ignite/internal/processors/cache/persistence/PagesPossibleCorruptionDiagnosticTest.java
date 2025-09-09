@@ -37,23 +37,19 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CorruptedFreeListException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static java.lang.String.format;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV2.PART_META_REUSE_LIST_ROOT_OFF;
 
 /**
@@ -90,7 +86,7 @@ public class PagesPossibleCorruptionDiagnosticTest extends GridCommonAbstractTes
             )
             .setFailureHandler(new FailureHandlerWithCallback(failureCtx ->
                 correctFailure = failureCtx.error() instanceof CorruptedPartitionMetaPageException
-                     && ((AbstractCorruptedPersistenceException)failureCtx.error()).pages().length > 0
+                     && ((CorruptedDataStructureException)failureCtx.error()).pageIds().length > 0
             ));
     }
 
@@ -119,13 +115,9 @@ public class PagesPossibleCorruptionDiagnosticTest extends GridCommonAbstractTes
      * @throws IgniteCheckedException If failed.
      */
     private FilePageStore filePageStore(IgniteEx ignite, int partId) throws IgniteCheckedException {
-        final PdsFolderSettings folderSettings = ignite.context().pdsFolderResolver().resolveFolders();
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-        File storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
-
-        File cacheWorkDir = new File(storeWorkDir, CACHE_DIR_PREFIX + DEFAULT_CACHE_NAME);
-
-        File partFile = new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
+        File partFile = ft.partitionFile(ignite.cachex(DEFAULT_CACHE_NAME).configuration(), partId);
 
         return (FilePageStore)storeFactory.createPageStore(FLAG_DATA, partFile, a -> {});
     }
@@ -195,7 +187,7 @@ public class PagesPossibleCorruptionDiagnosticTest extends GridCommonAbstractTes
         IgniteCacheOffheapManager.CacheDataStore dataStore =
             ignite.context().cache().cacheGroup(grpId).offheap().cacheDataStores().iterator().next();
 
-        GridCacheOffheapManager.GridCacheDataStore store = (GridCacheOffheapManager.GridCacheDataStore) dataStore;
+        GridCacheOffheapManager.GridCacheDataStore store = (GridCacheOffheapManager.GridCacheDataStore)dataStore;
 
         AbstractFreeList freeList = store.getCacheStoreFreeList();
 
@@ -204,13 +196,13 @@ public class PagesPossibleCorruptionDiagnosticTest extends GridCommonAbstractTes
         bag.addFreePage(pageId(0, FLAG_DATA, 10));
         bag.addFreePage(pageId(0, FLAG_DATA, 11));
 
-        T2<Integer, Long>[] pages = null;
+        long[] pages = null;
 
         try {
             freeList.addForRecycle(bag);
         }
         catch (CorruptedFreeListException e) {
-            pages = e.pages();
+            pages = e.pageIds();
         }
 
         assertNotNull(pages);

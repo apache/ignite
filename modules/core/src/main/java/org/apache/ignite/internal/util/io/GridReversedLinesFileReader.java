@@ -32,24 +32,34 @@ import java.nio.charset.UnsupportedCharsetException;
  */
 @SuppressWarnings("ALL")
 public class GridReversedLinesFileReader implements Closeable {
+    /** */
     private final int blockSize;
 
+    /** */
     private final Charset encoding;
 
+    /** */
     private final RandomAccessFile randomAccessFile;
 
+    /** */
     private final long totalByteLength;
 
+    /** */
     private final long totalBlockCount;
 
+    /** */
     private final byte[][] newLineSequences;
 
+    /** */
     private final int avoidNewlineSplitBufferSize;
 
+    /** */
     private final int byteDecrement;
 
+    /** */
     private FilePart currentFilePart;
 
+    /** */
     private boolean trailingNewlineOfFileSkipped = false;
 
     /**
@@ -83,10 +93,11 @@ public class GridReversedLinesFileReader implements Closeable {
 
         randomAccessFile = new RandomAccessFile(file, "r");
         totalByteLength = randomAccessFile.length();
-        int lastBlockLength = (int) (totalByteLength % blockSize);
+        int lastBlockLength = (int)(totalByteLength % blockSize);
         if (lastBlockLength > 0) {
             totalBlockCount = totalByteLength / blockSize + 1;
-        } else {
+        }
+        else {
             totalBlockCount = totalByteLength / blockSize;
             if (totalByteLength > 0) {
                 lastBlockLength = blockSize;
@@ -100,22 +111,27 @@ public class GridReversedLinesFileReader implements Closeable {
         if (maxBytesPerChar == 1f) {
             // all one byte encodings are no problem
             byteDecrement = 1;
-        } else if (charset == Charset.forName("UTF-8")) {
+        }
+        else if (charset == Charset.forName("UTF-8")) {
             // UTF-8 works fine out of the box, for multibyte sequences a second UTF-8 byte can never be a newline byte
             // http://en.wikipedia.org/wiki/UTF-8
             byteDecrement = 1;
-        } else if (charset == Charset.forName("Shift_JIS")) {
+        }
+        else if (charset == Charset.forName("Shift_JIS")) {
             // Same as for UTF-8
             // http://www.herongyang.com/Unicode/JIS-Shift-JIS-Encoding.html
             byteDecrement = 1;
-        } else if (charset == Charset.forName("UTF-16BE") || charset == Charset.forName("UTF-16LE")) {
+        }
+        else if (charset == Charset.forName("UTF-16BE") || charset == Charset.forName("UTF-16LE")) {
             // UTF-16 new line sequences are not allowed as second tuple of four byte sequences,
             // however byte order has to be specified
             byteDecrement = 2;
-        } else if (charset == Charset.forName("UTF-16")) {
+        }
+        else if (charset == Charset.forName("UTF-16")) {
             throw new UnsupportedEncodingException(
                 "For UTF-16, you need to specify the byte order (use UTF-16BE or UTF-16LE)");
-        } else {
+        }
+        else {
             throw new UnsupportedEncodingException(
                 "Encoding " + charset + " is not supported yet (feel free to submit a patch)");
         }
@@ -157,7 +173,8 @@ public class GridReversedLinesFileReader implements Closeable {
             currentFilePart = currentFilePart.rollOver();
             if (currentFilePart != null) {
                 line = currentFilePart.readLine();
-            } else {
+            }
+            else {
                 // no more fileparts: we're done, leave line set to null
                 break;
             }
@@ -181,13 +198,18 @@ public class GridReversedLinesFileReader implements Closeable {
         randomAccessFile.close();
     }
 
+    /** */
     private class FilePart {
+        /** */
         private final long no;
 
+        /** */
         private final byte[] data;
 
+        /** */
         private byte[] leftOver;
 
+        /** */
         private int currentLastBytePos;
 
         /**
@@ -206,8 +228,8 @@ public class GridReversedLinesFileReader implements Closeable {
             // read data
             if (no > 0 /* file not empty */) {
                 randomAccessFile.seek(off);
-                final int countRead = randomAccessFile.read(data, 0, length);
-                if (countRead != length) {
+                final int cntRead = randomAccessFile.read(data, 0, length);
+                if (cntRead != length) {
                     throw new IllegalStateException("Count of requested bytes and actually read bytes don't match");
                 }
             }
@@ -234,7 +256,8 @@ public class GridReversedLinesFileReader implements Closeable {
 
             if (no > 1) {
                 return new FilePart(no - 1, blockSize, leftOver);
-            } else {
+            }
+            else {
                 // NO 1 was the last FilePart, we're finished
                 if (leftOver != null) {
                     throw new IllegalStateException("Unexpected leftover of the last block: leftOverOfThisFilePart="
@@ -253,7 +276,7 @@ public class GridReversedLinesFileReader implements Closeable {
         private String readLine() throws IOException {
 
             String line = null;
-            int newLineMatchByteCount;
+            int newLineMatchByteCnt;
 
             boolean isLastFilePart = no == 1;
 
@@ -268,7 +291,7 @@ public class GridReversedLinesFileReader implements Closeable {
                 }
 
                 // --- check for newline ---
-                if ((newLineMatchByteCount = getNewLineMatchByteCount(data, i)) > 0 /* found newline */) {
+                if ((newLineMatchByteCnt = getNewLineMatchByteCount(data, i)) > 0 /* found newline */) {
                     final int lineStart = i + 1;
                     int lineLengthBytes = currentLastBytePos - lineStart + 1;
 
@@ -280,7 +303,7 @@ public class GridReversedLinesFileReader implements Closeable {
 
                     line = new String(lineData, encoding);
 
-                    currentLastBytePos = i - newLineMatchByteCount;
+                    currentLastBytePos = i - newLineMatchByteCnt;
                     break; // found line
                 }
 
@@ -313,7 +336,8 @@ public class GridReversedLinesFileReader implements Closeable {
                 // create left over for next block
                 leftOver = new byte[lineLengthBytes];
                 System.arraycopy(data, 0, leftOver, 0, lineLengthBytes);
-            } else {
+            }
+            else {
                 leftOver = null;
             }
             currentLastBytePos = -1;
@@ -327,14 +351,14 @@ public class GridReversedLinesFileReader implements Closeable {
          * @return length of newline sequence or 0 if none found
          */
         private int getNewLineMatchByteCount(byte[] data, int i) {
-            for (byte[] newLineSequence : newLineSequences) {
+            for (byte[] newLineSeq : newLineSequences) {
                 boolean match = true;
-                for (int j = newLineSequence.length - 1; j >= 0; j--) {
-                    int k = i + j - (newLineSequence.length - 1);
-                    match &= k >= 0 && data[k] == newLineSequence[j];
+                for (int j = newLineSeq.length - 1; j >= 0; j--) {
+                    int k = i + j - (newLineSeq.length - 1);
+                    match &= k >= 0 && data[k] == newLineSeq[j];
                 }
                 if (match) {
-                    return newLineSequence.length;
+                    return newLineSeq.length;
                 }
             }
             return 0;

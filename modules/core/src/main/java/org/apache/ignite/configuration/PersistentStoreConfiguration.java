@@ -78,12 +78,6 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Default wal always write full pages. */
     public static final boolean DFLT_WAL_ALWAYS_WRITE_FULL_PAGES = false;
 
-    /** Default wal directory. */
-    public static final String DFLT_WAL_STORE_PATH = "db/wal";
-
-    /** Default wal archive directory. */
-    public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
-
     /** Default write throttling enabled. */
     public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
 
@@ -115,10 +109,10 @@ public class PersistentStoreConfiguration implements Serializable {
     private int walSegmentSize = DFLT_WAL_SEGMENT_SIZE;
 
     /** Directory where WAL is stored (work directory) */
-    private String walStorePath = DFLT_WAL_STORE_PATH;
+    private String walStorePath = DataStorageConfiguration.DFLT_WAL_PATH;
 
     /** WAL archive path. */
-    private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
+    private String walArchivePath = DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 
     /** Metrics enabled flag. */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
@@ -170,7 +164,7 @@ public class PersistentStoreConfiguration implements Serializable {
     private boolean writeThrottlingEnabled = DFLT_WRITE_THROTTLING_ENABLED;
 
     /**
-     * Returns a path the root directory where the Persistent Store will persist data and indexes.
+     * @return Path the root directory where the Persistent Store will persist data and indexes.
      */
     public String getPersistentStorePath() {
         return persistenceStorePath;
@@ -181,6 +175,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * By default the Persistent Store's files are located under Ignite work directory.
      *
      * @param persistenceStorePath Persistence store path.
+     * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setPersistentStorePath(String persistenceStorePath) {
         this.persistenceStorePath = persistenceStorePath;
@@ -401,6 +396,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * Sets flag indicating whether persistence metrics collection is enabled.
      *
      * @param metricsEnabled Metrics enabled flag.
+     * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setMetricsEnabled(boolean metricsEnabled) {
         this.metricsEnabled = metricsEnabled;
@@ -409,7 +405,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Gets flag indicating whether write throttling is enabled.
+     * @return Flag indicating whether write throttling is enabled.
      */
     public boolean isWriteThrottlingEnabled() {
         return writeThrottlingEnabled;
@@ -419,6 +415,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * Sets flag indicating whether write throttling is enabled.
      *
      * @param writeThrottlingEnabled Write throttling enabled flag.
+     * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setWriteThrottlingEnabled(boolean writeThrottlingEnabled) {
         this.writeThrottlingEnabled = writeThrottlingEnabled;
@@ -443,6 +440,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * hits will be tracked.
      *
      * @param rateTimeInterval Time interval in milliseconds.
+     * @return {@code this} for chaining.
      * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
     @Deprecated
@@ -468,6 +466,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * Sets the number of sub-intervals to split the {@link #getRateTimeInterval()} into to track the update history.
      *
      * @param subIntervals The number of sub-intervals for history tracking.
+     * @return {@code this} for chaining.
      * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
     @Deprecated
@@ -489,6 +488,7 @@ public class PersistentStoreConfiguration implements Serializable {
 
     /**
      * @param walMode Wal mode.
+     * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setWalMode(WALMode walMode) {
         if (walMode == WALMode.DEFAULT)
@@ -513,6 +513,7 @@ public class PersistentStoreConfiguration implements Serializable {
 
     /**
      * @param tlbSize WAL buffer size.
+     * @return {@code this} for chaining.
      * @deprecated Instead {@link #setWalBufferSize(int walBuffSize)} should be used.
      */
     @Deprecated
@@ -533,6 +534,7 @@ public class PersistentStoreConfiguration implements Serializable {
 
     /**
      * @param walBuffSize WAL buffer size.
+     * @return {@code this} for chaining.
      */
     @Deprecated
     public PersistentStoreConfiguration setWalBufferSize(int walBuffSize) {
@@ -556,6 +558,7 @@ public class PersistentStoreConfiguration implements Serializable {
      *  all other WAL modes.
      *
      * @param walFlushFreq WAL flush frequency, in milliseconds.
+     * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setWalFlushFrequency(long walFlushFreq) {
         this.walFlushFreq = walFlushFreq;
@@ -564,7 +567,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Gets the fsync delay, in nanoseconds.
+     * @return The fsync delay, in nanoseconds.
      */
     public long getWalFsyncDelayNanos() {
         return walFsyncDelay <= 0 ? DFLT_WAL_FSYNC_DELAY : walFsyncDelay;
@@ -572,6 +575,7 @@ public class PersistentStoreConfiguration implements Serializable {
 
     /**
      * @param walFsyncDelayNanos Wal fsync delay, in nanoseconds.
+     * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setWalFsyncDelayNanos(long walFsyncDelayNanos) {
         walFsyncDelay = walFsyncDelayNanos;
@@ -591,6 +595,7 @@ public class PersistentStoreConfiguration implements Serializable {
 
     /**
      * @param walRecordIterBuffSize Wal record iterator buffer size.
+     * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setWalRecordIteratorBufferSize(int walRecordIterBuffSize) {
         this.walRecordIterBuffSize = walRecordIterBuffSize;
@@ -599,7 +604,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     *
+     * @return Whether full page must be always written.
      */
     public boolean isAlwaysWriteFullPages() {
         return alwaysWriteFullPages;
@@ -607,6 +612,7 @@ public class PersistentStoreConfiguration implements Serializable {
 
     /**
      * @param alwaysWriteFullPages Always write full pages.
+     * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setAlwaysWriteFullPages(boolean alwaysWriteFullPages) {
         this.alwaysWriteFullPages = alwaysWriteFullPages;
@@ -626,6 +632,7 @@ public class PersistentStoreConfiguration implements Serializable {
 
     /**
      * @param fileIOFactory File I/O factory
+     * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setFileIOFactory(FileIOFactory fileIOFactory) {
         this.fileIOFactory = fileIOFactory;
@@ -668,6 +675,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * This property defines order of writing pages to disk storage during checkpoint.
      *
      * @param checkpointWriteOrder Checkpoint write order.
+     * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setCheckpointWriteOrder(CheckpointWriteOrder checkpointWriteOrder) {
         this.checkpointWriteOrder = checkpointWriteOrder;

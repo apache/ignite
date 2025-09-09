@@ -532,8 +532,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     public void readyNearLock(GridCacheVersion ver, GridCacheVersion mapped,
         Collection<GridCacheVersion> committed,
         Collection<GridCacheVersion> rolledBack,
-        Collection<GridCacheVersion> pending) throws GridCacheEntryRemovedException
-    {
+        Collection<GridCacheVersion> pending
+    ) throws GridCacheEntryRemovedException {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 

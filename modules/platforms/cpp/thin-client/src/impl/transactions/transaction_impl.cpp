@@ -33,7 +33,7 @@ namespace ignite
             namespace transactions
             {
                 template<typename ReqT, typename RspT>
-                void TransactionImpl::SendTxMessage(const ReqT& req, RspT& rsp)
+                void TransactionImpl::SendTxMessage(ReqT& req, RspT& rsp)
                 {
                     channel.Get()->SyncMessage(req, rsp, static_cast<int32_t>(timeout / 1000) + ioTimeout);
 

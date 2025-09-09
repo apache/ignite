@@ -17,18 +17,40 @@
 
 package org.apache.ignite.client;
 
+import org.apache.ignite.client.thin.ExtraColumnInH2RowsTest;
+import org.apache.ignite.internal.client.thin.AffinityMetricsTest;
+import org.apache.ignite.internal.client.thin.AtomicLongTest;
+import org.apache.ignite.internal.client.thin.BlockingTxOpsTest;
 import org.apache.ignite.internal.client.thin.CacheAsyncTest;
 import org.apache.ignite.internal.client.thin.CacheEntryListenersTest;
 import org.apache.ignite.internal.client.thin.ClusterApiTest;
+import org.apache.ignite.internal.client.thin.ClusterGroupClusterRestartTest;
 import org.apache.ignite.internal.client.thin.ClusterGroupTest;
 import org.apache.ignite.internal.client.thin.ComputeTaskTest;
+import org.apache.ignite.internal.client.thin.DataReplicationOperationsTest;
+import org.apache.ignite.internal.client.thin.FunctionalTest;
+import org.apache.ignite.internal.client.thin.IgniteSetTest;
+import org.apache.ignite.internal.client.thin.InactiveClusterCacheRequestTest;
+import org.apache.ignite.internal.client.thin.InvokeTest;
+import org.apache.ignite.internal.client.thin.MetadataRegistrationTest;
+import org.apache.ignite.internal.client.thin.OptimizedMarshallerClassesCachedTest;
+import org.apache.ignite.internal.client.thin.RecoveryModeTest;
+import org.apache.ignite.internal.client.thin.ReliableChannelDuplicationTest;
 import org.apache.ignite.internal.client.thin.ReliableChannelTest;
+import org.apache.ignite.internal.client.thin.ServiceAwarenessTest;
+import org.apache.ignite.internal.client.thin.ServicesBinaryArraysTests;
 import org.apache.ignite.internal.client.thin.ServicesTest;
+import org.apache.ignite.internal.client.thin.ThinClientEnpointsDiscoveryTest;
+import org.apache.ignite.internal.client.thin.ThinClientNonTransactionalOperationsInTxTest;
+import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessBalancingTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessDiscoveryTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessResourceReleaseTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessStableTopologyTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessUnstableTopologyTest;
 import org.apache.ignite.internal.client.thin.TimeoutTest;
+import org.apache.ignite.internal.client.thin.events.IgniteClientConnectionEventListenerTest;
+import org.apache.ignite.internal.client.thin.events.IgniteClientLifecycleEventListenerTest;
+import org.apache.ignite.internal.client.thin.events.IgniteClientRequestEventListenerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -39,13 +61,11 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     ClientConfigurationTest.class,
     ClientCacheConfigurationTest.class,
+    ClientOrderedCollectionWarnTest.class,
     FunctionalTest.class,
     IgniteBinaryTest.class,
     LoadTest.class,
     ReliabilityTest.class,
-    ReliabilityTestAsync.class,
-    ReliabilityTestPartitionAware.class,
-    ReliabilityTestPartitionAwareAsync.class,
     SecurityTest.class,
     FunctionalQueryTest.class,
     IgniteBinaryQueryTest.class,
@@ -57,14 +77,36 @@ import org.junit.runners.Suite;
     ClusterApiTest.class,
     ClusterGroupTest.class,
     ServicesTest.class,
+    ServicesBinaryArraysTests.class,
+    ServiceAwarenessTest.class,
     CacheEntryListenersTest.class,
     ThinClientPartitionAwarenessStableTopologyTest.class,
     ThinClientPartitionAwarenessUnstableTopologyTest.class,
     ThinClientPartitionAwarenessResourceReleaseTest.class,
     ThinClientPartitionAwarenessDiscoveryTest.class,
+    ThinClientPartitionAwarenessBalancingTest.class,
+    ThinClientNonTransactionalOperationsInTxTest.class,
     ReliableChannelTest.class,
     CacheAsyncTest.class,
-    TimeoutTest.class
+    TimeoutTest.class,
+    OptimizedMarshallerClassesCachedTest.class,
+    AtomicLongTest.class,
+    BinaryConfigurationTest.class,
+    IgniteSetTest.class,
+    DataReplicationOperationsTest.class,
+    MetadataRegistrationTest.class,
+    IgniteClientConnectionEventListenerTest.class,
+    IgniteClientRequestEventListenerTest.class,
+    IgniteClientLifecycleEventListenerTest.class,
+    ThinClientEnpointsDiscoveryTest.class,
+    InactiveClusterCacheRequestTest.class,
+    AffinityMetricsTest.class,
+    ClusterGroupClusterRestartTest.class,
+    BlockingTxOpsTest.class,
+    InvokeTest.class,
+    ExtraColumnInH2RowsTest.class,
+    RecoveryModeTest.class,
+    ReliableChannelDuplicationTest.class
 })
 public class ClientTestSuite {
     // No-op.

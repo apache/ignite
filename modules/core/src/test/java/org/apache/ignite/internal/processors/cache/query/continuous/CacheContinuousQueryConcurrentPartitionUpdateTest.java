@@ -23,7 +23,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
@@ -42,12 +41,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -83,14 +80,6 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
      * @throws Exception If failed.
      */
     @Test
-    public void testConcurrentUpdatePartitionMvccTx() throws Exception {
-        concurrentUpdatePartition(TRANSACTIONAL_SNAPSHOT, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testConcurrentUpdatePartitionAtomicCacheGroup() throws Exception {
         concurrentUpdatePartition(ATOMIC, true);
     }
@@ -101,14 +90,6 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     @Test
     public void testConcurrentUpdatePartitionTxCacheGroup() throws Exception {
         concurrentUpdatePartition(TRANSACTIONAL, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testConcurrentUpdatePartitionMvccTxCacheGroup() throws Exception {
-        concurrentUpdatePartition(TRANSACTIONAL_SNAPSHOT, true);
     }
 
     /**
@@ -201,10 +182,6 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
                                         committed = true;
                                     }
-                                    catch (CacheException e) {
-                                        assertTrue(e.getCause() instanceof TransactionSerializationException);
-                                        assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
-                                    }
                                 }
                             }
                         }
@@ -276,14 +253,6 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
      * @throws Exception If failed.
      */
     @Test
-    public void testConcurrentUpdatesAndQueryStartMvccTx() throws Exception {
-        concurrentUpdatesAndQueryStart(TRANSACTIONAL_SNAPSHOT, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testConcurrentUpdatesAndQueryStartAtomicCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(ATOMIC, true);
     }
@@ -294,14 +263,6 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     @Test
     public void testConcurrentUpdatesAndQueryStartTxCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testConcurrentUpdatesAndQueryStartMvccTxCacheGroup() throws Exception {
-        concurrentUpdatesAndQueryStart(TRANSACTIONAL_SNAPSHOT, true);
     }
 
     /**
@@ -393,10 +354,6 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
                                             committed = true;
                                         }
-                                        catch (CacheException e) {
-                                            assertTrue(e.getCause() instanceof TransactionSerializationException);
-                                            assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
-                                        }
                                     }
                                 }
                             }
@@ -442,10 +399,6 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                                         tx.commit();
 
                                         committed = true;
-                                    }
-                                    catch (CacheException e) {
-                                        assertTrue(e.getCause() instanceof TransactionSerializationException);
-                                        assertEquals(atomicityMode, TRANSACTIONAL_SNAPSHOT);
                                     }
                                 }
                             }

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.sql;
 
-import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
-import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.junit.Test;
 
 /**
@@ -32,7 +31,7 @@ public class SqlParserMultiStatementSelfTest extends SqlParserAbstractSelfTest {
      */
     @Test
     public void testEmptyStatements() {
-        String sql = ";;;CREATE INDEX TEST on TABLE1(id)  ; ;   BEGIN   ;;;";
+        String sql = ";;;CREATE INDEX TEST on TABLE1(id)  ; ;   DROP USER test   ;;;";
 
         SqlParser parser = new SqlParser("schema", sql);
 
@@ -44,12 +43,12 @@ public class SqlParserMultiStatementSelfTest extends SqlParserAbstractSelfTest {
 
         assertTrue(create instanceof SqlCreateIndexCommand);
         assertEquals("CREATE INDEX TEST on TABLE1(id)", parser.lastCommandSql());
-        assertEquals(" ;   BEGIN   ;;;", parser.remainingSql());
+        assertEquals(" ;   DROP USER test   ;;;", parser.remainingSql());
 
-        SqlCommand begin = parser.nextCommand();
+        SqlCommand dropUser = parser.nextCommand();
 
-        assertTrue(begin instanceof SqlBeginTransactionCommand);
-        assertEquals("BEGIN", parser.lastCommandSql());
+        assertTrue(dropUser instanceof SqlDropUserCommand);
+        assertEquals("DROP USER test", parser.lastCommandSql());
         assertEquals(";;", parser.remainingSql());
 
         SqlCommand emptyCmd = parser.nextCommand();
@@ -63,32 +62,35 @@ public class SqlParserMultiStatementSelfTest extends SqlParserAbstractSelfTest {
      */
     @Test
     public void testComments() {
-        String beginSql = "BEGIN  ;" + "  \n";
-        String noteSql = "  -- Let's start an empty transaction; $1M idea!\n";
-        String commitSql = "COMMIT;" + ";;";
-
-        String sql = beginSql +
-            noteSql +
-            commitSql;
+        String sql = " -- Creating new index \n" +
+            " CREATE INDEX IDX1 on TABLE1(id); \n" +
+            " -- Creating one more index \n" +
+            " CREATE INDEX IDX2 on TABLE2(id); \n" +
+            " -- All done.";
 
         SqlParser parser = new SqlParser("schema", sql);
 
-        SqlCommand begin = parser.nextCommand();
+        // Haven't parse anything yet.
+        assertEquals(null, parser.lastCommandSql());
+        assertEquals(sql, parser.remainingSql());
 
-        assertTrue(begin instanceof SqlBeginTransactionCommand);
+        SqlCommand cmd = parser.nextCommand();
 
-        assertEquals("BEGIN", parser.lastCommandSql());
-        assertEquals("  \n" + noteSql + commitSql, parser.remainingSql());
+        assertTrue(cmd instanceof SqlCreateIndexCommand);
+        assertEquals("CREATE INDEX IDX1 on TABLE1(id)", parser.lastCommandSql());
+        assertEquals(" \n -- Creating one more index \n" +
+            " CREATE INDEX IDX2 on TABLE2(id); \n" +
+            " -- All done.", parser.remainingSql());
 
-        SqlCommand commit = parser.nextCommand();
+        cmd = parser.nextCommand();
 
-        assertTrue(commit instanceof SqlCommitTransactionCommand);
-        assertEquals("COMMIT", parser.lastCommandSql());
-        assertEquals(";;", parser.remainingSql());
+        assertTrue(cmd instanceof SqlCreateIndexCommand);
+        assertEquals("CREATE INDEX IDX2 on TABLE2(id)", parser.lastCommandSql());
+        assertEquals(" \n -- All done.", parser.remainingSql());
 
-        SqlCommand emptyCmd = parser.nextCommand();
+        cmd = parser.nextCommand();
 
-        assertEquals(null, emptyCmd);
+        assertNull(cmd);
         assertEquals(null, parser.lastCommandSql());
         assertEquals(null, parser.remainingSql());
     }

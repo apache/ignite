@@ -16,11 +16,9 @@
  */
 package org.apache.ignite.internal.processors.marshaller;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * On receiving a {@link MissingMappingRequestMessage} mapping request server node looks up class name
@@ -29,15 +27,15 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class MissingMappingResponseMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
+    @Order(0)
     private byte platformId;
 
     /** */
+    @Order(1)
     private int typeId;
 
     /** */
+    @Order(value = 2, method = "className")
     private String clsName;
 
     /**
@@ -58,85 +56,8 @@ public class MissingMappingResponseMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString("clsName", clsName))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByte("platformId", platformId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeInt("typeId", typeId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                clsName = reader.readString("clsName");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                platformId = reader.readByte("platformId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                typeId = reader.readInt("typeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(MissingMappingResponseMessage.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 79;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */
@@ -151,6 +72,11 @@ public class MissingMappingResponseMessage implements Message {
         return platformId;
     }
 
+    /** */
+    public void platformId(byte platformId) {
+        this.platformId = platformId;
+    }
+
     /**
      *
      */
@@ -158,11 +84,21 @@ public class MissingMappingResponseMessage implements Message {
         return typeId;
     }
 
+    /** */
+    public void typeId(int typeId) {
+        this.typeId = typeId;
+    }
+
     /**
      *
      */
     public String className() {
         return clsName;
+    }
+
+    /** */
+    public void className(String clsName) {
+        this.clsName = clsName;
     }
 
     /** {@inheritDoc} */

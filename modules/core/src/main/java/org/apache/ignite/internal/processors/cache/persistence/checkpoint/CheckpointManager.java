@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,11 +36,12 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -47,6 +49,7 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableBiPredicate;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
@@ -78,6 +81,9 @@ public class CheckpointManager {
     /** Checkpoint markers storage which mark the start and end of each checkpoint. */
     private final CheckpointMarkersStorage checkpointMarkersStorage;
 
+    /** Storage for checkpoint recovery files. */
+    private final CheckpointRecoveryFileStorage checkpointRecoveryFileStorage;
+
     /** Timeout checkpoint lock which should be used while write to memory happened. */
     final CheckpointTimeoutLock checkpointTimeoutLock;
 
@@ -100,13 +106,14 @@ public class CheckpointManager {
      * @param cacheGroupContexts Cache group contexts.
      * @param pageMemoryGroupResolver Page memory resolver.
      * @param throttlingPolicy Throttling policy.
-     * @param snapshotMgr Snapshot manager.
      * @param persStoreMetrics Persistence metrics.
      * @param longJvmPauseDetector Long JVM pause detector.
      * @param failureProcessor Failure processor.
      * @param cacheProcessor Cache processor.
      * @param cpFreqDeviation Distributed checkpoint frequency deviation.
-     * @throws IgniteCheckedException if fail.
+     * @param checkpointMapSnapshotExecutor Checkpoint map snapshot executor.
+     * @param marsh JDK marshaller.
+     * @param ft Node file tree.
      */
     public CheckpointManager(
         Function<Class<?>, IgniteLogger> logger,
@@ -121,13 +128,15 @@ public class CheckpointManager {
         Supplier<Collection<CacheGroupContext>> cacheGroupContexts,
         IgniteThrowableFunction<Integer, PageMemoryEx> pageMemoryGroupResolver,
         PageMemoryImpl.ThrottlingPolicy throttlingPolicy,
-        IgniteCacheSnapshotManager snapshotMgr,
         DataStorageMetricsImpl persStoreMetrics,
         LongJVMPauseDetector longJvmPauseDetector,
         FailureProcessor failureProcessor,
         GridCacheProcessor cacheProcessor,
-        Supplier<Integer> cpFreqDeviation
-    ) throws IgniteCheckedException {
+        Supplier<Integer> cpFreqDeviation,
+        Executor checkpointMapSnapshotExecutor,
+        JdkMarshaller marsh,
+        NodeFileTree ft
+    ) {
         CheckpointHistory cpHistory = new CheckpointHistory(
             persistenceCfg,
             logger,
@@ -137,19 +146,22 @@ public class CheckpointManager {
 
         FileIOFactory ioFactory = persistenceCfg.getFileIOFactory();
 
+        CheckpointReadWriteLock lock = new CheckpointReadWriteLock(logger);
+
         checkpointMarkersStorage = new CheckpointMarkersStorage(
+            igniteInstanceName,
             logger,
             cpHistory,
             ioFactory,
-            pageStoreManager.workDir().getAbsolutePath()
+            ft,
+            lock,
+            checkpointMapSnapshotExecutor,
+            marsh
         );
-
-        CheckpointReadWriteLock lock = new CheckpointReadWriteLock(logger);
 
         checkpointWorkflow = new CheckpointWorkflow(
             logger,
             wal,
-            snapshotMgr,
             checkpointMarkersStorage,
             lock,
             persistenceCfg.getCheckpointWriteOrder(),
@@ -171,12 +183,16 @@ public class CheckpointManager {
         };
 
         checkpointPagesWriterFactory = new CheckpointPagesWriterFactory(
-            logger, snapshotMgr,
+            cacheProcessor.context().kernalContext(),
+            logger,
             (pageMemEx, fullPage, buf, tag) -> pageStoreManager.write(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
             persStoreMetrics,
             throttlingPolicy, threadBuf,
             pageMemoryGroupResolver
         );
+
+        checkpointRecoveryFileStorage = new CheckpointRecoveryFileStorage(cacheProcessor.context().kernalContext(),
+            ft.checkpoint(), ioFactory);
 
         checkpointerProvider = () -> new Checkpointer(
             igniteInstanceName,
@@ -185,11 +201,11 @@ public class CheckpointManager {
             logger,
             longJvmPauseDetector,
             failureProcessor,
-            snapshotMgr,
             persStoreMetrics,
             cacheProcessor,
             checkpointWorkflow,
             checkpointPagesWriterFactory,
+            checkpointRecoveryFileStorage,
             persistenceCfg.getCheckpointFrequency(),
             persistenceCfg.getCheckpointThreads(),
             cpFreqDeviation
@@ -255,10 +271,10 @@ public class CheckpointManager {
     }
 
     /**
-     * @return Checkpoint directory.
+     * @return Checkpoint storage.
      */
-    public File checkpointDirectory() {
-        return checkpointMarkersStorage.cpDir;
+    public CheckpointMarkersStorage checkpointMarkerStorage() {
+        return checkpointMarkersStorage;
     }
 
     /**
@@ -296,6 +312,13 @@ public class CheckpointManager {
     }
 
     /**
+     * @return List of checkpoint recovery files.
+     */
+    public List<CheckpointRecoveryFile> checkpointRecoveryFiles(@Nullable UUID cpId) throws StorageException {
+        return checkpointRecoveryFileStorage.list(cpId == null ? null : cpId::equals);
+    }
+
+    /**
      * Initialize checkpoint storage.
      */
     public void initializeStorage() throws IgniteCheckedException {
@@ -320,7 +343,7 @@ public class CheckpointManager {
     }
 
     /**
-     * Clean checkpoint directory {@link CheckpointMarkersStorage#cpDir}. The operation is necessary when local node joined to
+     * Clean checkpoint directory {@link NodeFileTree#checkpoint()}. The operation is necessary when local node joined to
      * baseline topology with different consistentId.
      */
     public void cleanupCheckpointDirectory() throws IgniteCheckedException {

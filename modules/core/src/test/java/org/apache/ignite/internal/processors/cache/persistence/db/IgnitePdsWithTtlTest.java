@@ -31,11 +31,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -62,7 +62,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -88,12 +87,6 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
     /** */
     private static final String CACHE_NAME_TX = "expirable-cache-tx";
-
-    /** */
-    private static final String CACHE_NAME_LOCAL_ATOMIC = "expirable-cache-local-atomic";
-
-    /** */
-    private static final String CACHE_NAME_LOCAL_TX = "expirable-cache-local-tx";
 
     /** */
     private static final String CACHE_NAME_NEAR_ATOMIC = "expirable-cache-near-atomic";
@@ -124,8 +117,6 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
-
         super.beforeTest();
 
         cleanPersistenceDir();
@@ -163,8 +154,6 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(
             getCacheConfiguration(CACHE_NAME_ATOMIC).setAtomicityMode(ATOMIC),
             getCacheConfiguration(CACHE_NAME_TX).setAtomicityMode(TRANSACTIONAL),
-            getCacheConfiguration(CACHE_NAME_LOCAL_ATOMIC).setAtomicityMode(ATOMIC).setCacheMode(CacheMode.LOCAL),
-            getCacheConfiguration(CACHE_NAME_LOCAL_TX).setAtomicityMode(TRANSACTIONAL).setCacheMode(CacheMode.LOCAL),
             getCacheConfiguration(CACHE_NAME_NEAR_ATOMIC).setAtomicityMode(ATOMIC)
                 .setNearConfiguration(new NearCacheConfiguration<>()),
             getCacheConfiguration(CACHE_NAME_NEAR_TX).setAtomicityMode(TRANSACTIONAL)
@@ -260,7 +249,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
         AtomicBoolean timeoutReached = new AtomicBoolean(false);
 
-        CheckpointManager checkpointManager = U.field(ig0.context().cache().context().database(), "checkpointManager");
+        CheckpointManager checkpointMgr = U.field(ig0.context().cache().context().database(), "checkpointManager");
 
         IgniteInternalFuture<?> ldrFut = runMultiThreadedAsync(() -> {
             while (!timeoutReached.get()) {
@@ -282,7 +271,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> cpWriteLockUnlockFut = runAsync(() -> {
             Object checkpointReadWriteLock = U.field(
-                checkpointManager.checkpointTimeoutLock(), "checkpointReadWriteLock"
+                checkpointMgr.checkpointTimeoutLock(), "checkpointReadWriteLock"
             );
 
             ReentrantReadWriteLockWithTracking lock = U.field(checkpointReadWriteLock, "checkpointLock");
@@ -327,8 +316,6 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             List<IgniteCache<Object, Object>> caches = F.asList(
                 srv.cache(CACHE_NAME_ATOMIC),
                 srv.cache(CACHE_NAME_TX),
-                srv.cache(CACHE_NAME_LOCAL_ATOMIC),
-                srv.cache(CACHE_NAME_LOCAL_TX),
                 srv.cache(CACHE_NAME_NEAR_ATOMIC),
                 srv.cache(CACHE_NAME_NEAR_TX)
             );
@@ -432,7 +419,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             srv.cluster().baselineAutoAdjustEnabled(false);
 
             startGrid(1);
-            srv.cluster().active(true);
+            srv.cluster().state(ClusterState.ACTIVE);
 
             ExpiryPolicy plc = CreatedExpiryPolicy.factoryOf(Duration.ONE_DAY).create();
 
@@ -501,10 +488,12 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
      *
      */
     protected void fillCache(IgniteCache<Integer, byte[]> cache) {
-        cache.putAll(new TreeMap<Integer, byte[]>() {{
-            for (int i = 0; i < ENTRIES; i++)
-                put(i, new byte[1024]);
-        }});
+        TreeMap<Integer, byte[]> data = new TreeMap<>();
+
+        for (int i = 0; i < ENTRIES; i++)
+            data.put(i, new byte[1024]);
+
+        cache.putAll(data);
 
         //Touch entries.
         for (int i = 0; i < ENTRIES; i++)

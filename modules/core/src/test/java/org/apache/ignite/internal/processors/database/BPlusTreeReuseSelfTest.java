@@ -46,16 +46,16 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
         long rootId,
         boolean initNew
     ) throws IgniteCheckedException {
-        PageLockTrackerManager pageLockTrackerManager = mock(PageLockTrackerManager.class);
+        PageLockTrackerManager pageLockTrackerMgr = mock(PageLockTrackerManager.class);
 
-        when(pageLockTrackerManager.createPageLockTracker(anyString())).thenReturn(new TestPageLockListener());
+        when(pageLockTrackerMgr.createPageLockTracker(anyString())).thenReturn(new TestPageLockListener());
 
         return new TestReuseList(
             cacheId,
             "test",
             pageMem,
             rootId,
-            pageLockTrackerManager,
+            pageLockTrackerMgr,
             new GridTestKernalContext(log),
             initNew
         );

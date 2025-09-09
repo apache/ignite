@@ -77,7 +77,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         @Override public void evaluate() throws Throwable {
             GridSpiAbstractTest testClsInstance = (GridSpiAbstractTest)description.getTestClass().newInstance();
             try {
-                testClsInstance.beforeFirstTest();
+                testClsInstance.beforeFirstTestInternal();
 
                 base.evaluate();
             }
@@ -157,7 +157,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     }
 
     /** */
-    private void beforeFirstTest() throws Exception {
+    protected void beforeFirstTestInternal() throws Exception {
         if (autoStart) {
             GridSpiTest spiTest = GridTestUtils.getAnnotation(getClass(), GridSpiTest.class);
 
@@ -370,7 +370,9 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     protected DiscoveryMetricsProvider createMetricsProvider() {
         return new DiscoveryMetricsProvider() {
             /** {@inheritDoc} */
-            @Override public ClusterMetrics metrics() { return new ClusterMetricsSnapshot(); }
+            @Override public ClusterMetrics metrics() {
+                return new ClusterMetricsSnapshot();
+            }
 
             /** {@inheritDoc} */
             @Override public Map<Integer, CacheMetrics> cacheMetrics() {
@@ -714,6 +716,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         }
     }
 
+    /** */
     private static class SecurityPermissionSetImpl implements SecurityPermissionSet {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;

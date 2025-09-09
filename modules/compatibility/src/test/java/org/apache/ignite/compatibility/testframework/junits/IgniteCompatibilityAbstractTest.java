@@ -22,14 +22,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.compatibility.testframework.junits.logger.ListenedGridTestLog4jLogger;
 import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -37,10 +33,16 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Rule;
+
+import static org.apache.ignite.compatibility.testframework.junits.Dependency.APACHE_IGNITE_GROUP_ID;
 
 /**
  * Super class for all compatibility tests.
@@ -55,6 +57,10 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
     /** Waiting milliseconds of the join of a node to topology. */
     protected static final int NODE_JOIN_TIMEOUT = 30_000;
+
+    /** */
+    @Rule
+    public SkipTestIfJdkNewerRule skipIfJdkNewerRule = new SkipTestIfJdkNewerRule();
 
     /** Local JVM Ignite node. */
     protected transient Ignite locJvmInstance = null;
@@ -142,9 +148,11 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         final IgniteConfiguration cfg = getConfiguration(igniteInstanceName); // stub - won't be used at node startup
 
-        IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, log, locJvmInstance == null ? null : (x) -> locJvmInstance, true) {
+        final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+        IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, listeningLog, locJvmInstance == null ? null : () -> locJvmInstance, true) {
             @Override protected IgniteLogger logger(IgniteLogger log, Object ctgr) {
-                return ListenedGridTestLog4jLogger.createLogger(ctgr + "#" + ver.replaceAll("\\.", "_"));
+                return listeningLog.getLogger(ctgr + "#" + ver.replaceAll("\\.", "_"));
             }
 
             @Override protected String igniteNodeRunnerClassName() throws Exception {
@@ -165,21 +173,18 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         };
 
         if (locJvmInstance == null) {
-            CountDownLatch nodeJoinedLatch = new CountDownLatch(1);
-
             UUID nodeId = ignite.getId();
 
-            ListenedGridTestLog4jLogger log = (ListenedGridTestLog4jLogger)ignite.log();
+            LogListener lsnr = LogListener.matches(SYNCHRONIZATION_LOG_MESSAGE + nodeId).build();
 
-            log.addListener(nodeId, new LoggedJoinNodeClosure(nodeJoinedLatch, nodeId));
+            listeningLog.registerListener(lsnr);
 
-            final long nodeJoinTimeout = getNodeJoinTimeout();
-            final boolean joined = nodeJoinedLatch.await(nodeJoinTimeout, TimeUnit.MILLISECONDS);
+            final long joinTimeout = getNodeJoinTimeout();
 
             assertTrue("Node has not joined [id=" + nodeId + "]/" +
-                "or does not completed its startup during timeout: " + nodeJoinTimeout + " ms.", joined);
+                "or does not completed its startup during timeout: " + joinTimeout + " ms.", lsnr.check(joinTimeout));
 
-            log.removeListener(nodeId);
+            listeningLog.clearListeners();
         }
 
         if (rmJvmInstance == null)
@@ -197,7 +202,9 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         filteredJvmArgs.add("-ea");
 
         for (String arg : U.jvmArgs()) {
-            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms"))
+            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") || arg.startsWith("--add-opens")
+                || arg.startsWith("--add-exports") || arg.startsWith("--add-modules")
+                || arg.startsWith("--patch-module") || arg.startsWith("--add-reads"))
                 filteredJvmArgs.add(arg);
         }
 
@@ -215,10 +222,12 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         }
 
         for (Dependency dependency : dependencies) {
-            final String artifactVer = Optional.ofNullable(dependency.version()).orElse(ver);
-
-            String pathToArtifact = MavenUtils.getPathToIgniteArtifact(dependency.groupId(),
-                    dependency.artifactId(), artifactVer, dependency.classifier());
+            // dependency.version() == null means the default Ignite classpath is used.
+            String pathToArtifact = MavenUtils.getPathToIgniteArtifact(
+                dependency.version() == null ? APACHE_IGNITE_GROUP_ID : dependency.groupId(),
+                dependency.artifactId(),
+                dependency.version() == null ? ver : dependency.version(),
+                dependency.classifier());
 
             pathBuilder.append(pathToArtifact).append(File.pathSeparator);
         }
@@ -252,6 +261,9 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         dependencies.add(new Dependency("core", "ignite-core", false));
         dependencies.add(new Dependency("core", "ignite-core", true));
 
+        if (IgniteProductVersion.fromString("2.14.0").compareTo(IgniteProductVersion.fromString(igniteVer)) > 0)
+            dependencies.add(new Dependency("log4j", "log4j", "log4j", "1.2.17", false));
+
         return dependencies;
     }
 
@@ -274,6 +286,13 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         // Just to exclude indexing module
         excluded.add("indexing");
+
+        // Exclude all modules necessary to compile the current version of core module to avoid conflicts with previous versions.
+        // When building with TeamCity, JAR files named according to their artifact IDs are added to the classpath.
+        excluded.addAll(Set.of("ignite-binary-api", "ignite-binary-impl", "ignite-commons", "ignite-grid-unsafe"));
+        // During local development, classes from the target directory (for example, ignite/modules/commons/target/classes)
+        // are included in the classpath.
+        excluded.addAll(Set.of("modules/binary/api", "modules/binary/impl", "modules/commons", "modules/unsafe"));
 
         return excluded;
     }
@@ -330,29 +349,5 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
         rmJvmInstance = null;
 
         super.stopAllGrids(cancel);
-    }
-
-    /** */
-    protected static class LoggedJoinNodeClosure implements IgniteInClosure<String> {
-        /** Node joined latch. */
-        private CountDownLatch nodeJoinedLatch;
-
-        /** Pattern for comparing. */
-        private String pattern;
-
-        /**
-         * @param nodeJoinedLatch Nodes startup synchronization latch.
-         * @param nodeId Expected node id.
-         */
-        LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID nodeId) {
-            this.nodeJoinedLatch = nodeJoinedLatch;
-            this.pattern = SYNCHRONIZATION_LOG_MESSAGE + nodeId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(String s) {
-            if (nodeJoinedLatch.getCount() > 0 && s.contains(pattern))
-                nodeJoinedLatch.countDown();
-        }
     }
 }

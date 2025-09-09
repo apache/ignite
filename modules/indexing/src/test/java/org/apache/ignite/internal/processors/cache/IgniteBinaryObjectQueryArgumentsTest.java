@@ -82,8 +82,6 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
 
         cfg.setCacheConfiguration(getCacheConfigurations());
 
-        cfg.setMarshaller(null);
-
         return cfg;
     }
 
@@ -204,7 +202,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
      */
     @Test
     public void testEnumObjectArgument() throws Exception {
-       testKeyValQuery(ENUM_CACHE, EnumKey.KEY1, EnumKey.KEY2);
+        testKeyValQuery(ENUM_CACHE, EnumKey.KEY1, EnumKey.KEY2);
     }
 
     /**
@@ -413,7 +411,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final Person person = (Person) o;
+            final Person person = (Person)o;
 
             return name != null ? name.equals(person.name) : person.name == null;
 
@@ -546,7 +544,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final SearchValue that = (SearchValue) o;
+            final SearchValue that = (SearchValue)o;
 
             if (uuid != null ? !uuid.equals(that.uuid) : that.uuid != null) return false;
             if (str != null ? !str.equals(that.str) : that.str != null) return false;

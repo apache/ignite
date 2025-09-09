@@ -147,7 +147,8 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
                 error("Transaction failed: " + tx, e);
 
                 throw e;
-            } finally {
+            }
+            finally {
                 tx.close();
             }
 

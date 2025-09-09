@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -352,29 +351,6 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
     }
 
     /**
-     *  Checks if JDBC connection disabled for daemon node.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testJdbcConnectionDisabledForDaemon() throws Exception {
-        final IgniteConfiguration cfg = baseConfiguration().setDaemon(true);
-
-        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
-            .setJdbcEnabled(true)
-            .setThinClientEnabled(true));
-
-        Ignition.start(cfg);
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
-                return null;
-            }
-        }, SQLException.class, "Failed to connect");
-    }
-
-    /**
      * Get base node configuration.
      *
      * @return Configuration.
@@ -388,7 +364,6 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
             NODE_IDX_GEN.incrementAndGet());
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setMarshaller(new BinaryMarshaller());
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
         spi.setIpFinder(new TcpDiscoveryVmIpFinder(true));

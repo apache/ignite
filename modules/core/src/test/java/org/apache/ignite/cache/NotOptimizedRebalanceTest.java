@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -134,7 +135,7 @@ public class NotOptimizedRebalanceTest extends GridCommonAbstractTest {
 
         IgniteEx ignite0 = startGrids(NODES_CNT);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         ignite0.cluster().baselineAutoAdjustEnabled(false);
 
@@ -250,15 +251,15 @@ public class NotOptimizedRebalanceTest extends GridCommonAbstractTest {
 
         communicationSpi.blockMessages((node, msg) -> {
             if (msg instanceof GridDhtPartitionDemandMessage) {
-                GridDhtPartitionDemandMessage demandMessage = (GridDhtPartitionDemandMessage)msg;
+                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
 
-                if (CU.cacheId(DEFAULT_CACHE_NAME) != demandMessage.groupId())
+                if (CU.cacheId(DEFAULT_CACHE_NAME) != demandMsg.groupId())
                     return false;
 
                 info("Message was caught: " + msg.getClass().getSimpleName()
-                    + " rebalanceId = " + U.field(demandMessage, "rebalanceId")
+                    + " rebalanceId = " + U.field(demandMsg, "rebalanceId")
                     + " to: " + node.consistentId()
-                    + " by cache id: " + demandMessage.groupId());
+                    + " by cache id: " + demandMsg.groupId());
 
                 return true;
             }

@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -101,7 +103,7 @@ public class IgnitePdsRestartAfterFailedToWriteMetaPageTest extends GridCommonAb
 
         startGrid(1);
 
-        grid.cluster().active(true);
+        grid.cluster().state(ClusterState.ACTIVE);
 
         AtomicBoolean stop = new AtomicBoolean();
 
@@ -167,7 +169,7 @@ public class IgnitePdsRestartAfterFailedToWriteMetaPageTest extends GridCommonAb
             if (file.getAbsolutePath().contains(nodeName)) {
                 if (failNextCheckpoint && file.getName().contains("-START.bin"))
                     cpCnt.incrementAndGet();
-                else if (file.getName().contains("part-") && !file.getAbsolutePath().contains("metastorage")) {
+                else if (NodeFileTree.partitionFile(file) && !file.getAbsolutePath().contains("metastorage")) {
                     return new FileIODecorator(delegate) {
                         @Override public int write(ByteBuffer srcBuf) throws IOException {
                             maybeThrowException();

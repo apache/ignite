@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -29,9 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -50,13 +48,6 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 4;
-    }
-
-    /** */
-    @Before
-    public void beforeCacheStoreListenerRWThroughDisabledTransactionalCacheTest() {
-        if (nearEnabled())
-            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */
@@ -80,13 +71,11 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
         int cnt = gridCnt.incrementAndGet();
 
-        if ((cnt == gridCount() && isClientStartedLast()) || (cnt == 1 && !isClientStartedLast())) {
+        if (cnt == gridCount()) {
             cfg.setClientMode(true);
 
             nearOnlyIgniteInstanceName = igniteInstanceName;
         }
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         return cfg;
     }
@@ -94,9 +83,6 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        if (nearEnabled())
-            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheStoreFactory(null);
@@ -115,13 +101,6 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
-    }
-
-    /**
-     * @return boolean {@code True} if client's grid must be started last, {@code false} if it must be started first.
-     */
-    protected boolean isClientStartedLast() {
-        return false;
     }
 
     /**
@@ -215,7 +194,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            if (F.eq(g.name(), nearOnlyIgniteInstanceName)) {
+            if (Objects.equals(g.name(), nearOnlyIgniteInstanceName)) {
                 for (int k = 0; k < 10000; k++) {
                     IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
@@ -229,7 +208,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
             }
             else {
                 boolean foundEntry = false;
-                boolean foundAffinityNode = false;
+                boolean foundAffNode = false;
 
                 for (int k = 0; k < 10000; k++) {
                     String key = "key" + k;
@@ -238,11 +217,11 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
                         foundEntry = true;
 
                     if (g.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()))
-                        foundAffinityNode = true;
+                        foundAffNode = true;
                 }
 
                 assertTrue("Did not found primary or backup entry for grid: " + i, foundEntry);
-                assertTrue("Did not found affinity node for grid: " + i, foundAffinityNode);
+                assertTrue("Did not found affinity node for grid: " + i, foundAffNode);
             }
         }
     }

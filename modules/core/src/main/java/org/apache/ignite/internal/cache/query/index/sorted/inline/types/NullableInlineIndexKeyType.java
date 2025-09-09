@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract inline key. Store base logic for work with inlined keys. Handle NULL values.
@@ -34,8 +33,11 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
     /** Value for comparison meaning 'Compare not supported for given value'. */
     public static final int COMPARE_UNSUPPORTED = Integer.MIN_VALUE;
 
+    /** Size of header for vartypes inlined values. */
+    public static final int VARTYPE_HEADER_SIZE = 3;
+
     /** Type of this key. */
-    private final int type;
+    private final IndexKeyType type;
 
     /** Actual size of a key without type field. */
     protected final short keySize;
@@ -44,13 +46,13 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
      * @param type Index key type.
      * @param keySize Size of value stored in the key.
      */
-    protected NullableInlineIndexKeyType(int type, short keySize) {
+    protected NullableInlineIndexKeyType(IndexKeyType type, short keySize) {
         this.type = type;
         this.keySize = keySize;
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
+    @Override public IndexKeyType type() {
         return type;
     }
 
@@ -58,7 +60,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
     @Override public int inlineSize(long pageAddr, int off) {
         int type = PageUtils.getByte(pageAddr, off);
 
-        if (type == IndexKeyTypes.NULL)
+        if (type == IndexKeyType.NULL.code())
             return 1;
 
         if (keySize > 0)
@@ -71,7 +73,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
 
     /** {@inheritDoc} */
     @Override public int inlineSize() {
-        if (type == IndexKeyTypes.NULL)
+        if (type == IndexKeyType.NULL)
             return 1;
 
         // For variable length keys returns -1.
@@ -85,7 +87,7 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
 
         ensureKeyType(key);
 
-        return inlineSize0((T) key);
+        return inlineSize0((T)key);
     }
 
     /**
@@ -104,22 +106,30 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
         if (maxSize < 1)
             return null;
 
-        int type = PageUtils.getByte(pageAddr, off);
+        int typeCode = PageUtils.getByte(pageAddr, off);
 
-        if (type == IndexKeyTypes.UNKNOWN)
+        if (typeCode == IndexKeyType.UNKNOWN.code())
             return null;
 
-        if (type == IndexKeyTypes.NULL)
+        if (typeCode == IndexKeyType.NULL.code())
             return NullIndexKey.INSTANCE;
 
-        ensureKeyType(type);
+        ensureKeyType(typeCode);
 
-        IndexKey o = get0(pageAddr, off);
+        return get0(pageAddr, off);
+    }
 
-        if (o == null)
-            return NullIndexKey.INSTANCE;
+    /** {@inheritDoc} */
+    @Override public Boolean isNull(long pageAddr, int off, int maxSize) {
+        if (maxSize < 1)
+            return null;
 
-        return o;
+        int typeCode = PageUtils.getByte(pageAddr, off);
+
+        if (typeCode == IndexKeyType.UNKNOWN.code())
+            return null;
+
+        return typeCode == IndexKeyType.NULL.code();
     }
 
     /** {@inheritDoc} */
@@ -130,18 +140,23 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
 
         if (keySize < 0 && maxSize < 4) {
             // Can't fit vartype field.
-            PageUtils.putByte(pageAddr, off, (byte) IndexKeyTypes.UNKNOWN);
+            PageUtils.putByte(pageAddr, off, (byte)IndexKeyType.UNKNOWN.code());
             return 0;
         }
 
         if (key == NullIndexKey.INSTANCE) {
-            PageUtils.putByte(pageAddr, off, (byte) IndexKeyTypes.NULL);
+            PageUtils.putByte(pageAddr, off, (byte)IndexKeyType.NULL.code());
             return 1;
         }
 
         ensureKeyType(key);
 
-        return put0(pageAddr, off, (T) key, maxSize);
+        return put0(pageAddr, off, (T)key, maxSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short keySize() {
+        return keySize;
     }
 
     /**
@@ -162,47 +177,47 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
      * @param pageAddr Page address.
      * @param off Offset.
      *
-     * @return Inline value or {@code null} if value can't be restored.
+     * @return Inline value.
      */
-    protected abstract @Nullable T get0(long pageAddr, int off);
+    protected abstract T get0(long pageAddr, int off);
 
     /** Read variable length bytearray */
-    protected byte[] readBytes(long pageAddr, int off) {
+    public static byte[] readBytes(long pageAddr, int off) {
         int size = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
         return PageUtils.getBytes(pageAddr, off + 3, size);
     }
 
     /** {@inheritDoc} */
     @Override public int compare(long pageAddr, int off, int maxSize, IndexKey key) {
-        int type;
+        int typeCode;
 
         if ((keySize > 0 && keySize + 1 > maxSize)
             || maxSize < 1
-            || (type = PageUtils.getByte(pageAddr, off)) == (byte) IndexKeyTypes.UNKNOWN)
+            || (typeCode = PageUtils.getByte(pageAddr, off)) == (byte)IndexKeyType.UNKNOWN.code())
             return CANT_BE_COMPARE;
 
-        if (type == IndexKeyTypes.NULL) {
+        if (typeCode == IndexKeyType.NULL.code()) {
             if (key == NullIndexKey.INSTANCE)
                 return 0;
             else
                 return -1;
         }
 
-        if (type() != type)
+        if (type.code() != typeCode)
             return COMPARE_UNSUPPORTED;
 
         if (key == NullIndexKey.INSTANCE)
             return 1;
 
-        return compare0(pageAddr, off, (T) key);
+        return compare0(pageAddr, off, key);
     }
 
     /**
      * Checks whether specified val corresponds to this key type.
      */
-    private void ensureKeyType(int type) {
-        if (this.type != type)
-            throw new UnsupportedOperationException("Value type doesn't match: exp=" + this.type + ", act=" + type);
+    private void ensureKeyType(int actCode) {
+        if (type.code() != actCode)
+            throw new UnsupportedOperationException("Value type doesn't match: exp=" + type.code() + ", act=" + actCode);
     }
 
     /**
@@ -225,8 +240,24 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
      * is not enough to compare, or {@link #COMPARE_UNSUPPORTED} if given value
      * can't be compared with inlined part at all.
      */
-    public abstract int compare0(long pageAddr, int off, T v);
+    public abstract int compare0(long pageAddr, int off, IndexKey v);
 
     /** Return inlined size for specified key. */
     protected abstract int inlineSize0(T key);
+
+    /** {@inheritDoc} */
+    @Override public boolean inlinedFullValue(long pageAddr, int off, int maxSize) {
+        if (maxSize < 1)
+            return false;
+
+        int type = PageUtils.getByte(pageAddr, off);
+
+        if (type == IndexKeyType.NULL.code())
+            return true;
+
+        if (keySize > 0) // For fixed length types.
+            return maxSize >= keySize + 1;
+        else // For variable length types.
+            return maxSize > VARTYPE_HEADER_SIZE && (PageUtils.getShort(pageAddr, off + 1) & 0x8000) == 0;
+    }
 }

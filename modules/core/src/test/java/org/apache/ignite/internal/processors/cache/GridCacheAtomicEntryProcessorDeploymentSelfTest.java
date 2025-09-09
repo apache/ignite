@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -27,12 +29,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -88,11 +94,12 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
      * @return Entry Processor.
      */
     protected String getEntryProcessor() {
-       return GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) != null ?
+        return GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) != null ?
             GridTestProperties.getProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME) :
             "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessor";
     }
 
+    /** */
     protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
@@ -115,6 +122,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
         depMode = DeploymentMode.SHARED;
 
         doTestInvoke();
+        doTestInvokeEx();
     }
 
     /**
@@ -161,6 +169,96 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
 
             // Checks that get produces no exceptions.
             cache.get("key");
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Scenario: 2 different client nodes invoke entry processors on intersected collection of keys.
+     * @throws Exception
+     */
+    private void doTestInvokeEx() throws Exception {
+        String testCacheName = "dynamic_params";
+
+        String prcClsName = "org.apache.ignite.tests.p2p.CacheDeploymentEntryProcessorMultipleEnts";
+
+        String contClsName = "org.apache.ignite.tests.p2p.cache.Container";
+
+        try {
+            startGrid(0);
+            IgniteEx cli1 = startClientGrid(1);
+            IgniteEx cli2 = startClientGrid(2);
+
+            Class procCls1 = cli1.configuration().getClassLoader().loadClass(prcClsName);
+            Class procCls2 = cli2.configuration().getClassLoader().loadClass(prcClsName);
+
+            Class contCls1 = cli1.configuration().getClassLoader().loadClass(contClsName);
+            Class contCls2 = cli2.configuration().getClassLoader().loadClass(contClsName);
+
+            // just one more additional class unavailability check.
+            try {
+                Class.forName(TEST_VALUE);
+                fail();
+            }
+            catch (ClassNotFoundException e) {
+                // No op.
+            }
+
+            Class<?> cacheValClazz = grid(2).configuration().getClassLoader().loadClass(TEST_VALUE);
+            Object cacheVal = cacheValClazz.newInstance();
+
+            CacheConfiguration<Long, Object> ccfg = new CacheConfiguration<>();
+            ccfg.setCacheMode(REPLICATED);
+            ccfg.setAtomicityMode(ATOMIC);
+            ccfg.setName(testCacheName);
+
+            IgniteCache<Long, Object> processedCache = cli1.createCache(ccfg);
+
+            Map<Long, Object> map = new HashMap<>();
+            for (long i = 0; i < 100; i++) {
+                map.put(i, cacheVal);
+            }
+
+            processedCache.putAll(map);
+
+            IgniteCache<Object, Object> cache1 = cli1.cache(testCacheName);
+            IgniteCache<Object, Object> cache2 = cli2.cache(testCacheName);
+
+            Object cont1 = contCls1.getDeclaredConstructor(Object.class).newInstance(map);
+            Object cont2 = contCls2.getDeclaredConstructor(Object.class).newInstance(map);
+
+            for (int i = 0; i < 10; ++i) {
+                IgniteCache<Object, Object> procCache1 = cache1;
+                IgniteInternalFuture<Object> f1 = GridTestUtils.runAsync(() -> {
+                    for (long key = 0; key < 10; key++) {
+                        procCache1.invoke(key,
+                                (CacheEntryProcessor)procCls1.getDeclaredConstructor(Object.class).newInstance(cont1));
+                    }
+                });
+
+                IgniteCache<Object, Object> procCache2 = cache2;
+                IgniteInternalFuture<Object> f2 = GridTestUtils.runAsync(() -> {
+                    for (long key = 10; key > 0; key--) {
+                        procCache2.invoke(key,
+                                (CacheEntryProcessor)procCls2.getDeclaredConstructor(Object.class).newInstance(cont2));
+                    };
+                });
+
+                long duration = TimeUnit.SECONDS.toMillis(30);
+
+                f1.get(duration);
+                f2.get(duration);
+
+                stopAllClients(true);
+
+                cli1 = startClientGrid(1);
+                cli2 = startClientGrid(2);
+
+                cache1 = cli1.cache(testCacheName);
+                cache2 = cli2.cache(testCacheName);
+            }
         }
         finally {
             stopAllGrids();

@@ -68,6 +68,21 @@ A logical OR operation is performed on each pair of corresponding bits of two bi
 
 In each pair, the result is 1 if the first bit is 1 OR the second bit is 1 OR both bits are 1, and otherwise the result is 0.
 
+
+== BIT_XOR
+
+
+[source,sql]
+----
+BIT_XOR (expression)
+----
+
+The bitwise XOR of all non-null values. If no rows are selected, the result is NULL. Aggregates are only allowed in select statements.
+
+A logical XOR operation is performed on each pair of corresponding bits of two binary expressions of equal length.
+
+In each pair, the result is 1 if only one of the bits is 1. Otherwise the result is 0.
+
 ////
 == BOOL_AND
 
@@ -119,30 +134,6 @@ Calculate the number of players in every city:
 SELECT city_id, COUNT(*) FROM Players GROUP BY city_id;
 ----
 
-== FIRSTVALUE
-
-[source, sql]
-----
-FIRSTVALUE ([DISTINCT] <expression1>, <expression2>)
-----
-
-Returns the value of `expression1` associated with the smallest value of `expression2` for each group defined by the `group by` expression in the query.
-This function can only be used with colocated data and you have to use the `collocated` flag when executing the query.
-
-The colocated hint can be set as follows:
-
-* `SqlFieldsQuery.collocated = true` if you use the link:SQL/sql-api[SQL API] to execute queries.
-* link:SQL/JDBC/jdbc-driver#parameters[JDBC connection string parameter]
-* link:SQL/ODBC/connection-string-dsn#supported-arguments[ODBC connection string argument]
-
-
-=== Example
-The example returns
-[source, sql]
-----
-select company_id, firstvalue(name, age) as youngest from person group by company_id;
-----
-
 == GROUP_CONCAT
 
 [source,sql]
@@ -173,31 +164,6 @@ Group all players' names in one row:
 ----
 SELECT GROUP_CONCAT(name ORDER BY id SEPARATOR ', ') FROM Players;
 ----
-
-
-== LASTVALUE
-
-[source, sql]
-----
-LASTVALUE ([DISTINCT] <expression1>, <expression2>)
-----
-
-Returns the value of `expression1` associated with the largest value of `expression2` for each group defined by the `group by` expression.
-This function can only be used with colocated data and you have to use the `collocated` flag when executing the query.
-
-The colocated hint can be set as follows:
-
-* `SqlFieldsQuery.collocated = true` if you use the link:SQL/sql-api[SQL API] to execute queries.
-* link:SQL/JDBC/jdbc-driver#parameters[JDBC connection string parameter]
-* link:SQL/ODBC/connection-string-dsn#supported-arguments[ODBC connection string argument]
-
-=== Example
-
-[source, sql]
-----
-select company_id, lastvalue(name, age) as oldest from person group by company_id;
-----
-
 
 
 == MAX

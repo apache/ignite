@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -64,15 +63,6 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
             GridUnsafe.freeMemory(ptr);
 
         super.afterTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
     }
 
     /**
@@ -517,7 +507,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      */
     private BinaryObjectExImpl convert(BinaryObjectExImpl obj, boolean offheap) {
         if (offheap) {
-            byte[] arr = obj.array();
+            byte[] arr = obj.bytes();
 
             long ptr = GridUnsafe.allocateMemory(arr.length);
 
@@ -525,7 +515,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
 
             GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
 
-            obj = new BinaryObjectOffheapImpl(obj.context(), ptr, 0, obj.array().length);
+            obj = new BinaryObjectOffheapImpl(obj.context(), ptr, 0, obj.bytes().length);
         }
 
         return obj;
@@ -566,7 +556,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
                 builder.setField((String)parts[i++], parts[i++]);
         }
 
-        return (BinaryObjectImpl) builder.build();
+        return (BinaryObjectImpl)builder.build();
     }
 
     /**

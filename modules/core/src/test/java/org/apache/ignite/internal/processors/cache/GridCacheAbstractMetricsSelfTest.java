@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntFunction;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.TouchedExpiryPolicy;
@@ -43,15 +43,21 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static java.util.Arrays.stream;
+import static java.util.Collections.singleton;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -63,12 +69,14 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /** */
     private static final int KEY_CNT = 500;
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
         configuration.setMetricsUpdateFrequency(2000);
         return configuration;
     }
 
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration configuration = super.cacheConfiguration(igniteInstanceName);
         configuration.setStatisticsEnabled(true);
@@ -156,18 +164,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(DEFAULT_CACHE_NAME).removeAll();
-
-            assert g.cache(DEFAULT_CACHE_NAME).localSize() == 0;
-        }
-
-        for (int i = 0; i < gridCount(); i++) {
-            Ignite g = grid(i);
-
-            g.cache(DEFAULT_CACHE_NAME).localMxBean().clear();
-
             g.transactions().resetMetrics();
         }
+
+        grid(0).cache(DEFAULT_CACHE_NAME).clearStatistics();
     }
 
     /** {@inheritDoc} */
@@ -1288,7 +1288,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
                 try {
                     Thread.sleep(100);
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     throw new EntryProcessorException(e);
                 }
 
@@ -1314,7 +1315,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
                 try {
                     Thread.sleep(200);
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     throw new EntryProcessorException(e);
                 }
 
@@ -1427,52 +1429,182 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
     /** */
     @Test
-    public void testGetTime() {
+    public void testGetTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetricImpl m = metric("GetTime");
+        HistogramMetricImpl getTime = metric("GetTime");
+        HistogramMetricImpl getAllTime = metric("GetAllTime");
 
-        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
-
-        cache.put(1, 1);
-
-        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+        assertTrue(stream(getTime.value()).allMatch(v -> v == 0));
+        assertTrue(stream(getAllTime.value()).allMatch(v -> v == 0));
 
         cache.get(1);
+        cache.getAsync(1).get();
 
-        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+        assertTrue(waitForCondition(() -> stream(getTime.value()).sum() == 2, getTestTimeout()));
+        assertEquals(0, stream(getAllTime.value()).sum());
+
+        cache.getAll(singleton(1));
+        cache.getAllAsync(singleton(1)).get();
+
+        assertTrue(waitForCondition(() -> stream(getAllTime.value()).sum() == 2, getTestTimeout()));
+        assertEquals(2, stream(getTime.value()).sum());
     }
 
     /** */
     @Test
-    public void testPutTime() {
+    public void testPutTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetricImpl m = metric("PutTime");
+        HistogramMetricImpl putTime = metric("PutTime");
+        HistogramMetricImpl putAllTime = metric("PutAllTime");
 
-        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+        assertTrue(stream(putTime.value()).allMatch(v -> v == 0));
+        assertTrue(stream(putAllTime.value()).allMatch(v -> v == 0));
 
         cache.put(1, 1);
+        cache.putAsync(2, 2).get();
 
-        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+        assertTrue(waitForCondition(() -> stream(putTime.value()).sum() == 2, getTestTimeout()));
+        assertEquals(0, stream(putAllTime.value()).sum());
+
+        cache.putAll(F.asMap(3, 3));
+        cache.putAllAsync(F.asMap(4, 4)).get();
+
+        assertTrue(waitForCondition(() -> stream(putAllTime.value()).sum() == 2, getTestTimeout()));
+        assertEquals(2, stream(putTime.value()).sum());
     }
 
     /** */
     @Test
-    public void testRemoveTime() {
+    public void testRemoveTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetricImpl m = metric("RemoveTime");
+        HistogramMetricImpl removeTime = metric("RemoveTime");
+        HistogramMetricImpl removeAllTime = metric("RemoveAllTime");
 
-        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+        assertTrue(stream(removeTime.value()).allMatch(v -> v == 0));
+        assertTrue(stream(removeAllTime.value()).allMatch(v -> v == 0));
 
         cache.put(1, 1);
+        cache.put(2, 2);
 
-        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+        assertEquals(0, stream(removeTime.value()).sum());
+        assertEquals(0, stream(removeAllTime.value()).sum());
 
         cache.remove(1);
+        cache.removeAsync(2).get();
 
-        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+        assertTrue(waitForCondition(() -> stream(removeTime.value()).sum() == 2, getTestTimeout()));
+        assertEquals(0, stream(removeAllTime.value()).sum());
+
+        cache.removeAll(singleton(3));
+        cache.removeAllAsync(singleton(4)).get();
+
+        assertTrue(waitForCondition(() -> stream(removeAllTime.value()).sum() == 2, getTestTimeout()));
+        assertEquals(2, stream(removeTime.value()).sum());
+    }
+
+    /** */
+    @Test
+    public void testGetAllOutTx() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl getAllTime = metric("GetAllTime");
+
+        assertTrue(stream(getAllTime.value()).allMatch(v -> v == 0));
+
+        cache.getAllOutTx(singleton(1));
+
+        assertTrue(waitForCondition(() -> stream(getAllTime.value()).sum() == 1, getTestTimeout()));
+
+        cache.getAllOutTxAsync(singleton(1)).get();
+
+        assertTrue(waitForCondition(() -> stream(getAllTime.value()).sum() == 2, getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testRemoveTimeTotal() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        LongMetric removeTimeTotal = metric("RemoveTimeTotal");
+
+        assertEquals(0, removeTimeTotal.value());
+
+        // 1. Check remove of a non-existing key.
+        cache.removeAsync(-1).get();
+        cache.remove(-1);
+
+        assertEquals(0, removeTimeTotal.value());
+
+        removeTimeTotal.reset();
+
+        // 2. Check remove of an existing key.
+        cache.put(1, 1);
+        cache.remove(1);
+
+        assertTrue(removeTimeTotal.value() > 0);
+
+        removeTimeTotal.reset();
+
+        cache.put(1, 1);
+        cache.removeAsync(1).get();
+
+        assertTrue(waitForCondition(() -> removeTimeTotal.value() > 0, getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testGetAndRemoveTimeTotal() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        LongMetric getTimeTotal = metric("GetTimeTotal");
+        LongMetric removeTimeTotal = metric("RemoveTimeTotal");
+
+        assertEquals(0, getTimeTotal.value());
+        assertEquals(0, removeTimeTotal.value());
+
+        cache.put(1, 1);
+        cache.getAndRemove(1);
+
+        assertTrue(getTimeTotal.value() > 0);
+        assertTrue(removeTimeTotal.value() > 0);
+
+        getTimeTotal.reset();
+        removeTimeTotal.reset();
+
+        cache.put(1, 1);
+        cache.getAndRemoveAsync(1).get();
+
+        assertTrue(waitForCondition(() -> getTimeTotal.value() > 0, getTestTimeout()));
+        assertTrue(waitForCondition(() -> removeTimeTotal.value() > 0, getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testPutAndRemoveAllConflict() throws Exception {
+        IgniteInternalCache<Integer, Integer> cachex = grid(0).cachex(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl putAllConflictTime = metric("PutAllConflictTime");
+        HistogramMetricImpl removeAllConflictTime = metric("RemoveAllConflictTime");
+
+        assertTrue(stream(putAllConflictTime.value()).allMatch(v -> v == 0));
+        assertTrue(stream(removeAllConflictTime.value()).allMatch(v -> v == 0));
+
+        GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
+        GridCacheDrInfo val = new GridCacheDrInfo(new CacheObjectImpl(1, null), confl);
+
+        IntFunction<KeyCacheObject> keyGen = i -> new KeyCacheObjectImpl(i, null, cachex.affinity().partition(0));
+
+        cachex.putAllConflict(F.asMap(keyGen.apply(1), val));
+        cachex.removeAllConflict(F.asMap(keyGen.apply(1), confl));
+
+        cachex.putAllConflictAsync(F.asMap(keyGen.apply(2), val)).get();
+        cachex.removeAllConflictAsync(F.asMap(keyGen.apply(2), confl)).get();
+
+        assertTrue(waitForCondition(() -> stream(putAllConflictTime.value()).sum() == 2, getTestTimeout()));
+        assertTrue(waitForCondition(() -> stream(removeAllConflictTime.value()).sum() == 2, getTestTimeout()));
     }
 
     /**

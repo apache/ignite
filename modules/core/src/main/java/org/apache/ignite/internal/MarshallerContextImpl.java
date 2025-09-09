@@ -32,15 +32,21 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeLoadBalancer;
+import org.apache.ignite.compute.ComputeTaskContinuousMapper;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
@@ -52,8 +58,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
@@ -109,9 +118,10 @@ public class MarshallerContextImpl implements MarshallerContext {
      */
     public MarshallerContextImpl(@Nullable Collection<PluginProvider> plugins, IgnitePredicate<String> clsFilter) {
         this.clsFilter = clsFilter;
-        this.jdkMarsh = new JdkMarshaller(clsFilter);
+        this.jdkMarsh = Marshallers.jdk(clsFilter);
 
         initializeCaches();
+        initializeMarshallerExclusions();
 
         try {
             ClassLoader ldr = U.gridClassLoader();
@@ -145,6 +155,35 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /** */
+    private void initializeMarshallerExclusions() {
+        try {
+            MarshallerExclusions.exclude(Class.forName("org.springframework.context.ApplicationContext"));
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        // Non-Ignite classes.
+        MarshallerExclusions.exclude(MBeanServer.class);
+        MarshallerExclusions.exclude(ExecutorService.class);
+        MarshallerExclusions.exclude(ClassLoader.class);
+        MarshallerExclusions.exclude(Thread.class);
+
+        // Ignite classes.
+        MarshallerExclusions.exclude(IgniteLogger.class);
+        MarshallerExclusions.exclude(ComputeTaskSession.class);
+        MarshallerExclusions.exclude(ComputeLoadBalancer.class);
+        MarshallerExclusions.exclude(ComputeJobContext.class);
+        MarshallerExclusions.exclude(Marshaller.class);
+        MarshallerExclusions.exclude(GridComponent.class);
+        MarshallerExclusions.exclude(ComputeTaskContinuousMapper.class);
+
+        // Ignite classes.
+        MarshallerExclusions.include(GridLoggerProxy.class);
+        MarshallerExclusions.include(GridExecutorService.class);
+    }
+
+    /** */
     private void initializeCaches() {
         allCaches.add(new CombinedMap(new ConcurrentHashMap<Integer, MappedName>(), sysTypesMap));
     }
@@ -159,7 +198,7 @@ public class MarshallerContextImpl implements MarshallerContext {
             Map res;
 
             if (i == JAVA_ID)
-                res = ((CombinedMap) allCaches.get(JAVA_ID)).userMap;
+                res = ((CombinedMap)allCaches.get(JAVA_ID)).userMap;
             else
                 res = allCaches.get(i);
 
@@ -192,8 +231,10 @@ public class MarshallerContextImpl implements MarshallerContext {
      */
     public static void saveMappings(GridKernalContext ctx, List<Map<Integer, MappedName>> mappings, File dir)
         throws IgniteCheckedException {
-        MarshallerMappingFileStore writer = new MarshallerMappingFileStore(ctx,
-            resolveMappingFileStoreWorkDir(dir.getAbsolutePath()));
+        MarshallerMappingFileStore writer = new MarshallerMappingFileStore(
+            ctx,
+            new SharedFileTree(dir).mkdirMarshaller()
+        );
 
         addPlatformMappings(ctx.log(MarshallerContextImpl.class),
             mappings,
@@ -315,9 +356,11 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean registerClassNameLocally(byte platformId, int typeId, String clsName)
-        throws IgniteCheckedException
-    {
+    @Override public boolean registerClassNameLocally(
+        byte platformId,
+        int typeId,
+        String clsName
+    ) throws IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
         fileStore.mergeAndWriteMapping(platformId, typeId, clsName);
@@ -325,6 +368,19 @@ public class MarshallerContextImpl implements MarshallerContext {
         cache.put(typeId, new MappedName(clsName, true));
 
         return true;
+    }
+
+    /** Remove mapping for appropriate type locally. */
+    public void unregisterClassNameLocally(int typeId) {
+        byte[] allPlatforms = otherPlatforms((byte)-1);
+
+        for (byte platformId : allPlatforms) {
+            ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
+
+            cache.remove(typeId);
+        }
+
+        fileStore.deleteMapping(typeId);
     }
 
     /**
@@ -361,7 +417,13 @@ public class MarshallerContextImpl implements MarshallerContext {
     public void onMappingAccepted(final MarshallerMappingItem item) {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.platformId());
 
-        cache.replace(item.typeId(), new MappedName(item.className(), true));
+        MappedName oldMappedName = cache.put(item.typeId(), new MappedName(item.className(), true));
+
+        assert oldMappedName == null || item.className().equals(oldMappedName.className()) :
+            "Class name resolved from cluster: "
+                + item.className()
+                + ", class name from local cache: "
+                + oldMappedName.className();
 
         closProc.runLocalSafe(new MappingStoreTask(fileStore, item.platformId(), item.typeId(), item.className()));
     }
@@ -442,7 +504,8 @@ public class MarshallerContextImpl implements MarshallerContext {
                     for (byte otherPlatformId : otherPlatforms(platformId)) {
                         try {
                             clsName = getClassName(otherPlatformId, typeId, true);
-                        } catch (ClassNotFoundException ignored) {
+                        }
+                        catch (ClassNotFoundException ignored) {
                             continue;
                         }
 
@@ -493,30 +556,6 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
 
         return null;
-    }
-
-    /**
-     * @param item Item.
-     * @param resolvedClsName Resolved class name.
-     */
-    public void onMissedMappingResolved(final MarshallerMappingItem item, String resolvedClsName) {
-        ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.platformId());
-
-        int typeId = item.typeId();
-        MappedName mappedName = cache.get(typeId);
-
-        if (mappedName != null)
-            assert resolvedClsName.equals(mappedName.className()) :
-                    "Class name resolved from cluster: "
-                            + resolvedClsName
-                            + ", class name from local cache: "
-                            + mappedName.className();
-        else {
-            mappedName = new MappedName(resolvedClsName, true);
-            cache.putIfAbsent(typeId, mappedName);
-
-            closProc.runLocalSafe(new MappingStoreTask(fileStore, item.platformId(), item.typeId(), resolvedClsName));
-        }
     }
 
     /** {@inheritDoc} */
@@ -585,47 +624,22 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param transport Transport.
      */
     public void onMarshallerProcessorStarted(
-            GridKernalContext ctx,
-            MarshallerMappingTransport transport
+        GridKernalContext ctx,
+        MarshallerMappingTransport transport
     ) throws IgniteCheckedException {
         assert ctx != null;
 
-        IgniteConfiguration cfg = ctx.config();
-        String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
-
-        fileStore = marshallerMappingFileStoreDir == null ?
-            new MarshallerMappingFileStore(ctx, resolveMappingFileStoreWorkDir(workDir)) :
-            new MarshallerMappingFileStore(ctx, marshallerMappingFileStoreDir);
+        fileStore = marshallerMappingFileStoreDir == null
+            ? new MarshallerMappingFileStore(ctx, ctx.pdsFolderResolver().fileTree().mkdirMarshaller())
+            : new MarshallerMappingFileStore(ctx, marshallerMappingFileStoreDir);
         this.transport = transport;
         closProc = ctx.closure();
         clientNode = ctx.clientNode();
 
         if (CU.isPersistenceEnabled(ctx.config()))
             fileStore.restoreMappings(this);
-    }
 
-    /**
-     * @param igniteWorkDir Base ignite working directory.
-     * @return Resolved directory.
-     */
-    public static File resolveMappingFileStoreWorkDir(String igniteWorkDir) {
-        File dir = mappingFileStoreWorkDir(igniteWorkDir);
-
-        if (!U.mkdirs(dir))
-            throw new IgniteException("Could not create directory for marshaller mappings: " + dir);
-
-        return dir;
-    }
-
-    /**
-     * @param igniteWorkDir Base ignite working directory.
-     * @return Work directory for marshaller mappings.
-     */
-    public static File mappingFileStoreWorkDir(String igniteWorkDir) {
-        if (F.isEmpty(igniteWorkDir))
-            throw new IgniteException("Work directory has not been set: " + igniteWorkDir);
-
-        return new File(igniteWorkDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
+        jdkMarsh.nodeName(ctx.igniteInstanceName());
     }
 
     /**
@@ -713,6 +727,11 @@ public class MarshallerContextImpl implements MarshallerContext {
         /** {@inheritDoc} */
         @Override public boolean remove(@NotNull Object key, Object val) {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public MappedName remove(@NotNull Object key) {
+            return userMap.remove(key);
         }
 
         /** {@inheritDoc} */

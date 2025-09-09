@@ -30,6 +30,7 @@ public class BaselineAutoAdjustMXBeanImpl implements BaselineAutoAdjustMXBean {
     /** */
     private final DistributedBaselineConfiguration baselineConfiguration;
 
+    /** */
     private final GridClusterStateProcessor state;
 
     /**

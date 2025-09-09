@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.rest.client.message;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.client.GridClientCacheMode;
+import org.apache.ignite.cache.CacheMode;
 
 /**
  * Cache bean.
@@ -35,17 +35,19 @@ public class GridClientCacheBean implements Serializable {
     /**
      * Cache mode
      */
-    private GridClientCacheMode mode;
+    private CacheMode mode;
 
     /**
      * Custom name of the sql schema.
      */
     private String sqlSchema;
 
+    /** */
     public GridClientCacheBean() {
     }
 
-    public GridClientCacheBean(String name, GridClientCacheMode mode, String sqlSchema) {
+    /** */
+    public GridClientCacheBean(String name, CacheMode mode, String sqlSchema) {
         this.name = name;
         this.mode = mode;
         this.sqlSchema = sqlSchema;
@@ -74,7 +76,7 @@ public class GridClientCacheBean implements Serializable {
      *
      * @return Cache mode.
      */
-    public GridClientCacheMode getMode() {
+    public CacheMode getMode() {
         return mode;
     }
 
@@ -83,7 +85,7 @@ public class GridClientCacheBean implements Serializable {
      *
      * @param mode Cache mode.
      */
-    public void setMode(GridClientCacheMode mode) {
+    public void setMode(CacheMode mode) {
         this.mode = mode;
     }
 
@@ -122,7 +124,7 @@ public class GridClientCacheBean implements Serializable {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        GridClientCacheBean other = (GridClientCacheBean) obj;
+        GridClientCacheBean other = (GridClientCacheBean)obj;
 
         return name == null ? other.name == null : name.equals(other.name);
     }

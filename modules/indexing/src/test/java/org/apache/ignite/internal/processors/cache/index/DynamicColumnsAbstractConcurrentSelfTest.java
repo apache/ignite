@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -44,28 +45,31 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 
 /**
  * Concurrency tests for dynamic index create/drop.
@@ -642,7 +646,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      */
     @Test
     public void testQueryConsistencyMultithreaded() throws Exception {
-        final int KEY_COUNT = 5000;
+        final int KEY_CNT = 5000;
 
         // Start complex topology.
         ignitionStart(serverConfiguration(1));
@@ -655,7 +659,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         run(cli, createSql);
 
-        put(cli, 0, KEY_COUNT);
+        put(cli, 0, KEY_CNT);
 
         final AtomicBoolean stopped = new AtomicBoolean();
 
@@ -714,7 +718,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                         List<Cache.Entry<BinaryObject, BinaryObject>> res = cache.query(
                             new SqlQuery<BinaryObject, BinaryObject>(valTypeName, "from " + TBL_NAME)).getAll();
 
-                        assertEquals(KEY_COUNT, res.size());
+                        assertEquals(KEY_CNT, res.size());
                     }
                     catch (Exception e) {
                         // Swallow retry exceptions.
@@ -1119,20 +1123,27 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
         /** {@inheritDoc} */
-        @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
-            boolean ifTblExists, boolean ifColNotExists)
-            throws IgniteCheckedException {
-            awaitIndexing(ctx.localNodeId());
+        @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
+            ctx.internalSubscriptionProcessor().registerSchemaChangeListener(new AbstractSchemaChangeListener() {
+                @Override public void onColumnsAdded(
+                    String schemaName,
+                    GridQueryTypeDescriptor typeDesc,
+                    GridCacheContextInfo<?, ?> cacheInfo,
+                    List<QueryField> cols
+                ) {
+                    awaitIndexing(ctx.localNodeId());
+                }
 
-            super.dynamicAddColumn(schemaName, tblName, cols, ifTblExists, ifColNotExists);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void dynamicDropColumn(String schemaName, String tblName, List<String> cols,
-            boolean ifTblExists, boolean ifColExists) throws IgniteCheckedException {
-            awaitIndexing(ctx.localNodeId());
-
-            super.dynamicDropColumn(schemaName, tblName, cols, ifTblExists, ifColExists);
+                @Override public void onColumnsDropped(
+                    String schemaName,
+                    GridQueryTypeDescriptor typeDesc,
+                    GridCacheContextInfo<?, ?> cacheInfo,
+                    List<String> cols
+                ) {
+                    awaitIndexing(ctx.localNodeId());
+                }
+            });
+            super.start(ctx, busyLock);
         }
     }
 
@@ -1144,7 +1155,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @return DDL operation future.
      */
     private static IgniteInternalFuture<?> addCols(Ignite node, String schemaName, QueryField... flds) {
-        final String cacheName = F.eq(schemaName, QueryUtils.DFLT_SCHEMA) ? CACHE_NAME : "idx";
+        final String cacheName = Objects.equals(schemaName, QueryUtils.DFLT_SCHEMA) ? CACHE_NAME : "idx";
 
         return ((IgniteEx)node).context().query().dynamicColumnAdd(cacheName, schemaName, TBL_NAME,
             Arrays.asList(flds), false, false);
@@ -1158,7 +1169,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @return DDL operation future.
      */
     private static IgniteInternalFuture<?> dropCols(Ignite node, String schemaName, String... flds) {
-        final String cacheName = F.eq(schemaName, QueryUtils.DFLT_SCHEMA) ? CACHE_NAME : "idx";
+        final String cacheName = Objects.equals(schemaName, QueryUtils.DFLT_SCHEMA) ? CACHE_NAME : "idx";
 
         return ((IgniteEx)node).context().query().dynamicColumnRemove(cacheName, schemaName, TBL_NAME,
             Arrays.asList(flds), false, false);

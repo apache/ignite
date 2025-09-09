@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,7 +54,6 @@ import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -131,6 +131,12 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
  */
 @SuppressWarnings("unchecked")
 public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
+    /** */
+    public static final String WRN_INCONSISTENT_UPDATES = "The Data Streamer loads data with 'allowOverwrite' set " +
+        "to false. It doesn't guarantee data consistency until successfully finishes. Streamer cancelation or " +
+        "streamer node failure can cause data inconsistency. Concurrently created snapshot may contain inconsistent " +
+        "data and might not be restored entirely.";
+
     /** Per thread buffer size. */
     private int bufLdrSzPerThread = DFLT_PER_THREAD_BUFFER_SIZE;
 
@@ -288,6 +294,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** */
     private final AtomicBoolean remapOwning = new AtomicBoolean();
 
+    /** Flag to warn into the log only once if streamer is inconsistent until successfully finished. */
+    private final AtomicBoolean inconsistencyWarned = new AtomicBoolean();
+
     /**
      * @param ctx Grid kernal context.
      * @param cacheName Cache name.
@@ -376,9 +385,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         if (cache == null) { // Possible, cache is not configured on node.
             assert ccfg != null;
-
-            if (ccfg.getCacheMode() == CacheMode.LOCAL)
-                throw new CacheException("Impossible to load Local cache configured remotely.");
 
             ctx.grid().getOrCreateCache(ccfg);
         }
@@ -647,6 +653,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         lock(false);
 
+        if (rcvr instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true))
+            log.warning(WRN_INCONSISTENT_UPDATES);
+
         try {
             long threadId = Thread.currentThread().getId();
 
@@ -809,7 +818,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         final int remaps,
         ClusterNode remapNode,
         AffinityTopologyVersion remapTopVer
-        ) {
+    ) {
         try {
             assert entries != null;
 
@@ -845,25 +854,21 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             AffinityTopologyVersion topVer;
 
-            if (!cctx.isLocal()) {
-                GridDhtPartitionsExchangeFuture exchFut = ctx.cache().context().exchange().lastTopologyFuture();
+            GridDhtPartitionsExchangeFuture exchFut = ctx.cache().context().exchange().lastTopologyFuture();
 
-                if (!exchFut.isDone()) {
-                    ExchangeActions acts = exchFut.exchangeActions();
+            if (!exchFut.isDone()) {
+                ExchangeActions acts = exchFut.exchangeActions();
 
-                    if (acts != null && acts.cacheStopped(CU.cacheId(cacheName)))
-                        throw new CacheStoppedException(cacheName);
-                }
-
-                // It is safe to block here even if the cache gate is acquired.
-                topVer = exchFut.get();
+                if (acts != null && acts.cacheStopped(CU.cacheId(cacheName)))
+                    throw new CacheStoppedException(cacheName);
             }
-            else
-                topVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+            // It is safe to block here even if the cache gate is acquired.
+            topVer = exchFut.get();
 
             List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
 
-            if (!allowOverwrite() && !cctx.isLocal()) { // Cases where cctx required.
+            if (!allowOverwrite()) { // Cases where cctx required.
                 gate = cctx.gate();
 
                 gate.enter();
@@ -892,7 +897,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         if (key.partition() == -1)
                             key.partition(cctx.affinity().partition(key, false));
 
-                        if (!allowOverwrite() && remapNode != null && F.eq(topVer, remapTopVer))
+                        if (!allowOverwrite() && remapNode != null && Objects.equals(topVer, remapTopVer))
                             nodes = Collections.singletonList(remapNode);
                         else
                             nodes = nodes(key, topVer, cctx);
@@ -1113,9 +1118,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         List<ClusterNode> res = null;
 
         if (!allowOverwrite())
-            res = cctx.isLocal() ?
-                aff.mapKeyToPrimaryAndBackups(cacheName, key, topVer) :
-                cctx.topology().nodes(cctx.affinity().partition(key), topVer);
+            res = cctx.topology().nodes(cctx.affinity().partition(key), topVer);
         else {
             ClusterNode node = aff.mapKeyToNode(cacheName, key, topVer);
 
@@ -1806,7 +1809,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             try {
                 GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
 
-                final boolean lockTop = !cctx.isLocal() && !allowOverwrite();
+                final boolean lockTop = !allowOverwrite();
 
                 GridDhtTopologyFuture topWaitFut = null;
 
@@ -2266,38 +2269,38 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<Integer> ignoredParts = new HashSet<>();
 
             try {
+                snapshotWarning(cctx);
+
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
                     cctx.shared().database().checkpointReadLock();
 
                     try {
                         e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
-                        if (!cctx.isLocal()) {
-                            int p = cctx.affinity().partition(e.getKey());
+                        int p = cctx.affinity().partition(e.getKey());
 
-                            if (ignoredParts.contains(p))
+                        if (ignoredParts.contains(p))
+                            continue;
+
+                        if (!reservedParts.contains(p)) {
+                            GridDhtLocalPartition part = cctx.topology().localPartition(p, topVer, true);
+
+                            if (!part.reserve()) {
+                                ignoredParts.add(p);
+
                                 continue;
+                            }
+                            else {
+                                // We must not allow to read from RENTING partitions.
+                                if (part.state() == GridDhtPartitionState.RENTING) {
+                                    part.release();
 
-                            if (!reservedParts.contains(p)) {
-                                GridDhtLocalPartition part = cctx.topology().localPartition(p, topVer, true);
-
-                                if (!part.reserve()) {
                                     ignoredParts.add(p);
 
                                     continue;
                                 }
-                                else {
-                                    // We must not allow to read from RENTING partitions.
-                                    if (part.state() == GridDhtPartitionState.RENTING) {
-                                        part.release();
 
-                                        ignoredParts.add(p);
-
-                                        continue;
-                                    }
-
-                                    reservedParts.add(p);
-                                }
+                                reservedParts.add(p);
                             }
                         }
 
@@ -2376,6 +2379,16 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     throw new IgniteException("Failed to write preloaded entries into write-ahead log.", e);
                 }
             }
+        }
+
+        /**
+         * Sets the streamer warning flag to current snapshot process if it is active.
+         *
+         * @param cctx Cache context.
+         */
+        private static void snapshotWarning(GridCacheContext<?, ?> cctx) {
+            if (cctx.group().persistenceEnabled())
+                cctx.kernalContext().cache().context().snapshotMgr().streamerWarning();
         }
     }
 

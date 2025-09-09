@@ -48,6 +48,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
 /**
@@ -222,7 +223,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     @Test
     public void testCacheNodes() throws Exception {
         // Validate only original node is available.
-        GridDiscoveryManager discoMgr = ((IgniteKernal) ignite).context().discovery();
+        GridDiscoveryManager discoMgr = ((IgniteKernal)ignite).context().discovery();
 
         Collection<ClusterNode> nodes = discoMgr.allNodes();
 
@@ -377,11 +378,6 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isDaemon() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean isClient() {
             return false;
         }
@@ -393,7 +389,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return F.eqNodes(this, o);
+            return eqNodes(this, o);
         }
 
         /** {@inheritDoc} */

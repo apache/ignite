@@ -17,62 +17,79 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.io.File;
+import java.lang.reflect.Field;
+import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.UUID;
-import java.util.logging.FileHandler;
-import java.util.logging.Formatter;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-import java.util.logging.StreamHandler;
-import java.util.stream.Collectors;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.client.GridClientAuthenticationException;
-import org.apache.ignite.internal.client.GridClientClosedException;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientDisconnectedException;
-import org.apache.ignite.internal.client.GridClientHandshakeException;
-import org.apache.ignite.internal.client.GridServerUnreachableException;
-import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
-import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.client.ClientAuthenticationException;
+import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.SslMode;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
+import org.apache.ignite.internal.management.api.CliConfirmArgument;
+import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
+import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandUtils;
+import org.apache.ignite.internal.management.api.CommandWarningException;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.management.api.EnumDescription;
+import org.apache.ignite.internal.management.api.HelpCommand;
+import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.management.cache.CacheCommand;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.spring.IgniteSpringHelperImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.java.JavaLoggerFileHandler;
-import org.apache.ignite.logger.java.JavaLoggerFormatter;
-import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
-import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.springframework.context.ApplicationContext;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
-import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
-import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_ENABLE_EXPERIMENTAL;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
-import static org.apache.ignite.internal.commandline.CommandLogger.optional;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_ENABLE_EXPERIMENTAL;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
-import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
-import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
-import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
-import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
+import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.NAME_PREFIX;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
+import static org.apache.ignite.internal.management.api.CommandUtils.executable;
+import static org.apache.ignite.internal.management.api.CommandUtils.hasDescription;
+import static org.apache.ignite.internal.management.api.CommandUtils.join;
+import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
+import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
+import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
 /**
  * Class that execute several commands passed via command line.
@@ -83,9 +100,6 @@ public class CommandHandler {
 
     /** */
     public static final String CONFIRM_MSG = "y";
-
-    /** */
-    static final String DELIM = "--------------------------------------------------------------------------------";
 
     /** */
     public static final int EXIT_CODE_OK = 0;
@@ -103,10 +117,19 @@ public class CommandHandler {
     public static final int EXIT_CODE_UNEXPECTED_ERROR = 4;
 
     /** */
+    public static final int EXIT_CODE_COMPLETED_WITH_WARNINGS = 5;
+
+    /** */
     private static final long DFLT_PING_INTERVAL = 5000L;
 
     /** */
     private static final long DFLT_PING_TIMEOUT = 30_000L;
+
+    /** */
+    public static final String DFLT_HOST = "127.0.0.1";
+
+    /** */
+    public static final int DFLT_PORT = 10800;
 
     /** */
     private final Scanner in = new Scanner(System.in);
@@ -114,11 +137,11 @@ public class CommandHandler {
     /** Utility name. */
     public static final String UTILITY_NAME = "control.(sh|bat)";
 
-    /** */
-    public static final String NULL = "null";
-
     /** JULs logger. */
-    private final Logger logger;
+    private final IgniteLogger logger;
+
+    /** Supported commands. */
+    private final IgniteCommandRegistry registry = new IgniteCommandRegistry();
 
     /** Session. */
     protected final String ses = U.id8(UUID.randomUUID());
@@ -144,71 +167,32 @@ public class CommandHandler {
     /**
      * @return prepared JULs logger.
      */
-    private Logger setupJavaLogger() {
-        Logger result = initLogger(CommandHandler.class.getName() + "Log");
-
-        // Adding logging to file.
+    public static IgniteLogger setupJavaLogger(String appName, Class<?> cls) {
         try {
-            String absPathPattern =
-                new File(JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory()), "control-utility-%g.log").getAbsolutePath();
+            IgniteLogger log =
+                U.initLogger(null, appName, null, U.defaultWorkDirectory()).getLogger(cls.getName() + "Log");
 
-            FileHandler fileHandler = new FileHandler(absPathPattern, 5 * 1024 * 1024, 5);
+            if (log instanceof IgniteLoggerEx)
+                ((IgniteLoggerEx)log).addConsoleAppender(true);
 
-            fileHandler.setFormatter(new JavaLoggerFormatter());
-
-            result.addHandler(fileHandler);
+            return log;
         }
-        catch (Exception e) {
-            System.out.println("Failed to configure logging to file");
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
-
-        // Adding logging to console.
-        result.addHandler(setupStreamHandler());
-
-        return result;
-    }
-
-    /**
-     * @return StreamHandler with empty formatting
-     */
-    public static StreamHandler setupStreamHandler() {
-        return new StreamHandler(System.out, new Formatter() {
-            @Override public String format(LogRecord record) {
-                return record.getMessage() + "\n";
-            }
-        });
-    }
-
-    /**
-     * Initialises JULs logger with basic settings
-     * @param loggerName logger name. If {@code null} anonymous logger is returned.
-     * @return logger
-     */
-    public static Logger initLogger(@Nullable String loggerName) {
-        Logger result;
-
-        if (loggerName == null)
-            result = Logger.getAnonymousLogger();
-        else
-            result = Logger.getLogger(loggerName);
-
-        result.setLevel(Level.INFO);
-        result.setUseParentHandlers(false);
-
-        return result;
     }
 
     /**
      *
      */
     public CommandHandler() {
-        logger = setupJavaLogger();
+        this(setupJavaLogger("control-utility", CommandHandler.class));
     }
 
     /**
      * @param logger Logger to use.
      */
-    public CommandHandler(Logger logger) {
+    public CommandHandler(IgniteLogger logger) {
         this.logger = logger;
     }
 
@@ -218,7 +202,7 @@ public class CommandHandler {
      * @param rawArgs Arguments to parse and execute.
      * @return Exit code.
      */
-    public int execute(List<String> rawArgs) {
+    public <A extends IgniteDataTransferObject> int execute(List<String> rawArgs) {
         LocalDateTime startTime = LocalDateTime.now();
 
         Thread.currentThread().setName("session=" + ses);
@@ -228,7 +212,7 @@ public class CommandHandler {
         logger.info("User: " + System.getProperty("user.name"));
         logger.info("Time: " + startTime.format(formatter));
 
-        String commandName = "";
+        String cmdName = "";
 
         Throwable err = null;
         boolean verbose = false;
@@ -242,36 +226,45 @@ public class CommandHandler {
 
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
-            ConnectionAndSslParameters args = new CommonArgParser(logger).parseAndValidate(rawArgs.iterator());
+            ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry, console).parseAndValidate(rawArgs);
 
-            Command command = args.command();
-            commandName = command.name();
+            cmdName = toFormattedCommandName(args.cmdPath().peekLast().getClass()).toUpperCase();
 
-            GridClientConfiguration clientCfg = getClientConfiguration(args);
-
-            int tryConnectMaxCount = 3;
+            int tryConnectMaxCnt = 3;
 
             boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());
 
             boolean credentialsRequested = false;
 
             while (true) {
-                try {
-                    if (!args.autoConfirmation()) {
-                        command.prepareConfirmation(clientCfg);
+                try (
+                    CliIgniteClientInvoker<A> invoker =
+                         new CliIgniteClientInvoker<>(args.command(), args.commandArg(), clientConfiguration(args))
+                ) {
+                    if (!invoker.prepare(logger::info))
+                        return EXIT_CODE_OK;
 
-                        if (!confirm(command.confirmationPrompt())) {
-                            logger.info("Operation cancelled.");
+                    if (!args.autoConfirmation() && !confirm(invoker.confirmationPrompt())) {
+                        logger.info("Operation cancelled.");
 
-                            return EXIT_CODE_OK;
-                        }
+                        return EXIT_CODE_OK;
                     }
 
-                    logger.info("Command [" + commandName + "] started");
-                    logger.info("Arguments: " + argumentsToString(rawArgs));
-                    logger.info(DELIM);
+                    logger.info("Command [" + cmdName + "] started");
+                    logger.info("Arguments: " + args.safeCommandString());
+                    logger.info(U.DELIM);
 
-                    lastOperationRes = command.execute(clientCfg, logger, args.verbose());
+                    String deprecationMsg = args.command().deprecationMessage(args.commandArg());
+
+                    if (deprecationMsg != null)
+                        logger.warning(deprecationMsg);
+
+                    if (args.command() instanceof HelpCommand)
+                        printUsage(logger, args.cmdPath().peekLast());
+                    else if (args.command() instanceof BeforeNodeStartCommand)
+                        lastOperationRes = invoker.invokeBeforeNodeStart(logger::info);
+                    else
+                        lastOperationRes = invoker.invoke(logger::info);
 
                     break;
                 }
@@ -280,47 +273,44 @@ public class CommandHandler {
                         throw e;
 
                     if (suppliedAuth)
-                        throw new GridClientAuthenticationException("Wrong credentials.");
+                        throw new IgniteAuthenticationException("Wrong credentials.");
 
-                    if (tryConnectMaxCount == 0) {
-                        throw new GridClientAuthenticationException("Maximum number of " +
-                            "retries exceeded");
-                    }
+                    if (tryConnectMaxCnt == 0)
+                        throw new IgniteAuthenticationException("Maximum number of retries exceeded");
 
                     logger.info(credentialsRequested ?
                         "Authentication error, please try again." :
                         "This cluster requires authentication.");
 
                     if (credentialsRequested)
-                        tryConnectMaxCount--;
+                        tryConnectMaxCnt--;
 
-                    String user = retrieveUserName(args, clientCfg);
+                    if (F.isEmpty(args.userName()))
+                        args.userName(requestDataFromConsole("user: "));
 
-                    String pwd = new String(requestPasswordFromConsole("password: "));
-
-                    clientCfg = getClientConfiguration(user, pwd, args);
+                    args.password(new String(requestPasswordFromConsole("password: ")));
 
                     credentialsRequested = true;
                 }
             }
 
-            logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_OK);
+            logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_OK);
 
             return EXIT_CODE_OK;
         }
-        catch (IllegalArgumentException e) {
-            logger.severe("Check arguments. " + errorMessage(e));
-            logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
-
-            if (verbose)
-                err = e;
-
-            return EXIT_CODE_INVALID_ARGUMENTS;
-        }
         catch (Throwable e) {
+            if (X.hasCause(e, CommandWarningException.class)) {
+                logger.warning(e.getMessage());
+                logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_COMPLETED_WITH_WARNINGS);
+
+                return EXIT_CODE_COMPLETED_WITH_WARNINGS;
+            }
+
+            logger.error("Failed to perform operation.");
+
             if (isAuthError(e)) {
-                logger.severe("Authentication error. " + errorMessage(e));
-                logger.info("Command [" + commandName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
+                logger.error("Authentication error. " + errorMessage(e));
+                logger.info("Command [" + cmdName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
 
                 if (verbose)
                     err = e;
@@ -332,17 +322,19 @@ public class CommandHandler {
                 IgniteCheckedException cause = X.cause(e, IgniteCheckedException.class);
 
                 if (isConnectionClosedSilentlyException(e))
-                    logger.severe("Connection to cluster failed. Please check firewall settings and " +
+                    logger.error("Connection to cluster failed. Please check firewall settings and " +
                         "client and server are using the same SSL configuration.");
                 else {
                     if (isSSLMisconfigurationError(cause))
                         e = cause;
 
-                    logger.severe("Connection to cluster failed. " + errorMessage(e));
-
+                    logger.error("Connection to cluster failed. " + errorMessage(e));
                 }
 
-                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
+                logger.error("Make sure you are connecting to the client connector (configured on a node via '" +
+                    ClientConnectorConfiguration.class.getName() + "')");
+
+                logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
 
                 if (verbose)
                     err = e;
@@ -353,8 +345,8 @@ public class CommandHandler {
             if (X.hasCause(e, IllegalArgumentException.class)) {
                 IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
-                logger.severe("Check arguments. " + errorMessage(iae));
-                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+                logger.error("Check arguments. " + errorMessage(iae));
+                logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
                 if (verbose)
                     err = e;
@@ -362,8 +354,8 @@ public class CommandHandler {
                 return EXIT_CODE_INVALID_ARGUMENTS;
             }
 
-            logger.severe(errorMessage(e));
-            logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
+            logger.error(errorMessage(e));
+            logger.info("Command [" + cmdName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
 
             err = e;
 
@@ -380,9 +372,8 @@ public class CommandHandler {
             logger.info("Control utility has completed execution at: " + endTime.format(formatter));
             logger.info("Execution time: " + diff.toMillis() + " ms");
 
-            Arrays.stream(logger.getHandlers())
-                  .filter(handler -> handler instanceof FileHandler)
-                  .forEach(Handler::close);
+            if (logger instanceof IgniteLoggerEx)
+                ((IgniteLoggerEx)logger).flush();
         }
     }
 
@@ -437,162 +428,61 @@ public class CommandHandler {
      * to secured cluster.
      */
     private boolean isConnectionClosedSilentlyException(Throwable e) {
-        if (!(e instanceof GridClientDisconnectedException))
-            return false;
-
-        Throwable cause = e.getCause();
-
-        if (cause == null)
-            return false;
-
-        cause = cause.getCause();
-
-        if (cause instanceof GridClientConnectionResetException &&
-            cause.getMessage() != null &&
-            cause.getMessage().contains("Failed to perform handshake")
-        )
-            return true;
-
-        return false;
+        return e instanceof ClientConnectionException && e.getMessage().startsWith("Channel is closed");
     }
 
     /**
-     * Joins user's arguments and hides sensitive information.
-     *
-     * @param rawArgs Arguments which user has provided.
-     * @return String which could be shown in console and pritned to log.
+     * @param args Common arguments.
+     * @return Thin client configuration to connect to cluster.
+     * @throws IgniteCheckedException If error occur.
      */
-    private String argumentsToString(List<String> rawArgs) {
-        boolean hide = false;
+    private ClientConfiguration clientConfiguration(ConnectionAndSslParameters args) throws IgniteCheckedException {
+        ClientConfiguration clientCfg = new ClientConfiguration();
 
-        SB sb = new SB();
+        clientCfg.setAddresses(args.host() + ":" + args.port());
 
-        for (int i = 0; i < rawArgs.size(); i++) {
-            if (hide) {
-                sb.a("***** ");
-
-                hide = false;
-
-                continue;
-            }
-
-            String arg = rawArgs.get(i);
-
-            sb.a(arg).a(' ');
-
-            hide = CommonArgParser.isSensitiveArgument(arg);
+        if (!F.isEmpty(args.userName())) {
+            clientCfg.setUserName(args.userName());
+            clientCfg.setUserPassword(args.password());
         }
 
-        return sb.toString();
-    }
+        if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath())) {
+            if (!F.isEmpty(args.sslKeyStorePath()) && !F.isEmpty(args.sslFactoryConfigPath())) {
+                throw new IllegalArgumentException("Incorrect SSL configuration. SSL factory config path should " +
+                    "not be specified simultaneously with other SSL options like keystore path.");
+            }
 
-    /**
-     * Does one of three things:
-     * <ul>
-     *     <li>returns user name from connection parameters if it is there;</li>
-     *     <li>returns user name from client configuration if it is there;</li>
-     *     <li>requests user input and returns entered name.</li>
-     * </ul>
-     *
-     * @param args Connection parameters.
-     * @param clientCfg Client configuration.
-     * @throws IgniteCheckedException If security credetials cannot be provided from client configuration.
-     */
-    private String retrieveUserName(
-        ConnectionAndSslParameters args,
-        GridClientConfiguration clientCfg
-    ) throws IgniteCheckedException {
-        if (!F.isEmpty(args.userName()))
-            return args.userName();
-        else if (clientCfg.getSecurityCredentialsProvider() == null)
-            return requestDataFromConsole("user: ");
-        else
-            return (String)clientCfg.getSecurityCredentialsProvider().credentials().getLogin();
-    }
-
-    /**
-     * @param args Common arguments.
-     * @return Thin client configuration to connect to cluster.
-     * @throws IgniteCheckedException If error occur.
-     */
-    @NotNull private GridClientConfiguration getClientConfiguration(
-        ConnectionAndSslParameters args
-    ) throws IgniteCheckedException {
-        return getClientConfiguration(args.userName(), args.password(), args);
-    }
-
-    /**
-     * @param userName User name for authorization.
-     * @param password Password for authorization.
-     * @param args Common arguments.
-     * @return Thin client configuration to connect to cluster.
-     * @throws IgniteCheckedException If error occur.
-     */
-    @NotNull private GridClientConfiguration getClientConfiguration(
-        String userName,
-        String password,
-        ConnectionAndSslParameters args
-    ) throws IgniteCheckedException {
-        GridClientConfiguration clientCfg = new GridClientConfiguration();
-
-        clientCfg.setPingInterval(args.pingInterval());
-
-        clientCfg.setPingTimeout(args.pingTimeout());
-
-        clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
-
-        if (!F.isEmpty(userName))
-            clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(userName, password, clientCfg));
-
-        if (!F.isEmpty(args.sslKeyStorePath()))
             clientCfg.setSslContextFactory(createSslSupportFactory(args));
+            clientCfg.setSslMode(SslMode.REQUIRED);
+        }
+
+        clientCfg.setClusterDiscoveryEnabled(false);
 
         return clientCfg;
-    }
-
-    /**
-     * @param userName User name for authorization.
-     * @param password Password for authorization.
-     * @param clientCfg Thin client configuration to connect to cluster.
-     * @return Security credentials provider with usage of given user name and password.
-     * @throws IgniteCheckedException If error occur.
-     */
-    @NotNull private SecurityCredentialsProvider getSecurityCredentialsProvider(
-        String userName,
-        String password,
-        GridClientConfiguration clientCfg
-    ) throws IgniteCheckedException {
-        SecurityCredentialsProvider securityCredential = clientCfg.getSecurityCredentialsProvider();
-
-        if (securityCredential == null)
-            return new SecurityCredentialsBasicProvider(new SecurityCredentials(userName, password));
-
-        final SecurityCredentials credential = securityCredential.credentials();
-        credential.setLogin(userName);
-        credential.setPassword(password);
-
-        return securityCredential;
     }
 
     /**
      * @param args Commond args.
      * @return Ssl support factory.
      */
-    @NotNull private GridSslBasicContextFactory createSslSupportFactory(ConnectionAndSslParameters args) {
-        GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
+    @NotNull private Factory<SSLContext> createSslSupportFactory(ConnectionAndSslParameters args) throws IgniteCheckedException {
+        if (!F.isEmpty(args.sslFactoryConfigPath())) {
+            URL springCfg = IgniteUtils.resolveSpringUrl(args.sslFactoryConfigPath());
 
-        List<String> sslProtocols = split(args.sslProtocol(), ",");
+            ApplicationContext ctx = IgniteSpringHelperImpl.applicationContext(springCfg);
 
-        String sslProtocol = F.isEmpty(sslProtocols) ? DFLT_SSL_PROTOCOL : sslProtocols.get(0);
+            return (Factory<SSLContext>)ctx.getBean(Factory.class);
+        }
 
-        factory.setProtocol(sslProtocol);
+        SslContextFactory factory = new SslContextFactory();
+
+        if (args.sslProtocol().length > 1)
+            factory.setProtocols(args.sslProtocol());
+        else
+            factory.setProtocol(args.sslProtocol()[0]);
+
         factory.setKeyAlgorithm(args.sslKeyAlgorithm());
-
-        if (sslProtocols.size() > 1)
-            factory.setProtocols(sslProtocols);
-
-        factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
-
+        factory.setCipherSuites(args.getSslCipherSuites());
         factory.setKeyStoreFilePath(args.sslKeyStorePath());
 
         if (args.sslKeyStorePassword() != null)
@@ -607,7 +497,7 @@ public class CommandHandler {
         factory.setKeyStoreType(args.sslKeyStoreType());
 
         if (F.isEmpty(args.sslTrustStorePath()))
-            factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
+            factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
         else {
             factory.setTrustStoreFilePath(args.sslTrustStorePath());
 
@@ -663,10 +553,10 @@ public class CommandHandler {
 
     /**
      * @param e Exception to check.
-     * @return {@code true} if specified exception is {@link GridClientAuthenticationException}.
+     * @return {@code true} if specified exception is an authentication exception.
      */
     public static boolean isAuthError(Throwable e) {
-        return X.hasCause(e, GridClientAuthenticationException.class);
+        return X.hasCause(e, ClientAuthenticationException.class);
     }
 
     /**
@@ -674,11 +564,7 @@ public class CommandHandler {
      * @return {@code true} if specified exception is a connection error.
      */
     private static boolean isConnectionError(Throwable e) {
-        return e instanceof GridClientClosedException ||
-            e instanceof GridClientConnectionResetException ||
-            e instanceof GridClientDisconnectedException ||
-            e instanceof GridClientHandshakeException ||
-            e instanceof GridServerUnreachableException;
+        return X.hasCause(e, ClientConnectionException.class);
     }
 
     /**
@@ -712,42 +598,36 @@ public class CommandHandler {
         }
     }
 
-    /**
-     * Split string into items.
-     *
-     * @param s String to process.
-     * @param delim Delimiter.
-     * @return List with items.
-     */
-    private static List<String> split(String s, String delim) {
-        if (F.isEmpty(s))
-            return Collections.emptyList();
-
-        return Arrays.stream(s.split(delim))
-            .map(String::trim)
-            .filter(item -> !item.isEmpty())
-            .collect(Collectors.toList());
-    }
-
     /** @param rawArgs Arguments. */
     private void printHelp(List<String> rawArgs) {
         boolean experimentalEnabled = rawArgs.stream().anyMatch(CMD_ENABLE_EXPERIMENTAL::equalsIgnoreCase) ||
-            IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+            getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         logger.info("Control utility script is used to execute admin commands on cluster or get common cluster info. " +
             "The command has the following syntax:");
         logger.info("");
 
-        logger.info(INDENT + CommandLogger.join(" ", CommandLogger.join(" ", UTILITY_NAME, CommandLogger.join(" ", getCommonOptions())),
-            optional("command"), "<command_parameters>"));
+        logger.info(INDENT + join(" ",
+            join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, registry, null).getCommonOptions())),
+            asOptional("command", true), "<command_parameters>"));
         logger.info("");
         logger.info("");
 
         logger.info("This utility can do the following commands:");
 
-        Arrays.stream(CommandList.values())
-            .filter(c -> experimentalEnabled || !c.command().experimental())
-            .forEach(c -> c.command().printUsage(logger));
+        registry.commands().forEachRemaining(e -> {
+            if (experimentalEnabled || !e.getValue().getClass().isAnnotationPresent(IgniteExperimental.class)) {
+                if (Objects.equals(e.getValue().getClass(), CacheCommand.class)) {
+                    logger.info("");
+                    logger.info("View caches information in a cluster. For more details type:");
+                    logger.info(DOUBLE_INDENT + UTILITY_NAME + " --cache help");
+
+                    return;
+                }
+
+                printUsage(logger, e.getValue());
+            }
+        });
 
         logger.info("");
         logger.info("By default commands affecting the cluster require interactive confirmation.");
@@ -772,5 +652,232 @@ public class CommandHandler {
         logger.info(DOUBLE_INDENT + EXIT_CODE_CONNECTION_FAILED + " - connection failed.");
         logger.info(DOUBLE_INDENT + ERR_AUTHENTICATION_FAILED + " - authentication failed.");
         logger.info(DOUBLE_INDENT + EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.");
+    }
+
+    /**
+     * Print info for user about command (parameters, use cases and so on).
+     *
+     * @param logger Logger to use.
+     */
+    public void printUsage(IgniteLogger logger, Command<?, ?> cmd) {
+        if (cmd instanceof CacheCommand || cmd instanceof CacheCommand.CacheHelpCommand)
+            printCacheHelpHeader(logger);
+
+        usage(cmd, Collections.emptyList(), logger);
+
+        if (cmd instanceof CacheCommand || cmd instanceof CacheCommand.CacheHelpCommand)
+            logger.info("");
+    }
+
+    /** */
+    private void printCacheHelpHeader(IgniteLogger logger) {
+        logger.info(INDENT + "The '--cache subcommand' is used to get information about and perform actions" +
+            " with caches. The command has the following syntax:");
+        logger.info("");
+        logger.info(INDENT + join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, null, null).getCommonOptions())) +
+            " --cache [subcommand] <subcommand_parameters>");
+        logger.info("");
+        logger.info(INDENT + "The subcommands that take [nodeId] as an argument ('list', 'find_garbage', " +
+            "'contention' and 'validate_indexes') will be executed on the given node or on all server nodes" +
+            " if the option is not specified. Other commands will run on a random server node.");
+        logger.info("");
+        logger.info("");
+        logger.info(INDENT + "Subcommands:");
+    }
+
+    /**
+     * Generates usage for base command and all of its children, if any.
+     *
+     * @param cmd Base command.
+     * @param parents Collection of parent commands.
+     * @param logger Logger to print help to.
+     */
+    public static void usage(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
+        if (executable(cmd)) {
+            logger.info("");
+
+            if (cmd.getClass().isAnnotationPresent(IgniteExperimental.class))
+                logger.info(INDENT + "[EXPERIMENTAL]");
+
+            printExample(cmd, parents, logger);
+
+            if (CommandUtils.hasDescribedParameters(cmd)) {
+                logger.info("");
+                logger.info(DOUBLE_INDENT + "Parameters:");
+
+                LengthCalculator lenCalc = new LengthCalculator();
+
+                visitCommandParams(cmd.argClass(), lenCalc, lenCalc, (argGrp, flds) -> flds.forEach(lenCalc));
+
+                Consumer<Field> printer = fld -> {
+                    BiConsumer<String, String> logParam = (name, description) -> {
+                        if (F.isEmpty(description))
+                            return;
+
+                        logger.info(
+                            DOUBLE_INDENT + INDENT + U.extendToLen(name, lenCalc.length) + "  - " + description + "."
+                        );
+                    };
+
+                    logParam.accept(
+                        parameterExample(fld, false),
+                        fld.getAnnotation(Argument.class).description()
+                    );
+
+                    if (fld.isAnnotationPresent(EnumDescription.class)) {
+                        EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
+
+                        String[] names = formattedEnumNames(fld);
+                        String[] descriptions = enumDesc.descriptions();
+
+                        for (int i = 0; i < names.length; i++)
+                            logParam.accept(names[i], descriptions[i]);
+                    }
+                };
+
+                visitCommandParams(cmd.argClass(), printer, printer, (argGrp, flds) -> {
+                    flds.stream().filter(fld -> fld.isAnnotationPresent(Positional.class)).forEach(printer);
+                    flds.stream().filter(fld -> !fld.isAnnotationPresent(Positional.class)).forEach(printer);
+                });
+            }
+        }
+
+        if (cmd instanceof CommandsRegistry) {
+            List<Command<?, ?>> parents0 = new ArrayList<>(parents);
+
+            parents0.add(cmd);
+
+            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(cmd0 -> usage(cmd0.getValue(), parents0, logger));
+        }
+    }
+
+    /**
+     * Generates and prints example of command.
+     *
+     * @param cmd Command.
+     * @param parents Collection of parent commands.
+     * @param logger Logger to print help to.
+     */
+    private static void printExample(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
+        logger.info(INDENT + cmd.description() + ":");
+
+        StringBuilder bldr = new StringBuilder(DOUBLE_INDENT + UTILITY_NAME);
+
+        CommandName name = new CommandName();
+
+        parents.forEach(name);
+        name.accept(cmd);
+
+        bldr.append(name.name.toString());
+
+        BiConsumer<Boolean, Field> paramPrinter = (spaceReq, fld) -> {
+            if (spaceReq)
+                bldr.append(' ');
+
+            bldr.append(parameterExample(fld, true));
+        };
+
+        visitCommandParams(
+            cmd.argClass(),
+            fld -> bldr.append(' ').append(valueExample(fld)),
+            fld -> paramPrinter.accept(true, fld),
+            (argGrp, flds) -> {
+                if (argGrp.onlyOneOf()) {
+                    bldr.append(' ');
+
+                    if (argGrp.optional())
+                        bldr.append('[');
+
+                    for (int i = 0; i < flds.size(); i++) {
+                        if (i != 0)
+                            bldr.append('|');
+
+                        paramPrinter.accept(false, flds.get(i));
+                    }
+
+                    if (argGrp.optional())
+                        bldr.append(']');
+                }
+                else {
+                    flds.stream()
+                        .filter(fld -> fld.isAnnotationPresent(Positional.class))
+                        .forEach(fld -> bldr.append(' ').append(valueExample(fld)));
+                    flds.stream()
+                        .filter(fld -> !fld.isAnnotationPresent(Positional.class))
+                        .forEach(fld -> paramPrinter.accept(true, fld));
+                }
+            }
+        );
+
+        if (cmd.argClass().isAnnotationPresent(CliConfirmArgument.class))
+            bldr.append(' ').append(CommandUtils.asOptional(CMD_AUTO_CONFIRMATION, true));
+
+        logger.info(bldr.toString());
+    }
+
+    /** */
+    private static String[] formattedEnumNames(Field fld) {
+        EnumDescription desc = fld.getAnnotation(EnumDescription.class);
+
+        String indent = fld.isAnnotationPresent(Positional.class) ? "" : INDENT;
+
+        return Arrays.stream(desc.names()).map(s -> indent + s).toArray(String[]::new);
+    }
+
+    /** */
+    private static class LengthCalculator implements Consumer<Field> {
+        /** */
+        int length;
+
+        /** {@inheritDoc} */
+        @Override public void accept(Field fld) {
+            if (!hasDescription(fld))
+                return;
+
+            length = Math.max(length, parameterExample(fld, false).length());
+
+            if (fld.isAnnotationPresent(EnumDescription.class)) {
+                for (String name : formattedEnumNames(fld))
+                    length = Math.max(length, name.length());
+            }
+        }
+    }
+
+    /** */
+    public static class CommandName implements Consumer<Object> {
+        /** */
+        private boolean prefixInclude = true;
+
+        /** */
+        private String parentPrefix;
+
+        /** */
+        StringBuilder name = new StringBuilder();
+
+        /** {@inheritDoc} */
+        @Override public void accept(Object cmd) {
+            name.append(' ');
+
+            if (prefixInclude)
+                name.append(NAME_PREFIX);
+
+            String cmdName = toFormattedCommandName(cmd.getClass());
+
+            String parentPrefix0 = parentPrefix;
+
+            parentPrefix = cmdName;
+
+            if (!F.isEmpty(parentPrefix0)) {
+                cmdName = cmdName.replaceFirst(parentPrefix0 + CMD_WORDS_DELIM, "");
+
+                if (!prefixInclude)
+                    cmdName = cmdName.replaceAll(CMD_WORDS_DELIM + "", PARAM_WORDS_DELIM + "");
+            }
+
+            name.append(cmdName);
+
+            if (cmd instanceof CommandsRegistry)
+                prefixInclude = cmd.getClass().isAnnotationPresent(CliSubcommandsWithPrefix.class);
+        }
     }
 }

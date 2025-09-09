@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -63,16 +62,14 @@ public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Object, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        QueryEntity queryEntity = new QueryEntity("KeyType", Integer.class.getName());
+        QueryEntity qryEntity = new QueryEntity("KeyType", Integer.class.getName());
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
         fields.put("a", "TypeA");
         fields.put("b", "TypeB");
 
-        queryEntity.setFields(fields);
+        qryEntity.setFields(fields);
 
         //Specify key fields in upper register
         HashSet<String> keyFields = new HashSet<>();
@@ -80,9 +77,9 @@ public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
         keyFields.add("a");
         keyFields.add("B");
 
-        queryEntity.setKeyFields(keyFields);
+        qryEntity.setKeyFields(keyFields);
 
-        ccfg.setQueryEntities(F.asList(queryEntity));
+        ccfg.setQueryEntities(F.asList(qryEntity));
 
         cfg.setCacheConfiguration(ccfg);
 

@@ -187,7 +187,7 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAutoArchiveWithoutNullPointerException() throws Exception {
-        setRootLoggerDebugLevel();
+        setLoggerDebugLevel();
 
         LogListener logLsnr0 = LogListener.matches("Checking if WAL rollover required").build();
 
@@ -297,6 +297,8 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
      * @return Timeout object.
      */
     @Nullable private GridTimeoutObject timeoutRollover(IgniteEx n) {
-        return getFieldValue(walMgr(n), "timeoutRollover");
+        synchronized (getFieldValue(walMgr(n), "timeoutRolloverMux")) {
+            return getFieldValue(walMgr(n), "timeoutRollover");
+        }
     }
 }

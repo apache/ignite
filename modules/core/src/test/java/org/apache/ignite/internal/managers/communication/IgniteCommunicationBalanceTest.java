@@ -54,7 +54,6 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
         TcpCommunicationSpi commSpi = ((TcpCommunicationSpi)cfg.getCommunicationSpi());
 
-        commSpi.setSharedMemoryPort(-1);
         commSpi.setConnectionsPerNode(connectionsPerNode());
         commSpi.setUsePairedConnections(usePairedConnections());
 
@@ -123,7 +122,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
             waitNioBalanceStop(Collections.singletonList(client), 10_000);
 
             final GridNioServer srv =
-                ((GridNioServerWrapper) GridTestUtils.getFieldValue(client.configuration().getCommunicationSpi(), "nioSrvWrapper")).nio();
+                ((GridNioServerWrapper)GridTestUtils.getFieldValue(client.configuration().getCommunicationSpi(), "nioSrvWrapper")).nio();
 
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -251,9 +250,9 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
         final List<GridNioServer> srvs = new ArrayList<>();
 
         for (Ignite node : nodes) {
-            TcpCommunicationSpi spi = (TcpCommunicationSpi) node.configuration().getCommunicationSpi();
+            TcpCommunicationSpi spi = (TcpCommunicationSpi)node.configuration().getCommunicationSpi();
 
-            GridNioServer srv = ((GridNioServerWrapper) GridTestUtils.getFieldValue(spi, "nioSrvWrapper")).nio();
+            GridNioServer srv = ((GridNioServerWrapper)GridTestUtils.getFieldValue(spi, "nioSrvWrapper")).nio();
 
             srvs.add(srv);
         }

@@ -18,10 +18,10 @@
 package org.apache.ignite.cdc;
 
 import java.io.Serializable;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,10 +29,8 @@ import org.jetbrains.annotations.Nullable;
  * Event of single entry change.
  * Instance presents new value of modified entry.
  *
- * @see CdcMain
  * @see CdcConsumer
  */
-@IgniteExperimental
 public interface CdcEvent extends Serializable {
     /**
      * @return Key for the changed entry.
@@ -76,4 +74,12 @@ public interface CdcEvent extends Serializable {
      * @see CacheView#cacheId()
      */
     public int cacheId();
+
+    /**
+     * @return Time when entry will be removed from cache. If {@code 0} then entry will be cached until removed.
+     * @see org.apache.ignite.IgniteCache#withExpiryPolicy(ExpiryPolicy)
+     * @see org.apache.ignite.configuration.CacheConfiguration#setExpiryPolicyFactory(Factory)
+     * @see org.apache.ignite.internal.processors.cache.GridCacheUtils#EXPIRE_TIME_ETERNAL
+     */
+    public long expireTime();
 }

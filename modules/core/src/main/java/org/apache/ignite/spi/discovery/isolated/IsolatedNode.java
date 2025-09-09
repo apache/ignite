@@ -116,11 +116,6 @@ public class IsolatedNode implements IgniteClusterNode {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isClient() {
         return false;
     }
@@ -151,7 +146,7 @@ public class IsolatedNode implements IgniteClusterNode {
         this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.emptyMap();
     }
 
-    /** */
+    /** @param attrs Local node attributes. */
     public void setAttributes(Map<String, Object> attrs) {
         this.attrs = U.sealMap(attrs);
     }

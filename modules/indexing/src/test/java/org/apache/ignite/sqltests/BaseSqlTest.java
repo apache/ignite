@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -150,9 +151,9 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
             if (addrId < FREE_ADDR_CNT)
                 depId = null;
 
-            String address = UUID.randomUUID().toString();
+            String addr = UUID.randomUUID().toString();
 
-            execute(insConf.setArgs(addrId, depId, depId, address));
+            execute(insConf.setArgs(addrId, depId, depId, addr));
         }
     }
 
@@ -695,7 +696,7 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
                 row -> {
                     Object id = row.get("ID");
 
-                    return F.eq(id, 1L) || F.eq(id, 256L) || F.eq(id, 42L);
+                    return Objects.equals(id, 1L) || Objects.equals(id, 256L) || Objects.equals(id, 42L);
                 },
                 "AGE");
 
@@ -835,17 +836,17 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
 
             List<List<Object>> all = select(node.cache(EMP_CACHE_NAME), null, "age");
 
-            Map<Integer, Long> cntGroups = new HashMap<>();
+            Map<Integer, Long> cntGrps = new HashMap<>();
 
             for (List<Object> entry : all) {
                 Integer age = (Integer)entry.get(0);
 
-                long cnt = cntGroups.getOrDefault(age, 0L);
+                long cnt = cntGrps.getOrDefault(age, 0L);
 
-                cntGroups.put(age, cnt + 1L);
+                cntGrps.put(age, cnt + 1L);
             }
 
-            List<List<Object>> expected = cntGroups.entrySet().stream()
+            List<List<Object>> expected = cntGrps.entrySet().stream()
                 .filter(ent -> ent.getValue() > avgAge)
                 .map(ent -> Arrays.<Object>asList(ent.getKey(), ent.getValue()))
                 .collect(Collectors.toList());
@@ -872,17 +873,17 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
 
             List<List<Object>> all = select(node.cache(EMP_CACHE_NAME), null, "depId");
 
-            Map<Long, Long> cntGroups = new HashMap<>();
+            Map<Long, Long> cntGrps = new HashMap<>();
 
             for (List<Object> entry : all) {
                 Long depId = (Long)entry.get(0);
 
-                long cnt = cntGroups.getOrDefault(depId, 0L);
+                long cnt = cntGrps.getOrDefault(depId, 0L);
 
-                cntGroups.put(depId, cnt + 1L);
+                cntGrps.put(depId, cnt + 1L);
             }
 
-            List<List<Object>> expected = cntGroups.entrySet().stream()
+            List<List<Object>> expected = cntGrps.entrySet().stream()
                 .filter(ent -> ent.getValue() > avgDep)
                 .map(ent -> Arrays.<Object>asList(ent.getKey(), ent.getValue()))
                 .collect(Collectors.toList());
@@ -1224,7 +1225,6 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
     /**
      * Check that FULL OUTER JOIN (which is currently unsupported) causes valid error message.
      */
-    @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testFullOuterJoinIsNotSupported() {
         testAllNodes(node -> {
@@ -1245,7 +1245,6 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
     /**
      * Check that distributed FULL OUTER JOIN (which is currently unsupported) causes valid error message.
      */
-    @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testFullOuterDistributedJoinIsNotSupported() {
         testAllNodes(node -> {
@@ -1275,16 +1274,16 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
                 "Schema name could not be an empty string"
         );
 
-        String sqlQuery = "SELECT * FROM Employee limit 1";
+        String sqlQry = "SELECT * FROM Employee limit 1";
 
         testAllNodes(node -> {
-            executeFrom(sqlQuery, node, "");
-            executeFrom(sqlQuery, node, " ");
+            executeFrom(sqlQry, node, "");
+            executeFrom(sqlQry, node, " ");
             assertTrue("Check valid schema",
-                    executeFrom(sqlQuery, node, "PUBLIC").values().stream().count() > 0
+                    executeFrom(sqlQry, node, "PUBLIC").values().stream().count() > 0
             );
             assertTrue("Check null schema",
-                    executeFrom(sqlQuery, node, null).values().stream().count() > 0
+                    executeFrom(sqlQry, node, null).values().stream().count() > 0
             );
         });
     }

@@ -25,6 +25,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.management.JMException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -54,8 +55,10 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -66,8 +69,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.testframework.GridTestUtils.assertActive;
 import static org.apache.ignite.testframework.GridTestUtils.assertInactive;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -80,7 +85,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     static final String CACHE_NAME_PREFIX = "cache-";
 
     /** Non-persistent data region name. */
-    private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
+    protected static final String NO_PERSISTENCE_REGION = "no-persistence-region";
 
     /** */
     private static final int DEFAULT_CACHES_COUNT = 2;
@@ -105,7 +110,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (testReconnectSpi) {
-            TcpDiscoverySpi spi = new IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi();
+            TcpDiscoverySpi spi = new TestTcpDiscoverySpi();
 
             cfg.setDiscoverySpi(spi);
 
@@ -475,14 +480,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
                 for (int j = 0; j < 10; j++) {
                     Integer key = ThreadLocalRandom.current().nextInt(1000);
-                    Integer value = j;
+                    Integer val = j;
 
                     if (state == ACTIVE)
                         cache.put(key, j);
                     else
-                        assertThrowsWithCause(() -> cache.put(key, value), IgniteClusterReadOnlyException.class);
+                        assertThrowsWithCause(() -> cache.put(key, val), IgniteClusterReadOnlyException.class);
 
-                    assertEquals(state == ACTIVE ? value : null, cache.get(key));
+                    assertEquals(state == ACTIVE ? val : null, cache.get(key));
                 }
             }
         }
@@ -1406,6 +1411,70 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         stateChangeFailover3(ACTIVE_READ_ONLY, INACTIVE);
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testDeactivateMXBean() throws Exception {
+        Ignite ignite = startGrid();
+
+        IgniteMXBean mxBean = getMxBean(ignite.name(), "Kernal", "IgniteKernal", IgniteMXBean.class);
+
+        if (persistenceEnabled())
+            ignite.cluster().state(ACTIVE);
+
+        // Create a new cache in order to trigger all needed checks on deactivation.
+        ignite.getOrCreateCache("test-partitioned-cache");
+
+        checkMXBeanDeactivation(ignite, () -> mxBean.active(false), false);
+
+        checkMXBeanDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name()), false);
+
+        checkMXBeanDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), false), false);
+
+        checkMXBeanDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), true), true);
+    }
+
+    /**
+     * Checks that not forced deactivation fails only if cluster has in-memory caches.
+     *
+     * @param ignite Ignite instance.
+     * @param deactivator Deactivation call to check. Assuming from the mx bean.
+     * @param forceDeactivation {@code True} if {@code deactivator} is forced.
+     */
+    private void checkMXBeanDeactivation(Ignite ignite, MXAction deactivator, boolean forceDeactivation) {
+        assertEquals(ACTIVE, ignite.cluster().state());
+
+        if (persistenceEnabled() || forceDeactivation) {
+            try {
+                deactivator.action();
+            }
+            catch (JMException e) {
+                throw new IllegalStateException("Unexpected exception on cluster deactivation.", e);
+            }
+
+            assertEquals(INACTIVE, ignite.cluster().state());
+
+            ignite.cluster().state(ACTIVE);
+        }
+        else {
+            assertThrows(log, () -> {
+                deactivator.action();
+
+                return null;
+            }, JMException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+
+            try {
+                deactivator.action();
+            }
+            catch (JMException e) {
+                assertNull("A JMX exception should not contain any cause. JMX client might be launched with " +
+                        "other class path witout remote class loading and won't be able to deserialize teh stacktrace.",
+                    e.getCause());
+            }
+        }
+
+        assertEquals(ACTIVE, ignite.cluster().state());
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -1763,5 +1832,11 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
                 throw new IgniteException(e);
             }
         }, "start" + "-" + (client ? "client" : "server") + "-node" + nodeNumber);
+    }
+
+    /** An JMX bean call that can throw JMException. */
+    private interface MXAction {
+        /** */
+        void action() throws JMException;
     }
 }

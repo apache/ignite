@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
@@ -61,10 +62,10 @@ public class CacheValidatorMetricsTest extends GridCommonAbstractTest implements
             .setCacheMode(CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setTopologyValidator(new TopologyValidator() {
-            @Override public boolean validate(Collection<ClusterNode> nodes) {
-                return nodes.size() == 2;
-            }
-        });
+                @Override public boolean validate(Collection<ClusterNode> nodes) {
+                    return nodes.size() == 2;
+                }
+            });
 
         cfg.setCacheConfiguration(cCfg1, cCfg2);
 
@@ -100,7 +101,7 @@ public class CacheValidatorMetricsTest extends GridCommonAbstractTest implements
     @Test
     public void testCacheValidatorMetrics() throws Exception {
         final IgniteEx crd = startGrid(1);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
         crd.cluster().baselineAutoAdjustEnabled(false);
 
         assertCacheStatus(CACHE_NAME_1, true, true);

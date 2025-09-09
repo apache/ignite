@@ -397,7 +397,8 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
                 if (regionId == UNMAPPED_REGION)
                     fail();
-            } catch (CacheException ignored) {
+            }
+            catch (CacheException ignored) {
                 if (regionId != UNMAPPED_REGION)
                     fail();
             }
@@ -449,7 +450,8 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
                 if (regionId == UNMAPPED_REGION)
                     fail();
-            } catch (CacheException ignored) {
+            }
+            catch (CacheException ignored) {
                 if (regionId != UNMAPPED_REGION)
                     fail();
             }
@@ -563,9 +565,11 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
     /** */
     protected static class DepositKey extends RegionKey {
+        /** */
         @QuerySqlField(index = true)
         protected int depositId;
 
+        /** */
         @QuerySqlField(index = true)
         protected int clientId;
 
@@ -611,27 +615,33 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
     /** */
     protected static class Client {
+        /** */
         @QuerySqlField
         protected String firstName;
 
+        /** */
         @QuerySqlField
         protected String lastName;
 
+        /** */
         @QuerySqlField(index = true)
         protected int passport;
     }
 
     /** */
     protected static class Deposit {
+        /** */
         @QuerySqlField
         protected long amount;
     }
 
     /** */
     protected static class Region {
+        /** */
         @QuerySqlField
         protected String name;
 
+        /** */
         @QuerySqlField
         protected int code;
     }

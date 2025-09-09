@@ -20,14 +20,14 @@ package org.apache.ignite.internal.processors.metric.impl;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
+import org.apache.ignite.internal.processors.metric.ConfigurableHistogramMetric;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.metric.HistogramMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Histogram metric implementation.
  */
-public class HistogramMetricImpl extends AbstractMetric implements HistogramMetric {
+public class HistogramMetricImpl extends AbstractMetric implements ConfigurableHistogramMetric {
     /** Holder of measurements. */
     private volatile HistogramHolder holder;
 
@@ -43,13 +43,21 @@ public class HistogramMetricImpl extends AbstractMetric implements HistogramMetr
     }
 
     /**
+     * @param name Name.
+     * @param toCopy Histogram metric to copy.
+     */
+    public HistogramMetricImpl(String name, HistogramMetricImpl toCopy) {
+        super(name, toCopy.description());
+
+        holder = toCopy.holder;
+    }
+
+    /**
      * Sets value.
      *
      * @param x Value.
      */
     public void value(long x) {
-        assert x >= 0;
-
         HistogramHolder h = holder;
 
         //Expect arrays of few elements.
@@ -71,6 +79,11 @@ public class HistogramMetricImpl extends AbstractMetric implements HistogramMetr
      */
     public void reset(long[] bounds) {
         holder = new HistogramHolder(bounds);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void bounds(long[] bounds) {
+        reset(bounds);
     }
 
     /** {@inheritDoc} */

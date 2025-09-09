@@ -23,18 +23,23 @@ if (WIN32)
     set(Boost_USE_STATIC_LIBS ON)
 endif()
 
-find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system)
+find_package(Boost 1.53 REQUIRED COMPONENTS unit_test_framework chrono thread system regex)
 
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS} ${JNI_INCLUDE_DIRS})
 include_directories(include)
 
-set(SOURCES src/teamcity/teamcity_boost.cpp
+set(SOURCES
+        src/teamcity/teamcity_boost.cpp
         src/teamcity/teamcity_messages.cpp
         src/cache_client_test.cpp
         src/compute_client_test.cpp
+        src/continuous_query_test.cpp
+        src/test_server.cpp
         src/test_utils.cpp
         src/ignite_client_test.cpp
         src/interop_test.cpp
+        src/network_codec_test.cpp
+        src/scan_query_test.cpp
         src/sql_fields_query_test.cpp
         src/auth_test.cpp
         src/tx_test.cpp
@@ -55,5 +60,9 @@ set(TEST_TARGET IgniteThinClientTest)
 
 add_test(NAME ${TEST_TARGET} COMMAND ${TARGET} --catch_system_errors=no --log_level=all)
 
-set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT
-        IGNITE_NATIVE_TEST_CPP_THIN_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config)
+list(APPEND ENV_VARIABLES "IGNITE_NATIVE_TEST_CPP_THIN_CONFIG_PATH=${PROJECT_SOURCE_DIR}/config")
+if (${WITH_SANITIZERS})
+    list(APPEND ENV_VARIABLES ${SANITIZERS_ENV})
+endif()
+
+set_tests_properties(${TEST_TARGET} PROPERTIES ENVIRONMENT "${ENV_VARIABLES}")

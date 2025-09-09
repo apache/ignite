@@ -35,13 +35,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -56,12 +54,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.values;
 public class IgniteCacheReadThroughStoreCallTest extends GridCommonAbstractTest {
     /** */
     private static final Map<Object, Object> storeMap = new ConcurrentHashMap<>();
-
-    /** */
-    @Before
-    public void beforeIgniteCacheReadThroughStoreCallTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

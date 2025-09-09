@@ -37,9 +37,14 @@ public interface CheckpointListener {
         public CheckpointProgress progress();
 
         /**
-         * @return {@code True} if a snapshot have to be created after.
+         * @param flush If {@code True} then will flush WAL after a Checkpoint begin.
          */
-        public boolean nextSnapshot();
+        public void walFlush(boolean flush);
+
+        /**
+         * Whether to flush WAL after a Checkpoint begin.
+         */
+        public boolean walFlush();
 
         /**
          * @return Checkpoint future which will be completed when checkpoint ends.
@@ -50,11 +55,6 @@ public interface CheckpointListener {
          * @return Partition allocation statistic map
          */
         public PartitionAllocationMap partitionStatMap();
-
-        /**
-         * @param cacheOrGrpName Cache or group name.
-         */
-        public boolean needToSnapshot(String cacheOrGrpName);
 
         /**
          * @return Context executor.

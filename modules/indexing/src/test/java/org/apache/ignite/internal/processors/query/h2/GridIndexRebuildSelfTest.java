@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -47,7 +47,7 @@ import org.junit.Test;
 
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.util.IgniteUtils.delete;
 
@@ -138,15 +138,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      *     <li>Restart the node and block index rebuild;</li>
      *     <li>For half of the keys do cache puts <b>before</b> corresponding key
      *     has been processed during index rebuild;</li>
-     *     <li>Check that:
-     *         <ul>
-     *             <li>For MVCC case: some keys have all versions that existed before restart, while those
-     *             updated concurrently have only put version (one with mark value -1)
-     *             and latest version present before node restart;</li>
-     *             <li>For non MVCC case: keys updated concurrently must have mark values of -1 despite that
-     *             index rebuild for them has happened after put.</li>
-     *         </ul>
-     *     </li>
+     *     <li>Check that keys updated concurrently must have mark values of -1 despite that
+     *     index rebuild for them has happened after put.</li>
      * </ul></p>
      * @throws Exception if failed.
      */
@@ -305,10 +298,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     protected File indexFile(IgniteInternalCache internalCache) {
         requireNonNull(internalCache);
 
-        File cacheWorkDir = ((FilePageStoreManager)internalCache.context().shared().pageStore())
-            .cacheWorkDir(internalCache.configuration());
-
-        return cacheWorkDir.toPath().resolve(INDEX_FILE_NAME).toFile();
+        return internalCache.context().kernalContext().pdsFolderResolver().fileTree()
+            .partitionFile(internalCache.configuration(), INDEX_PARTITION);
     }
 
     /**
@@ -379,7 +370,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      */
     protected IgniteEx startServer() throws Exception {
         IgniteEx srvNode = startGrid(serverConfiguration(0));
-        srvNode.active(true);
+        srvNode.cluster().state(ClusterState.ACTIVE);
         return srvNode;
     }
 
@@ -412,12 +403,12 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
                 firstRbld = false;
 
             if (slowRebuildIdxFut) {
-                rebuildIdxFut.listen(fut -> {
+                rebuildIdxFut.listen(() -> {
                     try {
                         U.sleep(1_000);
                     }
                     catch (IgniteInterruptedCheckedException e) {
-                        log.error("Error while slow down " + fut, e);
+                        log.error("Error while slow down " + rebuildIdxFut, e);
                     }
                 });
             }

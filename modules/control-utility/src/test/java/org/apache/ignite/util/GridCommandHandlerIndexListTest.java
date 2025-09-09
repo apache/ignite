@@ -22,10 +22,9 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.cache.CacheCommands;
-import org.apache.ignite.internal.visor.cache.index.IndexListInfoContainer;
+import org.apache.ignite.internal.management.cache.IndexListInfoContainer;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -46,6 +45,9 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
     /** Ignite instance. */
     private Ignite ignite;
 
+    /** Empty group name. */
+    public static final String EMPTY_GROUP_NAME = "no_group";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -54,7 +56,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         ignite = startGrids(GRIDS_NUM);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         createAndFillSeveralCaches(ignite);
     }
@@ -74,21 +76,23 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
     @Test
     public void testCacheIndexList() {
         final String idxName = "PERSON_ORGID_ASC_IDX";
-        final int expectedLinesNum = 15;
-        final int expectedIndexDescrLinesNum = 2;
+        final int expectedLinesNum = 4 + commandHandlerExtraLines();
+        final int expectedIdxDescrLinesNum = 2;
 
         injectTestSystemOut();
 
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
-        assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--index-name", idxName));
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--cache", "indexes_list", "--index-name", idxName));
 
         String outStr = testOut.toString();
 
+        String typePattern = cliCommandHandler() ? "ArrayList" : "LinkedKeySet";
+
         assertTrue(outStr.contains("grpName=" + GROUP_NAME + ", cacheName=" + CACHE_NAME + ", idxName=PERSON_ORGID_ASC_IDX, " +
-            "colsNames=ArrayList [ORGID, _KEY], tblName=PERSON"));
+            "colsNames=" + typePattern + " [ORGID, _KEY], tblName=PERSON"));
         assertTrue(outStr.contains("grpName=" + GROUP_NAME_SECOND + ", cacheName=" + CACHE_NAME_SECOND +
-            ", idxName=PERSON_ORGID_ASC_IDX, colsNames=ArrayList [ORGID, _KEY], tblName=PERSON"));
+            ", idxName=PERSON_ORGID_ASC_IDX, colsNames=" + typePattern + " [ORGID, _KEY], tblName=PERSON"));
 
         final String[] outputLines = outStr.split("\n");
 
@@ -96,15 +100,15 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         assertEquals("Unexpected number of lines: " + outputLinesNum, outputLinesNum, expectedLinesNum);
 
-        long indexDescrLinesNum =
+        long idxDescrLinesNum =
             Arrays.stream(outputLines)
                 .filter(s -> s.contains("grpName="))
                 .count();
 
-        assertEquals("Unexpected number of index description lines: " + indexDescrLinesNum,
-            indexDescrLinesNum, expectedIndexDescrLinesNum);
+        assertEquals("Unexpected number of index description lines: " + idxDescrLinesNum,
+            idxDescrLinesNum, expectedIdxDescrLinesNum);
 
-        Set<IndexListInfoContainer> cmdResult = handler.getLastOperationResult();
+        Set<IndexListInfoContainer> cmdResult = hnd.getLastOperationResult();
         assertNotNull(cmdResult);
 
         final int resSetSize = cmdResult.size();
@@ -127,16 +131,18 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         injectTestSystemOut();
 
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
-        assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list",
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--cache", "indexes_list",
             "--node-id", grid(0).localNode().id().toString(),
             "--group-name", "^" + GROUP_NAME + "$",
             "--cache-name", CACHE_NAME,
             "--index-name", idxName));
 
+        String typePattern = cliCommandHandler() ? "ArrayList" : "LinkedKeySet";
+
         assertTrue(testOut.toString().contains("grpName=" + GROUP_NAME + ", cacheName=" + CACHE_NAME +
-            ", idxName=PERSON_ORGID_ASC_IDX, colsNames=ArrayList [ORGID, _KEY], tblName=PERSON"));
+            ", idxName=PERSON_ORGID_ASC_IDX, colsNames=" + typePattern + " [ORGID, _KEY], tblName=PERSON"));
     }
 
     /**
@@ -150,7 +156,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         injectTestSystemOut();
 
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
         try {
             ignite.createCache(tmpCacheName);
@@ -160,13 +166,13 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
                     streamer.addData(i * 13, i * 17);
             }
 
-            assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--cache-name", tmpCacheName));
+            assertEquals(EXIT_CODE_OK, execute(hnd, "--cache", "indexes_list", "--cache-name", tmpCacheName));
 
             String str = testOut.toString();
 
             String[] lines = str.split("\n");
 
-            assertEquals("Unexpected output size", 11, lines.length);
+            assertEquals("Unexpected output size", commandHandlerExtraLines(), lines.length);
         }
         finally {
             ignite.destroyCache(tmpCacheName);
@@ -199,7 +205,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
      */
     @Test
     public void testEmptyGroupFilter() {
-        checkGroup(CacheCommands.EMPTY_GROUP_NAME, CacheCommands.EMPTY_GROUP_NAME, 4);
+        checkGroup(EMPTY_GROUP_NAME, EMPTY_GROUP_NAME, 4);
     }
 
     /** */
@@ -209,11 +215,11 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
     /** */
     private void checkGroup(String grpRegEx, Predicate<String> predicate, int expectedResNum) {
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
-        assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--group-name", grpRegEx));
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--cache", "indexes_list", "--group-name", grpRegEx));
 
-        Set<IndexListInfoContainer> cmdResult = handler.getLastOperationResult();
+        Set<IndexListInfoContainer> cmdResult = hnd.getLastOperationResult();
         assertNotNull(cmdResult);
 
         boolean isResCorrect =
@@ -256,11 +262,11 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
     /** */
     private void checkCacheNameFilter(String cacheRegEx, Predicate<String> predicate, int expectedResNum) {
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
-        assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--cache-name", cacheRegEx));
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--cache", "indexes_list", "--cache-name", cacheRegEx));
 
-        Set<IndexListInfoContainer> cmdResult = handler.getLastOperationResult();
+        Set<IndexListInfoContainer> cmdResult = hnd.getLastOperationResult();
         assertNotNull(cmdResult);
 
         boolean isResCorrect =

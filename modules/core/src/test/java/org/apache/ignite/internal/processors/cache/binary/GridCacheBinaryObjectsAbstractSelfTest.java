@@ -56,9 +56,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
+import org.apache.ignite.internal.binary.BinaryObjectTestUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -109,22 +107,23 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         binKeysCacheCfg.setName("BinKeysCache");
 
         cfg.setCacheConfiguration(cacheCfg, binKeysCacheCfg);
-        cfg.setMarshaller(new BinaryMarshaller());
 
         List<BinaryTypeConfiguration> binTypes = new ArrayList<>();
 
-        binTypes.add(new BinaryTypeConfiguration() {{
-            setTypeName("ArrayHashedKey");
-        }});
+        BinaryTypeConfiguration type = new BinaryTypeConfiguration();
+
+        type.setTypeName("ArrayHashedKey");
+
+        binTypes.add(type);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
         binCfg.setTypeConfigurations(binTypes);
 
         cfg.setBinaryConfiguration(binCfg);
 
-        CacheKeyConfiguration arrayHashCfg = new CacheKeyConfiguration("ArrayHashedKey", "fld1");
+        CacheKeyConfiguration arrHashCfg = new CacheKeyConfiguration("ArrayHashedKey", "fld1");
 
-        cfg.setCacheKeyConfiguration(arrayHashCfg);
+        cfg.setCacheKeyConfiguration(arrHashCfg);
 
         GridCacheBinaryObjectsAbstractSelfTest.cfg = cfg;
 
@@ -166,10 +165,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
                 Object val = CU.value(e.rawGet(), c.context(), false);
 
                 if (key instanceof BinaryObject)
-                    assert ((BinaryObjectImpl)key).detached() : val;
+                    assert BinaryObjectTestUtils.isDetached(key) : key;
 
                 if (val instanceof BinaryObject)
-                    assert ((BinaryObjectImpl)val).detached() : val;
+                    assert BinaryObjectTestUtils.isDetached(val) : val;
             }
         }
 
@@ -517,7 +516,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         assertTrue(bObj instanceof BinaryObject);
         assertEquals(Collections.singletonList(null).getClass(), cBinary.getClass());
 
-        assertEquals(Integer.valueOf(123), ((BinaryObject) bObj).field("val"));
+        assertEquals(Integer.valueOf(123), ((BinaryObject)bObj).field("val"));
     }
 
     /**
@@ -660,7 +659,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
                 BinaryObject val = kbCache.get(i);
 
-                assertFalse("Key=" + i, val instanceof BinaryObjectOffheapImpl);
+                assertFalse("Key=" + i, BinaryObjectTestUtils.isBinaryObjectOffheapImplInstance(val));
 
                 assertEquals(i, (int)val.field("val"));
 
@@ -716,7 +715,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
                 BinaryObject val = kbCache.getAsync(i).get();
 
-                assertFalse("Key=" + i, val instanceof BinaryObjectOffheapImpl);
+                assertFalse("Key=" + i, BinaryObjectTestUtils.isBinaryObjectOffheapImplInstance(val));
 
                 assertEquals(i, (int)val.field("val"));
 
@@ -911,7 +910,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
                     kpc.put(e.getKey(), val);
 
-                    assertFalse("Key=" + i, val instanceof BinaryObjectOffheapImpl);
+                    assertFalse("Key=" + i, BinaryObjectTestUtils.isBinaryObjectOffheapImplInstance(val));
                 }
 
                 tx.commit();
@@ -984,7 +983,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
                     assertEquals(new Integer(e.getKey().intValue()), val.field("val"));
 
-                    assertFalse("Key=" + e.getKey(), val instanceof BinaryObjectOffheapImpl);
+                    assertFalse("Key=" + e.getKey(), BinaryObjectTestUtils.isBinaryObjectOffheapImplInstance(val));
                 }
 
                 tx.commit();
@@ -1208,12 +1207,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         checkTransform(primaryKey(c));
 
-        if (cacheMode() != CacheMode.LOCAL) {
-            checkTransform(backupKey(c));
+        checkTransform(backupKey(c));
 
-            if (nearConfiguration() != null)
-                checkTransform(nearKey(c));
-        }
+        if (nearConfiguration() != null)
+            checkTransform(nearKey(c));
     }
 
     /**
@@ -1352,6 +1349,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * No-op entry processor.
      */
     private static class ObjectEntryProcessor implements EntryProcessor<Integer, TestObject, Boolean> {
+        /** {@inheritDoc} */
         @Override public Boolean process(MutableEntry<Integer, TestObject> entry, Object... args) throws EntryProcessorException {
             TestObject obj = entry.getValue();
 
@@ -1437,7 +1435,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            ComplexBinaryFieldsListHashedKey that = (ComplexBinaryFieldsListHashedKey) o;
+            ComplexBinaryFieldsListHashedKey that = (ComplexBinaryFieldsListHashedKey)o;
 
             return secondField.equals(that.secondField) &&
                 thirdField.equals(that.thirdField);

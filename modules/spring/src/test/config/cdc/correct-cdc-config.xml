@@ -30,9 +30,9 @@
                 <property name="defaultDataRegionConfiguration">
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                         <property name="persistenceEnabled" value="true" />
+                        <property name="cdcEnabled" value="true" />
                     </bean>
                 </property>
-                <property name="cdcEnabled" value="true" />
             </bean>
         </property>
     </bean>

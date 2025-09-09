@@ -57,13 +57,10 @@ import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -76,8 +73,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -111,10 +106,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
@@ -133,9 +126,7 @@ import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager
  * TcpDiscoverySpi starts in client mode as well. In this case node does not take its place in the ring,
  * but it connects to random node in the ring (IP taken from IP finder configured) and
  * use it as a router for discovery traffic.
- * Therefore slow client node or its shutdown will not affect whole cluster. If TcpDiscoverySpi
- * needs to be started in server mode regardless of {@link IgniteConfiguration#clientMode},
- * {@link #forceSrvMode} should be set to true.
+ * Therefore slow client node or its shutdown will not affect whole cluster.
  * <p>
  * At startup SPI tries to send messages to random IP taken from
  * {@link TcpDiscoveryIpFinder} about self start (stops when send succeeds)
@@ -194,7 +185,6 @@ import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager
  * <li>Thread priority for threads started by SPI (see {@link #setThreadPriority(int)})</li>
  * <li>IP finder clean frequency (see {@link #setIpFinderCleanFrequency(long)})</li>
  * <li>Statistics print frequency (see {@link #setStatisticsPrintFrequency(long)}</li>
- * <li>Force server mode (see {@link #setForceServerMode(boolean)}</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
@@ -448,9 +438,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected TcpDiscoveryImpl impl;
 
     /** */
-    private boolean forceSrvMode;
-
-    /** */
     private boolean clientReconnectDisabled;
 
     /** */
@@ -461,9 +448,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** */
     protected IgniteSpiContext spiCtx;
-
-    /** */
-    private IgniteDiscoverySpiInternalListener internalLsnr;
 
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
@@ -511,6 +495,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * @param id Id.
+     * @return Cluster node instance with specified ID.
      */
     public ClusterNode getNode0(UUID id) {
         if (impl instanceof ServerImpl)
@@ -536,13 +521,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-        IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
-
-        if (internalLsnr != null) {
-            if (!internalLsnr.beforeSendCustomEvent(this, log, msg))
-                return;
-        }
-
         impl.sendCustomEvent(msg);
     }
 
@@ -564,36 +542,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             throw new IllegalStateException("TcpDiscoverySpi has not started.");
 
         return impl instanceof ClientImpl;
-    }
-
-    /**
-     * If {@code true} TcpDiscoverySpi will started in server mode regardless
-     * of {@link IgniteConfiguration#isClientMode()}
-     *
-     * @return forceServerMode flag.
-     * @deprecated Will be removed at 3.0.
-     */
-    @Deprecated
-    public boolean isForceServerMode() {
-        return forceSrvMode;
-    }
-
-    /**
-     * Sets force server mode flag.
-     * <p>
-     * If {@code true} TcpDiscoverySpi is started in server mode regardless
-     * of {@link IgniteConfiguration#isClientMode()}.
-     *
-     * @param forceSrvMode forceServerMode flag.
-     * @return {@code this} for chaining.
-     * @deprecated Will be removed at 3.0.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    @Deprecated
-    public TcpDiscoverySpi setForceServerMode(boolean forceSrvMode) {
-        this.forceSrvMode = forceSrvMode;
-
-        return this;
     }
 
     /**
@@ -633,10 +581,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             setLocalAddress(ignite.configuration().getLocalHost());
             setAddressResolver(ignite.configuration().getAddressResolver());
 
-            if (ignite instanceof IgniteKernal) // IgniteMock instance can be injected from tests.
-                marsh = ((IgniteKernal)ignite).context().marshallerContext().jdkMarshaller();
-            else
-                marsh = new JdkMarshaller();
+            marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
         }
     }
 
@@ -995,7 +940,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * <p>
      * If not specified, default is {@link #DFLT_SO_LINGER}
      * </p>
-    */
+     *
+     * @param soLinger SO_LINGER value.
+     */
     @IgniteSpiConfiguration(optional = true)
     public void setSoLinger(int soLinger) {
         this.soLinger = soLinger;
@@ -1259,8 +1206,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param node Node.
      * @return {@link LinkedHashSet} of internal and external addresses of provided node.
      *      Internal addresses placed before external addresses.
+     * @see #getEffectiveNodeAddresses(TcpDiscoveryNode)
      */
-    LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node) {
+    LinkedHashSet<InetSocketAddress> getAllNodeAddresses(TcpDiscoveryNode node) {
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>(node.socketAddresses());
 
         Collection<InetSocketAddress> extAddrs = node.attribute(createSpiAttributeName(ATTR_EXT_ADDRS));
@@ -1273,15 +1221,35 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * @param node Node.
-     * @param sameHost Same host flag.
-     * @return {@link LinkedHashSet} of internal and external addresses of provided node.
+     * @return {@link LinkedHashSet} of internal and external addresses of provided node except loopback addresses if
+     * current node has the same ones.
      *      Internal addresses placed before external addresses.
      *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
+     * @see #getAllNodeAddresses(TcpDiscoveryNode)
      */
-    LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
+    LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node) {
+        return getEffectiveNodeAddresses(node, U.sameMacs(locNode, node));
+    }
+
+    /**
+     * Gives node addresses with a preferable order.
+     *
+     * @param node Node.
+     * @param sameHost If {@code True}, loopback addresses go first. Otherwise, last.
+     * @return {@link LinkedHashSet} of internal and external addresses of provided node except loopback addresses if
+     * current node has the same ones.
+     *      Internal addresses placed before external addresses.
+     *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
+     * @see #getAllNodeAddresses(TcpDiscoveryNode)
+     */
+    LinkedHashSet<InetSocketAddress> getEffectiveNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
         List<InetSocketAddress> addrs = U.arrayList(node.socketAddresses());
 
-        Collections.sort(addrs, U.inetAddressesComparator(sameHost));
+        // Do not give own loopback to avoid requesting current node.
+        if (!node.equals(locNode))
+            addrs.removeIf(addr -> addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr));
+
+        addrs.sort(U.inetAddressesComparator(sameHost));
 
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>();
 
@@ -1493,7 +1461,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         impl.onContextInitialized0(spiCtx);
 
-        MetricRegistry discoReg = (MetricRegistry)getSpiContext().getOrCreateMetricRegistry(DISCO_METRICS);
+        MetricRegistryImpl discoReg = (MetricRegistryImpl)getSpiContext().getOrCreateMetricRegistry(DISCO_METRICS);
 
         stats.registerMetrics(discoReg);
 
@@ -1626,12 +1594,46 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
             return sock;
-        } catch (IOException | IgniteSpiOperationTimeoutException e) {
+        }
+        catch (IOException | IgniteSpiOperationTimeoutException e) {
             if (sock != null)
                 U.closeQuiet(sock);
 
             throw e;
         }
+    }
+
+    /**
+     * Writing to a socket might fail due to a broken connection. It might happen due to a recipient has closed the connection
+     * before, on SSL handshake, and doesn't accept new messages. In a such case it's possible to check the original error
+     * by reading the socket input stream.
+     *
+     * @param sock Socket to check.
+     * @param writeErr Error on writing a message to the socket.
+     * @return {@code SSLException} in case of SSL error, or {@code null} otherwise.
+     */
+    private @Nullable SSLException checkSslException(Socket sock, Exception writeErr) {
+        if (!sslEnable)
+            return null;
+
+        SSLException sslEx = X.cause(writeErr, SSLException.class);
+
+        if (sslEx != null)
+            return sslEx;
+
+        try {
+            // Set timeout to 1ms, in this case of closed socket it should return fast.
+            if (X.hasCause(writeErr, SocketException.class))
+                readReceipt(sock, 1);
+        }
+        catch (SSLException sslErr) {
+            return sslErr;
+        }
+        catch (Exception err) {
+            // Skip.
+        }
+
+        return null;
     }
 
     /**
@@ -1654,7 +1656,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             configureSocketOptions(sock);
 
             return sock;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             if (sock != null)
                 U.closeQuiet(sock);
 
@@ -1671,18 +1674,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param timeout Socket write timeout.
      * @throws IOException If IO failed or write timed out.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
         assert sock != null;
         assert data != null;
 
-        SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
-
-        addTimeoutObject(obj);
-
-        IOException err = null;
-
-        try {
+        try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
             OutputStream out = sock.getOutputStream();
 
             out.write(data);
@@ -1690,20 +1686,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             out.flush();
         }
         catch (IOException e) {
-            err = e;
-        }
-        finally {
-            boolean cancelled = obj.cancel();
+            SSLException sslEx = checkSslException(sock, e);
 
-            if (cancelled)
-                removeTimeoutObject(obj);
-
-            // Throw original exception.
-            if (err != null)
-                throw err;
-
-            if (!cancelled)
-                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
+            throw sslEx == null ? e : sslEx;
         }
     }
 
@@ -1722,20 +1707,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Writes message to the socket.
-     *
-     * @param sock Socket.
-     * @param msg Message.
-     * @param timeout Socket write timeout.
-     * @throws IOException If IO failed or write timed out.
-     * @throws IgniteCheckedException If marshalling failed.
-     */
-    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
-        IgniteCheckedException {
-        writeToSocket(sock, socketStream(sock), msg, timeout);
-    }
-
-    /**
      * @param msg Message.
      */
     @TestOnly
@@ -1744,24 +1715,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * @param node Target node.
-     * @param sock Socket.
-     * @param out Stream to write to.
-     * @param msg Message.
-     * @param timeout Timeout.
-     * @throws IOException If IO failed or write timed out.
-     * @throws IgniteCheckedException If marshalling failed.
-     */
-    protected void writeToSocket(
-        ClusterNode node,
-        Socket sock,
-        OutputStream out,
-        TcpDiscoveryAbstractMessage msg,
-        long timeout) throws IOException, IgniteCheckedException {
-        writeToSocket(sock, out, msg, timeout);
-    }
-
-    /**
      * Writes message to the socket.
      *
      * @param sock Socket.
@@ -1771,47 +1724,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @throws IOException If IO failed or write timed out.
      * @throws IgniteCheckedException If marshalling failed.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     protected void writeToSocket(Socket sock,
         OutputStream out,
         TcpDiscoveryAbstractMessage msg,
         long timeout) throws IOException, IgniteCheckedException {
-        if (internalLsnr != null) {
-            if (msg instanceof TcpDiscoveryJoinRequestMessage)
-                internalLsnr.beforeJoin(locNode, log);
-
-            if (msg instanceof TcpDiscoveryClientReconnectMessage)
-                internalLsnr.beforeReconnect(locNode, log);
-        }
-
         assert sock != null;
         assert msg != null;
-        assert out != null;
 
-        SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
-
-        addTimeoutObject(obj);
-
-        IgniteCheckedException err = null;
-
-        try {
+        try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
             U.marshal(marshaller(), msg, out);
         }
         catch (IgniteCheckedException e) {
-            err = e;
-        }
-        finally {
-            boolean cancelled = obj.cancel();
+            SSLException sslEx = checkSslException(sock, e);
 
-            if (cancelled)
-                removeTimeoutObject(obj);
-
-            // Throw original exception.
-            if (err != null)
-                throw err;
-
-            if (!cancelled)
-                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
+            throw sslEx == null ? e : new IgniteCheckedException(sslEx);
         }
     }
 
@@ -1824,39 +1750,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param timeout Socket timeout.
      * @throws IOException If IO failed or write timed out.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout)
         throws IOException {
         assert sock != null;
 
-        SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
+        try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
+            OutputStream out = sock.getOutputStream();
 
-        addTimeoutObject(obj);
-
-        OutputStream out = sock.getOutputStream();
-
-        IOException err = null;
-
-        try {
             out.write(res);
 
             out.flush();
         }
         catch (IOException e) {
-            err = e;
-        }
-        finally {
-            boolean cancelled = obj.cancel();
+            SSLException sslEx = checkSslException(sock, e);
 
-            if (cancelled)
-                removeTimeoutObject(obj);
-
-            // Throw original exception.
-            if (err != null)
-                throw err;
-
-            if (!cancelled)
-                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
+            throw (sslEx == null) ? e : sslEx;
         }
     }
 
@@ -2128,9 +2036,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param dataPacket Data packet.
      */
     DiscoveryDataPacket collectExchangeData(DiscoveryDataPacket dataPacket) {
-        if (locNode.isDaemon())
-            return dataPacket;
-
         assert dataPacket != null;
         assert dataPacket.joiningNodeId() != null;
 
@@ -2144,7 +2049,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             dataPacket.marshalJoiningNodeData(
                 dataBag,
                 marshaller(),
-                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
                 ignite.configuration().getNetworkCompressionLevel(),
                 log);
         else
@@ -2152,7 +2056,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 dataBag,
                 locNode.id(),
                 marshaller(),
-                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
                 ignite.configuration().getNetworkCompressionLevel(),
                 log);
 
@@ -2164,9 +2067,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param clsLdr Class loader.
      */
     protected void onExchange(DiscoveryDataPacket dataPacket, ClassLoader clsLdr) {
-        if (locNode.isDaemon())
-            return;
-
         assert dataPacket != null;
         assert dataPacket.joiningNodeId() != null;
 
@@ -2186,14 +2086,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 throw new IgniteException(e);
             }
         }
-        else {
+        else
             dataBag = dataPacket.unmarshalJoiningNodeDataSilently(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
-
-            //Marshal unzipped joining node data if it was zipped but not whole cluster supports that.
-            //It can be happened due to several nodes, including node without compression support, are trying to join cluster concurrently.
-            if (!allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION) && dataPacket.isJoiningDataZipped())
-                dataPacket.unzipData(log);
-        }
 
         exchange.onExchange(dataBag);
     }
@@ -2210,15 +2104,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      *
      */
-    private void initializeImpl() {
+    protected void initializeImpl() {
         if (impl != null)
             return;
 
-        sslEnable = ignite().configuration().getSslContextFactory() != null;
+        sslEnable = ignite.configuration().getSslContextFactory() != null;
 
         initFailureDetectionTimeout();
 
-        if (!forceSrvMode && (Boolean.TRUE.equals(ignite.configuration().isClientMode()))) {
+        if (Boolean.TRUE.equals(ignite.configuration().isClientMode())) {
             if (ackTimeout == 0)
                 ackTimeout = DFLT_ACK_TIMEOUT_CLIENT;
 
@@ -2236,7 +2130,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (sockTimeout == 0)
                 sockTimeout = DFLT_SOCK_TIMEOUT;
 
-            impl = new ServerImpl(this);
+            impl = new ServerImpl(this, 4);
         }
 
         metricsUpdateFreq = ignite.configuration().getMetricsUpdateFrequency();
@@ -2262,7 +2156,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                SSLContext sslCtx = ignite().configuration().getSslContextFactory().create();
+                SSLContext sslCtx = ignite.configuration().getSslContextFactory().create();
 
                 sslSockFactory = sslCtx.getSocketFactory();
                 sslSrvSockFactory = sslCtx.getServerSocketFactory();
@@ -2403,14 +2297,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /** {@inheritDoc} */
-    @Override public boolean allNodesSupport(IgniteFeatures feature) {
-        if (impl == null)
-            return false;
-
-        return impl.allNodesSupport(feature);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean knownNode(UUID nodeId) {
         return getNode0(nodeId) != null;
     }
@@ -2432,6 +2318,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
+     * @return Client workers count.
      */
     public int clientWorkerCount() {
         return ((ServerImpl)impl).clientWorkersCount();
@@ -2446,18 +2333,17 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
+     *
+     * @param lsnr Listener of sent messages.
      */
     public void addSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> lsnr) {
         sndMsgLsnrs.add(lsnr);
     }
 
-    /** {@inheritDoc} */
-    @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
-        this.internalLsnr = lsnr;
-    }
-
     /**
      * <strong>FOR TEST ONLY!!!</strong>
+     *
+     * @param lsnr Instance of the listener for sent messages.
      */
     public void removeSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> lsnr) {
         sndMsgLsnrs.remove(lsnr);
@@ -2465,6 +2351,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
+     *
+     * @param lsnr Instance of the listener for incoming messages.
      */
     public void addIncomeConnectionListener(IgniteInClosure<Socket> lsnr) {
         incomeConnLsnrs.add(lsnr);
@@ -2472,6 +2360,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
+     *
+     * @param lsnr Instance of the listener for incoming messages.
      */
     public void removeIncomeConnectionListener(IgniteInClosure<Socket> lsnr) {
         incomeConnLsnrs.remove(lsnr);
@@ -2521,7 +2411,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @return Marshaller.
      */
     protected Marshaller marshaller() {
-        MarshallerUtils.setNodeName(marsh, igniteInstanceName);
+        marsh.nodeName(igniteInstanceName);
 
         return marsh;
     }
@@ -2538,10 +2428,19 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         return S.toString(TcpDiscoverySpi.class, this);
     }
 
+    /** Starts a timer for a socket operation. */
+    private SocketTimeoutObject startTimer(Socket sock, long timeout) {
+        SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
+
+        addTimeoutObject(obj);
+
+        return obj;
+    }
+
     /**
      * Socket timeout object.
      */
-    private class SocketTimeoutObject implements IgniteSpiTimeoutObject {
+    private class SocketTimeoutObject implements IgniteSpiTimeoutObject, AutoCloseable {
         /** */
         private final IgniteUuid id = IgniteUuid.randomUuid();
 
@@ -2597,6 +2496,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         /** {@inheritDoc} */
         @Override public IgniteUuid id() {
             return id;
+        }
+
+        /** */
+        @Override public void close() throws SocketTimeoutException {
+            if (cancel())
+                removeTimeoutObject(this);
+            else
+                throw new SocketTimeoutException("Write timed out (socket was concurrently closed).");
         }
 
         /** {@inheritDoc} */

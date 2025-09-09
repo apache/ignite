@@ -50,7 +50,7 @@ public class BPlusMetaIO extends PageIO {
     private static final int FLAGS_OFFSET = INLINE_SIZE_OFFSET + 2;
 
     /** */
-    private static final int CREATED_VER_OFFSET = FLAGS_OFFSET + 8;
+    private static final int CREATED_VER_OFFSET = FLAGS_OFFSET + Long.BYTES;
 
     /** */
     private static final int REFS_OFFSET = CREATED_VER_OFFSET + IgniteProductVersion.SIZE_IN_BYTES;
@@ -104,6 +104,8 @@ public class BPlusMetaIO extends PageIO {
      * @param pageSize Page size.
      */
     public void initRoot(long pageAdrr, long rootId, int pageSize) {
+        assertPageType(pageAdrr);
+
         setLevelsCount(pageAdrr, 1, pageSize);
         setFirstPageId(pageAdrr, 0, rootId);
     }
@@ -121,8 +123,8 @@ public class BPlusMetaIO extends PageIO {
      * @param pageSize Page size.
      * @return Max levels possible for this page size.
      */
-    private int getMaxLevels(long pageAddr, int pageSize) {
-        return (pageSize - refsOff) / 8;
+    public int getMaxLevels(long pageAddr, int pageSize) {
+        return (pageSize - refsOff) / Long.BYTES;
     }
 
     /**
@@ -143,7 +145,7 @@ public class BPlusMetaIO extends PageIO {
      * @return Offset for page reference.
      */
     private int offset(int lvl) {
-        return lvl * 8 + refsOff;
+        return lvl * Long.BYTES + refsOff;
     }
 
     /**
@@ -186,6 +188,8 @@ public class BPlusMetaIO extends PageIO {
      * @param pageSize Page size.
      */
     public void addRoot(long pageAddr, long rootPageId, int pageSize) {
+        assertPageType(pageAddr);
+
         int lvl = getLevelsCount(pageAddr);
 
         setLevelsCount(pageAddr, lvl + 1, pageSize);
@@ -197,6 +201,8 @@ public class BPlusMetaIO extends PageIO {
      * @param pageSize Page size.
      */
     public void cutRoot(long pageAddr, int pageSize) {
+        assertPageType(pageAddr);
+
         int lvl = getRootLevel(pageAddr);
 
         setLevelsCount(pageAddr, lvl, pageSize); // Decrease tree height.
@@ -207,6 +213,8 @@ public class BPlusMetaIO extends PageIO {
      * @param size Offset size.
      */
     public void setInlineSize(long pageAddr, int size) {
+        assertPageType(pageAddr);
+
         if (getVersion() > 1)
             PageUtils.putShort(pageAddr, INLINE_SIZE_OFFSET, (short)size);
     }
@@ -260,6 +268,8 @@ public class BPlusMetaIO extends PageIO {
      * @param createdVer The version of the product that creates the page (b+tree).
      */
     public void initFlagsAndVersion(long pageAddr, long flags, IgniteProductVersion createdVer) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, FLAGS_OFFSET, flags);
 
         setCreatedVersion(pageAddr, createdVer);
@@ -271,6 +281,7 @@ public class BPlusMetaIO extends PageIO {
      */
     public void setCreatedVersion(long pageAddr, IgniteProductVersion curVer) {
         assert curVer != null;
+        assertPageType(pageAddr);
 
         PageUtils.putByte(pageAddr, CREATED_VER_OFFSET, curVer.major());
         PageUtils.putByte(pageAddr, CREATED_VER_OFFSET + 1, curVer.minor());
@@ -317,6 +328,7 @@ public class BPlusMetaIO extends PageIO {
         boolean inlineObjSupported,
         boolean inlineObjHash) {
         assert supportFlags();
+        assertPageType(pageAddr);
 
         long flags = unwrappedPk ? FLAG_UNWRAPPED_PK : 0;
         flags |= inlineObjSupported ? FLAG_INLINE_OBJECT_SUPPORTED : 0;
@@ -332,6 +344,11 @@ public class BPlusMetaIO extends PageIO {
             .a(",\n\tinlineSize=").a(getInlineSize(addr))
             .a("\n]");
             //TODO print firstPageIds by level
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return (getMaxLevels(pageAddr, pageSize) - getLevelsCount(pageAddr)) * Long.BYTES;
     }
 
     /**

@@ -113,11 +113,9 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
         return TimeUnit.MINUTES.toMillis(10);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testBackupQueue() throws Exception {
+    public void testBackupQueue() {
         final CacheEventListener lsnr = new CacheEventListener();
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
@@ -137,11 +135,9 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testManyQueryBackupQueue() throws Exception {
+    public void testManyQueryBackupQueue() {
         List<QueryCursor> qryCursors = new ArrayList<>();
 
         for (int i = 0; i < QUERY_COUNT; i++) {

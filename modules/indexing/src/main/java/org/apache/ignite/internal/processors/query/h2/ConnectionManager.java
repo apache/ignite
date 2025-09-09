@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,8 +35,10 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.api.JavaObjectSerializer;
+import org.h2.engine.ConnectionInfo;
 import org.h2.engine.Database;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.store.DataHandler;
@@ -75,6 +80,9 @@ public class ConnectionManager {
         // H2 DbSettings.
         System.setProperty("h2.optimizeTwoEquals", "false"); // Makes splitter fail on subqueries in WHERE.
         System.setProperty("h2.dropRestrict", "false"); // Drop schema with cascade semantics.
+
+        // Forbid vulnerable settings.
+        forbidH2DbSettings("INIT");
     }
 
     /** The period of clean up the statement cache. */
@@ -101,10 +109,13 @@ public class ConnectionManager {
     private final ConcurrentStripedPool<H2Connection> connPool;
 
     /** H2 connection for INFORMATION_SCHEMA. Holds H2 open until node is stopped. */
-    private volatile Connection sysConn;
+    private final Connection sysConn;
 
     /** H2 data handler. Primarily used for serialization. */
     private final DataHandler dataNhd;
+
+    /** Busy lock. */
+    private final GridBusyLock busyLock = new GridBusyLock();
 
     /**
      * Constructor.
@@ -125,11 +136,7 @@ public class ConnectionManager {
 
             sysConn.setSchema(QueryUtils.SCHEMA_INFORMATION);
 
-            assert sysConn instanceof JdbcConnection : sysConn;
-
-            JdbcConnection conn = (JdbcConnection)sysConn;
-
-            dataNhd = conn.getSession().getDataHandler();
+            dataNhd = sysConn.unwrap(JdbcConnection.class).getSession().getDataHandler();
         }
         catch (SQLException e) {
             throw new IgniteSQLException("Failed to initialize DB connection: " + dbUrl, e);
@@ -193,6 +200,8 @@ public class ConnectionManager {
      * Close all connections.
      */
     private void closeConnections() {
+        busyLock.block();
+
         connPool.forEach(c -> U.close(c.connection(), log));
         connPool.clear();
 
@@ -272,6 +281,9 @@ public class ConnectionManager {
      * @return H2 connection wrapper.
      */
     public H2PooledConnection connection() {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to initialize DB connection (grid is stopping)");
+
         try {
             H2Connection conn = connPool.borrow();
 
@@ -288,6 +300,9 @@ public class ConnectionManager {
         }
         catch (SQLException e) {
             throw new IgniteSQLException("Failed to initialize DB connection: " + dbUrl, e);
+        }
+        finally {
+            busyLock.leaveBusy();
         }
     }
 
@@ -311,12 +326,20 @@ public class ConnectionManager {
      * @param conn Connection.
      */
     void recycle(H2Connection conn) {
-        boolean rmv = usedConns.remove(conn);
+        if (!busyLock.enterBusy())
+            return;
 
-        assert rmv : "Connection isn't tracked [conn=" + conn + ']';
+        try {
+            boolean rmv = usedConns.remove(conn);
 
-        if (!connPool.recycle(conn))
-            conn.close();
+            assert rmv : "Connection isn't tracked [conn=" + conn + ']';
+
+            if (!connPool.recycle(conn))
+                conn.close();
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
@@ -337,9 +360,32 @@ public class ConnectionManager {
     }
 
     /**
-     * @return H2 connection.
+     * Forbids specified settings from KNOWN_SETTINGS for security reasons.
+     *
+     * @param settings Settings to forbid.
      */
-    public JdbcConnection jdbcConnection() {
-        return (JdbcConnection) sysConn;
+    private static void forbidH2DbSettings(String... settings) {
+        try {
+            Field knownSettingsField = ConnectionInfo.class.getDeclaredField("KNOWN_SETTINGS");
+            Field modifiers = Field.class.getDeclaredField("modifiers");
+
+            modifiers.setAccessible(true);
+            modifiers.setInt(knownSettingsField, knownSettingsField.getModifiers() & ~Modifier.FINAL);
+
+            knownSettingsField.setAccessible(true);
+
+            HashSet<String> knownSettings = (HashSet<String>)knownSettingsField.get(null);
+
+            for (String s: settings)
+                knownSettings.remove(s);
+
+            modifiers.setInt(knownSettingsField, knownSettingsField.getModifiers() & Modifier.FINAL);
+            modifiers.setAccessible(false);
+
+            knownSettingsField.setAccessible(false);
+        }
+        catch (Exception e) {
+            // No-op.
+        }
     }
 }

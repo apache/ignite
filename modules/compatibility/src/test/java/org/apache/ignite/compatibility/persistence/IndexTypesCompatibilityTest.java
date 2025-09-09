@@ -36,12 +36,20 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.compatibility.IgniteReleasedVersion;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_12_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_6_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
+import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 
 /**
  * Checks all basic sql types work correctly.
@@ -96,14 +104,19 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
     /** Test run configurations: Ignite version, Inline size configuration. */
     @Parameterized.Parameters(name = "ver={0}")
     public static Collection<Object[]> runConfig() {
-        return Arrays.asList(new Object[][] {
-            {"2.6.0"}, {"2.7.0"}, {"2.7.6"}, {"2.8.0"}, {"2.8.1"}, {"2.9.0"}, {"2.9.1"}, {"2.10.0"}
-        });
+        return cartesianProduct(since(VER_2_6_0));
     }
 
-        /** */
+    /** */
     @Test
     public void testQueryOldIndex() throws Exception {
+        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
+
+        if (majorJavaVer > 11) {
+            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
+                    VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) < 0);
+        }
+
         doTestStartupWithOldVersion(igniteVer, new PostStartupClosure());
     }
 
@@ -183,7 +196,7 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
         for (int i = 0; i < 2; i++) {
             if ("Binary".equals(type))
                 assertTrue("Type=" + type + "; exp=" + val + "; act=" + row.get(i),
-                    Arrays.equals((byte[]) val, (byte[]) row.get(i)));
+                    Arrays.equals((byte[])val, (byte[])row.get(i)));
             else
                 assertTrue("Type=" + type + "; exp=" + val + "; act=" + row.get(i), row.get(i).equals(getBaseValue(type, inc)));
         }
@@ -242,7 +255,7 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
 
             if ("Binary".equals(type))
                 assertTrue("Type=" + type + "; exp=" + val + "; act=" + row.get(0),
-                    Arrays.equals((byte[]) val, (byte[]) row.get(0)));
+                    Arrays.equals((byte[])val, (byte[])row.get(0)));
             else
                 assertTrue("Type=" + type + "; exp=" + val + "; act=" + row.get(0),
                     row.get(0).equals(val));

@@ -230,15 +230,15 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         assertFalse(dupPartsData.containsKey(CU.cacheId(AFF3_CACHE1)));
 
         Map<Integer, CachePartitionFullCountersMap> partCntrs =
-            getFieldValue(getFieldValue(msg, "partCntrs2"), "map");
+            getFieldValue(getFieldValue(msg, "partCntrs"), "map");
 
         if (partCntrs != null) {
             for (CachePartitionFullCountersMap cntrs : partCntrs.values()) {
-                long[] initialUpdCntrs = getFieldValue(cntrs, "initialUpdCntrs");
+                long[] initUpdCntrs = getFieldValue(cntrs, "initialUpdCntrs");
                 long[] updCntrs = getFieldValue(cntrs, "updCntrs");
 
-                for (int i = 0; i < initialUpdCntrs.length; i++) {
-                    assertEquals(0, initialUpdCntrs[i]);
+                for (int i = 0; i < initUpdCntrs.length; i++) {
+                    assertEquals(0, initUpdCntrs[i]);
                     assertEquals(0, updCntrs[i]);
                 }
             }
@@ -275,8 +275,8 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     private void checkFullMessage(String cache1,
         String cache2,
         Map<Integer, Integer> dupPartsData,
-        GridDhtPartitionsFullMessage msg)
-    {
+        GridDhtPartitionsFullMessage msg
+    ) {
         int cache1Grp = groupIdForCache(ignite(0), cache1);
         int cache2Grp = groupIdForCache(ignite(0), cache2);
 
@@ -318,8 +318,8 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     private void checkSingleMessage(String cache1,
         String cache2,
         Map<Integer, Integer> dupPartsData,
-        GridDhtPartitionsSingleMessage msg)
-    {
+        GridDhtPartitionsSingleMessage msg
+    ) {
         if (!F.isEmpty(msg.cacheGroupsAffinityRequest())) {
             for (GridDhtPartitionMap map : msg.partitions().values())
                 assertTrue(F.isEmpty(map.map()));

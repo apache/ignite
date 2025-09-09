@@ -26,11 +26,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -51,7 +53,7 @@ import static org.junit.Assert.assertTrue;
 public class SecurityTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /** Ignite home. */
     private static final String IGNITE_HOME = U.getIgniteHome();
@@ -61,12 +63,35 @@ public class SecurityTest {
      */
     @Before
     public void beforeEach() throws IgniteCheckedException {
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+        SharedFileTree sft = new SharedFileTree(U.defaultWorkDirectory());
+
+        U.delete(sft.db());
+
+        assertTrue(sft.db().mkdirs());
     }
 
     /** Test SSL/TLS encryption. */
     @Test
     public void testEncryption() throws Exception {
+        // Do not test old protocols.
+        SslProtocol[] protocols = new SslProtocol[] {
+            SslProtocol.TLS,
+            SslProtocol.TLSv1_2,
+            SslProtocol.TLSv1_3
+        };
+
+        for (SslProtocol protocol : protocols) {
+            try {
+                testEncryption(protocol);
+            }
+            catch (Throwable t) {
+                throw new Exception("Failed for protocol: " + protocol, t);
+            }
+        }
+    }
+
+    /** Test SSL/TLS encryption. */
+    private void testEncryption(SslProtocol protocol) {
         // Server-side security configuration
         IgniteConfiguration srvCfg = Config.getServerConfiguration();
 
@@ -122,7 +147,7 @@ public class SecurityTest {
                 .setSslTrustCertificateKeyStorePassword("123456")
                 .setSslKeyAlgorithm(DFLT_KEY_ALGORITHM)
                 .setSslTrustAll(false)
-                .setSslProtocol(SslProtocol.TLS)
+                .setSslProtocol(protocol)
             )) {
                 client.<Integer, String>cache(Config.DEFAULT_CACHE_NAME).put(1, "1");
             }
@@ -149,10 +174,12 @@ public class SecurityTest {
         testInvalidUserAuthentication(client -> {
             try {
                 client.getOrCreateCacheAsync("testAuthentication").get();
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 throw new RuntimeException(e);
-            } catch (ExecutionException e) {
-                throw (IgniteClientException) e.getCause();
+            }
+            catch (ExecutionException e) {
+                throw (IgniteClientException)e.getCause();
             }
         });
     }
@@ -232,7 +259,7 @@ public class SecurityTest {
             )
         );
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         for (SimpleEntry<String, String> u : users)
             createUser(u.getKey(), u.getValue());

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
+import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -62,11 +62,6 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
 
     /** Cache on backup node. */
     private IgniteCache<Integer, Integer> cache3;
-
-    /** {@inheritDoc} */
-    @Override public void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -169,7 +164,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
 
             ClusterNode primaryNode = F.first(affNodes);
 
-            if (F.eq(primaryNode, cache1.unwrap(Ignite.class).cluster().localNode()) &&
+            if (Objects.equals(primaryNode, cache1.unwrap(Ignite.class).cluster().localNode()) &&
                 affNodes.contains(cache3.unwrap(Ignite.class).cluster().localNode()))
                 break;
 
@@ -203,7 +198,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
     private void checkCache(IgniteCache<Integer, Integer> cache, int key, int expVal) throws Exception {
         Integer val = cache.get(key);
 
-        assert F.eq(expVal, val) : "Unexpected cache value [key=" + key + ", expected=" + expVal +
+        assert Objects.equals(expVal, val) : "Unexpected cache value [key=" + key + ", expected=" + expVal +
             ", actual=" + val + ']';
     }
 }

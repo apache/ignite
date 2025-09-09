@@ -164,6 +164,7 @@ public class CachingProvider implements javax.cache.spi.CachingProvider {
 
     /**
      * @param ignite Ignite.
+     * @return Cache manager implementation.
      */
     public javax.cache.CacheManager findManager(Ignite ignite) {
         synchronized (cacheManagers) {
@@ -244,9 +245,9 @@ public class CachingProvider implements javax.cache.spi.CachingProvider {
 
             if (fut != null && fut.isDone() && !fut.isFailed()) {
                 try {
-                    CacheManager cachedManager = fut.get();
+                    CacheManager cachedMgr = fut.get();
 
-                    if (cachedManager == mgr)
+                    if (cachedMgr == mgr)
                         uriMap.remove(mgr.getURI());
                 }
                 catch (IgniteCheckedException e) {

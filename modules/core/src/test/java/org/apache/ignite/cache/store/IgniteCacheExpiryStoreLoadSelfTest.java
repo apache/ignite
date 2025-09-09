@@ -99,9 +99,9 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
      */
     private void checkLoad(boolean async) throws Exception {
         IgniteCache<String, Integer> cache = jcache(0)
-           .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));
+            .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));
 
-         List<Integer> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         keys.add(primaryKey(jcache(0)));
         keys.add(primaryKey(jcache(1)));

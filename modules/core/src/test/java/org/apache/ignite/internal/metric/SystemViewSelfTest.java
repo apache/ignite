@@ -20,12 +20,11 @@ package org.apache.ignite.internal.metric;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
@@ -33,8 +32,16 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.EternalExpiryPolicy;
+import javax.cache.expiry.ModifiedExpiryPolicy;
+import com.google.common.collect.Lists;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -42,19 +49,20 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -68,6 +76,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
@@ -75,14 +84,20 @@ import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestO
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -90,6 +105,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
 import org.apache.ignite.spi.systemview.view.BaselineNodeView;
@@ -98,17 +114,22 @@ import org.apache.ignite.spi.systemview.view.CacheGroupIoView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.spi.systemview.view.ClientConnectionAttributeView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.apache.ignite.spi.systemview.view.ConfigurationView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.NodeAttributeView;
 import org.apache.ignite.spi.systemview.view.NodeMetricsView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
+import org.apache.ignite.spi.systemview.view.PagesTimestampHistogramView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
@@ -129,6 +150,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.AtomicConfiguration.DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
+import static org.apache.ignite.internal.IgniteKernal.CFG_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_ATTRIBUTES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_METRICS_SYS_VIEW;
@@ -140,8 +163,11 @@ import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CAC
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_METADATA_VIEW;
+import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
+import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.PAGE_TS_HISTOGRAM_VIEW;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.BASELINE_NODES_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.BASELINE_NODE_ATTRIBUTES_SYS_VIEW;
@@ -158,15 +184,20 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.SETS_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.STAMPED_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_ATTR_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
+import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -182,6 +213,26 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     public static final String TEST_TRANSFORMER = "TestTransformer";
+
+    /** */
+    private static CountDownLatch jobStartedLatch;
+
+    /** */
+    private static CountDownLatch releaseJobLatch;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cleanPersistenceDir();
+    }
 
     /** Tests work of {@link SystemView} for caches. */
     @Test
@@ -223,6 +274,112 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Tests work of {@link SystemView} for cache expiry policy info with in-memory configuration. */
+    @Test
+    public void testCacheViewExpiryPolicyWithInMemory() throws Exception {
+        testCacheViewExpiryPolicy(false);
+    }
+
+    /** Tests work of {@link SystemView} for cache expiry policy info with persist configuration. */
+    @Test
+    public void testCacheViewExpiryPolicyWithPersist() throws Exception {
+        testCacheViewExpiryPolicy(true);
+    }
+
+    /** Tests work of {@link SystemView} for cache groups expiry policy info. */
+    private void testCacheViewExpiryPolicy(boolean withPersistence) throws Exception {
+        try (IgniteEx g = !withPersistence ? startGrid() : startGrid(getConfiguration().setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(true)
+            )))) {
+
+            if (withPersistence)
+                g.cluster().state(ClusterState.ACTIVE);
+
+            String eternalCacheName = "eternalCache";
+            String createdCacheName = "createdCache";
+            String eagerTtlCacheName = "eagerTtlCache";
+            String withoutGrpCacheName = "withoutGrpCache";
+            String dfltCacheName = "defaultCache";
+
+            CacheConfiguration<Long, Long> eternalCache = new CacheConfiguration<Long, Long>(eternalCacheName)
+                .setGroupName("group1")
+                .setExpiryPolicyFactory(EternalExpiryPolicy.factoryOf());
+
+            CacheConfiguration<Long, Long> createdCache = new CacheConfiguration<Long, Long>(createdCacheName)
+                .setGroupName("group2")
+                .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 500L)));
+
+            CacheConfiguration<Long, Long> eagerTtlCache = new CacheConfiguration<Long, Long>(eagerTtlCacheName)
+                .setGroupName("group2")
+                .setEagerTtl(false)
+                .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 500L)));
+
+            CacheConfiguration<Long, Long> withoutGrpCache = new CacheConfiguration<Long, Long>(withoutGrpCacheName)
+                .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 500L)));
+
+            CacheConfiguration<Long, Long> dfltCache = new CacheConfiguration<Long, Long>(dfltCacheName)
+                .setGroupName("group3");
+
+            g.createCache(eternalCache);
+            g.createCache(createdCache);
+            g.createCache(eagerTtlCache);
+            g.createCache(withoutGrpCache);
+            g.createCache(dfltCache);
+
+            SystemView<CacheView> caches = g.context().systemView().view(CACHES_VIEW);
+
+            for (CacheView row : caches) {
+                switch (row.cacheName()) {
+                    case "defaultCache":
+                    case "eternalCache":
+                        assertEquals("No", row.hasExpiringEntries());
+
+                        g.cache(row.cacheName()).put(0, 0);
+
+                        assertEquals("No", row.hasExpiringEntries());
+
+                        g.cache(row.cacheName())
+                            .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L)))
+                            .put(1, 1);
+
+                        assertEquals("Yes", row.hasExpiringEntries());
+                        assertTrue(waitForCondition(() -> "No".equals(row.hasExpiringEntries()), getTestTimeout()));
+
+                        break;
+
+                    case "withoutGrpCache":
+                    case "createdCache":
+                        assertEquals("No", row.hasExpiringEntries());
+
+                        g.cache(row.cacheName()).put(0, 0);
+
+                        assertEquals("Yes", row.hasExpiringEntries());
+                        assertTrue(waitForCondition(() -> "No".equals(row.hasExpiringEntries()), getTestTimeout()));
+
+                        g.cache(row.cacheName())
+                            .withExpiryPolicy(new ModifiedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 200L)))
+                            .put(1, 1);
+
+                        assertEquals("Yes", row.hasExpiringEntries());
+                        assertTrue(waitForCondition(() -> "No".equals(row.hasExpiringEntries()), getTestTimeout()));
+
+                        if (row.cacheName().equals(createdCacheName)) {
+                            g.cache(eagerTtlCacheName).put(2, 2);
+                            assertEquals("No", row.hasExpiringEntries());
+                        }
+
+                        break;
+
+                    case "eagerTtlCache":
+                        assertEquals("Unknown", row.hasExpiringEntries());
+
+                        break;
+                }
+            }
+        }
+    }
+
     /** Tests work of {@link SystemView} for services. */
     @Test
     public void testServices() throws Exception {
@@ -245,7 +402,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 assertEquals(srvcCfg.getName(), sview.name());
                 assertNotNull(sview.serviceId());
-                assertEquals(srvcCfg.getMaxPerNodeCount(), sview.maxPerNodeCount());
                 assertEquals(DummyService.class, sview.serviceClass());
                 assertEquals(srvcCfg.getMaxPerNodeCount(), sview.maxPerNodeCount());
                 assertNull(sview.cacheName());
@@ -253,6 +409,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(TestNodeFilter.class, sview.nodeFilter());
                 assertFalse(sview.staticallyConfigured());
                 assertEquals(g.localNode().id(), sview.originNodeId());
+                assertEquals(F.asMap(g.localNode().id(), 1), sview.topologySnapshot());
             }
 
             {
@@ -278,7 +435,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 assertEquals(srvcCfg.getName(), sview[0].name());
                 assertNotNull(sview[0].serviceId());
-                assertEquals(srvcCfg.getMaxPerNodeCount(), sview[0].maxPerNodeCount());
                 assertEquals(DummyService.class, sview[0].serviceClass());
                 assertEquals(srvcCfg.getMaxPerNodeCount(), sview[0].maxPerNodeCount());
                 assertEquals("test-cache", sview[0].cacheName());
@@ -286,6 +442,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(TestNodeFilter.class, sview[0].nodeFilter());
                 assertFalse(sview[0].staticallyConfigured());
                 assertEquals(g.localNode().id(), sview[0].originNodeId());
+                assertEquals(F.asMap(g.localNode().id(), 2), sview[0].topologySnapshot());
             }
         }
     }
@@ -452,63 +609,80 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testComputeTask() throws Exception {
-        CyclicBarrier barrier = new CyclicBarrier(2);
+        doTestComputeTask(false);
+    }
 
-        try (IgniteEx g1 = startGrid(0)) {
-            SystemView<ComputeTaskView> tasks = g1.context().systemView().view(TASKS_VIEW);
+    /** */
+    @Test
+    public void testInternalComputeTask() throws Exception {
+        doTestComputeTask(true);
+    }
 
+    /** */
+    private void doTestComputeTask(boolean internal) throws Exception {
+        int gridCnt = 3;
+
+        IgniteEx g1 = startGrids(gridCnt);
+
+        try {
             IgniteCache<Integer, Integer> cache = g1.createCache("test-cache");
 
             cache.put(1, 1);
 
-            g1.compute().executeAsync(new ComputeTask<Object, Object>() {
-                @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-                    @Nullable Object arg) throws IgniteException {
-                    return Collections.singletonMap(new ComputeJob() {
-                        @Override public void cancel() {
-                            // No-op.
-                        }
+            for (int i = 0; i < gridCnt; i++) {
+                IgniteEx grid = grid(i);
 
-                        @Override public Object execute() throws IgniteException {
-                            return 1;
-                        }
-                    }, subgrid.get(0));
+                SystemView<ComputeTaskView> tasks = grid.context().systemView().view(TASKS_VIEW);
+
+                jobStartedLatch = new CountDownLatch(3);
+                releaseJobLatch = new CountDownLatch(1);
+
+                IgniteInternalFuture<Object> fut
+                    = runAsync(() -> grid.compute().execute(internal ? new InternalTask() : new UserTask(), 1));
+
+                assertTrue(jobStartedLatch.await(30_000, TimeUnit.MILLISECONDS));
+
+                try {
+                    assertEquals(1, tasks.size());
+
+                    ComputeTaskView t = tasks.iterator().next();
+
+                    assertEquals("Expecting to see " + (internal ? "internal" : "user") + " task", internal, t.internal());
+                    assertNull(t.affinityCacheName());
+                    assertEquals(-1, t.affinityPartitionId());
+                    assertTrue(t.taskClassName().startsWith(getClass().getName()));
+                    assertTrue(t.taskName().startsWith(getClass().getName()));
+                    assertEquals(grid.localNode().id(), t.taskNodeId());
+                    assertEquals("0", t.userVersion());
+
+                    checkJobs(gridCnt, internal, t.sessionId());
+                }
+                finally {
+                    releaseJobLatch.countDown();
                 }
 
-                @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-                    List<ComputeJobResult> rcvd) throws IgniteException {
-                    try {
-                        barrier.await();
-                        barrier.await();
-                    }
-                    catch (InterruptedException | BrokenBarrierException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    return null;
-                }
-
-                @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
-                    return 1;
-                }
-            }, 1);
-
-            barrier.await();
-
-            assertEquals(1, tasks.size());
-
-            ComputeTaskView t = tasks.iterator().next();
-
-            assertFalse(t.internal());
-            assertNull(t.affinityCacheName());
-            assertEquals(-1, t.affinityPartitionId());
-            assertTrue(t.taskClassName().startsWith(getClass().getName()));
-            assertTrue(t.taskName().startsWith(getClass().getName()));
-            assertEquals(g1.localNode().id(), t.taskNodeId());
-            assertEquals("0", t.userVersion());
-
-            barrier.await();
+                fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+            }
         }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** */
+    private void checkJobs(int gridCnt, boolean internal, IgniteUuid sesId) {
+        for (int i = 0; i < gridCnt; i++) {
+            SystemView<ComputeJobView> jobs = grid(i).context().systemView().view(JOBS_VIEW);
+
+            assertTrue("Expecting to see " + (internal ? "internal" : "user") + " job", jobs.size() > 0);
+
+            ComputeJobView job = jobs.iterator().next();
+
+            assertEquals(sesId, job.sessionId());
+            assertEquals("Expecting to see " + (internal ? "internal" : "user") + " job", internal, job.isInternal());
+        }
+
+        releaseJobLatch.countDown();
     }
 
     /** */
@@ -553,6 +727,49 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             boolean res = GridTestUtils.waitForCondition(() -> conns.size() == 0, 5_000);
 
             assertTrue(res);
+        }
+    }
+
+    /** */
+    @Test
+    public void testClientConnectionAttributes() throws Exception {
+        try (IgniteEx g0 = startGrid(0)) {
+            SystemView<ClientConnectionAttributeView> view = g0.context().systemView().view(CLI_CONN_ATTR_VIEW);
+
+            try (
+                IgniteClient cl1 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                    .setUserAttributes(F.asMap("attr1", "val1", "attr2", "val2")));
+                IgniteClient cl2 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                    .setUserAttributes(F.asMap("attr1", "val2")));
+                IgniteClient cl3 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+            ) {
+                assertEquals(3, F.size(view.iterator()));
+
+                assertEquals(1, F.size(view.iterator(), row ->
+                    "attr1".equals(row.name()) && "val1".equals(row.value())));
+
+                // Test filtering.
+                assertTrue(view instanceof FiltrableSystemView);
+
+                Iterator<ClientConnectionAttributeView> iter = ((FiltrableSystemView<ClientConnectionAttributeView>)view)
+                    .iterator(F.asMap(ClientConnectionAttributeViewWalker.NAME_FILTER, "attr1"));
+
+                assertEquals(2, F.size(iter));
+
+                iter = ((FiltrableSystemView<ClientConnectionAttributeView>)view).iterator(
+                    F.asMap(ClientConnectionAttributeViewWalker.NAME_FILTER, "attr2"));
+
+                assertTrue(iter.hasNext());
+
+                long connId = iter.next().connectionId();
+
+                assertFalse(iter.hasNext());
+
+                iter = ((FiltrableSystemView<ClientConnectionAttributeView>)view).iterator(
+                    F.asMap(ClientConnectionAttributeViewWalker.CONNECTION_ID_FILTER, connId));
+
+                assertEquals(2, F.size(iter));
+            }
         }
     }
 
@@ -744,7 +961,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         assertEquals(node.order(), view.nodeOrder());
         assertEquals(node.version().toString(), view.version());
         assertEquals(isLoc, view.isLocal());
-        assertEquals(node.isDaemon(), view.isDaemon());
         assertEquals(node.isClient(), view.isClient());
     }
 
@@ -808,10 +1024,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(0, txv.timeout());
                 assertTrue(txv.startTime() <= System.currentTimeMillis());
                 assertEquals(String.valueOf(cacheId(cache1.getName())), txv.cacheIds());
-
-                //Only pessimistic transactions are supported when MVCC is enabled.
-                if (Objects.equals(System.getProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS), "true"))
-                    return;
 
                 GridTestUtils.runMultiThreadedAsync(() -> {
                     try (Transaction tx = g.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
@@ -1789,7 +2001,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     new DataRegionConfiguration().setName("dr1").setMaxSize(100L * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )))) {
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite.context().cache().context()
                 .database();
@@ -1828,6 +2040,29 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertTrue(dr0flPages > 0);
             assertTrue(dr0flStripes > 0);
 
+            int bucketsCnt = ((PagesList)ignite.context().cache().context().database().freeList("dr0")).bucketsCount();
+            int[] bucketPagesSize = new int[bucketsCnt];
+
+            for (PagesListView pagesListView : dataRegionPageLists) {
+                int bucket = pagesListView.bucketNumber();
+
+                if (bucketPagesSize[bucket] == 0) {
+                    assertTrue(bucket == 0 || pagesListView.pageFreeSpace() != 0);
+                    bucketPagesSize[bucket] = pagesListView.pageFreeSpace();
+                }
+                else
+                    assertEquals(bucketPagesSize[bucket], pagesListView.pageFreeSpace());
+            }
+
+            int prev = 0;
+
+            for (int size : bucketPagesSize) {
+                if (size > 0) {
+                    assertTrue(size > prev);
+                    prev = size;
+                }
+            }
+
             SystemView<CachePagesListView> cacheGrpPageLists = ignite.context().systemView().view(CACHE_GRP_PAGE_LIST_VIEW);
 
             long dr1flPages = 0;
@@ -1849,7 +2084,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             // Test filtering.
             assertTrue(cacheGrpPageLists instanceof FiltrableSystemView);
 
-            Iterator<CachePagesListView> iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
+            Iterator<CachePagesListView> iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(Map.of(
                 CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
                 CachePagesListViewWalker.PARTITION_ID_FILTER, 0,
                 CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
@@ -1857,7 +2092,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             assertEquals(1, F.size(iter));
 
-            iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
+            iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(Map.of(
                 CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
                 CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
             ));
@@ -1928,7 +2163,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             try {
                 db.metaStorage().write(name, val);
                 db.metaStorage().writeRaw(unmarshalledName, new byte[0]);
-            } finally {
+            }
+            finally {
                 db.checkpointReadUnlock();
             }
 
@@ -1953,21 +2189,29 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             )))) {
             ignite.cluster().state(ClusterState.ACTIVE);
 
+            String histogramName = "CheckpointBeforeLockHistogram";
+
+            ignite.context().metric().configureHistogram(metricName(DATASTORAGE_METRIC_PREFIX, histogramName), new long[] { 1, 2, 3});
+
             DistributedMetaStorage dms = ignite.context().distributedMetastorage();
-
-            SystemView<MetastorageView> metaStoreView = ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW);
-
-            assertNotNull(metaStoreView);
 
             String name = "test-distributed-key";
             String val = "test-distributed-value";
 
             dms.write(name, val);
 
-            MetastorageView testKey = F.find(metaStoreView, null,
-                (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()));
+            assertNotNull(F.find(
+                ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW),
+                null,
+                (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()))
+            );
 
-            assertNotNull(testKey);
+            assertNotNull(F.find(
+                ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW),
+                null,
+                (IgnitePredicate<? super MetastorageView>)
+                    view -> view.name().endsWith(histogramName) && "[1, 2, 3]".equals(view.value()))
+            );
         }
     }
 
@@ -2044,6 +2288,301 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    @Test
+    public void testSnapshot() throws Exception {
+        cleanPersistenceDir();
+
+        String dfltCacheGrp = "testGroup";
+
+        String testSnap0 = "testSnap0";
+        String testSnap1 = "testSnap1";
+
+        try (IgniteEx ignite = startGrid(getConfiguration()
+            .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME).setGroupName(dfltCacheGrp))
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setName("pds").setPersistenceEnabled(true)
+                ).setWalCompactionEnabled(true)))
+        ) {
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+            ignite.cache(DEFAULT_CACHE_NAME).put(1, 1);
+
+            ignite.snapshot().createSnapshot(testSnap0).get();
+            ignite.snapshot().createSnapshot(testSnap1).get(getTestTimeout());
+            ignite.snapshot().createIncrementalSnapshot(testSnap1).get(getTestTimeout());
+            ignite.snapshot().createIncrementalSnapshot(testSnap1).get(getTestTimeout());
+
+            SystemView<SnapshotView> views = ignite.context().systemView().view(SNAPSHOT_SYS_VIEW);
+
+            List<T2<String, Integer>> exp = Lists.newArrayList(
+                new T2<>(testSnap0, null),
+                new T2<>(testSnap1, null),
+                new T2<>(testSnap1, 1),
+                new T2<>(testSnap1, 2));
+
+            assertEquals(4, views.size());
+
+            for (SnapshotView v: views) {
+                assertTrue(exp.remove(new T2<>(v.name(), v.incrementIndex())));
+
+                assertEquals(ignite.localNode().consistentId().toString(), v.consistentId());
+                assertNotNull(v.snapshotRecordSegment());
+                assertTrue("snapshotTime should be non-zero value",
+                        v.snapshotTime() > 0);
+
+                Integer incIdx = v.incrementIndex();
+
+                if (incIdx == null) {
+                    assertEquals(ignite.localNode().consistentId().toString(), v.baselineNodes());
+                    assertEquals(String.join(",", dfltCacheGrp, METASTORAGE_CACHE_NAME), v.cacheGroups());
+                    assertEquals("FULL", v.type());
+                }
+                else
+                    assertEquals("INCREMENTAL", v.type());
+            }
+
+            assertTrue(exp.isEmpty());
+        }
+    }
+
+    /** */
+    @Test
+    public void testPagesTimestampHistogram() throws Exception {
+        int keysCnt = 50_000;
+
+        AtomicLong curTime = new AtomicLong(System.currentTimeMillis());
+
+        GridTestClockTimer.timeSupplier(curTime::get);
+        GridTestClockTimer.update();
+
+        String regionName = "default";
+
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration()
+                .setMaxSize(50L * 1024 * 1024)
+                .setPersistenceEnabled(true)
+                .setName(regionName)
+                .setMetricsEnabled(true)
+        );
+
+        cleanPersistenceDir();
+
+        try (IgniteEx ignite = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg))) {
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+            CacheConfiguration<Object, Object> ccfg1 = new CacheConfiguration<>("test-pages-ts1")
+                .setAffinity(new RendezvousAffinityFunction(false, 10));
+
+            CacheConfiguration<Object, Object> ccfg2 = new CacheConfiguration<>("test-pages-ts2")
+                .setAffinity(new RendezvousAffinityFunction(false, 10));
+
+            IgniteCache<Object, Object> cache1 = ignite.createCache(ccfg1);
+
+            long ts1 = curTime.get();
+
+            for (int i = 0; i < 1000; i++)
+                cache1.put(i, i);
+
+            long ts2 = curTime.addAndGet(PeriodicHistogramMetricImpl.DFLT_BUCKETS_INTERVAL);
+            GridTestClockTimer.update();
+
+            for (int i = 1000; i < 2000; i++)
+                cache1.put(i, i);
+
+            SystemView<PagesTimestampHistogramView> pagesTsHistogram =
+                ignite.context().systemView().view(PAGE_TS_HISTOGRAM_VIEW);
+
+            assertNotNull(pagesTsHistogram);
+
+            long totalCnt = 0;
+
+            for (PagesTimestampHistogramView view : pagesTsHistogram) {
+                if (regionName.equals(view.dataRegionName())) {
+                    if ((ts1 >= view.intervalStart().getTime() && ts1 <= view.intervalEnd().getTime()) ||
+                        (ts2 >= view.intervalStart().getTime() && ts2 <= view.intervalEnd().getTime())) {
+                        assertTrue("Unexpected pages count: " + view.pagesCount(), view.pagesCount() > 0);
+
+                        totalCnt += view.pagesCount();
+                    }
+                    else
+                        assertEquals(0, view.pagesCount());
+                }
+            }
+
+            assertTrue(totalCnt > 0);
+            assertEquals(ignite.dataRegionMetrics(regionName).getPhysicalMemoryPages(), totalCnt);
+
+            assertEquals(2, F.size(F.iterator(pagesTsHistogram, v -> v, true, v -> v.pagesCount() > 0)));
+
+            // Check histogram after replacement.
+            long ts3 = curTime.addAndGet(PeriodicHistogramMetricImpl.DFLT_BUCKETS_INTERVAL);
+            GridTestClockTimer.update();
+
+            ignite.createCache(ccfg2);
+
+            try (IgniteDataStreamer<Integer, Object> streamer = ignite.dataStreamer("test-pages-ts2")) {
+                for (int i = 0; i < keysCnt; i++)
+                    streamer.addData(i, new byte[1000]);
+            }
+
+            assertEquals(ignite.dataRegionMetrics(regionName).getPhysicalMemoryPages(),
+                F.sumInt(F.iterator(pagesTsHistogram, v -> (int)v.pagesCount(), true)));
+
+            assertFalse(F.isEmpty(F.iterator(pagesTsHistogram, v -> v, true, v -> v.pagesCount() > 0 &&
+                v.intervalStart().getTime() <= ts3 && ts3 <= v.intervalEnd().getTime())));
+
+            // Check histogram after cache destroy and remove of outdated pages.
+            long ts4 = curTime.addAndGet(PeriodicHistogramMetricImpl.DFLT_BUCKETS_INTERVAL);
+            GridTestClockTimer.update();
+
+            ignite.destroyCache("test-pages-ts2");
+
+            IgniteCache<Object, Object> cache2 = ignite.createCache(ccfg2);
+
+            for (int i = 0; i < keysCnt; i++) {
+                cache1.put(i, i);
+                cache2.put(i, new byte[1000]);
+            }
+
+            assertEquals(ignite.dataRegionMetrics(regionName).getPhysicalMemoryPages(),
+                F.sumInt(F.iterator(pagesTsHistogram, v -> (int)v.pagesCount(), true)));
+
+            assertFalse(F.isEmpty(F.iterator(pagesTsHistogram, v -> v, true, v -> v.pagesCount() > 0 &&
+                v.intervalStart().getTime() <= ts4 && ts4 <= v.intervalEnd().getTime())));
+        }
+        finally {
+            GridTestClockTimer.timeSupplier(GridTestClockTimer.DFLT_TIME_SUPPLIER);
+        }
+    }
+
+    /** */
+    @Test
+    public void testPagesTimestampHistogramAfterPartitionEviction() throws Exception {
+        int keysCnt = 50_000;
+
+        String regionName = "default";
+
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration()
+                .setMaxSize(50L * 1024 * 1024)
+                .setPersistenceEnabled(true)
+                .setName(regionName)
+                .setMetricsEnabled(true)
+        );
+
+        cleanPersistenceDir();
+
+        try (IgniteEx ignite = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg))) {
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+            IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>("test-pages-ts")
+                .setBackups(1).setAffinity(new RendezvousAffinityFunction(false, 10)));
+
+            try (IgniteDataStreamer<Integer, Object> streamer = ignite.dataStreamer("test-pages-ts")) {
+                for (int i = 0; i < keysCnt; i++)
+                    streamer.addData(i, new byte[1000]);
+            }
+
+            startGrid(getConfiguration(getTestIgniteInstanceName(1)).setDataStorageConfiguration(dsCfg));
+            startGrid(getConfiguration(getTestIgniteInstanceName(2)).setDataStorageConfiguration(dsCfg));
+
+            resetBaselineTopology();
+
+            awaitPartitionMapExchange(true, true, null);
+
+            // Force checkpoint to invalidate evicted partitions.
+            forceCheckpoint(ignite);
+
+            // Check histogram after partition eviction.
+            SystemView<PagesTimestampHistogramView> pagesTsHistogram =
+                ignite.context().systemView().view(PAGE_TS_HISTOGRAM_VIEW);
+
+            assertEquals(ignite.dataRegionMetrics(regionName).getPhysicalMemoryPages(),
+                F.sumInt(F.iterator(pagesTsHistogram, v -> (int)v.pagesCount(), true)));
+
+            stopGrid(2);
+
+            resetBaselineTopology();
+
+            // Wait until rebalance complete.
+            assertTrue(GridTestUtils.waitForCondition(() -> ignite.context().discovery().topologyVersionEx()
+                .minorTopologyVersion() >= 2, 5_000L));
+
+            // Check histogram after rebalance.
+            assertEquals(ignite.dataRegionMetrics(regionName).getPhysicalMemoryPages(),
+                F.sumInt(F.iterator(pagesTsHistogram, v -> (int)v.pagesCount(), true)));
+
+            stopGrid(1);
+
+            resetBaselineTopology();
+
+            // Allocate some pages after eviction.
+            for (int i = 0; i < 10_000; i++)
+                cache.put(i + keysCnt, new byte[1024]);
+
+            // Acquire some outdated pages.
+            for (int i = 0; i < keysCnt + 10_000; i++)
+                assertNotNull(cache.get(i));
+
+            // Check histogram after replacement of outdated pages.
+            assertEquals(ignite.dataRegionMetrics(regionName).getPhysicalMemoryPages(),
+                F.sumInt(F.iterator(pagesTsHistogram, v -> (int)v.pagesCount(), true)));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** */
+    @Test
+    public void testConfigurationView() throws Exception {
+        IgniteConfiguration icfg = new IgniteConfiguration();
+
+        long expMaxSize = 10 * MB;
+
+        String expName = "my-instance";
+
+        String expDrName = "my-dr";
+
+        icfg.setIgniteInstanceName(expName)
+            .setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION);
+        icfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setLazyMemoryAllocation(false))
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                    .setName(expDrName)
+                    .setMaxSize(expMaxSize)));
+
+        try (IgniteEx ignite = startGrid(icfg)) {
+            Map<String, String> viewContent = new HashMap<>();
+
+            ignite.context().systemView().<ConfigurationView>view(CFG_VIEW)
+                .forEach(view -> viewContent.put(view.name(), view.value()));
+
+            assertEquals(expName, viewContent.get("IgniteInstanceName"));
+            assertEquals(
+                "false",
+                viewContent.get("DataStorageConfiguration.DefaultDataRegionConfiguration.LazyMemoryAllocation")
+            );
+            assertEquals(expDrName, viewContent.get("DataStorageConfiguration.DataRegionConfigurations[0].Name"));
+            assertEquals(
+                Long.toString(expMaxSize),
+                viewContent.get("DataStorageConfiguration.DataRegionConfigurations[0].MaxSize")
+            );
+            assertEquals(
+                CacheAtomicityMode.TRANSACTIONAL.name(),
+                viewContent.get("CacheConfiguration[0].AtomicityMode")
+            );
+            assertTrue(viewContent.containsKey("AddressResolver"));
+            assertNull(viewContent.get("AddressResolver"));
+            assertEquals("[" + EVT_CONSISTENCY_VIOLATION + ']', viewContent.get("IncludeEventTypes"));
+        }
+    }
+
     /** Test node filter. */
     public static class TestNodeFilter implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
@@ -2080,5 +2619,54 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         @Override public String toString() {
             return getClass().getSimpleName() + idx;
         }
+    }
+
+    /** */
+    private static class UserTask implements ComputeTask<Object, Object> {
+        /** {@inheritDoc} */
+        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
+            List<ClusterNode> subgrid,
+            @Nullable Object arg
+        ) throws IgniteException {
+            return subgrid.stream().collect(Collectors.toMap(k -> new UserJob(), Function.identity()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+            return ComputeJobResultPolicy.WAIT;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
+            return 1;
+        }
+
+        /** */
+        private static class UserJob implements ComputeJob {
+            /** {@inheritDoc} */
+            @Override public void cancel() {
+                // No-op.
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object execute() throws IgniteException {
+                jobStartedLatch.countDown();
+
+                try {
+                    assertTrue(releaseJobLatch.await(30_000, TimeUnit.MILLISECONDS));
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                return 1;
+            }
+        }
+    }
+
+    /** */
+    @GridInternal
+    public static class InternalTask extends UserTask {
+        // No-op.
     }
 }

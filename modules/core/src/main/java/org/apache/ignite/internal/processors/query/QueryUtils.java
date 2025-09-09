@@ -35,6 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +51,6 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -71,9 +71,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
-import org.apache.ignite.transactions.TransactionDuplicateKeyException;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,6 +98,12 @@ public class QueryUtils {
 
     /** Default schema. */
     public static final String DFLT_SCHEMA = "PUBLIC";
+
+    /** Name of Primary Key index for every table. */
+    public static final String PRIMARY_KEY_INDEX = "_key_PK";
+
+    /** Affinity key index name. */
+    public static final String AFFINITY_KEY_INDEX = "AFFINITY_KEY";
 
     /** Schema for system view. */
     public static final String SCHEMA_SYS = getBoolean(IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE) ? "IGNITE" : "SYS";
@@ -262,15 +265,15 @@ public class QueryUtils {
      * @param cfg Cache config.
      * @return Normalized query entities.
      */
-    public static Collection<QueryEntity> normalizeQueryEntities(Collection<QueryEntity> entities,
-        CacheConfiguration<?, ?> cfg) {
+    public static Collection<QueryEntity> normalizeQueryEntities(GridKernalContext ctx,
+        Collection<QueryEntity> entities, CacheConfiguration<?, ?> cfg) {
         Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
 
         for (QueryEntity entity : entities) {
             if (!F.isEmpty(entity.getNotNullFields()))
                 checkNotNullAllowed(cfg);
 
-            normalEntities.add(normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
+            normalEntities.add(normalizeQueryEntity(ctx, entity, cfg.isSqlEscapeAll()));
         }
 
         return normalEntities;
@@ -284,7 +287,7 @@ public class QueryUtils {
      * @param escape Escape flag taken form configuration.
      * @return Normalized query entity.
      */
-    public static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
+    public static QueryEntity normalizeQueryEntity(GridKernalContext ctx, QueryEntity entity, boolean escape) {
         if (escape) {
             String tblName = tableName(entity);
 
@@ -312,7 +315,7 @@ public class QueryUtils {
             return entity;
         }
 
-        QueryEntity normalEntity = entity instanceof QueryEntityEx ? new QueryEntityEx() : new QueryEntity();
+        QueryEntityEx normalEntity = new QueryEntityEx();
 
         // Propagate plain properties.
         normalEntity.setKeyType(entity.getKeyType());
@@ -325,6 +328,11 @@ public class QueryUtils {
         normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
         normalEntity.setFieldsPrecision(entity.getFieldsPrecision());
         normalEntity.setFieldsScale(entity.getFieldsScale());
+
+        if (entity instanceof QueryEntityEx) {
+            normalEntity.setPrimaryKeyInlineSize(((QueryEntityEx)entity).getPrimaryKeyInlineSize());
+            normalEntity.setAffinityKeyInlineSize(((QueryEntityEx)entity).getAffinityKeyInlineSize());
+        }
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -372,6 +380,11 @@ public class QueryUtils {
         normalEntity.setIndexes(normalIdxs);
 
         validateQueryEntity(normalEntity);
+
+        if (!ctx.recoveryMode())
+            normalEntity.fillAbsentPKsWithDefaults(true);
+        else if (entity instanceof QueryEntityEx)
+            normalEntity.fillAbsentPKsWithDefaults(((QueryEntityEx)entity).fillAbsentPKsWithDefaults());
 
         return normalEntity;
     }
@@ -460,8 +473,6 @@ public class QueryUtils {
         throws IgniteCheckedException {
         CacheConfiguration<?, ?> ccfg = cacheInfo.config();
 
-        boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
-
         CacheObjectContext coCtx = ctx.cacheObjects().contextForCache(ccfg);
 
         QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx);
@@ -469,6 +480,9 @@ public class QueryUtils {
         desc.schemaName(schemaName);
 
         desc.aliases(qryEntity.getAliases());
+
+        if (qryEntity instanceof QueryEntityEx)
+            desc.setFillAbsentPKsWithDefaults(((QueryEntityEx)qryEntity).fillAbsentPKsWithDefaults());
 
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
@@ -492,14 +506,14 @@ public class QueryUtils {
 
         desc.tableName(qryEntity.getTableName());
 
-        if (binaryEnabled && !keyOrValMustDeserialize) {
+        if (!keyOrValMustDeserialize) {
             // Safe to check null.
-            if (SQL_TYPES.contains(valCls))
+            if (valCls != null && isSqlType(valCls))
                 desc.valueClass(valCls);
             else
                 desc.valueClass(Object.class);
 
-            if (SQL_TYPES.contains(keyCls))
+            if (isSqlType(keyCls))
                 desc.keyClass(keyCls);
             else
                 desc.keyClass(Object.class);
@@ -519,7 +533,7 @@ public class QueryUtils {
         desc.keyFieldName(qryEntity.getKeyFieldName());
         desc.valueFieldName(qryEntity.getValueFieldName());
 
-        if (binaryEnabled && keyOrValMustDeserialize) {
+        if (keyOrValMustDeserialize) {
             if (keyMustDeserialize)
                 mustDeserializeClss.add(keyCls);
 
@@ -532,7 +546,7 @@ public class QueryUtils {
 
         int valTypeId = ctx.cacheObjects().typeId(qryEntity.findValueType());
 
-        if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
+        if (valCls == null || !keyOrValMustDeserialize) {
             processBinaryMeta(ctx, qryEntity, desc);
 
             typeId = new QueryTypeIdKey(cacheName, valTypeId);
@@ -555,7 +569,7 @@ public class QueryUtils {
                         String affField0 = field.name();
 
                         if (!F.isEmpty(qryEntity.getKeyFields()) && qryEntity.getKeyFields().contains(affField0)) {
-                            affField = affField0;
+                            affField = desc.aliases().getOrDefault(affField0, affField0);
 
                             if (!escape)
                                 affField = normalizeObjectName(affField, false);
@@ -578,6 +592,8 @@ public class QueryUtils {
                     ((GridCacheDefaultAffinityKeyMapper)keyMapper).affinityKeyPropertyName(desc.keyClass());
 
                 if (affField != null) {
+                    affField = desc.aliases().getOrDefault(affField, affField);
+
                     if (!escape)
                         affField = normalizeObjectName(affField, false);
 
@@ -592,6 +608,17 @@ public class QueryUtils {
         }
 
         desc.typeId(valTypeId);
+
+        if (qryEntity instanceof QueryEntityEx) {
+            QueryEntityEx qe = (QueryEntityEx)qryEntity;
+
+            desc.primaryKeyInlineSize(qe.getPrimaryKeyInlineSize() != null ? qe.getPrimaryKeyInlineSize() : -1);
+            desc.affinityFieldInlineSize(qe.getAffinityKeyInlineSize() != null ? qe.getAffinityKeyInlineSize() : -1);
+        }
+        else {
+            desc.primaryKeyInlineSize(-1);
+            desc.affinityFieldInlineSize(-1);
+        }
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
@@ -657,6 +684,9 @@ public class QueryUtils {
 
         if (!isKeyClsSqlType && qryEntity instanceof QueryEntityEx && ((QueryEntityEx)qryEntity).isPreserveKeysOrder())
             d.primaryKeyFields(keyFields);
+
+        if (qryEntity instanceof QueryEntityEx)
+            d.implicitPk(((QueryEntityEx)qryEntity).implicitPk());
 
         // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
         // Also if fields are not set then _KEY and _VAL will be created as visible,
@@ -1102,7 +1132,7 @@ public class QueryUtils {
      * @return {@code True} if will be deserialized.
      */
     private static boolean mustDeserializeBinary(GridKernalContext ctx, Class cls) {
-        if (cls != null && cls != Object.class && ctx.config().getMarshaller() instanceof BinaryMarshaller) {
+        if (cls != null && cls != Object.class) {
             CacheObjectBinaryProcessorImpl proc0 = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
             return proc0.binaryContext().mustDeserialize(cls);
@@ -1204,7 +1234,7 @@ public class QueryUtils {
 
         long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
 
-        return (int) tmp;
+        return (int)tmp;
     }
 
     /**
@@ -1251,20 +1281,20 @@ public class QueryUtils {
      */
     public static SchemaOperationException checkQueryEntityConflicts(CacheConfiguration<?, ?> ccfg,
         Collection<DynamicCacheDescriptor> descs) {
-        String schema = QueryUtils.normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
+        String schema = normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
 
         Set<String> idxNames = new HashSet<>();
 
         Set<String> tblNames = new HashSet<>();
 
         for (DynamicCacheDescriptor desc : descs) {
-            if (F.eq(ccfg.getName(), desc.cacheName()))
+            if (Objects.equals(ccfg.getName(), desc.cacheName()))
                 continue;
 
-            String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+            String descSchema = normalizeSchemaName(desc.cacheName(),
                 desc.cacheConfiguration().getSqlSchema());
 
-            if (!F.eq(schema, descSchema))
+            if (!Objects.equals(schema, descSchema))
                 continue;
 
             for (QueryEntity e : desc.schema().entities()) {
@@ -1309,6 +1339,8 @@ public class QueryUtils {
             throw new IgniteException("Value field is not in the field list [queryEntity=" + entity +
                 ", valFieldName=" + valFieldName + "]");
         }
+
+        validateAliases(entity);
 
         Collection<QueryIndex> idxs = entity.getIndexes();
 
@@ -1365,6 +1397,21 @@ public class QueryUtils {
                             ", actual scale: " + dec.scale(), VALUE_SCALE_OUT_OF_RANGE);
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * @param entity Query entity which aliases should be validated.
+     * @throws IgniteException If validation failed.
+     */
+    private static void validateAliases(QueryEntity entity) {
+        Set<String> aliases = new HashSet<>();
+
+        for (String alias : entity.getAliases().values()) {
+            if (!aliases.add(alias)) {
+                throw new IgniteException(
+                    "Multiple query fields are associated with the same alias [alias=" + alias + "]");
             }
         }
     }
@@ -1455,11 +1502,11 @@ public class QueryUtils {
      * @return {@code null} if it's OK to remove the column and exception otherwise.
      */
     public static SchemaOperationException validateDropColumn(QueryEntity entity, String fieldName, String colName) {
-        if (F.eq(fieldName, entity.getKeyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(fieldName))
+        if (Objects.equals(fieldName, entity.getKeyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(fieldName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
                 "\" because it represents an entire cache key");
 
-        if (F.eq(fieldName, entity.getValueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName))
+        if (Objects.equals(fieldName, entity.getValueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
                 "\" because it represents an entire cache value");
 
@@ -1490,11 +1537,11 @@ public class QueryUtils {
      * @return {@code null} if it's OK to remove the column and exception otherwise.
      */
     public static SchemaOperationException validateDropColumn(GridQueryTypeDescriptor type, String colName) {
-        if (F.eq(colName, type.keyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(colName))
+        if (Objects.equals(colName, type.keyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(colName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
                 "\" because it represents an entire cache key");
 
-        if (F.eq(colName, type.valueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(colName))
+        if (Objects.equals(colName, type.valueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(colName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
                 "\" because it represents an entire cache value");
 
@@ -1539,21 +1586,6 @@ public class QueryUtils {
             sqlState = ((IgniteSQLException)e).sqlState();
 
             code = ((IgniteSQLException)e).statusCode();
-        }
-        else if (e instanceof TransactionDuplicateKeyException) {
-            code = IgniteQueryErrorCode.DUPLICATE_KEY;
-
-            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
-        }
-        else if (e instanceof TransactionSerializationException) {
-            code = IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
-
-            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
-        }
-        else if (e instanceof TransactionAlreadyCompletedException) {
-            code = IgniteQueryErrorCode.TRANSACTION_COMPLETED;
-
-            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
         }
         else {
             sqlState = SqlStateCode.INTERNAL_ERROR;
@@ -1604,7 +1636,7 @@ public class QueryUtils {
     public static String fieldNameByAlias(QueryEntity entity, String alias) {
         if (!F.isEmpty(entity.getAliases())) {
             for (Map.Entry<String, String> aliasEntry : entity.getAliases().entrySet()) {
-                if (F.eq(aliasEntry.getValue(), alias))
+                if (Objects.equals(aliasEntry.getValue(), alias))
                     return aliasEntry.getKey();
             }
         }
@@ -1613,14 +1645,97 @@ public class QueryUtils {
     }
 
     /**
-     * Remove field by alias.
+     * @return {@link IgniteSQLException} with the message same as of {@code this}'s and
+     */
+    public static IgniteSQLException convert(SchemaOperationException e) {
+        int sqlCode;
+
+        switch (e.code()) {
+            case SchemaOperationException.CODE_CACHE_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.CACHE_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_TABLE_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.TABLE_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_TABLE_EXISTS:
+                sqlCode = IgniteQueryErrorCode.TABLE_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_COLUMN_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.COLUMN_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_COLUMN_EXISTS:
+                sqlCode = IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_INDEX_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.INDEX_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_INDEX_EXISTS:
+                sqlCode = IgniteQueryErrorCode.INDEX_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_VIEW_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.VIEW_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_VIEW_EXISTS:
+                sqlCode = IgniteQueryErrorCode.VIEW_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_SCHEMA_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.SCHEMA_NOT_FOUND;
+
+                break;
+
+            default:
+                sqlCode = IgniteQueryErrorCode.UNKNOWN;
+        }
+
+        return new IgniteSQLException(e.getMessage(), sqlCode, e);
+    }
+
+    /**
+     * Check if schema supports DDL statement.
+     *
+     * @param schemaName Schema name.
+     */
+    public static void isDdlOnSchemaSupported(String schemaName) {
+        if (Objects.equals(SCHEMA_SYS, schemaName))
+            throw new IgniteSQLException("DDL statements are not supported on " + schemaName + " schema",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
+     * Remove field and corresponding alias by the alias name.
      *
      * @param entity Query entity.
-     * @param alias Filed's alias.
-     * @return {@code true} if the field is removed. Otherwise returns {@code false}.
+     * @param alias Name of the field alias.
+     * @return {@code true} if the field and corresponding alias is removed. Otherwise, returns {@code false}.
      */
-    public static boolean removeField(QueryEntity entity, String alias) {
-        return entity.getFields().remove(fieldNameByAlias(entity, alias)) != null;
+    public static boolean removeFieldAndAlias(QueryEntity entity, String alias) {
+        String fieldName = fieldNameByAlias(entity, alias);
+
+        if (entity.getFields().remove(fieldName) != null) {
+            entity.getAliases().remove(fieldName);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -1654,6 +1769,23 @@ public class QueryUtils {
             return SPACE_DELIM;
 
         return DEFAULT_DELIM;
+    }
+
+    /** */
+    public static boolean isConvertibleTypes(Object val, Class<?> expCls) {
+        if (val == null)
+            return true;
+
+        if (expCls == java.sql.Date.class || expCls == java.time.LocalDate.class)
+            return val instanceof java.sql.Date || val instanceof java.time.LocalDate;
+
+        if (expCls == java.sql.Time.class || expCls == java.time.LocalTime.class)
+            return val instanceof java.sql.Time || val instanceof java.time.LocalTime;
+
+        if (expCls == java.sql.Timestamp.class || expCls == java.util.Date.class || expCls == java.time.LocalDateTime.class)
+            return val instanceof java.time.LocalDateTime || val instanceof java.util.Date;
+
+        return false;
     }
 
     /**

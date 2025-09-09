@@ -123,17 +123,16 @@ public class Log4j2LoggerVerboseModeSelfTest {
         throws Exception {
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setIpFinder(new TcpDiscoveryVmIpFinder(false) {{
-            setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
-        }});
+        disco.setIpFinder(new TcpDiscoveryVmIpFinder(false)
+            .setAddresses(Collections.singleton("127.0.0.1:47500..47509")));
 
         File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_VERBOSE_TEST);
 
-        Log4J2Logger logger = new Log4J2Logger(xml);
+        Log4J2Logger log = new Log4J2Logger(xml);
 
         return new IgniteConfiguration()
             .setIgniteInstanceName(igniteInstanceName)
-            .setGridLogger(logger)
+            .setGridLogger(log)
             .setConnectorConfiguration(null)
             .setDiscoverySpi(disco);
     }

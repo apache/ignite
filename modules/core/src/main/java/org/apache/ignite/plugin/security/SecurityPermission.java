@@ -17,6 +17,7 @@
 
 package org.apache.ignite.plugin.security;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -57,6 +58,12 @@ public enum SecurityPermission {
     /** Visor admin operations permissions. */
     ADMIN_OPS,
 
+    /** System processes kill permission. */
+    ADMIN_KILL,
+
+    /** Permission to perform administration of security access for users. */
+    ADMIN_USER_ACCESS,
+
     /** Service deploy permission. */
     SERVICE_DEPLOY,
 
@@ -87,11 +94,30 @@ public enum SecurityPermission {
     /** Administration operation with cluster snapshots (create, cancel, check). */
     ADMIN_SNAPSHOT,
 
+    /**
+     * Administration operation: changing cluster state.
+     *
+     * @see ClusterState
+     */
+    ADMIN_CLUSTER_STATE,
+
+    /** Start new cluster node permission. */
+    ADMIN_CLUSTER_NODE_START,
+
+    /** Stop/restart cluster node permission. */
+    ADMIN_CLUSTER_NODE_STOP,
+
     /** Permission to execute REFRESH STATISTICS command. */
     REFRESH_STATISTICS,
 
     /** Permission to execute ANALYZE and DROP STATISTICS command. */
-    CHANGE_STATISTICS;
+    CHANGE_STATISTICS,
+
+    /** Permission to execute CREATE VIEW command. */
+    SQL_VIEW_CREATE,
+
+    /** Permission to execute DROP VIEW command. */
+    SQL_VIEW_DROP;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

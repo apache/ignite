@@ -65,6 +65,7 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
         this.keepBinary = keepBinary;
     }
 
+    /** */
     public GridCacheLazyPlainVersionedEntry(GridCacheContext cctx,
         KeyCacheObject keyObj,
         CacheObject valObj,

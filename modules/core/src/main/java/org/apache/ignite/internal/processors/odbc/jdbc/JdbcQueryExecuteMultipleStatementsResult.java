@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -38,6 +38,9 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
     /** Flag indicating the query has no unfetched results for the first query. */
     private boolean last;
 
+    /** Transaction id. */
+    private int txId;
+
     /**
      * Default constructor.
      */
@@ -51,11 +54,12 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
      * @param last Flag indicating the query has no unfetched results for the first query.
      */
     public JdbcQueryExecuteMultipleStatementsResult(List<JdbcResultInfo> results,
-        List<List<Object>> items, boolean last) {
+        List<List<Object>> items, boolean last, int txId) {
         super(QRY_EXEC_MULT);
         this.results = results;
         this.items = items;
         this.last = last;
+        this.txId = txId;
     }
 
     /**
@@ -79,9 +83,16 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
         return last;
     }
 
+    /**
+     * @return Transaction id.
+     */
+    public int txId() {
+        return txId;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         super.writeBinary(writer, protoCtx);
@@ -100,12 +111,15 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
         }
         else
             writer.writeInt(0);
+
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES))
+            writer.writeInt(txId);
     }
 
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         super.readBinary(reader, protoCtx);
@@ -131,6 +145,9 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
                 items = JdbcUtils.readItems(reader, protoCtx);
             }
         }
+
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES))
+            txId = reader.readInt();
     }
 
     /** {@inheritDoc} */

@@ -64,6 +64,7 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
         "where pr.companyId = co._key\n" +
         "order by co._key, pr._key ";
 
+    /** */
     protected static final String QRY_LONG = "select pe.id, co.id, pr._key\n" +
         "from \"pe\".Person pe, \"pr\".Product pr, \"co\".Company co, \"pu\".Purchase pu\n" +
         "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key \n" +
@@ -265,7 +266,8 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
         public static int sleep() {
             try {
                 U.sleep(1_000);
-            } catch (IgniteInterruptedCheckedException ignored) {
+            }
+            catch (IgniteInterruptedCheckedException ignored) {
                 // No-op.
             }
 

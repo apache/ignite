@@ -33,12 +33,13 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -48,7 +49,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  *  Binary object implementation over offheap memory
  */
-public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizable, CacheObject {
+class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizable, CacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -88,7 +89,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @return Heap-based copy.
      */
     public BinaryObject heapCopy() {
-        return new BinaryObjectImpl(ctx, U.copyMemory(ptr, size), start);
+        return new BinaryObjectImpl(ctx, GridUnsafe.copyMemory(ptr, size), start);
     }
 
     /** {@inheritDoc} */
@@ -98,7 +99,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
 
-            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(ptr + off, size));
+            String clsName = BinaryUtils.doReadClassName(BinaryStreams.inputStream(ptr + off, size));
 
             typeId = ctx.typeId(clsName);
         }
@@ -129,8 +130,8 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override public BinarySchema createSchema() {
-        return reader(null, false).getOrCreateSchema();
+    @Override BinarySchema createSchema() {
+        return ((BinaryReaderExImpl)reader(null, false)).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -141,11 +142,6 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     /** {@inheritDoc} */
     @Override public int start() {
         return start;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte[] array() {
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -165,7 +161,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException {
         throw new UnsupportedOperationException("TODO implement");
     }
 
@@ -175,7 +171,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasArray() {
+    @Override public boolean hasBytes() {
         return false;
     }
 
@@ -198,12 +194,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return (F) reader(null, false).unmarshalField(fieldName);
+        return (F)reader(null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return (F) reader(null, false).unmarshalField(fieldId);
+        return (F)reader(null, false).unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -229,7 +225,8 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
             int len = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
 
             return start + GridBinaryMarshaller.DFLT_HDR_LEN + len + 5;
-        } else
+        }
+        else
             return start + GridBinaryMarshaller.DFLT_HDR_LEN;
     }
 
@@ -387,7 +384,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 break;
 
             default:
-                BinaryOffheapInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
+                BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
                 stream.position(fieldPos);
 
@@ -419,13 +416,13 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         if (ldr == null)
             return deserialize();
 
-        GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
+        Marshallers.USE_CACHE.set(Boolean.FALSE);
 
         try {
             return (T)reader(null, ldr, true).deserialize();
         }
         finally {
-            GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
+            Marshallers.USE_CACHE.set(Boolean.TRUE);
         }
     }
 
@@ -441,7 +438,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
-        return BinaryObjectBuilderImpl.wrap(heapCopy());
+        return BinaryObjectBuilders.builder(heapCopy());
     }
 
     /** {@inheritDoc} */
@@ -470,7 +467,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         throw new UnsupportedOperationException();
     }
 
@@ -496,11 +493,6 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
         throw new UnsupportedOperationException();
     }
 
@@ -538,8 +530,8 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
-        return reader(rCtx, ctx.configuration().getClassLoader(), forUnmarshal);
+    private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
+        return reader(rCtx, ctx.classLoader(), forUnmarshal);
     }
 
     /**
@@ -550,13 +542,13 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
+    private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
         boolean forUnmarshal) {
-        BinaryOffheapInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
+        BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
         stream.position(start);
 
-        return new BinaryReaderExImpl(ctx,
+        return BinaryUtils.reader(ctx,
             stream,
             ldr,
             rCtx,

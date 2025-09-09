@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -127,7 +128,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testSingleNode() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         DistributedMetaStorage metastorage = ignite.context().distributedMetastorage();
 
@@ -165,7 +166,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         String clientName = "client0";
 
         String key = "key";
-        String value = "value";
+        String val = "value";
 
         GridTestUtils.runAsync(() -> startClientGrid(clientName));
 
@@ -192,7 +193,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                clDms.write(key, value);
+                clDms.write(key, val);
 
                 return null;
             }
@@ -208,7 +209,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         startGrids(cnt);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < cnt; i++) {
             String key = UUID.randomUUID().toString();
@@ -234,7 +235,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         startGrids(cnt);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         AtomicInteger predCntr = new AtomicInteger();
 
@@ -267,7 +268,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         startGrids(cnt);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         metastorage(0).write("key", "value");
 
@@ -300,7 +301,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testCas() throws Exception {
         startGrids(2);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         assertFalse(metastorage(0).compareAndSet("key", "expVal", "newVal"));
 
@@ -338,7 +339,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testJoinCleanNode() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.context().distributedMetastorage().write("key", "value");
 
@@ -357,7 +358,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testJoinCleanNodeFullData() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.context().distributedMetastorage().write("key1", "value1");
 
@@ -380,17 +381,17 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testDeactivateActivate() throws Exception {
         startGrid(0);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         metastorage(0).write("key1", "value1");
 
         metastorage(0).write("key2", "value2");
 
-        grid(0).cluster().active(false);
+        grid(0).cluster().state(ClusterState.INACTIVE);
 
         startGrid(1);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         assertEquals("value1", metastorage(0).read("key1"));
 
@@ -406,7 +407,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testOptimizedWriteTwice() throws Exception {
         IgniteEx igniteEx = startGrid(0);
 
-        igniteEx.cluster().active(true);
+        igniteEx.cluster().state(ClusterState.ACTIVE);
 
         metastorage(0).write("key1", "value1");
 
@@ -426,7 +427,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testClient() throws Exception {
         IgniteEx igniteEx = startGrid(0);
 
-        igniteEx.cluster().active(true);
+        igniteEx.cluster().state(ClusterState.ACTIVE);
 
         metastorage(0).write("key0", "value0");
 
@@ -454,7 +455,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testClientReconnect() throws Exception {
         IgniteEx igniteEx = startGrid(0);
 
-        igniteEx.cluster().active(true);
+        igniteEx.cluster().state(ClusterState.ACTIVE);
 
         startClientGrid(1);
 
@@ -466,7 +467,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         stopGrid(2);
 
-        startGrid(2).cluster().active(true);
+        startGrid(2).cluster().state(ClusterState.ACTIVE);
 
         metastorage(2).write("key1", "value1");
 
@@ -495,7 +496,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(cnt);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         stopGrid(0);
 

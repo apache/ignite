@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -80,11 +79,6 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testGet(boolean nearCache, boolean cpyOnRead) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc()) {
-            if (!MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
-                return;
-        }
-
         fail = false;
 
         Ignite srv = grid(0);

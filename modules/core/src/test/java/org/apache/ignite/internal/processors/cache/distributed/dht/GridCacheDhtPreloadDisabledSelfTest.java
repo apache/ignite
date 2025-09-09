@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -46,6 +45,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.events.EventType.EVTS_CACHE_REBALANCE;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
@@ -98,8 +98,6 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         backups = DFLT_BACKUPS;
         partitions = DFLT_PARTITIONS;
     }
@@ -138,9 +136,9 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                     int size = backups + 1;
 
                     assert owners.size() == size : "Size mismatch [nodeIdx=" + i + ", p=" + p + ", size=" + size +
-                        ", owners=" + F.nodeIds(owners) + ']';
+                        ", owners=" + nodeIds(owners) + ']';
                     assert nodes.size() == size : "Size mismatch [nodeIdx=" + i + ", p=" + p + ", size=" + size +
-                        ", nodes=" + F.nodeIds(nodes) + ']';
+                        ", nodes=" + nodeIds(nodes) + ']';
 
                     assert F.eqNotOrdered(nodes, owners);
                     assert F.eqNotOrdered(owners, nodes);
@@ -154,10 +152,10 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                     for (int j = 0; j != i && j < mappings.size(); j++) {
                         Collection<ClusterNode> m2 = mappings.get(j);
 
-                        assert F.eqNotOrdered(m1, m2) : "Mappings are not equal [m1=" + F.nodeIds(m1) + ", m2=" +
-                            F.nodeIds(m2) + ']';
-                        assert F.eqNotOrdered(m2, m1) : "Mappings are not equal [m1=" + F.nodeIds(m1) + ", m2=" +
-                            F.nodeIds(m2) + ']';
+                        assert F.eqNotOrdered(m1, m2) : "Mappings are not equal [m1=" + nodeIds(m1) + ", m2=" +
+                            nodeIds(m2) + ']';
+                        assert F.eqNotOrdered(m2, m1) : "Mappings are not equal [m1=" + nodeIds(m1) + ", m2=" +
+                            nodeIds(m2) + ']';
                     }
                 }
             }

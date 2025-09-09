@@ -22,7 +22,7 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 /**
  * Binary writer schema holder.
  */
-public class BinaryWriterSchemaHolder {
+class BinaryWriterSchemaHolder {
     /** Maximum offset which fits in 1 byte. */
     private static final int MAX_OFFSET_1 = 1 << 8;
 
@@ -71,7 +71,9 @@ public class BinaryWriterSchemaHolder {
     }
 
     /**
-     * Write collected frames and pop them.
+     * Write collected frames.
+     * Note, that after writing collected frames, you must call {@link BinaryWriterSchemaHolder#pop(int)} method with
+     * the total number of written frames as an argument.
      *
      * @param out Output stream.
      * @param fieldCnt Count.
@@ -98,7 +100,7 @@ public class BinaryWriterSchemaHolder {
             }
             else if (lastOffset < MAX_OFFSET_2) {
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
-                    out.unsafeWriteShort((short) data[curIdx]);
+                    out.unsafeWriteShort((short)data[curIdx]);
 
                 res = BinaryUtils.OFFSET_2;
             }
@@ -113,7 +115,7 @@ public class BinaryWriterSchemaHolder {
             if (lastOffset < MAX_OFFSET_1) {
                 for (int curIdx = startIdx; curIdx < idx;) {
                     out.unsafeWriteInt(data[curIdx++]);
-                    out.unsafeWriteByte((byte) data[curIdx++]);
+                    out.unsafeWriteByte((byte)data[curIdx++]);
                 }
 
                 res = BinaryUtils.OFFSET_1;
@@ -121,7 +123,7 @@ public class BinaryWriterSchemaHolder {
             else if (lastOffset < MAX_OFFSET_2) {
                 for (int curIdx = startIdx; curIdx < idx;) {
                     out.unsafeWriteInt(data[curIdx++]);
-                    out.unsafeWriteShort((short) data[curIdx++]);
+                    out.unsafeWriteShort((short)data[curIdx++]);
                 }
 
                 res = BinaryUtils.OFFSET_2;

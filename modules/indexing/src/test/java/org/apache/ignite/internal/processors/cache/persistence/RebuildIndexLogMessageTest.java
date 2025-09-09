@@ -24,13 +24,14 @@ import java.util.concurrent.TimeoutException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.CallbackExecutorLogListener;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -38,6 +39,8 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.MessageOrderLogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
  *
@@ -84,7 +87,7 @@ public class RebuildIndexLogMessageTest extends GridCommonAbstractTest implement
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         ListeningTestLogger testLog =
-            new ListeningTestLogger(false, super.getConfiguration(igniteInstanceName).getGridLogger());
+            new ListeningTestLogger(super.getConfiguration(igniteInstanceName).getGridLogger());
 
         testLog.registerListener(logLsnr);
         testLog.registerListener(latchLsnr);
@@ -135,7 +138,7 @@ public class RebuildIndexLogMessageTest extends GridCommonAbstractTest implement
 
         String gridName = ignite.name();
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Person> cacheA = ignite.getOrCreateCache(CACHE_NAME_A);
         IgniteCache<Integer, Person> cacheB = ignite.getOrCreateCache(CACHE_NAME_B);
@@ -151,13 +154,10 @@ public class RebuildIndexLogMessageTest extends GridCommonAbstractTest implement
 
         forceCheckpoint();
 
-        File cacheAWorkDir = ((FilePageStoreManager)cacheAEx.context().shared().pageStore())
-            .cacheWorkDir(cacheAEx.configuration());
-        File cacheBWorkDir = ((FilePageStoreManager)cacheBEx.context().shared().pageStore())
-            .cacheWorkDir(cacheBEx.configuration());
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-        File idxPathA = cacheAWorkDir.toPath().resolve("index.bin").toFile();
-        File idxPathB = cacheBWorkDir.toPath().resolve("index.bin").toFile();
+        File idxPathA = ft.partitionFile(cacheAEx.configuration(), INDEX_PARTITION);
+        File idxPathB = ft.partitionFile(cacheBEx.configuration(), INDEX_PARTITION);
 
         stopAllGrids();
 
@@ -166,7 +166,7 @@ public class RebuildIndexLogMessageTest extends GridCommonAbstractTest implement
 
         ignite = startGrid(getConfiguration(gridName));
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         cacheA = ignite.getOrCreateCache(CACHE_NAME_A);
         cacheB = ignite.getOrCreateCache(CACHE_NAME_B);

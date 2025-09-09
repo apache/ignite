@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.rest;
 
 import java.util.concurrent.Callable;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -42,7 +42,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+        recreateDefaultDb();
 
         super.beforeTestsStarted();
     }
@@ -55,7 +55,7 @@ public abstract class JettyRestProcessorAuthenticationAbstractTest extends Jetty
     /** {@inheritDoc} */
     @Override protected void initCache() {
         // We need to activate cluster.
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         super.initCache();
     }

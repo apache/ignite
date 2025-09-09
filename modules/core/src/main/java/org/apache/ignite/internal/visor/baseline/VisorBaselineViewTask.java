@@ -19,6 +19,8 @@ package org.apache.ignite.internal.visor.baseline;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.management.baseline.BaselineAutoAdjustSettings;
+import org.apache.ignite.internal.management.baseline.BaselineTaskResult;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -30,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * Task that will collect information about baseline topology.
  */
 @GridInternal
-public class VisorBaselineViewTask extends VisorOneNodeTask<Void, VisorBaselineTaskResult> {
+public class VisorBaselineViewTask extends VisorOneNodeTask<Void, BaselineTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +44,7 @@ public class VisorBaselineViewTask extends VisorOneNodeTask<Void, VisorBaselineT
     /**
      * Job that will collect baseline topology information.
      */
-    private static class VisorBaselineViewJob extends VisorJob<Void, VisorBaselineTaskResult> {
+    private static class VisorBaselineViewJob extends VisorJob<Void, BaselineTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -55,18 +57,18 @@ public class VisorBaselineViewTask extends VisorOneNodeTask<Void, VisorBaselineT
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorBaselineTaskResult run(@Nullable Void arg) throws IgniteException {
+        @Override protected BaselineTaskResult run(@Nullable Void arg) throws IgniteException {
             IgniteClusterEx cluster = ignite.cluster();
 
-            VisorBaselineAutoAdjustSettings autoAdjustSettings = new VisorBaselineAutoAdjustSettings(
+            BaselineAutoAdjustSettings autoAdjustSettings = new BaselineAutoAdjustSettings(
                 cluster.isBaselineAutoAdjustEnabled(),
                 cluster.baselineAutoAdjustTimeout()
             );
 
             BaselineAutoAdjustStatus adjustStatus = cluster.baselineAutoAdjustStatus();
 
-            return new VisorBaselineTaskResult(
-                ignite.cluster().active(),
+            return new BaselineTaskResult(
+                ignite.cluster().state(),
                 cluster.topologyVersion(),
                 cluster.currentBaselineTopology(),
                 cluster.forServers().nodes(),

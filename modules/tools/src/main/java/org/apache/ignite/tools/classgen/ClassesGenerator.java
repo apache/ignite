@@ -46,6 +46,9 @@ public class ClassesGenerator {
     /** */
     private static final String DEFAULT_FILE_PATH = META_INF + "classnames.properties";
 
+    /** File path separator used to separate path parts by {@link JarInputStream} . */
+    private static final char JAR_ENTRY_SEPARATOR = '/';
+
     /** */
     private static final String[] EXCLUDED_PACKAGES = {
         "org.apache.ignite.tools"
@@ -187,19 +190,18 @@ public class ClassesGenerator {
 
                     while ((entry = jin.getNextJarEntry()) != null) {
                         if (!entry.isDirectory() && entry.getName().toLowerCase().endsWith(".class"))
-                            processClassFile(entry.getName(), 0);
+                            processClassFile(entry.getName(), 0, JAR_ENTRY_SEPARATOR);
                     }
                 }
             }
             else if (path.toLowerCase().endsWith(".class"))
-                processClassFile(path, prefixLen);
+                processClassFile(path, prefixLen, File.separatorChar);
         }
     }
 
     /**
-     * Returns URLs of class loader
-     *
      * @param clsLdr Class loader.
+     * @return URLs of class loader.
      */
     public static URL[] classLoaderUrls(ClassLoader clsLdr) {
         if (clsLdr == null)
@@ -243,11 +245,12 @@ public class ClassesGenerator {
     /**
      * @param path File path.
      * @param prefixLen Prefix length.
+     * @param separatorChar Char symbol to convert class file path to java class name.
      * @throws Exception In case of error.
      */
-    private void processClassFile(String path, int prefixLen)
+    private void processClassFile(String path, int prefixLen, char separatorChar)
         throws Exception {
-        String clsName = path.substring(prefixLen, path.length() - 6).replace(File.separatorChar, '.');
+        String clsName = path.substring(prefixLen, path.length() - 6).replace(separatorChar, '.');
 
         for (String pkg : EXCLUDED_PACKAGES) {
             if (clsName.startsWith(pkg))

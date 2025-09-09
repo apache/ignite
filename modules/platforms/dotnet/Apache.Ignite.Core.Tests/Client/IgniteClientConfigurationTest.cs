@@ -109,7 +109,9 @@ namespace Apache.Ignite.Core.Tests.Client
                     DefaultTimeout = TimeSpan.FromSeconds(1),
                     DefaultTransactionConcurrency = TransactionConcurrency.Optimistic,
                     DefaultTransactionIsolation = TransactionIsolation.Serializable
-                }
+                },
+                RetryLimit = 33,
+                HeartbeatInterval = TimeSpan.FromSeconds(30)
             };
 
             using (var xmlReader = XmlReader.Create(Path.Combine("Config", "Client", "IgniteClientConfiguration.xml")))
@@ -300,7 +302,6 @@ namespace Apache.Ignite.Core.Tests.Client
             }
         }
 
-#if !NETCOREAPP
         /// <summary>
         /// Tests the schema validation.
         /// </summary>
@@ -324,7 +325,6 @@ namespace Apache.Ignite.Core.Tests.Client
                 "IgniteClientConfigurationSection.xsd", "igniteClientConfiguration",
                 typeof(IgniteClientConfiguration));
         }
-#endif
 
         /// <summary>
         /// Tests <see cref="TransactionClientConfiguration"/> copy ctor.

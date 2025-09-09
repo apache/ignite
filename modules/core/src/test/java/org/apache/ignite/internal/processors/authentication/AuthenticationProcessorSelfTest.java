@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -108,12 +109,12 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+        recreateDefaultDb();
 
         startGrids(NODES_COUNT - 1);
         startClientGrid(CLI_NODE);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 
@@ -229,7 +230,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                         return null;
                     }
                 }, IgniteAccessControlException.class,
-                "User management operations initiated on behalf of the Ignite node are not expected.");
+                    "User management operations initiated on behalf of the Ignite node are not expected.");
             }
         }
     }
@@ -652,7 +653,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         return new AutoCloseable() {
             @Override public void close() throws Exception {
-               oldSecCtxs.forEach(OperationSecurityContext::close);
+                oldSecCtxs.forEach(OperationSecurityContext::close);
             }
         };
     }

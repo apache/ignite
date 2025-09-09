@@ -158,7 +158,9 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
         /**
          * @param ex Exception to be thrown in {@link #execute}.
          */
-        GridTestFailoverJob(IgniteException ex) { super(ex); }
+        GridTestFailoverJob(IgniteException ex) {
+            super(ex);
+        }
 
         /** {@inheritDoc} */
         @Override public IgniteException execute() {

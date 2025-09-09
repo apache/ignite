@@ -37,7 +37,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
@@ -94,15 +93,6 @@ public class IgniteTxConcurrentRemoveObjectsTest extends GridCommonAbstractTest 
     @Test
     public void testPessimisticTxLeavesObjectsInLocalPartition() throws Exception {
         checkTxLeavesObjectsInLocalPartition(cacheConfiguration(), TransactionConcurrency.PESSIMISTIC, SERIALIZABLE);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxLeavesObjectsInLocalPartition() throws Exception {
-        checkTxLeavesObjectsInLocalPartition(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT),
-            TransactionConcurrency.PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**

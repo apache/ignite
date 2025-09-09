@@ -36,17 +36,21 @@ import org.jetbrains.annotations.Nullable;
  */
 @IgniteExperimental
 public interface MaintenanceAction<T> {
-    /** Executes operations of current maintenance action and returns results. */
+    /**
+     * Executes operations of current maintenance action.
+     *
+     * @return Result of the maintenance action.
+     */
     public T execute();
 
     /**
-     * Mandatory human-readable name of maintenance action.
+     * @return Mandatory human-readable name of maintenance action.
      * All actions of single {@link MaintenanceWorkflowCallback} should have unique names.
      */
     @NotNull public String name();
 
     /**
-     * Optional user-readable description of maintenance action.
+     * @return Optional user-readable description of maintenance action.
      */
     @Nullable public String description();
 }

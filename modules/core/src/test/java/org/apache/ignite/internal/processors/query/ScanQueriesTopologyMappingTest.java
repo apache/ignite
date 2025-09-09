@@ -83,35 +83,6 @@ public class ScanQueriesTopologyMappingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testLocalCacheQueryMapping() throws Exception {
-        IgniteEx ign0 = startGrid(0);
-
-        IgniteCache<Object, Object> cache = ign0.createCache(new CacheConfiguration<>(GridAbstractTest.DEFAULT_CACHE_NAME)
-            .setCacheMode(CacheMode.LOCAL));
-
-        cache.put(1, 2);
-
-        startGrid(1);
-
-        ScanQuery<Object, Object> qry = new ScanQuery<>();
-
-        {
-            List<Cache.Entry<Object, Object>> res0 = grid(0).cache(GridAbstractTest.DEFAULT_CACHE_NAME).query(qry).getAll();
-
-            assertEquals(1, res0.size());
-            assertEquals(1, res0.get(0).getKey());
-            assertEquals(2, res0.get(0).getValue());
-        }
-
-        {
-            List<Cache.Entry<Object, Object>> res1 = grid(1).cache(GridAbstractTest.DEFAULT_CACHE_NAME).query(qry).getAll();
-
-            assertTrue(res1.isEmpty());
-        }
-    }
-
-    /** */
     private void checkQueryWithRebalance(CacheMode cacheMode) throws Exception {
         IgniteEx ign0 = startGrid(0);
 

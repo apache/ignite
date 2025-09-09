@@ -72,8 +72,8 @@ public class TracingConfigurationValidationTest extends GridCommonAbstractTest {
             "",
             "label", "Some really long label with spaces, Some really long label with spaces," +
                 " Some really long label with spaces, Some really long label with spaces," +
-                " Some really long label with spaces").forEach(
-            lb -> new TracingConfigurationCoordinates.Builder(TX).withLabel(lb).build());
+                " Some really long label with spaces"
+        ).forEach(lb -> new TracingConfigurationCoordinates.Builder(TX).withLabel(lb).build());
     }
 
     /**
@@ -96,10 +96,7 @@ public class TracingConfigurationValidationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testThatItsPossibleToSpecifyOnlyValidSamplingRate() {
-        for (Double invalidSamplingRate : new double[] {
-            -1d,
-            10d})
-        {
+        for (Double invalidSamplingRate : new double[] {-1d, 10d}) {
             GridTestUtils.assertThrows(
                 log,
                 () -> new TracingConfigurationParameters.Builder().withSamplingRate(invalidSamplingRate).build(),

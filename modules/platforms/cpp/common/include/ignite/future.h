@@ -279,6 +279,131 @@ namespace ignite
         /** Shared state. */
         common::concurrent::SharedPointer< common::SharedState<ValueType> > state;
     };
+
+    /**
+     * Specialization for shared pointer.
+     */
+    template<typename T>
+    class Future< common::concurrent::SharedPointer<T> >
+    {
+        friend class common::Promise< common::concurrent::SharedPointer<T> >;
+
+    public:
+        /** Template value type */
+        typedef T ValueType;
+
+        /** Template value type shared pointer */
+        typedef common::concurrent::SharedPointer<ValueType> SP_ValueType;
+
+        /**
+         * Copy constructor.
+         *
+         * @param src Instance to copy.
+         */
+        Future(const Future<SP_ValueType>& src) :
+            state(src.state)
+        {
+            // No-op.
+        }
+
+        /**
+         * Assignment operator.
+         *
+         * @param other Other instance.
+         * @return *this.
+         */
+        Future& operator=(const Future<SP_ValueType>& other)
+        {
+            if (this != &other)
+                state = other.state;
+
+            return *this;
+        }
+
+        /**
+         * Wait for value to be set.
+         * Active thread will be blocked until value or error will be set.
+         */
+        void Wait() const
+        {
+            const common::SharedState<SP_ValueType>* state0 = state.Get();
+
+            assert(state0 != 0);
+
+            state0->Wait();
+        }
+
+        /**
+         * Wait for value to be set for specified time.
+         * Active thread will be blocked until value or error will be set or timeout will end.
+         *
+         * @param msTimeout Timeout in milliseconds.
+         * @return True if the object has been triggered and false in case of timeout.
+         */
+        bool WaitFor(int32_t msTimeout) const
+        {
+            const common::SharedState<SP_ValueType>* state0 = state.Get();
+
+            assert(state0 != 0);
+
+            return state0->WaitFor(msTimeout);
+        }
+
+        /**
+         * Get the set value.
+         * Active thread will be blocked until value or error will be set.
+         *
+         * @throw IgniteError if error has been set.
+         * @return Value that has been set on success.
+         */
+        SP_ValueType GetValue() const
+        {
+            const common::SharedState<SP_ValueType>* state0 = state.Get();
+
+            assert(state0 != 0);
+
+            return state0->GetValue();
+        }
+
+        /**
+         * Cancel related operation.
+         */
+        void Cancel()
+        {
+            common::SharedState<SP_ValueType>* state0 = state.Get();
+
+            assert(state0 != 0);
+
+            state0->Cancel();
+        }
+
+        /**
+         * Check if the future ready.
+         */
+        bool IsReady()
+        {
+            common::SharedState<SP_ValueType>* state0 = state.Get();
+
+            assert(state0 != 0);
+
+            return state0->IsSet();
+        }
+
+    private:
+        /**
+         * Constructor.
+         *
+         * @param state0 Shared state instance.
+         */
+        Future(common::concurrent::SharedPointer< common::SharedState<SP_ValueType> > state0) :
+            state(state0)
+        {
+            // No-op.
+        }
+
+        /** Shared state. */
+        common::concurrent::SharedPointer< common::SharedState<SP_ValueType> > state;
+    };
 }
 
 #endif //_IGNITE_FUTURE

@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IgniteConfiguration GetConfig()
         {
-            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration(noLogger: true))
             {
                 AutoGenerateIgniteInstanceName = true
             };

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.events;
 
+import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteExperimental;
 
@@ -67,22 +69,39 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Represents original values of entries.*/
-    final Map<Object, Map<ClusterNode, EntryInfo>> entries;
+    private final Map<Object, EntriesInfo> entries;
+
+    /** Repaired entries. */
+    private final Map<Object, Object> repaired;
+
+    /** Cache name. */
+    private final String cacheName;
+
+    /** Strategy. */
+    private final ReadRepairStrategy strategy;
 
     /**
      * Creates a new instance of CacheConsistencyViolationEvent.
-     *
+     * @param cacheName Cache name.
      * @param node Local node.
      * @param msg Event message.
      * @param entries Collection of original entries.
+     * @param repaired Collection of repaired entries.
+     * @param strategy Strategy.
      */
     public CacheConsistencyViolationEvent(
+        String cacheName,
         ClusterNode node,
         String msg,
-        Map<Object, Map<ClusterNode, EntryInfo>> entries) {
+        Map<Object, EntriesInfo> entries,
+        Map<Object, Object> repaired,
+        ReadRepairStrategy strategy) {
         super(node, msg, EVT_CONSISTENCY_VIOLATION);
 
-        this.entries = entries;
+        this.cacheName = cacheName;
+        this.entries = Collections.unmodifiableMap(entries);
+        this.repaired = Collections.unmodifiableMap(repaired);
+        this.strategy = strategy;
     }
 
     /**
@@ -90,8 +109,50 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      *
      * @return Collection of original entries.
      */
-    public Map<Object, Map<ClusterNode, EntryInfo>> getEntries() {
+    public Map<Object, EntriesInfo> getEntries() {
         return entries;
+    }
+
+    /**
+     * Returns a mapping of keys to a collection of repaired entries.
+     *
+     * @return Collection of repaired entries.
+     */
+    public Map<Object, Object> getRepairedEntries() {
+        return repaired;
+    }
+
+    /**
+     * Returns cache name.
+     *
+     * @return Cache name.
+     */
+    public String getCacheName() {
+        return cacheName;
+    }
+
+    /**
+     * Returns strategy.
+     *
+     * @return Strategy.
+     */
+    public ReadRepairStrategy getStrategy() {
+        return strategy;
+    }
+
+    /**
+     * Inconsistent entries mapping.
+     */
+    public interface EntriesInfo {
+        /**
+         * @return Entry's mapping.
+         */
+        public Map<ClusterNode, EntryInfo> getMapping();
+
+        /**
+         * @return Entry's partition.
+         */
+        public int partition();
     }
 
     /**
@@ -99,22 +160,22 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
      */
     public interface EntryInfo {
         /**
-         * Value.
+         * @return Value.
          */
         public Object getValue();
 
         /**
-         * Version.
+         * @return Version.
          */
         public CacheEntryVersion getVersion();
 
         /**
-         * Located at the primary node.
+         * @return Located at the primary node.
          */
         public boolean isPrimary();
 
         /**
-         * Marked as correct during the fix.
+         * @return Marked as correct during the repair.
          */
         public boolean isCorrect();
     }

@@ -35,13 +35,12 @@ import javassist.CtNewMethod;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 
 /** */
-public class BinaryObjectToStringTest extends GridCommonAbstractTest {
+public class BinaryObjectToStringTest extends AbstractBinaryArraysTest {
     /** */
     @Test
     public void testToStringInaccessibleOptimizedMarshallerClass() throws Exception {
@@ -57,7 +56,7 @@ public class BinaryObjectToStringTest extends GridCommonAbstractTest {
         assertStringFormContains(new TestIntContainer(123), "i=123");
 
         assertStringFormContains(new TestContainer(new int[]{1, 2}), "x=[1, 2]");
-        assertStringFormContains(new TestContainer(new Integer[]{1, 2}), "x=[1, 2]");
+        assertStringFormContains(new TestContainer(new Integer[]{1, 2}), useBinaryArrays ? "[1, 2]" : "x=[1, 2]");
         assertStringFormContains(new TestContainer(new ArrayList<>(Arrays.asList(1, 2))), "x=ArrayList {1, 2}");
         assertStringFormContains(new TestContainer(new HashSet<>(Arrays.asList(1, 2))), "x=HashSet {1, 2}");
         assertStringFormContains(new TestContainer(new HashMap<>(ImmutableMap.of(1, 2))), "x=HashMap {1=2}");
@@ -151,58 +150,62 @@ public class BinaryObjectToStringTest extends GridCommonAbstractTest {
 
     /** */
     private Object newExtInstance1() throws Exception {
-        ClassPool classPool = new ClassPool(ClassPool.getDefault());
+        ClassPool clsPool = new ClassPool(ClassPool.getDefault());
 
-        CtClass aClass = classPool.makeClass("ExternalTestClass1");
-        aClass.addInterface(classPool.get("java.io.Externalizable"));
-        aClass.addField(CtField.make("private int x;", aClass));
-        aClass.addConstructor(CtNewConstructor.make("public ExternalTestClass1() {}", aClass));
-        aClass.addConstructor(CtNewConstructor.make("public ExternalTestClass1(int x0) { x = x0; }", aClass));
-        aClass.addMethod(CtNewMethod.make(
+        CtClass aCls = clsPool.makeClass("ExternalTestClass1");
+        aCls.addInterface(clsPool.get("java.io.Externalizable"));
+        aCls.addField(CtField.make("private int x;", aCls));
+        aCls.addConstructor(CtNewConstructor.make("public ExternalTestClass1() {}", aCls));
+        aCls.addConstructor(CtNewConstructor.make("public ExternalTestClass1(int x0) { x = x0; }", aCls));
+        aCls.addMethod(CtNewMethod.make(
             "public void writeExternal(java.io.ObjectOutput out) throws java.io.IOException { out.writeInt(x); }",
-            aClass));
-        aClass.addMethod(CtNewMethod.make(
+            aCls));
+        aCls.addMethod(CtNewMethod.make(
             "public void readExternal(java.io.ObjectInput in) throws java.io.IOException { x = in.readInt(); }",
-            aClass));
+            aCls));
 
-        ClassLoader extClsLdr = new ClassLoader() {{
-            byte[] bytecode = aClass.toBytecode();
+        ClassLoader extClsLdr = new ClassLoader() {
+            {
+                byte[] bytecode = aCls.toBytecode();
 
-            defineClass("ExternalTestClass1", bytecode, 0, bytecode.length);
-        }};
+                defineClass("ExternalTestClass1", bytecode, 0, bytecode.length);
+            }
+        };
 
-        Class<?> extClass = extClsLdr.loadClass("ExternalTestClass1");
+        Class<?> extCls = extClsLdr.loadClass("ExternalTestClass1");
 
-        Constructor<?> ctor = extClass.getConstructor(int.class);
+        Constructor<?> ctor = extCls.getConstructor(int.class);
 
         return ctor.newInstance(42);
     }
 
     /** */
     private Object newExtInstance2() throws Exception {
-        ClassPool classPool = new ClassPool(ClassPool.getDefault());
+        ClassPool clsPool = new ClassPool(ClassPool.getDefault());
 
-        CtClass aClass = classPool.makeClass("ExternalTestClass2");
-        aClass.addInterface(classPool.get("java.io.Serializable"));
-        aClass.addField(CtField.make("private int x;", aClass));
-        aClass.addConstructor(CtNewConstructor.make("public ExternalTestClass2() {}", aClass));
-        aClass.addConstructor(CtNewConstructor.make("public ExternalTestClass2(int x0) { x = x0; }", aClass));
-        aClass.addMethod(CtNewMethod.make(
+        CtClass aCls = clsPool.makeClass("ExternalTestClass2");
+        aCls.addInterface(clsPool.get("java.io.Serializable"));
+        aCls.addField(CtField.make("private int x;", aCls));
+        aCls.addConstructor(CtNewConstructor.make("public ExternalTestClass2() {}", aCls));
+        aCls.addConstructor(CtNewConstructor.make("public ExternalTestClass2(int x0) { x = x0; }", aCls));
+        aCls.addMethod(CtNewMethod.make(
             "private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException { out.writeInt(x); }",
-            aClass));
-        aClass.addMethod(CtNewMethod.make(
+            aCls));
+        aCls.addMethod(CtNewMethod.make(
             "private void readObject(java.io.ObjectInputStream in) throws java.io.IOException { x = in.readInt(); }",
-            aClass));
+            aCls));
 
-        ClassLoader extClsLdr = new ClassLoader() {{
-            byte[] bytecode = aClass.toBytecode();
+        ClassLoader extClsLdr = new ClassLoader() {
+            {
+                byte[] bytecode = aCls.toBytecode();
 
-            defineClass("ExternalTestClass2", bytecode, 0, bytecode.length);
-        }};
+                defineClass("ExternalTestClass2", bytecode, 0, bytecode.length);
+            }
+        };
 
-        Class<?> extClass = extClsLdr.loadClass("ExternalTestClass2");
+        Class<?> extCls = extClsLdr.loadClass("ExternalTestClass2");
 
-        Constructor<?> ctor = extClass.getConstructor(int.class);
+        Constructor<?> ctor = extCls.getConstructor(int.class);
 
         return ctor.newInstance(42);
     }
@@ -227,5 +230,12 @@ public class BinaryObjectToStringTest extends GridCommonAbstractTest {
         private TestIntContainer(int i) {
             this.i = i;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
     }
 }

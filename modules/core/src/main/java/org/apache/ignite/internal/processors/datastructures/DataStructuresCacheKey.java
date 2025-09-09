@@ -37,6 +37,7 @@ public class DataStructuresCacheKey implements GridCacheInternal, Serializable {
         return obj == this || (obj instanceof DataStructuresCacheKey);
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "DataStructuresCacheKey []";
     }

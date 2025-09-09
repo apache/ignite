@@ -33,12 +33,10 @@ import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
@@ -66,9 +64,6 @@ public class CheckpointPagesWriter implements Runnable {
 
     /** Some action which will be executed every time before page will be written. */
     private final Runnable beforePageWrite;
-
-    /** Snapshot manager. */
-    private final IgniteCacheSnapshotManager snapshotMgr;
 
     /** Data storage metrics. */
     private final DataStorageMetricsImpl persStoreMetrics;
@@ -99,7 +94,6 @@ public class CheckpointPagesWriter implements Runnable {
      * @param updStores Updating storage.
      * @param doneFut Done future.
      * @param beforePageWrite Action to be performed before every page write.
-     * @param snapshotManager Snapshot manager.
      * @param log Logger.
      * @param dsMetrics Data storage metrics.
      * @param buf Thread local byte buffer.
@@ -115,7 +109,6 @@ public class CheckpointPagesWriter implements Runnable {
         ConcurrentLinkedHashMap<PageStore, LongAdder> updStores,
         CountDownFuture doneFut,
         Runnable beforePageWrite,
-        IgniteCacheSnapshotManager snapshotManager,
         IgniteLogger log,
         DataStorageMetricsImpl dsMetrics,
         ThreadLocal<ByteBuffer> buf,
@@ -130,7 +123,6 @@ public class CheckpointPagesWriter implements Runnable {
         this.updStores = updStores;
         this.doneFut = doneFut;
         this.beforePageWrite = beforePageWrite;
-        this.snapshotMgr = snapshotManager;
         this.log = log;
         this.persStoreMetrics = dsMetrics;
         this.threadBuf = buf;
@@ -143,8 +135,6 @@ public class CheckpointPagesWriter implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        snapshotMgr.beforeCheckpointPageWritten();
-
         GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> writePageIds = this.writePageIds;
 
         try {
@@ -153,8 +143,10 @@ public class CheckpointPagesWriter implements Runnable {
             if (pagesToRetry.isEmpty())
                 doneFut.onDone();
             else {
-                LT.warn(log, pagesToRetry.initialSize() + " checkpoint pages were not written yet due to unsuccessful " +
-                    "page write lock acquisition and will be retried");
+                if (log.isInfoEnabled()) {
+                    log.info(pagesToRetry.initialSize() + " checkpoint pages were not written yet due to " +
+                        "unsuccessful page write lock acquisition and will be retried");
+                }
 
                 while (!pagesToRetry.isEmpty())
                     pagesToRetry = writePages(pagesToRetry);
@@ -197,27 +189,23 @@ public class CheckpointPagesWriter implements Runnable {
 
             PageMemoryEx pageMem = res.getKey();
 
-            snapshotMgr.beforePageWrite(fullId);
-
             tmpWriteBuf.rewind();
 
             PageStoreWriter pageStoreWriter =
                 pageStoreWriters.computeIfAbsent(pageMem, pageMemEx -> createPageStoreWriter(pageMemEx, pagesToRetry));
 
-            pageMem.checkpointWritePage(fullId, tmpWriteBuf, pageStoreWriter, tracker);
+            pageMem.checkpointWritePage(fullId, tmpWriteBuf, pageStoreWriter, tracker, false);
 
             if (throttlingEnabled) {
-                while (pageMem.shouldThrottle()) {
+                while (pageMem.isCpBufferOverflowThresholdExceeded()) {
                     FullPageId cpPageId = pageMem.pullPageFromCpBuffer();
 
                     if (cpPageId.equals(FullPageId.NULL_PAGE))
                         break;
 
-                    snapshotMgr.beforePageWrite(cpPageId);
-
                     tmpWriteBuf.rewind();
 
-                    pageMem.checkpointWritePage(cpPageId, tmpWriteBuf, pageStoreWriter, tracker);
+                    pageMem.checkpointWritePage(cpPageId, tmpWriteBuf, pageStoreWriter, tracker, false);
                 }
             }
         }
@@ -248,7 +236,6 @@ public class CheckpointPagesWriter implements Runnable {
                     return;
                 }
 
-                int groupId = fullPageId.groupId();
                 long pageId = fullPageId.pageId();
 
                 assert getType(buf) != 0 : "Invalid state. Type is 0! pageId = " + hexLong(pageId);

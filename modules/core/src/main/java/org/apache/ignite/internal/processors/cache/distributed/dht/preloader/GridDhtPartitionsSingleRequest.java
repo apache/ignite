@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -28,13 +27,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private GridDhtPartitionExchangeId restoreExchId;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtPartitionsSingleRequest() {
         // No-op.
@@ -83,7 +79,7 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -91,7 +87,7 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
 
         switch (writer.state()) {
             case 6:
-                if (!writer.writeMessage("restoreExchId", restoreExchId))
+                if (!writer.writeMessage(restoreExchId))
                     return false;
 
                 writer.incrementState();
@@ -105,15 +101,12 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 6:
-                restoreExchId = reader.readMessage("restoreExchId");
+                restoreExchId = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -122,17 +115,12 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
 
         }
 
-        return reader.afterMessageRead(GridDhtPartitionsSingleRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 48;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 7;
     }
 
     /** {@inheritDoc} */

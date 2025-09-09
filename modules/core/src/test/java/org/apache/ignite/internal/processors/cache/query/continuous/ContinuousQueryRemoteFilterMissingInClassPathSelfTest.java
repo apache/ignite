@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Map;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
@@ -35,7 +36,6 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -101,7 +101,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
             cfg.setGridLogger(log);
 
         if (setFilterAttr)
-            cfg.setUserAttributes(U.map("filter", 1));
+            cfg.setUserAttributes(Map.of("filter", 1));
 
         return cfg;
     }
@@ -156,9 +156,9 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
 
         executeContinuousQuery(ignite0.cache(DEFAULT_CACHE_NAME));
 
-        ListeningTestLogger listeningLogger = new ListeningTestLogger();
+        ListeningTestLogger listeningLog = new ListeningTestLogger();
 
-        log = listeningLogger;
+        log = listeningLog;
 
         LogListener lsnr = LogListener.matches(logStr ->
             logStr.contains("class org.apache.ignite.IgniteCheckedException: " +
@@ -166,7 +166,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
                 || logStr.contains("Failed to unmarshal continuous routine handler"
             )).build();
 
-        listeningLogger.registerListener(lsnr);
+        listeningLog.registerListener(lsnr);
 
         setExternalLoader = false;
 
@@ -259,10 +259,10 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
 
         qry.setLocalListener(
             new CacheEntryUpdatedListener<Integer, String>() {
-                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> events)
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> evts)
                     throws CacheEntryListenerException {
-                    for (CacheEntryEvent<? extends Integer, ? extends String> event : events)
-                        System.out.println("Key = " + event.getKey() + ", Value = " + event.getValue());
+                    for (CacheEntryEvent<? extends Integer, ? extends String> evt : evts)
+                        System.out.println("Key = " + evt.getKey() + ", Value = " + evt.getValue());
                 }
             }
         );

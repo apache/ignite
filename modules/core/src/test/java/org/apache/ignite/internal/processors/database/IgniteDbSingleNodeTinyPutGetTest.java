@@ -38,10 +38,10 @@ public class IgniteDbSingleNodeTinyPutGetTest extends IgniteDbSingleNodePutGetTe
         IgniteCache<Short, Byte> cache = ig.cache("tiny");
 
         for (short i = 0; i < 1000; i++)
-            cache.put(i, (byte) i);
+            cache.put(i, (byte)i);
 
         for (short i = 0; i < 1000; i++)
-            assertEquals((byte) i, cache.get(i).byteValue());
+            assertEquals((byte)i, cache.get(i).byteValue());
     }
 
     /** {@inheritDoc} */

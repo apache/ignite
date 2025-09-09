@@ -20,6 +20,7 @@ package org.apache.ignite.internal.sql.command;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +78,24 @@ public class SqlAnalyzeCommand extends SqlStatisticsCommands {
         }
     }
 
+    /** */
+    public SqlAnalyzeCommand() {
+        // No-op;
+    }
+
+    /** */
+    public SqlAnalyzeCommand(Collection<StatisticsTarget> targets) {
+        this(targets, null);
+    }
+
+    /** */
+    public SqlAnalyzeCommand(Collection<StatisticsTarget> targets, Map<String, String> params) {
+        this.targets = new ArrayList<>(targets);
+
+        for (StatisticsTarget tgt: targets)
+            configs.add(buildConfig(tgt, params));
+    }
+
     /**
      * Build statistics object configuration from command arguments.
      *
@@ -95,7 +114,7 @@ public class SqlAnalyzeCommand extends SqlStatisticsCommands {
         if (!F.isEmpty(params))
             throw new IgniteSQLException("");
 
-        List<StatisticsColumnConfiguration> colCfgs = (target.columns() == null) ? null :
+        List<StatisticsColumnConfiguration> colCfgs = (target.columns() == null) ? Collections.emptyList() :
             Arrays.stream(target.columns()).map(col -> new StatisticsColumnConfiguration(col, overrides))
                 .collect(Collectors.toList());
 
@@ -152,8 +171,8 @@ public class SqlAnalyzeCommand extends SqlStatisticsCommands {
         if (map == null)
             return dfltVal;
 
-        String value = map.remove(key);
-        return (value == null) ? dfltVal : Byte.valueOf(value);
+        String val = map.remove(key);
+        return (val == null) ? dfltVal : Byte.valueOf(val);
     }
 
     /**

@@ -28,11 +28,12 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -118,7 +119,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         Ignite client = startClientGrid(CLIENT_INSTANCE_NAME);
 
-        client.cluster().active(true);
+        client.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -164,7 +165,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
      * @throws Exception if something wrong.
      */
     private Set<String> igniteUtilsCachedClasses() throws Exception {
-        Field f = IgniteUtils.class.getDeclaredField("classCache");
+        Field f = CommonUtils.class.getDeclaredField("classCache");
 
         f.setAccessible(true);
 

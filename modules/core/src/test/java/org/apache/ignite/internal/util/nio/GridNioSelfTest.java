@@ -136,7 +136,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     byte[] msg = new byte[MSG_SIZE];
 
                     for (int i = 0; i < msg.length; i++)
-                        msg[i] = (byte) (i ^ (i * i - 1)); // Some data
+                        msg[i] = (byte)(i ^ (i * i - 1)); // Some data
 
                     for (int i = 0; i < RECONNECT_MSG_CNT; i++)
                         validateSendMessage(srvr.port(), msg);
@@ -293,7 +293,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                         byte[] msg = new byte[MSG_SIZE];
 
                         for (int i = 0; i < msg.length; i++)
-                            msg[i] = (byte) (i ^ (i * i - 1)); // Some data
+                            msg[i] = (byte)(i ^ (i * i - 1)); // Some data
 
                         try (Socket s = createSocket()) {
                             s.connect(new InetSocketAddress(U.getLocalHost(), srvr.port()), 1000);
@@ -616,9 +616,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     protected GridNioServer.Builder<?> serverBuilder(int port,
         GridNioParser parser,
-        GridNioServerListener lsnr)
-        throws Exception
-    {
+        GridNioServerListener lsnr
+    ) throws Exception {
         return GridNioServer.builder()
             .address(U.getLocalHost())
             .port(port)
@@ -653,7 +652,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
                 client.sendMessage(createMessage(), MSG_SIZE);
+                client.receiveMessage();
                 client.sendMessage(createMessage(), MSG_SIZE);
+                client.receiveMessage();
 
                 client.close();
             }
@@ -730,8 +731,10 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     try {
                         client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
-                        for (int i = 0; i < MSG_CNT; i++)
+                        for (int i = 0; i < MSG_CNT; i++) {
                             client.sendMessage(data, data.length);
+                            client.receiveMessage();
+                        }
                     }
                     catch (Exception e) {
                         error("Failed to send message.", e);
@@ -891,6 +894,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                             deliveryDurations.put(msg.getId(), start);
 
                             client.sendMessage(data, data.length);
+                            client.receiveMessage();
 
                             long end = System.currentTimeMillis();
 
@@ -1127,7 +1131,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             int rangeMax = (int)((i + 1) * guessedMaxDuration / durationRange.length);
 
-            float percents = (float) durationRange[i] * 100 / overall.count();
+            float percents = (float)durationRange[i] * 100 / overall.count();
 
             info(">>> [" + rangeMin + '-' + rangeMax + "] ms: " + String.format("%.2f", percents) + "% (" +
                 durationRange[i] + " messages)");
@@ -1334,6 +1338,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             if (latch != null)
                 latch.countDown();
+
+            //sending ack of processing message
+            ses.send(new byte[] {(byte)0xDEADBEEF});
         }
 
         /**

@@ -238,6 +238,7 @@ public class IgniteSqlSchemaIndexingTest extends AbstractIndexingCommonTest {
         @QuerySqlField
         private int id;
 
+        /** */
         @QuerySqlField
         private String name;
 

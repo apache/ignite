@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
-import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -66,6 +66,7 @@ public class IgniteConnectionConcurrentReserveAndRemoveTest extends GridCommonAb
         }
     }
 
+    /** */
     @Test
     public void test() throws Exception {
         IgniteEx svr = startGrid(0);
@@ -80,7 +81,7 @@ public class IgniteConnectionConcurrentReserveAndRemoveTest extends GridCommonAb
 
         TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi)c1.configuration().getCommunicationSpi();
 
-        spi2.blockMessages(HandshakeMessage2.class, c1.name());
+        spi2.blockMessages(HandshakeMessage.class, c1.name());
 
         AtomicInteger cnt = new AtomicInteger();
 

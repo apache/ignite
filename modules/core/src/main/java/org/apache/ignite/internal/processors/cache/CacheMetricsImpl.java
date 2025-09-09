@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -30,12 +29,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.collection.IntSet;
@@ -57,10 +56,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Rebalance rate interval. */
     private static final int REBALANCE_RATE_INTERVAL = IgniteSystemProperties.getInteger(
         IgniteSystemProperties.IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, 60000);
-
-    /** Onheap peek modes. */
-    private static final CachePeekMode[] ONHEAP_PEEK_MODES = new CachePeekMode[] {
-        CachePeekMode.ONHEAP, CachePeekMode.PRIMARY, CachePeekMode.BACKUP, CachePeekMode.NEAR};
 
     /** */
     private static final long NANOS_IN_MICROSECOND = 1000L;
@@ -189,11 +184,26 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Get time. */
     private final HistogramMetricImpl getTime;
 
+    /** GetAll time. */
+    private final HistogramMetricImpl getAllTime;
+
     /** Put time. */
     private final HistogramMetricImpl putTime;
 
+    /** PutAll time. */
+    private final HistogramMetricImpl putAllTime;
+
+    /** PutAllConflict time. */
+    private final HistogramMetricImpl putAllConflictTime;
+
     /** Remove time. */
     private final HistogramMetricImpl rmvTime;
+
+    /** RemoveAll time. */
+    private final HistogramMetricImpl rmvAllTime;
+
+    /** RemoveAllConflict time. */
+    private final HistogramMetricImpl rmvAllConflictTime;
 
     /** Commit time. */
     private final HistogramMetricImpl commitTime;
@@ -218,23 +228,23 @@ public class CacheMetricsImpl implements CacheMetrics {
     private volatile Supplier<List<Map.Entry</* Colliding keys. */ GridCacheMapEntry, /* Collisions queue size. */ Integer>>>
         txKeyCollisionInfo;
 
-    /** Offheap entries count. */
-    private final LongGauge offHeapEntriesCnt;
-
-    /** Offheap primary entries count. */
-    private final LongGauge offHeapPrimaryEntriesCnt;
-
-    /** Offheap backup entries count. */
-    private final LongGauge offHeapBackupEntriesCnt;
-
-    /** Onheap entries count. */
-    private final LongGauge heapEntriesCnt;
-
-    /** Cache size. */
-    private final LongGauge cacheSize;
-
     /** Number of keys processed during index rebuilding. */
     private final LongAdderMetric idxRebuildKeyProcessed;
+
+    /** The number of local node partitions that remain to be processed to complete indexing. */
+    private final IntMetricImpl idxBuildPartitionsLeftCnt;
+
+    /** Cache metric registry. */
+    private final MetricRegistryImpl mreg;
+
+    /** Conflict resolver accepted entries count. */
+    private LongAdderMetric rslvrAcceptedCnt;
+
+    /** Conflict resolver rejected entries count. */
+    private LongAdderMetric rslvrRejectedCnt;
+
+    /** Conflict resolver merged entries count. */
+    private LongAdderMetric rslvrMergedCnt;
 
     /**
      * Creates cache metrics.
@@ -264,7 +274,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         delegate = null;
 
-        MetricRegistry mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(), isNear));
+        mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(), isNear));
 
         reads = mreg.longMetric("CacheGets",
             "The total number of gets to the cache.");
@@ -279,13 +289,13 @@ public class CacheMetricsImpl implements CacheMetrics {
             "The total number of cache invocations, caused no updates.");
 
         entryProcessorInvokeTimeNanos = mreg.longMetric("EntryProcessorInvokeTimeNanos",
-            "The total time of cache invocations, in nanoseconds.");
+            "The total time of cache invocations for which this node is the initiator, in nanoseconds.");
 
         entryProcessorMinInvocationTime = mreg.longMetric("EntryProcessorMinInvocationTime",
-            "So far, the minimum time to execute cache invokes.");
+            "So far, the minimum time to execute cache invokes for which this node is the initiator.");
 
         entryProcessorMaxInvocationTime = mreg.longMetric("EntryProcessorMaxInvocationTime",
-            "So far, the maximum time to execute cache invokes.");
+            "So far, the maximum time to execute cache invokes for which this node is the initiator.");
 
         entryProcessorHits = mreg.longMetric("EntryProcessorHits",
             "The total number of invocations on keys, which exist in cache.");
@@ -314,13 +324,13 @@ public class CacheMetricsImpl implements CacheMetrics {
         rmCnt = mreg.longMetric("CacheRemovals", "The total number of removals from the cache.");
 
         putTimeTotal = mreg.longMetric("PutTimeTotal",
-            "The total time of cache puts, in nanoseconds.");
+            "The total time of cache puts for which this node is the initiator, in nanoseconds.");
 
         getTimeTotal = mreg.longMetric("GetTimeTotal",
-            "The total time of cache gets, in nanoseconds.");
+            "The total time of cache gets for which this node is the initiator, in nanoseconds.");
 
         rmvTimeTotal = mreg.longMetric("RemoveTimeTotal",
-            "The total time of cache removal, in nanoseconds.");
+            "The total time of cache removal for which this node is the initiator, in nanoseconds.");
 
         commitTimeTotal = mreg.longMetric("CommitTimeTotal",
             "The total time of commit, in nanoseconds.");
@@ -379,11 +389,29 @@ public class CacheMetricsImpl implements CacheMetrics {
         mreg.register("IsIndexRebuildInProgress", this::isIndexRebuildInProgress,
             "True if index rebuild is in progress.");
 
-        getTime = mreg.histogram("GetTime", HISTOGRAM_BUCKETS, "Get time in nanoseconds.");
+        getTime = mreg.histogram("GetTime", HISTOGRAM_BUCKETS,
+            "Get time for which this node is the initiator, in nanoseconds.");
 
-        putTime = mreg.histogram("PutTime", HISTOGRAM_BUCKETS, "Put time in nanoseconds.");
+        getAllTime = mreg.histogram("GetAllTime", HISTOGRAM_BUCKETS,
+            "GetAll time for which this node is the initiator, in nanoseconds.");
 
-        rmvTime = mreg.histogram("RemoveTime", HISTOGRAM_BUCKETS, "Remove time in nanoseconds.");
+        putTime = mreg.histogram("PutTime", HISTOGRAM_BUCKETS,
+            "Put time for which this node is the initiator, in nanoseconds.");
+
+        putAllTime = mreg.histogram("PutAllTime", HISTOGRAM_BUCKETS,
+            "PutAll time for which this node is the initiator, in nanoseconds.");
+
+        putAllConflictTime = mreg.histogram("PutAllConflictTime", HISTOGRAM_BUCKETS,
+            "PutAllConflict time for which this node is the initiator, in nanoseconds.");
+
+        rmvTime = mreg.histogram("RemoveTime", HISTOGRAM_BUCKETS,
+            "Remove time for which this node is the initiator, in nanoseconds.");
+
+        rmvAllTime = mreg.histogram("RemoveAllTime", HISTOGRAM_BUCKETS,
+            "RemoveAll time for which this node is the initiator, in nanoseconds.");
+
+        rmvAllConflictTime = mreg.histogram("RemoveAllConflictTime", HISTOGRAM_BUCKETS,
+            "RemoveAllConflict time for which this node is the initiator, in nanoseconds.");
 
         commitTime = mreg.histogram("CommitTime", HISTOGRAM_BUCKETS, "Commit time in nanoseconds.");
 
@@ -393,23 +421,21 @@ public class CacheMetricsImpl implements CacheMetrics {
             "Show keys and collisions queue size. Due transactional payload some keys become hot. Metric shows " +
             "corresponding keys.");
 
-        offHeapEntriesCnt = mreg.register("OffHeapEntriesCount",
-            () -> getEntriesStat().offHeapEntriesCount(), "Offheap entries count.");
+        mreg.register("OffHeapEntriesCount", this::getOffHeapEntriesCount, "Offheap entries count.");
 
-        offHeapPrimaryEntriesCnt = mreg.register("OffHeapPrimaryEntriesCount",
-            () -> getEntriesStat().offHeapPrimaryEntriesCount(), "Offheap primary entries count.");
+        mreg.register("OffHeapPrimaryEntriesCount", this::getOffHeapPrimaryEntriesCount, "Offheap primary entries count.");
 
-        offHeapBackupEntriesCnt = mreg.register("OffHeapBackupEntriesCount",
-            () -> getEntriesStat().offHeapBackupEntriesCount(), "Offheap backup entries count.");
+        mreg.register("OffHeapBackupEntriesCount", this::getOffHeapBackupEntriesCount, "Offheap backup entries count.");
 
-        heapEntriesCnt = mreg.register("HeapEntriesCount",
-            () -> getEntriesStat().heapEntriesCount(), "Onheap entries count.");
+        mreg.register("HeapEntriesCount", this::getHeapEntriesCount, "Onheap entries count.");
 
-        cacheSize = mreg.register("CacheSize",
-            () -> getEntriesStat().cacheSize(), "Local cache size.");
+        mreg.register("CacheSize", this::getCacheSize, "Local cache size.");
 
         idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
             "Number of keys processed during the index rebuilding.");
+
+        idxBuildPartitionsLeftCnt = mreg.intMetric("IndexBuildPartitionsLeftCount",
+            "The number of local node partitions that remain to be processed to complete indexing.");
     }
 
     /**
@@ -480,22 +506,22 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
-        return offHeapEntriesCnt.value();
+        return getEntriesStat().offHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapEntriesCount() {
-        return heapEntriesCnt.value();
+        return getEntriesStat().heapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
-        return offHeapPrimaryEntriesCnt.value();
+        return getEntriesStat().offHeapPrimaryEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapBackupEntriesCount() {
-        return offHeapBackupEntriesCnt.value();
+        return getEntriesStat().offHeapBackupEntriesCount();
     }
 
     /** {@inheritDoc} */
@@ -512,7 +538,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCacheSize() {
-        return cacheSize.value();
+        return getEntriesStat().cacheSize();
     }
 
     /** {@inheritDoc} */
@@ -714,8 +740,13 @@ public class CacheMetricsImpl implements CacheMetrics {
         offHeapEvicts.reset();
 
         getTime.reset();
+        getAllTime.reset();
         putTime.reset();
+        putAllTime.reset();
+        putAllConflictTime.reset();
         rmvTime.reset();
+        rmvAllTime.reset();
+        rmvAllConflictTime.reset();
         commitTime.reset();
         rollbackTime.reset();
 
@@ -727,6 +758,15 @@ public class CacheMetricsImpl implements CacheMetrics {
         txKeyCollisionInfo = null;
 
         idxRebuildKeyProcessed.reset();
+
+        if (rslvrAcceptedCnt != null)
+            rslvrAcceptedCnt.reset();
+
+        if (rslvrRejectedCnt != null)
+            rslvrRejectedCnt.reset();
+
+        if (rslvrMergedCnt != null)
+            rslvrMergedCnt.reset();
     }
 
     /** {@inheritDoc} */
@@ -1134,6 +1174,20 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /**
+     * Increments the getAll time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addGetAllTimeNanos(long duration) {
+        getTimeTotal.add(duration);
+
+        getAllTime.value(duration);
+
+        if (delegate != null)
+            delegate.addGetAllTimeNanos(duration);
+    }
+
+    /**
      * Increments the put time accumulator.
      *
      * @param duration the time taken in nanoseconds.
@@ -1148,6 +1202,32 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /**
+     * Increments the putAll time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addPutAllTimeNanos(long duration) {
+        putTimeTotal.add(duration);
+
+        putAllTime.value(duration);
+
+        if (delegate != null)
+            delegate.addPutAllTimeNanos(duration);
+    }
+
+    /**
+     * Increments the putAllConflict time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addPutAllConflictTimeNanos(long duration) {
+        putAllConflictTime.value(duration);
+
+        if (delegate != null)
+            delegate.addPutAllConflictTimeNanos(duration);
+    }
+
+    /**
      * Increments the remove time accumulator.
      *
      * @param duration the time taken in nanoseconds.
@@ -1159,6 +1239,32 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.addRemoveTimeNanos(duration);
+    }
+
+    /**
+     * Increments the removeAll time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addRemoveAllTimeNanos(long duration) {
+        rmvTimeTotal.add(duration);
+
+        rmvAllTime.value(duration);
+
+        if (delegate != null)
+            delegate.addRemoveAllTimeNanos(duration);
+    }
+
+    /**
+     * Increments the removeAllConflict time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addRemoveAllConflictTimeNanos(long duration) {
+        rmvAllConflictTime.value(duration);
+
+        if (delegate != null)
+            delegate.addRemoveAllConflictTimeNanos(duration);
     }
 
     /**
@@ -1222,9 +1328,6 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @return Valid ot not.
      */
     private boolean isValidForOperation(boolean read) {
-        if (cctx.isLocal())
-            return true;
-
         try {
             GridDhtTopologyFuture fut = cctx.shared().exchange().lastFinishedFuture();
 
@@ -1293,43 +1396,34 @@ public class CacheMetricsImpl implements CacheMetrics {
                 sizeLong = cache.localSizeLong(null);
             }
 
-            if (cctx.isLocal()) {
-                if (cache != null) {
-                    offHeapPrimaryEntriesCnt = offHeapEntriesCnt;
+            IntSet primaries = ImmutableIntSet.wrap(cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
+            IntSet backups = ImmutableIntSet.wrap(cctx.affinity().backupPartitions(cctx.localNodeId(), topVer));
 
-                    heapEntriesCnt = cache.sizeLong();
-                }
-            }
-            else {
-                IntSet primaries = ImmutableIntSet.wrap(cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
-                IntSet backups = ImmutableIntSet.wrap(cctx.affinity().backupPartitions(cctx.localNodeId(), topVer));
+            if (cctx.isNear() && cache != null)
+                heapEntriesCnt = cache.nearSize();
 
-                if (cctx.isNear() && cache != null)
-                    heapEntriesCnt = cache.nearSize();
+            for (GridDhtLocalPartition part : cctx.topology().currentLocalPartitions()) {
+                // Partitions count.
+                GridDhtPartitionState partState = part.state();
 
-                for (GridDhtLocalPartition part : cctx.topology().currentLocalPartitions()) {
-                    // Partitions count.
-                    GridDhtPartitionState partState = part.state();
+                if (partState == GridDhtPartitionState.OWNING)
+                    owningPartCnt++;
 
-                    if (partState == GridDhtPartitionState.OWNING)
-                        owningPartCnt++;
+                if (partState == GridDhtPartitionState.MOVING)
+                    movingPartCnt++;
 
-                    if (partState == GridDhtPartitionState.MOVING)
-                        movingPartCnt++;
+                // Offheap entries count
+                if (cache == null)
+                    continue;
 
-                    // Offheap entries count
-                    if (cache == null)
-                        continue;
+                long cacheSize = part.dataStore().cacheSize(cctx.cacheId());
 
-                    long cacheSize = part.dataStore().cacheSize(cctx.cacheId());
+                if (primaries.contains(part.id()))
+                    offHeapPrimaryEntriesCnt += cacheSize;
+                else if (backups.contains(part.id()))
+                    offHeapBackupEntriesCnt += cacheSize;
 
-                    if (primaries.contains(part.id()))
-                        offHeapPrimaryEntriesCnt += cacheSize;
-                    else if (backups.contains(part.id()))
-                        offHeapBackupEntriesCnt += cacheSize;
-
-                    heapEntriesCnt += part.publicSize(cctx.cacheId());
-                }
+                heapEntriesCnt += part.publicSize(cctx.cacheId());
             }
         }
         catch (Exception e) {
@@ -1602,6 +1696,53 @@ public class CacheMetricsImpl implements CacheMetrics {
      */
     public void addIndexRebuildKeyProcessed(long val) {
         idxRebuildKeyProcessed.add(val);
+    }
+
+    /** */
+    public void decrementIndexBuildPartitionsLeftCount() {
+        idxBuildPartitionsLeftCnt.decrement();
+    }
+
+    /** */
+    public void addIndexBuildPartitionsLeftCount(int val) {
+        idxBuildPartitionsLeftCnt.add(val);
+    }
+
+    /** */
+    public void resetIndexBuildPartitionsLeftCount() {
+        idxBuildPartitionsLeftCnt.reset();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getIndexBuildPartitionsLeftCount() {
+        return idxBuildPartitionsLeftCnt.value();
+    }
+
+    /** */
+    public void incrementResolverAcceptedCount() {
+        rslvrAcceptedCnt.increment();
+    }
+
+    /** */
+    public void incrementResolverRejectedCount() {
+        rslvrRejectedCnt.increment();
+    }
+
+    /** */
+    public void incrementResolverMergedCount() {
+        rslvrMergedCnt.increment();
+    }
+
+    /** Registers metrics for conflict resolver. */
+    public void registerResolverMetrics() {
+        rslvrAcceptedCnt = mreg.longAdderMetric("ConflictResolverAcceptedCount",
+            "Conflict resolver accepted entries count");
+
+        rslvrRejectedCnt = mreg.longAdderMetric("ConflictResolverRejectedCount",
+            "Conflict resolver rejected entries count");
+
+        rslvrMergedCnt = mreg.longAdderMetric("ConflictResolverMergedCount",
+            "Conflict resolver merged entries count");
     }
 
     /** {@inheritDoc} */

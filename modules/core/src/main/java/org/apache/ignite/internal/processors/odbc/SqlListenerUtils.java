@@ -18,15 +18,20 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import java.math.BigDecimal;
+import java.sql.Blob;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,7 +45,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow)
+    @Nullable public static Object readObject(BinaryReaderEx reader, boolean binObjAllow)
         throws BinaryObjectException {
         return readObject(reader, binObjAllow, true);
     }
@@ -52,7 +57,7 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(BinaryReaderExImpl reader, boolean binObjAllow, boolean keepBinary)
+    @Nullable public static Object readObject(BinaryReaderEx reader, boolean binObjAllow, boolean keepBinary)
         throws BinaryObjectException {
         byte type = reader.readByte();
 
@@ -66,109 +71,46 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(byte type, BinaryReaderExImpl reader, boolean binObjAllow,
-        boolean keepBinary) throws BinaryObjectException {
-        switch (type) {
-            case GridBinaryMarshaller.NULL:
-                return null;
+    @Nullable public static Object readObject(byte type, BinaryReaderEx reader, boolean binObjAllow,
+                                              boolean keepBinary) throws BinaryObjectException {
+        return readObject(type, reader, binObjAllow, keepBinary, true);
+    }
 
-            case GridBinaryMarshaller.BOOLEAN:
-                return reader.readBoolean();
+    /**
+     * @param type Object type.
+     * @param reader Reader.
+     * @param binObjAllow Allow to read non plaint objects.
+     * @param keepBinary Whether to deserialize objects or keep in binary format.
+     * @param createByteArrayCopy Whether to return new copy or copy-on-write buffer for byte array.
+     * @return Read object.
+     * @throws BinaryObjectException On error.
+     */
+    @Nullable public static Object readObject(byte type, BinaryReaderEx reader, boolean binObjAllow,
+        boolean keepBinary, boolean createByteArrayCopy) throws BinaryObjectException {
+        if (type == GridBinaryMarshaller.BYTE_ARR && !createByteArrayCopy && reader.in().hasArray())
+            return readJdbcByteArray(reader);
 
-            case GridBinaryMarshaller.BYTE:
-                return reader.readByte();
+        return BinaryUtils.unmarshallJdbc(type, reader, binObjAllow, keepBinary);
+    }
 
-            case GridBinaryMarshaller.CHAR:
-                return reader.readChar();
+    /**
+     * Read byte array using the reader.
+     *
+     * <p>Returns either (eagerly) new instance of the byte array with all data materialized,
+     * or {@link JdbcBinaryBuffer} which wraps part of the array enclosed in
+     * the reader's input stream in a copy-on-write manner.
+     *
+     * @param reader Reader.
+     * @return Either byte[] or {@link JdbcBinaryBuffer}.
+     */
+    private static Object readJdbcByteArray(BinaryReaderEx reader) {
+        int len = reader.in().readInt();
 
-            case GridBinaryMarshaller.SHORT:
-                return reader.readShort();
+        int position = reader.in().position();
 
-            case GridBinaryMarshaller.INT:
-                return reader.readInt();
+        reader.in().position(position + len);
 
-            case GridBinaryMarshaller.LONG:
-                return reader.readLong();
-
-            case GridBinaryMarshaller.FLOAT:
-                return reader.readFloat();
-
-            case GridBinaryMarshaller.DOUBLE:
-                return reader.readDouble();
-
-            case GridBinaryMarshaller.STRING:
-                return BinaryUtils.doReadString(reader.in());
-
-            case GridBinaryMarshaller.DECIMAL:
-                return BinaryUtils.doReadDecimal(reader.in());
-
-            case GridBinaryMarshaller.UUID:
-                return BinaryUtils.doReadUuid(reader.in());
-
-            case GridBinaryMarshaller.TIME:
-                return BinaryUtils.doReadTime(reader.in());
-
-            case GridBinaryMarshaller.TIMESTAMP:
-                return BinaryUtils.doReadTimestamp(reader.in());
-
-            case GridBinaryMarshaller.DATE:
-                return BinaryUtils.doReadDate(reader.in());
-
-            case GridBinaryMarshaller.BOOLEAN_ARR:
-                return BinaryUtils.doReadBooleanArray(reader.in());
-
-            case GridBinaryMarshaller.BYTE_ARR:
-                return BinaryUtils.doReadByteArray(reader.in());
-
-            case GridBinaryMarshaller.CHAR_ARR:
-                return BinaryUtils.doReadCharArray(reader.in());
-
-            case GridBinaryMarshaller.SHORT_ARR:
-                return BinaryUtils.doReadShortArray(reader.in());
-
-            case GridBinaryMarshaller.INT_ARR:
-                return BinaryUtils.doReadIntArray(reader.in());
-
-            case GridBinaryMarshaller.LONG_ARR:
-                return BinaryUtils.doReadLongArray(reader.in());
-
-            case GridBinaryMarshaller.FLOAT_ARR:
-                return BinaryUtils.doReadFloatArray(reader.in());
-
-            case GridBinaryMarshaller.DOUBLE_ARR:
-                return BinaryUtils.doReadDoubleArray(reader.in());
-
-            case GridBinaryMarshaller.STRING_ARR:
-                return BinaryUtils.doReadStringArray(reader.in());
-
-            case GridBinaryMarshaller.DECIMAL_ARR:
-                return BinaryUtils.doReadDecimalArray(reader.in());
-
-            case GridBinaryMarshaller.UUID_ARR:
-                return BinaryUtils.doReadUuidArray(reader.in());
-
-            case GridBinaryMarshaller.TIME_ARR:
-                return BinaryUtils.doReadTimeArray(reader.in());
-
-            case GridBinaryMarshaller.TIMESTAMP_ARR:
-                return BinaryUtils.doReadTimestampArray(reader.in());
-
-            case GridBinaryMarshaller.DATE_ARR:
-                return BinaryUtils.doReadDateArray(reader.in());
-
-            default:
-                reader.in().position(reader.in().position() - 1);
-
-                if (binObjAllow) {
-                    Object res = reader.readObjectDetached();
-
-                    return !keepBinary && res instanceof BinaryObject
-                        ? ((BinaryObject)res).deserialize()
-                        : res;
-                }
-                else
-                    throw new BinaryObjectException("Custom objects are not supported");
-        }
+        return JdbcBinaryBuffer.createReadOnly(reader.in().array(), position, len);
     }
 
     /**
@@ -177,7 +119,7 @@ public abstract class SqlListenerUtils {
      * @param binObjAllow Allow to write non plain objects.
      * @throws BinaryObjectException On error.
      */
-    public static void writeObject(BinaryWriterExImpl writer, @Nullable Object obj, boolean binObjAllow)
+    public static void writeObject(BinaryWriterEx writer, @Nullable Object obj, boolean binObjAllow)
         throws BinaryObjectException {
         if (obj == null) {
             writer.writeByte(GridBinaryMarshaller.NULL);
@@ -204,9 +146,9 @@ public abstract class SqlListenerUtils {
         else if (cls == Double.class)
             writer.writeDoubleFieldPrimitive((Double)obj);
         else if (cls == String.class)
-            writer.doWriteString((String)obj);
+            writer.writeString((String)obj);
         else if (cls == BigDecimal.class)
-            writer.doWriteDecimal((BigDecimal)obj);
+            writer.writeDecimal((BigDecimal)obj);
         else if (cls == UUID.class)
             writer.writeUuid((UUID)obj);
         else if (cls == Time.class)
@@ -243,10 +185,49 @@ public abstract class SqlListenerUtils {
             writer.writeTimestampArray((Timestamp[])obj);
         else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
             writer.writeDateArray((java.util.Date[])obj);
+        else if (obj instanceof SqlInputStreamWrapper)
+            writeByteArray(writer, (SqlInputStreamWrapper)obj);
+        else if (obj instanceof Blob)
+            writeByteArray(writer, (Blob)obj);
         else if (binObjAllow)
             writer.writeObjectDetached(obj);
         else
             throw new BinaryObjectException("Custom objects are not supported");
+    }
+
+    /**
+     * Write byte array from the InputStream enclosed in the stream wrapper.
+     *
+     * @param writer Writer.
+     * @param wrapper stream wrapper
+     */
+    private static void writeByteArray(BinaryWriterEx writer, SqlInputStreamWrapper wrapper) throws BinaryObjectException {
+        int written = writer.writeByteArray(wrapper.inputStream(), wrapper.length());
+
+        if (wrapper.length() != -1 && wrapper.length() != written) {
+            throw new BinaryObjectException("Input stream length mismatch. [declaredLength=" + wrapper.length() + ", " +
+                    "actualLength=" + written + "]");
+        }
+    }
+
+    /**
+     * Write byte array from the Blob instance.
+     *
+     * @param writer Writer.
+     * @param blob Blob.
+     */
+    private static void writeByteArray(BinaryWriterEx writer, Blob blob) throws BinaryObjectException {
+        try {
+            int written = writer.writeByteArray(blob.getBinaryStream(), (int)blob.length());
+
+            if ((int)blob.length() != written) {
+                throw new BinaryObjectException("Blob length mismatch. [declaredLength=" + (int)blob.length() + ", " +
+                        "actualLength=" + written + "]");
+            }
+        }
+        catch (SQLException e) {
+            throw new BinaryObjectException(e);
+        }
     }
 
     /**
@@ -281,7 +262,22 @@ public abstract class SqlListenerUtils {
             || cls == UUID[].class
             || cls == Time[].class
             || cls == Timestamp[].class
-            || cls == java.util.Date[].class || cls == java.sql.Date[].class;
+            || cls == java.util.Date[].class || cls == java.sql.Date[].class
+            || cls == SqlInputStreamWrapper.class
+            || cls == Blob.class;
+    }
+
+    /**
+     * @param e Exception to convert.
+     * @return IgniteQueryErrorCode.
+     */
+    public static int exceptionToSqlErrorCode(Throwable e) {
+        if (e instanceof QueryCancelledException)
+            return IgniteQueryErrorCode.QUERY_CANCELED;
+        if (e instanceof IgniteSQLException)
+            return ((IgniteSQLException)e).statusCode();
+        else
+            return IgniteQueryErrorCode.UNKNOWN;
     }
 
     /**

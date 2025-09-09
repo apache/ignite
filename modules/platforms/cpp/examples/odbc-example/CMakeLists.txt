@@ -34,5 +34,5 @@ if (WIN32)
     remove_definitions(-DUNICODE=1)
 endif()
 
-target_link_libraries(${TARGET} ${IGNITE_LIB} ${IGNITE_JNI_LIB} ${IGNITE_BINARY_LIB} ${IGNITE_COMMON_LIB}
-        ${ODBC_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${TARGET} ${IGNITE_LIB} ${IGNITE_BINARY_LIB} ${IGNITE_COMMON_LIB} ${ODBC_LIBRARY}
+        ${CMAKE_THREAD_LIBS_INIT})

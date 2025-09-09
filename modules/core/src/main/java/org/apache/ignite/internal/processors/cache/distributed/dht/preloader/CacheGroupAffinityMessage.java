@@ -45,9 +45,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheGroupAffinityMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridDirectCollection(GridLongList.class)
     private List<GridLongList> assigns;
 
@@ -96,6 +93,7 @@ public class CacheGroupAffinityMessage implements Message {
         }
     }
 
+    /** */
     private List<GridLongList> createAssigns(List<List<ClusterNode>> assign0) {
         if (assign0 != null) {
             List<GridLongList> assigns = new ArrayList<>(assign0.size());
@@ -253,7 +251,7 @@ public class CacheGroupAffinityMessage implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -261,19 +259,19 @@ public class CacheGroupAffinityMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("assigns", assigns, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(assigns, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMap("assignsDiff", assignsDiff, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
+                if (!writer.writeMap(assignsDiff, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection("idealAssigns", idealAssigns, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(idealAssigns, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -287,12 +285,9 @@ public class CacheGroupAffinityMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                assigns = reader.readCollection("assigns", MessageCollectionItemType.MSG);
+                assigns = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -300,7 +295,7 @@ public class CacheGroupAffinityMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                assignsDiff = reader.readMap("assignsDiff", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+                assignsDiff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -308,7 +303,7 @@ public class CacheGroupAffinityMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                idealAssigns = reader.readCollection("idealAssigns", MessageCollectionItemType.MSG);
+                idealAssigns = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -317,17 +312,12 @@ public class CacheGroupAffinityMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(CacheGroupAffinityMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 128;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
     /// Binary type structure. Cache field IDs and metadata to improve marshalling performance.
     /// Every object write contains a set of field writes. Every unique ordered set of written fields
     /// produce write "path". We cache these paths allowing for very fast traverse over object structure
-    /// without expensive map lookups and field ID calculations. 
+    /// without expensive map lookups and field ID calculations.
     /// </summary>
     internal class BinaryStructure
     {
@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// <returns>Empty type structure.</returns>
         public static BinaryStructure CreateEmpty()
         {
-            return new BinaryStructure(new[] { new BinaryStructureEntry[0] }, 
+            return new BinaryStructure(new[] { new BinaryStructureEntry[0] },
                 new BinaryStructureJumpTable[1], new Dictionary<string, byte>());
         }
 
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             Debug.Assert(paths != null);
             Debug.Assert(jumps != null);
             Debug.Assert(fieldTypes != null);
-            
+
             _paths = paths;
             _jumps = jumps;
             _fieldTypes = fieldTypes;
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         {
             Debug.Assert(fieldName != null);
             Debug.Assert(pathIdx <= _paths.Length);
-            
+
             // Get path.
             BinaryStructureEntry[] path = _paths[pathIdx];
 
@@ -224,6 +224,19 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         }
 
         /// <summary>
+        /// Gets a value indicating whether specified action index is at the path end or further.
+        /// </summary>
+        /// <param name="pathIdx">Path index.</param>
+        /// <param name="actionIdx">Action index.</param>
+        /// <returns>True when specified action is at or beyond the path end; false otherwise.</returns>
+        public bool IsPathEnd(int pathIdx, int actionIdx)
+        {
+            BinaryStructureEntry[] path = _paths[pathIdx];
+
+            return actionIdx >= path.Length - 1;
+        }
+
+        /// <summary>
         /// Copy and possibly expand paths.
         /// </summary>
         /// <param name="minLen">Minimum length.</param>
@@ -312,6 +325,6 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         internal IDictionary<string, byte> FieldTypes
         {
             get { return _fieldTypes; }
-        } 
+        }
     }
 }

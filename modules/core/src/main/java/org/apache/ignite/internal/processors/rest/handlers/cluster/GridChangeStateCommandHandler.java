@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.handlers.cluster;
 
 import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -25,7 +26,7 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -57,38 +58,24 @@ public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest restRest) {
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest restRest)
+        throws IgniteCheckedException {
         GridRestChangeStateRequest req = (GridRestChangeStateRequest)restRest;
 
-        final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
+        switch (req.command()) {
+            case CLUSTER_CURRENT_STATE:
+                Boolean curState = ctx.state().publicApiActiveState(false);
 
-        final GridRestResponse res = new GridRestResponse();
+                return new GridFinishedFuture<>(new GridRestResponse(curState));
 
-        try {
-            switch (req.command()) {
-                case CLUSTER_CURRENT_STATE:
-                    Boolean currentState = ctx.state().publicApiActiveState(false);
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
+                log.warning(req.command().key() + " is deprecated. Use newer commands.");
+            default:
+                ctx.state().changeGlobalState(req.active() ? ACTIVE : INACTIVE, req.forceDeactivation(),
+                    ctx.cluster().get().forServers().nodes(), false).get();
 
-                    res.setResponse(currentState);
-                    break;
-                case CLUSTER_ACTIVE:
-                case CLUSTER_INACTIVE:
-                    log.warning(req.command().key() + " is deprecated. Use newer commands.");
-                default:
-                    ctx.state().changeGlobalState(req.active() ? ACTIVE : INACTIVE, req.forceDeactivation(),
-                        ctx.cluster().get().forServers().nodes(), false).get();
-
-                    res.setResponse(req.command().key() + " started");
-                    break;
-            }
-
-            fut.onDone(res);
+                return new GridFinishedFuture<>(new GridRestResponse(req.command().key() + " started"));
         }
-        catch (Exception e) {
-            res.setError(errorMessage(e));
-
-            fut.onDone(res);
-        }
-        return fut;
     }
 }

@@ -17,34 +17,58 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 
 /** */
 public class IndexQueryContext {
-    /** Cache entry filter. */
-    private final IndexingQueryFilter filter;
+    /** Cache filter. */
+    private final IndexingQueryFilter cacheFilter;
+
+    /** Index rows filter. */
+    private final BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter;
+
+    /** Index row factory. */
+    private final BPlusTree.TreeRowFactory<IndexRow, IndexRow> rowFactory;
 
     /** */
-    private final MvccSnapshot mvccSnapshot;
+    public IndexQueryContext(
+        IndexingQueryFilter cacheFilter,
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter
+    ) {
+        this(cacheFilter, rowFilter, null);
+    }
 
     /** */
-    public IndexQueryContext(IndexingQueryFilter filter, MvccSnapshot snapshot) {
-        this.filter = filter;
-        this.mvccSnapshot = snapshot;
+    public IndexQueryContext(
+        IndexingQueryFilter cacheFilter,
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter,
+        BPlusTree.TreeRowFactory<IndexRow, IndexRow> rowFactory
+    ) {
+        this.cacheFilter = cacheFilter;
+        this.rowFilter = rowFilter;
+        this.rowFactory = rowFactory;
     }
 
     /**
-     * @return Mvcc snapshot.
+     * @return Cache filter.
      */
-    public MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
+    public IndexingQueryFilter cacheFilter() {
+        return cacheFilter;
     }
 
     /**
-     * @return Filter.
+     * @return Index row filter.
      */
-    public IndexingQueryFilter filter() {
-        return filter;
+    public BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter() {
+        return rowFilter;
+    }
+
+    /**
+     * @return Index row factory.
+     */
+    public BPlusTree.TreeRowFactory<IndexRow, IndexRow> rowFactory() {
+        return rowFactory;
     }
 }

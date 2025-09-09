@@ -52,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
@@ -166,10 +165,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(
-        byte protoVer,
-        ObjectInput in
-    ) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         uid = U.readLongString(in);
         grpName = U.readLongString(in);
         cacheName = U.readLongString(in);
@@ -262,7 +258,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                         }
                     };
 
-                    new IgniteThread(w).start();
+                    U.newThread(w).start();
 
                     this.worker = w;
 
@@ -279,6 +275,18 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
             outFut = new GridFinishedFuture<>(DurableBackgroundTaskResult.complete());
 
         return outFut;
+    }
+
+    /**
+     * Renames index's trees.
+     *
+     * @param grpCtx Cache group context.
+     * @throws IgniteCheckedException If failed to rename index's trees.
+     */
+    public void renameIndexTrees(CacheGroupContext grpCtx) throws IgniteCheckedException {
+        renameIndexRootPages(grpCtx, cacheName, oldTreeName, newTreeName, segments);
+
+        needToRen = false;
     }
 
     /**
@@ -488,6 +496,27 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                 null
             );
         }
+    }
+
+    /**
+     * @return Cache name.
+     */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /**
+     * @return Index name.
+     */
+    public String idxName() {
+        return idxName;
+    }
+
+    /**
+     * @return {@code true} if needs to rename index trees, {@code false} otherwise.
+     */
+    public boolean needToRename() {
+        return needToRen;
     }
 
     /** {@inheritDoc} */

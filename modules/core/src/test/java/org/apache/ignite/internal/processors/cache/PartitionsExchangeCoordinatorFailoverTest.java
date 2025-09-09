@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -121,7 +122,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
 
         IgniteEx newCrd = startGrid(1);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         // 3 node join topology version.
         AffinityTopologyVersion joinThirdNodeVer = new AffinityTopologyVersion(3, 0);
@@ -140,7 +141,9 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
                 try {
                     sndFullMsgLatch.await();
                 }
-                catch (Throwable ignored) { }
+                catch (Throwable ignored) {
+                    // Ignore.
+                }
 
                 return true;
             }
@@ -209,7 +212,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
 
         IgniteEx problemNode = startGrid(2);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -248,7 +251,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
             final int delay = 5_000;
 
             if (msg instanceof GridDhtPartitionDemandMessage) {
-                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage) msg;
+                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
 
                 if (demandMsg.groupId() == GridCacheUtils.cacheId(GridCacheUtils.UTILITY_CACHE_NAME))
                     return 0;
@@ -271,7 +274,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
             final int delay = 1_000;
 
             if (msg instanceof GridDhtPartitionsSingleMessage) {
-                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) msg;
+                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)msg;
 
                 if (singleMsg.exchangeId() != null)
                     return delay;
@@ -288,7 +291,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
             final int delay = 5_000;
 
             if (msg instanceof GridDhtPartitionsSingleMessage) {
-                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) msg;
+                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)msg;
 
                 if (singleMsg.exchangeId() != null)
                     return delay;
@@ -349,7 +352,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
             final int delay = 5_000;
 
             if (msg instanceof GridDhtPartitionsSingleMessage) {
-                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) msg;
+                GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)msg;
 
                 if (singleMsg.exchangeId() != null) {
                     joiningNodeSentSingleMsg.countDown();
@@ -383,14 +386,14 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
         awaitPartitionMapExchange();
 
         // Check that affinity are equal on all nodes.
-        AffinityTopologyVersion affVer = ((IgniteEx) ignite(1)).cachex(CACHE_NAME)
+        AffinityTopologyVersion affVer = ((IgniteEx)ignite(1)).cachex(CACHE_NAME)
             .context().shared().exchange().readyAffinityVersion();
 
         List<List<ClusterNode>> expAssignment = null;
         IgniteEx expAssignmentNode = null;
 
         for (Ignite node : G.allGrids()) {
-            IgniteEx nodeEx = (IgniteEx) node;
+            IgniteEx nodeEx = (IgniteEx)node;
 
             List<List<ClusterNode>> assignment = nodeEx.cachex(CACHE_NAME).context().affinity().assignments(affVer);
 
@@ -464,7 +467,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
         // Delay sending full messages (without exchange id).
         spi.blockMessages((node, msg) -> {
             if (msg instanceof GridDhtPartitionsFullMessage) {
-                GridDhtPartitionsFullMessage fullMsg = (GridDhtPartitionsFullMessage) msg;
+                GridDhtPartitionsFullMessage fullMsg = (GridDhtPartitionsFullMessage)msg;
 
                 if (fullMsg.exchangeId() != null && pred.test(node)) {
                     log.warning("Blocked sending " + msg + " to " + node);

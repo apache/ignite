@@ -1,0 +1,36 @@
+# name: test/sql/subquery/exists/test_scalar_exists.test
+# description: Test scalar EXISTS query
+# group: [exists]
+
+statement ok
+PRAGMA enable_verification
+
+query T
+SELECT EXISTS(SELECT 1)
+----
+true
+
+statement ok
+CREATE TABLE integers(i INTEGER)
+
+statement ok
+INSERT INTO integers VALUES (1), (2), (3), (NULL)
+
+query T
+SELECT EXISTS(SELECT 1) FROM integers
+----
+true
+true
+true
+true
+
+query T
+SELECT EXISTS(SELECT * FROM integers)
+----
+true
+
+query T
+SELECT EXISTS(SELECT * FROM integers WHERE i IS NULL)
+----
+true
+

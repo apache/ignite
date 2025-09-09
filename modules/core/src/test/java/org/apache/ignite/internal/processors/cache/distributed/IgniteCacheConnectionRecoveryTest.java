@@ -34,16 +34,13 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -61,11 +58,8 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
         cfg.setCacheConfiguration(
             cacheConfiguration("cache1", TRANSACTIONAL),
-            cacheConfiguration("cache2", TRANSACTIONAL_SNAPSHOT),
             cacheConfiguration("cache3", ATOMIC));
 
         return cfg;
@@ -108,7 +102,6 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
                 IgniteCache[] caches = {
                     node.cache("cache1"),
-                    node.cache("cache2"),
                     node.cache("cache3")};
 
                 int iter = 0;
@@ -117,14 +110,9 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
                     try {
                         for (IgniteCache cache : caches) {
                             while (true) {
-                                try {
-                                    cache.putAllAsync(data).get(15, SECONDS);
+                                cache.putAllAsync(data).get(15, SECONDS);
 
-                                    break;
-                                }
-                                catch (Exception e) {
-                                    MvccFeatureChecker.assertMvccWriteConflict(e);
-                                }
+                                break;
                             }
                         }
 

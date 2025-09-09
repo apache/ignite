@@ -34,9 +34,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -57,12 +55,6 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRID_CNT;
-    }
-
-    /** */
-    @Before
-    public void beforeGridCacheFinishPartitionsSelfTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
     }
 
     /** {@inheritDoc} */

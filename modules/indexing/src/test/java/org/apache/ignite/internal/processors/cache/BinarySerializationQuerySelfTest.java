@@ -49,7 +49,6 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -76,8 +75,6 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
         cfg.setDiscoverySpi(discoSpi);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         if (useReflectiveSerializer()) {
             BinaryTypeConfiguration binTypCfg1 = new BinaryTypeConfiguration(EntityPlain.class.getName());
@@ -114,15 +111,15 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
-        List<QueryEntity> queryEntities = new ArrayList<>();
+        List<QueryEntity> qryEntities = new ArrayList<>();
 
-        queryEntities.add(entityForClass(EntityPlain.class));
-        queryEntities.add(entityForClass(EntitySerializable.class));
-        queryEntities.add(entityForClass(EntityExternalizable.class));
-        queryEntities.add(entityForClass(EntityBinarylizable.class));
-        queryEntities.add(entityForClass(EntityWriteReadObject.class));
+        qryEntities.add(entityForClass(EntityPlain.class));
+        qryEntities.add(entityForClass(EntitySerializable.class));
+        qryEntities.add(entityForClass(EntityExternalizable.class));
+        qryEntities.add(entityForClass(EntityBinarylizable.class));
+        qryEntities.add(entityForClass(EntityWriteReadObject.class));
 
-        cacheCfg.setQueryEntities(queryEntities);
+        cacheCfg.setQueryEntities(qryEntities);
 
         cfg.setCacheConfiguration(cacheCfg);
 

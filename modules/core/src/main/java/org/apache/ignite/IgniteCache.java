@@ -44,6 +44,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -57,6 +58,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
@@ -65,7 +67,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
@@ -146,52 +147,59 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * Gets an instance of {@code IgniteCache} that will perform backup nodes check on each get attempt.
      * <p>
-     * Read Repair means that each backup node will be checked to have the same entry as primary node has,
-     * and in case consistency violation found:
+     * Read Repair means that each backup node will be checked to have the same entry as the primary node has.
+     * <p>
+     * In case consistency violations were found, the values across the topology will be replaced by repaired values
+     * according to the chosen strategy, see {@link ReadRepairStrategy} for the details.
+     * <p>
+     * A consistency violation exception will be thrown when the repair is impossible.
+     * <p>
+     * {@link CacheConsistencyViolationEvent} will be recorded for each violation in case it's configured as recordable.
      * <ul>
-     *  <li>for transactional caches:
-     *  <p>Values across the topology will be replaced by latest versioned value:
+     *  <li>For transactional caches, values will be repaired:
      *  <ul>
      *      <li>automatically for transactions that have {@link TransactionConcurrency#OPTIMISTIC} concurrency mode
-     *          or {@link TransactionIsolation#READ_COMMITTED} isolation level</li>
+     *          or {@link TransactionIsolation#READ_COMMITTED} isolation level,</li>
      *      <li>at commit() phase for transactions that have {@link TransactionConcurrency#PESSIMISTIC} concurrency mode
      *          and isolation level other than {@link TransactionIsolation#READ_COMMITTED}</li>
      *  </ul>
-     *  <p>Consistency violation event will be recorded in case it's configured as recordable.</li>
-     *  <li>for atomic caches: consistency violation exception will be thrown.
-     *  <p>Consistency violation event will be recorded in case it's configured as recordable.</li>
+     *  Warning:
+     *  <p>
+     *  This proxy usage does not guarantee "all copies check" in case the value have been already cached inside the transaction.
+     *  In case you don't use a READ_COMMITTED isolation mode and already have a cached value, for example have already
+     *  read the value or performed a write, you'll just get the cached value.
+     *  </li>
+     *  <li>For atomic caches, values will be repaired automatically.
+     *  <p>
+     *  Warning:
+     *  <p>
+     *  Due to the nature of an atomic cache, false-positive results can be observed. For example, an attempt to check
+     *  consistency under cache's loading may lead to a consistency violation exception. By default, the implementation tries
+     *  to check the given key three times. The number of attempts can be changed using
+     *  {@link IgniteSystemProperties#IGNITE_NEAR_GET_MAX_REMAPS} property.
+     *  </li>
      * </ul>
-     * <p>
-     * One more important thing is that this proxy usage does not guarantee "all copies check" in case value
-     * already cached inside the transaction. In case you use !READ_COMMITTED isolation mode and already have
-     * cached value, for example already read the value or performed a write, you'll gain the cached value.
-     * <p>
-     * Due to the nature of the atomic cache, false-positive results can be observed. For example, an attempt to check
-     * consistency under cache loading may lead to consistency violation exception. By default, the implementation tries
-     * to check the given key three times. The number of attempts can be changed using
-     * {@link IgniteSystemProperties#IGNITE_NEAR_GET_MAX_REMAPS} property.
-     * <p>
-     * Consistency check is incompatible with the following cache configurations:
+     * A consistency check is incompatible with the following cache configurations:
      * <ul>
      *     <li>Caches without backups.</li>
-     *     <li>Local caches.</li>
      *     <li>Near caches.</li>
      *     <li>Caches that use "read-through" mode.</li>
      * </ul>
      * <p>
      * Full list of repairable methods:
      * <ul>
-     * <li>{@link IgniteCache#containsKey} && {@link IgniteCache#containsKeyAsync}</li>
-     * <li>{@link IgniteCache#containsKeys} && {@link IgniteCache#containsKeysAsync}</li>
-     * <li>{@link IgniteCache#getEntry} && {@link IgniteCache#getEntryAsync}</li>
-     * <li>{@link IgniteCache#getEntries} && {@link IgniteCache#getEntriesAsync}</li>
-     * <li>{@link IgniteCache#get} && {@link IgniteCache#getAsync}</li>
-     * <li>{@link IgniteCache#getAll} && {@link IgniteCache#getAllAsync}</li>
+     * <li>{@link IgniteCache#containsKey} &amp;&amp; {@link IgniteCache#containsKeyAsync}</li>
+     * <li>{@link IgniteCache#containsKeys} &amp;&amp; {@link IgniteCache#containsKeysAsync}</li>
+     * <li>{@link IgniteCache#getEntry} &amp;&amp; {@link IgniteCache#getEntryAsync}</li>
+     * <li>{@link IgniteCache#getEntries} &amp;&amp; {@link IgniteCache#getEntriesAsync}</li>
+     * <li>{@link IgniteCache#get} &amp;&amp; {@link IgniteCache#getAsync}</li>
+     * <li>{@link IgniteCache#getAll} &amp;&amp; {@link IgniteCache#getAllAsync}</li>
      * </ul>
+     * @param strategy Read Repair strategy.
      * @return Cache with explicit consistency check on each read and repair if necessary.
      */
     @IgniteExperimental
-    public IgniteCache<K, V> withReadRepair();
+    public IgniteCache<K, V> withReadRepair(ReadRepairStrategy strategy);
 
     /**
      * Returns cache that will operate with binary objects.
@@ -218,7 +226,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * (which will be stored in binary format), you should acquire following projection
      * to avoid deserialization:
      * <pre>
-     * IgniteCache<Integer, BinaryObject> prj = cache.withKeepBinary();
+     * IgniteCache&lt;Integer, BinaryObject&gt; prj = cache.withKeepBinary();
      *
      * // Value is not deserialized and returned in binary format.
      * BinaryObject po = prj.get(1);
@@ -228,21 +236,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * if default marshaller is used.
      * If not, this method is no-op and will return current cache.
      *
+     * @param <V1> Type of the cache value binary objects.
+     * @param <K1> Type of the cache key.
      * @return New cache instance for binary objects.
      */
     public <K1, V1> IgniteCache<K1, V1> withKeepBinary();
-
-    /**
-     * By default atomic operations are allowed in transaction.
-     * To restrict transactions from operations with atomic caches you can set system property
-     * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} to {@code false}.
-     * <p>
-     * If you want to use atomic operations inside transactions in case they are restricted by system property,
-     * you should allow it before transaction start.
-     *
-     * @return Cache with atomic operations allowed in transactions.
-     */
-    public <K1, V1> IgniteCache<K1, V1> withAllowAtomicOpsInTx();
 
     /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
@@ -422,6 +420,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * See also {@link #query(SqlFieldsQuery)}.
      *
      * @param qry Query.
+     * @param <R> Type of the query result.
      * @return Cursor.
      * @see ScanQuery
      * @see SqlFieldsQuery
@@ -450,6 +449,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param qry Query.
      * @param transformer Transformer.
+     * @param <T> Type of the initial query result.
+     * @param <R> Type of the transformed query result.
      * @return Cursor.
      */
     public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer);
@@ -654,6 +655,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return The map of {@link EntryProcessorResult}s of the processing per key,
      *      if any, defined by the {@link EntryProcessor} implementation.  No mappings
      *      will be returned for {@link EntryProcessor}s that return a
@@ -669,6 +671,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return a Future representing pending completion of the operation. See more about future result
      * at the {@link #invokeAll(Map, Object...)}.
      * @throws TransactionException If operation within transaction is failed.
@@ -1190,6 +1193,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * </ul>
      * If the cache is empty, the {@link CacheWriter} is not called.
      * <p>
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
+     * <p>
      * This is potentially an expensive operation as listeners are invoked.
      * Use {@link #clearAsync()} to avoid this.
      *
@@ -1201,13 +1206,21 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public IgniteFuture<Void> removeAllAsync();
 
-    /** {@inheritDoc} */
+    /**
+     * Clears the contents of the cache, without notifying listeners or {@link CacheWriter}s.
+     * Entries are cleared only if they are not currently locked, and are not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
+     *
+     * @throws IllegalStateException if the cache is {@link #isClosed()}.
+     * @throws CacheException        if there is a problem during the clear.
+     */
     @IgniteAsyncSupported
     @Override public void clear();
 
     /**
      * Asynchronously clears the contents of the cache, without notifying listeners or
      * {@link CacheWriter}s.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      *
      * @return a Future representing pending completion of the operation.
      */
@@ -1217,6 +1230,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears entry from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      *
      * @param key Key to clear.
      * @throws IllegalStateException if the cache is {@link #isClosed()}
@@ -1229,6 +1243,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Asynchronously clears entry from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      *
      * @param key Key to clear.
      * @return a Future representing pending completion of the operation.
@@ -1241,6 +1256,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears entries from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      *
      * @param keys Keys to clear.
      * @throws IllegalStateException if the cache is {@link #isClosed()}
@@ -1253,6 +1269,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Asynchronously clears entries from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      *
      * @param keys Keys to clear.
      * @return a Future representing pending completion of the operation.
@@ -1265,6 +1282,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears entry from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      * <p/>
      * Note that this operation is local as it merely clears
      * an entry from local cache, it does not remove entries from
@@ -1278,6 +1296,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears entries from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * This operation is not transactional. It calls broadcast closure that deletes all primary keys from remote nodes.
      * <p/>
      * Note that this operation is local as it merely clears
      * an entry from local cache, it does not remove entries from
@@ -1311,6 +1330,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param key The key to the entry.
      * @param entryProcessor The {@link EntryProcessor} to invoke.
      * @param arguments Additional arguments to pass to the {@link EntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return a Future representing pending completion of the operation.
      * @throws TransactionException If operation within transaction is failed.
      */
@@ -1333,6 +1353,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param key The key to the entry.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
      * @param arguments Additional arguments to pass to the {@link CacheEntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return The result of the processing, if any, defined by the {@link CacheEntryProcessor} implementation.
      * @throws NullPointerException If key or {@link CacheEntryProcessor} is null
      * @throws IllegalStateException If the cache is {@link #isClosed()}
@@ -1364,6 +1385,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param key The key to the entry.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
      * @param arguments Additional arguments to pass to the {@link CacheEntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return a Future representing pending completion of the operation.
      * @throws NullPointerException If key or {@link CacheEntryProcessor} is null
      * @throws IllegalStateException If the cache is {@link #isClosed()}
@@ -1427,6 +1449,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param keys The set of keys.
      * @param entryProcessor The {@link EntryProcessor} to invoke.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return a Future representing pending completion of the operation.
      * @throws TransactionException If operation within transaction is failed.
      */
@@ -1464,6 +1487,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param keys The set of keys for entries to process.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
      * @param args Additional arguments to pass to the {@link CacheEntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return The map of {@link EntryProcessorResult}s of the processing per key,
      * if any, defined by the {@link CacheEntryProcessor} implementation.  No mappings
      * will be returned for {@link CacheEntryProcessor}s that return a
@@ -1512,6 +1536,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param keys The set of keys for entries to process.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
      * @param args Additional arguments to pass to the {@link CacheEntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
      * @return a Future representing pending completion of the operation.
      * @throws NullPointerException If keys or {@link CacheEntryProcessor} are {#code null}.
      * @throws IllegalStateException If the cache is {@link #isClosed()}.
@@ -1562,7 +1587,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * @return Future that will be completed when rebalancing is finished. Future.get() returns {@code true}
      *      when rebalance was successfully finished.
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public IgniteFuture<Boolean> rebalance();
 
     /**
@@ -1593,20 +1620,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache metrics.
      */
     public CacheMetrics localMetrics();
-
-    /**
-     * Gets whole cluster MxBean for this cache.
-     *
-     * @return MxBean.
-     */
-    public CacheMetricsMXBean mxBean();
-
-    /**
-     * Gets local MxBean for this cache.
-     *
-     * @return MxBean.
-     */
-    public CacheMetricsMXBean localMxBean();
 
     /**
      * Gets a collection of lost partition IDs.

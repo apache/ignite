@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -26,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Platform;
     using Apache.Ignite.Core.Services;
 
     /// <summary>
@@ -351,7 +353,7 @@ namespace Apache.Ignite.Core.Impl.Services
                     var res = new List<T>(count);
 
                     for (var i = 0; i < count; i++)
-                        res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
+                        res.Add((T)Marshaller.Ignite.HandleRegistry.Get<ServiceContext>(r.ReadLong()).Service);
 
                     return res;
                 });
@@ -366,16 +368,15 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public T GetServiceProxy<T>(string name, bool sticky) where T : class
         {
+            return GetServiceProxy<T>(name, sticky, null);
+        }
+
+        /** <inheritDoc /> */
+        public T GetServiceProxy<T>(string name, bool sticky, IServiceCallContext callCtx) where T : class
+        {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", 
                 "Service proxy type should be an interface: " + typeof(T));
-
-            // In local scenario try to return service instance itself instead of a proxy
-            // Get as object because proxy interface may be different from real interface
-            var locInst = GetService<object>(name) as T;
-
-            if (locInst != null)
-                return locInst;
 
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>
             {
@@ -384,9 +385,10 @@ namespace Apache.Ignite.Core.Impl.Services
             });
 
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
+            var callAttrs = GetCallerContextAttributes(callCtx);
 
             return ServiceProxyFactory<T>.CreateProxy((method, args) =>
-                InvokeProxyMethod(javaProxy, method.Name, method, args, platform));
+                InvokeProxyMethod(javaProxy, method.Name, method, args, platform, callAttrs));
         }
 
         /** <inheritDoc /> */
@@ -398,15 +400,13 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public dynamic GetDynamicServiceProxy(string name, bool sticky)
         {
+            return GetDynamicServiceProxy(name, sticky, null);
+        }
+
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name, bool sticky, IServiceCallContext callCtx)
+        {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
-
-            // In local scenario try to return service instance itself instead of a proxy
-            var locInst = GetService<object>(name);
-
-            if (locInst != null)
-            {
-                return locInst;
-            }
 
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>
             {
@@ -415,9 +415,10 @@ namespace Apache.Ignite.Core.Impl.Services
             });
 
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
+            var callAttrs = GetCallerContextAttributes(callCtx);
 
             return new DynamicServiceProxy((methodName, args) =>
-                InvokeProxyMethod(javaProxy, methodName, null, args, platform));
+                InvokeProxyMethod(javaProxy, methodName, null, args, platform, callAttrs));
         }
 
         /// <summary>
@@ -428,11 +429,12 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="method">Method to invoke.</param>
         /// <param name="args">Arguments.</param>
         /// <param name="platformType">The platform.</param>
+        /// <param name="callAttrs">Service call context attributes.</param>
         /// <returns>
         /// Invocation result.
         /// </returns>
         private object InvokeProxyMethod(IPlatformTargetInternal proxy, string methodName,
-            MethodBase method, object[] args, PlatformType platformType)
+            MethodBase method, object[] args, PlatformType platformType, IDictionary callAttrs)
         {
             bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
 
@@ -444,7 +446,7 @@ namespace Apache.Ignite.Core.Impl.Services
             try
             {
                 return DoOutInOp(OpInvokeMethod,
-                    writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType),
+                    writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType, callAttrs),
                     (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary),
                     proxy);
             }
@@ -476,6 +478,20 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /// <summary>
+        /// Gets the attributes of the service call context.
+        /// </summary>
+        /// <param name="callCtx">Service call context.</param>
+        /// <returns>Service call context attributes.</returns>
+        private IDictionary GetCallerContextAttributes(IServiceCallContext callCtx)
+        {
+            IgniteArgumentCheck.Ensure(callCtx == null || callCtx is ServiceCallContext, "callCtx", 
+                "custom implementation of " + typeof(ServiceCallContext).Name + " is not supported." +
+                " Please use " + typeof(ServiceCallContextBuilder).Name + " to create it.");
+
+            return callCtx == null ? null : ((ServiceCallContext) callCtx).Values();
+        }
+
+        /// <summary>
         /// Performs ServiceConfiguration validation.
         /// </summary>
         /// <param name="configuration">Service configuration</param>
@@ -485,6 +501,13 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.NotNull(configuration, argName);
             IgniteArgumentCheck.NotNullOrEmpty(configuration.Name, string.Format("{0}.Name", argName));
             IgniteArgumentCheck.NotNull(configuration.Service, string.Format("{0}.Service", argName));
+
+            if (configuration.Interceptors != null)
+            {
+                foreach (var interceptor in configuration.Interceptors)
+                    IgniteArgumentCheck.NotNull(interceptor, string.Format("{0}.Interceptors[]", argName));
+            }
+
         }
 
         /// <summary>

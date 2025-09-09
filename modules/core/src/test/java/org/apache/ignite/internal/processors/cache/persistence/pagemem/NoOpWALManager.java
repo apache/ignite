@@ -118,7 +118,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean disabled(int grpId) {
+    @Override public boolean pageRecordsDisabled(int grpId, long pageId) {
         return false;
     }
 
@@ -199,6 +199,11 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
 
     /** {@inheritDoc} */
     @Override public void startAutoReleaseSegments() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void awaitCompacted(long idx) {
         // No-op.
     }
 }

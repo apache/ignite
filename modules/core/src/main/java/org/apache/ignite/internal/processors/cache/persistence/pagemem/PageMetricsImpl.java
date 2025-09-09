@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
 import org.jetbrains.annotations.Nullable;
@@ -32,7 +32,7 @@ public class PageMetricsImpl implements PageMetrics {
 
     /** */
     private PageMetricsImpl(
-        MetricRegistry metricRegistry,
+        MetricRegistryImpl metricRegistry,
         @Nullable LongAdderWithDelegateMetric.Delegate totalPagesCb,
         @Nullable LongAdderWithDelegateMetric.Delegate idxPagesCb
     ) {
@@ -50,7 +50,7 @@ public class PageMetricsImpl implements PageMetrics {
      */
     public static final class Builder {
         /** Metric registry. */
-        private final MetricRegistry metricRegistry;
+        private final MetricRegistryImpl metricRegistry;
 
         /** Total pages callback. */
         private LongAdderWithDelegateMetric.Delegate totalPagesCb;
@@ -61,7 +61,7 @@ public class PageMetricsImpl implements PageMetrics {
         /**
          * @param metricRegistry Metric registry.
          */
-        Builder(MetricRegistry metricRegistry) {
+        Builder(MetricRegistryImpl metricRegistry) {
             this.metricRegistry = metricRegistry;
         }
 
@@ -94,7 +94,7 @@ public class PageMetricsImpl implements PageMetrics {
     /**
      * @param metricRegistry Metric registry.
      */
-    public static Builder builder(MetricRegistry metricRegistry) {
+    public static Builder builder(MetricRegistryImpl metricRegistry) {
         return new Builder(metricRegistry);
     }
 
@@ -105,7 +105,7 @@ public class PageMetricsImpl implements PageMetrics {
      * @param delegate Delegate.
      */
     private static LongAdderMetric createMetricWithOptionalDelegate(
-        MetricRegistry metricRegistry,
+        MetricRegistryImpl metricRegistry,
         String name,
         String desc,
         @Nullable LongAdderWithDelegateMetric.Delegate delegate
@@ -119,7 +119,6 @@ public class PageMetricsImpl implements PageMetrics {
     @Override public LongAdderMetric totalPages() {
         return totalPages;
     }
-
 
     /** {@inheritDoc} */
     @Override public LongAdderMetric indexPages() {

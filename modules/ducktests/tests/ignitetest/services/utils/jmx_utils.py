@@ -21,6 +21,7 @@ import os
 import re
 
 from ignitetest.services.utils.decorators import memoize
+from ignitetest.services.utils.jvm_utils import java_version, java_major_version
 
 
 def ignite_jmx_mixin(node, service):
@@ -29,7 +30,7 @@ def ignite_jmx_mixin(node, service):
     :param node: Ignite service node.
     :param service: Ignite service.
     """
-    setattr(node, 'pids', service.pids(node))
+    setattr(node, 'pids', service.pids(node, service.main_java_class))
     setattr(node, 'install_root', service.install_root)
     base_cls = node.__class__
     base_cls_name = node.__class__.__name__
@@ -52,6 +53,15 @@ class JmxMBean:
         """
         return self.client.mbean_attribute(self.name, attr)
 
+    def run(self, operation, params):
+        """"
+        Runs through JMX client MBean operation.
+        :param operation: Operation name.
+        :param params: List of parameters.
+        :return: Result of operation as string.
+        """
+        return self.client.mbean_run(self.name, operation, params)
+
 
 class JmxClient:
     """JMX client, invokes jmxterm on node locally.
@@ -60,24 +70,31 @@ class JmxClient:
         self.node = node
         self.install_root = node.install_root
         self.pid = node.pids[0]
+        self.java_major = java_major_version(java_version(self.node))
 
     @property
     def jmx_util_cmd(self):
         """
         :return: jmxterm prepared command line invocation.
         """
-        return os.path.join(f"java -jar {self.install_root}/jmxterm.jar -v silent -n")
+        extra_flag = "--add-exports jdk.jconsole/sun.tools.jconsole=ALL-UNNAMED" if self.java_major >= 15 else ""
+
+        return os.path.join(f"java {extra_flag} -jar {self.install_root}/jmxterm.jar -v silent -n")
 
     @memoize
-    def find_mbean(self, pattern, domain='org.apache'):
+    def find_mbean(self, pattern, negative_pattern=None, domain='org.apache'):
         """
         Find mbean by specified pattern and domain on node.
         :param pattern: MBean name pattern.
+        :param negative_pattern: if passed used to filter out some MBeans
         :param domain: Domain of MBean
         :return: JmxMBean instance
         """
-        cmd = "echo $'open %s\\n beans -d %s \\n close' | %s | grep -o '%s'" \
+        cmd = "echo $'open %s\\n beans -d %s \\n close' | %s | grep -E -o '%s'" \
               % (self.pid, domain, self.jmx_util_cmd, pattern)
+
+        if negative_pattern:
+            cmd += " | grep -E -v '%s'" % negative_pattern
 
         name = next(self.__run_cmd(cmd)).strip()
 
@@ -91,7 +108,20 @@ class JmxClient:
         :return: Attribute value
         """
         cmd = "echo $'open %s\\n get -b %s %s \\n close' | %s | sed 's/%s = \\(.*\\);/\\1/'" \
-              % (self.pid, mbean, attr, self.jmx_util_cmd, attr)
+              % (self.pid, mbean.replace(' ', '\\ '), attr, self.jmx_util_cmd, attr)
+
+        return iter(s.strip() for s in self.__run_cmd(cmd))
+
+    def mbean_run(self, mbean, operation, params):
+        """
+        Run MBean operation.
+        :param mbean: MBean name
+        :param operation: Operation name
+        :param params: List of parameters
+        :return: Result of operation as string
+        """
+        cmd = "echo $'open %s\\n run -b %s %s %s\\n close' | %s" \
+              % (self.pid, mbean.replace(' ', '\\ '), operation, ' '.join(str(p) for p in params), self.jmx_util_cmd)
 
         return iter(s.strip() for s in self.__run_cmd(cmd))
 

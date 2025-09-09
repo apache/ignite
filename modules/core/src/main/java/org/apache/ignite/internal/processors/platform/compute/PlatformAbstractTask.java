@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -85,7 +85,7 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
                 try (PlatformMemory mem = ctx.memory().allocate()) {
                     PlatformOutputStream out = mem.output();
 
-                    BinaryRawWriterEx writer = ctx.writer(out);
+                    BinaryWriterEx writer = ctx.writer(out);
 
                     writer.writeLong(taskPtr);
                     writer.writeLong(job.pointer());
@@ -103,7 +103,7 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
                 }
             }
 
-            ComputeJobResultPolicy plc0 = ComputeJobResultPolicy.fromOrdinal((byte) plc);
+            ComputeJobResultPolicy plc0 = ComputeJobResultPolicy.fromOrdinal((byte)plc);
 
             assert plc0 != null : plc;
 
@@ -152,7 +152,7 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
                 try (PlatformMemory mem = ctx.memory().allocate()) {
                     PlatformOutputStream out = mem.output();
 
-                    BinaryRawWriterEx writer = ctx.writer(out);
+                    BinaryWriterEx writer = ctx.writer(out);
 
                     if (e0 == null) {
                         writer.writeBoolean(false);

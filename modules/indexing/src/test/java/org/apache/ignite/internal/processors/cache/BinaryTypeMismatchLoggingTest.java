@@ -176,15 +176,15 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
 
         assertEquals(0, countRows(binary));
 
-        String capturedMessages = this.capture.toString();
+        String capturedMsgs = this.capture.toString();
 
-        assertContainsExactlyOnce(capturedMessages,
+        assertContainsExactlyOnce(capturedMsgs,
             "Key-value pair is not inserted into any SQL table [cacheName=binary, " + MESSAGE_PAYLOAD_VALUE + "]");
-        assertContainsExactlyOnce(capturedMessages,
+        assertContainsExactlyOnce(capturedMsgs,
             "Value type(s) are specified via CacheConfiguration.indexedTypes or CacheConfiguration.queryEntities");
-        assertContainsExactlyOnce(capturedMessages,
+        assertContainsExactlyOnce(capturedMsgs,
             "Make sure that same type(s) used when adding Object or BinaryObject to cache");
-        assertContainsExactlyOnce(capturedMessages,
+        assertContainsExactlyOnce(capturedMsgs,
             "Otherwise, entries will be stored in cache, but not appear as SQL Table rows");
     }
 
@@ -329,9 +329,10 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Payload> binary = ignite.createCache(new CacheConfiguration<Integer, Payload>()
             .setName("binary").setQueryEntities(Arrays.asList(
-            new QueryEntity().setKeyType("Foo").setKeyFieldName("id")
-                .setValueType("Bar").setFields(fields).setTableName("regular"),
-            new QueryEntity().setKeyFieldName("id").setValueType("Payload").setFields(fields).setTableName("binary"))));
+                new QueryEntity().setKeyType("Foo").setKeyFieldName("id")
+                    .setValueType("Bar").setFields(fields).setTableName("regular"),
+                new QueryEntity().setKeyFieldName("id").setValueType("Payload").setFields(fields).setTableName("binary")
+            )));
 
         binary.put(1, new Payload("foo"));
         binary.put(2, new Payload("bar"));

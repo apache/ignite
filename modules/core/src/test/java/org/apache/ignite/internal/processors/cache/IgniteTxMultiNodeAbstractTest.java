@@ -392,7 +392,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
             onRemoveItemQueried(putCntr, ignite, i);
 
             if (i % 50 == 0)
-                ((IgniteKernal) ignite).internalCache(DEFAULT_CACHE_NAME).context().tm().printMemoryStats();
+                ((IgniteKernal)ignite).internalCache(DEFAULT_CACHE_NAME).context().tm().printMemoryStats();
         }
     }
 

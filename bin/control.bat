@@ -28,7 +28,7 @@ if "%OS%" == "Windows_NT"  setlocal
 if defined JAVA_HOME  goto checkJdk
     echo %0, ERROR:
     echo JAVA_HOME environment variable is not found.
-    echo Please point JAVA_HOME variable to location of JDK 1.8 or later.
+    echo Please point JAVA_HOME variable to location of JDK 11 or later.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -37,7 +37,7 @@ goto error_finish
 if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
     echo %0, ERROR:
     echo JAVA is not found in JAVA_HOME=%JAVA_HOME%.
-    echo Please point JAVA_HOME variable to installation of JDK 1.8 or later.
+    echo Please point JAVA_HOME variable to installation of JDK 11 or later.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -55,10 +55,10 @@ set JAVA_VER_STR=%JAVA_VER_STR:"=%
 for /f "tokens=1,2 delims=." %%a in ("%JAVA_VER_STR%.x") do set MAJOR_JAVA_VER=%%a& set MINOR_JAVA_VER=%%b
 if %MAJOR_JAVA_VER% == 1 set MAJOR_JAVA_VER=%MINOR_JAVA_VER%
 
-if %MAJOR_JAVA_VER% LSS 8 (
+if %MAJOR_JAVA_VER% LSS 11 (
     echo %0, ERROR:
     echo The version of JAVA installed in %JAVA_HOME% is incorrect.
-    echo Please point JAVA_HOME variable to installation of JDK 1.8 or later.
+    echo Please point JAVA_HOME variable to installation of JDK 11 or later.
     echo You can also download latest JDK at http://java.com/download.
     goto error_finish
 )
@@ -189,36 +189,7 @@ if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.internal.commandline.Co
 ::
 :: Final CONTROL_JVM_OPTS for Java 9+ compatibility
 ::
-if %MAJOR_JAVA_VER% == 8 (
-    set CONTROL_JVM_OPTS= ^
-    -XX:+AggressiveOpts ^
-    %CONTROL_JVM_OPTS%
-)
-
-if %MAJOR_JAVA_VER% GEQ 9 if %MAJOR_JAVA_VER% LSS 11 (
-    set CONTROL_JVM_OPTS= ^
-    -XX:+AggressiveOpts ^
-    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
-    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
-    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
-    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
-    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
-    --illegal-access=permit ^
-    --add-modules=java.xml.bind ^
-    %CONTROL_JVM_OPTS%
-)
-
-if %MAJOR_JAVA_VER% GEQ 11 (
-    set CONTROL_JVM_OPTS= ^
-    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
-    --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^
-    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED ^
-    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
-    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
-    --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED ^
-    --illegal-access=permit ^
-    %CONTROL_JVM_OPTS%
-)
+call "%SCRIPTS_HOME%\include\jvmdefaults.bat" %MAJOR_JAVA_VER% "%CONTROL_JVM_OPTS%" CONTROL_JVM_OPTS
 
 if defined JVM_OPTS (
     echo JVM_OPTS environment variable is set, but will not be used. To pass JVM options use CONTROL_JVM_OPTS

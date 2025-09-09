@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import java.io.IOException;
 import java.sql.Statement;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * JDBC query execute request.
  */
-public class JdbcQueryExecuteRequest extends JdbcRequest {
+public class JdbcQueryExecuteRequest extends JdbcClientInfoAwareRequest {
     /** Schema name. */
     private String schemaName;
 
@@ -60,6 +60,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** Explicit timeout. */
     private boolean explicitTimeout;
 
+    /** Transaction id. */
+    private int txId;
+
     /** */
     JdbcQueryExecuteRequest() {
         super(QRY_EXEC);
@@ -75,9 +78,10 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      * @param autoCommit Connection auto commit flag state.
      * @param sqlQry SQL query.
      * @param args Arguments list.
+     * @param txId Transaction id.
      */
     public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
-        boolean autoCommit, boolean explicitTimeout, String sqlQry, Object[] args) {
+        boolean autoCommit, boolean explicitTimeout, String sqlQry, Object[] args, int txId) {
         super(QRY_EXEC);
 
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
@@ -88,6 +92,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         this.stmtType = stmtType;
         this.autoCommit = autoCommit;
         this.explicitTimeout = explicitTimeout;
+        this.txId = txId;
     }
 
     /**
@@ -141,7 +146,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         super.writeBinary(writer, protoCtx);
@@ -166,13 +171,16 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         if (protoCtx.isAffinityAwarenessSupported())
             writer.writeBoolean(partResReq);
 
-        if (protoCtx.features().contains(JdbcThinFeature.QUERY_TIMEOUT))
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.QUERY_TIMEOUT))
             writer.writeBoolean(explicitTimeout);
+
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES))
+            writer.writeInt(txId);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         super.readBinary(reader, protoCtx);
@@ -205,8 +213,11 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         if (protoCtx.isAffinityAwarenessSupported())
             partResReq = reader.readBoolean();
 
-        if (protoCtx.features().contains(JdbcThinFeature.QUERY_TIMEOUT))
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.QUERY_TIMEOUT))
             explicitTimeout = reader.readBoolean();
+
+        if (protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES))
+            txId = reader.readInt();
     }
 
     /**
@@ -229,6 +240,11 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      */
     public boolean explicitTimeout() {
         return explicitTimeout;
+    }
+
+    /** @return Transaction id. */
+    public int txId() {
+        return txId;
     }
 
     /** {@inheritDoc} */

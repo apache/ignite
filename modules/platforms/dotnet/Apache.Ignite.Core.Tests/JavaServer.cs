@@ -62,10 +62,15 @@ namespace Apache.Ignite.Core.Tests
         {
             IgniteArgumentCheck.NotNullOrEmpty(version, "version");
 
+            Console.WriteLine("Using maven at: " + MavenPath);
+            Console.WriteLine("JAVA_HOME: " + Environment.GetEnvironmentVariable("JAVA_HOME"));
+            Console.WriteLine("IsJava9: " + Jvm.IsJava9());
+            Console.WriteLine("GetJavaMajorVersion: " + TestUtilsJni.GetJavaMajorVersion());
+
             var pomWrapper =
                 ReplaceIgniteVersionInPomFile(groupId, version, Path.Combine(JavaServerSourcePath, "pom.xml"));
 
-            EnsureJvmCreated();
+            TestUtils.EnsureJvmCreated();
 
             var time = DateTime.Now;
 
@@ -73,6 +78,9 @@ namespace Apache.Ignite.Core.Tests
                 file: Os.IsWindows ? "cmd.exe" : "/bin/bash",
                 arg1: Os.IsWindows ? "/c" : "-c",
                 arg2: string.Format("{0} {1}", MavenPath, MavenCommandExec),
+                envVars: Jvm.IsJava9()
+                    ? "MAVEN_OPTS#" + string.Join(" ", Jvm.Java9Options)
+                    : string.Empty,
                 workDir: JavaServerSourcePath,
                 waitForOutput: "Ignite node started OK");
 
@@ -93,19 +101,6 @@ namespace Apache.Ignite.Core.Tests
                 TestUtilsJni.DestroyProcess();
                 pomWrapper.Dispose();
             });
-        }
-
-        /// <summary>
-        /// Ensures that JVM is created.
-        /// When corresponding test runs individually we have to start/stop Ignite node to create the JVM,
-        /// otherwise it already exists.
-        /// </summary>
-        private static void EnsureJvmCreated()
-        {
-            if (Jvm.Get(ignoreMissing: true) == null)
-            {
-                Ignition.Start(TestUtils.GetTestConfiguration()).Dispose();
-            }
         }
 
         /// <summary>

@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.metric;
 
 import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
 import java.sql.Connection;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
@@ -49,6 +52,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -70,11 +74,13 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
-import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.sql.SqlSchemaView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -89,7 +95,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
-import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_VIEW;
+import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.SQL_SCHEMA_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -113,10 +119,15 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDataRegionConfigurations(
-                new DataRegionConfiguration().setName("in-memory").setMaxSize(100L * 1024 * 1024))
+                new DataRegionConfiguration()
+                    .setName("in-memory")
+                    .setMaxSize(100L * 1024 * 1024)
+                    .setMetricsEnabled(true))
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)));
+                    .setName("persistent")
+                    .setPersistenceEnabled(true)
+                    .setMetricsEnabled(true)));
 
         return cfg;
     }
@@ -129,7 +140,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         ignite1 = startGrid(1);
 
         ignite0.cluster().baselineAutoAdjustEnabled(false);
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -149,7 +160,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testEmptyFilter() throws Exception {
+    public void testEmptyFilter() {
         List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.METRICS");
 
         assertNotNull(res);
@@ -158,9 +169,9 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testDataRegionMetrics() throws Exception {
+    public void testDataRegionMetrics() {
         List<List<?>> res = execute(ignite0,
-            "SELECT REPLACE(name, 'io.dataregion.default.'), value, description FROM SYS.METRICS");
+            "SELECT REPLACE(name, 'io.dataregion.persistent.'), value, description FROM SYS.METRICS");
 
         Set<String> names = new HashSet<>();
 
@@ -187,7 +198,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testCachesView() throws Exception {
+    public void testCachesView() {
         Set<String> cacheNames = new HashSet<>(asList("cache-1", "cache-2"));
 
         for (String name : cacheNames)
@@ -205,7 +216,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testCacheGroupsView() throws Exception {
+    public void testCacheGroupsView() {
         Set<String> grpNames = new HashSet<>(asList("grp-1", "grp-2"));
 
         for (String grpName : grpNames)
@@ -227,7 +238,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         CyclicBarrier barrier = new CyclicBarrier(6);
 
         for (int i = 0; i < 5; i++) {
-            ignite0.compute().broadcastAsync(() -> {
+            ignite0.compute(ignite0.cluster().forLocal()).broadcastAsync(() -> {
                 try {
                     barrier.await();
                     barrier.await();
@@ -268,7 +279,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testServices() throws Exception {
+    public void testServices() {
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
         srvcCfg.setName("service");
@@ -288,7 +299,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 "  AFFINITY_KEY, " +
                 "  NODE_FILTER, " +
                 "  STATICALLY_CONFIGURED, " +
-                "  ORIGIN_NODE_ID " +
+                "  ORIGIN_NODE_ID, " +
+                "  TOPOLOGY_SNAPSHOT " +
                 "FROM SYS.SERVICES");
 
         assertEquals(ignite0.context().service().serviceDescriptors().size(), srvs.size());
@@ -298,6 +310,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(srvcCfg.getName(), sysView.get(0));
         assertEquals(DummyService.class.getName(), sysView.get(2));
         assertEquals(srvcCfg.getMaxPerNodeCount(), sysView.get(4));
+        assertEquals(F.first(ignite0.services().serviceDescriptors()).topologySnapshot().toString(), sysView.get(10));
     }
 
     /** */
@@ -397,8 +410,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testViews() throws Exception {
-        Set<String> expViews = new HashSet<>(asList(
+    public void testViews() {
+        Set<String> expViews = new TreeSet<>(asList(
             "METRICS",
             "SERVICES",
             "CACHE_GROUPS",
@@ -409,6 +422,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "NODES",
             "SCHEMAS",
             "NODE_METRICS",
+            "CONFIGURATION",
             "BASELINE_NODES",
             "BASELINE_NODE_ATTRIBUTES",
             "INDEXES",
@@ -416,8 +430,10 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "SQL_QUERIES",
             "SCAN_QUERIES",
             "NODE_ATTRIBUTES",
+            "SNAPSHOT",
             "TABLES",
             "CLIENT_CONNECTIONS",
+            "CLIENT_CONNECTION_ATTRIBUTES",
             "VIEWS",
             "TABLE_COLUMNS",
             "VIEW_COLUMNS",
@@ -433,12 +449,24 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "DISTRIBUTED_METASTORAGE",
             "STATISTICS_CONFIGURATION",
             "STATISTICS_PARTITION_DATA",
-            "STATISTICS_LOCAL_DATA"
+            "STATISTICS_LOCAL_DATA",
+            "STATISTICS_GLOBAL_DATA",
+            "DS_ATOMICLONGS",
+            "DS_ATOMICREFERENCES",
+            "DS_ATOMICSTAMPED",
+            "DS_ATOMICSEQUENCES",
+            "DS_COUNTDOWNLATCHES",
+            "DS_REENTRANTLOCKS",
+            "DS_SETS",
+            "DS_SEMAPHORES",
+            "DS_QUEUES",
+            "PAGES_TIMESTAMP_HISTOGRAM",
+            "SQL_PLANS_HISTORY"
         ));
 
-        Set<String> actViews = new HashSet<>();
+        Set<String> actViews = new TreeSet<>();
 
-        List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.VIEWS");
+        List<List<?>> res = execute(ignite0, "SELECT name FROM SYS.VIEWS");
 
         for (List<?> row : res)
             actViews.add(row.get(0).toString());
@@ -489,7 +517,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     public void testTableColumns() throws Exception {
         assertTrue(execute(ignite0, "SELECT * FROM SYS.TABLE_COLUMNS").isEmpty());
 
-        execute(ignite0, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR(40))");
+        execute(ignite0, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR(40) DEFAULT 'name')");
 
         Set<?> actCols = execute(ignite0, "SELECT * FROM SYS.TABLE_COLUMNS")
             .stream()
@@ -500,15 +528,17 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         execute(ignite0, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR(50))");
 
+        // Columns order: COLUMN_NAME, TABLE_NAME, SCHEMA_NAME, AFFINITY_COLUMN, AUTO_INCREMENT, DEFAULT_VALUE,
+        // NULLABLE, PK, PRECESION, SCALE, TYPE.
         List<List<?>> expRes = asList(
-            asList("ID", "T1", "PUBLIC", false, false, "null", true, true, -1, -1, Long.class.getName()),
-            asList("NAME", "T1", "PUBLIC", false, false, "null", true, false, 40, -1, String.class.getName()),
-            asList("_KEY", "T1", "PUBLIC", true, false, null, false, true, -1, -1, null),
-            asList("_VAL", "T1", "PUBLIC", false, false, null, true, false, -1, -1, null),
-            asList("ID", "T2", "PUBLIC", false, false, "null", true, true, -1, -1, Long.class.getName()),
-            asList("NAME", "T2", "PUBLIC", false, false, "null", true, false, 50, -1, String.class.getName()),
-            asList("_KEY", "T2", "PUBLIC", true, false, null, false, true, -1, -1, null),
-            asList("_VAL", "T2", "PUBLIC", false, false, null, true, false, -1, -1, null)
+            asList("ID", "T1", "PUBLIC", true, false, null, true, true, -1, -1, Long.class.getName()),
+            asList("NAME", "T1", "PUBLIC", false, false, "name", true, false, 40, -1, String.class.getName()),
+            asList("_KEY", "T1", "PUBLIC", true, false, null, false, true, -1, -1, Long.class.getName()),
+            asList("_VAL", "T1", "PUBLIC", false, false, null, false, false, -1, -1, Object.class.getName()),
+            asList("ID", "T2", "PUBLIC", true, false, null, true, true, -1, -1, Long.class.getName()),
+            asList("NAME", "T2", "PUBLIC", false, false, null, true, false, 50, -1, String.class.getName()),
+            asList("_KEY", "T2", "PUBLIC", true, false, null, false, true, -1, -1, Long.class.getName()),
+            asList("_VAL", "T2", "PUBLIC", false, false, null, false, false, -1, -1, Object.class.getName())
         );
 
         List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.TABLE_COLUMNS ORDER BY TABLE_NAME, COLUMN_NAME");
@@ -523,21 +553,17 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testViewColumns() throws Exception {
+    public void testViewColumns() {
         execute(ignite0, "SELECT * FROM SYS.VIEW_COLUMNS");
 
+        // Columns order: COLUMN_NAME, VIEW_NAME, SCHEMA_NAME, DEFAULT_VALUE, NULLABLE, PRECESION, SCALE, TYPE.
         List<List<?>> expRes = asList(
-            asList("CONNECTION_ID", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, 19L, 0, Long.class.getName()),
-            asList("LOCAL_ADDRESS", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
-                String.class.getName()),
-            asList("REMOTE_ADDRESS", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
-                String.class.getName()),
-            asList("TYPE", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
-                String.class.getName()),
-            asList("USER", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
-                String.class.getName()),
-            asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
-                String.class.getName())
+            asList("CONNECTION_ID", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, false, -1, -1, long.class.getName()),
+            asList("LOCAL_ADDRESS", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, InetSocketAddress.class.getName()),
+            asList("REMOTE_ADDRESS", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, InetSocketAddress.class.getName()),
+            asList("TYPE", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, String.class.getName()),
+            asList("USER", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, String.class.getName()),
+            asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, String.class.getName())
         );
 
         List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.VIEW_COLUMNS WHERE VIEW_NAME = 'CLIENT_CONNECTIONS'");
@@ -915,9 +941,9 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             dbMgr.enableCheckpoints(true).get();
         }
 
-        ignite0.cluster().active(false);
+        ignite0.cluster().state(ClusterState.INACTIVE);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cacheInMemory = ignite0.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setName("cacheFLInMemory").setDataRegionName("in-memory"));
@@ -1119,7 +1145,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         try {
             db.metaStorage().write(name, val);
             db.metaStorage().writeRaw(unmarshalledName, new byte[0]);
-        } finally {
+        }
+        finally {
             db.checkpointReadUnlock();
         }
 
@@ -1150,6 +1177,56 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(waitForCondition(() -> execute(ignite1,
             "SELECT * FROM SYS.DISTRIBUTED_METASTORAGE WHERE name = ? AND value = ?", name, val).size() == 1,
             getTestTimeout()));
+    }
+
+    /** */
+    @Test
+    public void testSnapshot() throws Exception {
+        String snap0 = "testSnapshot0";
+        String snap1 = "testSnapshot1";
+
+        int nodesCnt = G.allGrids().size();
+
+        assertEquals(0, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
+
+        ignite0.snapshot().createSnapshot(snap0).get();
+
+        assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
+
+        ignite0.createCache(DEFAULT_CACHE_NAME).put("key", "val");
+
+        ignite0.snapshot().createSnapshot(snap1).get();
+
+        assertEquals(nodesCnt * 2, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT").size());
+        assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT where name = ?", snap0).size());
+        assertEquals(nodesCnt, execute(ignite0,
+            "SELECT * FROM SYS.SNAPSHOT WHERE cache_groups LIKE '%" + DEFAULT_CACHE_NAME + "%'").size());
+    }
+
+    /** */
+    @Test
+    public void testPagesTimestampHistogram() throws Exception {
+        IgniteCache<Integer, Integer> cache = ignite0.getOrCreateCache("test-page-ts-cache");
+
+        cache.put(0, 0);
+
+        assertEquals(0, execute(ignite0,
+            "SELECT * FROM SYS.PAGES_TIMESTAMP_HISTOGRAM WHERE DATA_REGION_NAME = ?", "in-memory").size());
+
+        // There should be two buckets after start: empty "out of bounds" bucket and current bucket.
+        assertEquals(2, execute(ignite0,
+            "SELECT * FROM SYS.PAGES_TIMESTAMP_HISTOGRAM WHERE DATA_REGION_NAME = ?", "persistent").size());
+
+        Timestamp ts = new Timestamp(U.currentTimeMillis());
+
+        List<List<?>> res = execute(ignite0, "SELECT INTERVAL_START, INTERVAL_END " +
+            "FROM SYS.PAGES_TIMESTAMP_HISTOGRAM " +
+            "WHERE DATA_REGION_NAME = ? AND PAGES_COUNT > 0", "persistent");
+
+        assertEquals(1, res.size());
+
+        assertTrue(ts.compareTo(((Timestamp)res.get(0).get(0))) >= 0);
+        assertTrue(ts.compareTo(((Timestamp)res.get(0).get(1))) <= 0);
     }
 
     /**

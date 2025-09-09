@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -42,7 +42,6 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -51,6 +50,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -214,7 +214,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                 }
             }, EVT_NODE_JOINED);
 
-            final Collection<ClusterNode> remotes = F.concat(false, spiCtx.remoteNodes(), spiCtx.remoteDaemonNodes());
+            final Collection<ClusterNode> remotes = spiCtx.remoteNodes();
 
             for (ClusterNode node : remotes) {
                 checkConfigurationConsistency(spiCtx, node, true);
@@ -405,8 +405,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
      * @param <T> Type of the MBean
      * @throws IgniteSpiException If registration failed.
      */
-    protected final <T extends IgniteSpiManagementMBean> void registerMBean(String igniteInstanceName, T impl, Class<T> mbeanItf
-       ) throws IgniteSpiException {
+    protected final <T extends IgniteSpiManagementMBean> void registerMBean(
+        String igniteInstanceName,
+        T impl,
+        Class<T> mbeanItf
+    ) throws IgniteSpiException {
         if (ignite == null || U.IGNITE_MBEANS_DISABLED)
             return;
 
@@ -752,15 +755,28 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
             if (msgFactory0 == null) {
                 msgFactory0 = new MessageFactory() {
+                    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+                        throw new IgniteException("Failed to register message, node is not started.");
+                    }
+
+                    @Override public void register(short directType, Supplier<Message> supplier,
+                        MessageSerializer serializer) throws IgniteException {
+                        throw new IgniteException("Failed to register message, node is not started.");
+                    }
+
                     @Nullable @Override public Message create(short type) {
                         throw new IgniteException("Failed to read message, node is not started.");
+                    }
+
+                    @Override public MessageSerializer serializer(short type) {
+                        throw new IgniteException("Failed to register message, node is not started.");
                     }
                 };
             }
 
             if (msgFormatter0 == null) {
                 msgFormatter0 = new MessageFormatter() {
-                    @Override public MessageWriter writer(UUID rmtNodeId) {
+                    @Override public MessageWriter writer(UUID rmtNodeId, MessageFactory msgFactory) {
                         throw new IgniteException("Failed to write message, node is not started.");
                     }
 
@@ -850,11 +866,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<ClusterNode> remoteDaemonNodes() {
-            return Collections.emptyList();
-        }
-
-        /** {@inheritDoc} */
         @Nullable @Override public ClusterNode node(UUID nodeId) {
             return null;
         }
@@ -890,7 +901,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(ClusterNode node, Serializable msg, String topic) {
+        @Override public void send(ClusterNode node, Object msg, String topic) {
             /* No-op. */
         }
 

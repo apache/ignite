@@ -21,13 +21,11 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Grid unique version.
@@ -46,12 +44,15 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     private static final int DR_ID_MASK = 0x1F;
 
     /** Topology version. */
+    @Order(value = 0, method = "topologyVersion")
     private int topVer;
 
     /** Node order (used as global order) and DR ID. */
+    @Order(value = 1, method = "nodeOrderAndDrIdRaw")
     private int nodeOrderDrId;
 
     /** Order. */
+    @Order(2)
     private long order;
 
     /**
@@ -88,6 +89,11 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
      * @param order Version order.
      */
     public GridCacheVersion(int topVer, int nodeOrderDrId, long order) {
+        assert topVer >= 0 : topVer;
+        assert order >= 0 : order;
+        assert (nodeOrderDrId >>> DR_ID_SHIFT) >= 0 : (nodeOrderDrId >>> DR_ID_SHIFT);
+        assert (nodeOrderDrId & NODE_ORDER_MASK) >= 0 : (nodeOrderDrId & NODE_ORDER_MASK);
+
         this.topVer = topVer;
         this.nodeOrderDrId = nodeOrderDrId;
         this.order = order;
@@ -96,6 +102,13 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     /** {@inheritDoc} */
     @Override public int topologyVersion() {
         return topVer;
+    }
+
+    /**
+     * @param topVer New topology version.
+     */
+    public void topologyVersion(int topVer) {
+        this.topVer = topVer;
     }
 
     /**
@@ -108,10 +121,24 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     }
 
     /**
+     * New combined node order and DR ID.
+     */
+    public void nodeOrderAndDrIdRaw(int nodeOrderDrId) {
+        this.nodeOrderDrId = nodeOrderDrId;
+    }
+
+    /**
      * @return Version order.
      */
     @Override public long order() {
         return order;
+    }
+
+    /**
+     * @param order New order.
+     */
+    public void order(long order) {
+        this.order = order;
     }
 
     /** {@inheritDoc} */
@@ -241,91 +268,15 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt("nodeOrderDrId", nodeOrderDrId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong("order", order))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeInt("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                nodeOrderDrId = reader.readInt("nodeOrderDrId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                order = reader.readLong("order");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                topVer = reader.readInt("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridCacheVersion.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 86;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return "GridCacheVersion [topVer=" + topologyVersion() +
             ", order=" + order() +
-            ", nodeOrder=" + nodeOrder() + ']';
+            ", nodeOrder=" + nodeOrder() +
+            ", dataCenterId=" + dataCenterId() + ']';
     }
 }

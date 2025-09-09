@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.h2.jdbc.JdbcSQLException;
 import org.junit.Assert;
 import org.junit.Test;
@@ -164,7 +165,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /** */
-    @SuppressWarnings("unchecked")
     @Test
     public void testComplexOperations() {
         IgniteCache<BinaryObject, BinaryObject> cache = ignite(nodeIndex())
@@ -178,8 +178,10 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         run(cache, "CREATE INDEX pidx1 ON Person(name, city desc)");
 
-        CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City")
-            .setIndexedTypes(Integer.class, City.class).setSqlSchema(QueryUtils.DFLT_SCHEMA);
+        CacheConfiguration<Integer, City> ccfg = GridAbstractTest.<Integer, City>defaultCacheConfiguration()
+            .setName("City")
+            .setIndexedTypes(Integer.class, City.class)
+            .setSqlSchema(QueryUtils.DFLT_SCHEMA);
 
         ccfg.getQueryEntities().iterator().next().setKeyFieldName("id");
 
@@ -252,10 +254,10 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test that we can add columns dynamically to tables associated with non dynamic caches storing user types as well.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testAddColumnToNonDynamicCacheWithRealValueType() throws SQLException {
-        CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City")
+        CacheConfiguration<Integer, City> ccfg = GridAbstractTest.<Integer, City>defaultCacheConfiguration()
+            .setName("City")
             .setIndexedTypes(Integer.class, City.class);
 
         IgniteCache<Integer, ?> cache = ignite(nodeIndex()).getOrCreateCache(ccfg);
@@ -299,11 +301,11 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws SQLException If failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testAddColumnUUID() throws SQLException {
-        CacheConfiguration<Integer, Object> ccfg = defaultCacheConfiguration().setName("GuidTest")
-                .setIndexedTypes(Integer.class, GuidTest.class);
+        CacheConfiguration<Integer, Object> ccfg = GridAbstractTest.<Integer, Object>defaultCacheConfiguration()
+            .setName("GuidTest")
+            .setIndexedTypes(Integer.class, GuidTest.class);
 
         Random rnd = new Random();
 
@@ -674,10 +676,10 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      *
      * @throws SQLException if failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testDropColumnFromNonDynamicCacheWithRealValueType() throws SQLException {
-        CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City")
+        CacheConfiguration<Integer, City> ccfg = GridAbstractTest.<Integer, City>defaultCacheConfiguration()
+            .setName("City")
             .setIndexedTypes(Integer.class, City.class);
 
         IgniteCache<Integer, ?> cache = ignite(nodeIndex()).getOrCreateCache(ccfg);
@@ -757,9 +759,11 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
             run("ALTER TABLE test DROP COLUMN a");
 
+            run("INSERT INTO test VALUES(4, 44)");
+
             res = run("SELECT * FROM test WHERE b > 0 ORDER BY b");
 
-            assertEquals(3, res.size());
+            assertEquals(4, res.size());
             assertEquals(2, res.get(0).size());
 
             assertEquals(1, res.get(0).get(0));

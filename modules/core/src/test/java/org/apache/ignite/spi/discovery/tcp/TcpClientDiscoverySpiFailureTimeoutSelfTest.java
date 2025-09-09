@@ -177,7 +177,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             checkNodes(1, 1);
 
             Ignite srvNode = G.ignite("server-0");
-            final TcpDiscoverySpi srvSpi = (TcpDiscoverySpi) srvNode.configuration().getDiscoverySpi();
+            final TcpDiscoverySpi srvSpi = (TcpDiscoverySpi)srvNode.configuration().getDiscoverySpi();
 
             Ignite clientNode = G.ignite("client-0");
             final TcpDiscoverySpi clientSpi = (TcpDiscoverySpi)clientNode.configuration().getDiscoverySpi();
@@ -302,7 +302,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
             Thread.sleep(failureDetectionTimeout());
 
-            assertTrue(firstSpi.err != null && X.hasCause(firstSpi.err, SocketTimeoutException.class));
+            assertTrue(X.hasCause(firstSpi.err, SocketTimeoutException.class));
 
             firstSpi.reset();
             secondSpi.reset();
@@ -390,7 +390,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                     DiscoveryEvent disoEvt = (DiscoveryEvent)evt;
 
                     if (disoEvt.eventNode().id().equals(srvNodeId)) {
-                        info("Expected node failed event: " + ((DiscoveryEvent) evt).eventNode());
+                        info("Expected node failed event: " + ((DiscoveryEvent)evt).eventNode());
 
                         latch.countDown();
                     }
@@ -492,29 +492,6 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
             if (sock.getSoTimeout() >= writeToSocketDelay)
                 super.writeToSocket(sock, out, msg, timeout);
-            else
-                throw new SocketTimeoutException("Write to socket delay timeout exception.");
-        }
-
-        /**  */
-        @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout
-        ) throws IOException, IgniteCheckedException {
-            if (writeToSocketDelay > 0) {
-                try {
-                    U.dumpStack(log, "Before sleep [msg=" + msg + ']');
-
-                    Thread.sleep(writeToSocketDelay);
-                }
-                catch (InterruptedException ignore) {
-                    // Nothing to do.
-                }
-            }
-
-            if (sock.getSoTimeout() >= writeToSocketDelay)
-                super.writeToSocket(sock, msg, timeout);
             else
                 throw new SocketTimeoutException("Write to socket delay timeout exception.");
         }

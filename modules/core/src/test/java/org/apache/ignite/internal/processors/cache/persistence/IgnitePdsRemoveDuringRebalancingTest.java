@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.io.File;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -31,13 +31,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -61,7 +60,6 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
                     .setMaxSize(100L * 1024 * 1024)
                     .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
-            .setPageSize(1024)
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -75,7 +73,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
-        U.delete(new File(U.getIgniteHome(), DFLT_STORE_DIR));
+        U.delete(new SharedFileTree(U.getIgniteHome()).db());
     }
 
     /** {@inheritDoc} */
@@ -84,7 +82,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
 
         cleanPersistenceDir();
 
-        U.delete(new File(U.getIgniteHome(), DFLT_STORE_DIR));
+        U.delete(new SharedFileTree(U.getIgniteHome()).db());
     }
 
     /**
@@ -94,7 +92,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     public void testRemovesDuringRebalancing() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.allowOverwrite(true);

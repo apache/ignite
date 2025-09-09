@@ -27,7 +27,7 @@ image::images/spark_integration.png[Spark Integration]
 
 Apache Ignite provides an implementation of the Spark RDD which allows any data and state to be shared in memory as RDDs across Spark jobs. The Ignite RDD provides a shared, mutable view of the same data in-memory in Ignite across different Spark jobs, workers, or applications. Native Spark RDDs cannot be shared across Spark jobs or applications.
 
-The way an link:ignite-for-spark/ignitecontext-and-rdd[IgniteRDD] is implemented is as a view over a distributed Ignite table (aka. cache). It can be deployed with an Ignite node either within the Spark job executing process, on a Spark worker, or in a separate Ignite cluster. It means that depending on the chosen deployment mode the shared state may either exist only during the lifespan of a Spark application (embedded mode), or it may out-survive the Spark application (standalone mode).
+The way an link:extensions-and-integrations/ignite-for-spark/ignitecontext-and-rdd[IgniteRDD,window=_blank] is implemented is as a view over a distributed Ignite table (aka. cache). It can be deployed with an Ignite node either within the Spark job executing process, on a Spark worker, or in a separate Ignite cluster. It means that depending on the chosen deployment mode the shared state may either exist only during the lifespan of a Spark application (embedded mode), or it may out-survive the Spark application (standalone mode).
 
 While Apache SparkSQL supports a fairly rich SQL syntax, it doesn't implement any indexing. As a result, Spark queries may take minutes even on moderately small data sets because they have to do full data scans. With Ignite, Spark users can configure primary and secondary indexes that can bring up to 1000x performance gains.
 
@@ -36,7 +36,7 @@ While Apache SparkSQL supports a fairly rich SQL syntax, it doesn't implement an
 
 The Apache Spark DataFrame API introduced the concept of a schema to describe the data, allowing Spark to manage the schema and organize the data into a tabular format. To put it simply, a DataFrame is a distributed collection of data organized into named columns. It is conceptually equivalent to a table in a relational database and allows Spark to leverage the Catalyst query optimizer to produce much more efficient query execution plans in comparison to RDDs, which are just collections of elements partitioned across the nodes of the cluster.
 
-Ignite expands link:ignite-for-spark/ignite-dataframe[DataFrame], simplifying development and improving data access times whenever Ignite is used as memory-centric storage for Spark. Benefits include:
+Ignite expands link:extensions-and-integrations/ignite-for-spark/ignite-dataframe[DataFrame,window=_blank], simplifying development and improving data access times whenever Ignite is used as memory-centric storage for Spark. Benefits include:
 
 * Ability to share data and state across Spark jobs by writing and reading DataFrames to/from Ignite.
 * Faster SparkSQL queries by optimizing Spark query execution plans with Ignite SQL engine which include​ advanced indexing and avoid data movement across the network from Ignite to Spark.
@@ -45,5 +45,7 @@ Ignite expands link:ignite-for-spark/ignite-dataframe[DataFrame], simplifying de
 
 Apache Ignite comes with two modules that support different versions of Apache Spark:
 
-* ignite-spark — integration with Spark 2.3
-* ignite-spark-2.4 — integration with Spark 2.4
+* ignite-spark-ext 1.0.0 — integration with Spark 2.3
+* ignite-spark-ext 2.0.0 — integration with Spark 2.4
+* ignite-spark-ext 3.0.0 — integration with Spark 3.2
+* ignite-spark-ext 4.0.0 — integration with Spark 3.5

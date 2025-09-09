@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.util.Collection;
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -91,6 +92,9 @@ public abstract class AbstractReducer implements Reducer {
     /** */
     private int pageSize;
 
+    /** */
+    protected int colCnt;
+
     /**
      * Will be r/w from query execution thread only, does not need to be threadsafe.
      */
@@ -111,12 +115,12 @@ public abstract class AbstractReducer implements Reducer {
     }
 
     /** {@inheritDoc} */
-    @Override public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
+    @Override public void setSources(Map<ClusterNode, BitSet> nodesToSegmentsCnt) {
         assert srcNodes == null;
 
-        srcNodes = new HashSet<>(nodes.size());
+        srcNodes = new HashSet<>(nodesToSegmentsCnt.size());
 
-        for (ClusterNode node : nodes) {
+        for (ClusterNode node : nodesToSegmentsCnt.keySet()) {
             if (!srcNodes.add(node.id()))
                 throw new IllegalStateException();
         }
@@ -327,6 +331,9 @@ public abstract class AbstractReducer implements Reducer {
                     page.fetchNextPage(); // Failed will throw an exception here.
 
                 iter = page.rows();
+
+                if (iter.hasNext() && colCnt == 0)
+                    colCnt = page.columnCount();
 
                 MTC.span().addTag(SQL_PAGE_ROWS, () -> Integer.toString(page.rowsInPage()));
 

@@ -22,12 +22,10 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -39,13 +37,6 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 4;
-    }
-
-    @Override protected void initStoreStrategy() throws IgniteCheckedException {
-        if (!MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
-            return;
-
-        super.initStoreStrategy();
     }
 
     /** {@inheritDoc} */
@@ -84,6 +75,7 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     /** Test key without {@link GridCacheInternal} parent interface. */
     @SuppressWarnings("PublicInnerClass")
     public static class InternalKey implements Externalizable, GridCacheInternal {
+        /** */
         private long key;
 
         /**

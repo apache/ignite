@@ -26,19 +26,19 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>1</version>
-        <relativePath>../../parent</relativePath>
+        <version>${revision}</version>
+        <relativePath>../../parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-tools</artifactId>
-    <version>2.12.0-SNAPSHOT</version>
+
     <url>http://ignite.apache.org</url>
 
     <profiles>
         <profile>
-            <id>java-9+</id>
+            <id>java-11+</id>
             <activation>
-                <jdk>[1.9,)</jdk>
+                <jdk>[11,15)</jdk>
             </activation>
             <properties>
                 <src.javaspecific.dir>src/main/java11</src.javaspecific.dir>
@@ -46,12 +46,12 @@
         </profile>
 
         <profile>
-            <id>java-8</id>
+            <id>java-15+</id>
             <activation>
-                <jdk>1.8</jdk>
+                <jdk>[15,)</jdk>
             </activation>
             <properties>
-                <src.javaspecific.dir>src/main/java8</src.javaspecific.dir>
+                <src.javaspecific.dir>src/main/java15</src.javaspecific.dir>
             </properties>
         </profile>
 
@@ -97,7 +97,7 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <excludes>
-                    <exclude>META-INF/services/org.apache.maven.surefire.providerapi.SurefireProvider</exclude>
+                    <exclude>META-INF/services/org.apache.maven.surefire.api.provider.SurefireProvider</exclude>
                 </excludes>
             </resource>
         </resources>
@@ -130,6 +130,17 @@
                     <skip>false</skip>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <sourceDirectories combine.children="append">
+                        <sourceDirectory>src/main/java11</sourceDirectory>
+                        <sourceDirectory>src/main/java15</sourceDirectory>
+                    </sourceDirectories>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -137,13 +148,13 @@
         <dependency>
             <groupId>org.jodd</groupId>
             <artifactId>jodd-lagarto</artifactId>
-            <version>3.4.8</version>
+            <version>6.0.6</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ant</groupId>
             <artifactId>ant</artifactId>
-            <version>1.8.2</version>
+            <version>1.10.13</version>
         </dependency>
 
         <dependency>
@@ -157,6 +168,12 @@
             <groupId>org.apache.maven.surefire</groupId>
             <artifactId>maven-surefire-common</artifactId>
             <version>${surefire.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>asm</groupId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -169,12 +186,6 @@
             <groupId>org.apache.maven.surefire</groupId>
             <artifactId>common-junit48</artifactId>
             <version>${surefire.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.puppycrawl.tools</groupId>
-            <artifactId>checkstyle</artifactId>
-            <version>${checkstyle.puppycrawl.version}</version>
         </dependency>
     </dependencies>
 </project>

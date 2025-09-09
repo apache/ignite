@@ -17,26 +17,27 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -46,7 +47,7 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
  *
@@ -159,14 +160,18 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     private void check(boolean msgFound) throws Exception {
-        srvLog = new ListeningTestLogger(false, log);
+        srvLog = new ListeningTestLogger(log);
 
         LogListener idxRebuildLsnr = LogListener.matches(idxRebuildPattert).build();
         srvLog.registerListener(idxRebuildLsnr);
 
         IgniteEx node = startGrids(2);
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
+
+        File idx = node.context().pdsFolderResolver().fileTree().partitionFile(node.cachex(CACHE_NAME).configuration(), INDEX_PARTITION);
+
+        assertTrue(idx.exists());
 
         IgniteCache<UserKey, UserValue> cache = node.getOrCreateCache(CACHE_NAME);
 
@@ -175,7 +180,7 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        removeIndexBin(0);
+        U.delete(idx);
 
         node = startGrid(0);
 
@@ -193,17 +198,6 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
         assertFalse(clo.call().hasIssues());
 
         assertEquals(msgFound, idxRebuildLsnr.check());
-    }
-
-    /** */
-    private void removeIndexBin(int nodeId) throws IgniteCheckedException {
-        U.delete(
-            U.resolveWorkDirectory(
-                U.defaultWorkDirectory(),
-                "db/" + U.maskForFileName(getTestIgniteInstanceName(nodeId)) + "/cache-" + CACHE_NAME + "/" + INDEX_FILE_NAME,
-                false
-            )
-        );
     }
 
     /**

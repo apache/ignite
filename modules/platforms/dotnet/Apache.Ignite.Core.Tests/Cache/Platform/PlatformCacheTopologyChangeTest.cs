@@ -84,6 +84,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             TestUtils.WaitForTrueCondition(() => !_cache[0].ContainsKey(Key3));
             Assert.Throws<KeyNotFoundException>(() => _cache[0].Get(Key3));
             Assert.Throws<KeyNotFoundException>(() => _cache[1].Get(Key3));
+
+            TestUtils.WaitForTrueCondition(() => !clientCache.ContainsKey(Key3));
             Assert.Throws<KeyNotFoundException>(() => clientCache.Get(Key3));
 
             // Check that updates for that key work on all nodes.
@@ -338,10 +340,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         }
 
         /// <summary>
-        /// Tests that client reconnect to a restarted cluster stops platform cache.
+        /// Tests that client reconnected to a restarted cluster still has platform cache.
         /// </summary>
         [Test]
-        public void TestClientNodeReconnectWithClusterRestartStopsPlatformCache()
+        public void TestClientNodeReconnectWithClusterRestartKeepsPlatformCache()
         {
             InitNodes(1);
             var clientCache = InitClientAndCache();
@@ -370,24 +372,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             Assert.IsEmpty(clientCache.GetLocalEntries(CachePeekMode.Platform));
             Assert.Throws<KeyNotFoundException>(() => clientCache.LocalPeek(1, CachePeekMode.Platform));
 
-            // Cache still works for new entries, platform cache is being bypassed.
+            // Cache still works for new entries after restart.
             var serverCache = _cache[0];
-
-            serverCache[1] = new Foo(11);
-            Assert.AreEqual(11, clientCache[1].Bar);
-
             serverCache[1] = new Foo(22);
+
+            TestUtils.WaitForTrueCondition(() => clientCache[1] != null);
 
             var foo = clientCache[1];
             Assert.AreEqual(22, foo.Bar);
-            Assert.AreNotSame(foo, clientCache[1]);
-
-            // This is a full cluster restart, so client platform cache is stopped.
-            Assert.IsNull(clientCache.GetConfiguration().NearConfiguration);
-
-            var ex = Assert.Throws<CacheException>(() =>
-                client.GetOrCreateNearCache<int, Foo>(clientCache.Name, new NearCacheConfiguration()));
-            StringAssert.Contains("cache with the same name without near cache is already started", ex.Message);
+            Assert.AreEqual(foo, clientCache.LocalPeek(1, CachePeekMode.Platform));
         }
 
         /// <summary>
@@ -472,6 +465,32 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         }
 
         /// <summary>
+        /// Tests platform cache with negative cache ID updated correctly on topology change.
+        /// </summary>
+        [Test]
+        public void TestPlatformCacheWithNegativeId()
+        {
+            InitNodes(1);
+
+            var cacheName = "negative_cache_id";
+
+            var cacheConfiguration = new CacheConfiguration(cacheName)
+            {
+                PlatformCacheConfiguration = new PlatformCacheConfiguration()
+            };
+            
+            var cache = _ignite[0].GetOrCreateCache<int, Foo>(cacheConfiguration);
+
+            var key = 0;
+            var val = new Foo(-1);
+            cache[key] = val;
+
+            InitNode(1);
+
+            Assert.AreEqual(val, cache[key]);
+        }
+
+        /// <summary>
         /// Inits a number of grids.
         /// </summary>
         private void InitNodes(int count, bool serverNear = true, int backups = 0)
@@ -516,7 +535,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         {
             var client = InitClient();
 
-            return client.CreateNearCache<int, Foo>(CacheName, new NearCacheConfiguration());
+            return client.GetCache<int, Foo>(CacheName);
         }
 
         /// <summary>

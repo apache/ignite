@@ -17,33 +17,34 @@
 
 package org.apache.ignite.internal.processors.query.schema.message;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Schema operation status message.
  */
-@IgniteCodeGeneratingFail
 public class SchemaOperationStatusMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Operation ID. */
+    @Order(value = 0, method = "operationId")
     private UUID opId;
 
-    /** Error bytes (if any). */
-    private byte[] errBytes;
+    /** Error code. */
+    @Order(value = 1, method = "errorCode")
+    private int errCode;
+
+    /** Error message. */
+    @Order(value = 2, method = "errorMessage")
+    private String errMsg;
 
     /** Sender node ID. */
-    @GridDirectTransient
     private UUID sndNodeId;
+
+    /** No-op flag. */
+    @Order(3)
+    private boolean nop;
 
     /**
      * Default constructor.
@@ -56,11 +57,15 @@ public class SchemaOperationStatusMessage implements Message {
      * Constructor.
      *
      * @param opId Operation ID.
-     * @param errBytes Error bytes.
+     * @param errCode Error code.
+     * @param errMsg Error message.
+     * @param nop No-op flag.
      */
-    public SchemaOperationStatusMessage(UUID opId, byte[] errBytes) {
+    public SchemaOperationStatusMessage(UUID opId, int errCode, @Nullable String errMsg, boolean nop) {
         this.opId = opId;
-        this.errBytes = errBytes;
+        this.errCode = errCode;
+        this.errMsg = errMsg;
+        this.nop = nop;
     }
 
     /**
@@ -71,10 +76,38 @@ public class SchemaOperationStatusMessage implements Message {
     }
 
     /**
-     * @return Error bytes.
+     * @param opId Operation ID.
      */
-    @Nullable public byte[] errorBytes() {
-        return errBytes;
+    public void operationId(UUID opId) {
+        this.opId = opId;
+    }
+
+    /**
+     * @return Error code.
+     */
+    public int errorCode() {
+        return errCode;
+    }
+
+    /**
+     * @param errCode Error code.
+     */
+    public void errorCode(int errCode) {
+        this.errCode = errCode;
+    }
+
+    /**
+     * @return Error message.
+     */
+    @Nullable public String errorMessage() {
+        return errMsg;
+    }
+
+    /**
+     * @param errMsg Error message.
+     */
+    public void errorMessage(String errMsg) {
+        this.errMsg = errMsg;
     }
 
     /**
@@ -91,70 +124,23 @@ public class SchemaOperationStatusMessage implements Message {
         this.sndNodeId = sndNodeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeUuid("opId", opId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByteArray("errBytes", errBytes))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
+    /**
+     * @return <code>True</code> if message is no-op.
+     */
+    public boolean nop() {
+        return nop;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                opId = reader.readUuid("opId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                errBytes = reader.readByteArray("errBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return reader.afterMessageRead(SchemaOperationStatusMessage.class);
+    /**
+     * @param nop <code>True</code> if message is no-op.
+     */
+    public void nop(boolean nop) {
+        this.nop = nop;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -53;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

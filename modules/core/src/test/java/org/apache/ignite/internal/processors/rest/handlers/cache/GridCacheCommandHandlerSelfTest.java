@@ -71,7 +71,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         // Cache config.
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(CacheMode.LOCAL);
+        cacheCfg.setCacheMode(CacheMode.REPLICATED);
 
         cacheCfg.setAtomicityMode(atomicityMode());
 
@@ -205,7 +205,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
             jcache().put(key, curVal);
 
             // Validate behavior for initialized cache (has current value).
-            assertTrue((Boolean) hnd.handleAsync(req).get().getResponse());
+            assertTrue((Boolean)hnd.handleAsync(req).get().getResponse());
         }
         finally {
             res = (T)jcache().getAndRemove(key);
@@ -238,7 +238,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
             assertTrue(jcache().size() == 10);
 
-            assertTrue((Boolean) hnd.handleAsync(req).get().getResponse());
+            assertTrue((Boolean)hnd.handleAsync(req).get().getResponse());
         }
         finally {
             assertTrue(jcache().size() == 0);

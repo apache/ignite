@@ -21,6 +21,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -65,7 +66,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
@@ -200,7 +200,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private final CountDownLatch leaveLatch = new CountDownLatch(1);
 
     /** */
-    private final ScheduledExecutorService executorService;
+    private final ScheduledExecutorService executorSrvc;
 
     /** */
     private MessageWorker msgWorker;
@@ -221,7 +221,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         String instanceName = adapter.ignite() == null || adapter.ignite().name() == null
             ? "client-node" : adapter.ignite().name();
 
-        executorService = Executors.newSingleThreadScheduledExecutor(
+        executorSrvc = Executors.newSingleThreadScheduledExecutor(
             new IgniteThreadFactory(instanceName, "tcp-discovery-exec"));
     }
 
@@ -307,9 +307,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         sockReader = new SocketReader();
         sockReader.start();
 
-        if (spi.ipFinder.isShared() && spi.isForceServerMode())
-            registerLocalNodeAddress();
-
         msgWorker = new MessageWorker(log);
 
         new IgniteSpiThread(msgWorker.igniteInstanceName(), msgWorker.name(), log) {
@@ -318,7 +315,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
         }.start();
 
-        executorService.scheduleAtFixedRate(new MetricsSender(), spi.metricsUpdateFreq, spi.metricsUpdateFreq, MILLISECONDS);
+        executorSrvc.scheduleAtFixedRate(new MetricsSender(), spi.metricsUpdateFreq, spi.metricsUpdateFreq, MILLISECONDS);
 
         try {
             joinLatch.await();
@@ -369,7 +366,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         while (!U.join(sockReader, log, 200))
             U.interrupt(sockReader);
 
-        executorService.shutdownNow();
+        executorSrvc.shutdownNow();
 
         spi.printStopInfo();
     }
@@ -382,11 +379,6 @@ class ClientImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
         return U.arrayList(rmtNodes.values(), TcpDiscoveryNodesRing.VISIBLE_NODES);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allNodesSupport(IgniteFeatures feature) {
-        return IgniteFeatures.allNodesSupports(upcast(rmtNodes.values()), feature);
     }
 
     /** {@inheritDoc} */
@@ -435,7 +427,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 else {
                     final GridFutureAdapter<Boolean> finalFut = fut;
 
-                    executorService.schedule(() -> {
+                    executorSrvc.schedule(() -> {
                         if (pingFuts.remove(nodeId, finalFut)) {
                             if (ClientImpl.this.state == DISCONNECTED)
                                 finalFut.onDone(new IgniteClientDisconnectedCheckedException(null,
@@ -727,11 +719,13 @@ class ClientImpl extends TcpDiscoveryImpl {
             boolean openSock = false;
 
             Socket sock = null;
+            OutputStream out;
 
             try {
                 long tsNanos = System.nanoTime();
 
                 sock = spi.openSocket(addr, timeoutHelper);
+                out = spi.socketStream(sock);
 
                 openSock = true;
 
@@ -739,7 +733,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 req.client(true);
 
-                spi.writeToSocket(sock, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeToSocket(sock, out, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
 
@@ -785,11 +779,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                     );
 
                     msg = joinReqMsg;
-
-                    // During marshalling, SPI didn't know whether all nodes support compression as we didn't join yet.
-                    // The only way to know is passing flag directly with handshake response.
-                    if (!res.isDiscoveryDataPacketCompression())
-                        ((TcpDiscoveryJoinRequestMessage)msg).gridDiscoveryData().unzipData(log);
                 }
                 else
                     msg = new TcpDiscoveryClientReconnectMessage(getLocalNodeId(), rmtNodeId, lastMsgId);
@@ -797,9 +786,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                 msg.client(true);
 
                 if (msg instanceof TraceableMessage)
-                    tracing.messages().beforeSend((TraceableMessage) msg);
+                    tracing.messages().beforeSend((TraceableMessage)msg);
 
-                spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeToSocket(sock, out, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 spi.stats.onMessageSent(msg, U.millisSinceNanos(tsNanos));
 
@@ -846,7 +835,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     break;
                 }
 
-                if (timeoutHelper.checkFailureTimeoutReached(e))
+                if (IgniteSpiOperationTimeoutHelper.checkFailureTimeoutReached(e))
                     break;
 
                 if (!spi.failureDetectionTimeoutEnabled() && ++reconCnt == spi.getReconnectCount())
@@ -1022,21 +1011,18 @@ class ClientImpl extends TcpDiscoveryImpl {
     @Override public void updateMetrics(UUID nodeId,
         ClusterMetrics metrics,
         Map<Integer, CacheMetrics> cacheMetrics,
-        long tsNanos)
-    {
-        boolean isLocDaemon = spi.locNode.isDaemon();
-
+        long tsNanos
+    ) {
         assert nodeId != null;
         assert metrics != null;
-        assert isLocDaemon || cacheMetrics != null;
+        assert cacheMetrics != null;
 
         TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
         if (node != null && node.visible()) {
             node.setMetrics(metrics);
 
-            if (!isLocDaemon)
-                node.setCacheMetrics(cacheMetrics);
+            node.setCacheMetrics(cacheMetrics);
 
             node.lastUpdateTimeNanos(tsNanos);
 
@@ -1403,6 +1389,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         try {
                             spi.writeToSocket(
                                 sock,
+                                spi.socketStream(sock),
                                 msg,
                                 sockTimeout);
                         }
@@ -1449,6 +1436,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     spi.writeToSocket(
                         sock,
+                        spi.socketStream(sock),
                         msg,
                         sockTimeout);
 
@@ -2147,9 +2135,9 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (spi.joinTimeout > 0) {
                 final int joinCnt0 = joinCnt;
 
-                executorService.schedule(() -> {
-                        queue.add(new JoinTimeout(joinCnt0));
-                    }, spi.joinTimeout, MILLISECONDS);
+                executorSrvc.schedule(() -> {
+                    queue.add(new JoinTimeout(joinCnt0));
+                }, spi.joinTimeout, MILLISECONDS);
             }
 
             sockReader.setSocket(joinRes.get1(), locNode.clientRouterNodeId());
@@ -2167,7 +2155,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             spi.stats.onMessageProcessingStarted(msg);
 
             if (msg instanceof TraceableMessage)
-                tracing.messages().beforeSend((TraceableMessage) msg);
+                tracing.messages().beforeSend((TraceableMessage)msg);
 
             if (msg instanceof TcpDiscoveryNodeAddedMessage)
                 processNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
@@ -2191,7 +2179,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             spi.stats.onMessageProcessingFinished(msg);
 
             if (msg instanceof TraceableMessage)
-                tracing.messages().finishProcessing((TraceableMessage) msg);
+                tracing.messages().finishProcessing((TraceableMessage)msg);
 
             if (spi.ensured(msg)
                     && state == CONNECTED
@@ -2645,21 +2633,18 @@ class ClientImpl extends TcpDiscoveryImpl {
         private void updateMetrics(UUID nodeId,
             ClusterMetrics metrics,
             Map<Integer, CacheMetrics> cacheMetrics,
-            long tsNanos)
-        {
-            boolean isLocDaemon = spi.locNode.isDaemon();
-
+            long tsNanos
+        ) {
             assert nodeId != null;
             assert metrics != null;
-            assert isLocDaemon || cacheMetrics != null;
+            assert cacheMetrics != null;
 
             TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
             if (node != null && node.visible()) {
                 node.setMetrics(metrics);
 
-                if (!isLocDaemon)
-                    node.setCacheMetrics(cacheMetrics);
+                node.setCacheMetrics(cacheMetrics);
 
                 node.lastUpdateTimeNanos(tsNanos);
 
@@ -2752,7 +2737,7 @@ class ClientImpl extends TcpDiscoveryImpl {
      */
     private static class JoinTimeout {
         /** */
-        private int joinCnt;
+        private final int joinCnt;
 
         /**
          * @param joinCnt Join count to compare.

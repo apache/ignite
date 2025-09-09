@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -41,7 +40,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_S
 /**
  * No operation IgniteSecurity.
  */
-public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements IgniteSecurity {
+public class NoOpIgniteSecurityProcessor extends IgniteSecurityAdapter {
     /** Error message that occurs when trying to perform security operations if security disabled. */
     public static final String SECURITY_DISABLED_ERROR_MSG = "Operation cannot be performed: Ignite security disabled.";
 

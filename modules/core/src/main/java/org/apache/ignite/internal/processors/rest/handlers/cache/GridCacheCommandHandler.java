@@ -121,7 +121,8 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_S
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_UPDATE_TLL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeForNodeId;
 
 /**
  * Command handler for API requests.
@@ -343,15 +344,16 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Instance on the named cache.
      * @throws IgniteCheckedException If cache not found.
      */
-    private static IgniteInternalCache<Object, Object> cache(Ignite ignite,
-        String cacheName) throws IgniteCheckedException {
-        IgniteInternalCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
+    private static IgniteInternalCache<Object, Object> cache(
+        Ignite ignite,
+        String cacheName
+    ) throws IgniteCheckedException {
+        IgniteCacheProxy<Object, Object> cache = (IgniteCacheProxy<Object, Object>)ignite.cache(cacheName);
 
         if (cache == null)
-            throw new IgniteCheckedException(
-                "Failed to find cache for given cache name: " + cacheName);
+            throw new IgniteCheckedException("Failed to find cache for given cache name: " + cacheName);
 
-        return cache;
+        return cache.internalProxy();
     }
 
     /** {@inheritDoc} */
@@ -759,13 +761,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 chain(resultWrapper((IgniteInternalCache<Object, Object>)prj, key));
         }
         else {
-            ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
+            ClusterGroup prj = ctx.grid().cluster().forPredicate(nodeForNodeId(destId));
 
-            ctx.task().setThreadContext(TC_NO_FAILOVER, true);
-
-            return ctx.closure().callAsync(BALANCE,
+            return ctx.closure().callAsync(
+                BALANCE,
                 new FlaggedCacheOperationCallable(cacheName, cacheFlags, op, key),
-                prj.nodes());
+                options(prj.nodes()).withFailoverDisabled()
+            );
         }
     }
 
@@ -785,8 +787,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         final String cacheName,
         final Object key,
         final CacheCommand op) throws IgniteCheckedException {
-        final boolean locExec = destId == null || destId.equals(ctx.localNodeId()) ||
-            ctx.cache().cache(cacheName) != null;
+        final boolean locExec = destId == null || destId.equals(ctx.localNodeId());
 
         if (locExec) {
             final IgniteInternalCache<Object, Object> cache = localCache(cacheName);
@@ -794,13 +795,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return op.apply(cache, ctx).chain(resultWrapper(cache, key));
         }
         else {
-            ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
+            ClusterGroup prj = ctx.grid().cluster().forPredicate(nodeForNodeId(destId));
 
-            ctx.task().setThreadContext(TC_NO_FAILOVER, true);
-
-            return ctx.closure().callAsync(BALANCE,
+            return ctx.closure().callAsync(
+                BALANCE,
                 new CacheOperationCallable(cacheName, op, key),
-                prj.nodes());
+                options(prj.nodes()).withFailoverDisabled()
+            );
         }
     }
 
@@ -825,13 +826,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws IgniteCheckedException If cache not found.
      */
     protected IgniteInternalCache<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
-        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
-
-        if (cache == null)
-            throw new IgniteCheckedException(
-                "Failed to find cache for given cache name: " + cacheName);
-
-        return cache;
+        return cache(ctx.grid(), cacheName);
     }
 
     /**
@@ -1109,8 +1104,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public Collection<GridCacheSqlMetadata> execute() {
             try {
-               if (future == null) {
-                    if (!ignite.cluster().active())
+                if (future == null) {
+                    if (!ignite.cluster().state().active())
                         return Collections.emptyList();
 
                     IgniteInternalCache<?, ?> cache = null;

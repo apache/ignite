@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Externalizable;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -86,8 +87,11 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
      */
     public IgniteCache<K, V> skipStore();
 
-    /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx();
+    /**
+     * @param appAttrs Application attributes.
+     * @return Cache with application attributes.
+     */
+    public IgniteCache<K, V> withApplicationAttributes(Map<String, String> appAttrs);
 
     /**
      * @return Internal proxy.

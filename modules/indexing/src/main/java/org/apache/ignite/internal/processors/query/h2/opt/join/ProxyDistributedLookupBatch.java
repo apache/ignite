@@ -19,7 +19,8 @@ package org.apache.ignite.internal.processors.query.h2.opt.join;
 
 import java.util.List;
 import java.util.concurrent.Future;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ProxyIndex;
 import org.h2.index.Cursor;
 import org.h2.index.IndexLookupBatch;
 import org.h2.result.SearchRow;
@@ -32,7 +33,7 @@ public class ProxyDistributedLookupBatch implements IndexLookupBatch {
     private final IndexLookupBatch delegate;
 
     /** Row descriptor. */
-    private final GridH2RowDescriptor rowDesc;
+    private final GridQueryRowDescriptor rowDesc;
 
     /**
      * Creates proxy lookup batch.
@@ -40,15 +41,15 @@ public class ProxyDistributedLookupBatch implements IndexLookupBatch {
      * @param delegate Underlying index lookup batch.
      * @param rowDesc Row descriptor.
      */
-    public ProxyDistributedLookupBatch(IndexLookupBatch delegate, GridH2RowDescriptor rowDesc) {
+    public ProxyDistributedLookupBatch(IndexLookupBatch delegate, GridQueryRowDescriptor rowDesc) {
         this.delegate = delegate;
         this.rowDesc = rowDesc;
     }
 
     /** {@inheritDoc} */
     @Override public boolean addSearchRows(SearchRow first, SearchRow last) {
-        SearchRow firstProxy = rowDesc.prepareProxyIndexRow(first);
-        SearchRow lastProxy = rowDesc.prepareProxyIndexRow(last);
+        SearchRow firstProxy = GridH2ProxyIndex.prepareProxyIndexRow(rowDesc, first);
+        SearchRow lastProxy = GridH2ProxyIndex.prepareProxyIndexRow(rowDesc, last);
 
         return delegate.addSearchRows(firstProxy, lastProxy);
     }

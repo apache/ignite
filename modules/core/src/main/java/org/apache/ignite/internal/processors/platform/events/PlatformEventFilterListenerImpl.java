@@ -24,7 +24,7 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -34,8 +34,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 /**
  * Platform event filter. Delegates apply to native platform.
  */
-public class PlatformEventFilterListenerImpl implements PlatformEventFilterListener, Externalizable
-{
+public class PlatformEventFilterListenerImpl implements PlatformEventFilterListener, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -124,7 +123,7 @@ public class PlatformEventFilterListenerImpl implements PlatformEventFilterListe
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = ctx.writer(out);
+            BinaryWriterEx writer = ctx.writer(out);
 
             ctx.writeEvent(writer, evt);
 
@@ -150,7 +149,7 @@ public class PlatformEventFilterListenerImpl implements PlatformEventFilterListe
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = ctx.writer(out);
+            BinaryWriterEx writer = ctx.writer(out);
 
             writer.writeObjectDetached(pred);
 

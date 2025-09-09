@@ -39,6 +39,8 @@ public class MetastorageLeafIO extends BPlusLeafIO<MetastorageRow> implements Me
         int off,
         MetastorageRow row
     ) {
+        assertPageType(pageAddr);
+
         setVersion(pageAddr, 2);
 
         MetastoragePageIOUtils.storeByOffset(this, pageAddr, off, row);
@@ -46,6 +48,8 @@ public class MetastorageLeafIO extends BPlusLeafIO<MetastorageRow> implements Me
 
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<MetastorageRow> srcIo, long srcPageAddr, int srcIdx) {
+        assertPageType(dstPageAddr);
+
         setVersion(dstPageAddr, 2);
 
         MetastoragePageIOUtils.store(this, dstPageAddr, dstIdx, srcIo, srcPageAddr, srcIdx);

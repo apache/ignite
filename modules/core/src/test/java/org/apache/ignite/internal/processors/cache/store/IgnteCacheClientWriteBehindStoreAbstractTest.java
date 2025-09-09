@@ -28,20 +28,12 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
  * Tests that write behind store is updated if client does not have store.
  */
 public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends IgniteCacheAbstractTest {
-    /** */
-    @Before
-    public void beforeCacheStoreListenerRWThroughDisabledTransactionalCacheTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
-
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -59,8 +51,6 @@ public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends Ignit
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setWriteBehindEnabled(true);

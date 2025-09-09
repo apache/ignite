@@ -96,7 +96,7 @@ public class ServiceReassignmentFunctionSelfTest {
     }
 
     /**
-     * Mocks GridServiceProcessor to test method {@link IgniteServiceProcessor#reassign(IgniteUuid,
+     * Mocks IgniteServiceProcessor to test method {@link IgniteServiceProcessor#reassign(IgniteUuid,
      * ServiceConfiguration, AffinityTopologyVersion, TreeMap)} AffinityTopologyVersion, Map)} )}.
      */
     private IgniteServiceProcessor mockServiceProcessor() {

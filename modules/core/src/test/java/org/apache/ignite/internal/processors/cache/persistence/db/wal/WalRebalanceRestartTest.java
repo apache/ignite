@@ -24,6 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -170,10 +171,10 @@ public class WalRebalanceRestartTest extends GridCommonAbstractTest {
      * @throws IgniteInterruptedCheckedException if failed.
      */
     private void waitForRebalanceOnLastDiscoTopology(IgniteEx ignite) throws IgniteInterruptedCheckedException {
-        AffinityTopologyVersion readyAffinity = ignite.context().cache().context().exchange().readyAffinityVersion();
+        AffinityTopologyVersion readyAff = ignite.context().cache().context().exchange().readyAffinityVersion();
 
-        assertTrue("Can not wait for rebalance topology [cur=" + rebTopVer + ", expect: " + readyAffinity + ']',
-            GridTestUtils.waitForCondition(() -> rebTopVer.equals(readyAffinity),
+        assertTrue("Can not wait for rebalance topology [cur=" + rebTopVer + ", expect: " + readyAff + ']',
+            GridTestUtils.waitForCondition(() -> rebTopVer.equals(readyAff),
                 10_000));
     }
 
@@ -229,7 +230,7 @@ public class WalRebalanceRestartTest extends GridCommonAbstractTest {
     private void restartRebalance(RebalanceRetrigger retrigger, boolean retriggerAsHistorical) throws Exception {
         IgniteEx ignite0 = startGrids(4);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         try (IgniteDataStreamer streamer = ignite0.dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.allowOverwrite(true);

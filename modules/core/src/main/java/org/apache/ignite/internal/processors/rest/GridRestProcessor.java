@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -81,7 +81,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
-import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -95,6 +94,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SECURITY_TOKE
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.PROBE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.VERSION;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_ILLEGAL_ARGUMENT;
@@ -108,6 +109,9 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
     /** HTTP protocol class name. */
     private static final String HTTP_PROTO_CLS =
         "org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestProtocol";
+
+    /** Commands, that are not required to be authenticated. */
+    private static final Set<GridRestCommand> SKIP_AUTHENTICATION_COMMANDS = EnumSet.of(VERSION, PROBE);
 
     /** Delay between sessions timeout checks. */
     private static final int SES_TIMEOUT_CHECK_DELAY = 1_000;
@@ -255,6 +259,9 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         if (log.isDebugEnabled())
             log.debug("Received request from client: " + req);
 
+        if (SKIP_AUTHENTICATION_COMMANDS.contains(req.command()))
+            return handleRequest0(req);
+
         if (securityEnabled) {
             Session ses;
 
@@ -313,11 +320,21 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         GridRestCommandHandler hnd = handlers.get(req.command());
 
-        IgniteInternalFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
+        final UUID secSubjId = securityEnabled ? ctx.security().securityContext().subject().id() : null;
 
-        if (res == null)
+        if (hnd == null) {
             return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to find registered handler for command: " + req.command()));
+        }
+
+        IgniteInternalFuture<GridRestResponse> res;
+
+        try {
+            res = hnd.handleAsync(req);
+        }
+        catch (Exception e) {
+            res = new GridFinishedFuture<>(e);
+        }
 
         return res.chain(new C1<IgniteInternalFuture<GridRestResponse>, GridRestResponse>() {
             @Override public GridRestResponse apply(IgniteInternalFuture<GridRestResponse> f) {
@@ -331,7 +348,9 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 catch (Exception e) {
                     failed = true;
 
-                    if (X.hasCause(e, IllegalArgumentException.class)) {
+                    if (X.hasCause(e, SecurityException.class))
+                        res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
+                    else if (X.hasCause(e, IllegalArgumentException.class)) {
                         IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
                         res = new GridRestResponse(STATUS_ILLEGAL_ARGUMENT, iae.getMessage());
@@ -358,7 +377,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                         sb.a(", err=")
                             .a(e.getMessage() != null ? e.getMessage() : e.getClass().getName())
                             .a(", trace=")
-                            .a(getErrorMessage(e))
+                            .a(X.getFullStackTrace(e))
                             .a(']');
 
                         res = new GridRestResponse(STATUS_FAILED, sb.toString());
@@ -367,29 +386,18 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 assert res != null;
 
-                if (securityEnabled && !failed)
-                    res.sessionTokenBytes(req.sessionToken());
+                if (securityEnabled) {
+                    if (!failed)
+                        res.sessionTokenBytes(req.sessionToken());
+
+                    res.setSecuritySubjectId(secSubjId);
+                }
 
                 interceptResponse(res, req);
 
                 return res;
             }
         });
-    }
-
-    /**
-     * @param th Th.
-     * @return Stack trace
-     */
-    private String getErrorMessage(Throwable th) {
-        if (th == null)
-            return "";
-
-        StringWriter writer = new StringWriter();
-
-        th.printStackTrace(new PrintWriter(writer));
-
-        return writer.toString();
     }
 
     /**
@@ -887,40 +895,35 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 break;
 
-            case EXE:
             case RESULT:
                 perm = SecurityPermission.TASK_EXECUTE;
 
                 GridRestTaskRequest taskReq = (GridRestTaskRequest)req;
                 name = taskReq.taskName();
 
-                // We should extract task name wrapped by VisorGatewayTask.
-                if (VisorGatewayTask.class.getName().equals(name))
-                    name = (String)taskReq.params().get(WRAPPED_TASK_IDX);
-
                 break;
 
             case GET_OR_CREATE_CACHE:
-            case DESTROY_CACHE:
-                perm = SecurityPermission.ADMIN_CACHE;
+                perm = SecurityPermission.CACHE_CREATE;
                 name = ((GridRestCacheRequest)req).cacheName();
 
                 break;
 
-            case CLUSTER_ACTIVE:
-            case CLUSTER_INACTIVE:
-            case CLUSTER_ACTIVATE:
-            case CLUSTER_DEACTIVATE:
+            case DESTROY_CACHE:
+                perm = SecurityPermission.CACHE_DESTROY;
+                name = ((GridRestCacheRequest)req).cacheName();
+
+                break;
+
             case BASELINE_SET:
             case BASELINE_ADD:
             case BASELINE_REMOVE:
-            case CLUSTER_SET_STATE:
                 perm = SecurityPermission.ADMIN_OPS;
 
                 break;
 
+            case EXE:
             case DATA_REGION_METRICS:
-            case DATA_STORAGE_METRICS:
             case CACHE_METRICS:
             case CACHE_SIZE:
             case CACHE_METADATA:
@@ -934,6 +937,11 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             case NAME:
             case LOG:
             case CLUSTER_CURRENT_STATE:
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
+            case CLUSTER_ACTIVATE:
+            case CLUSTER_DEACTIVATE:
+            case CLUSTER_SET_STATE:
             case CLUSTER_NAME:
             case BASELINE_CURRENT_STATE:
             case CLUSTER_STATE:
@@ -941,6 +949,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             case ADD_USER:
             case REMOVE_USER:
             case UPDATE_USER:
+            case PROBE:
                 break;
 
             default:
@@ -955,7 +964,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
      * @return Whether or not REST is enabled.
      */
     private boolean isRestEnabled() {
-        return !ctx.config().isDaemon() && ctx.config().getConnectorConfiguration() != null;
+        return ctx.config().getConnectorConfiguration() != null;
     }
 
     /**

@@ -30,7 +30,6 @@ import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -84,8 +83,6 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setClientConnectorConfiguration(
             new ClientConnectorConfiguration()
@@ -332,9 +329,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      *
      * Note: Disabled cipher suite can be enabled via Java Security property "jdk.tls.disabledAlgorithms" or in
-     * &lt;JRE_8_HOME&gt;/lib/security/java.security file.
-     *
-     * Note: java.security file location may be changed for Java 9+ version
+     * &lt;JAVA_HOME&gt;/conf/security/java.security file.
      */
     @Test
     public void testDisabledCustomCipher() throws Exception {
@@ -373,9 +368,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      *
      * Note: Disabled cipher suite can be enabled via Java Security property "jdk.tls.disabledAlgorithms" or in
-     * &lt;JRE_8_HOME&gt;/lib/security/java.security file.
-     *
-     * Note: java.security file location may be changed for Java 9+ version
+     * &lt;JAVA_HOME&gt;/conf/security/java.security file.
      */
     @Test
     public void testUnsupportedCustomCipher() throws Exception {
@@ -654,7 +647,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
                     return null;
                 }
-            }, SQLException.class, "Unsupported keystore algorithm: INVALID");
+            }, SQLException.class, "Unsupported key algorithm: INVALID");
         }
         finally {
             stopAllGrids();

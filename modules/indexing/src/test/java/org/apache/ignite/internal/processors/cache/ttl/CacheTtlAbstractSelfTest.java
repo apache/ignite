@@ -40,9 +40,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 import static org.apache.ignite.cache.CachePeekMode.NEAR;
 import static org.apache.ignite.cache.CachePeekMode.OFFHEAP;
@@ -63,6 +61,9 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final long DEFAULT_TIME_TO_LIVE = 2000;
+
+    /** */
+    private static final long DEFAULT_CHECK_DELAY = 1000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -146,7 +147,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + DEFAULT_CHECK_DELAY);
 
         checkSizeAfterLive();
     }
@@ -181,7 +182,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + DEFAULT_CHECK_DELAY);
 
         checkSizeAfterLive();
     }
@@ -198,7 +199,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + DEFAULT_CHECK_DELAY);
 
         checkSizeAfterLive();
 
@@ -211,7 +212,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + DEFAULT_CHECK_DELAY);
 
         checkSizeAfterLive();
     }
@@ -229,7 +230,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(1);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + DEFAULT_CHECK_DELAY);
 
         checkSizeAfterLive();
     }
@@ -250,7 +251,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + DEFAULT_CHECK_DELAY);
 
         checkSizeAfterLive();
     }
@@ -260,9 +261,6 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDefaultTimeToLivePreload() throws Exception {
-        if (cacheMode() == LOCAL)
-            return;
-
         IgniteCache<Integer, Integer> cache = jcache(0);
 
         Map<Integer, Integer> entries = new HashMap<>();
@@ -276,7 +274,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE, gridCount() + 1);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + DEFAULT_CHECK_DELAY);
 
         checkSizeAfterLive(gridCount() + 1);
     }
@@ -296,11 +294,11 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + DEFAULT_CHECK_DELAY);
 
         checkSizeBeforeLive(SIZE);
 
-        Thread.sleep(time - DEFAULT_TIME_TO_LIVE + 500);
+        Thread.sleep(time - DEFAULT_TIME_TO_LIVE + DEFAULT_CHECK_DELAY);
 
         checkSizeAfterLive();
     }

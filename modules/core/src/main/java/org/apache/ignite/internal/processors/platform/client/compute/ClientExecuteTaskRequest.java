@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.platform.client.compute;
 
 import java.util.Set;
 import java.util.UUID;
-
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 
 /**
  * Request to execute compute task.
@@ -51,7 +52,7 @@ public class ClientExecuteTaskRequest extends ClientRequest {
      *
      * @param reader Reader.
      */
-    public ClientExecuteTaskRequest(BinaryRawReaderEx reader) {
+    public ClientExecuteTaskRequest(BinaryReaderEx reader) {
         super(reader);
 
         int cnt = reader.readInt();
@@ -72,9 +73,12 @@ public class ClientExecuteTaskRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        ClientComputeTask task = new ClientComputeTask(ctx);
+        boolean sysTask = systemTask(ctx.kernalContext(), taskName);
 
-        ctx.incrementActiveTasksCount();
+        ClientComputeTask task = new ClientComputeTask(ctx, sysTask);
+
+        if (!sysTask)
+            ctx.incrementActiveTasksCount();
 
         long taskId = ctx.resources().put(task);
 
@@ -84,7 +88,7 @@ public class ClientExecuteTaskRequest extends ClientRequest {
             // Deserialize as part of process() call - not in constructor - for proper error handling.
             // Failure to deserialize binary object should not be treated as a failure to decode request.
             if ((flags & ClientComputeTask.KEEP_BINARY_FLAG_MASK) == 0 && arg instanceof BinaryObject)
-                arg0 = ((BinaryObject) arg).deserialize();
+                arg0 = ((BinaryObject)arg).deserialize();
 
             task.execute(taskId, taskName, arg0, nodeIds, flags, timeout);
         }
@@ -95,5 +99,22 @@ public class ClientExecuteTaskRequest extends ClientRequest {
         }
 
         return new ClientExecuteTaskResponse(requestId(), task);
+    }
+
+    /** */
+    private boolean systemTask(GridKernalContext ctx, String taskName) {
+        Class<?> cls;
+
+        try {
+            cls = U.forName(taskName, U.gridClassLoader());
+        }
+        catch (ClassNotFoundException ignored) {
+            return false;
+        }
+
+        if (ctx.security().enabled())
+            return ctx.security().isSystemType(cls);
+        else
+            return VisorMultiNodeTask.class.isAssignableFrom(cls);
     }
 }

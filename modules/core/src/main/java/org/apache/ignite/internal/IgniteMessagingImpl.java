@@ -79,7 +79,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
 
     /** {@inheritDoc} */
     @Override public void send(@Nullable Object topic, Object msg) {
-       send0(topic, msg, isAsync());
+        send0(topic, msg, isAsync());
     }
 
     /**
@@ -232,9 +232,9 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
         IgniteBiPredicate<UUID, Object> res = (IgniteBiPredicate<UUID, Object>)p;
 
         if (ctx.security().enabled()) {
-            final UUID subjectId = ctx.security().securityContext().subject().id();
+            final UUID subjId = ctx.security().securityContext().subject().id();
 
-            return new SecurityAwareBiPredicate<>(subjectId, res);
+            return new SecurityAwareBiPredicate<>(subjId, res);
         }
 
         return res;

@@ -16,26 +16,24 @@
  */
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Message is used to send acks for {@link Latch} instances management.
  */
 public class LatchAckMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Latch id. */
+    @Order(0)
     private String latchId;
 
     /** Latch topology version. */
+    @Order(1)
     private AffinityTopologyVersion topVer;
 
     /** Flag indicates that ack is final. */
+    @Order(2)
     private boolean isFinal;
 
     /**
@@ -65,10 +63,24 @@ public class LatchAckMessage implements Message {
     }
 
     /**
+     * @param latchId New latch id.
+     */
+    public void latchId(String latchId) {
+        this.latchId = latchId;
+    }
+
+    /**
      * @return Latch topology version.
      */
     public AffinityTopologyVersion topVer() {
         return topVer;
+    }
+
+    /**
+     * @param topVer New latch topology version.
+     */
+    public void topVer(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
     }
 
     /**
@@ -78,86 +90,16 @@ public class LatchAckMessage implements Message {
         return isFinal;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeBoolean("isFinal", isFinal))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeString("latchId", latchId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                isFinal = reader.readBoolean("isFinal");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                latchId = reader.readString("latchId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                topVer = reader.readAffinityTopologyVersion("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(LatchAckMessage.class);
+    /**
+     * @param isFinal New flag indicates that ack is final.
+     */
+    public void isFinal(boolean isFinal) {
+        this.isFinal = isFinal;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 135;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 
     /** {@inheritDoc} */

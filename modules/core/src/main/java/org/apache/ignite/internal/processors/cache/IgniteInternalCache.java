@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -1447,8 +1446,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public int nearSize();
 
     /**
-     * Gets the number of all primary entries cached on this node. For {@link CacheMode#LOCAL} non-distributed
-     * cache mode, this method is identical to {@link #size()}.
+     * Gets the number of all primary entries cached on this node.
      * <p>
      * For {@link CacheMode#PARTITIONED} and {@link CacheMode#REPLICATED} modes, this method will
      * return number of primary entries cached on this node (excluding any backups). The complexity of
@@ -1461,8 +1459,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public int primarySize();
 
     /**
-     * Gets the number of all primary entries cached on this node as a long value. For {@link CacheMode#LOCAL}
-     * non-distributed cache mode, this method is identical to {@link #size()}.
+     * Gets the number of all primary entries cached on this node as a long value.
      * <p>
      * For {@link CacheMode#PARTITIONED} and {@link CacheMode#REPLICATED} modes, this method will
      * return number of primary entries cached on this node (excluding any backups). The complexity of
@@ -1510,20 +1507,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Cache metrics.
      */
     public CacheMetrics localMetrics();
-
-    /**
-     * Gets whole cluster metrics (statistics) for this cache.
-     *
-     * @return Cache metrics.
-     */
-    public CacheMetricsMXBean clusterMxBean();
-
-    /**
-     * Gets local metrics (statistics) for this cache.
-     *
-     * @return Cache metrics.
-     */
-    public CacheMetricsMXBean localMxBean();
 
     /**
      * Gets number of cache entries stored in off-heap memory.
@@ -1657,11 +1640,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Cache with no-retries behavior enabled.
      */
     public IgniteInternalCache<K, V> withNoRetries();
-
-    /**
-     * @return New projection based on this one, but with atomic cache operations allowed to be used.
-     */
-    public <K1, V1> IgniteInternalCache<K1, V1> withAllowAtomicOpsInTx();
 
     /**
      * @param key Key.

@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -85,12 +84,10 @@ public class LightweightCheckpointManager {
      * @param dataRegions Data regions.
      * @param pageMemoryGroupResolver Page memory resolver.
      * @param throttlingPolicy Throttling policy.
-     * @param snapshotMgr Snapshot manager.
      * @param persStoreMetrics Persistence metrics.
      * @param longJvmPauseDetector Long JVM pause detector.
      * @param failureProcessor Failure processor.
      * @param cacheProcessor Cache processor.
-     * @throws IgniteCheckedException if fail.
      */
     public LightweightCheckpointManager(
         Function<Class<?>, IgniteLogger> logger,
@@ -101,18 +98,16 @@ public class LightweightCheckpointManager {
         Supplier<Collection<DataRegion>> dataRegions,
         IgniteThrowableFunction<Integer, PageMemoryEx> pageMemoryGroupResolver,
         PageMemoryImpl.ThrottlingPolicy throttlingPolicy,
-        IgniteCacheSnapshotManager snapshotMgr,
         DataStorageMetricsImpl persStoreMetrics,
         LongJVMPauseDetector longJvmPauseDetector,
         FailureProcessor failureProcessor,
         GridCacheProcessor cacheProcessor
-    ) throws IgniteCheckedException {
+    ) {
         CheckpointReadWriteLock lock = new CheckpointReadWriteLock(logger);
 
         checkpointWorkflow = new CheckpointWorkflow(
             logger,
             null,
-            snapshotMgr,
             null,
             lock,
             persistenceCfg.getCheckpointWriteOrder(),
@@ -134,8 +129,8 @@ public class LightweightCheckpointManager {
         };
 
         checkpointPagesWriterFactory = new CheckpointPagesWriterFactory(
+            cacheProcessor.context().kernalContext(),
             logger,
-            snapshotMgr,
             (pageMemEx, fullPage, buf, tag) ->
                 pageMemEx.pageManager().write(fullPage.groupId(), fullPage.pageId(), buf, tag, true),
             persStoreMetrics,
@@ -151,11 +146,11 @@ public class LightweightCheckpointManager {
             logger,
             longJvmPauseDetector,
             failureProcessor,
-            snapshotMgr,
             persStoreMetrics,
             cacheProcessor,
             checkpointWorkflow,
             checkpointPagesWriterFactory,
+            null,
             persistenceCfg.getCheckpointFrequency(),
             persistenceCfg.getCheckpointThreads(),
             () -> 0

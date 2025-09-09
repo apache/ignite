@@ -25,6 +25,8 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
+
 /**
  * Tests for the standard JMX beans registered by the kernal.
  */
@@ -66,25 +68,26 @@ public class GridMBeansTest extends GridCommonAbstractTest {
     @Test
     public void testExecutorBeans() throws Exception {
         // standard executors
-        checkBean("Thread Pools", "GridExecutionExecutor", "Terminated", false);
-        checkBean("Thread Pools", "GridSystemExecutor", "Terminated", false);
-        checkBean("Thread Pools", "GridManagementExecutor", "Terminated", false);
-        checkBean("Thread Pools", "GridClassLoadingExecutor", "Terminated", false);
-        checkBean("Thread Pools", "GridQueryExecutor", "Terminated", false);
-        checkBean("Thread Pools", "GridSchemaExecutor", "Terminated", false);
-        checkBean("Thread Pools", "StripedExecutor", "Terminated", false);
+        checkBean(THREAD_POOLS, "GridExecutionExecutor", "Terminated", false);
+        checkBean(THREAD_POOLS, "GridSystemExecutor", "Terminated", false);
+        checkBean(THREAD_POOLS, "GridManagementExecutor", "Terminated", false);
+        checkBean(THREAD_POOLS, "GridClassLoadingExecutor", "Terminated", false);
+        checkBean(THREAD_POOLS, "GridQueryExecutor", "Terminated", false);
+        checkBean(THREAD_POOLS, "GridSchemaExecutor", "Terminated", false);
+        checkBean(THREAD_POOLS, "GridThinClientExecutor", "Terminated", false);
+        checkBean(THREAD_POOLS, "StripedExecutor", "Terminated", false);
 
         // custom executors
-        checkBean("Thread Pools", CUSTOM_EXECUTOR_0, "Terminated", false);
-        checkBean("Thread Pools", CUSTOM_EXECUTOR_1, "Terminated", false);
+        checkBean(THREAD_POOLS, CUSTOM_EXECUTOR_0, "Terminated", false);
+        checkBean(THREAD_POOLS, CUSTOM_EXECUTOR_1, "Terminated", false);
     }
 
     /** Checks that a bean with the specified group and name is available and has the expected attribute */
     private void checkBean(String grp, String name, String attributeName, Object expAttributeVal) throws Exception {
         ObjectName mBeanName = IgniteUtils.makeMBeanName(grid().name(), grp, name);
-        Object attributeVal = grid().configuration().getMBeanServer().getAttribute(mBeanName, attributeName);
+        Object attrVal = grid().configuration().getMBeanServer().getAttribute(mBeanName, attributeName);
 
-        assertEquals(expAttributeVal, attributeVal);
+        assertEquals(expAttributeVal, attrVal);
     }
 
     /**
@@ -94,13 +97,10 @@ public class GridMBeansTest extends GridCommonAbstractTest {
     public void testBeansClasses() throws Exception {
         String[] clsNames = new String[]{"org.apache.ignite.internal.ClusterLocalNodeMetricsMXBeanImpl",
             "org.apache.ignite.internal.ClusterMetricsMXBeanImpl",
-            "org.apache.ignite.internal.IgniteKernal",
+            "org.apache.ignite.internal.IgniteMXBeanImpl",
             "org.apache.ignite.internal.IgnitionMXBeanAdapter",
-            "org.apache.ignite.internal.StripedExecutorMXBeanAdapter",
-            "org.apache.ignite.internal.ThreadPoolMXBeanAdapter",
             "org.apache.ignite.internal.TransactionMetricsMxBeanImpl",
             "org.apache.ignite.internal.TransactionsMXBeanImpl",
-            "org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsMXBeanImpl",
             "org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl",
             "org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerMXBeanImpl",
             "org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl",

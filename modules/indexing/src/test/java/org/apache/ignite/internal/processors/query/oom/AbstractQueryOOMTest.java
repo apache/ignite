@@ -33,6 +33,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -120,14 +121,14 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        Ignite local = startGrid(0);
+        Ignite loc = startGrid(0);
 
         for (int i = 0; i < RMT_NODES_CNT; ++i)
             startGrid("remote-" + i);
 
-        local.cluster().active(true);
+        loc.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache c = local.cache(CACHE_NAME);
+        IgniteCache c = loc.cache(CACHE_NAME);
 
         Map<Long, Value> batch = new HashMap<>(BATCH_SIZE);
 
@@ -152,7 +153,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        local.cluster().active(false);
+        loc.cluster().state(ClusterState.INACTIVE);
 
         stopAllGrids(false);
 
@@ -179,7 +180,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
         for (int i = 0; i < RMT_NODES_CNT; ++i)
             startGrid("remote-" + i);
 
-        loc.cluster().active(true);
+        loc.cluster().state(ClusterState.ACTIVE);
 
         stopGrid(0, false);
     }

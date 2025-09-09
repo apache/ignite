@@ -33,12 +33,14 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
-
+import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 
 /**
@@ -138,13 +140,19 @@ public class ClientCacheConfigurationSerializer {
     /** */
     private static final short EXPIRY_POLICY = 407;
 
+    /** */
+    private static final short STORAGE_PATH = 408;
+
+    /** */
+    private static final short IDX_PATH = 409;
+
     /**
      * Writes the cache configuration.
      * @param writer Writer.
      * @param cfg Configuration.
      * @param protocolCtx Client protocol context.
      */
-    static void write(BinaryRawWriterEx writer, CacheConfiguration cfg, ClientProtocolContext protocolCtx) {
+    static void write(BinaryWriterEx writer, CacheConfiguration cfg, ClientProtocolContext protocolCtx) {
         assert writer != null;
         assert cfg != null;
 
@@ -155,7 +163,7 @@ public class ClientCacheConfigurationSerializer {
                 CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE);
 
         writer.writeInt(cfg.getBackups());
-        PlatformConfigurationUtils.writeEnumInt(writer, cfg.getCacheMode(), CacheConfiguration.DFLT_CACHE_MODE);
+        writer.writeInt(ofNullable(cfg.getCacheMode()).orElse(CacheConfiguration.DFLT_CACHE_MODE).code());
         writer.writeBoolean(cfg.isCopyOnRead());
         writer.writeString(cfg.getDataRegionName());
         writer.writeBoolean(cfg.isEagerTtl());
@@ -191,7 +199,8 @@ public class ClientCacheConfigurationSerializer {
                 writer.writeString(key.getTypeName());
                 writer.writeString(key.getAffinityKeyFieldName());
             }
-        } else {
+        }
+        else {
             writer.writeInt(0);
         }
 
@@ -203,11 +212,17 @@ public class ClientCacheConfigurationSerializer {
 
             for (QueryEntity e : qryEntities)
                 writeQueryEntity(writer, e, protocolCtx);
-        } else
+        }
+        else
             writer.writeInt(0);
 
         if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.EXPIRY_POLICY))
             PlatformConfigurationUtils.writeExpiryPolicyFactory(writer, cfg.getExpiryPolicyFactory());
+
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.CACHE_STORAGES)) {
+            writer.writeStringArray(cfg.getStoragePaths());
+            writer.writeString(cfg.getIndexPath());
+        }
 
         // Write length (so that part of the config can be skipped).
         writer.writeInt(pos, writer.out().position() - pos - 4);
@@ -220,7 +235,7 @@ public class ClientCacheConfigurationSerializer {
      * @param qryEntity Query entity.
      * @param protocolCtx Protocol context.
      */
-    private static void writeQueryEntity(BinaryRawWriterEx writer, QueryEntity qryEntity, ClientProtocolContext protocolCtx) {
+    private static void writeQueryEntity(BinaryWriterEx writer, QueryEntity qryEntity, ClientProtocolContext protocolCtx) {
         assert qryEntity != null;
 
         writer.writeString(qryEntity.getKeyType());
@@ -277,8 +292,8 @@ public class ClientCacheConfigurationSerializer {
         if (indexes != null) {
             writer.writeInt(indexes.size());
 
-            for (QueryIndex index : indexes)
-                PlatformConfigurationUtils.writeQueryIndex(writer, index);
+            for (QueryIndex idx : indexes)
+                PlatformConfigurationUtils.writeQueryIndex(writer, idx);
         }
         else
             writer.writeInt(0);
@@ -296,7 +311,7 @@ public class ClientCacheConfigurationSerializer {
 
         short propCnt = reader.readShort();
 
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration<?, ?> cfg = new CacheConfiguration<>();
 
         for (int i = 0; i < propCnt; i++) {
             short code = reader.readShort();
@@ -311,7 +326,7 @@ public class ClientCacheConfigurationSerializer {
                     break;
 
                 case CACHE_MODE:
-                    cfg.setCacheMode(CacheMode.fromOrdinal(reader.readInt()));
+                    cfg.setCacheMode(CacheMode.fromCode(reader.readInt()));
                     break;
 
                 case COPY_ON_READ:
@@ -359,7 +374,7 @@ public class ClientCacheConfigurationSerializer {
                     break;
 
                 case PARTITION_LOSS_POLICY:
-                    cfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte) reader.readInt()));
+                    cfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte)reader.readInt()));
                     break;
 
                 case QUERY_DETAIL_METRICS_SIZE:
@@ -444,8 +459,19 @@ public class ClientCacheConfigurationSerializer {
                         cfg.setQueryEntities(entities);
                     }
                     break;
+
+                case STORAGE_PATH:
+                    cfg.setStoragePaths(reader.readStringArray());
+                    break;
+
+                case IDX_PATH:
+                    cfg.setIndexPath(reader.readString());
+                    break;
             }
         }
+
+        if (cfg.getCacheMode() == null)
+            throw new ClientException("Unsupported cache mode");
 
         return cfg;
     }

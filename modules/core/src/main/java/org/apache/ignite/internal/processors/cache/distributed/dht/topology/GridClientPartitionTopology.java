@@ -66,6 +66,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Partition topology for node which does not have any local partitions.
@@ -304,9 +305,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut,
         boolean initParts,
-        boolean updateMoving)
-        throws IgniteCheckedException
-    {
+        boolean updateMoving
+    ) throws IgniteCheckedException {
         ClusterNode loc = cctx.localNode();
 
         U.writeLock(lock);
@@ -490,7 +490,17 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridDhtLocalPartition> currentLocalPartitions() {
+    @Override public int localPartitionsNumber() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterable<GridDhtLocalPartition> currentLocalPartitions() {
+        return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterable<GridDhtLocalPartition> shiftedCurrentLocalPartitions() {
         return Collections.emptyList();
     }
 
@@ -579,7 +589,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @return List of nodes for the partition.
      */
     private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
-        Collection<UUID> allIds = F.nodeIds(discoCache.cacheGroupAffinityNodes(grpId));
+        Collection<UUID> allIds = nodeIds(discoCache.cacheGroupAffinityNodes(grpId));
 
         lock.readLock().lock();
 
@@ -1099,7 +1109,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             }
 
             lostParts = null;
-        } finally {
+        }
+        finally {
             lock.writeLock().unlock();
         }
     }
@@ -1308,16 +1319,26 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                     U.warn(log, "Partitions have been scheduled for rebalancing due to outdated update counter "
                         + "[grpId=" + grpId
                         + ", nodeId=" + nodeId
-                        + ", partsFull=" + S.compact(partsToRebalance)
-                        + ", partsHistorical=" + S.compact(historical) + "]");
+                        + ", partsFull=" + S.toStringSortedDistinct(partsToRebalance)
+                        + ", partsHistorical=" + S.toStringSortedDistinct(historical) + "]");
                 }
             }
 
             for (Map.Entry<Integer, Set<UUID>> entry : ownersByUpdCounters.entrySet())
                 part2node.put(entry.getKey(), entry.getValue());
 
+            if (lostParts != null) {
+                for (Integer lostPart : lostParts) {
+                    for (GridDhtPartitionMap partMap : node2part.values()) {
+                        if (partMap.containsKey(lostPart))
+                            partMap.put(lostPart, LOST);
+                    }
+                }
+            }
+
             updateSeq.incrementAndGet();
-        } finally {
+        }
+        finally {
             lock.writeLock().unlock();
         }
 

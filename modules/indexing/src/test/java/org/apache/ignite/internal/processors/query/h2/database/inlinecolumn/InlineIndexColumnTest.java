@@ -29,6 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.GridTestBinaryMarshaller;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -101,7 +103,10 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
     public void resetState() throws Exception {
         inlineObjHash = false;
 
-        IndexProcessor.serializer = new JavaObjectKeySerializer(getConfiguration());
+        IndexProcessor.serializer = new JavaObjectKeySerializer(
+            U.resolveClassLoader(getConfiguration()),
+            createStandaloneBinaryMarshaller()
+        );
 
         JdbcUtils.serializer = new JavaObjectSerializer() {
             @Override public byte[] serialize(Object o) throws Exception {
@@ -282,7 +287,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                 .inlineObjHash(inlineObjHash)
                 .stringOptimizedCompare(true);
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(wrap(v1, cls).getType(), keyTypeSettings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.forCode(wrap(v1, cls).getType()), keyTypeSettings);
 
             keyType.put(pageAddr, off, idxKey(wrap(v1, cls)), maxSize);
 
@@ -353,7 +358,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                 .inlineObjHash(false)
                 .stringOptimizedCompare(false);
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(Value.STRING, keyTypeSettings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.STRING, keyTypeSettings);
 
             keyType.put(pageAddr, off, idxKey(ValueString.get("aaaaaaa")), 3 + 5);
 
@@ -406,7 +411,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                 .inlineObjHash(false)
                 .stringOptimizedCompare(false);
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(Value.BYTES, keyTypeSettings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.BYTES, keyTypeSettings);
 
             int maxSize = 3 + 3;
             int savedBytesCnt = keyType.put(pageAddr, off,
@@ -418,7 +423,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             maxSize = 3 + 5;
 
-            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, (byte[]) keyType.get(pageAddr, off, maxSize).key()));
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, (byte[])keyType.get(pageAddr, off, maxSize).key()));
 
             savedBytesCnt = keyType.put(pageAddr, off,
                 idxKey(ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), keyTypeSettings), maxSize);
@@ -427,7 +432,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             assertTrue(savedBytesCnt <= maxSize);
 
-            assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, (byte[]) keyType.get(pageAddr, off, maxSize).key()));
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, (byte[])keyType.get(pageAddr, off, maxSize).key()));
         }
         finally {
             if (page != 0L)
@@ -470,7 +475,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                 .inlineObjHash(false)
                 .stringOptimizedCompare(false);
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(Value.JAVA_OBJECT, keyTypeSettings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.JAVA_OBJECT, keyTypeSettings);
 
             ValueJavaObject exp = ValueJavaObject.getNoCopy(new TestPojo(4, 3L), null, null);
 
@@ -485,7 +490,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             assertTrue(Arrays.equals(
                 Arrays.copyOf(exp.getBytesNoCopy(), 3),
-                ((JavaObjectIndexKey) keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
+                ((JavaObjectIndexKey)keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
 
             savedBytesCnt = keyType.put(pageAddr, off, idxKey(ValueJavaObject.getNoCopy(null, exp.getBytesNoCopy(), null)), maxSize);
 
@@ -495,7 +500,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             assertTrue(Arrays.equals(
                 exp.getBytesNoCopy(),
-                ((JavaObjectIndexKey) keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
+                ((JavaObjectIndexKey)keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
         }
         finally {
             if (page != 0L)
@@ -535,7 +540,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
             IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
                 .stringOptimizedCompare(false);
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(Value.JAVA_OBJECT, keyTypeSettings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.JAVA_OBJECT, keyTypeSettings);
 
             Value exp = wrap(new TestPojo(4, 3L), TestPojo.class);
 
@@ -890,7 +895,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                 .inlineObjHash(false)
                 .stringOptimizedCompare(false);
 
-            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(v1.getType(), keyTypeSettings);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.forCode(v1.getType()), keyTypeSettings);
 
             off += keyType.put(pageAddr, off, idxKey(v1), max - off);
             off += keyType.put(pageAddr, off, idxKey(v2), max - off);
@@ -917,7 +922,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
      * @return Random string.
      */
     private String randomString(int cnt) {
-        final char[] buffer = new char[cnt];
+        final char[] buf = new char[cnt];
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -934,9 +939,9 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                     cnt++;
                 else {
                     // low surrogate, insert high surrogate after putting it in
-                    buffer[cnt] = ch;
+                    buf[cnt] = ch;
                     cnt--;
-                    buffer[cnt] = (char)(55296 + rnd.nextInt(128));
+                    buf[cnt] = (char)(55296 + rnd.nextInt(128));
                 }
             }
             else if (ch >= 55296 && ch <= 56191) {
@@ -944,19 +949,19 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
                     cnt++;
                 else {
                     // high surrogate, insert low surrogate before putting it in
-                    buffer[cnt] = (char)(56320 + rnd.nextInt(128));
+                    buf[cnt] = (char)(56320 + rnd.nextInt(128));
                     cnt--;
-                    buffer[cnt] = ch;
+                    buf[cnt] = ch;
                 }
             }
             else if (ch >= 56192 && ch <= 56319)
                 // private high surrogate, no effing clue, so skip it
                 cnt++;
             else
-                buffer[cnt] = ch;
+                buf[cnt] = ch;
         }
 
-        return new String(buffer);
+        return new String(buf);
     }
 
     /** Test class to verify java object inlining */

@@ -17,15 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -44,9 +38,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNearLockRequest extends GridDistributedLockRequest {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private static final int NEED_RETURN_VALUE_FLAG_MASK = 0x01;
 
     /** */
@@ -63,9 +54,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** Mini future ID. */
     private int miniId;
-
-    /** Filter. */
-    private CacheEntryPredicate[] filter;
 
     /** Array of mapped DHT versions for this entry. */
     @GridToStringInclude
@@ -87,7 +75,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     private String txLbl;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearLockRequest() {
         // No-op.
@@ -241,23 +229,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @return Filter.
-     */
-    public CacheEntryPredicate[] filter() {
-        return filter;
-    }
-
-    /**
-     * @param filter Filter.
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void filter(CacheEntryPredicate[] filter, GridCacheContext ctx)
-        throws IgniteCheckedException {
-        this.filter = filter;
-    }
-
-    /**
      * @return Mini future ID.
      */
     public int miniId() {
@@ -284,19 +255,12 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param key Key.
      * @param retVal Flag indicating whether value should be returned.
      * @param dhtVer DHT version.
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
      */
-    public void addKeyBytes(
-        KeyCacheObject key,
-        boolean retVal,
-        @Nullable GridCacheVersion dhtVer,
-        GridCacheContext ctx
-    ) throws IgniteCheckedException {
+    public void addKeyBytes(KeyCacheObject key, boolean retVal, @Nullable GridCacheVersion dhtVer) {
         dhtVers[idx] = dhtVer;
 
         // Delegate to super.
-        addKeyBytes(key, retVal, ctx);
+        addKeyBytes(key, retVal);
     }
 
     /**
@@ -329,34 +293,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (filter != null) {
-            GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-            for (CacheEntryPredicate p : filter) {
-                if (p != null)
-                    p.prepareMarshal(cctx);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (filter != null) {
-            GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-            for (CacheEntryPredicate p : filter) {
-                if (p != null)
-                    p.finishUnmarshal(cctx, ldr);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -364,7 +300,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -372,55 +308,49 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
         switch (writer.state()) {
             case 21:
-                if (!writer.writeLong("accessTtl", accessTtl))
+                if (!writer.writeLong(accessTtl))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeLong("createTtl", createTtl))
+                if (!writer.writeLong(createTtl))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
+                if (!writer.writeObjectArray(dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 28:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 29:
-                if (!writer.writeString("txLbl", txLbl))
+                if (!writer.writeString(txLbl))
                     return false;
 
                 writer.incrementState();
@@ -433,15 +363,12 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 21:
-                accessTtl = reader.readLong("accessTtl");
+                accessTtl = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -449,7 +376,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 22:
-                createTtl = reader.readLong("createTtl");
+                createTtl = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -457,7 +384,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 23:
-                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
+                dhtVers = reader.readObjectArray(MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -465,7 +392,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 24:
-                filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -473,7 +400,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 25:
-                flags = reader.readByte("flags");
+                miniId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -481,7 +408,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 26:
-                miniId = reader.readInt("miniId");
+                taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -489,7 +416,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 27:
-                taskNameHash = reader.readInt("taskNameHash");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -497,15 +424,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 28:
-                topVer = reader.readAffinityTopologyVersion("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 29:
-                txLbl = reader.readString("txLbl");
+                txLbl = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -514,7 +433,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
         }
 
-        return reader.afterMessageRead(GridNearLockRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -523,13 +442,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 30;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearLockRequest.class, this, "filter", Arrays.toString(filter),
-            "super", super.toString());
+        return S.toString(GridNearLockRequest.class, this, "super", super.toString());
     }
 }

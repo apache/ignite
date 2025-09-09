@@ -42,12 +42,10 @@ import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.GridSelectorNioSessionImpl;
-import org.apache.ignite.internal.util.nio.GridShmemCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.CommunicationListener;
@@ -67,7 +65,6 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONSIS
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.NOOP;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.usePairedConnections;
 import static org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper.CHANNEL_FUT_META;
-import static org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper.MAX_CONN_PER_NODE;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture.SES_FUT_META;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
@@ -78,12 +75,6 @@ import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastRecei
  * This class implement NioListener which process handshake stage, and transmit messages to session.
  */
 public class InboundConnectionHandler extends GridNioServerListenerAdapter<Message> {
-    /**
-     * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
-     * before it starts being visible for server)
-     */
-    private static final IgniteProductVersion VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT = IgniteProductVersion.fromString("2.1.4");
-
     /** Message tracker meta for session. */
     private static final int TRACKER_META = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -230,7 +221,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
             }
 
             try {
-                if (client || ctxInitLatch.getCount() == 0 || !stateProvider.isHandshakeWaitSupported()) {
+                if (client || ctxInitLatch.getCount() == 0) {
                     if (log.isDebugEnabled())
                         log.debug("Sending local node ID to newly accepted session: " + ses);
 
@@ -291,7 +282,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
             }
         }
         else {
-            if (isChannelConnIdx(connKey.connectionIndex())) {
+            if (GridNioServerWrapper.isChannelConnIdx(connKey.connectionIndex())) {
                 if (ses.meta(CHANNEL_FUT_META) == null)
                     nioSrvWrapper.onChannelCreate((GridSelectorNioSessionImpl)ses, connKey, msg);
                 else {
@@ -378,8 +369,8 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                 GridNioMessageTracker tracker = ses.meta(TRACKER_META);
 
                 if (tracker == null) {
-                    GridNioMessageTracker old = ses.addMeta(TRACKER_META, tracker =
-                        new GridNioMessageTracker(ses, cfg.messageQueueLimit()));
+                    GridNioMessageTracker old = ses.addMeta(TRACKER_META,
+                        tracker = new GridNioMessageTracker(ses, cfg.messageQueueLimit()));
 
                     assert old == null;
                 }
@@ -397,10 +388,10 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
 
     /** {@inheritDoc} */
     @Override public void onFailure(FailureType failureType, Throwable failure) {
-        FailureProcessor failureProcessor = failureProcessorSupplier.get();
+        FailureProcessor failureProc = failureProcessorSupplier.get();
 
-        if (failureProcessor != null)
-            failureProcessor.process(new FailureContext(failureType, failure));
+        if (failureProc != null)
+            failureProc.process(new FailureContext(failureType, failure));
     }
 
     /** {@inheritDoc} */
@@ -507,8 +498,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                 if (node0 != null) {
                     assert node0.isClient() : node0;
 
-                    if (node0.version().compareTo(VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT) >= 0)
-                        unknownNode = false;
+                    unknownNode = false;
                 }
             }
             else if (discoverySpi instanceof IgniteDiscoverySpi)
@@ -545,7 +535,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                 ", msg=" + msg0 + ']');
         }
 
-        if (isChannelConnIdx(msg0.connectionIndex()))
+        if (GridNioServerWrapper.isChannelConnIdx(msg0.connectionIndex()))
             ses.send(new RecoveryLastReceivedMessage(0));
         else if (cfg.usePairedConnections() && usePairedConnections(rmtNode, attributeNames.pairedConnection())) {
             final GridNioRecoveryDescriptor recoveryDesc = nioSrvWrapper.inRecoveryDescriptor(rmtNode, connKey);
@@ -574,26 +564,17 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                     curClients[connKey.connectionIndex()] :
                     null;
 
-            boolean hasShmemClient = false;
+            if (oldClient instanceof GridTcpNioCommunicationClient) {
+                if (log.isInfoEnabled())
+                    log.info("Received incoming connection when already connected " +
+                        "to this node, rejecting [locNode=" + locNode.id() +
+                        ", rmtNode=" + sndId + ']');
 
-            if (oldClient != null) {
-                if (oldClient instanceof GridTcpNioCommunicationClient) {
-                    if (log.isInfoEnabled())
-                        log.info("Received incoming connection when already connected " +
-                            "to this node, rejecting [locNode=" + locNode.id() +
-                            ", rmtNode=" + sndId + ']');
+                ses.send(new RecoveryLastReceivedMessage(ALREADY_CONNECTED));
 
-                    ses.send(new RecoveryLastReceivedMessage(ALREADY_CONNECTED));
+                closeStaleConnections(connKey);
 
-                    closeStaleConnections(connKey);
-
-                    return;
-                }
-                else {
-                    assert oldClient instanceof GridShmemCommunicationClient;
-
-                    hasShmemClient = true;
-                }
+                return;
             }
 
             GridFutureAdapter<GridCommunicationClient> fut = new GridFutureAdapter<>();
@@ -608,32 +589,25 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                 oldClient = curClients != null && connKey.connectionIndex() < curClients.length ?
                     curClients[connKey.connectionIndex()] : null;
 
-                if (oldClient != null) {
-                    if (oldClient instanceof GridTcpNioCommunicationClient) {
-                        assert oldClient.connectionIndex() == connKey.connectionIndex() : oldClient;
+                if (oldClient instanceof GridTcpNioCommunicationClient) {
+                    assert oldClient.connectionIndex() == connKey.connectionIndex() : oldClient;
 
-                        if (log.isInfoEnabled())
-                            log.info("Received incoming connection when already connected " +
-                                "to this node, rejecting [locNode=" + locNode.id() +
-                                ", rmtNode=" + sndId + ']');
+                    if (log.isInfoEnabled())
+                        log.info("Received incoming connection when already connected " +
+                            "to this node, rejecting [locNode=" + locNode.id() +
+                            ", rmtNode=" + sndId + ']');
 
-                        ses.send(new RecoveryLastReceivedMessage(ALREADY_CONNECTED));
+                    ses.send(new RecoveryLastReceivedMessage(ALREADY_CONNECTED));
 
-                        closeStaleConnections(connKey);
+                    closeStaleConnections(connKey);
 
-                        fut.onDone(oldClient);
+                    fut.onDone(oldClient);
 
-                        return;
-                    }
-                    else {
-                        assert oldClient instanceof GridShmemCommunicationClient;
-
-                        hasShmemClient = true;
-                    }
+                    return;
                 }
 
                 boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
-                    new ConnectClosure(ses, recoveryDesc, rmtNode, connKey, msg0, !hasShmemClient, fut));
+                    new ConnectClosure(ses, recoveryDesc, rmtNode, connKey, msg0, true, fut));
 
                 if (log.isDebugEnabled()) {
                     log.debug("Received incoming connection from remote node " +
@@ -644,7 +618,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                 if (reserved) {
                     try {
                         GridTcpNioCommunicationClient client =
-                            connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
+                            connected(recoveryDesc, ses, rmtNode, msg0.received(), true, true);
 
                         fut.onDone(client);
                     }
@@ -665,14 +639,13 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                     ses.send(new RecoveryLastReceivedMessage(ALREADY_CONNECTED));
                 }
                 else {
-                    // The code below causes a race condition between shmem and TCP (see IGNITE-1294)
                     boolean reserved = recoveryDesc.tryReserve(msg0.connectCount(),
-                        new ConnectClosure(ses, recoveryDesc, rmtNode, connKey, msg0, !hasShmemClient, fut));
+                        new ConnectClosure(ses, recoveryDesc, rmtNode, connKey, msg0, true, fut));
 
                     GridTcpNioCommunicationClient client = null;
 
                     if (reserved)
-                        client = connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
+                        client = connected(recoveryDesc, ses, rmtNode, msg0.received(), true, true);
 
                     if (oldFut instanceof ConnectionRequestFuture && !oldFut.isDone())
                         oldFut.onDone(client);
@@ -765,14 +738,6 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send message: " + e, e);
         }
-    }
-
-    /**
-     * @param connIdx Connection index to check.
-     * @return {@code true} if connection index is related to the channel create request\response.
-     */
-    private boolean isChannelConnIdx(int connIdx) {
-        return connIdx > MAX_CONN_PER_NODE;
     }
 
     /**

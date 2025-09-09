@@ -40,11 +40,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
-import static org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager.exchangeProtocolVersion;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  *
@@ -80,9 +79,6 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
     /** */
     private Map<UUID, GridDhtPartitionExchangeId> joinedNodes;
 
-    /** */
-    private boolean restoreState;
-
     /**
      * @param cctx Context.
      */
@@ -100,8 +96,6 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
 
         GridCacheSharedContext cctx = exchFut.sharedContext();
 
-        restoreState = exchangeProtocolVersion(exchFut.context().events().discoveryCache().minimumNodeVersion()) > 1;
-
         boolean newAff = exchFut.localJoinExchange();
 
         IgniteInternalFuture<?> fut = cctx.affinity().initCoordinatorCaches(exchFut, newAff);
@@ -109,99 +103,87 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
         if (fut != null)
             add(fut);
 
-        if (restoreState) {
-            DiscoCache curDiscoCache = cctx.discovery().discoCache();
+        DiscoCache curDiscoCache = cctx.discovery().discoCache();
 
-            DiscoCache discoCache = exchFut.events().discoveryCache();
+        DiscoCache discoCache = exchFut.events().discoveryCache();
 
-            List<ClusterNode> nodes = new ArrayList<>();
+        List<ClusterNode> nodes = new ArrayList<>();
 
-            synchronized (this) {
-                for (ClusterNode node : discoCache.allNodes()) {
-                    if (!node.isLocal() && cctx.discovery().alive(node)) {
+        synchronized (this) {
+            for (ClusterNode node : discoCache.allNodes()) {
+                if (!node.isLocal() && cctx.discovery().alive(node)) {
+                    awaited.add(node.id());
+
+                    nodes.add(node);
+                }
+                else if (!node.isLocal()) {
+                    if (log.isInfoEnabled())
+                        log.info("Init new coordinator future will skip remote node: " + node);
+                }
+            }
+
+            if (exchFut.context().mergeExchanges() && !curDiscoCache.version().equals(discoCache.version())) {
+                for (ClusterNode node : curDiscoCache.allNodes()) {
+                    if (discoCache.node(node.id()) == null) {
                         awaited.add(node.id());
 
                         nodes.add(node);
+
+                        if (joinedNodes == null)
+                            joinedNodes = new HashMap<>();
+
+                        GridDhtPartitionExchangeId exchId = new GridDhtPartitionExchangeId(node.id(),
+                            EVT_NODE_JOINED,
+                            new AffinityTopologyVersion(node.order()));
+
+                        joinedNodes.put(node.id(), exchId);
                     }
-                    else if (!node.isLocal()) {
-                        if (log.isInfoEnabled())
-                            log.info("Init new coordinator future will skip remote node: " + node);
-                    }
-                }
-
-                if (exchFut.context().mergeExchanges() && !curDiscoCache.version().equals(discoCache.version())) {
-                    for (ClusterNode node : curDiscoCache.allNodes()) {
-                        if (discoCache.node(node.id()) == null) {
-                            if (exchangeProtocolVersion(node.version()) == 1)
-                                break;
-
-                            awaited.add(node.id());
-
-                            nodes.add(node);
-
-                            if (joinedNodes == null)
-                                joinedNodes = new HashMap<>();
-
-                            GridDhtPartitionExchangeId exchId = new GridDhtPartitionExchangeId(node.id(),
-                                EVT_NODE_JOINED,
-                                new AffinityTopologyVersion(node.order()));
-
-                            joinedNodes.put(node.id(), exchId);
-                        }
-                    }
-                }
-
-                if (joinedNodes == null)
-                    joinedNodes = Collections.emptyMap();
-
-                if (!awaited.isEmpty()) {
-                    restoreStateFut = new GridFutureAdapter();
-
-                    add(restoreStateFut);
                 }
             }
 
-            if (log.isInfoEnabled()) {
-                log.info("Try restore exchange result [awaited=" + awaited +
-                    ", joined=" + joinedNodes.keySet() +
-                    ", nodes=" + U.nodeIds(nodes) +
-                    ", discoAllNodes=" + U.nodeIds(discoCache.allNodes()) + ']');
+            if (joinedNodes == null)
+                joinedNodes = Collections.emptyMap();
+
+            if (!awaited.isEmpty()) {
+                restoreStateFut = new GridFutureAdapter();
+
+                add(restoreStateFut);
             }
+        }
 
-            if (!nodes.isEmpty()) {
-                GridDhtPartitionsSingleRequest req = GridDhtPartitionsSingleRequest.restoreStateRequest(exchFut.exchangeId(),
-                    exchFut.exchangeId());
+        if (log.isInfoEnabled()) {
+            log.info("Try restore exchange result [awaited=" + awaited +
+                ", joined=" + joinedNodes.keySet() +
+                ", nodes=" + nodeIds(nodes) +
+                ", discoAllNodes=" + nodeIds(discoCache.allNodes()) + ']');
+        }
 
-                for (ClusterNode node : nodes) {
-                    try {
-                        GridDhtPartitionsSingleRequest sndReq = req;
+        if (!nodes.isEmpty()) {
+            GridDhtPartitionsSingleRequest req = GridDhtPartitionsSingleRequest.restoreStateRequest(exchFut.exchangeId(),
+                exchFut.exchangeId());
 
-                        if (joinedNodes.containsKey(node.id())) {
-                            sndReq = GridDhtPartitionsSingleRequest.restoreStateRequest(
-                                joinedNodes.get(node.id()),
-                                exchFut.exchangeId());
-                        }
+            for (ClusterNode node : nodes) {
+                try {
+                    GridDhtPartitionsSingleRequest sndReq = req;
 
-                        cctx.io().send(node, sndReq, GridIoPolicy.SYSTEM_POOL);
+                    if (joinedNodes.containsKey(node.id())) {
+                        sndReq = GridDhtPartitionsSingleRequest.restoreStateRequest(
+                            joinedNodes.get(node.id()),
+                            exchFut.exchangeId());
                     }
-                    catch (ClusterTopologyCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send partitions request, node failed: " + node);
 
-                        onNodeLeft(node.id());
-                    }
+                    cctx.io().send(node, sndReq, GridIoPolicy.SYSTEM_POOL);
+                }
+                catch (ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send partitions request, node failed: " + node);
+
+                    onNodeLeft(node.id());
                 }
             }
         }
 
         markInitialized();
-    }
-
-    /**
-     * @return {@code True} if new coordinator tried to restore exchange state.
-     */
-    boolean restoreState() {
-        return restoreState;
     }
 
     /**
@@ -254,7 +236,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
                 GridDhtPartitionsFullMessage fullMsg0 = msg.finishMessage();
 
                 if (fullMsg0 != null && fullMsg0.resultTopologyVersion() != null) {
-                    if (node.isClient() || node.isDaemon()) {
+                    if (node.isClient()) {
                         assert resTopVer == null || resTopVer.equals(fullMsg0.resultTopologyVersion());
 
                         resTopVer = fullMsg0.resultTopologyVersion();

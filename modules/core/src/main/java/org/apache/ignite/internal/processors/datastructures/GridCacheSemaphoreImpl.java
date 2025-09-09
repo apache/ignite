@@ -108,6 +108,7 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
         /** Flag indicating that a node failed and it is not safe to continue using this semaphore. */
         protected boolean broken = false;
 
+        /** */
         protected Sync(int permits, Map<UUID, Integer> waiters, boolean failoverSafe) {
             setState(permits);
             nodeMap = waiters;
@@ -673,28 +674,29 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
                                                            int numPermits) {
         acquire(numPermits);
 
-        Future<T> passedInCallableFuture = ctx.kernalContext().pools().getExecutorService().submit(callable);
+        Future<T> passedInCallableFut = ctx.kernalContext().pools().getExecutorService().submit(callable);
 
         final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
             @Override public T get() {
                 try {
-                    return passedInCallableFuture.get();
-                } catch (Exception e) {
+                    return passedInCallableFut.get();
+                }
+                catch (Exception e) {
                     throw new RuntimeException(e.getMessage());
                 }
             }
         };
 
-        IgniteFuture<T> future = new IgniteFutureImpl<>(fut);
+        IgniteFuture<T> fut0 = new IgniteFutureImpl<>(fut);
 
-        future.listen(new IgniteInClosure<IgniteFuture<T>>() {
+        fut0.listen(new IgniteInClosure<IgniteFuture<T>>() {
             /** {@inheritDoc} */
             @Override public void apply(IgniteFuture<T> igniteFuture) {
                 release(numPermits);
             }
         });
 
-        return future;
+        return fut0;
     }
 
     /** {@inheritDoc} */

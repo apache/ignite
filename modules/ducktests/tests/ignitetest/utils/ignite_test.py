@@ -16,16 +16,44 @@
 """
 This module contains basic ignite test.
 """
+import importlib
 from time import monotonic
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
-from ducktape.tests.test import Test
+from ducktape.tests.test import Test, TestContext
 
-# pylint: disable=W0223
 from ignitetest.services.utils.ducktests_service import DucktestsService
 
 # globals:
 JFR_ENABLED = "jfr_enabled"
+IGNITE_TEST_CONTEXT_CLASS_KEY_NAME = "IgniteTestContext"
+SAFEPOINT_LOGS_ENABLED = "safepoint_log_enabled"
+
+
+class IgniteTestContext(TestContext):
+    def __init__(self, test_context):
+        super().__init__()
+        self.__dict__.update(**test_context.__dict__)
+
+    @property
+    def available_cluster_size(self):
+        return len(self.cluster)
+
+    def before(self):
+        pass
+
+    def after(self, test_result):
+        return test_result
+
+    @staticmethod
+    def resolve(test_context):
+        if IGNITE_TEST_CONTEXT_CLASS_KEY_NAME in test_context.globals:
+            fqdn = test_context.globals[IGNITE_TEST_CONTEXT_CLASS_KEY_NAME]
+            (module, clazz) = fqdn.rsplit('.', 1)
+            module = importlib.import_module(module)
+            return getattr(module, clazz)(test_context)
+        else:
+            return IgniteTestContext(test_context)
 
 
 class IgniteTest(Test):
@@ -33,7 +61,15 @@ class IgniteTest(Test):
     Basic ignite test.
     """
     def __init__(self, test_context):
+        assert isinstance(test_context, IgniteTestContext), \
+            "any IgniteTest MUST BE decorated with the @ignitetest.utils.cluster decorator"
+
         super().__init__(test_context=test_context)
+
+    @property
+    def available_cluster_size(self):
+        # noinspection PyUnresolvedReferences
+        return self.test_context.available_cluster_size
 
     @staticmethod
     def monotonic():
@@ -52,7 +88,6 @@ class IgniteTest(Test):
         if not self.test_context.globals.get(JFR_ENABLED, False):
             self.logger.debug("Killing all runned services to speed-up the tearing down.")
 
-            # pylint: disable=W0212
             for service in self.test_context.services._services.values():
                 assert isinstance(service, DucktestsService)
 

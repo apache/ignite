@@ -57,6 +57,8 @@ public class DataStreamerUpdateAfterLoadTest extends GridCommonAbstractTest {
             int key = 0;
 
             try (IgniteCache<Integer, Integer> cache = ignite0.createCache(ccfg)) {
+                awaitCacheOnClient(grid(NODES - 1), ccfg.getName());
+
                 key = testLoadAndUpdate(cache.getName(), key, false);
 
                 testLoadAndUpdate(cache.getName(), key, true);

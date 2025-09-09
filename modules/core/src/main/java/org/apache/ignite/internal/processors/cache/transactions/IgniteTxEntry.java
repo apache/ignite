@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -29,6 +28,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -84,16 +84,19 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     public static final GridCacheVersion GET_ENTRY_INVALID_VER_AFTER_GET = new GridCacheVersion(0, 0, 3);
 
     /** Skip store flag bit mask. */
-    private static final int TX_ENTRY_SKIP_STORE_FLAG_MASK = 0x01;
+    private static final int TX_ENTRY_SKIP_STORE_FLAG_MASK = 1;
 
     /** Keep binary flag. */
-    private static final int TX_ENTRY_KEEP_BINARY_FLAG_MASK = 0x02;
+    private static final int TX_ENTRY_KEEP_BINARY_FLAG_MASK = 1 << 1;
 
     /** Flag indicating that old value for 'invoke' operation was non null on primary node. */
-    private static final int TX_ENTRY_OLD_VAL_ON_PRIMARY = 0x04;
+    private static final int TX_ENTRY_OLD_VAL_ON_PRIMARY = 1 << 2;
 
     /** Flag indicating that near cache is enabled on originating node and it should be added as reader. */
-    private static final int TX_ENTRY_ADD_READER_FLAG_MASK = 0x08;
+    private static final int TX_ENTRY_ADD_READER_FLAG_MASK = 1 << 3;
+
+    /** Flag indicating that 'invoke' operation was no-op on primary. */
+    private static final int TX_ENTRY_NOOP_ON_PRIMARY = 1 << 4;
 
     /** Prepared flag updater. */
     private static final AtomicIntegerFieldUpdater<IgniteTxEntry> PREPARED_UPD =
@@ -222,7 +225,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private transient @Nullable GridAbsClosureX cqNotifyC;
 
     /**
-     * Required by {@link Externalizable}
+     * Empty constructor.
      */
     public IgniteTxEntry() {
         /* No-op. */
@@ -560,6 +563,20 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
+     * @param noop Add no-op flag.
+     */
+    public void noop(boolean noop) {
+        setFlag(noop, TX_ENTRY_NOOP_ON_PRIMARY);
+    }
+
+    /**
+     * @return {@code true} if noop flag is set, {@code false} otherwise.
+     */
+    public boolean noop() {
+        return isFlag(TX_ENTRY_NOOP_ON_PRIMARY);
+    }
+
+    /**
      * Sets flag mask.
      *
      * @param flag Set or clear.
@@ -777,9 +794,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(key, keyVal, cacheVal, val,
                     ver, keepBinary(), cached());
 
-                EntryProcessor processor = t.get1();
+                EntryProcessor proc = t.get1();
 
-                processor.process(invokeEntry, t.get2());
+                proc.process(invokeEntry, t.get2());
 
                 val = invokeEntry.getValue();
 
@@ -928,6 +945,39 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         }
         else
             expiryPlcBytes = null;
+
+        if (oldVal != null)
+            oldVal.marshal(context());
+    }
+
+    /**
+     * Prepares this entry to unmarshall. In particular, this method initialize a cache context.
+     *
+     * @param ctx Cache context.
+     * @param topVer Topology version that is used to validate a cache context.
+     *               If this parameter is {@code null} then validation will be skipped.
+     * @param near Near flag.
+     * @throws IgniteCheckedException If un-marshalling failed.
+     */
+    public void prepareUnmarshal(
+        GridCacheSharedContext<?, ?> ctx,
+        AffinityTopologyVersion topVer,
+        boolean near
+    ) throws IgniteCheckedException {
+        if (this.ctx == null) {
+            GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
+
+            if (cacheCtx == null || (topVer != null && topVer.before(cacheCtx.startTopologyVersion())))
+                throw new CacheInvalidStateException(
+                    "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
+
+            if (cacheCtx.isNear() && !near)
+                cacheCtx = cacheCtx.near().dht().context();
+            else if (!cacheCtx.isNear() && near)
+                cacheCtx = cacheCtx.dht().near().context();
+
+            this.ctx = cacheCtx;
+        }
     }
 
     /**
@@ -944,20 +994,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         ClassLoader clsLdr
     ) throws IgniteCheckedException {
 
-        if (this.ctx == null) {
-            GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
-
-            if (cacheCtx == null)
-                throw new CacheInvalidStateException(
-                    "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
-
-            if (cacheCtx.isNear() && !near)
-                cacheCtx = cacheCtx.near().dht().context();
-            else if (!cacheCtx.isNear() && near)
-                cacheCtx = cacheCtx.dht().near().context();
-
-            this.ctx = cacheCtx;
-        }
+        if (this.ctx == null)
+            prepareUnmarshal(ctx, null, near);
 
         CacheObjectValueContext coctx = this.ctx.cacheObjectContext();
 
@@ -984,6 +1022,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         if (expiryPlcBytes != null && expiryPlc == null)
             expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
+
+        if (hasOldValue())
+            oldVal.unmarshal(coctx, clsLdr);
     }
 
     /**
@@ -1053,7 +1094,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -1061,80 +1102,80 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("cacheId", cacheId))
+                if (!writer.writeInt(cacheId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("conflictExpireTime", conflictExpireTime))
+                if (!writer.writeLong(conflictExpireTime))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("conflictVer", conflictVer))
+                if (!writer.writeMessage(conflictVer))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray("expiryPlcBytes", expiryPlcBytes))
+                if (!writer.writeByteArray(expiryPlcBytes))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMessage("explicitVer", explicitVer))
+                if (!writer.writeMessage(explicitVer))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeObjectArray("filters",
+                if (!writer.writeObjectArray(
                     !F.isEmptyOrNulls(filters) ? filters : null, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage(key))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeMessage("oldVal", oldVal))
+                if (!writer.writeMessage(oldVal))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("serReadVer", serReadVer))
+                if (!writer.writeMessage(serReadVer))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeByteArray("transformClosBytes", transformClosBytes))
+                if (!writer.writeByteArray(transformClosBytes))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeLong("ttl", ttl))
+                if (!writer.writeLong(ttl))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeMessage("val", val))
+                if (!writer.writeMessage(val))
                     return false;
 
                 writer.incrementState();
@@ -1148,12 +1189,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                cacheId = reader.readInt("cacheId");
+                cacheId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -1161,7 +1199,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 1:
-                conflictExpireTime = reader.readLong("conflictExpireTime");
+                conflictExpireTime = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -1169,7 +1207,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 2:
-                conflictVer = reader.readMessage("conflictVer");
+                conflictVer = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -1177,7 +1215,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 3:
-                expiryPlcBytes = reader.readByteArray("expiryPlcBytes");
+                expiryPlcBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -1185,7 +1223,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 4:
-                explicitVer = reader.readMessage("explicitVer");
+                explicitVer = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -1193,7 +1231,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 5:
-                filters = reader.readObjectArray("filters", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
+                filters = reader.readObjectArray(MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -1201,7 +1239,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 6:
-                flags = reader.readByte("flags");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -1209,7 +1247,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 7:
-                key = reader.readMessage("key");
+                key = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -1217,7 +1255,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 8:
-                oldVal = reader.readMessage("oldVal");
+                oldVal = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -1225,7 +1263,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 9:
-                serReadVer = reader.readMessage("serReadVer");
+                serReadVer = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -1233,7 +1271,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 10:
-                transformClosBytes = reader.readByteArray("transformClosBytes");
+                transformClosBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -1241,7 +1279,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 11:
-                ttl = reader.readLong("ttl");
+                ttl = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -1249,7 +1287,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 12:
-                val = reader.readMessage("val");
+                val = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -1258,17 +1296,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         }
 
-        return reader.afterMessageRead(IgniteTxEntry.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 100;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 13;
     }
 
     /** {@inheritDoc} */

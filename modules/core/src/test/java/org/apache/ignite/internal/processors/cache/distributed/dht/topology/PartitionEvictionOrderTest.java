@@ -131,7 +131,7 @@ public class PartitionEvictionOrderTest extends GridCommonAbstractTest {
         TestDependencyResolver rslvr = new TestDependencyResolver(new DependencyResolver() {
             @Override public <T> T resolve(T instance) {
                 if (instance instanceof GridDhtPartitionTopologyImpl) {
-                    GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl) instance;
+                    GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)instance;
 
                     top.partitionFactory((ctx, grp, id, recovery) -> new GridDhtLocalPartition(ctx, grp, id, recovery) {
                         @Override public long clearAll(EvictionContext evictionCtx) throws NodeStoppingException {

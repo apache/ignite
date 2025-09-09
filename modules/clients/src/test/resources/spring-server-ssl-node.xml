@@ -68,8 +68,8 @@
                 <!-- Sets flag indicating whether or not SSL client authentication is required. -->
                 <property name="sslClientAuth" value="true"/>
 
-                <property name="sslContextFactory">
-                    <bean class="org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory">
+                <property name="sslFactory">
+                    <bean class="org.apache.ignite.ssl.SslContextFactory">
                         <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
                         <property name="keyStorePassword" value="123456"/>
                         <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust-one.jks"/>
@@ -87,18 +87,6 @@
                 CacheConfiguration interface can be configured here.
             -->
             <list>
-                <!--
-                    Local cache example configuration.
-                -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <!-- Cache name is null. -->
-                    <!--<property name="name"><null/></property>-->
-
-                    <!-- LOCAL cache mode. -->
-                    <property name="cacheMode" value="LOCAL"/>
-
-                </bean>
-
                 <!--
                     Partitioned cache example configuration.
                 -->
@@ -270,8 +258,8 @@
             Logger to use.
         -->
         <property name="gridLogger">
-            <bean class="org.apache.ignite.logger.log4j.Log4JLogger">
-                <constructor-arg type="java.lang.String" value="modules/clients/src/test/resources/log4j.xml"/>
+            <bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">
+                <constructor-arg type="java.lang.String" value="modules/clients/src/test/resources/log4j2.xml"/>
             </bean>
         </property>
 

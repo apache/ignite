@@ -31,13 +31,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginConfiguration;
@@ -47,7 +48,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Snapshot custom handlers test.
@@ -149,15 +150,14 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
     private void changeMetadataRequestIdOnDisk(UUID newReqId) throws Exception {
         for (Ignite grid : G.allGrids()) {
             IgniteSnapshotManager snpMgr = ((IgniteEx)grid).context().cache().context().snapshotMgr();
-            String constId = grid.cluster().localNode().consistentId().toString();
+            SnapshotFileTree sft = snapshotFileTree((IgniteEx)grid, SNAPSHOT_NAME);
 
-            SnapshotMetadata metadata = snpMgr.readSnapshotMetadata(SNAPSHOT_NAME, constId);
-            File smf = new File(snpMgr.snapshotLocalDir(SNAPSHOT_NAME), U.maskForFileName(constId) + SNAPSHOT_METAFILE_EXT);
+            SnapshotMetadata metadata = snpMgr.readSnapshotMetadata(sft.meta());
 
-            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
+            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(sft.meta()))) {
                 GridTestUtils.setFieldValue(metadata, "rqId", newReqId);
 
-                U.marshal(MarshallerUtils.jdkMarshaller(grid.name()), metadata, out);
+                U.marshal(((IgniteEx)grid).context().marshallerContext().jdkMarshaller(), metadata, out);
             }
         }
     }
@@ -202,13 +202,13 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg);
 
         failCreateFlag.set(false);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
         ignite.cache(DEFAULT_CACHE_NAME).destroy();
 
@@ -253,7 +253,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         resetBaselineTopology();
 
         // Case 1: handler is loaded on only one of the two nodes.
-        IgniteFuture<Void> fut0 = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut0 = snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         UUID nodeId1 = grid(1).localNode().id();
 
@@ -275,7 +275,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         startGrid(1);
 
-        IgniteFuture<Void> fut1 = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut1 = snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut1.get(TIMEOUT), IgniteCheckedException.class,
             "Snapshot handlers configuration mismatch (number of local snapshot handlers differs from the remote one)");
@@ -287,7 +287,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         startGrid(1);
 
-        IgniteFuture<Void> fut2 = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut2 = snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut2.get(TIMEOUT), IgniteCheckedException.class,
             "Snapshot handlers configuration mismatch (number of local snapshot handlers differs from the remote one)");
@@ -300,7 +300,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         startGrid(1);
 
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        createAndCheckSnapshot(grid(1), SNAPSHOT_NAME, null, TIMEOUT);
     }
 
     /**
@@ -334,7 +334,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        IgniteFuture<Void> fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(grid(1)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         latch.await();
 
@@ -346,6 +346,90 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             "Snapshot operation interrupted, because baseline node left the cluster: " + crdNodeId);
 
         startGrid(0);
-        grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
+    }
+
+    /**
+     * Test ensures that the snapshot path is set correctly in the handler context.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testHandlerSnapshotLocation() throws Exception {
+        String snpName = "snapshot_30052022";
+        File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
+        String expFullPath = new File(snpDir, snpName).getAbsolutePath();
+
+        SnapshotHandler<Void> createHnd = new SnapshotHandler<Void>() {
+            @Override public SnapshotHandlerType type() {
+                return SnapshotHandlerType.CREATE;
+            }
+
+            @Override public Void invoke(SnapshotHandlerContext ctx) {
+                if (!expFullPath.equals(ctx.snapshotFileTree().root().getAbsolutePath()))
+                    throw new IllegalStateException("Expected " + expFullPath + ", actual " + ctx.snapshotFileTree().root());
+
+                return null;
+            }
+        };
+
+        SnapshotHandler<Void> restoreHnd = new SnapshotHandler<Void>() {
+            @Override public SnapshotHandlerType type() {
+                return SnapshotHandlerType.RESTORE;
+            }
+
+            @Override public Void invoke(SnapshotHandlerContext ctx) throws Exception {
+                createHnd.invoke(ctx);
+
+                return null;
+            }
+        };
+
+        handlers.add(createHnd);
+        handlers.add(restoreHnd);
+
+        try {
+            IgniteEx ignite = startGridsWithCache(1, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+
+            createAndCheckSnapshot(ignite, snpName, snpDir.getAbsolutePath(), TIMEOUT);
+
+            ignite.destroyCache(DEFAULT_CACHE_NAME);
+            awaitPartitionMapExchange();
+
+            snpMgr.restoreSnapshot(snpName, snpDir.getAbsolutePath(), null).get(TIMEOUT);
+        }
+        finally {
+            U.delete(snpDir);
+        }
+    }
+
+    /**
+     * Test ensures that snapshot fails if some files are absent during the check.
+     * @see SnapshotPartitionsQuickVerifyHandler
+     */
+    @Test
+    public void testHandlerExceptionFailSnapshot() throws Exception {
+        handlers.add(new SnapshotHandler<Void>() {
+            @Override public SnapshotHandlerType type() {
+                return SnapshotHandlerType.CREATE;
+            }
+
+            @Override public Void invoke(SnapshotHandlerContext ctx) {
+                // Someone removes snapshot files during creation.
+                // In this case snapshot must fail.
+                U.delete(ctx.snapshotFileTree().root());
+
+                return null;
+            }
+        });
+
+        IgniteEx ignite = startGridsWithCache(1, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+        assertThrowsWithCause(
+            () -> snp(ignite).createSnapshot("must_fail", null, false, onlyPrimary).get(getTestTimeout()),
+            IgniteException.class
+        );
     }
 }

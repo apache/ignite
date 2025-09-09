@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import java.math.BigDecimal;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /** */
-public class FloatIndexKey implements IndexKey {
+public class FloatIndexKey extends NumericIndexKey {
     /** */
     private final float key;
 
@@ -35,14 +36,57 @@ public class FloatIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.FLOAT;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.FLOAT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(boolean val) {
+        return Boolean.compare(key != 0f, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(byte val) {
+        return Float.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(short val) {
+        return Float.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(int val) {
+        return Float.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(long val) {
+        return Float.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(float val) {
+        return Float.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(double val) {
+        return Double.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(BigDecimal val) {
+        return BigDecimal.valueOf(key).compareTo(val);
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        float okey = (float) o.key();
+        return -((NumericIndexKey)o).compareTo(key);
+    }
 
-        return Float.compare(key, okey);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(key);
     }
 }

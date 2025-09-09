@@ -19,11 +19,11 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Inline index key implementation for inlining {@link String} values.
@@ -37,14 +37,14 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
 
     /** Constructor. */
     public StringInlineIndexKeyType() {
-        super(IndexKeyTypes.STRING, (short) -1);  // -1 means variable length.
+        super(IndexKeyType.STRING, (short)-1);  // -1 means variable length.
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, StringIndexKey str, int maxSize) {
         short size;
 
-        byte[] s = ((String) str.key()).getBytes(CHARSET);
+        byte[] s = ((String)str.key()).getBytes(CHARSET);
         if (s.length + 3 <= maxSize)
             size = (short)s.length;
         else {
@@ -54,11 +54,11 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
 
         if (s == null) {
             // Can't fit anything to
-            PageUtils.putByte(pageAddr, off, (byte) IndexKeyTypes.UNKNOWN);
+            PageUtils.putByte(pageAddr, off, (byte)IndexKeyType.UNKNOWN.code());
             return 0;
         }
         else {
-            PageUtils.putByte(pageAddr, off, (byte) type());
+            PageUtils.putByte(pageAddr, off, (byte)type().code());
             PageUtils.putShort(pageAddr, off + 1, size);
             PageUtils.putBytes(pageAddr, off + 3, s);
             return s.length + 3;
@@ -66,15 +66,15 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable StringIndexKey get0(long pageAddr, int off) {
+    @Override protected StringIndexKey get0(long pageAddr, int off) {
         String s = new String(readBytes(pageAddr, off), CHARSET);
 
         return new StringIndexKey(s);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, StringIndexKey key) {
-        String s = (String) key.key();
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+        String s = (String)key.key();
 
         int len1 = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
         int len2 = s.length();
@@ -86,7 +86,7 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
 
         // Try reading ASCII.
         while (cntr1 < len1 && cntr2 < len2) {
-            c = (int) GridUnsafe.getByte(addr) & 0xFF;
+            c = (int)GridUnsafe.getByte(addr) & 0xFF;
 
             if (c > 127)
                 break;
@@ -107,7 +107,7 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
 
         // read other
         while (cntr1 < len1 && cntr2 < len2) {
-            c = (int) GridUnsafe.getByte(addr++) & 0xFF;
+            c = (int)GridUnsafe.getByte(addr++) & 0xFF;
 
             switch (c >> 4) {
                 case 0:
@@ -133,7 +133,7 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
                     if (cntr1 > len1)
                         throw new IllegalStateException("Malformed input (partial character at the end).");
 
-                    c2 = (int) GridUnsafe.getByte(addr++) & 0xFF;
+                    c2 = (int)GridUnsafe.getByte(addr++) & 0xFF;
 
                     if ((c2 & 0xC0) != 0x80)
                         throw new IllegalStateException("Malformed input around byte: " + (cntr1 - 2));
@@ -152,9 +152,9 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
                     if (cntr1 > len1)
                         throw new IllegalStateException("Malformed input (partial character at the end).");
 
-                    c2 = (int) GridUnsafe.getByte(addr++) & 0xFF;
+                    c2 = (int)GridUnsafe.getByte(addr++) & 0xFF;
 
-                    c3 = (int) GridUnsafe.getByte(addr++) & 0xFF;
+                    c3 = (int)GridUnsafe.getByte(addr++) & 0xFF;
 
                     if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
                         throw new IllegalStateException("Malformed input around byte: " + (cntr1 - 3));
@@ -174,11 +174,11 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
                     if (cntr1 > len1)
                         throw new IllegalStateException("Malformed input (partial character at the end).");
 
-                    c2 = (int) GridUnsafe.getByte(addr++) & 0xFF;
+                    c2 = (int)GridUnsafe.getByte(addr++) & 0xFF;
 
-                    c3 = (int) GridUnsafe.getByte(addr++) & 0xFF;
+                    c3 = (int)GridUnsafe.getByte(addr++) & 0xFF;
 
-                    c4 = (int) GridUnsafe.getByte(addr++) & 0xFF;
+                    c4 = (int)GridUnsafe.getByte(addr++) & 0xFF;
 
                     if (((c & 0xF8) != 0xf0) || ((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80) || ((c4 & 0xC0) != 0x80))
                         throw new IllegalStateException("Malformed input around byte: " + (cntr1 - 4));
@@ -229,7 +229,7 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
 
         int res = cntr1 == len1 && cntr2 == len2 ? 0 : cntr1 == len1 ? -1 : 1;
 
-        if (isValueFull(pageAddr, off))
+        if (inlinedFullValue(pageAddr, off, VARTYPE_HEADER_SIZE + 1))
             return res;
 
         if (res >= 0)
@@ -263,17 +263,8 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
         return null;
     }
 
-    /**
-     * @param pageAddr Page address.
-     * @param off Offset.
-     * @return {@code True} if string is not truncated on save.
-     */
-    private boolean isValueFull(long pageAddr, int off) {
-        return (PageUtils.getShort(pageAddr, off + 1) & 0x8000) == 0;
-    }
-
     /** {@inheritDoc} */
     @Override protected int inlineSize0(StringIndexKey key) {
-        return ((String) key.key()).getBytes(CHARSET).length + 3;
+        return ((String)key.key()).getBytes(CHARSET).length + 3;
     }
 }

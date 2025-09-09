@@ -29,8 +29,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceAction;
@@ -71,21 +70,25 @@ public class MaintenanceRegistrySimpleTest {
     }
 
     /** */
-    private void cleanMaintenanceRegistryFile() throws Exception {
-        String dftlWorkDir = U.defaultWorkDirectory();
-
-        for (File f : new File(dftlWorkDir).listFiles()) {
+    private void cleanMaintenanceRegistryFile() throws IgniteCheckedException {
+        for (File f : fileTree().nodeStorage().listFiles()) {
             if (f.getName().endsWith(".mntc"))
                 f.delete();
         }
     }
 
     /** */
-    private GridKernalContext initContext(boolean persistenceEnabled) throws IgniteCheckedException {
-        String dfltWorkDir = U.defaultWorkDirectory();
+    private NodeFileTree fileTree() throws IgniteCheckedException {
+        NodeFileTree ft = new NodeFileTree(new File(U.defaultWorkDirectory()), "test");
 
-        GridKernalContext kctx = new StandaloneGridKernalContext(log, null, null)
-        {
+        ft.nodeStorage().mkdirs();
+
+        return ft;
+    }
+
+    /** */
+    private GridKernalContext initContext(boolean persistenceEnabled) throws IgniteCheckedException {
+        return new StandaloneGridKernalContext(log, fileTree()) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
@@ -95,17 +98,7 @@ public class MaintenanceRegistrySimpleTest {
 
                 return cfg;
             }
-
-            @Override public PdsFoldersResolver pdsFolderResolver() {
-                return new PdsFoldersResolver() {
-                    @Override public PdsFolderSettings resolveFolders() {
-                        return new PdsFolderSettings(new File(dfltWorkDir), U.maskForFileName(""));
-                    }
-                };
-            }
         };
-
-        return kctx;
     }
 
     /**
@@ -138,6 +131,48 @@ public class MaintenanceRegistrySimpleTest {
 
         assertNotNull(task);
         assertEquals(newParams, task.parameters());
+    }
+
+    /**
+     * {@link MaintenanceTask} could be updated using remapping function.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMaintenanceTaskUpdate() throws Exception {
+        String name0 = "taskName0";
+        String descr = "description";
+        String oldParams = "oldParams";
+        String newParams = "newParams";
+
+        MaintenanceProcessor proc = new MaintenanceProcessor(initContext(true));
+
+        proc.start();
+
+        assertFalse(proc.isMaintenanceMode());
+
+        MaintenanceTask oldTask = new MaintenanceTask(name0, descr, oldParams);
+
+        assertNull(proc.registerMaintenanceTask(oldTask));
+
+        MaintenanceTask newTask = new MaintenanceTask(name0, descr, newParams);
+
+        proc.registerMaintenanceTask(newTask, prevTask -> new MaintenanceTask(
+                newTask.name(),
+                newTask.description(),
+               prevTask.parameters() + newTask.parameters()
+            )
+        );
+
+        proc.stop(false);
+
+        proc.start();
+
+        assertTrue(proc.isMaintenanceMode());
+        MaintenanceTask task = proc.activeMaintenanceTask(name0);
+
+        assertNotNull(task);
+        assertEquals(oldParams + newParams, task.parameters());
     }
 
     /**
@@ -302,6 +337,7 @@ public class MaintenanceRegistrySimpleTest {
         /** */
         private final List<MaintenanceAction<?>> actions = new ArrayList<>();
 
+        /** */
         SimpleMaintenanceCallback(List<MaintenanceAction<?>> actions) {
             this.actions.addAll(actions);
         }

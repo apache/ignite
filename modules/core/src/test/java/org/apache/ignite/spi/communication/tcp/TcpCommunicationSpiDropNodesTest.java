@@ -67,7 +67,6 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
         TestCommunicationSpi spi = new TestCommunicationSpi();
 
         spi.setIdleConnectionTimeout(100);
-        spi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(spi);
 
@@ -137,7 +136,8 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
             });
 
             fail("Should have exception here.");
-        } catch (IgniteException e) {
+        }
+        catch (IgniteException e) {
             assertTrue(e.getCause() instanceof IgniteSpiException);
         }
 

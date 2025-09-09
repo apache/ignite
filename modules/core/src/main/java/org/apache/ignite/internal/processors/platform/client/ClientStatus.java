@@ -40,6 +40,9 @@ public final class ClientStatus {
     /** Invalid node status. */
     public static final int INVALID_NODE_STATE = 10;
 
+    /** Node in recovery mode. */
+    public static final int NODE_IN_RECOVERY_MODE = 11;
+
     /** Functionality is disabled. */
     public static final int FUNCTIONALITY_DISABLED = 100;
 
@@ -48,6 +51,9 @@ public final class ClientStatus {
 
     /** Cache already exists. */
     public static final int CACHE_EXISTS = 1001;
+
+    /** Invalid cache configuration. */
+    public static final int CACHE_CONFIG_INVALID = 1002;
 
     /** Too many cursors. */
     public static final int TOO_MANY_CURSORS = 1010;
@@ -66,6 +72,9 @@ public final class ClientStatus {
 
     /** Too many compute tasks. */
     public static final int TOO_MANY_COMPUTE_TASKS = 1030;
+
+    /** Entry processor invokation error. */
+    public static final int ENTRY_PROCESSOR_EXCEPTION = 1040;
 
     /** Authentication failed. */
     public static final int AUTH_FAILED = 2000;

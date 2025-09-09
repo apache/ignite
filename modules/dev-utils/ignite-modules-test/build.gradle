@@ -26,7 +26,7 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 ext {
-    ignVer = '2.12.0-SNAPSHOT'
+    ignVer = '2.18.0-SNAPSHOT'
     moduleName = 'ignite_modules_test'
 }
 
@@ -78,9 +78,7 @@ dependencies {
     /* compile (group: 'org.apache.ignite', name: 'ignite-spring', version: ignVer) {
         exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
     }*/
-    compile group: 'org.apache.ignite', name: 'ignite-ml', version: ignVer
 
-    compile group: 'org.apache.ignite', name: 'ignite-log4j', version: ignVer
     compile group: 'org.apache.ignite', name: 'ignite-log4j2', version: ignVer
     compile group: 'org.apache.ignite', name: 'ignite-slf4j', version: ignVer
 
@@ -92,10 +90,6 @@ dependencies {
         exclude group: "log4j", module: "log4j"
         exclude group: "org.slf4j", module: "slf4j-log4j12"
     }
-
-    // todo https://issues.apache.org/jira/browse/IGNITE-11485
-    // compile group: 'org.apache.ignite', name: 'ignite-hibernate_5.3', version: ignVer
-
 
     // todo https://issues.apache.org/jira/browse/IGNITE-11486
     compile (group: 'org.apache.ignite', name: 'ignite-zookeeper', version: ignVer) {
@@ -113,12 +107,6 @@ dependencies {
     */
 
     // compile group: 'org.apache.ignite', name: 'ignite-compress', version: ignVer
-
-    compile (group: 'org.apache.ignite', name: 'ignite-cassandra-store', version: ignVer) {
-        exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
-
-        exclude group: 'org.apache.ignite', module: 'ignite-spring'
-    }
 }
 
 test {

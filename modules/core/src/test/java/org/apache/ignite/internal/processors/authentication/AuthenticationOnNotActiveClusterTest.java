@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -71,7 +72,7 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+        recreateDefaultDb();
     }
 
     /** {@inheritDoc} */
@@ -106,7 +107,7 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
         startClientGrid(CLI_NODE);
         startGrid(NODES_COUNT);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         SecurityContext secCtxDflt = authenticate(grid(0), User.DFAULT_USER_NAME, "ignite");
 

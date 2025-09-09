@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -37,9 +36,6 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     /** */
     private static final byte RESTORE_STATE_FLAG_MASK = 0x02;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Exchange ID. */
     private GridDhtPartitionExchangeId exchId;
 
@@ -50,7 +46,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     protected byte flags;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor.
      */
     protected GridDhtPartitionsAbstractMessage() {
         // No-op.
@@ -144,11 +140,6 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 6;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -156,7 +147,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -164,19 +155,19 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeMessage("exchId", exchId))
+                if (!writer.writeMessage(exchId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("lastVer", lastVer))
+                if (!writer.writeMessage(lastVer))
                     return false;
 
                 writer.incrementState();
@@ -190,15 +181,12 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 3:
-                exchId = reader.readMessage("exchId");
+                exchId = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -206,7 +194,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
                 reader.incrementState();
 
             case 4:
-                flags = reader.readByte("flags");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -214,7 +202,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
                 reader.incrementState();
 
             case 5:
-                lastVer = reader.readMessage("lastVer");
+                lastVer = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -223,7 +211,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
 
         }
 
-        return reader.afterMessageRead(GridDhtPartitionsAbstractMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */

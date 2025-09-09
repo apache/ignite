@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateFilterRequest;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -261,9 +262,9 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
 
-        FieldsQueryCursor<List<?>> query = cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
+        FieldsQueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
 
-        query.iterator().forEachRemaining((e) -> {
+        qry.iterator().forEachRemaining((e) -> {
             Assert.assertEquals("Should be one running query",
                 1,
                 ignite.context().query().runningQueries(-1).size());
@@ -541,21 +542,21 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         int key = 0;
 
-        int[] notAffinityKey = new int[2];
+        int[] notAffKey = new int[2];
 
-        for (int i = 0; i < notAffinityKey.length; i++) {
+        for (int i = 0; i < notAffKey.length; i++) {
             while (ignite.affinity(DEFAULT_CACHE_NAME).isPrimary(ignite.localNode(), key))
                 key++;
 
-            notAffinityKey[i] = key;
+            notAffKey[i] = key;
 
             key++;
         }
 
         String[] queries = {
             "create table test(ID int primary key, NAME varchar(20))",
-            "insert into test (ID, NAME) values (" + notAffinityKey[0] + ", 'name')",
-            "insert into test (ID, NAME) values (" + notAffinityKey[1] + ", 'name')",
+            "insert into test (ID, NAME) values (" + notAffKey[0] + ", 'name')",
+            "insert into test (ID, NAME) values (" + notAffKey[1] + ", 'name')",
             "SELECT * FROM test"
         };
 
@@ -564,7 +565,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         try (Connection conn = GridTestUtils.connect(ignite, null); Statement stmt = conn.createStatement()) {
             IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(() -> stmt.execute(sql));
 
-            for (String query : queries) {
+            for (String qry : queries) {
                 assertWaitingOnBarrier();
 
                 List<GridRunningQueryInfo> runningQueries = (List<GridRunningQueryInfo>)ignite.context().query()
@@ -572,7 +573,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
                 assertEquals(1, runningQueries.size());
 
-                assertEquals(query, runningQueries.get(0).query());
+                assertEquals(qry, runningQueries.get(0).query());
 
                 awaitTimeout();
             }

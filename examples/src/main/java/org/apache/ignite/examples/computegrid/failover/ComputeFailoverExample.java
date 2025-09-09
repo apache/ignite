@@ -66,6 +66,7 @@ public class ComputeFailoverExample {
         }
     }
 
+    /** */
     @ComputeTaskSessionFullSupport
     private static final class CheckPointJob implements IgniteClosure<String, Integer> {
         /** Injected distributed task session. */

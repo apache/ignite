@@ -28,10 +28,9 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -136,10 +135,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     /** */
     @LoggerResource
     @GridToStringExclude
-    private IgniteLogger log;
-
-    /** */
-    private IgniteDiscoverySpiInternalListener internalLsnr;
+    protected IgniteLogger log;
 
     /** */
     private final ZookeeperDiscoveryStatistics stats = new ZookeeperDiscoveryStatistics();
@@ -341,14 +337,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /** {@inheritDoc} */
-    @Override public boolean allNodesSupport(IgniteFeatures feature) {
-        if (impl == null)
-            return false;
-
-        return impl.allNodesSupport(feature);
-    }
-
-    /** {@inheritDoc} */
     @Override public ClusterNode getLocalNode() {
         return impl != null ? impl.localNode() : null;
     }
@@ -416,13 +404,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
-        IgniteDiscoverySpiInternalListener internalLsnr = impl.internalLsnr;
-
-        if (internalLsnr != null) {
-            if (!internalLsnr.beforeSendCustomEvent(this, log, msg))
-                return;
-        }
-
         impl.sendCustomMessage(msg);
     }
 
@@ -477,8 +458,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
             locNode,
             lsnr,
             exchange,
-            internalLsnr,
-            stats);
+            stats,
+            ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller());
 
         registerMBean(igniteInstanceName, new ZookeeperDiscoverySpiMBeanImpl(this), ZookeeperDiscoverySpiMBean.class);
 
@@ -496,19 +477,11 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
 
-        MetricRegistry discoReg = (MetricRegistry)getSpiContext().getOrCreateMetricRegistry(DISCO_METRICS);
+        MetricRegistryImpl discoReg = (MetricRegistryImpl)getSpiContext().getOrCreateMetricRegistry(DISCO_METRICS);
 
         stats.registerMetrics(discoReg);
 
         discoReg.register("Coordinator", () -> impl.getCoordinator(), UUID.class, "Coordinator ID");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
-        if (impl != null)
-            impl.internalLsnr = lsnr;
-        else
-            internalLsnr = lsnr;
     }
 
     /** {@inheritDoc} */
@@ -529,6 +502,14 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
      */
     public Map<String, Object> getLocNodeAttrs() {
         return locNodeAttrs;
+    }
+
+    /**
+     * Callback before join topology.
+     * @param locNode Local node.
+     */
+    public void beforeJoinTopology(ClusterNode locNode) {
+        // No-op.
     }
 
     /**

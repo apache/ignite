@@ -25,13 +25,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
 /**
@@ -62,9 +61,6 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setGridLogger(testLog);
-
-        if (igniteInstanceName.endsWith("client_force_server"))
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         return cfg;
     }
@@ -117,7 +113,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         Pattern ptrn = Pattern.compile(String.format(ALIVE_NODES_MSG, 1, 2));
 
-        LogListener aliveNodesLsnr = LogListener.matches(ptrn).times(log.isDebugEnabled() ? 0 : 4).build();
+        LogListener aliveNodesLsnr = LogListener.matches(ptrn).times(4).build();
 
         testLog.registerListener(aliveNodesLsnr);
 
@@ -181,7 +177,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         Pattern ptrn = Pattern.compile(String.format(ALIVE_NODES_MSG, 1, 4));
 
-        LogListener aliveNodesLsnr = LogListener.matches(ptrn).times(log.isDebugEnabled() ? 0 : 16).build();
+        LogListener aliveNodesLsnr = LogListener.matches(ptrn).times(16).build();
 
         testLog.registerListener(aliveNodesLsnr);
 
@@ -237,6 +233,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
         doForceServerAndClientTest();
     }
 
+    /** */
     @Test
     public void checkMessageOnCoordinatorChangeTest() throws Exception {
         startGrid(1);
@@ -268,7 +265,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
 
         Pattern ptrn = Pattern.compile(String.format(ALIVE_NODES_MSG, 1, 4));
 
-        LogListener aliveNodesLsnr = LogListener.matches(ptrn).times(log.isDebugEnabled() ? 0 : 25).build();
+        LogListener aliveNodesLsnr = LogListener.matches(ptrn).times(25).build();
 
         testLog.registerListener(aliveNodesLsnr);
 
@@ -290,9 +287,9 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
             Ignite srv1 = startGrid("server1");
             Ignite client1 = startClientGrid("first client");
             Ignite client2 = startClientGrid("second client");
-            Ignite forceServClnt3 = startClientGrid("third client_force_server");
+            Ignite client3 = startClientGrid("third client");
 
-            waitForDiscovery(srv, srv1, client1, client2, forceServClnt3);
+            waitForDiscovery(srv, srv1, client1, client2, client3);
         }
         finally {
             stopAllGrids();
@@ -321,15 +318,9 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
      * @param aliveNodesLsnr log listener.
      */
     private void checkLogMessages(LogListener aliveNodesLsnr, LogListener lsnr, LogListener lsnr2) {
-        if (testLog.isDebugEnabled()) {
-            assertTrue(aliveNodesLsnr.check());
-            assertFalse(lsnr.check());
-            assertTrue(lsnr2.check());
-        } else {
-            assertTrue(aliveNodesLsnr.check());
-            assertTrue(lsnr.check());
-            assertFalse(lsnr2.check());
-        }
+        assertTrue(aliveNodesLsnr.check());
+        assertTrue(lsnr.check());
+        assertFalse(lsnr2.check());
     }
 
     /**

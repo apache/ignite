@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -26,112 +27,119 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.compute.ComputeJobAdapter;
-import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 
 /**
  * Snapshot restore operation handling task.
  */
-public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
+public class SnapshotHandlerRestoreTask {
+    /** */
+    private final IgniteEx ignite;
 
-    /** Injected ignite logger. */
-    @LoggerResource
-    private IgniteLogger log;
+    /** */
+    private final IgniteLogger log;
 
-    /** {@inheritDoc} */
-    @Override protected ComputeJob createJob(String snpName, String constId, Collection<String> groups) {
-        return new SnapshotHandlerRestoreJob(snpName, constId, groups);
+    /** */
+    private final SnapshotHandlerRestoreJob job;
+
+    /** */
+    SnapshotHandlerRestoreTask(
+        IgniteEx ignite,
+        IgniteLogger log,
+        SnapshotFileTree sft,
+        Collection<String> grps,
+        boolean check
+    ) {
+        job = new SnapshotHandlerRestoreJob(ignite, sft, grps, check);
+        this.ignite = ignite;
+        this.log = log;
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("rawtypes")
-    @Nullable @Override public SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) {
+    /** */
+    public Map<String, SnapshotHandlerResult<Object>> execute() {
+        return job.execute0();
+    }
+
+    /** */
+    public void reduce(
+        String snapshotName,
+        Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> results
+    ) {
         Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
         Collection<UUID> execNodes = new ArrayList<>(results.size());
 
-        for (ComputeJobResult res : results) {
-            if (res.getException() != null)
-                throw res.getException();
+        // Checking node -> Map by consistend id.
+        for (Map.Entry<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> nodeRes : results.entrySet()) {
+            // Consistent id -> Map by handler name.
+            for (Map.Entry<Object, Map<String, SnapshotHandlerResult<?>>> res : nodeRes.getValue().entrySet()) {
+                // Depending on the job mapping, we can get several different results from one node.
+                execNodes.add(nodeRes.getKey().id());
 
-            // Depending on the job mapping, we can get several different results from one node.
-            execNodes.add(res.getNode().id());
+                Map<String, SnapshotHandlerResult<?>> nodeDataMap = res.getValue();
 
-            Map<String, SnapshotHandlerResult> nodeDataMap = res.getData();
+                assert nodeDataMap != null : "At least the default snapshot restore handler should have been executed ";
 
-            assert nodeDataMap != null : "At least the default snapshot restore handler should have been executed ";
+                for (Map.Entry<String, SnapshotHandlerResult<?>> entry : nodeDataMap.entrySet()) {
+                    String hndName = entry.getKey();
 
-            for (Map.Entry<String, SnapshotHandlerResult> entry : nodeDataMap.entrySet()) {
-                String hndName = entry.getKey();
-
-                clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(entry.getValue());
+                    clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(entry.getValue());
+                }
             }
         }
 
-        String snapshotName = F.first(F.first(metas.values())).snapshotName();
-
         try {
             ignite.context().cache().context().snapshotMgr().handlers().completeAll(
-                SnapshotHandlerType.RESTORE, snapshotName, clusterResults, execNodes);
-        } catch (Exception e) {
+                SnapshotHandlerType.RESTORE, snapshotName, clusterResults, execNodes, wrns -> {});
+        }
+        catch (Exception e) {
             log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" + snapshotName + "].", e);
 
             throw new IgniteException(e);
         }
-
-        return new SnapshotPartitionsVerifyTaskResult(metas, null);
     }
 
     /** Invokes all {@link SnapshotHandlerType#RESTORE} handlers locally. */
-    private static class SnapshotHandlerRestoreJob extends ComputeJobAdapter {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
+    private static class SnapshotHandlerRestoreJob {
+        /** */
+        private final IgniteEx ignite;
 
-        /** Ignite instance. */
-        @IgniteInstanceResource
-        private IgniteEx ignite;
+        /** */
+        private final SnapshotFileTree sft;
 
-        /** Injected logger. */
-        @LoggerResource
-        private IgniteLogger log;
+        /** */
+        private final Collection<String> rqGrps;
 
-        /** Snapshot name. */
-        private final String snpName;
-
-        /** String representation of the consistent node ID. */
-        private final String consistentId;
-
-        /** Cache group names. */
-        private final Collection<String> grps;
+        /** */
+        private final boolean check;
 
         /**
-         * @param snpName Snapshot name.
-         * @param consistentId String representation of the consistent node ID.
          * @param grps Cache group names.
+         * @param check If {@code true} check snapshot before restore.
          */
-        public SnapshotHandlerRestoreJob(String snpName, String consistentId, Collection<String> grps) {
-            this.snpName = snpName;
-            this.consistentId = consistentId;
-            this.grps = grps;
+        SnapshotHandlerRestoreJob(
+            IgniteEx ignite,
+            SnapshotFileTree sft,
+            Collection<String> grps,
+            boolean check
+        ) {
+            this.ignite = ignite;
+            this.sft = sft;
+            this.rqGrps = grps;
+            this.check = check;
         }
 
-        /** {@inheritDoc} */
-        @Override public Map<String, SnapshotHandlerResult<Object>> execute() {
+        /** */
+        public Map<String, SnapshotHandlerResult<Object>> execute0() {
             try {
                 IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
-                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consistentId);
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, grps, ignite.localNode());
+                SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.meta());
 
-                return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE, ctx);
+                return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
+                    new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false, check));
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);
             }
         }

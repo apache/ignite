@@ -211,10 +211,10 @@ namespace ignite
             if (password.IsSet() && !config.IsPasswordSet())
                 config.SetPassword(password.GetValue());
 
-            SettableValue<std::string> nestedTxModeStr = ReadDsnString(dsn, ConnectionStringParser::Key::nestedTxMode);
+            SettableValue<std::string> engineModeStr = ReadDsnString(dsn, ConnectionStringParser::Key::engineMode);
 
-            if (nestedTxModeStr.IsSet() && !config.IsNestedTxModeSet())
-                config.SetNestedTxMode(NestedTxMode::FromString(nestedTxModeStr.GetValue(), config.GetNestedTxMode()));
+            if (engineModeStr.IsSet() && !config.IsEngineModeSet())
+                config.SetEngineMode(EngineMode::FromString(engineModeStr.GetValue(), config.GetEngineMode()));
         }
     }
 }

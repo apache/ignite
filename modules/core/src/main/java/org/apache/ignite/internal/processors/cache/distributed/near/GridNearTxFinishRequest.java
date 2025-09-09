@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -31,23 +29,16 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Near transaction finish request.
  */
 public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Mini future ID. */
     private int miniId;
 
-    /** */
-    private MvccSnapshot mvccSnapshot;
-
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearTxFinishRequest() {
         // No-op.
@@ -89,7 +80,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         Collection<GridCacheVersion> rolledbackVers,
         int txSize,
         int taskNameHash,
-        MvccSnapshot mvccSnapshot,
         boolean addDepInfo) {
         super(
             xidVer,
@@ -112,15 +102,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
         explicitLock(explicitLock);
         storeEnabled(storeEnabled);
-
-        this.mvccSnapshot = mvccSnapshot;
-    }
-
-    /**
-     * @return Mvcc info.
-     */
-    @Nullable public MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
     }
 
     /**
@@ -175,7 +156,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -183,13 +164,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
         switch (writer.state()) {
             case 21:
-                if (!writer.writeInt("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
-                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
@@ -203,23 +178,12 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 21:
-                miniId = reader.readInt("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
-                mvccSnapshot = reader.readMessage("mvccSnapshot");
+                miniId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -228,17 +192,12 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
         }
 
-        return reader.afterMessageRead(GridNearTxFinishRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 53;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 23;
     }
 
     /** {@inheritDoc} */

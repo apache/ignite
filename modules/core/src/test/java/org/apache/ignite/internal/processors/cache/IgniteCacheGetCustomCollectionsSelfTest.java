@@ -39,16 +39,14 @@ public class IgniteCacheGetCustomCollectionsSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(null);
+        final CacheConfiguration<String, MyMap> mapCacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        final CacheConfiguration<String, MyMap> mapCacheConfig = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        mapCacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        mapCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        mapCacheCfg.setBackups(1);
+        mapCacheCfg.setName("cache");
 
-        mapCacheConfig.setCacheMode(CacheMode.PARTITIONED);
-        mapCacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        mapCacheConfig.setBackups(1);
-        mapCacheConfig.setName("cache");
-
-        cfg.setCacheConfiguration(mapCacheConfig);
+        cfg.setCacheConfiguration(mapCacheCfg);
 
         return cfg;
     }
@@ -113,6 +111,7 @@ public class IgniteCacheGetCustomCollectionsSelfTest extends GridCommonAbstractT
      *
      */
     private static class Value implements Serializable {
+        /** */
         private int val;
     }
 }

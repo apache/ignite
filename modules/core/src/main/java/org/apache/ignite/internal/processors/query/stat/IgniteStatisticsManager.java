@@ -61,6 +61,14 @@ public interface IgniteStatisticsManager {
     public ObjectStatistics getLocalStatistics(StatisticsKey key);
 
     /**
+     * Get global statistics by object.
+     *
+     * @param key Statistic key.
+     * @return Object statistics of {@code null} if there are no available global statistics by specified object.
+     */
+    public ObjectStatistics getGlobalStatistics(StatisticsKey key);
+
+    /**
      * Stop statistic manager.
      */
     public void stop();

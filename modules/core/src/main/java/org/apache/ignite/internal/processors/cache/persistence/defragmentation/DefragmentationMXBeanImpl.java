@@ -31,6 +31,7 @@ public class DefragmentationMXBeanImpl implements DefragmentationMXBean {
     /** Defragmentation manager. */
     private final IgniteDefragmentation defragmentation;
 
+    /** */
     public DefragmentationMXBeanImpl(GridKernalContext ctx) {
         this.defragmentation = ctx.defragmentation();
     }

@@ -35,6 +35,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -45,6 +46,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
+import org.apache.ignite.internal.util.IgniteUtils.TestBinaryContext;
+import org.apache.ignite.internal.util.IgniteUtils.TestBinaryContext.TestBinaryContextListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.BlockTcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -145,11 +148,9 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
 
         IgniteEx client0 = startClientGrid("client0");
 
-        CacheObjectBinaryProcessorImpl.TestBinaryContext clientCtx =
-            (CacheObjectBinaryProcessorImpl.TestBinaryContext)((CacheObjectBinaryProcessorImpl)client0.context().
-                cacheObjects()).binaryContext();
+        TestBinaryContext clientCtx = (TestBinaryContext)((CacheObjectBinaryProcessorImpl)client0.context().cacheObjects()).binaryContext();
 
-        clientCtx.addListener(new CacheObjectBinaryProcessorImpl.TestBinaryContext.TestBinaryContextListener() {
+        clientCtx.addListener(new TestBinaryContextListener() {
             @Override public void onAfterMetadataRequest(int typeId, BinaryType type) {
                 if (syncMeta) {
                     try {
@@ -176,7 +177,7 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
 
         startGrid("node4");
 
-        node0.cluster().active(true);
+        node0.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -342,14 +343,14 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        CacheObjectBinaryProcessorImpl.useTestBinaryCtx = true;
+        U.useTestBinaryCtx = true;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        CacheObjectBinaryProcessorImpl.useTestBinaryCtx = false;
+        U.useTestBinaryCtx = false;
 
         stopAllGrids();
     }

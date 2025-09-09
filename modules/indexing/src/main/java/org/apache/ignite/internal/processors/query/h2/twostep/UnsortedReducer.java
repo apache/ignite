@@ -53,7 +53,7 @@ public class UnsortedReducer extends UnsortedBaseReducer {
             }
 
             @Override public Row next() {
-                return H2PlainRowFactory.create(iter.next());
+                return H2PlainRowFactory.create(colCnt, iter.next());
             }
 
             @Override public void remove() {
@@ -78,7 +78,7 @@ public class UnsortedReducer extends UnsortedBaseReducer {
         /**
          * @param stream Stream of all the rows from remote nodes.
          */
-         FetchingCursor(Iterator<Row> stream) {
+        FetchingCursor(Iterator<Row> stream) {
             assert stream != null;
 
             // Initially we will use all the fetched rows, after we will switch to the last block.

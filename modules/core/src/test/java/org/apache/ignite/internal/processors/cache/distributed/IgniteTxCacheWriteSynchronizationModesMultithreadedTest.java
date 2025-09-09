@@ -36,21 +36,18 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionOptimisticException;
-import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -78,15 +75,6 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
     /** */
     private static final int MULTITHREADED_TEST_KEYS = 100;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -181,14 +169,6 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
         boolean store,
         boolean nearCache,
         boolean restart) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc()) {
-            if (store && !MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
-                return;
-
-            if (nearCache && !MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
-                return;
-        }
-
         final Ignite ignite = ignite(0);
 
         createCache(ignite, cacheConfiguration(DEFAULT_CACHE_NAME, syncMode, backups, store), nearCache);
@@ -219,16 +199,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
                     Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
 
-                    while (true) {
-                        try {
-                            cache.put(key, rnd.nextInt());
-
-                            break;
-                        }
-                        catch (CacheException e) {
-                            MvccFeatureChecker.assertMvccWriteConflict(e);
-                        }
-                    }
+                    cache.put(key, rnd.nextInt());
                 }
             });
 
@@ -244,19 +215,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                         map.put(key, rnd.nextInt());
                     }
 
-                    while (true) {
-                        try {
-                            cache.putAll(map);
-
-                            break;
-                        }
-                        catch (CacheException e) {
-                            if (X.hasCause(e, TransactionRollbackException.class))
-                                return;
-
-                            MvccFeatureChecker.assertMvccWriteConflict(e);
-                        }
-                    }
+                    cache.putAll(map);
                 }
             });
 
@@ -286,38 +245,36 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                 }
             });
 
-            if (!MvccFeatureChecker.forcedMvcc()) {
-                commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
-                    @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
-                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
+                @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                        Map<Integer, Integer> map = new LinkedHashMap<>();
+                    Map<Integer, Integer> map = new LinkedHashMap<>();
 
-                        for (int i = 0; i < 10; i++) {
-                            Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
+                    for (int i = 0; i < 10; i++) {
+                        Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
 
-                            map.put(key, rnd.nextInt());
+                        map.put(key, rnd.nextInt());
+                    }
+
+                    while (true) {
+                        try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                            for (Map.Entry<Integer, Integer> e : map.entrySet())
+                                cache.put(e.getKey(), e.getValue());
+
+                            tx.commit();
+
+                            break;
                         }
-
-                        while (true) {
-                            try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                                for (Map.Entry<Integer, Integer> e : map.entrySet())
-                                    cache.put(e.getKey(), e.getValue());
-
-                                tx.commit();
-
-                                break;
-                            }
-                            catch (TransactionOptimisticException ignored) {
-                                // Retry.
-                            }
-                            catch (CacheException | IgniteException ignored) {
-                                break;
-                            }
+                        catch (TransactionOptimisticException ignored) {
+                            // Retry.
+                        }
+                        catch (CacheException | IgniteException ignored) {
+                            break;
                         }
                     }
-                });
-            }
+                }
+            });
         }
         finally {
             stop.set(true);
@@ -383,6 +340,9 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     private <K, V> IgniteCache<K, V> createCache(Ignite ignite, CacheConfiguration<K, V> ccfg,
         boolean nearCache) {
         IgniteCache<K, V> cache = ignite.createCache(ccfg);
+
+        F.view(G.allGrids(), node -> node.cluster().localNode().isClient())
+            .forEach(node -> awaitCacheOnClient(node, ccfg.getName()));
 
         if (nearCache)
             ignite(NODES - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());

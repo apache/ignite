@@ -35,11 +35,14 @@ import org.apache.ignite.events.SnapshotEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static java.util.Optional.ofNullable;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
@@ -54,9 +57,6 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
     /** Number of cache keys to pre-create at node start. */
     private static final int CACHE_KEYS_RANGE = 10_000;
 
-    /** Cache value builder. */
-    private Function<Integer, Object> valBuilder = new BinaryValueBuilder(TYPE_NAME);
-
     /** {@inheritDoc} */
     @Override protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
         return super.txCacheConfig(ccfg).setSqlIndexMaxInlineSize(255).setSqlSchema("PUBLIC")
@@ -65,11 +65,6 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
                 .setValueType(TYPE_NAME)
                 .setFields(new LinkedHashMap<>(F.asMap("id", Integer.class.getName(), "name", String.class.getName())))
                 .setIndexes(Collections.singletonList(new QueryIndex("id")))));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Function<Integer, Object> valueBuilder() {
-        return valBuilder;
     }
 
     /** @throws Exception If failed. */
@@ -81,7 +76,13 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
+        // Only primary mode leads to index rebuild on restore.
+        // Must wait until index rebuild finish so subsequent checks will pass.
+        if (onlyPrimary)
+            awaitPartitionMapExchange();
+
         assertCacheKeys(client.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+        assertRebuildIndexes(client.cache(DEFAULT_CACHE_NAME), onlyPrimary);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
     }
@@ -89,6 +90,8 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
     /** @throws Exception If failed. */
     @Test
     public void testBasicClusterSnapshotRestoreWithMetadata() throws Exception {
+        valBuilder = new BinaryValueBuilder(TYPE_NAME);
+
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
         // Remove metadata.
@@ -100,7 +103,13 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
+        // Only primary mode leads to index rebuild on restore.
+        // Must wait until index rebuild finish so subsequent checks will pass.
+        if (onlyPrimary)
+            awaitPartitionMapExchange();
+
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary(), CACHE_KEYS_RANGE);
+        assertRebuildIndexes(ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary(), onlyPrimary);
 
         for (Ignite grid : G.allGrids())
             assertNotNull(((IgniteEx)grid).context().cacheObjects().metadata(typeId));
@@ -111,9 +120,11 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
     /** @throws Exception If failed. */
     @Test
     public void testClusterSnapshotRestoreOnBiggerTopology() throws Exception {
+        valBuilder = new BinaryValueBuilder(TYPE_NAME);
+
         int nodesCnt = 4;
 
-        startGridsWithCache(nodesCnt - 2, CACHE_KEYS_RANGE, valBuilder, dfltCacheCfg);
+        startGridsWithCache(nodesCnt - 2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
         grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
@@ -146,7 +157,11 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         awaitPartitionMapExchange();
 
-        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary(), CACHE_KEYS_RANGE);
+        for (Ignite g : G.allGrids())
+            ofNullable(indexRebuildFuture((IgniteEx)g, CU.cacheId(DEFAULT_CACHE_NAME))).orElse(new GridFinishedFuture<>()).get(TIMEOUT);
+
+        for (Ignite g : G.allGrids())
+            assertCacheKeys(g.cache(DEFAULT_CACHE_NAME).withKeepBinary(), CACHE_KEYS_RANGE);
 
         GridTestUtils.waitForCondition(() -> evts.size() == 2, TIMEOUT);
         assertEquals(2, evts.size());
@@ -154,7 +169,7 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
         SnapshotEvent startEvt = evts.get(0);
 
         assertEquals(SNAPSHOT_NAME, startEvt.snapshotName());
-        assertTrue(startEvt.message().contains("grps=[" + DEFAULT_CACHE_NAME + ']'));
+        assertTrue(startEvt.message().contains("caches=[" + DEFAULT_CACHE_NAME + ']'));
     }
 
     /** {@inheritDoc} */
@@ -168,12 +183,6 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
             String nodeId = ctx.localNodeId().toString();
 
-            assertTrue("nodeId=" + nodeId, grid.cache(cache.getName()).indexReadyFuture().isDone());
-
-            // Make sure no index rebuild happened.
-            assertEquals("nodeId=" + nodeId,
-                0, ctx.cache().cache(cache.getName()).context().cache().metrics0().getIndexRebuildKeysProcessed());
-
             GridQueryProcessor qry = ((IgniteEx)grid).context().query();
 
             // Make sure  SQL works fine.
@@ -185,6 +194,26 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
                 "explain SELECT * FROM " + tblName + " WHERE id < 10"), true).getAll().get(0).get(0);
 
             assertTrue("nodeId=" + nodeId + "\n" + explainPlan, explainPlan.contains("ID_ASC_IDX"));
+        }
+    }
+
+    /**
+     * @param cache Ignite cache.
+     * @param rebuild Rebuild index happened.
+     */
+    private void assertRebuildIndexes(IgniteCache<Object, Object> cache, boolean rebuild) {
+        for (Ignite grid : G.allGrids()) {
+            GridKernalContext ctx = ((IgniteEx)grid).context();
+
+            assertTrue("nodeId=" + ctx.localNodeId(), grid.cache(cache.getName()).indexReadyFuture().isDone());
+
+            if (grid.configuration().isClientMode())
+                continue;
+
+            // Make sure no index rebuild happened.
+            assertEquals("nodeId=" + ctx.localNodeId(),
+                rebuild, ctx.cache().cache(cache.getName()).context().cache().metrics0()
+                    .getIndexRebuildKeysProcessed() > 0);
         }
     }
 

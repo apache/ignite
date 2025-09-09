@@ -21,7 +21,7 @@ import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.GridTestUtils.RunnableX;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -141,14 +141,14 @@ public class GridCacheProcessorActiveTxTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDynamicCacheClose() {
-        GridCacheProcessor cacheProcessor = NODE.context().cache();
+        GridCacheProcessor cacheProc = NODE.context().cache();
 
         String cacheName = DEFAULT_CACHE_NAME;
 
         NODE.getOrCreateCache(new CacheConfiguration<>(cacheName));
 
         opInActiveTx(
-            () -> cacheProcessor.dynamicCloseCache(cacheName),
+            () -> cacheProc.dynamicCloseCache(cacheName),
             cacheName,
             "dynamicCloseCache"
         );

@@ -129,8 +129,8 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public RegisterStatus register(UUID nodeId, UUID routineId, final GridKernalContext ctx) {
-        p2pUnmarshalFut.listen((fut) -> {
-            if (fut.error() == null)
+        p2pUnmarshalFut.listen(() -> {
+            if (p2pUnmarshalFut.error() == null)
                 ctx.io().addUserMessageListener(topic, pred, nodeId);
         });
 
@@ -153,9 +153,9 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (topic != null)
-            topicBytes = U.marshal(ctx.config().getMarshaller(), topic);
+            topicBytes = U.marshal(ctx.marshaller(), topic);
 
-        predBytes = U.marshal(ctx.config().getMarshaller(), pred);
+        predBytes = U.marshal(ctx.marshaller(), pred);
 
         // Deploy only listener, as it is very likely to be of some user class.
         GridPeerDeployAware pda = U.peerDeployAware(pred);

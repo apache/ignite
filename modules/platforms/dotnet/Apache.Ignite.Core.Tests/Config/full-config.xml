@@ -20,10 +20,10 @@
 <!-- Full XML config with all properties having custom values. -->
 
 <igniteConfiguration
-              workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true'
+              workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' 
               isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true'
               peerAssemblyLoadingMode='CurrentAppDomain' longQueryWarningTimeout='1:2:3' isActiveOnStart='false'
-              consistentId='someId012' redirectJavaConsoleOutput='false' authenticationEnabled='true' mvccVacuumFrequency='10000' mvccVacuumThreadCount='4'
+              consistentId='someId012' redirectJavaConsoleOutput='false' authenticationEnabled='true'
               sqlQueryHistorySize='123' javaPeerClassLoadingEnabled='true' asyncContinuationExecutor='UnsafeSynchronous'>
     <localhost>127.1.1.1</localhost>
     <binaryConfiguration compactFooter='false' keepDeserialized='true'>
@@ -121,7 +121,7 @@
             </value>
         </pair>
     </userAttributes>
-    <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
+    <atomicConfiguration backups='2' cacheMode='Partitioned' atomicSequenceReserveSize='250' />
     <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
     <logger type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestLogger, Apache.Ignite.Core.Tests' />
     <pluginConfigurations>
@@ -163,8 +163,7 @@
     <dataStorageConfiguration alwaysWriteFullPages="false" checkpointFrequency="00:00:01"
                               checkpointThreads="3" concurrencyLevel="4" lockWaitTime="00:00:05" metricsEnabled="true"
                               pageSize="6" storagePath="cde" metricsRateTimeInterval="00:00:07"
-                              metricsSubIntervalCount="8" systemRegionInitialSize="9" systemRegionMaxSize="10"
-                              walThreadLocalBufferSize="11"
+                              metricsSubIntervalCount="8" walThreadLocalBufferSize="11"
                               walArchivePath="abc" walFlushFrequency="00:00:12" walFsyncDelayNanos="13" walHistorySize="14"
                               walMode="Background" walRecordIteratorBufferSize="15" walSegments="16" walSegmentSize="17"
                               walPath="wal-store" writeThrottlingEnabled="true" walAutoArchiveAfterInactivity="00:00:18"
@@ -179,6 +178,7 @@
                                         maxSize="5" metricsEnabled="false" name="reg1" pageEvictionMode="Disabled"
                                         metricsRateTimeInterval="00:00:03" metricsSubIntervalCount="6"
                                         swapPath="swap2" checkpointPageBufferSize="8" />
+        <systemDataRegionConfiguration initialSize="9" maxSize="10" />
     </dataStorageConfiguration>
     <sslContextFactory type='SslContextFactory' protocol='SSL'
                        keyStoreFilePath='KeyStore/server.jks' keyStorePassword='123456'

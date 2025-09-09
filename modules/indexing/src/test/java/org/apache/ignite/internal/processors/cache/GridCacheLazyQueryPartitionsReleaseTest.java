@@ -98,7 +98,8 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
             it.next();
 
             resCntr++;
-        } else
+        }
+        else
             fail("No query results.");
 
         startGrid(1);

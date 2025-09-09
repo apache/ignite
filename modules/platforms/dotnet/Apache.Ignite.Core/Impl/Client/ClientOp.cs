@@ -24,6 +24,8 @@ namespace Apache.Ignite.Core.Impl.Client
     {
         // General purpose.
         ResourceClose = 0,
+        Heartbeat = 1,
+        GetIdleTimeout = 2,
 
         // Cache.
         CacheGet = 1000,
@@ -92,9 +94,37 @@ namespace Apache.Ignite.Core.Impl.Client
 
         // Services.
         ServiceInvoke = 7000,
+        ServiceGetDescriptors = 7001,
+        ServiceGetDescriptor = 7002,
+        ServiceGetTopology = 7003,
 
         // Data Streamer.
         DataStreamerStart = 8000,
-        DataStreamerAddData = 8001
+        DataStreamerAddData = 8001,
+
+        // Data Structures.
+        AtomicLongCreate = 9000,
+        AtomicLongRemove = 9001,
+        AtomicLongExists = 9002,
+        AtomicLongValueGet = 9003,
+        AtomicLongValueAddAndGet = 9004,
+        AtomicLongValueGetAndSet = 9005,
+        AtomicLongValueCompareAndSet = 9006,
+        AtomicLongValueCompareAndSetAndGet = 9007,
+
+        SetGetOrCreate = 9010,
+        SetClose = 9011,
+        SetExists = 9012,
+        SetValueAdd = 9013,
+        SetValueAddAll = 9014,
+        SetValueRemove = 9015,
+        SetValueRemoveAll = 9016,
+        SetValueContains = 9017,
+        SetValueContainsAll = 9018,
+        SetValueRetainAll = 9019,
+        SetSize = 9020,
+        SetClear = 9021,
+        SetIteratorStart = 9022,
+        SetIteratorGetPage = 9023
     }
 }

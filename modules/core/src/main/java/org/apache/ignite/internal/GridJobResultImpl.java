@@ -43,19 +43,19 @@ public class GridJobResultImpl implements ComputeJobResult {
     /** */
     private ClusterNode node;
 
-    /** */
+    /** Guarded by {@code this}. */
     private Object data;
 
-    /** */
+    /** Guarded by {@code this}. */
     private IgniteException ex;
 
-    /** */
+    /** Guarded by {@code this}. */
     private boolean hasRes;
 
-    /** */
+    /** Guarded by {@code this}. */
     private boolean isCancelled;
 
-    /** */
+    /** Guarded by {@code this}. */
     private boolean isOccupied;
 
     /**
@@ -128,10 +128,12 @@ public class GridJobResultImpl implements ComputeJobResult {
      * @param jobAttrs Job attributes.
      * @param isCancelled Whether job was cancelled or not.
      */
-    public synchronized void onResponse(@Nullable Object data,
+    public synchronized void onResponse(
+        @Nullable Object data,
         @Nullable IgniteException ex,
         @Nullable Map<Object, Object> jobAttrs,
-        boolean isCancelled) {
+        boolean isCancelled
+    ) {
         this.data = data;
         this.ex = ex;
         this.isCancelled = isCancelled;

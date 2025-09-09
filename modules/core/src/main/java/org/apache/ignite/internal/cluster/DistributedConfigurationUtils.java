@@ -18,13 +18,20 @@
 package org.apache.ignite.internal.cluster;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedProperty;
-import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.jetbrains.annotations.NotNull;
 
 import static java.lang.String.format;
@@ -33,6 +40,9 @@ import static java.lang.String.format;
  * Distributed configuration utilities methods.
  */
 public final class DistributedConfigurationUtils {
+    /** */
+    public static final String CONN_DISABLED_BY_ADMIN_ERR_MSG = "Connection disabled by administrator";
+
     /**
      */
     private DistributedConfigurationUtils() {
@@ -40,23 +50,44 @@ public final class DistributedConfigurationUtils {
     }
 
     /**
-     * @param property Property which value should be set.
-     * @param value Default value.
+     * @param prop Property which value should be set.
+     * @param val Default value.
      * @param log Logger.
      * @param <T> Property type.
+     *
+     * @return Future for the operation.
      */
-    public static <T extends Serializable> void setDefaultValue(DistributedProperty<T> property, T value, IgniteLogger log) {
-        if (property.get() == null) {
+    public static <T extends Serializable> IgniteInternalFuture<Void> setDefaultValue(
+        DistributedProperty<T> prop,
+        T val,
+        IgniteLogger log
+    ) {
+        if (prop.get() == null) {
             try {
-                property.propagateAsync(null, value)
-                    .listen((IgniteInClosure<IgniteInternalFuture<?>>)future -> {
-                        if (future.error() != null)
-                            log.error("Cannot set default value of '" + property.getName() + '\'', future.error());
-                    });
+                IgniteInternalFuture<Void> fut = (IgniteInternalFuture<Void>)prop.propagateAsync(null, val);
+
+                fut.listen(future -> {
+                    if (future.error() != null)
+                        log.error("Cannot set default value of '" + prop.getName() + '\'', future.error());
+                });
+
+                return fut;
             }
             catch (IgniteCheckedException e) {
-                log.error("Cannot initiate setting default value of '" + property.getName() + '\'', e);
+                String errMsg = "Cannot initiate setting default value of '" + prop.getName() + '\'';
+
+                log.error(errMsg, e);
+
+                return new GridFinishedFuture<>(new IgniteCheckedException(errMsg, e));
             }
+        }
+        else {
+            if (log.isDebugEnabled()) {
+                log.debug("Skip set default value for distributed property [name=" + prop.getName() +
+                    ", clusterValue=" + prop.get() + ", defaultValue=" + val + ']');
+            }
+
+            return new GridFinishedFuture<>();
         }
     }
 
@@ -73,5 +104,40 @@ public final class DistributedConfigurationUtils {
                     log.info(format(propUpdMsg, name, oldVal, newVal));
             }
         };
+    }
+
+    /**
+     * Creates and registers distributed properties to enable connection by type.
+     * @param subscriptionProcessor Processor to register properties.
+     * @param log Logger to log default values.
+     * @param types Connection types.
+     * @return Detached distributed property.
+     */
+    public static List<DistributedBooleanProperty> newConnectionEnabledProperty(
+        GridInternalSubscriptionProcessor subscriptionProcessor,
+        IgniteLogger log,
+        String... types
+    ) {
+        List<DistributedBooleanProperty> props = Arrays.stream(types).map(type -> DistributedBooleanProperty.detachedBooleanProperty(
+            "new" + type + "ConnectionsEnabled",
+            "If true then new " + type.toUpperCase() + " connections allowed."
+        )).collect(Collectors.toList());
+
+        subscriptionProcessor.registerDistributedConfigurationListener(new DistributedConfigurationLifecycleListener() {
+            @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
+                props.forEach(p -> {
+                    if (dispatcher.property(p.getName()) != null)
+                        return;
+
+                    dispatcher.registerProperty(p);
+                });
+            }
+
+            @Override public void onReadyToWrite() {
+                props.forEach(prop -> setDefaultValue(prop, true, log));
+            }
+        });
+
+        return props;
     }
 }

@@ -25,8 +25,8 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.spi.metric.IntMetric;
 

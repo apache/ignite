@@ -38,6 +38,21 @@
             </bean>
         </property>
 
+        <property name="sqlConfiguration">
+            <bean class="org.apache.ignite.configuration.SqlConfiguration">
+                <property name="queryEnginesConfiguration">
+                    <list>
+                        <bean class="org.apache.ignite.indexing.IndexingQueryEngineConfiguration">
+                            <property name="default" value="true"/>
+                        </bean>
+                        <bean class="org.apache.ignite.calcite.CalciteQueryEngineConfiguration">
+                            <property name="default" value="false"/>
+                        </bean>
+                    </list>
+                </property>
+            </bean>
+        </property>
+
         <property name="cacheConfiguration">
             <list>
                 <bean parent="test-type-template"/>
@@ -73,6 +88,8 @@
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
         <property name="cacheMode" value="PARTITIONED"/>
         <property name="atomicityMode" value="TRANSACTIONAL"/>
+
+        <property name="sqlFunctionClasses" value="org.apache.ignite.testframework.GridTestUtils.SqlTestFunctions"/>
 
         <!-- Configure type metadata to enable queries. -->
         <property name="queryEntities">

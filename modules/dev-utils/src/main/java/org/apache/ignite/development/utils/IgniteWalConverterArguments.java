@@ -33,6 +33,7 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
@@ -44,19 +45,13 @@ import static java.util.Collections.emptyList;
  */
 public class IgniteWalConverterArguments {
     /** */
-    private static final String WAL_DIR = "walDir";
+    private static final String ROOT_DIR = "root";
 
     /** */
-    private static final String WAL_ARCHIVE_DIR = "walArchiveDir";
+    private static final String FOLDER_NAME = "folderName";
 
     /** */
     private static final String PAGE_SIZE = "pageSize";
-
-    /** */
-    private static final String BINARY_METADATA_FILE_STORE_DIR = "binaryMetadataFileStoreDir";
-
-    /** */
-    private static final String MARSHALLER_MAPPING_FILE_STORE_DIR = "marshallerMappingFileStoreDir";
 
     /** */
     private static final String KEEP_BINARY = "keepBinary";
@@ -86,22 +81,13 @@ public class IgniteWalConverterArguments {
     private static final String PAGES = "pages";
 
     /** Record pattern for {@link #PAGES}. */
-    private static final Pattern PAGE_ID_PATTERN = Pattern.compile("(\\d+):(\\d+)");
+    private static final Pattern PAGE_ID_PATTERN = Pattern.compile("(-?\\d+):(-?\\d+)");
 
-    /** Path to dir with wal files. */
-    private final File walDir;
-
-    /** Path to dir with archive wal files. */
-    private final File walArchiveDir;
+    /** Node file tree. */
+    private final NodeFileTree ft;
 
     /** Size of pages, which was selected for file store (1024, 2048, 4096, etc). */
     private final int pageSize;
-
-    /** Path to binary metadata dir. */
-    private final File binaryMetadataFileStoreDir;
-
-    /** Path to marshaller dir. */
-    private final File marshallerMappingFileStoreDir;
 
     /** Keep binary flag. */
     private final boolean keepBinary;
@@ -133,11 +119,8 @@ public class IgniteWalConverterArguments {
     /**
      * Constructor.
      *
-     * @param walDir                        Path to dir with wal files.
-     * @param walArchiveDir                 Path to dir with archive wal files.
+     * @param ft                            Node file tree.
      * @param pageSize                      Size of pages, which was selected for file store (1024, 2048, 4096, etc).
-     * @param binaryMetadataFileStoreDir    Path to binary metadata dir.
-     * @param marshallerMappingFileStoreDir Path to marshaller dir.
      * @param keepBinary                    Keep binary flag.
      * @param recordTypes                   WAL record types (TX_RECORD, DATA_RECORD, etc).
      * @param fromTime                      The start time interval for the record time in milliseconds.
@@ -148,16 +131,13 @@ public class IgniteWalConverterArguments {
      * @param skipCrc                       Skip CRC calculation/check flag.
      * @param pages                         Pages for searching in format grpId:pageId.
      */
-    public IgniteWalConverterArguments(File walDir, File walArchiveDir, int pageSize,
-        File binaryMetadataFileStoreDir, File marshallerMappingFileStoreDir, boolean keepBinary,
+    public IgniteWalConverterArguments(NodeFileTree ft, int pageSize,
+        boolean keepBinary,
         Set<WALRecord.RecordType> recordTypes, Long fromTime, Long toTime, String recordContainsText,
         ProcessSensitiveData processSensitiveData,
         boolean printStat, boolean skipCrc, Collection<T2<Integer, Long>> pages) {
-        this.walDir = walDir;
-        this.walArchiveDir = walArchiveDir;
+        this.ft = ft;
         this.pageSize = pageSize;
-        this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
-        this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
         this.keepBinary = keepBinary;
         this.recordTypes = recordTypes;
         this.fromTime = fromTime;
@@ -170,21 +150,12 @@ public class IgniteWalConverterArguments {
     }
 
     /**
-     * Path to dir with wal files.
+     * Node file tree.
      *
-     * @return walDir
+     * @return Node file tree.
      */
-    public File getWalDir() {
-        return walDir;
-    }
-
-    /**
-     * Path to dir with archive wal files.
-     *
-     * @return walArchiveDir
-     */
-    public File getWalArchiveDir() {
-        return walArchiveDir;
+    public NodeFileTree getFileTree() {
+        return ft;
     }
 
     /**
@@ -194,24 +165,6 @@ public class IgniteWalConverterArguments {
      */
     public int getPageSize() {
         return pageSize;
-    }
-
-    /**
-     * Path to binary metadata dir.
-     *
-     * @return binaryMetadataFileStoreD
-     */
-    public File getBinaryMetadataFileStoreDir() {
-        return binaryMetadataFileStoreDir;
-    }
-
-    /**
-     * Path to marshaller dir.
-     *
-     * @return marshallerMappingFileStoreD
-     */
-    public File getMarshallerMappingFileStoreDir() {
-        return marshallerMappingFileStoreDir;
     }
 
     /**
@@ -299,19 +252,17 @@ public class IgniteWalConverterArguments {
      * Parse command line arguments and return filled IgniteWalConverterArguments
      *
      * @param args Command line arguments.
+     * @param out Out print stream.
      * @return IgniteWalConverterArguments.
      */
     public static IgniteWalConverterArguments parse(final PrintStream out, String... args) {
         if (args == null || args.length < 1) {
             out.println("Print WAL log data in human-readable form.");
             out.println("You need to provide:");
-            out.println("    walDir                           Path to dir with wal files.");
-            out.println("    walArchiveDir                    " +
-                "Path to dir with archive wal files. walDir or walArchiveDir must be specified.");
+            out.println("    root                           Root pds directory.");
+            out.println("    folderName                     Node specific folderName.");
             out.println("    pageSize                         " +
                 "Size of pages, which was selected for file store (1024, 2048, 4096, etc). Default 4096.");
-            out.println("    binaryMetadataFileStoreDir       (Optional) Path to binary meta.");
-            out.println("    marshallerMappingFileStoreDir    (Optional) Path to marshaller dir.");
             out.println("    keepBinary                       Keep binary flag. Default true.");
             out.println("    recordTypes                      " +
                 "(Optional) Comma-separated WAL record types (TX_RECORD, DATA_RECORD, etc). Default all.");
@@ -325,11 +276,7 @@ public class IgniteWalConverterArguments {
             out.println("    pages                            (Optional) Comma-separated pages or path to file with " +
                 "pages on each line in grpId:pageId format.");
             out.println("For example:");
-            out.println("    walDir=/work/db/wal");
-            out.println("    walArchiveDir=/work/db/wal_archive");
             out.println("    pageSize=4096");
-            out.println("    binaryMetadataFileStoreDir=/work/db/nodeId-consistentId");
-            out.println("    marshallerMappingFileStoreDir=/work/db/marshaller");
             out.println("    keepBinary=true");
             out.println("    recordTypes=DataRecord,TxRecord");
             out.println("    walTimeFromMillis=1575158400000");
@@ -341,37 +288,35 @@ public class IgniteWalConverterArguments {
             return null;
         }
 
-        File walDir = null;
-        File walArchiveDir = null;
+        NodeFileTree ft = null;
+        File root = null;
+        String folderName = null;
         int pageSize = 4096;
-        File binaryMetadataFileStoreDir = null;
-        File marshallerMappingFileStoreDir = null;
         boolean keepBinary = true;
         final Set<WALRecord.RecordType> recordTypes = new HashSet<>();
         Long fromTime = null;
         Long toTime = null;
         String recordContainsText = null;
-        ProcessSensitiveData processSensitiveData = ProcessSensitiveData.SHOW;
+        ProcessSensitiveData procSensitiveData = ProcessSensitiveData.SHOW;
         boolean printStat = false;
         boolean skipCrc = false;
         Collection<T2<Integer, Long>> pages = emptyList();
 
         for (String arg : args) {
-            if (arg.startsWith(WAL_DIR + "=")) {
-                final String walPath = arg.substring(WAL_DIR.length() + 1);
+            if (arg.startsWith(ROOT_DIR + "=")) {
+                final String rootPath = arg.substring(ROOT_DIR.length() + 1);
 
-                walDir = new File(walPath);
+                root = new File(rootPath);
 
-                if (!walDir.exists())
-                    throw new IllegalArgumentException("Incorrect path to dir with wal files: " + walPath);
+                if (!root.exists())
+                    throw new IllegalArgumentException("Incorrect path to the root dir: " + root);
+
+                ft = ensureNodeStorageExists(root, folderName);
             }
-            else if (arg.startsWith(WAL_ARCHIVE_DIR + "=")) {
-                final String walArchivePath = arg.substring(WAL_ARCHIVE_DIR.length() + 1);
+            else if (arg.startsWith(FOLDER_NAME + "=")) {
+                folderName = arg.substring(FOLDER_NAME.length() + 1);
 
-                walArchiveDir = new File(walArchivePath);
-
-                if (!walArchiveDir.exists())
-                    throw new IllegalArgumentException("Incorrect path to dir with archive wal files: " + walArchivePath);
+                ft = ensureNodeStorageExists(root, folderName);
             }
             else if (arg.startsWith(PAGE_SIZE + "=")) {
                 final String pageSizeStr = arg.substring(PAGE_SIZE.length() + 1);
@@ -383,33 +328,17 @@ public class IgniteWalConverterArguments {
                     throw new IllegalArgumentException("Incorrect page size. Error parse: " + pageSizeStr);
                 }
             }
-            else if (arg.startsWith(BINARY_METADATA_FILE_STORE_DIR + "=")) {
-                final String binaryMetadataFileStorePath = arg.substring(BINARY_METADATA_FILE_STORE_DIR.length() + 1);
-
-                binaryMetadataFileStoreDir = new File(binaryMetadataFileStorePath);
-
-                if (!binaryMetadataFileStoreDir.isDirectory())
-                    throw new IllegalArgumentException("Incorrect path to dir with binary meta files: " + binaryMetadataFileStorePath);
-            }
-            else if (arg.startsWith(MARSHALLER_MAPPING_FILE_STORE_DIR + "=")) {
-                final String marshallerMappingFileStorePath = arg.substring(MARSHALLER_MAPPING_FILE_STORE_DIR.length() + 1);
-
-                marshallerMappingFileStoreDir = new File(marshallerMappingFileStorePath);
-
-                if (!marshallerMappingFileStoreDir.isDirectory())
-                    throw new IllegalArgumentException("Incorrect path to dir with marshaller files: " + marshallerMappingFileStorePath);
-            }
             else if (arg.startsWith(KEEP_BINARY + "=")) {
                 keepBinary = parseBoolean(KEEP_BINARY, arg.substring(KEEP_BINARY.length() + 1));
             }
             else if (arg.startsWith(RECORD_TYPES + "=")) {
                 final String recordTypesStr = arg.substring(RECORD_TYPES.length() + 1);
 
-                final String[] recordTypesStrArray = recordTypesStr.split(",");
+                final String[] recordTypesStrArr = recordTypesStr.split(",");
 
                 final SortedSet<String> unknownRecordTypes = new TreeSet<>();
 
-                for (String recordTypeStr : recordTypesStrArray) {
+                for (String recordTypeStr : recordTypesStrArr) {
                     try {
                         recordTypes.add(WALRecord.RecordType.valueOf(recordTypeStr));
                     }
@@ -446,12 +375,12 @@ public class IgniteWalConverterArguments {
                 recordContainsText = arg.substring(RECORD_CONTAINS_TEXT.length() + 1);
             }
             else if (arg.startsWith(PROCESS_SENSITIVE_DATA + "=")) {
-                final String processSensitiveDataStr = arg.substring(PROCESS_SENSITIVE_DATA.length() + 1);
+                final String procSensitiveDataStr = arg.substring(PROCESS_SENSITIVE_DATA.length() + 1);
                 try {
-                    processSensitiveData = ProcessSensitiveData.valueOf(processSensitiveDataStr);
+                    procSensitiveData = ProcessSensitiveData.valueOf(procSensitiveDataStr);
                 }
                 catch (Exception e) {
-                    throw new IllegalArgumentException("Unknown processSensitiveData: " + processSensitiveDataStr +
+                    throw new IllegalArgumentException("Unknown processSensitiveData: " + procSensitiveDataStr +
                         ". Supported: " + Arrays.toString(ProcessSensitiveData.values()));
                 }
             }
@@ -470,25 +399,14 @@ public class IgniteWalConverterArguments {
             }
         }
 
-        if (walDir == null && walArchiveDir == null)
-            throw new IllegalArgumentException("The paths to the WAL files are not specified.");
+        if (ft == null)
+            throw new IllegalArgumentException("The paths to the node files are not specified.");
 
         out.println("Program arguments:");
 
-        if (walDir != null)
-            out.printf("\t%s = %s\n", WAL_DIR, walDir.getAbsolutePath());
-
-        if (walArchiveDir != null)
-            out.printf("\t%s = %s\n", WAL_ARCHIVE_DIR, walArchiveDir.getAbsolutePath());
-
+        out.printf("\t%s = %s\n", ROOT_DIR, root.getAbsolutePath());
+        out.printf("\t%s = %s\n", FOLDER_NAME, folderName);
         out.printf("\t%s = %d\n", PAGE_SIZE, pageSize);
-
-        if (binaryMetadataFileStoreDir != null)
-            out.printf("\t%s = %s\n", BINARY_METADATA_FILE_STORE_DIR, binaryMetadataFileStoreDir);
-
-        if (marshallerMappingFileStoreDir != null)
-            out.printf("\t%s = %s\n", MARSHALLER_MAPPING_FILE_STORE_DIR, marshallerMappingFileStoreDir);
-
         out.printf("\t%s = %s\n", KEEP_BINARY, keepBinary);
 
         if (!F.isEmpty(recordTypes))
@@ -510,10 +428,27 @@ public class IgniteWalConverterArguments {
         if (!pages.isEmpty())
             out.printf("\t%s = %s\n", PAGES, pages);
 
-        return new IgniteWalConverterArguments(walDir, walArchiveDir, pageSize,
-            binaryMetadataFileStoreDir, marshallerMappingFileStoreDir,
-            keepBinary, recordTypes, fromTime, toTime, recordContainsText, processSensitiveData, printStat, skipCrc,
+        return new IgniteWalConverterArguments(ft, pageSize,
+            keepBinary, recordTypes, fromTime, toTime, recordContainsText, procSensitiveData, printStat, skipCrc,
             pages);
+    }
+
+    /**
+     * Creates and check {@link NodeFileTree} when both params specified.
+     * @param root Root directory.
+     * @param folderName Folder name.
+     * @return Node file tree if both parameter specified, {@code null} otherwise.
+     */
+    private static NodeFileTree ensureNodeStorageExists(@Nullable File root, @Nullable String folderName) {
+        if (root == null || folderName == null)
+            return null;
+
+        NodeFileTree ft = new NodeFileTree(root, folderName);
+
+        if (!ft.wal().exists() && !ft.walArchive().exists())
+            throw new IllegalArgumentException("WAL directories not exists: " + ft.wal() + ", " + ft.walArchive());
+
+        return ft;
     }
 
     /**

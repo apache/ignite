@@ -18,16 +18,13 @@
 package org.apache.ignite.internal.processors.platform.dotnet;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
@@ -39,7 +36,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformConfiguratio
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
@@ -87,16 +83,16 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         memMgr = new PlatformMemoryManagerImpl(gate, 1024);
 
-        PlatformLogger logger = null;
+        PlatformLogger log = null;
 
         if (useLogger) {
-            logger = new PlatformLogger();
-            logger.setGateway(gate);
-            igniteCfg.setGridLogger(logger);
+            log = new PlatformLogger();
+            log.setGateway(gate);
+            igniteCfg.setGridLogger(log);
         }
 
         PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr,
-            logger);
+            log);
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
 
@@ -108,32 +104,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         // Callback to .Net.
         prepare(igniteCfg, dotNetCfg0);
-
-        // Make sure binary config is right.
-        setBinaryConfiguration(igniteCfg, dotNetCfg0);
-    }
-
-    /**
-     * Sets binary config.
-     *
-     * @param igniteCfg Ignite config.
-     * @param dotNetCfg .NET config.
-     */
-    private void setBinaryConfiguration(IgniteConfiguration igniteCfg, PlatformDotNetConfigurationEx dotNetCfg) {
-        // Check marshaller.
-        Marshaller marsh = igniteCfg.getMarshaller();
-
-        if (marsh == null) {
-            igniteCfg.setMarshaller(new BinaryMarshaller());
-
-            dotNetCfg.warnings(Collections.singleton("Marshaller is automatically set to " +
-                BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
-        }
-        else if (!(marsh instanceof BinaryMarshaller))
-            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
-                " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
-
-        BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
     }
 
     /**
@@ -150,7 +120,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 PlatformOutputStream out = outMem.output();
 
                 GridBinaryMarshaller marshaller = PlatformUtils.marshaller();
-                BinaryRawWriterEx writer = marshaller.writer(out);
+                BinaryWriterEx writer = marshaller.writer(out);
 
                 PlatformConfigurationUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
@@ -189,7 +159,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      *
      * @param in Input stream.
      */
-    private void processPrepareResult(BinaryReaderExImpl in) {
+    private void processPrepareResult(BinaryReaderEx in) {
         assert cfg != null;
 
         PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);

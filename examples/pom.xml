@@ -21,13 +21,12 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
-        <version>1</version>
-        <relativePath>../parent</relativePath>
+        <artifactId>ignite-parent-internal</artifactId>
+        <version>${revision}</version>
+        <relativePath>../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-examples</artifactId>
-    <version>2.12.0-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -37,15 +36,13 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${project.version}</version>
             <!--Remove exclusion while upgrading ignite-spring version to 5.0-->
             <exclusions>
                 <exclusion>
@@ -63,31 +60,33 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>${spring-5.0.version}</version>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>${spring-5.0.version}</version>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-log4j</artifactId>
-            <version>${project.version}</version>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-log4j2</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-calcite</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-opencensus</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -103,45 +102,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml-xgboost-model-parser</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml-catboost-model-parser</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml-h2o-model-parser</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml-spark-model-parser</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-kubernetes</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -157,17 +119,15 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
-            <version>${project.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -178,108 +138,25 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>ignite-shmem</artifactId>
-            <version>1.0.0</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.javassist</groupId>
             <artifactId>javassist</artifactId>
             <version>${javassist.version}</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.jpmml/pmml-model -->
-        <dependency>
-            <groupId>org.jpmml</groupId>
-            <artifactId>pmml-model</artifactId>
-            <version>1.4.7</version>
-        </dependency>
 
         <dependency>
-            <groupId>org.apache.parquet</groupId>
-            <artifactId>parquet-hadoop</artifactId>
-            <version>1.10.0</version>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.11.0</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-common</artifactId>
-            <version>2.9.1</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.protobuf</groupId>
-                    <artifactId>protobuf-java</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
     </dependencies>
 
     <properties>
         <!-- will be changed by profile activation. allows to combine profiles. -->
         <lgpl.folder>src/main/java</lgpl.folder>
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
-        <spark.folder>src/main/java</spark.folder>
-        <spark.test.folder>src/test/java</spark.test.folder>
     </properties>
 
     <profiles>
-        <profile>
-            <id>scala</id>
-
-            <properties>
-                <spark.folder>src/main/spark</spark.folder>
-                <spark.test.folder>src/test/spark</spark.test.folder>
-            </properties>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-scalar</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.scalatest</groupId>
-                    <artifactId>scalatest_2.11</artifactId>
-                    <version>${scala.test.version}</version>
-                    <scope>test</scope>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>org.scala-lang</groupId>
-                            <artifactId>scala-library</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-spark</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>net.alchim31.maven</groupId>
-                        <artifactId>scala-maven-plugin</artifactId>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-checkstyle-plugin</artifactId>
-                        <configuration>
-                            <sourceDirectories combine.children="append">
-                                <sourceDirectory>${spark.folder}</sourceDirectory>
-                                <sourceDirectory>${spark.test.folder}</sourceDirectory>
-                            </sourceDirectories>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
         <profile>
             <id>lgpl</id>
 
@@ -290,21 +167,8 @@
 
             <dependencies>
                 <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-hibernate_5.1</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
+                    <groupId>${project.groupId}</groupId>
                     <artifactId>ignite-schedule</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-geospatial</artifactId>
-                    <version>${project.version}</version>
                 </dependency>
             </dependencies>
 
@@ -317,60 +181,6 @@
                             <sourceDirectories combine.children="append">
                                 <sourceDirectory>${lgpl.folder}</sourceDirectory>
                                 <sourceDirectory>${lgpl.test.folder}</sourceDirectory>
-                            </sourceDirectories>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>spark-2.4</id>
-
-            <properties>
-                <spark.folder>src/main/spark</spark.folder>
-                <spark.test.folder>src/test/spark</spark.test.folder>
-            </properties>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-scalar</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.scalatest</groupId>
-                    <artifactId>scalatest_2.11</artifactId>
-                    <version>${scala.test.version}</version>
-                    <scope>test</scope>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>org.scala-lang</groupId>
-                            <artifactId>scala-library</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-spark-2.4</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>net.alchim31.maven</groupId>
-                        <artifactId>scala-maven-plugin</artifactId>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-checkstyle-plugin</artifactId>
-                        <configuration>
-                            <sourceDirectories combine.children="append">
-                                <sourceDirectory>${spark.folder}</sourceDirectory>
-                                <sourceDirectory>${spark.test.folder}</sourceDirectory>
                             </sourceDirectories>
                         </configuration>
                     </plugin>
@@ -406,7 +216,6 @@
                         <configuration>
                             <sources>
                                 <source>${lgpl.folder}</source>
-                                <source>${spark.folder}</source>
                             </sources>
                         </configuration>
                     </execution>
@@ -420,7 +229,6 @@
                         <configuration>
                             <sources>
                                 <source>${lgpl.test.folder}</source>
-                                <source>${spark.test.folder}</source>
                             </sources>
                         </configuration>
                     </execution>

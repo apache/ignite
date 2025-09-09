@@ -53,7 +53,7 @@ public final class KeystoreEncryptionKey implements Serializable {
     }
 
     /**
-     * Encryption key.
+     * @return Encryption key.
      */
     public Key key() {
         return k;

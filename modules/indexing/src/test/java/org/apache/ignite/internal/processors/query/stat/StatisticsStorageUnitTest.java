@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.persistence.ReadWriteMetaStorageMock;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,18 +62,20 @@ public class StatisticsStorageUnitTest extends StatisticsAbstractTest {
 
         IgniteStatisticsHelper helper = Mockito.mock(IgniteStatisticsHelper.class);
 
-        GridInternalSubscriptionProcessor subscriptionProcessor = Mockito.mock(GridInternalSubscriptionProcessor.class);
+        GridInternalSubscriptionProcessor subscriptionProc = Mockito.mock(GridInternalSubscriptionProcessor.class);
         Mockito.doAnswer(invocation -> lsnr[0] = invocation.getArgument(0))
-            .when(subscriptionProcessor).registerMetastorageListener(Mockito.any(MetastorageLifecycleListener.class));
+            .when(subscriptionProc).registerMetastorageListener(Mockito.any(MetastorageLifecycleListener.class));
 
         IgniteStatisticsStore inMemoryStore = new IgniteStatisticsInMemoryStoreImpl(cls -> log);
         GridSystemViewManager sysViewMgr = Mockito.mock(GridSystemViewManager.class);
 
         IgniteStatisticsRepository statsRepos = new IgniteStatisticsRepository(inMemoryStore, sysViewMgr, helper, cls -> log);
 
-        IgniteCacheDatabaseSharedManager dbMgr = new IgniteCacheDatabaseSharedManager();
-        IgniteStatisticsPersistenceStoreImpl persStore = new IgniteStatisticsPersistenceStoreImpl(subscriptionProcessor,
-            dbMgr, cls -> new GridTestLog4jLogger());
+        GridTestLog4jLogger log = new GridTestLog4jLogger();
+
+        IgniteCacheDatabaseSharedManager dbMgr = new IgniteCacheDatabaseSharedManager(new GridTestKernalContext(log));
+        IgniteStatisticsPersistenceStoreImpl persStore = new IgniteStatisticsPersistenceStoreImpl(subscriptionProc,
+            dbMgr, cls -> log);
 
         ReadWriteMetaStorageMock metastorage = new ReadWriteMetaStorageMock();
         lsnr[0].onReadyForReadWrite(metastorage);

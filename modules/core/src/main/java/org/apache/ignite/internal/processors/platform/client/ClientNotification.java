@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
 /**
@@ -78,10 +78,10 @@ public class ClientNotification extends ClientListenerResponse implements Client
      * @param ctx Connection context.
      * @param writer Writer.
      */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
         writer.writeLong(rsrcId);
 
-        short flags = (short) (ClientFlag.NOTIFICATION | (status() == ClientStatus.SUCCESS ? 0 : ClientFlag.ERROR));
+        short flags = (short)(ClientFlag.NOTIFICATION | (status() == ClientStatus.SUCCESS ? 0 : ClientFlag.ERROR));
 
         writer.writeShort(flags);
 

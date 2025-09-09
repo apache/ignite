@@ -227,7 +227,8 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
                             // No-op.
                         }
                     }, true).get(5_000);
-                } catch (IgniteCheckedException e) {
+                }
+                catch (IgniteCheckedException e) {
                     fail(X.getFullStackTrace(e));
                 }
             }
@@ -262,20 +263,21 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
 
         try {
             ref.get().get(10_000);
-        } catch (IgniteFutureTimeoutCheckedException e) {
+        }
+        catch (IgniteFutureTimeoutCheckedException e) {
             fail(X.getFullStackTrace(e));
         }
 
         PartitionsEvictManager mgr = grid(0).context().cache().context().evict();
 
         // Group eviction context should remain in map.
-        Map evictionGroupsMap = U.field(mgr, "evictionGroupsMap");
+        Map evictionGrpsMap = U.field(mgr, "evictionGroupsMap");
 
-        assertEquals("Group context must be cleaned up", 0, evictionGroupsMap.size());
+        assertEquals("Group context must be cleaned up", 0, evictionGrpsMap.size());
 
         grid(0).getOrCreateCache(cacheConfiguration());
 
-        assertEquals(0, evictionGroupsMap.size());
+        assertEquals(0, evictionGrpsMap.size());
 
         assertPartitionsSame(idleVerify(grid(0), DEFAULT_CACHE_NAME));
     }
@@ -305,7 +307,8 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
 
         try {
             ref.get().get(10_000);
-        } catch (IgniteFutureTimeoutCheckedException e) {
+        }
+        catch (IgniteFutureTimeoutCheckedException e) {
             fail(X.getFullStackTrace(e));
         }
 
@@ -325,7 +328,7 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
         IgniteEx g0 = startGrid(0, new DependencyResolver() {
             @Override public <T> T resolve(T instance) {
                 if (instance instanceof GridDhtPartitionTopologyImpl) {
-                    GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl) instance;
+                    GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)instance;
 
                     top.partitionFactory(new GridDhtPartitionTopologyImpl.PartitionFactory() {
                         @Override public GridDhtLocalPartition create(
@@ -345,7 +348,7 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
                     });
                 }
                 else if (instance instanceof IgniteCacheOffheapManager) {
-                    IgniteCacheOffheapManager mgr = (IgniteCacheOffheapManager) instance;
+                    IgniteCacheOffheapManager mgr = (IgniteCacheOffheapManager)instance;
 
                     IgniteCacheOffheapManager spied = Mockito.spy(mgr);
 
@@ -360,7 +363,7 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
                         }
                     }).when(spied).stop();
 
-                    return (T) spied;
+                    return (T)spied;
                 }
 
                 return instance;
@@ -419,7 +422,7 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
         IgniteEx g0 = startGrid(0, new DependencyResolver() {
             @Override public <T> T resolve(T instance) {
                 if (instance instanceof GridDhtPartitionTopologyImpl) {
-                    GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl) instance;
+                    GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)instance;
 
                     top.partitionFactory(new GridDhtPartitionTopologyImpl.PartitionFactory() {
                         @Override public GridDhtLocalPartition create(

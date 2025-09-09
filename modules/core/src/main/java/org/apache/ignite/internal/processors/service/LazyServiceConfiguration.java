@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.util.Arrays;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceConfiguration;
 
 /**
@@ -34,11 +37,29 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     @GridToStringExclude
     private transient Service srvc;
 
+    /** Node filter. */
+    @GridToStringExclude
+    private transient IgnitePredicate<ClusterNode> nodeFilter;
+
+    /** Service interceptors. */
+    @GridToStringExclude
+    private transient ServiceCallInterceptor[] interceptors;
+
     /** */
     private String srvcClsName;
 
     /** */
     private byte[] srvcBytes;
+
+    /** */
+    private byte[] nodeFilterBytes;
+
+    /** */
+    private byte[] interceptorsBytes;
+
+    /** Names of platform service methods to build service statistics. */
+    @GridToStringExclude
+    private String[] platformMtdNames;
 
     /**
      * Default constructor.
@@ -49,9 +70,15 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
 
     /**
      * @param cfg Configuration.
-     * @param srvcBytes Marshaller service.
+     * @param srvcBytes Marshalled service.
+     * @param interceptorsBytes Marshalled interceptors.
      */
-    public LazyServiceConfiguration(ServiceConfiguration cfg, byte[] srvcBytes) {
+    public LazyServiceConfiguration(
+        ServiceConfiguration cfg,
+        byte[] srvcBytes,
+        byte[] nodeFilterBytes,
+        byte[] interceptorsBytes
+    ) {
         assert cfg.getService() != null : cfg;
         assert srvcBytes != null;
 
@@ -61,9 +88,20 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         cacheName = cfg.getCacheName();
         affKey = cfg.getAffinityKey();
         nodeFilter = cfg.getNodeFilter();
+        this.nodeFilterBytes = nodeFilterBytes;
         this.srvcBytes = srvcBytes;
         srvc = cfg.getService();
         srvcClsName = srvc.getClass().getName();
+        isStatisticsEnabled = cfg.isStatisticsEnabled();
+        interceptors = cfg.getInterceptors();
+        this.interceptorsBytes = interceptorsBytes;
+    }
+
+    /**
+     * @return Node filter bytes.
+     */
+    public byte[] nodeFilterBytes() {
+        return nodeFilterBytes;
     }
 
     /**
@@ -85,6 +123,43 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         assert srvc != null : this;
 
         return srvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ServiceConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+        this.nodeFilter = nodeFilter;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgnitePredicate<ClusterNode> getNodeFilter() {
+        return nodeFilter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ServiceCallInterceptor[] getInterceptors() {
+        return interceptors;
+    }
+
+    /**
+     * @return Interceptors bytes.
+     */
+    public byte[] interceptorBytes() {
+        return interceptorsBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (!(o instanceof LazyServiceConfiguration))
+            return super.equals(o);
+
+        if (!equalsIgnoreNodeFilter(o))
+            return false;
+
+        LazyServiceConfiguration that = (LazyServiceConfiguration)o;
+
+        return Arrays.equals(nodeFilterBytes, that.nodeFilterBytes);
     }
 
     /** {@inheritDoc} */
@@ -113,10 +188,25 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         if (name != null ? !name.equals(that.getName()) : that.getName() != null)
             return false;
 
-        if (!F.eq(srvcClsName, that.srvcClsName))
+        if (!Arrays.equals(srvcBytes, that.srvcBytes))
+            return false;
+
+        if (!Arrays.equals(interceptorsBytes, that.interceptorsBytes))
             return false;
 
         return true;
+    }
+
+    /** */
+    LazyServiceConfiguration platformMtdNames(String[] platformMtdNames) {
+        this.platformMtdNames = platformMtdNames;
+
+        return this;
+    }
+
+    /** @return Names of known service methods. */
+    String[] platformMtdNames() {
+        return platformMtdNames;
     }
 
     /** {@inheritDoc} */
@@ -124,6 +214,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         String svcCls = srvc == null ? "" : srvc.getClass().getSimpleName();
         String nodeFilterCls = nodeFilter == null ? "" : nodeFilter.getClass().getSimpleName();
 
-        return S.toString(LazyServiceConfiguration.class, this, "svcCls", svcCls, "nodeFilterCls", nodeFilterCls);
+        return S.toString(LazyServiceConfiguration.class, this, "name", name, "svcCls", svcCls,
+            "nodeFilterCls", nodeFilterCls);
     }
 }

@@ -29,36 +29,13 @@ import org.apache.ignite.lang.IgniteOutClosure;
  * Throttles threads that generate dirty pages during ongoing checkpoint.
  * Designed to avoid zero dropdowns that can happen if checkpoint buffer is overflowed.
  */
-public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
-    /** Page memory. */
-    private final PageMemoryImpl pageMemory;
-
-    /** Database manager. */
-    private final IgniteOutClosure<CheckpointProgress> cpProgress;
-
+public class PagesWriteThrottle extends AbstractPagesWriteThrottle {
     /** If true, throttle will only protect from checkpoint buffer overflow, not from dirty pages ratio cap excess. */
     private final boolean throttleOnlyPagesInCheckpoint;
 
-    /** Checkpoint lock state checker. */
-    private CheckpointLockStateChecker stateChecker;
-
-    /** Starting throttle time. Limits write speed to 1000 MB/s. */
-    private static final long STARTING_THROTTLE_NANOS = 4000;
-
-    /** Backoff ratio. Each next park will be this times longer. */
-    private static final double BACKOFF_RATIO = 1.05;
-
-    /** Checkpoint buffer fullfill upper bound. */
-    private static final float CP_BUF_FILL_THRESHOLD = 2f / 3;
-
-    /** Counter for dirty pages ratio throttling. */
-    private final AtomicInteger notInCheckpointBackoffCntr = new AtomicInteger(0);
-
-    /** Counter for checkpoint buffer usage ratio throttling (we need a separate one due to IGNITE-7751). */
-    private final AtomicInteger inCheckpointBackoffCntr = new AtomicInteger(0);
-
-    /** Logger. */
-    private IgniteLogger log;
+    /** Not-in-checkpoint protection logic. */
+    private final ExponentialBackoffThrottlingStrategy notInCheckpointProtection
+        = new ExponentialBackoffThrottlingStrategy();
 
     /** Threads that are throttled due to checkpoint buffer overflow. */
     private final ConcurrentHashMap<Long, Thread> cpBufThrottledThreads = new ConcurrentHashMap<>();
@@ -66,42 +43,45 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
     /**
      * @param pageMemory Page memory.
      * @param cpProgress Database manager.
-     * @param stateChecker checkpoint lock state checker.
+     * @param cpLockStateChecker Checkpoint lock state checker.
      * @param throttleOnlyPagesInCheckpoint If true, throttle will only protect from checkpoint buffer overflow.
+     * @param fillRateBasedCpBufProtection If true, fill rate based throttling will be used to protect from
+     *        checkpoint buffer overflow.
      * @param log Logger.
      */
     public PagesWriteThrottle(PageMemoryImpl pageMemory,
         IgniteOutClosure<CheckpointProgress> cpProgress,
-        CheckpointLockStateChecker stateChecker,
+        CheckpointLockStateChecker cpLockStateChecker,
         boolean throttleOnlyPagesInCheckpoint,
+        boolean fillRateBasedCpBufProtection,
         IgniteLogger log
     ) {
-        this.pageMemory = pageMemory;
-        this.cpProgress = cpProgress;
-        this.stateChecker = stateChecker;
+        super(pageMemory, cpProgress, cpLockStateChecker, fillRateBasedCpBufProtection, log);
         this.throttleOnlyPagesInCheckpoint = throttleOnlyPagesInCheckpoint;
-        this.log = log;
 
-        assert throttleOnlyPagesInCheckpoint || cpProgress != null : "cpProgress must be not null if ratio based throttling mode is used";
+        assert (throttleOnlyPagesInCheckpoint && !fillRateBasedCpBufProtection) || cpProgress != null
+                : "cpProgress must be not null if ratio based throttling mode is used";
     }
 
     /** {@inheritDoc} */
     @Override public void onMarkDirty(boolean isPageInCheckpoint) {
-        assert stateChecker.checkpointLockIsHeldByThread();
+        assert cpLockStateChecker.checkpointLockIsHeldByThread();
 
         boolean shouldThrottle = false;
 
         if (isPageInCheckpoint)
-            shouldThrottle = shouldThrottle();
+            shouldThrottle = cpBufWatchdog.isInThrottlingZone();
 
         if (!shouldThrottle && !throttleOnlyPagesInCheckpoint) {
             CheckpointProgress progress = cpProgress.apply();
 
-            AtomicInteger writtenPagesCntr = progress == null ? null : cpProgress.apply().writtenPagesCounter();
+            AtomicInteger writtenPagesCntr = progress == null ? null : progress.writtenPagesCounter();
+            AtomicInteger writtenRecoveryPagesCntr = progress == null ? null : progress.writtenRecoveryPagesCounter();
 
-            if (progress == null || writtenPagesCntr == null)
+            if (progress == null || writtenPagesCntr == null || writtenRecoveryPagesCntr == null)
                 return; // Don't throttle if checkpoint is not running.
 
+            int cpWrittenRecoveryPages = writtenRecoveryPagesCntr.get();
             int cpWrittenPages = writtenPagesCntr.get();
 
             int cpTotalPages = progress.currentCheckpointPagesCount();
@@ -109,8 +89,10 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
             if (cpWrittenPages == cpTotalPages) {
                 // Checkpoint is already in fsync stage, increasing maximum ratio of dirty pages to 3/4
                 shouldThrottle = pageMemory.shouldThrottle(3.0 / 4);
-            } else {
-                double dirtyRatioThreshold = ((double)cpWrittenPages) / cpTotalPages;
+            }
+            else {
+                double dirtyRatioThreshold = cpWrittenRecoveryPages == 0 ? ((double)cpWrittenPages) / cpTotalPages :
+                    (cpWrittenRecoveryPages + cpWrittenPages) / 2d / cpTotalPages;
 
                 // Starting with 0.05 to avoid throttle right after checkpoint start
                 // 7/12 is maximum ratio of dirty pages
@@ -120,12 +102,13 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
             }
         }
 
-        AtomicInteger cntr = isPageInCheckpoint ? inCheckpointBackoffCntr : notInCheckpointBackoffCntr;
+        ThrottlingStrategy exponentialThrottle = isPageInCheckpoint ? cpBufProtector : notInCheckpointProtection;
 
         if (shouldThrottle) {
-            int throttleLevel = cntr.getAndIncrement();
+            long throttleParkTimeNs = exponentialThrottle.protectionParkTime();
 
-            long throttleParkTimeNs = (long) (STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, throttleLevel));
+            if (throttleParkTimeNs == 0)
+                return;
 
             Thread curThread = Thread.currentThread();
 
@@ -157,20 +140,27 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
             pageMemory.metrics().addThrottlingTime(U.currentTimeMillis() - startTime);
         }
         else {
-            int oldCntr = cntr.getAndSet(0);
+            boolean backoffWasAlreadyStarted = exponentialThrottle.reset();
 
-            if (isPageInCheckpoint && oldCntr != 0)
-                cpBufThrottledThreads.values().forEach(LockSupport::unpark);
+            if (isPageInCheckpoint && backoffWasAlreadyStarted)
+                unparkParkedThreads();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void tryWakeupThrottledThreads() {
-        if (!shouldThrottle()) {
-            inCheckpointBackoffCntr.set(0);
+    @Override public void wakeupThrottledThreads() {
+        if (!cpBufWatchdog.isInThrottlingZone()) {
+            cpBufProtector.reset();
 
-            cpBufThrottledThreads.values().forEach(LockSupport::unpark);
+            unparkParkedThreads();
         }
+    }
+
+    /**
+     * Unparks all the threads that were parked by us.
+     */
+    private void unparkParkedThreads() {
+        cpBufThrottledThreads.values().forEach(LockSupport::unpark);
     }
 
     /** {@inheritDoc} */
@@ -179,15 +169,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
 
     /** {@inheritDoc} */
     @Override public void onFinishCheckpoint() {
-        inCheckpointBackoffCntr.set(0);
-
-        notInCheckpointBackoffCntr.set(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean shouldThrottle() {
-        int checkpointBufLimit = (int)(pageMemory.checkpointBufferPagesSize() * CP_BUF_FILL_THRESHOLD);
-
-        return pageMemory.checkpointBufferPagesCount() > checkpointBufLimit;
+        cpBufProtector.reset();
+        notInCheckpointProtection.reset();
     }
 }

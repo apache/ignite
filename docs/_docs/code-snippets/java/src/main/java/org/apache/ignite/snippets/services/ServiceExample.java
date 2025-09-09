@@ -23,7 +23,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class ServiceExample {
 
@@ -50,11 +50,11 @@ public class ServiceExample {
 
         // Print the latest counter value from our counter service.
         System.out.println("Incremented value : " + counterService.get());
-        
+
         //tag::undeploy[]
         services.cancel("myCounterService");
         //end::undeploy[]
-        
+
         ignite.close();
     }
 
@@ -63,7 +63,7 @@ public class ServiceExample {
         //tag::deploy-with-cluster-group[]
         Ignite ignite = Ignition.start();
 
-        //deploy the service to the nodes that host the cache named "myCache" 
+        //deploy the service to the nodes that host the cache named "myCache"
         ignite.services(ignite.cluster().forCacheNodes("myCache"));
 
         //end::deploy-with-cluster-group[]
@@ -83,11 +83,11 @@ public class ServiceExample {
 
     @Test
     void affinityKey() {
-        
+
         //tag::deploy-by-key[]
         Ignite ignite = Ignition.start();
 
-        //making sure the cache exists
+        // Making sure the cache exists.
         ignite.getOrCreateCache("orgCache");
 
         ServiceConfiguration serviceCfg = new ServiceConfiguration();
@@ -157,6 +157,29 @@ public class ServiceExample {
     }
 
     @Test
+    void startWithStatistics() {
+        //tag::start-with-statistics[]
+        Ignite ignite = Ignition.start();
+
+        ServiceConfiguration serviceCfg = new ServiceConfiguration();
+
+        serviceCfg.setName("myService");
+        serviceCfg.setMaxPerNodeCount(1);
+        serviceCfg.setService(new MyCounterServiceImpl());
+
+        // Enable service statistics.
+        serviceCfg.setStatisticsEnabled(true);
+
+        ignite.services().deploy(serviceCfg);
+
+        // NOTE: work via proxy. Direct references like 'IgniteServices#service()' corrupt the statistics.
+        MyCounterService svc = ignite.services().serviceProxy("myService", MyCounterService.class, true);
+        //end::start-with-statistics[]
+
+        ignite.close();
+    }
+
+    @Test
     void serviceConfiguration() {
         //tag::service-configuration[]
         ServiceConfiguration serviceCfg = new ServiceConfiguration();
@@ -173,5 +196,28 @@ public class ServiceExample {
         Ignite ignite = Ignition.start(igniteCfg);
         //end::service-configuration[]
         ignite.close();
+    }
+
+    @Test
+    public void serviceCallContextExample() {
+        //tag::service-call-context-create[]
+        try (Ignite ignite = Ignition.start()) {
+            ignite.services().deployClusterSingleton("EchoService", new EchoServiceImpl());
+
+            // Create context.
+            ServiceCallContext johnCtx = ServiceCallContext.builder().put("user", "John").build();
+            ServiceCallContext maryCtx = ServiceCallContext.builder().put("user", "Mary").build();
+
+            // Bind it to the service proxy.
+            EchoService johnProxy = ignite.services().serviceProxy("EchoService", EchoService.class, false, johnCtx);
+            EchoService maryProxy = ignite.services().serviceProxy("EchoService", EchoService.class, false, maryCtx);
+
+            // Prints "Hello John!".
+            System.out.println(johnProxy.hello());
+
+            // Prints "Hello Mary!".
+            System.out.println(maryProxy.hello());
+        }
+        //end::service-call-context-create[]
     }
 }

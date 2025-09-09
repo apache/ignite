@@ -14,8 +14,6 @@
 // limitations under the License.
 = Transparent Data Encryption
 
-WARNING: This feature is in beta and not recommended for use in production environments.
-
 == Overview
 Transparent data encryption (TDE) allows users to encrypt their data at rest.
 
@@ -43,7 +41,7 @@ Transparent Data Encryption has some limitations that you should be aware of bef
 
 *Snapshots and Recovery*
 
-* No support for snapshots. Snapshots are not encrypted and it's not possible to recover from a snapshot that includes an encrypted table or cache.
+* Encryption, changing of master key or cache group key are not allowed during snapshot operations.
 
 == Configuration
 To enable encryption in the cluster, provide a master key in the configuration of each server node. A configuration example is shown below.
@@ -111,9 +109,9 @@ A keystore with a master key can be created using `keytool` as follows:
 [source,shell]
 ----
 user:~/tmp:[]$ java -version
-java version "1.8.0_161"
-Java(TM) SE Runtime Environment (build 1.8.0_161-b12)
-Java HotSpot(TM) 64-Bit Server VM (build 25.161-b12, mixed mode)
+openjdk version "11.0.24" 2024-07-16
+OpenJDK Runtime Environment Temurin-11.0.24+8 (build 11.0.24+8)
+OpenJDK 64-Bit Server VM Temurin-11.0.24+8 (build 11.0.24+8, mixed mode)
 
 user:~/tmp:[]$ keytool -genseckey \
 -alias ignite.master.key \
@@ -130,11 +128,11 @@ user:~/tmp:[]$ keytool \
 -list
 
 Keystore type: PKCS12
-Keystore provider: SunJSSE
+Keystore provider: SUN
 
 Your keystore contains 1 entry
 
-ignite.master.key, 07.11.2018, SecretKeyEntry,
+ignite.master.key, 07.08.2024, SecretKeyEntry,
 ----
 
 == Source Code Example

@@ -16,16 +16,27 @@
  */
 package org.apache.ignite.snippets;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.junit.jupiter.api.Test;
+
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 
 public class UsingScanQueries {
 
@@ -82,6 +93,71 @@ public class UsingScanQueries {
             //end::transformer[]
 
             System.out.println("Transformer example output:" + keys.get(0));
+        }
+    }
+
+    @Test
+    void executingIndexQueriesExample() {
+        try (Ignite ignite = Ignition.start()) {
+            //tag::idxQry[]
+            // Create index by 2 fields (orgId, salary).
+            LinkedHashMap<String,String> fields = new LinkedHashMap<>();
+                fields.put("orgId", Integer.class.getName());
+                fields.put("salary", Integer.class.getName());
+      
+            QueryEntity personEntity = new QueryEntity(Integer.class, Person.class)
+                .setFields(fields)
+                .setIndexes(Collections.singletonList(
+                    new QueryIndex(Arrays.asList("orgId", "salary"), QueryIndexType.SORTED)
+                        .setName("ORG_SALARY_IDX")
+                ));
+
+            CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<Integer, Person>("entityCache")
+                .setQueryEntities(Collections.singletonList(personEntity));
+
+            IgniteCache<Integer, Person> cache = ignite.getOrCreateCache(ccfg);
+
+            //end::idxQry[]
+            {
+            //tag::idxQry[]
+            // Find the persons who work in Organization 1.
+            QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(
+                new IndexQuery<Integer, Person>(Person.class, "ORG_SALARY_IDX")
+                    .setCriteria(eq("orgId", 1))
+            );
+            //end::idxQry[]
+            }
+
+            {
+                //tag::idxQryMultipleCriteria[]
+                // Find the persons who work in Organization 1 and have salary more than 1,000.
+                QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(
+                    new IndexQuery<Integer, Person>(Person.class, "ORG_SALARY_IDX")
+                        .setCriteria(eq("orgId", 1), gt("salary", 1000))
+                );
+                //end::idxQryMultipleCriteria[]
+            }
+
+            {
+                //tag::idxQryNoIdxName[]
+                // Ignite finds suitable index "ORG_SALARY_IDX" by specified criterion field "orgId".
+                QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(
+                    new IndexQuery<Integer, Person>(Person.class)
+                        .setCriteria(eq("orgId", 1))
+                );
+                //end::idxQryNoIdxName[]
+            }
+
+            {
+                //tag::idxQryFilter[]
+                // Find the persons who work in Organization 1 and whose name contains 'Vasya'.
+                QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(
+                    new IndexQuery<Integer, Person>(Person.class)
+                        .setCriteria(eq("orgId", 1))
+                        .setFilter((k, v) -> v.getName().contains("Vasya"))
+                );
+                //end::idxQryFilter[]
+            }
         }
     }
 }

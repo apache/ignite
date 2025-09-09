@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Query.
  */
-public class GridCacheSqlQuery implements Message {
+public class GridCacheSqlQuery implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,10 +83,10 @@ public class GridCacheSqlQuery implements Message {
     /** Flag indicating that the query contains an OUTER JOIN from REPLICATED to PARTITIONED. */
     @GridToStringInclude
     @GridDirectTransient
-    private transient boolean hasOuterJoinReplicatedPartitioned;
+    private transient boolean treatPartitionedAsReplicated;
 
     /**
-     * For {@link Message}.
+     * Empty constructor.
      */
     public GridCacheSqlQuery() {
         // No-op.
@@ -166,7 +167,7 @@ public class GridCacheSqlQuery implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -174,25 +175,25 @@ public class GridCacheSqlQuery implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("alias", alias))
+                if (!writer.writeString(alias))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeUuid("node", node))
+                if (!writer.writeUuid(node))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeIntArray("paramIdxs", paramIdxs))
+                if (!writer.writeIntArray(paramIdxs))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeString("qry", qry))
+                if (!writer.writeString(qry))
                     return false;
 
                 writer.incrementState();
@@ -206,12 +207,9 @@ public class GridCacheSqlQuery implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                alias = reader.readString("alias");
+                alias = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -219,7 +217,7 @@ public class GridCacheSqlQuery implements Message {
                 reader.incrementState();
 
             case 1:
-                node = reader.readUuid("node");
+                node = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -227,7 +225,7 @@ public class GridCacheSqlQuery implements Message {
                 reader.incrementState();
 
             case 2:
-                paramIdxs = reader.readIntArray("paramIdxs");
+                paramIdxs = reader.readIntArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -235,7 +233,7 @@ public class GridCacheSqlQuery implements Message {
                 reader.incrementState();
 
             case 3:
-                qry = reader.readString("qry");
+                qry = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -244,17 +242,12 @@ public class GridCacheSqlQuery implements Message {
 
         }
 
-        return reader.afterMessageRead(GridCacheSqlQuery.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 112;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 
     /**
@@ -375,19 +368,23 @@ public class GridCacheSqlQuery implements Message {
     }
 
     /**
-     * @return {@code true} if the query contains an OUTER JOIN from REPLICATED to PARTITIONED.
+     * @return {@code true} if the query contains an OUTER JOIN from REPLICATED to PARTITIONED, or
+     * outer query over REPLICATED cache has a subquery over PARTIITIONED.
      */
-    public boolean hasOuterJoinReplicatedPartitioned() {
-        return hasOuterJoinReplicatedPartitioned;
+    public boolean treatReplicatedAsPartitioned() {
+        return treatPartitionedAsReplicated;
     }
 
     /**
-     * @param hasOuterJoinReplicatedPartitioned Flag indicating that the query contains an OUTER JOIN from REPLICATED to PARTITIONED.
+     * Set flag to {@code true} when query contains an OUTER JOIN from REPLICATED to PARTITIONED, or
+     * outer query over REPLICATED cache has a subquery over PARTIITIONED.
      *
+     * @param trearPartitionedAsReplicated Flag indicating that the replicated cache in outer query must be treat
+     * as partitioned.
      * @return {@code this}.
      */
-    public GridCacheSqlQuery hasOuterJoinReplicatedPartitioned(boolean hasOuterJoinReplicatedPartitioned) {
-        this.hasOuterJoinReplicatedPartitioned = hasOuterJoinReplicatedPartitioned;
+    public GridCacheSqlQuery treatReplicatedAsPartitioned(boolean trearPartitionedAsReplicated) {
+        this.treatPartitionedAsReplicated = trearPartitionedAsReplicated;
 
         return this;
     }

@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.management.cache.CacheDistributionCommandArg;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -43,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Collect information on the distribution of partitions.
  */
-public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionTaskArg,
+public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionCommandArg,
     CacheDistributionTaskResult, CacheDistributionNode> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -65,12 +66,12 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionT
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<CacheDistributionTaskArg, CacheDistributionNode> job(CacheDistributionTaskArg arg) {
+    @Override protected VisorJob<CacheDistributionCommandArg, CacheDistributionNode> job(CacheDistributionCommandArg arg) {
         return new CacheDistributionJob(arg, debug);
     }
 
     /** Job for node. */
-    private static class CacheDistributionJob extends VisorJob<CacheDistributionTaskArg, CacheDistributionNode> {
+    private static class CacheDistributionJob extends VisorJob<CacheDistributionCommandArg, CacheDistributionNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -78,12 +79,12 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionT
          * @param arg Argument.
          * @param debug Debug.
          */
-        public CacheDistributionJob(@Nullable CacheDistributionTaskArg arg, boolean debug) {
+        public CacheDistributionJob(@Nullable CacheDistributionCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override public CacheDistributionNode run(CacheDistributionTaskArg arg) throws IgniteException {
+        @Override public CacheDistributionNode run(CacheDistributionCommandArg arg) throws IgniteException {
             try {
                 final CacheDistributionNode info = new CacheDistributionNode();
 
@@ -92,25 +93,25 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionT
                 info.setNodeId(node.id());
                 info.setAddresses(node.addresses().toString());
 
-                if (arg.getUserAttributes() != null) {
+                if (arg.userAttributes() != null) {
                     info.setUserAttributes(new TreeMap<>());
 
-                    for (String userAttribute : arg.getUserAttributes())
-                        info.getUserAttributes().put(userAttribute, (String)node.attributes().get(userAttribute));
+                    for (String userAttr : arg.userAttributes())
+                        info.getUserAttributes().put(userAttr, (String)node.attributes().get(userAttr));
                 }
 
                 info.setGroups(new ArrayList<>());
 
                 Set<Integer> grpIds = new HashSet<>();
 
-                if (arg.getCaches() == null) {
+                if (arg.caches() == null) {
                     final Collection<CacheGroupContext> ctxs = ignite.context().cache().cacheGroups();
 
                     for (CacheGroupContext ctx : ctxs)
                         grpIds.add(ctx.groupId());
                 }
                 else {
-                    for (String cacheName : arg.getCaches())
+                    for (String cacheName : arg.caches())
                         grpIds.add(CU.cacheId(cacheName));
                 }
 
@@ -118,15 +119,18 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionT
                     return info;
 
                 for (Integer id : grpIds) {
+                    final DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(id);
+
+                    final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(desc == null ? id : desc.groupId());
+
+                    if (grpCtx == null)
+                        continue;
+
                     final CacheDistributionGroup grp = new CacheDistributionGroup();
 
                     info.getGroups().add(grp);
 
                     grp.setGroupId(id);
-
-                    final DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(id);
-
-                    final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(desc == null ? id : desc.groupId());
 
                     grp.setGroupName(grpCtx.cacheOrGroupName());
 
@@ -136,11 +140,7 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionT
 
                     final AffinityAssignment assignment = grpCtx.affinity().readyAffinity(top.readyTopologyVersion());
 
-                    List<GridDhtLocalPartition> locParts = top.localPartitions();
-
-                    for (int i = 0; i < locParts.size(); i++) {
-                        GridDhtLocalPartition part = locParts.get(i);
-
+                    for (GridDhtLocalPartition part: top.currentLocalPartitions()) {
                         if (part == null)
                             continue;
 

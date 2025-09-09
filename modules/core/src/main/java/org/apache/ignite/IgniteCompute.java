@@ -227,6 +227,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
+     * @param <R> Type of the job result.
      * @return Job result.
      * @throws IgniteException If job failed.
      */
@@ -241,6 +242,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
+     * @param <R> Type of the job result.
      * @return a Future representing pending completion of the affinity call.
      * @throws IgniteException If job failed.
      */
@@ -257,6 +259,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
+     * @param <R> Type of the job result.
      * @return Job result.
      * @throws IgniteException If job failed.
      */
@@ -273,6 +276,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
+     * @param <R> Type of the job result.
      * @return a Future representing pending completion of the affinity call.
      * @throws IgniteException If job failed.
      */
@@ -288,6 +292,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param partId Partition to reserve.
      * @param job Job which will be co-located on the node with given affinity key.
+     * @param <R> Type of the job result.
      * @return Job result.
      * @throws IgniteException If job failed.
      */
@@ -304,6 +309,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param partId Partition to reserve.
      * @param job Job which will be co-located on the node with given affinity key.
+     * @param <R> Type of the job result.
      * @return a Future representing pending completion of the affinity call.
      * @throws IgniteException If job failed.
      */
@@ -318,6 +324,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *      then task is deployed under a name specified within annotation. Otherwise, full
      *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.
+     * @param <R> Type of the task result.
+     * @param <T> Type of the task argument.
      * @return Task result.
      * @throws IgniteException If task failed.
      */
@@ -332,6 +340,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *      then task is deployed under a name specified within annotation. Otherwise, full
      *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.
+     * @param <R> Type of the task result.
+     * @param <T> Type of the task argument.
      * @return a Future representing pending completion of the task.
      * @throws IgniteException If task failed.
      */
@@ -346,6 +356,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *      then task is deployed under a name specified within annotation. Otherwise, full
      *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.
+     * @param <R> Type of the task result.
+     * @param <T> Type of the task argument.
      * @return Task result.
      * @throws IgniteException If task failed.
      */
@@ -360,6 +372,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *      then task is deployed under a name specified within annotation. Otherwise, full
      *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.
+     * @param <R> type.
+     * @param <T> type.
      * @return a Future representing pending completion of the task.
      * @throws IgniteException If task failed.
      */
@@ -378,6 +392,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
+     * @param <R> Type of the task result.
+     * @param <T> Type of the task argument.
      * @return Task result.
      * @throws IgniteException If task failed.
      * @see ComputeTask for information about task execution.
@@ -394,6 +410,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
+     * @param <R> Type of the task result.
+     * @param <T> Type of the task argument.
      * @return a Future representing pending completion of the task.
      * @throws IgniteException If task failed.
      * @see ComputeTask for information about task execution.
@@ -423,6 +441,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * job result. Collection of all returned job results is returned from the result future.
      *
      * @param job Job to broadcast to all cluster group nodes.
+     * @param <R> Type of the job result.
      * @return Collection of results for this execution.
      * @throws IgniteException If execution failed.
      */
@@ -434,6 +453,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * job result. Collection of all returned job results is returned from the result future.
      *
      * @param job Job to broadcast to all cluster group nodes.
+     * @param <R> Type of the job result.
      * @return a Future representing pending completion of the broadcast execution of the job.
      * @throws IgniteException If execution failed.
      */
@@ -446,6 +466,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param job Job to broadcast to all cluster group nodes.
      * @param arg Job closure argument.
+     * @param <R> Type of the job result.
+     * @param <T> Type of the job argument.
      * @return Collection of results for this execution.
      * @throws IgniteException If execution failed.
      */
@@ -459,6 +481,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param job Job to broadcast to all cluster group nodes.
      * @param arg Job closure argument.
+     * @param <R> Type of the job result.
+     * @param <T> Type of the job argument.
      * @return a Future representing pending completion of the broadcast execution of the job.
      * @throws IgniteException If execution failed.
      */
@@ -507,6 +531,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * job execution is returned from the result closure.
      *
      * @param job Job to execute.
+     * @param <R> Type of the job result.
      * @return Job result.
      * @throws IgniteException If execution failed.
      */
@@ -518,6 +543,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * job execution is returned from the result closure.
      *
      * @param job Job to execute.
+     * @param <R> Type of the job result.
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
@@ -528,6 +554,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Collection of all returned job results is returned from the result future.
      *
      * @param jobs Non-empty collection of jobs to execute.
+     * @param <R> Type of the jobs result.
      * @return Collection of job results for this execution.
      * @throws IgniteException If execution failed.
      */
@@ -539,6 +566,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Collection of all returned job results is returned from the result future.
      *
      * @param jobs Non-empty collection of jobs to execute.
+     * @param <R> Type of the job result.
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
@@ -551,6 +579,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param jobs Non-empty collection of jobs to execute.
      * @param rdc Reducer to reduce all job results into one individual return value.
+     * @param <R1> Type of the job result.
+     * @param <R2> Type of the result returned by reducer.
      * @return Reduced job result for this execution.
      * @throws IgniteException If execution failed.
      */
@@ -564,6 +594,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param jobs Non-empty collection of jobs to execute.
      * @param rdc Reducer to reduce all job results into one individual return value.
+     * @param <R1> Type of the job result.
+     * @param <R2> Type of the result returned by reducer.
      * @return a Future with reduced job result for this execution.
      * @throws IgniteException If execution failed.
      */
@@ -577,6 +609,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param job Job to run.
      * @param arg Job argument.
+     * @param <R> Type of the job result.
+     * @param <T> Type of the job argument.
      * @return Job result.
      * @throws IgniteException If execution failed.
      */
@@ -590,6 +624,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param job Job to run.
      * @param arg Job argument.
+     * @param <R> Type of the job result.
+     * @param <T> Type of the job argument.
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
@@ -602,6 +638,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param job Job to run.
      * @param args Job arguments.
+     * @param <R> Type of the job result.
+     * @param <T> Type of the job argument.
      * @return Collection of job results.
      * @throws IgniteException If execution failed.
      */
@@ -615,6 +653,8 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param job Job to run.
      * @param args Job arguments.
+     * @param <R> Type of the job result.
+     * @param <T> Type of the job argument.
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
@@ -630,6 +670,9 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job to run.
      * @param args Job arguments.
      * @param rdc Reducer to reduce all job results into one individual return value.
+     * @param <R1> Type of the job result.
+     * @param <R2> Type of the reducer argument.
+     * @param <T> Type of the job argument.
      * @return Reduced job result for this execution.
      * @throws IgniteException If execution failed.
      */
@@ -646,6 +689,9 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job to run.
      * @param args Job arguments.
      * @param rdc Reducer to reduce all job results into one individual return value.
+     * @param <R1> Type of the job result.
+     * @param <R2> Type of the reducer argument.
+     * @param <T> Type of the job argument.
      * @return a Future with reduced job result for this execution.
      * @throws IgniteException If execution failed.
      */
@@ -655,6 +701,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     /**
      * Gets tasks future for active tasks started on local node.
      *
+     * @param <R> Type of the task result.
      * @return Map of active tasks keyed by their task task session ID.
      */
     public <R> Map<IgniteUuid, ComputeTaskFuture<R>> activeTaskFutures();
@@ -677,9 +724,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Sets task timeout for the next executed task in the <b>current thread</b>.
-     * When task starts execution, the timeout is reset, so one timeout is used only once. You may use
-     * this method to set task name when executing jobs directly, without explicitly
-     * defining {@link ComputeTask}.
+     * When task starts execution, the timeout is reset, so one timeout is used only once.
      * <p>
      * Here is an example.
      * <pre class="brush:java">

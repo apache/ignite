@@ -20,17 +20,23 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.management.cache.IdleVerifyResult;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The result of execution snapshot partitions verify task which besides calculating partition hashes of
- * {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+ * {@link IdleVerifyResult} also contains the snapshot metadata distribution across the cluster.
  */
 public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject {
     /** Serial version uid. */
@@ -40,7 +46,7 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
     private Map<ClusterNode, List<SnapshotMetadata>> metas;
 
     /** Result of cluster nodes partitions comparison. */
-    private IdleVerifyResultV2 idleRes;
+    @Nullable private IdleVerifyResult idleRes;
 
     /** Default constructor. */
     public SnapshotPartitionsVerifyTaskResult() {
@@ -51,9 +57,9 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
      * @param metas Map of snapshot metadata information found on each cluster node.
      * @param idleRes Result of cluster nodes partitions comparison.
      */
-    public SnapshotPartitionsVerifyTaskResult(
+    SnapshotPartitionsVerifyTaskResult(
         Map<ClusterNode, List<SnapshotMetadata>> metas,
-        IdleVerifyResultV2 idleRes
+        @Nullable IdleVerifyResult idleRes
     ) {
         this.metas = metas;
         this.idleRes = idleRes;
@@ -67,9 +73,37 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
     }
 
     /**
+     * Print formatted result to the given printer. Adds the snapshot warnings if snapshot has conflicts.
+     *
+     * @param printer Consumer for handle formatted result.
+     */
+    public void print(Consumer<String> printer) {
+        if (idleRes != null) {
+            idleRes.print(printer, true);
+
+            if (!F.isEmpty(idleRes.exceptions()))
+                return;
+        }
+
+        Collection<String> wrns = F.flatCollections(F.viewReadOnly(
+            F.flatCollections(metas.values()).stream().distinct().collect(Collectors.toList()),
+            SnapshotMetadata::warnings,
+            meta -> meta != null && !F.isEmpty(meta.warnings()))
+        );
+
+        if (!F.isEmpty(wrns)) {
+            GridStringBuilder sb = new GridStringBuilder("This snapshot was created with the warnings:")
+                .a(wrns.stream().collect(Collectors.joining("", U.nl() + "\t- ", "")))
+                .nl();
+
+            printer.accept(sb.toString());
+        }
+    }
+
+    /**
      * @return Result of cluster nodes partitions comparison.
      */
-    public IdleVerifyResultV2 idleVerifyResult() {
+    public IdleVerifyResult idleVerifyResult() {
         return idleRes;
     }
 
@@ -87,8 +121,8 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         metas = U.readMap(in);
-        idleRes = (IdleVerifyResultV2)in.readObject();
+        idleRes = (IdleVerifyResult)in.readObject();
     }
 }

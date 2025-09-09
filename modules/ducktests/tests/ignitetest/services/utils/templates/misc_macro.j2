@@ -44,3 +44,52 @@
         {% endfor %}
     {% endif %}
 {% endmacro %}
+
+{% macro event_types(config) %}
+    {% if config.include_event_types | length > 0 %}
+        <util:list id="eventTypes" value-type="java.lang.Integer">
+            {% for event_type in config.include_event_types %}
+            <value>{{ event_type }}</value>
+            {% endfor %}
+        </util:list>
+    {% endif %}
+{% endmacro %}
+
+{% macro bean(bean_object) %}
+    {% if bean_object.properties | length > 0 or bean_object.constructor_args | length > 0 %}
+        {% if bean_object.id != "" %}
+        <bean id="{{ bean_object.id }}" class="{{ bean_object }}">
+        {% else %}
+        <bean class="{{ bean_object }}">
+        {% endif %}
+            {% for name, value in bean_object.properties.items() %}
+                {% if value is string or value is number or value is boolean %}
+                    <property name="{{ name  | snake_to_camel }}" value="{{ value }}"/>
+                {% elif value is iterable and value is not mapping %}
+                    <property name="{{ name | snake_to_camel }}">
+                        <list>
+                            {% for v in value %}
+                                {% if v is string or v is number or v is boolean %}
+                                    <value>{{ v }}</value>
+                                {% else %}
+                                    {{ bean(v) }}
+                                {% endif %}
+                            {% endfor %}
+                        </list>
+                    </property>
+                {% elif value.ref | length > 0 %}
+                    <property name="{{ name  | snake_to_camel }}" ref="{{ value.ref }}"/>
+                {% else %}
+                    <property name="{{ name | snake_to_camel }}">
+                        {{ bean(value) }}
+                    </property>
+                {% endif %}
+            {% endfor %}
+            {% for value in bean_object.constructor_args %}
+            <constructor-arg value="{{ value }}"/>
+            {% endfor %}
+        </bean>
+    {% else %}
+        <bean id="{{ bean_object.id }}" class="{{ bean_object }}"/>
+    {% endif %}
+{% endmacro %}

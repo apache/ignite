@@ -18,7 +18,7 @@ This module contains classes and utilities to start zookeeper cluster for testin
 """
 
 import os.path
-from distutils.version import LooseVersion
+from looseversion import LooseVersion
 
 from ducktape.utils.util import wait_until
 
@@ -79,7 +79,16 @@ class ZookeeperService(DucktestsService, PathAware):
         return os.path.join(self.persistent_root, "zookeeper.properties")
 
     def start(self, **kwargs):
+        self.start_async(**kwargs)
+        self.await_started()
+
+    def start_async(self, **kwargs):
+        """
+        Starts in async way.
+        """
         super().start(**kwargs)
+
+    def await_started(self):
         self.logger.info("Waiting for Zookeeper quorum...")
 
         for node in self.nodes:

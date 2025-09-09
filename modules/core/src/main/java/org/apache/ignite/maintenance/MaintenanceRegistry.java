@@ -18,6 +18,7 @@
 package org.apache.ignite.maintenance;
 
 import java.util.List;
+import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
@@ -98,7 +99,24 @@ public interface MaintenanceRegistry {
      * @return Previously registered {@link MaintenanceTask} with the same ID
      * or null if no tasks were registered for this ID.
      */
-    public @Nullable MaintenanceTask registerMaintenanceTask(MaintenanceTask task) throws IgniteCheckedException;
+    @Nullable public MaintenanceTask registerMaintenanceTask(MaintenanceTask task) throws IgniteCheckedException;
+
+    /**
+     * Method to register {@link MaintenanceTask} locally on the node where method is called. If an old task
+     * with the same name exists, applies remapping function to compute a new task.
+     * Has the same restrictions as the {@link #registerMaintenanceTask(MaintenanceTask)}.
+     *
+     * @param task {@link MaintenanceTask} object with maintenance information that needs
+     *                                     to be stored to maintenance registry.
+     *
+     * @param remappingFunction Function to compute a task if an old {@link MaintenanceTask} with the same name exists.
+     *
+     * @throws IgniteCheckedException If handling or storing maintenance task failed.
+     */
+    public void registerMaintenanceTask(
+        MaintenanceTask task,
+        UnaryOperator<MaintenanceTask> remappingFunction
+    ) throws IgniteCheckedException;
 
     /**
      * Deletes {@link MaintenanceTask} of given ID from maintenance registry.
@@ -173,4 +191,10 @@ public interface MaintenanceRegistry {
         if (task != null)
             registerWorkflowCallback(maintenanceTaskName, workflowCalProvider.apply(task));
     }
+
+    /**
+     * @param maintenanceTaskName Task's name.
+     * @return Requested maintenance task or {@code null}.
+     */
+    @Nullable public MaintenanceTask requestedTask(String maintenanceTaskName);
 }

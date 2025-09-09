@@ -21,9 +21,9 @@
     "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <suppressions>
-    <suppress checks="EmptyLineSeparator|MethodParamPad|SingleSpaceSeparator"
+    <suppress checks="RightCurly|LeftCurly|EmptyLineSeparator|MethodParamPad|SingleSpaceSeparator"
               files="BCrypt\.java|ConcurrentLinkedDeque8\.java"/>
     <suppress checks="NoWhitespaceBefore" files="ConcurrentLinkedHashMap\.java"/>
     <suppress checks="LineLength"
-              files="ClusterTagGenerator\.java|PagesWriteSpeedBasedThrottle\.java|GridExecutorService\.java|CatboostClassificationModel\.java"/>
+              files="ClusterTagGenerator\.java|PagesWriteSpeedBasedThrottle\.java|GridExecutorService\.java|CatboostClassificationModel\.java|classnames\.properties"/>
 </suppressions>

@@ -104,8 +104,8 @@ namespace ignite
                     /** Connection attribute keyword for password attribute. */
                     static const std::string pwd;
 
-                    /** Connection attribute keyword for nestedTxMode attribute. */
-                    static const std::string nestedTxMode;
+                    /** SQL engine mode. */
+                    static const std::string engineMode;
                 };
 
                 /**

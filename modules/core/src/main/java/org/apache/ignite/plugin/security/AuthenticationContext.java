@@ -150,6 +150,7 @@ public class AuthenticationContext {
     /**
      * Set client SSL certificates.
      * @param certs Client SSL certificates.
+     * @return {@code this} for chaining.
      */
     public AuthenticationContext certificates(Certificate[] certs) {
         this.certs = certs;
@@ -166,6 +167,9 @@ public class AuthenticationContext {
 
     /**
      * Sets flag indicating if this is client node context.
+     *
+     * @param newVal Whether current authentication context relates to client node connection.
+     * @return {@code this} for chaining.
      */
     public AuthenticationContext setClient(boolean newVal) {
         client = newVal;

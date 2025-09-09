@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteTransactionsEx;
@@ -53,14 +54,23 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     /** Tracing enabled flag. */
     private boolean tracingEnabled;
 
+    /** Application attributes. */
+    private Map<String, String> appAttrs;
+
     /**
      * @param cctx Cache shared context.
      * @param lb Label.
      */
-    public IgniteTransactionsImpl(GridCacheSharedContext<K, V> cctx, @Nullable String lb, boolean tracingEnabled) {
+    public IgniteTransactionsImpl(
+        GridCacheSharedContext<K, V> cctx,
+        @Nullable String lb,
+        boolean tracingEnabled,
+        @Nullable Map<String, String> appAttrs
+    ) {
         this.cctx = cctx;
         this.lb = lb;
         this.tracingEnabled = tracingEnabled;
+        this.appAttrs = appAttrs;
     }
 
     /** {@inheritDoc} */
@@ -115,8 +125,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
-        int txSize)
-    {
+        int txSize) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
         A.ensure(timeout >= 0, "timeout cannot be negative");
@@ -135,8 +144,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     @Override public GridNearTxLocal txStartEx(
         GridCacheContext ctx,
         TransactionConcurrency concurrency,
-        TransactionIsolation isolation)
-    {
+        TransactionIsolation isolation) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
@@ -194,10 +202,9 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
                 isolation,
                 timeout,
                 true,
-                null,
                 txSize,
                 lb,
-                tracingEnabled
+                appAttrs
             );
 
             assert tx != null;
@@ -210,9 +217,9 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public Transaction tx() {
-        GridNearTxLocal tx = cctx.tm().userTx();
+        GridNearTxLocal tx = cctx.tm().threadLocalTx(null);
 
-        return tx != null ? tx.proxy() : null;
+        return tx != null && !tx.internal() ? tx.proxy() : null;
     }
 
     /** {@inheritDoc} */
@@ -242,12 +249,23 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     @Override public IgniteTransactions withLabel(String lb) {
         A.notNull(lb, "label should not be empty.");
 
-        return new IgniteTransactionsImpl<>(cctx, lb, tracingEnabled);
+        return new IgniteTransactionsImpl<>(cctx, lb, tracingEnabled, appAttrs);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTransactions withTracing() {
-        return new IgniteTransactionsImpl<>(cctx, lb, true);
+        return new IgniteTransactionsImpl<>(cctx, lb, true, appAttrs);
+    }
+
+    /**
+     * Returns an instance of {@code IgniteTransactions} with application attributes.
+     *
+     * @return Application attributes aware instance.
+     */
+    public IgniteTransactions withApplicationAttributes(Map<String, String> appAttrs) {
+        A.notEmpty(appAttrs, "application attributes");
+
+        return new IgniteTransactionsImpl<>(cctx, lb, tracingEnabled, appAttrs);
     }
 
     /**

@@ -27,10 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -40,6 +38,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
 import static java.util.Collections.singleton;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeForNodeIds;
 
 /**
  * Test for {@link ClusterGroup}.
@@ -91,7 +90,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected ClusterGroup projection() {
-        return grid(0).cluster().forPredicate(F.nodeForNodeIds(ids));
+        return grid(0).cluster().forPredicate(nodeForNodeIds(ids));
     }
 
     /** {@inheritDoc} */
@@ -199,32 +198,6 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testForDaemons() throws Exception {
-        assertEquals(4, ignite.cluster().nodes().size());
-
-        ClusterGroup daemons = ignite.cluster().forDaemons();
-        ClusterGroup srvs = ignite.cluster().forServers();
-
-        assertEquals(0, daemons.nodes().size());
-        assertEquals(2, srvs.nodes().size());
-
-        Ignition.setDaemon(true);
-
-        try (Ignite g = startGrid(NODES_CNT)) {
-            Ignition.setDaemon(false);
-
-            try (Ignite g1 = startGrid(NODES_CNT + 1)) {
-                assertEquals(1, ignite.cluster().forDaemons().nodes().size());
-                assertEquals(3, srvs.nodes().size());
-                assertEquals(1, daemons.nodes().size());
-            }
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testNewNodes() throws Exception {
         ClusterGroup youngest = ignite.cluster().forYoungest();
         ClusterGroup oldest = ignite.cluster().forOldest();
@@ -294,7 +267,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
      */
     @Test
     public void testAgeClusterGroupSerialization() throws Exception {
-        Marshaller marshaller = ignite.configuration().getMarshaller();
+        Marshaller marshaller = marshaller(ignite);
 
         ClusterGroup grp = ignite.cluster().forYoungest();
         ClusterNode node = grp.node();
@@ -439,7 +412,6 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
         assertEquals(0, emptyGrp.forCacheNodes("cacheName").nodes().size());
         assertEquals(0, emptyGrp.forClientNodes("cacheName").nodes().size());
         assertEquals(0, emptyGrp.forClients().nodes().size());
-        assertEquals(0, emptyGrp.forDaemons().nodes().size());
         assertEquals(0, emptyGrp.forDataNodes("cacheName").nodes().size());
         assertEquals(0, emptyGrp.forRandom().nodes().size());
         assertEquals(0, emptyGrp.forRemotes().nodes().size());

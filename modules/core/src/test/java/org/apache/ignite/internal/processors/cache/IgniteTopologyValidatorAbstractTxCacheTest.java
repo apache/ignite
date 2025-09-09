@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -45,22 +44,22 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheTest extends IgniteT
     /** {@inheritDoc} */
     @Test
     @Override public void testTopologyValidator() throws Exception {
+        startGrid(0);
+
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             putInvalid(CACHE_NAME_1);
         }
 
-        if (!MvccFeatureChecker.forcedMvcc()) {
-            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-                putValid(CACHE_NAME_1);
-                commitFailed(tx);
-            }
+        try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            putValid(CACHE_NAME_1);
+            commitFailed(tx);
+        }
 
-            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-                putValid(CACHE_NAME_1);
-                putValid(DEFAULT_CACHE_NAME);
-                putValid(CACHE_NAME_2);
-                commitFailed(tx);
-            }
+        try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            putValid(CACHE_NAME_1);
+            putValid(DEFAULT_CACHE_NAME);
+            putValid(CACHE_NAME_2);
+            commitFailed(tx);
         }
 
         assertEmpty(DEFAULT_CACHE_NAME); // rolled back
@@ -101,11 +100,9 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheTest extends IgniteT
         assertEmpty(DEFAULT_CACHE_NAME); // rolled back
         assertEmpty(CACHE_NAME_1); // rolled back
 
-        if (!MvccFeatureChecker.forcedMvcc()) {
-            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
-                putValid(CACHE_NAME_1);
-                commitFailed(tx);
-            }
+        try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            putValid(CACHE_NAME_1);
+            commitFailed(tx);
         }
 
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {

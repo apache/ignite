@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -30,29 +31,17 @@ import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.util.GridCommandHandlerFactoryAbstractTest;
 import org.junit.Test;
 
 /** */
-public abstract class BaselineEventsTest extends GridCommonAbstractTest {
+public abstract class BaselineEventsTest extends GridCommandHandlerFactoryAbstractTest {
     /** */
     private int[] includedEvtTypes = EventType.EVTS_ALL;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setConnectorConfiguration(new ConnectorConfiguration())
-            .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration()
-                            .setPersistenceEnabled(true)
-                    )
-                    .setWalSegments(3)
-                    .setWalSegmentSize(512 * 1024)
-            )
-            .setConsistentId(igniteInstanceName)
-            .setIncludeEventTypes(includedEvtTypes);
+        return getConfiguration(igniteInstanceName, true);
     }
 
     /** {@inheritDoc} */
@@ -72,12 +61,54 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private IgniteConfiguration getConfiguration(String igniteInstanceName, boolean isPersistenceEnabled) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+            .setConnectorConfiguration(new ConnectorConfiguration())
+            .setConsistentId(igniteInstanceName)
+            .setIncludeEventTypes(includedEvtTypes);
+
+        if (isPersistenceEnabled) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(true))
+                .setWalSegments(3)
+                .setWalSegmentSize(512 * 1024)
+            );
+        }
+
+        return cfg;
+    }
+
+    /** */
     protected abstract void listen(IgniteEx ignite, IgnitePredicate<Event> lsnr, int... types);
 
     /** */
     @Test
+    public void testInMemoryBaselineAutoAdjustNotProduceEvents() throws Exception {
+        startGrid(getConfiguration(getTestIgniteInstanceName(0), false));
+        startGrid(getConfiguration(getTestIgniteInstanceName(1), false));
+
+        AtomicBoolean isBaselineChangedEvtListened = new AtomicBoolean();
+
+        listen(
+            grid(0),
+            event -> {
+                isBaselineChangedEvtListened.set(true);
+
+                return true;
+            },
+            EventType.EVT_BASELINE_CHANGED
+        );
+
+        startGrid(getConfiguration(getTestIgniteInstanceName(2), false));
+
+        assertFalse(GridTestUtils.waitForCondition(isBaselineChangedEvtListened::get, 2000));
+    }
+
+    /** */
+    @Test
     public void testChangeBltWithControlUtility() throws Exception {
-        startGrid(0).cluster().active(true);
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
 
         AtomicBoolean baselineChanged = new AtomicBoolean();
 
@@ -101,7 +132,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
 
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
-            new CommandHandler().execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
+            newCommandHandler().execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
         );
 
         assertTrue(GridTestUtils.waitForCondition(baselineChanged::get, 3_000));
@@ -110,7 +141,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testChangeBltWithPublicApi() throws Exception {
-        startGrid(0).cluster().active(true);
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
 
         AtomicBoolean baselineChanged = new AtomicBoolean();
 
@@ -150,13 +181,13 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
             EventType.EVT_BASELINE_CHANGED
         );
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         assertTrue(GridTestUtils.waitForCondition(baselineChanged::get, 3_000));
         baselineChanged.set(false);
 
-        ignite.cluster().active(false);
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.INACTIVE);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         assertFalse(GridTestUtils.waitForCondition(baselineChanged::get, 3_000));
     }
@@ -166,7 +197,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
     public void testChangeAutoAdjustEnabled() throws Exception {
         IgniteClusterEx cluster = startGrids(2).cluster();
 
-        cluster.active(true);
+        cluster.state(ClusterState.ACTIVE);
 
         assertFalse(cluster.isBaselineAutoAdjustEnabled());
 
@@ -186,15 +217,15 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
 
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
-            new CommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
+            newCommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
         );
         assertTrue(GridTestUtils.waitForCondition(autoAdjustEnabled::get, 3_000));
 
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
-            new CommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "disable", "--yes"))
+            newCommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "disable", "--yes"))
         );
-        assertFalse(autoAdjustEnabled.get());
+        assertTrue(GridTestUtils.waitForCondition(() -> !autoAdjustEnabled.get(), 3_000));
 
         cluster.baselineAutoAdjustEnabled(true);
         assertTrue(GridTestUtils.waitForCondition(autoAdjustEnabled::get, 3_000));
@@ -208,7 +239,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
     public void testChangeAutoAdjustTimeout() throws Exception {
         IgniteClusterEx cluster = startGrids(2).cluster();
 
-        cluster.active(true);
+        cluster.state(ClusterState.ACTIVE);
 
         AtomicLong autoAdjustTimeout = new AtomicLong();
 
@@ -226,7 +257,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
 
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
-            new CommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
+            newCommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
         );
         assertTrue(GridTestUtils.waitForCondition(() -> autoAdjustTimeout.get() == 10L, 3_000));
 
@@ -241,7 +272,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
         includedEvtTypes = new int[0];
 
         IgniteClusterEx cluster = startGrid(0).cluster();
-        cluster.active(true);
+        cluster.state(ClusterState.ACTIVE);
 
         AtomicInteger evtsTriggered = new AtomicInteger();
 
@@ -262,7 +293,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
 
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
-            new CommandHandler().execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
+            newCommandHandler().execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
         );
 
         awaitPartitionMapExchange();
@@ -275,7 +306,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
 
         assertEquals(
             CommandHandler.EXIT_CODE_OK,
-            new CommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
+            newCommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
         );
 
         cluster.baselineAutoAdjustEnabled(false);

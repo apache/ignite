@@ -28,49 +28,48 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
-import org.apache.ignite.internal.StripedExecutorMXBeanAdapter;
-import org.apache.ignite.internal.ThreadPoolMXBeanAdapter;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareIoPool;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripedExecutor;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripedThreadPoolExecutor;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareThreadPoolExecutor;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.mxbean.StripedExecutorMXBean;
-import org.apache.ignite.mxbean.ThreadPoolMXBean;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.thread.SameThreadExecutor;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -120,6 +119,12 @@ public class PoolProcessor extends GridProcessorAdapter {
     /** */
     public static final String THRD_FACTORY_DESC = "Class name of thread factory used to create new threads.";
 
+    /** Task execution time metric name. */
+    public static final String TASK_EXEC_TIME = "TaskExecutionTime";
+
+    /** Task execution time metric description. */
+    public static final String TASK_EXEC_TIME_DESC = "Tasks execution times as histogram (milliseconds).";
+
     /** Name of the system view for a data streamer {@link StripedExecutor} queue view. */
     public static final String STREAM_POOL_QUEUE_VIEW = metricName("datastream", "threadpool", "queue");
 
@@ -134,6 +139,17 @@ public class PoolProcessor extends GridProcessorAdapter {
 
     /** Group for a thread pools. */
     public static final String THREAD_POOLS = "threadPools";
+
+    /** Histogram buckets for the task execution time metric (in milliseconds). */
+    public static final long[] TASK_EXEC_TIME_HISTOGRAM_BUCKETS = new long[] {10, 50, 100, 500, 1000};
+
+    /**
+     * Default interval of checking thread pool state for the starvation. Will be used only if the
+     * {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property is not set.
+     * <p>
+     * Value is {@code 30 sec}.
+     */
+    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 30 * 1000L;
 
     /** Executor service. */
     @GridToStringExclude
@@ -198,15 +214,37 @@ public class PoolProcessor extends GridProcessorAdapter {
     @GridToStringExclude
     private ThreadPoolExecutor rebalanceExecSvc;
 
+    /** Snapshot task executor service. */
+    @GridToStringExclude
+    private ThreadPoolExecutor snpExecSvc;
+
+    /** Executor service for thin clients. */
+    @GridToStringExclude
+    private ExecutorService thinClientExec;
+
     /** Rebalance striped executor service. */
     @GridToStringExclude
     private IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc;
+
+    /** Executor to perform a data pages scanning during cache group re-encryption. */
+    @GridToStringExclude
+    private ThreadPoolExecutor reencryptExecSvc;
 
     /** Map of {@link IoPool}-s injected by Ignite plugins. */
     private final IoPool[] extPools = new IoPool[128];
 
     /** Custom named pools. */
     private Map<String, ThreadPoolExecutor> customExecs;
+
+    /** Pools to check for starvation. */
+    private Map<String, ExecutorService> starvationExecs = new HashMap<>();
+
+    /**
+     * The instance of scheduled thread pool starvation checker. {@code null} if starvation checks have been
+     * disabled by the value of {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property.
+     */
+    @GridToStringExclude
+    private GridTimeoutProcessor.CancelableTask starveTask;
 
     /**
      * Constructor.
@@ -276,6 +314,8 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         execSvc.allowCoreThreadTimeOut(true);
 
+        addExecutorForStarvationDetection("public", execSvc);
+
         validateThreadPoolSize(cfg.getServiceThreadPoolSize(), "service");
 
         svcExecSvc = createExecutorService(
@@ -304,6 +344,8 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         sysExecSvc.allowCoreThreadTimeOut(true);
 
+        addExecutorForStarvationDetection("system", sysExecSvc);
+
         validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
 
         WorkersRegistry workerRegistry = ctx.workersRegistry();
@@ -321,6 +363,8 @@ public class PoolProcessor extends GridProcessorAdapter {
             false,
             workerRegistry,
             cfg.getFailureDetectionTimeout());
+
+        addExecutorForStarvationDetection("striped", stripedExecSvc);
 
         // Note that since we use 'LinkedBlockingQueue', number of
         // maximum threads has no effect.
@@ -439,7 +483,9 @@ public class PoolProcessor extends GridProcessorAdapter {
                 GridIoPolicy.IDX_POOL,
                 oomeHnd
             );
+        }
 
+        if (IgniteComponentType.INDEXING.inClassPath() || IgniteComponentType.QUERY_ENGINE.inClassPath()) {
             int buildIdxThreadPoolSize = cfg.getBuildIndexThreadPoolSize();
 
             validateThreadPoolSize(buildIdxThreadPoolSize, "build-idx");
@@ -472,6 +518,8 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         qryExecSvc.allowCoreThreadTimeOut(true);
 
+        addExecutorForStarvationDetection("query", qryExecSvc);
+
         schemaExecSvc = createExecutorService(
             "schema",
             cfg.getIgniteInstanceName(),
@@ -497,6 +545,44 @@ public class PoolProcessor extends GridProcessorAdapter {
             excHnd);
 
         rebalanceExecSvc.allowCoreThreadTimeOut(true);
+
+        snpExecSvc = createExecutorService(
+            SNAPSHOT_RUNNER_THREAD_PREFIX,
+            cfg.getIgniteInstanceName(),
+            cfg.getSnapshotThreadPoolSize(),
+            cfg.getSnapshotThreadPoolSize(),
+            DFLT_THREAD_KEEP_ALIVE_TIME,
+            new LinkedBlockingQueue<>(),
+            GridIoPolicy.UNDEFINED,
+            oomeHnd);
+
+        snpExecSvc.allowCoreThreadTimeOut(true);
+
+        if (CU.isPersistenceEnabled(ctx.config())) {
+            reencryptExecSvc = createExecutorService(
+                "reencrypt",
+                ctx.igniteInstanceName(),
+                1,
+                1,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                oomeHnd);
+
+            reencryptExecSvc.allowCoreThreadTimeOut(true);
+        }
+
+        if (cfg.getClientConnectorConfiguration() != null) {
+            thinClientExec = new IgniteThreadPoolExecutor(
+                "client-connector",
+                cfg.getIgniteInstanceName(),
+                cfg.getClientConnectorConfiguration().getThreadPoolSize(),
+                cfg.getClientConnectorConfiguration().getThreadPoolSize(),
+                0,
+                new LinkedBlockingQueue<>(),
+                GridIoPolicy.UNDEFINED,
+                oomeHnd);
+        }
 
         rebalanceStripedExecSvc = createStripedThreadPoolExecutor(
             cfg.getRebalanceThreadPoolSize(),
@@ -549,8 +635,8 @@ public class PoolProcessor extends GridProcessorAdapter {
         monitorExecutor("GridSchemaExecutor", schemaExecSvc);
         monitorExecutor("GridRebalanceExecutor", rebalanceExecSvc);
         monitorExecutor("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
-
-        monitorStripedPool("GridDataStreamExecutor", dataStreamerExecSvc);
+        monitorExecutor("GridDataStreamExecutor", dataStreamerExecSvc);
+        monitorExecutor("StripedExecutor", stripedExecSvc);
 
         if (idxExecSvc != null)
             monitorExecutor("GridIndexingExecutor", idxExecSvc);
@@ -558,10 +644,14 @@ public class PoolProcessor extends GridProcessorAdapter {
         if (ctx.config().getConnectorConfiguration() != null)
             monitorExecutor("GridRestExecutor", restExecSvc);
 
-        if (stripedExecSvc != null) {
-            // Striped executor uses a custom adapter.
-            monitorStripedPool("StripedExecutor", stripedExecSvc);
-        }
+        if (snpExecSvc != null)
+            monitorExecutor("GridSnapshotExecutor", snpExecSvc);
+
+        if (thinClientExec != null)
+            monitorExecutor("GridThinClientExecutor", thinClientExec);
+
+        if (reencryptExecSvc != null)
+            monitorExecutor("GridReencryptionExecutor", reencryptExecSvc);
 
         if (customExecs != null) {
             for (Map.Entry<String, ? extends ExecutorService> entry : customExecs.entrySet())
@@ -579,6 +669,81 @@ public class PoolProcessor extends GridProcessorAdapter {
             Arrays.asList(dataStreamerExecSvc.stripes()),
             StripedExecutor.Stripe::queue,
             StripedExecutorTaskView::new);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
+
+        String intervalStr = IgniteSystemProperties.getString(IGNITE_STARVATION_CHECK_INTERVAL);
+
+        // Start starvation checker if enabled.
+        if ("0".equals(intervalStr))
+            return;
+
+        final long interval = F.isEmpty(intervalStr) ? DFLT_PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
+
+        starveTask = ctx.timeout().schedule(new Runnable() {
+            /** Last completed task count by pool name. */
+            private final Map<String, Long> lastCompleted = new HashMap<>();
+
+            @Override public void run() {
+                Map<String, ExecutorService> execs = starvationExecs;
+
+                if (execs == null)
+                    return;
+
+                for (Map.Entry<String, ExecutorService> entry : execs.entrySet()) {
+                    String name = entry.getKey();
+                    ExecutorService exec = entry.getValue();
+
+                    if (exec instanceof ThreadPoolExecutor) {
+                        ThreadPoolExecutor exec0 = (ThreadPoolExecutor)exec;
+
+                        checkPoolStarvation(name, exec0.getCompletedTaskCount(), exec0.getPoolSize(),
+                            exec0.getActiveCount(), exec0.getQueue().isEmpty());
+                    }
+                    if (exec instanceof IgniteStripedThreadPoolExecutor) {
+                        IgniteStripedThreadPoolExecutor exec0 = (IgniteStripedThreadPoolExecutor)exec;
+
+                        checkPoolStarvation(name, exec0.completedTaskCount(), exec0.poolSize(),
+                            exec0.activeCount(), exec0.queueEmpty());
+                    }
+                    else if (exec instanceof StripedExecutor)
+                        ((StripedExecutor)exec).detectStarvation();
+                }
+            }
+
+            /** */
+            private void checkPoolStarvation(
+                String pool,
+                long completedCnt,
+                int poolSize,
+                int activeCnt,
+                boolean queueEmpty
+            ) {
+                long lastCompletedCnt = lastCompleted.getOrDefault(pool, 0L);
+
+                // If all threads are active and no task has completed since last time and there is
+                // at least one waiting request, then it is possible starvation.
+                if (poolSize == activeCnt && completedCnt == lastCompletedCnt && !queueEmpty) {
+                    LT.warn(log, "Possible thread pool starvation detected (no task completed in last " +
+                        interval + "ms, is " + pool + " thread pool size large enough?)");
+                }
+
+                if (completedCnt != lastCompletedCnt)
+                    lastCompleted.put(pool, completedCnt);
+            }
+        }, interval, interval);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        super.onKernalStop(cancel);
+
+        if (starveTask != null)
+            starveTask.close();
     }
 
     /**
@@ -630,6 +795,9 @@ public class PoolProcessor extends GridProcessorAdapter {
                 assert getSchemaExecutorService() != null : "Query pool is not configured.";
 
                 return getSchemaExecutorService();
+
+            case GridIoPolicy.CALLER_THREAD:
+                return SameThreadExecutor.INSTANCE;
 
             default: {
                 if (plc < 0)
@@ -820,6 +988,22 @@ public class PoolProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Executor service that is used for processing snapshot tasks (taking, sending, restoring).
+     */
+    public ExecutorService getSnapshotExecutorService() {
+        return snpExecSvc;
+    }
+
+    /**
+     * Executor service for thin clients.
+     *
+     * @return Executor service for thin clients.
+     */
+    public ExecutorService getThinClientExecutorService() {
+        return thinClientExec;
+    }
+
+    /**
      * Executor service that is in charge of processing unorderable rebalance messages.
      *
      * @return Executor service that is in charge of processing unorderable rebalance messages.
@@ -838,170 +1022,35 @@ public class PoolProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Executor to perform a data pages scanning during cache group re-encryption.
+     */
+    public ExecutorService getReencryptionExecutorService() {
+        return reencryptExecSvc;
+    }
+
+    /**
+     * Add pool to check for starvation.
+     *
+     * @param name Executor name.
+     * @param execSvc Executor service.
+     */
+    public void addExecutorForStarvationDetection(String name, ExecutorService execSvc) {
+        starvationExecs.put(name, execSvc);
+    }
+
+    /**
      * Creates a {@link MetricRegistry} for an executor.
      *
      * @param name Name of the metric to register.
      * @param execSvc Executor to register a metric for.
      */
     private void monitorExecutor(String name, ExecutorService execSvc) {
-        MetricRegistry mreg = ctx.metric().registry(metricName(THREAD_POOLS, name));
-
-        if (execSvc instanceof ThreadPoolExecutor) {
-            ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
-
-            mreg.register("ActiveCount", exec::getActiveCount, ACTIVE_COUNT_DESC);
-            mreg.register("CompletedTaskCount", exec::getCompletedTaskCount, COMPLETED_TASK_DESC);
-            mreg.register("CorePoolSize", exec::getCorePoolSize, CORE_SIZE_DESC);
-            mreg.register("LargestPoolSize", exec::getLargestPoolSize, LARGEST_SIZE_DESC);
-            mreg.register("MaximumPoolSize", exec::getMaximumPoolSize, MAX_SIZE_DESC);
-            mreg.register("PoolSize", exec::getPoolSize, POOL_SIZE_DESC);
-            mreg.register("TaskCount", exec::getTaskCount, TASK_COUNT_DESC);
-            mreg.register("QueueSize", () -> exec.getQueue().size(), QUEUE_SIZE_DESC);
-            mreg.register("KeepAliveTime", () -> exec.getKeepAliveTime(MILLISECONDS), KEEP_ALIVE_TIME_DESC);
-            mreg.register("Shutdown", exec::isShutdown, IS_SHUTDOWN_DESC);
-            mreg.register("Terminated", exec::isTerminated, IS_TERMINATED_DESC);
-            mreg.register("Terminating", exec::isTerminating, IS_TERMINATING_DESC);
-            mreg.register("RejectedExecutionHandlerClass", () -> {
-                RejectedExecutionHandler hnd = exec.getRejectedExecutionHandler();
-
-                return hnd == null ? "" : hnd.getClass().getName();
-            }, String.class, REJ_HND_DESC);
-            mreg.register("ThreadFactoryClass", () -> {
-                ThreadFactory factory = exec.getThreadFactory();
-
-                return factory == null ? "" : factory.getClass().getName();
-            }, String.class, THRD_FACTORY_DESC);
-        }
-        else {
-            mreg.longMetric("ActiveCount", ACTIVE_COUNT_DESC).value(0);
-            mreg.longMetric("CompletedTaskCount", COMPLETED_TASK_DESC).value(0);
-            mreg.longMetric("CorePoolSize", CORE_SIZE_DESC).value(0);
-            mreg.longMetric("LargestPoolSize", LARGEST_SIZE_DESC).value(0);
-            mreg.longMetric("MaximumPoolSize", MAX_SIZE_DESC).value(0);
-            mreg.longMetric("PoolSize", POOL_SIZE_DESC).value(0);
-            mreg.longMetric("TaskCount", TASK_COUNT_DESC);
-            mreg.longMetric("QueueSize", QUEUE_SIZE_DESC).value(0);
-            mreg.longMetric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(0);
-            mreg.register("Shutdown", execSvc::isShutdown, IS_SHUTDOWN_DESC);
-            mreg.register("Terminated", execSvc::isTerminated, IS_TERMINATED_DESC);
-            mreg.longMetric("Terminating", IS_TERMINATING_DESC);
-            mreg.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC).value("");
-            mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
-        }
-    }
-
-    /**
-     * Creates a {@link MetricRegistry} for a stripped executor.
-     *
-     * @param name name of the bean to register
-     * @param svc Executor.
-     */
-    private void monitorStripedPool(String name, StripedExecutor svc) {
-        MetricRegistry mreg = ctx.metric().registry(metricName(THREAD_POOLS, name));
-
-        mreg.register("DetectStarvation",
-            svc::detectStarvation,
-            "True if possible starvation in striped pool is detected.");
-
-        mreg.register("StripesCount",
-            svc::stripesCount,
-            "Stripes count.");
-
-        mreg.register("Shutdown",
-            svc::isShutdown,
-            "True if this executor has been shut down.");
-
-        mreg.register("Terminated",
-            svc::isTerminated,
-            "True if all tasks have completed following shut down.");
-
-        mreg.register("TotalQueueSize",
-            svc::queueSize,
-            "Total queue size of all stripes.");
-
-        mreg.register("TotalCompletedTasksCount",
-            svc::completedTasks,
-            "Completed tasks count of all stripes.");
-
-        mreg.register("StripesCompletedTasksCounts",
-            svc::stripesCompletedTasks,
-            long[].class,
-            "Number of completed tasks per stripe.");
-
-        mreg.register("ActiveCount",
-            svc::activeStripesCount,
-            "Number of active tasks of all stripes.");
-
-        mreg.register("StripesActiveStatuses",
-            svc::stripesActiveStatuses,
-            boolean[].class,
-            "Number of active tasks per stripe.");
-
-        mreg.register("StripesQueueSizes",
-            svc::stripesQueueSizes,
-            int[].class,
-            "Size of queue per stripe.");
-    }
-
-    /**
-     * Register thread pool JMX beans.
-     *
-     * @param mbMgr Ignite MXBean manager.
-     * @throws IgniteCheckedException On bean registration error.
-     */
-    public void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException {
-        registerExecutorMBean(mbMgr, "GridUtilityCacheExecutor", utilityCacheExecSvc);
-        registerExecutorMBean(mbMgr, "GridExecutionExecutor", execSvc);
-        registerExecutorMBean(mbMgr, "GridServicesExecutor", svcExecSvc);
-        registerExecutorMBean(mbMgr, "GridSystemExecutor", sysExecSvc);
-        registerExecutorMBean(mbMgr, "GridClassLoadingExecutor", p2pExecSvc);
-        registerExecutorMBean(mbMgr, "GridManagementExecutor", mgmtExecSvc);
-        registerExecutorMBean(mbMgr, "GridAffinityExecutor", affExecSvc);
-        registerExecutorMBean(mbMgr, "GridCallbackExecutor", callbackExecSvc);
-        registerExecutorMBean(mbMgr, "GridQueryExecutor", qryExecSvc);
-        registerExecutorMBean(mbMgr, "GridSchemaExecutor", schemaExecSvc);
-        registerExecutorMBean(mbMgr, "GridRebalanceExecutor", rebalanceExecSvc);
-        registerExecutorMBean(mbMgr, "GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
-
-        registerStripedExecutorMBean(mbMgr, "GridDataStreamExecutor", dataStreamerExecSvc);
-
-        if (idxExecSvc != null)
-            registerExecutorMBean(mbMgr, "GridIndexingExecutor", idxExecSvc);
-
-        if (ctx.config().getConnectorConfiguration() != null)
-            registerExecutorMBean(mbMgr, "GridRestExecutor", restExecSvc);
-
-        if (stripedExecSvc != null) {
-            // striped executor uses a custom adapter
-            registerStripedExecutorMBean(mbMgr, "StripedExecutor", stripedExecSvc);
+        if (!(execSvc instanceof MetricsAwareExecutorService)) {
+            throw new UnsupportedOperationException(
+                "Executor '" + name + "' does not implement '" + MetricsAwareExecutorService.class.getSimpleName() + "'.");
         }
 
-        if (customExecs != null) {
-            for (Map.Entry<String, ? extends ExecutorService> entry : customExecs.entrySet())
-                registerExecutorMBean(mbMgr, entry.getKey(), entry.getValue());
-        }
-    }
-
-    /**
-     * Registers a {@link ThreadPoolMXBean} for an executor.
-     *
-     * @param name Mame of the bean to register.
-     * @param exec Executor to register a bean for.
-     * @throws IgniteCheckedException if registration fails.
-     */
-    private void registerExecutorMBean(IgniteMBeansManager mgr, String name, ExecutorService exec) throws IgniteCheckedException {
-        mgr.registerMBean("Thread Pools", name, new ThreadPoolMXBeanAdapter(exec), ThreadPoolMXBean.class);
-    }
-
-    /**
-     * Registers a {@link StripedExecutorMXBean} for an striped executor.
-     *
-     * @param name Mame of the bean to register.
-     * @param exec Executor to register a bean for.
-     * @throws IgniteCheckedException if registration fails.
-     */
-    private void registerStripedExecutorMBean(IgniteMBeansManager mgr, String name, StripedExecutor exec) throws IgniteCheckedException {
-        mgr.registerMBean("Thread Pools", name, new StripedExecutorMXBeanAdapter(exec), StripedExecutorMXBean.class);
+        ((MetricsAwareExecutorService)execSvc).registerMetrics(ctx.metric().registry(metricName(THREAD_POOLS, name)));
     }
 
     /**
@@ -1028,6 +1077,9 @@ public class PoolProcessor extends GridProcessorAdapter {
      */
     private void stopExecutors0(IgniteLogger log) {
         assert log != null;
+        U.shutdownNow(getClass(), snpExecSvc, log);
+
+        snpExecSvc = null;
 
         U.shutdownNow(getClass(), execSvc, log);
 
@@ -1098,12 +1150,23 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         callbackExecSvc = null;
 
+        if (thinClientExec != null)
+            U.shutdownNow(getClass(), thinClientExec, log);
+
+        thinClientExec = null;
+
+        U.shutdownNow(getClass(), reencryptExecSvc, log);
+
+        reencryptExecSvc = null;
+
         if (!F.isEmpty(customExecs)) {
             for (ThreadPoolExecutor exec : customExecs.values())
                 U.shutdownNow(getClass(), exec, log);
 
             customExecs = null;
         }
+
+        starvationExecs = null;
     }
 
     /**
@@ -1152,22 +1215,22 @@ public class PoolProcessor extends GridProcessorAdapter {
         boolean allowCoreThreadTimeOut,
         long keepAliveTime
     ) {
-         return ctx.security().enabled()
-             ? new SecurityAwareStripedThreadPoolExecutor(
-                 ctx.security(),
-                 concurrentLvl,
-                 igniteInstanceName,
-                 threadNamePrefix,
-                 eHnd,
-                 allowCoreThreadTimeOut,
-                 keepAliveTime)
-             : new IgniteStripedThreadPoolExecutor(
-                 concurrentLvl,
-                 igniteInstanceName,
-                 threadNamePrefix,
-                 eHnd,
-                 allowCoreThreadTimeOut,
-                 keepAliveTime);
+        return ctx.security().enabled()
+            ? new SecurityAwareStripedThreadPoolExecutor(
+                ctx.security(),
+                concurrentLvl,
+                igniteInstanceName,
+                threadNamePrefix,
+                eHnd,
+                allowCoreThreadTimeOut,
+                keepAliveTime)
+            : new IgniteStripedThreadPoolExecutor(
+                concurrentLvl,
+                igniteInstanceName,
+                threadNamePrefix,
+                eHnd,
+                allowCoreThreadTimeOut,
+                keepAliveTime);
     }
 
     /** Creates instance {@link StripedExecutor} with a notion of whether {@link IgniteSecurity} is enabled. */

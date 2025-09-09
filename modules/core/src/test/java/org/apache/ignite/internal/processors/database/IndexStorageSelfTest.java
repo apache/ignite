@@ -105,9 +105,9 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
                 IndexStorageImpl metaStore = storeMap.get(cacheId);
 
                 if (metaStore == null) {
-                    PageLockTrackerManager pageLockTrackerManager = mock(PageLockTrackerManager.class);
+                    PageLockTrackerManager pageLockTrackerMgr = mock(PageLockTrackerManager.class);
 
-                    when(pageLockTrackerManager.createPageLockTracker(anyString())).thenReturn(NOOP_LSNR);
+                    when(pageLockTrackerMgr.createPageLockTracker(anyString())).thenReturn(NOOP_LSNR);
 
                     metaStore = new IndexStorageImpl(
                         "indexStorageTree",
@@ -122,7 +122,7 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
                         mem.allocatePage(cacheId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX),
                         true,
                         null,
-                        pageLockTrackerManager
+                        pageLockTrackerMgr
                     );
 
                     storeMap.put(cacheId, metaStore);

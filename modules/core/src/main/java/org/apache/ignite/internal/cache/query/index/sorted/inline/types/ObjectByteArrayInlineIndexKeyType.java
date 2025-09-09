@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.BytesIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.JavaObjectIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.PlainJavaObjectIndexKey;
 
@@ -31,7 +32,7 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
 
     /** */
     public ObjectByteArrayInlineIndexKeyType(BytesInlineIndexKeyType delegate) {
-        super(IndexKeyTypes.JAVA_OBJECT, (short) -1);
+        super(IndexKeyType.JAVA_OBJECT, (short)-1);
 
         this.delegate = delegate;
     }
@@ -46,14 +47,14 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
 
     /** {@inheritDoc} */
     @Override protected JavaObjectIndexKey get0(long pageAddr, int off) {
-        byte[] b = (byte[]) delegate.get0(pageAddr, off).key();
+        byte[] b = (byte[])delegate.get0(pageAddr, off).key();
 
         return new PlainJavaObjectIndexKey(null, b);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, JavaObjectIndexKey key) {
-        byte[] b = key.bytesNoCopy();
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+        byte[] b = ((JavaObjectIndexKey)key).bytesNoCopy();
 
         // Signed or unsigned doesn't matter there.
         return delegate.compare0(pageAddr, off, new BytesIndexKey(b));
@@ -65,5 +66,10 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
 
         // Signed or unsigned doesn't matter there.
         return delegate.inlineSize0(new BytesIndexKey(b));
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean inlinedFullValue(long pageAddr, int offset, int maxSize) {
+        return delegate.inlinedFullValue(pageAddr, offset, maxSize);
     }
 }

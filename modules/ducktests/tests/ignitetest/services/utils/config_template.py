@@ -24,7 +24,8 @@ IGNITE_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 ZK_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "zk", "templates")
 DEFAULT_IGNITE_CONF = "ignite.xml.j2"
 DEFAULT_THIN_CLIENT_CONF = "thin_client_config.xml.j2"
-DEFAULT_LOG4J_CONF = "log4j.xml.j2"
+DEFAULT_THIN_JDBC_CONF = "thin_jdbc_config.xml.j2"
+DEFAULT_LOG4J2_CONF = "log4j2.xml.j2"
 
 TEMPLATE_PATHES = [IGNITE_TEMPLATE_PATH, ZK_TEMPLATE_PATH]
 
@@ -35,6 +36,7 @@ class ConfigTemplate:
     """
     def __init__(self, path):
         env = Environment(loader=FileSystemLoader(searchpath=TEMPLATE_PATHES))
+        env.filters["snake_to_camel"] = snake_to_camel
 
         self.template = env.get_template(path)
         self.default_params = {}
@@ -47,6 +49,16 @@ class ConfigTemplate:
         unfiltered = self.template.render(**kwargs)
 
         return '\n'.join(filter(lambda line: line.strip(), unfiltered.split('\n')))
+
+
+def snake_to_camel(snake_name):
+    """
+    Custom jinja2 filter to convert named from smake to camel format
+    :param snake_name: name in snake format
+    :return: name in camel format
+    """
+    components = snake_name.split('_')
+    return components[0] + ''.join(x.title() for x in components[1:])
 
 
 class IgniteServerConfigTemplate(ConfigTemplate):
@@ -74,9 +86,17 @@ class IgniteThinClientConfigTemplate(ConfigTemplate):
         super().__init__(path)
 
 
+class IgniteThinJdbcConfigTemplate(ConfigTemplate):
+    """
+    Ignite client node configuration.
+    """
+    def __init__(self, path=DEFAULT_THIN_JDBC_CONF):
+        super().__init__(path)
+
+
 class IgniteLoggerConfigTemplate(ConfigTemplate):
     """
     Ignite logger configuration.
     """
     def __init__(self):
-        super().__init__(DEFAULT_LOG4J_CONF)
+        super().__init__(DEFAULT_LOG4J2_CONF)

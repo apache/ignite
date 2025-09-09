@@ -29,6 +29,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -103,14 +104,16 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        super.start();
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        super.onKernalStart();
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse>() {
-            @Override public void apply(UUID nodeId, GridNearGetResponse res) {
-                processGetResponse(nodeId, res);
-            }
-        });
+        assert !ctx.isRecoveryMode() : "Registering message handlers in recovery mode [cacheName=" + name() + ']';
+
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
+            ctx.startTopologyVersion(),
+            GridNearGetResponse.class,
+            (CI2<UUID, GridNearGetResponse>)this::processGetResponse);
     }
 
     /**
@@ -261,6 +264,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         /*metrics*/true,
                         /*primary*/false,
                         /*check version*/true,
+                        false,
                         topVer,
                         CU.empty0(),
                         DR_NONE,
@@ -340,9 +344,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         }
 
                         CacheObject val = req.nearValue(i);
-                        EntryProcessor<Object, Object, Object> entryProcessor = req.nearEntryProcessor(i);
+                        EntryProcessor<Object, Object, Object> entryProc = req.nearEntryProcessor(i);
 
-                        GridCacheOperation op = entryProcessor != null ? TRANSFORM :
+                        GridCacheOperation op = entryProc != null ? TRANSFORM :
                             (val != null) ? UPDATE : DELETE;
 
                         long ttl = req.nearTtl(i);
@@ -353,7 +357,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             nodeId,
                             nodeId,
                             op,
-                            op == TRANSFORM ? entryProcessor : val,
+                            op == TRANSFORM ? entryProc : val,
                             op == TRANSFORM ? req.invokeArguments() : null,
                             /*write-through*/false,
                             /*read-through*/false,
@@ -364,6 +368,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             /*metrics*/true,
                             /*primary*/false,
                             /*check version*/!req.forceTransformBackups(),
+                            false,
                             req.topologyVersion(),
                             CU.empty0(),
                             DR_NONE,
@@ -414,7 +419,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean readRepair,
+        ReadRepairStrategy readRepairStrategy,
         boolean skipVals,
         boolean needVer
     ) {

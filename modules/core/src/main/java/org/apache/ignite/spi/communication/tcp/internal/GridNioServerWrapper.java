@@ -42,6 +42,7 @@ import java.util.function.Supplier;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -84,6 +85,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategy;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -93,7 +95,6 @@ import org.apache.ignite.spi.TimeoutStrategy;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.tcp.AttributeNames;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
-import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
@@ -101,8 +102,6 @@ import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
-import static org.apache.ignite.internal.IgniteFeatures.CHANNEL_COMMUNICATION;
-import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
@@ -135,7 +134,7 @@ public class GridNioServerWrapper {
     static final int CHANNEL_FUT_META = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Maximum {@link GridNioSession} connections per node. */
-    public static final int MAX_CONN_PER_NODE = 1024;
+    static final int MAX_CONN_PER_NODE = 1024;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -330,8 +329,8 @@ public class GridNioServerWrapper {
      * <li>The remote GridNioAcceptWorker thread accepts new connection.</li>
      * <li>The remote node sends back the {@link NodeIdMessage}.</li>
      * <li>The local node reads NodeIdMessage from created channel.</li>
-     * <li>The local node sends the {@link HandshakeMessage2} to remote.</li>
-     * <li>The remote node processes {@link HandshakeMessage2} in {@link GridNioServerListener#onMessage(GridNioSession,
+     * <li>The local node sends the {@link HandshakeMessage} to remote.</li>
+     * <li>The remote node processes {@link HandshakeMessage} in {@link GridNioServerListener#onMessage(GridNioSession,
      * Object)}.</li>
      * <li>The remote node sends back the {@link RecoveryLastReceivedMessage}.</li>
      * </ol>
@@ -349,7 +348,7 @@ public class GridNioServerWrapper {
      * @throws IgniteCheckedException If establish connection fails.
      */
     public GridNioSession createNioSession(ClusterNode node, int connIdx) throws IgniteCheckedException {
-        boolean locNodeIsSrv = !locNodeSupplier.get().isClient() && !locNodeSupplier.get().isDaemon();
+        boolean locNodeIsSrv = !locNodeSupplier.get().isClient();
 
         if (!(Thread.currentThread() instanceof IgniteDiscoveryThread) && locNodeIsSrv) {
             if (node.isClient() && forceClientToServerConnections(node)) {
@@ -486,7 +485,7 @@ public class GridNioServerWrapper {
                             node.id(),
                             timeout,
                             sslMeta,
-                            new HandshakeMessage2(locNode.id(),
+                            new HandshakeMessage(locNode.id(),
                                 recoveryDesc.incrementConnectCount(),
                                 recoveryDesc.received(),
                                 connIdx));
@@ -804,13 +803,31 @@ public class GridNioServerWrapper {
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
 
+                    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+                        get().register(directType, supplier);
+                    }
+
+                    @Override public void register(short directType, Supplier<Message> supplier,
+                        MessageSerializer serializer) throws IgniteException {
+                        get().register(directType, supplier, serializer);
+                    }
+
                     @Nullable @Override public Message create(short type) {
-                        if (impl == null)
+                        return get().create(type);
+                    }
+
+                    @Override public MessageSerializer serializer(short type) {
+                        return get().serializer(type);
+                    }
+
+                    private MessageFactory get() {
+                        if (impl == null) {
                             impl = stateProvider.getSpiContext().messageFactory();
 
-                        assert impl != null;
+                            assert impl != null;
+                        }
 
-                        return impl.create(type);
+                        return impl;
                     }
                 };
 
@@ -855,7 +872,7 @@ public class GridNioServerWrapper {
 
                         ConnectionKey key = ses.meta(CONN_IDX_META);
 
-                        return key != null ? formatter.writer(key.nodeId()) : null;
+                        return key != null ? formatter.writer(key.nodeId(), msgFactory) : null;
                     }
                 };
 
@@ -1017,6 +1034,7 @@ public class GridNioServerWrapper {
         return recovery;
     }
 
+    /** */
     public void onChannelCreate(
         GridSelectorNioSessionImpl ses,
         ConnectionKey connKey,
@@ -1068,8 +1086,6 @@ public class GridNioServerWrapper {
         assert !remote.isLocal() : remote;
         assert initMsg != null;
         assert chConnPlc != null;
-        assert nodeSupports(remote, CHANNEL_COMMUNICATION) : "Node doesn't support direct connection over socket channel " +
-            "[nodeId=" + remote.id() + ']';
 
         ConnectionKey key = new ConnectionKey(remote.id(), chConnPlc.connectionIndex());
 
@@ -1124,6 +1140,14 @@ public class GridNioServerWrapper {
     }
 
     /**
+     * @param connIdx Connection index to check.
+     * @return {@code true} if connection index is related to the channel create request\response.
+     */
+    static boolean isChannelConnIdx(int connIdx) {
+        return connIdx > MAX_CONN_PER_NODE;
+    }
+
+    /**
      * @param key The connection key to cleanup descriptors on local node.
      */
     private void cleanupLocalNodeRecoveryDescriptor(ConnectionKey key) {
@@ -1158,7 +1182,7 @@ public class GridNioServerWrapper {
      * @param rmtNodeId Remote node.
      * @param timeout Timeout for handshake.
      * @param sslMeta Session meta.
-     * @param msg {@link HandshakeMessage} or {@link HandshakeMessage2} to send.
+     * @param msg {@link HandshakeMessage} to send.
      * @return Handshake response.
      * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
      */
@@ -1170,21 +1194,15 @@ public class GridNioServerWrapper {
         GridSslMeta sslMeta,
         HandshakeMessage msg
     ) throws IgniteCheckedException {
-        HandshakeTimeoutObject timeoutObject = new HandshakeTimeoutObject(ch);
+        HandshakeTimeoutObject timeoutObj = new HandshakeTimeoutObject(ch);
 
-        handshakeTimeoutExecutorService.schedule(timeoutObject, timeout, TimeUnit.MILLISECONDS);
+        handshakeTimeoutExecutorService.schedule(timeoutObj, timeout, TimeUnit.MILLISECONDS);
 
         try {
             return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg);
         }
-        catch (IOException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to read from channel: " + e);
-
-            throw new IgniteCheckedException("Failed to read from channel.", e);
-        }
         finally {
-            if (!timeoutObject.cancel())
+            if (!timeoutObj.cancel())
                 throw handshakeTimeoutException();
         }
     }

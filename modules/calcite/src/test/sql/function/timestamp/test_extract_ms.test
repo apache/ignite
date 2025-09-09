@@ -1,0 +1,23 @@
+# name: test/sql/function/timestamp/test_extract_ms.test
+# description: Extract milliseconds from timestamp
+# group: [timestamp]
+
+statement ok
+CREATE TABLE timestamps(id INTEGER, i TIMESTAMP);
+
+statement ok
+INSERT INTO timestamps VALUES (0, TIMESTAMP '1993-08-14 08:22:33.42'), (1, NULL);
+
+# postgres returns 33.42 here
+query I
+SELECT EXTRACT(second FROM i) FROM timestamps ORDER BY id
+----
+33
+NULL
+
+query I
+SELECT EXTRACT(minute FROM i) FROM timestamps ORDER BY id
+----
+22
+NULL
+

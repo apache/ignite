@@ -45,20 +45,17 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -95,14 +92,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     @Test
     public void testClientStartCoordinatorFailsTx() throws Exception {
         clientStartCoordinatorFails(TRANSACTIONAL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientStartCoordinatorFailsMvccTx() throws Exception {
-        clientStartCoordinatorFails(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
@@ -162,14 +151,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     @Test
     public void testClientStartLastServerFailsTx() throws Exception {
         clientStartLastServerFails(TRANSACTIONAL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientStartLastServerFailsMvccTx() throws Exception {
-        clientStartLastServerFails(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
@@ -268,7 +249,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi.spi(ignite(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
                 return msg instanceof GridDhtPartitionsFullMessage &&
-                    ((GridDhtPartitionsFullMessage) msg).exchangeId() == null;
+                    ((GridDhtPartitionsFullMessage)msg).exchangeId() == null;
             }
         });
 
@@ -378,16 +359,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
                                 ", key=" + key +
                                 ", val=" + i + ']', e);
 
-                            CacheConfiguration ccfg = cache.getConfiguration(CacheConfiguration.class);
-
-                            TransactionSerializationException txEx = X.cause(e, TransactionSerializationException.class);
-
-                            boolean notContains = !txEx.getMessage().contains(
-                                "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"
-                            );
-
-                            if (txEx == null || ccfg.getAtomicityMode() != TRANSACTIONAL_SNAPSHOT || notContains)
-                                fail("Assert violated because exception was thrown [e=" + e.getMessage() + ']');
+                            fail();
                         }
                     }
                 }
@@ -556,16 +528,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 3; i++) {
             CacheConfiguration<Object, Object> ccfg = cacheConfiguration("tx-" + i, TRANSACTIONAL, i);
-
-            IgniteCache<Object, Object> cache = node.createCache(ccfg);
-
-            cacheNames.add(ccfg.getName());
-
-            cache.putAll(map);
-        }
-
-       for (int i = 0; i < 3; i++) {
-            CacheConfiguration<Object, Object> ccfg = cacheConfiguration("mvcc-" + i, TRANSACTIONAL_SNAPSHOT, i);
 
             IgniteCache<Object, Object> cache = node.createCache(ccfg);
 

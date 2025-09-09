@@ -17,34 +17,32 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
 public class CacheEvictionEntry implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
+    @Order(0)
     @GridToStringInclude
     private KeyCacheObject key;
 
     /** */
+    @Order(value = 1, method = "version")
     @GridToStringInclude
     private GridCacheVersion ver;
 
     /** */
+    @Order(2)
     private boolean near;
 
     /**
-     * Required by {@link Message}.
+     * Default constructor.
      */
     public CacheEvictionEntry() {
         // No-op.
@@ -69,6 +67,13 @@ public class CacheEvictionEntry implements Message {
     }
 
     /**
+     * @param key New key.
+     */
+    public void key(KeyCacheObject key) {
+        this.key = key;
+    }
+
+    /**
      * @return Version.
      */
     public GridCacheVersion version() {
@@ -76,10 +81,24 @@ public class CacheEvictionEntry implements Message {
     }
 
     /**
+     * @param ver New version.
+     */
+    public void version(GridCacheVersion ver) {
+        this.ver = ver;
+    }
+
+    /**
      * @return {@code True} if key should be evicted from near cache.
      */
     public boolean near() {
         return near;
+    }
+
+    /**
+     * @param near {@code True} if key should be evicted from near cache.
+     */
+    public void near(boolean near) {
+        this.near = near;
     }
 
     /** {@inheritDoc} */
@@ -107,82 +126,5 @@ public class CacheEvictionEntry implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMessage("key", key))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeBoolean("near", near))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeMessage("ver", ver))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                key = reader.readMessage("key");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                near = reader.readBoolean("near");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                ver = reader.readMessage("ver");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(CacheEvictionEntry.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 }

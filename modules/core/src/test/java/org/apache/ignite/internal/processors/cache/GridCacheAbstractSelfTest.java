@@ -38,6 +38,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
@@ -48,12 +49,10 @@ import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -93,8 +92,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         assert cnt >= 1 : "At least one grid must be started";
 
-        if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
-            initStoreStrategy();
+        initStoreStrategy();
 
         startGrids(cnt);
 
@@ -142,24 +140,14 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 try {
                     final int fi = i;
 
-                    assertTrue(
-                        "Cache is not empty: " + " localSize = " + jcache(fi).localSize(CachePeekMode.ALL)
-                            + ", local entries " + entrySet(jcache(fi).localEntries()),
-                        GridTestUtils.waitForCondition(
-                            // Preloading may happen as nodes leave, so we need to wait.
-                            new GridAbsPredicateX() {
-                                @Override public boolean applyx() throws IgniteCheckedException {
-                                    jcache(fi).removeAll();
-
-                                    if (jcache(fi).size(CachePeekMode.ALL) > 0) {
-                                        for (Cache.Entry<String, ?> k : jcache(fi).localEntries())
-                                            jcache(fi).remove(k.getKey());
-                                    }
-
-                                    return jcache(fi).localSize(CachePeekMode.ALL) == 0;
-                                }
-                            },
-                            getTestTimeout()));
+                    GridTestUtils.waitForCondition(
+                        // Preloading may happen as nodes leave, so we need to wait.
+                        new GridAbsPredicateX() {
+                            @Override public boolean applyx() {
+                                jcache(fi).clear();
+                                return jcache(fi).localSize(CachePeekMode.ALL) == 0;
+                            }
+                        }, getTestTimeout());
 
                     int primaryKeySize = jcache(i).localSize(CachePeekMode.PRIMARY);
                     int keySize = jcache(i).localSize();
@@ -193,7 +181,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
-        assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
         if (storeStgy != null)
             storeStgy.resetStore();
@@ -213,12 +200,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
-
-        TcpCommunicationSpi comm = new TcpCommunicationSpi();
-
-        comm.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(comm);
 
         return cfg;
     }
@@ -353,7 +334,14 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache() {
-        return jcache(0);
+        return defaultInstance().cache(DEFAULT_CACHE_NAME);
+    }
+
+    /**
+     * @return Default Ignite instance.
+     */
+    public IgniteEx defaultInstance() {
+        return grid(0);
     }
 
     /**
@@ -376,7 +364,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache(int idx) {
-        return ignite(idx).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        return ignite(idx).cache(DEFAULT_CACHE_NAME);
     }
 
     /**

@@ -23,18 +23,18 @@ public class TableStatistics {
     /** Total table row count (including primary and backup partitions). */
     private final long totalRowCnt;
 
-    /** Primary parts row count. */
-    private final long primaryRowCnt;
+    /** Local node row count. */
+    private final long localRowCount;
 
     /**
      * @param totalRowCnt Total table row count (including primary and backup partitions).
-     * @param primaryRowCnt Primary parts row count.
+     * @param localRowCount Local node row count.
      */
-    public TableStatistics(long totalRowCnt, long primaryRowCnt) {
-        assert totalRowCnt >= 0 && primaryRowCnt >= 0 : "totalRowCnt=" + totalRowCnt + ", primaryRowCnt=" + primaryRowCnt;
+    public TableStatistics(long totalRowCnt, long localRowCount) {
+        assert totalRowCnt >= 0 && localRowCount >= 0 : "totalRowCnt=" + totalRowCnt + ", localRowCount=" + localRowCount;
 
         this.totalRowCnt = totalRowCnt;
-        this.primaryRowCnt = primaryRowCnt;
+        this.localRowCount = localRowCount;
     }
 
     /**
@@ -45,9 +45,9 @@ public class TableStatistics {
     }
 
     /**
-     * @return Primary parts row count.
+     * @return Local node row count.
      */
-    public long primaryRowCount() {
-        return primaryRowCnt;
+    public long localRowCount() {
+        return localRowCount;
     }
 }

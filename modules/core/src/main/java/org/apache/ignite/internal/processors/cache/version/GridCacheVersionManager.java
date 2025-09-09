@@ -25,7 +25,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -48,6 +48,9 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
     /** Last data version metric name. */
     public static final String LAST_DATA_VER = "LastDataVersion";
+
+    /** Cluster ID metric name. */
+    public static final String DATA_VER_CLUSTER_ID = "DataVersionClusterId";
 
     /** Last version metric. */
     protected AtomicLongMetric lastDataVer;
@@ -95,9 +98,11 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        MetricRegistry sysreg = cctx.kernalContext().metric().registry(CACHE_METRICS);
+        MetricRegistryImpl sysreg = cctx.kernalContext().metric().registry(CACHE_METRICS);
 
         lastDataVer = sysreg.longMetric(LAST_DATA_VER, "The latest data version on the node.");
+
+        sysreg.register(DATA_VER_CLUSTER_ID, () -> dataCenterId, "Data version cluster id.");
 
         startVer = new GridCacheVersion(0, 0, 0, dataCenterId);
 
@@ -116,7 +121,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         long startTime = cctx.kernalContext().discovery().gridStartTime();
 
         if (startTime != 0)
-            offset = (int) ((startTime - TOP_VER_BASE_TIME) / 1000);
+            offset = (int)((startTime - TOP_VER_BASE_TIME) / 1000);
 
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
 
@@ -289,9 +294,9 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         long ord = order.incrementAndGet();
 
         GridCacheVersion next = new GridCacheVersion(
-            (int) topVer,
+            (int)topVer,
             ord,
-            (int) nodeOrder,
+            (int)nodeOrder,
             dataCenterId);
 
         last = next;
@@ -310,9 +315,9 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         long ord = loadOrder.incrementAndGet();
 
         GridCacheVersion next = new GridCacheVersion(
-            (int) topVer,
+            (int)topVer,
             ord,
-            (int) nodeOrder,
+            (int)nodeOrder,
             dataCenterId);
 
         last = next;
@@ -359,14 +364,5 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      */
     public boolean isStartVersion(GridCacheVersion ver) {
         return startVer.equals(ver);
-    }
-
-    /**
-     * Update grid start time.
-     */
-    public void gridStartTime(long startTime) {
-        offset = (int) ((startTime - TOP_VER_BASE_TIME) / 1000);
-
-        isolatedStreamerVer = new GridCacheVersion(1 + offset, 0, 1, dataCenterId);
     }
 }

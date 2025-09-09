@@ -40,7 +40,7 @@ public class PlatformThinClientConnectionsTask extends ComputeTaskAdapter<Object
     /** {@inheritDoc} */
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) {
-        return Collections.singletonMap(new PlatformThinClientConnectionsJob((String) arg), F.first(subgrid));
+        return Collections.singletonMap(new PlatformThinClientConnectionsJob((String)arg), F.first(subgrid));
     }
 
     /** {@inheritDoc} */

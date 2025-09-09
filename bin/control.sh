@@ -43,6 +43,7 @@ fi
 SCRIPTS_HOME="${IGNITE_HOME_TMP}/bin"
 
 source "${SCRIPTS_HOME}"/include/functions.sh
+source "${SCRIPTS_HOME}"/include/jvmdefaults.sh
 
 #
 # Discover path to Java executable and check it's version.
@@ -137,34 +138,7 @@ fi
 #
 # Final CONTROL_JVM_OPTS for Java 9+ compatibility
 #
-if [ $version -eq 8 ] ; then
-    CONTROL_JVM_OPTS="\
-        -XX:+AggressiveOpts \
-         ${CONTROL_JVM_OPTS}"
-
-elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
-    CONTROL_JVM_OPTS="\
-        -XX:+AggressiveOpts \
-        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
-        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
-        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
-        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
-        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
-        --illegal-access=permit \
-        --add-modules=java.xml.bind \
-        ${CONTROL_JVM_OPTS}"
-
-elif [ $version -ge 11 ] ; then
-    CONTROL_JVM_OPTS="\
-        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
-        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
-        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
-        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
-        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
-        --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED \
-        --illegal-access=permit \
-        ${CONTROL_JVM_OPTS}"
-fi
+CONTROL_JVM_OPTS=$(getJavaSpecificOpts $version "$CONTROL_JVM_OPTS")
 
 if [ -n "${JVM_OPTS:-}" ] ; then
   echo "JVM_OPTS environment variable is set, but will not be used. To pass JVM options use CONTROL_JVM_OPTS"
@@ -175,11 +149,11 @@ case $osname in
     Darwin*)
         "$JAVA" ${CONTROL_JVM_OPTS} ${QUIET:-} "${DOCK_OPTS}" \
          -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-         -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
+         -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} "$@"
     ;;
     *)
         "$JAVA" ${CONTROL_JVM_OPTS} ${QUIET:-} \
          -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-         -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
+         -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} "$@"
     ;;
 esac

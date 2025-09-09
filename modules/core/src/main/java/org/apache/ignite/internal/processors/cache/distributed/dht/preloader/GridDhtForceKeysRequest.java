@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
@@ -41,9 +40,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * next batch of transmitting entries.
  */
 public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
     private IgniteUuid futId;
 
@@ -59,7 +55,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     private AffinityTopologyVersion topVer;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtForceKeysRequest() {
         // No-op.
@@ -159,7 +155,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -167,25 +163,25 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeIgniteUuid(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
@@ -199,15 +195,12 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -215,7 +208,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
                 reader.incrementState();
 
             case 5:
-                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
+                keys = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -223,7 +216,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
                 reader.incrementState();
 
             case 6:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -231,7 +224,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
                 reader.incrementState();
 
             case 7:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -240,17 +233,12 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
         }
 
-        return reader.afterMessageRead(GridDhtForceKeysRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 42;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 8;
     }
 
     /** {@inheritDoc} */

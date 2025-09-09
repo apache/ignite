@@ -735,4 +735,10 @@ public interface CacheMetrics {
      * @return Number of keys processed during index rebuilding.
      */
     public long getIndexRebuildKeysProcessed();
+
+    /**
+     * @return The number of partitions that remain to be processed to complete indexing.
+     *         Note that this metric includes backup partitions, which also participate in index building on each node.
+     */
+    public int getIndexBuildPartitionsLeftCount();
 }

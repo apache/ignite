@@ -18,29 +18,46 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Message factory implementation which is responsible for instantiation of all communication messages.
  */
-public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
+public class IgniteMessageFactoryImpl implements MessageFactory {
     /** Offset. */
     private static final int OFF = -Short.MIN_VALUE;
 
     /** Array size. */
     private static final int ARR_SIZE = 1 << Short.SIZE;
 
+    /** Delegate serialization to {@code Message} methods. */
+    private static final MessageSerializer DEFAULT_SERIALIZER = new MessageSerializer() {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(Message msg, ByteBuffer buf, MessageWriter writer) {
+            return msg.writeTo(buf, writer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(Message msg, ByteBuffer buf, MessageReader reader) {
+            return msg.readFrom(buf, reader);
+        }
+    };
+
     /** Message suppliers. */
-    private final Supplier<Message>[] msgSuppliers = (Supplier<Message>[]) Array.newInstance(Supplier.class, ARR_SIZE);
+    private final Supplier<Message>[] msgSuppliers = (Supplier<Message>[])Array.newInstance(Supplier.class, ARR_SIZE);
+
+    /** Message serializers. */
+    private final MessageSerializer[] msgSerializers = (MessageSerializer[])Array.newInstance(MessageSerializer.class, ARR_SIZE);
 
     /** Initialized flag. If {@code true} then new message type couldn't be registered. */
     private boolean initialized;
@@ -59,44 +76,18 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
      *
      * @param factories Concrete message factories or message factory providers. Cfn't be empty or {@code null}.
      */
-    public IgniteMessageFactoryImpl(MessageFactory[] factories) {
+    public IgniteMessageFactoryImpl(MessageFactoryProvider[] factories) {
         if (factories == null || factories.length == 0)
             throw new IllegalArgumentException("Message factory couldn't be initialized. Factories aren't provided.");
 
-        List<MessageFactory> old = new ArrayList<>(factories.length);
-
-        for (MessageFactory factory : factories) {
-            if (factory instanceof MessageFactoryProvider) {
-                MessageFactoryProvider p = (MessageFactoryProvider)factory;
-
-                p.registerAll(this);
-            }
-            else
-                old.add(factory);
-        }
-
-        if (!old.isEmpty()) {
-            for (int i = 0; i < ARR_SIZE; i++) {
-                Supplier<Message> curr = msgSuppliers[i];
-
-                if (curr == null) {
-                    short directType = indexToDirectType(i);
-
-                    for (MessageFactory factory : old) {
-                        Message msg = factory.create(directType);
-
-                        if (msg != null)
-                            register(directType, () -> factory.create(directType));
-                    }
-                }
-            }
-        }
+        for (MessageFactoryProvider factory : factories)
+            factory.registerAll(this);
 
         initialized = true;
     }
 
     /** {@inheritDoc} */
-    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+    @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer) throws IgniteException {
         if (initialized) {
             throw new IllegalStateException("Message factory is already initialized. " +
                     "Registration of new message types is forbidden.");
@@ -108,6 +99,7 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
 
         if (curr == null) {
             msgSuppliers[idx] = supplier;
+            msgSerializers[idx] = serializer;
 
             minIdx = Math.min(idx, minIdx);
 
@@ -117,6 +109,11 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
         }
         else
             throw new IgniteException("Message factory is already registered for direct type: " + directType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
+        register(directType, supplier, DEFAULT_SERIALIZER);
     }
 
     /**
@@ -133,6 +130,20 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
             throw new IgniteException("Invalid message type: " + directType);
 
         return supplier.get();
+    }
+
+    /**
+     * @param directType Message direct type.
+     * @return Message instance.
+     * @throws IgniteException If there are no any message factory for given {@code directType}.
+     */
+    @Override public MessageSerializer serializer(short directType) {
+        MessageSerializer serializer = msgSerializers[directTypeToIndex(directType)];
+
+        if (serializer == null)
+            throw new IgniteException("Message serializer not found for a message type: " + directType);
+
+        return serializer;
     }
 
     /**

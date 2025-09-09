@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -37,7 +38,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -87,7 +87,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     public void testMetaStorageMassivePutFixed() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCacheDatabaseSharedManager db = ig.context().cache().context().database();
 
@@ -125,7 +125,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     public void testMetaStorageMassivePutRandom() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCacheDatabaseSharedManager db = ig.context().cache().context().database();
 
@@ -189,7 +189,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         try {
             IgniteEx ig = startGrid(0);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             IgniteCacheDatabaseSharedManager db = ig.context().cache().context().database();
 
@@ -229,7 +229,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             ig = (IgniteEx)startGrid(getTestIgniteInstanceName(0), optimize(cfg), null);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             db = ig.context().cache().context().database();
 
@@ -252,7 +252,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             ig = startGrid(0);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             db = ig.context().cache().context().database();
 
@@ -299,7 +299,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         try {
             IgniteEx ig = startGrid(0);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             IgniteCacheDatabaseSharedManager db = ig.context().cache().context().database();
 
@@ -323,7 +323,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             ig = startGrid(0);
 
-            ig.cluster().active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             db = ig.context().cache().context().database();
 
@@ -431,7 +431,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     public void testMetaStorageMassivePutUpdateRestart() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         final byte KEYS_CNT = 100;
         final String KEY_PREFIX = "test.key.";
@@ -444,7 +444,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
         ig = startGrid(0);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         verifyKeys(ig, KEYS_CNT, KEY_PREFIX, UPDATED_VAL_PREFIX);
     }
@@ -456,7 +456,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     public void testRecoveryOfMetastorageWhenNodeNotInBaseline() throws Exception {
         IgniteEx ig0 = startGrid(0);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         final byte KEYS_CNT = 100;
         final String KEY_PREFIX = "test.key.";
@@ -485,7 +485,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     public void testReadOnlyIterationOrder() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         MetaStorage storage = ignite.context().cache().context().database().metaStorage();
 
@@ -506,15 +506,15 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             GridTestUtils.setFieldValue(storage, "readOnly", true);
 
-            storage.applyUpdate("pref-0", JdkMarshaller.DEFAULT.marshal(0));
+            storage.applyUpdate("pref-0", TEST_JDK_MARSHALLER.marshal(0));
 
-            storage.applyUpdate("pref-1", JdkMarshaller.DEFAULT.marshal(10));
+            storage.applyUpdate("pref-1", TEST_JDK_MARSHALLER.marshal(10));
 
-            storage.applyUpdate("pref-4", JdkMarshaller.DEFAULT.marshal(4));
+            storage.applyUpdate("pref-4", TEST_JDK_MARSHALLER.marshal(4));
 
             storage.applyUpdate("pref-5", null);
 
-            storage.applyUpdate("pref-8", JdkMarshaller.DEFAULT.marshal(8));
+            storage.applyUpdate("pref-8", TEST_JDK_MARSHALLER.marshal(8));
 
             List<String> keys = new ArrayList<>();
 

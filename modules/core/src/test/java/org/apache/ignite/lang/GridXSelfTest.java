@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -52,6 +53,52 @@ public class GridXSelfTest extends GridCommonAbstractTest {
         assert gridEx.getCause(IOException.class) == ioEx;
         assert gridEx.getCause(ConnectException.class) == conEx;
         assert gridEx.getCause(NumberFormatException.class) == null;
+    }
+
+    /**
+     * Checks that using function with Throwable that contains circular reference in {@code getSuppressed()}
+     *     does not cause {@link StackOverflowError}.
+     */
+    @Test
+    public void testCauseDoesNotRaiseStackOverflowWhenCircularReferenceInSuppressed() {
+        NullPointerException npe = new NullPointerException();
+
+        IOException ioExc = new IOException(npe);
+
+        IgniteException exc = new IgniteException(ioExc);
+
+        ioExc.addSuppressed(exc);
+
+        assertEquals(npe, X.cause(exc, NullPointerException.class));
+
+        assertTrue(X.hasCause(exc, NullPointerException.class));
+
+        assertNull(X.cause(exc, ArithmeticException.class));
+
+        assertFalse(X.hasCause(exc, ArithmeticException.class));
+    }
+
+    /**
+     * Checks that using function with Throwable that contains circular reference in {@code getCaused()}
+     *     does not cause {@link StackOverflowError}.
+     */
+    @Test
+    public void testCauseDoesNotRaiseStackOverflowWhenCircularReferenceInCaused() {
+        NullPointerException npe = new NullPointerException();
+
+        IOException ioExc = new IOException(npe);
+
+        IgniteException exc = new IgniteException(ioExc);
+
+        npe.initCause(exc);
+
+        assertEquals(npe, X.cause(exc, NullPointerException.class));
+
+        assertTrue(X.hasCause(exc, NullPointerException.class));
+
+        assertNull(X.cause(exc, ArithmeticException.class));
+
+        assertFalse(X.hasCause(exc, ArithmeticException.class));
     }
 
     /**

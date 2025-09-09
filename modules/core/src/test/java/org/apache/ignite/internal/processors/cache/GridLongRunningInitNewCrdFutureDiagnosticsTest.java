@@ -33,7 +33,7 @@ public class GridLongRunningInitNewCrdFutureDiagnosticsTest extends GridCommonAb
     private static final int NODE_WITH_DIAGNOSTIC_LOG = 2;
 
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, GridAbstractTest.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
 
     /** Test recording communication spi. */
     private TestRecordingCommunicationSpi testRecordingCommSpi;

@@ -17,16 +17,16 @@
 
 
 # Base Image
-FROM  s390x/ubuntu:18.04
+FROM  s390x/ubuntu:20.04
 
 # Dockerfile variables
 ARG IGNITE_VER
 
 # Set Environment Variables
-ENV JAVA_HOME="/opt/jdk-11.0.7+10"
+ENV JAVA_HOME="/opt/jdk-11.0.14.1+1"
 ENV IGNITE_HOME="/opt/apache-ignite-${IGNITE_VER}-bin"
 ENV PATH="${JAVA_HOME}/bin:/opt/apache-ignite-${IGNITE_VER}-bin/bin:${PATH}"
-ENV JDK_FILE="OpenJDK11U-jdk_s390x_linux_openj9_11.0.7_10_openj9-0.20.0.tar.gz"
+ENV JDK_FILE="ibm-semeru-open-jdk_s390x_linux_11.0.14.1_1_openj9-0.30.1.tar.gz"
 
 # The Author
 LABEL maintainer="LoZ Open Source Ecosystem (https://www.ibm.com/community/z/usergroups/opensource)"
@@ -44,8 +44,8 @@ RUN apt-get update && \
     apt-get -y clean autoremove && \
     rm -rf /var/lib/apt/lists/*
 
-# Download AdoptOpenJDK 8
-RUN wget https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.7%2B10_openj9-0.20.0/${JDK_FILE} && \
+# Download JDK 11
+RUN wget https://github.com/ibmruntimes/semeru11-binaries/releases/download/jdk-11.0.14.1%2B1_openj9-0.30.1/${JDK_FILE} && \
     tar xvf ${JDK_FILE} && \
     rm -rf ${JDK_FILE}
 

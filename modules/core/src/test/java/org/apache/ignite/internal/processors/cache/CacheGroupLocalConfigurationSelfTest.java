@@ -112,30 +112,30 @@ public class CacheGroupLocalConfigurationSelfTest extends GridCommonAbstractTest
     private void executeTest() throws Exception {
         startGrid(0);
 
-        IgniteKernal ignite = (IgniteKernal) startGrid("secondNode");
+        IgniteKernal ignite = (IgniteKernal)startGrid("secondNode");
 
         GridCacheProcessor cacheProc = ignite.context().cache();
 
         Map<Integer, CacheGroupContext> cacheGrps = U.field(cacheProc, "cacheGrps");
 
-        CacheConfiguration cacheGroupCfg = findGroupConfig(cacheGrps,
+        CacheConfiguration cacheGrpCfg = findGroupConfig(cacheGrps,
             useNonDfltCacheGrp ? NON_DEFAULT_GROUP_NAME : DEFAULT_CACHE_NAME);
 
-        assertNotNull("Default cache group must be presented", cacheGroupCfg);
+        assertNotNull("Default cache group must be presented", cacheGrpCfg);
 
-        assertEquals("Rebalance delay", cacheGroupCfg.getRebalanceDelay(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance delay", cacheGrpCfg.getRebalanceDelay(), NON_STANDARD_REBALANCE_VALUE);
 
         assertEquals("Rebalance batches prefetch count",
-            cacheGroupCfg.getRebalanceBatchesPrefetchCount(),
+            cacheGrpCfg.getRebalanceBatchesPrefetchCount(),
             NON_STANDARD_REBALANCE_VALUE);
 
-        assertEquals("Rebalance batch size", cacheGroupCfg.getRebalanceBatchSize(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance batch size", cacheGrpCfg.getRebalanceBatchSize(), NON_STANDARD_REBALANCE_VALUE);
 
-        assertEquals("Rebalance order", cacheGroupCfg.getRebalanceOrder(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance order", cacheGrpCfg.getRebalanceOrder(), NON_STANDARD_REBALANCE_VALUE);
 
-        assertEquals("Rebalance throttle", cacheGroupCfg.getRebalanceThrottle(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance throttle", cacheGrpCfg.getRebalanceThrottle(), NON_STANDARD_REBALANCE_VALUE);
 
-        assertEquals("Rebalance timeout", cacheGroupCfg.getRebalanceTimeout(), NON_STANDARD_REBALANCE_VALUE);
+        assertEquals("Rebalance timeout", cacheGrpCfg.getRebalanceTimeout(), NON_STANDARD_REBALANCE_VALUE);
     }
 
     /**

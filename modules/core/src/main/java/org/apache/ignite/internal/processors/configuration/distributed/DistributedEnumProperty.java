@@ -50,16 +50,18 @@ public class DistributedEnumProperty<T extends Enum> implements DistributedChang
      * Property constructor.
      *
      * @param name Name of property.
+     * @param desc Property description.
      * @param fromOrdinalFunc Function reflects an integer to an enumiration value.
      * @param toOrdinalFunc Function converts an enumeration value to an integer.
      */
     public DistributedEnumProperty(
         String name,
+        String desc,
         IgniteClosure<Integer, T> fromOrdinalFunc,
         IgniteClosure<T, Integer> toOrdinalFunc,
         Class<T> enumCls
     ) {
-        this.internal = new SimpleDistributedProperty<>(name, null);
+        this.internal = new SimpleDistributedProperty<>(name, null, desc);
         this.fromOrdinalFunc = fromOrdinalFunc;
         this.toOrdinalFunc = toOrdinalFunc;
         this.values = Arrays.stream(enumCls.getEnumConstants())
@@ -116,6 +118,11 @@ public class DistributedEnumProperty<T extends Enum> implements DistributedChang
     /** {@inheritDoc} */
     @Override public String getName() {
         return internal.getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return internal.description();
     }
 
     /** {@inheritDoc} */

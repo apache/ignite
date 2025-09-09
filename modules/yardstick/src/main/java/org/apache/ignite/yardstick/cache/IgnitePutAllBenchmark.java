@@ -18,15 +18,16 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.yardstickframework.BenchmarkConfiguration;
 
 /**
@@ -42,100 +43,87 @@ public class IgnitePutAllBenchmark extends IgniteCacheAbstractBenchmark<Integer,
     /** Affinity mapper. */
     private Affinity<Integer> aff;
 
-    /** */
-    private int srvrCnt;
+    /** Sequentially grow thread data identifier.*/
+    AtomicInteger threadIdent = new AtomicInteger();
 
-    /** */
-    private int stripesCnt;
+    /** Predefined batches.*/
+    List<Map<Integer, Map<Integer, Integer>>> batchMaps;
+
+    /** {@inheritDoc} */
+    @Override public void tearDown() throws Exception {
+        super.tearDown();
+
+        if (threadIdent.get() != batchMaps.size())
+            throw new IgniteException("Some workers are not initialized.");
+    }
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
+        int threadsCnt = cfg.threads();
+
+        batchMaps = new ArrayList<>(threadsCnt);
+
+        for (int i = 0; i < threadsCnt; ++i)
+            batchMaps.add(null);
+
+        for (int i = 0; i < threadsCnt; ++i) {
+            for (int m = 0; m < PUT_MAPS_CNT; ++m) {
+                TreeMap<Integer, Integer> vals = new TreeMap<>();
+
+                ClusterNode node = args.collocated() ? aff.mapKeyToNode(nextRandom(args.range())) : null;
+
+                for (; vals.size() < args.batch(); ) {
+                    int key = nextRandom(args.range());
+                    
+                    if (args.collocated() && !aff.isPrimary(node, key))
+                        continue;
+
+                    vals.put(key, key);
+                }
+
+                Map<Integer, Map<Integer, Integer>> map = batchMaps.get(i);
+
+                if (map == null)
+                    batchMaps.set(i, map = new HashMap<>());
+
+                map.put(m, vals);
+            }
+        }
+
         aff = ignite().affinity(cache().getName());
-
-        Collection<ClusterNode> nodes = ignite().cluster().forServers().nodes();
-
-        stripesCnt = ignite().cluster().forServers().forRandom().metrics().getTotalCpus();
-
-        srvrCnt = nodes.size();
 
         IgniteLogger log = ignite().log();
 
         if (log.isInfoEnabled())
-            log.info("Servers info [srvrsCnt=" + srvrCnt + ", stripesCnt=" + stripesCnt + ']');
+            log.info("Initialization completed, batches predefined for " + threadsCnt + "threads.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        List<Map<Integer, Integer>> putMaps = (List<Map<Integer, Integer>>)ctx.get(PUT_MAPS_KEY);
+        if (ctx.isEmpty()) {
+            int currCeil = threadIdent.getAndIncrement();
 
-        if (putMaps == null) {
-            putMaps = new ArrayList<>(PUT_MAPS_CNT);
+            Map<Integer, Map<Integer, Integer>> batches = batchMaps.get(currCeil);
 
-            ctx.put(PUT_MAPS_KEY, putMaps);
+            ctx.put(PUT_MAPS_KEY, batches);
         }
 
-        Map<Integer, Integer> vals;
+        Map<Integer, Map<Integer, Integer>> batches = (Map<Integer, Map<Integer, Integer>>)ctx.get(PUT_MAPS_KEY);
 
-        if (putMaps.size() == PUT_MAPS_CNT)
-            vals = putMaps.get(nextRandom(PUT_MAPS_CNT));
-        else {
-            vals = new TreeMap<>();
+        Map<Integer, Integer> vals = batches.get(nextRandom(PUT_MAPS_CNT));
 
-            ClusterNode node = args.collocated() ? aff.mapKeyToNode(nextRandom(args.range())) : null;
+        putData(vals);
 
-            Map<ClusterNode, Integer> stripesMap = null;
-
-            if (args.singleStripe())
-                stripesMap = U.newHashMap(srvrCnt);
-
-            for (; vals.size() < args.batch(); ) {
-                int key = nextRandom(args.range());
-
-                if (args.collocated() && !aff.isPrimary(
-                    node,
-                    key))
-                    continue;
-
-                if (args.singleStripe()) {
-                    int part = aff.partition(key);
-
-                    ClusterNode node0 = node != null ? node : aff.mapPartitionToNode(part);
-
-                    Integer stripe0 = stripesMap.get(node0);
-                    int stripe = part % stripesCnt;
-
-                    if (stripe0 != null) {
-                        if (stripe0 != stripe)
-                            continue;
-                    }
-                    else
-                        stripesMap.put(
-                            node0,
-                            stripe);
-                }
-
-                vals.put(
-                    key,
-                    key);
-            }
-
-            putMaps.add(vals);
-
-            if (putMaps.size() == PUT_MAPS_CNT) {
-                IgniteLogger log = ignite().log();
-
-                if (log.isInfoEnabled())
-                    log.info("Put maps set generated.");
-            }
-        }
-
+        return true;
+    }
+    
+    /** Put operations.*/
+    protected void putData(Map<Integer, Integer> vals) throws Exception {
         IgniteCache<Integer, Object> cache = cacheForOperation();
 
         cache.putAll(vals);
-
-        return true;
     }
 
     /** {@inheritDoc} */

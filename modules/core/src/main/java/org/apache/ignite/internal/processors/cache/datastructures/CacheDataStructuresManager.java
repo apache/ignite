@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.datastructures.GridTransactionalCac
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -74,6 +73,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  *
@@ -237,9 +237,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable public <T> GridCacheQueueProxy<T> queue(final String name,
         final int cap,
         boolean colloc,
-        final boolean create)
-        throws IgniteCheckedException
-    {
+        final boolean create
+    ) throws IgniteCheckedException {
         waitInitialization();
 
         return queue0(name, cap, colloc, create);
@@ -257,9 +256,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable public <T> GridCacheQueueProxy<T> queue0(final String name,
         final int cap,
         boolean colloc,
-        final boolean create)
-        throws IgniteCheckedException
-    {
+        final boolean create
+    ) throws IgniteCheckedException {
         cctx.gate().enter();
 
         try {
@@ -323,7 +321,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         }
                     },
                     new QueueHeaderPredicate(),
-                    cctx.isLocal() || (cctx.isReplicated() && cctx.affinityNode()),
+                    cctx.isReplicated() && cctx.affinityNode(),
                     true,
                     false,
                     false);
@@ -359,8 +357,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
         boolean create,
-        boolean separated) throws IgniteCheckedException
-    {
+        boolean separated
+    ) throws IgniteCheckedException {
         return set0(name, colloc, create, separated);
     }
 
@@ -376,9 +374,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable private <T> IgniteSet<T> set0(String name,
         boolean collocated,
         boolean create,
-        boolean separated)
-        throws IgniteCheckedException
-    {
+        boolean separated
+    ) throws IgniteCheckedException {
         cctx.gate().enter();
 
         try {
@@ -406,7 +403,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             if (set == null) {
                 GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
+                    set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr, false)));
 
                 if (old != null)
                     set = old;
@@ -433,15 +430,11 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void removeSetData(IgniteUuid setId, AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        boolean loc = cctx.isLocal();
-
         GridCacheAffinityManager aff = cctx.affinity();
 
-        if (!loc) {
-            aff.affinityReadyFuture(topVer).get();
+        aff.affinityReadyFuture(topVer).get();
 
-            cctx.preloader().syncFuture().get();
-        }
+        cctx.preloader().syncFuture().get();
 
         IgniteInternalCache<?, ?> cache = cctx.cache();
 
@@ -476,74 +469,71 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     public void removeSetData(IgniteUuid id, boolean separated) throws IgniteCheckedException {
         assert id != null;
 
-        if (!cctx.isLocal()) {
-            while (true) {
-                AffinityTopologyVersion topVer = cctx.topologyVersionFuture().get();
+        while (true) {
+            AffinityTopologyVersion topVer = cctx.topologyVersionFuture().get();
 
-                Collection<ClusterNode> nodes = F.view(cctx.discovery().nodes(topVer), node -> !node.isDaemon());
+            Collection<ClusterNode> nodes = cctx.discovery().nodes(topVer);
 
-                try {
-                    cctx.closures().callAsyncNoFailover(BROADCAST,
-                        new BlockSetCallable(cctx.name(), id),
-                        nodes,
-                        true,
-                        0, false).get();
+            try {
+                cctx.closures().callAsync(
+                    BROADCAST,
+                    new BlockSetCallable(cctx.name(), id),
+                    options(nodes)
+                        .withFailoverDisabled()
+                        .asSystemTask()
+                ).get();
 
-                    // Separated cache will be destroyed after the set is blocked.
-                    if (separated)
-                        break;
-                }
-                catch (IgniteCheckedException e) {
-                    if (e.hasCause(ClusterTopologyCheckedException.class)) {
-                        if (log.isDebugEnabled())
-                            log.debug("RemoveSetData job failed, will retry: " + e);
-
-                        continue;
-                    }
-                    else if (!pingNodes(nodes)) {
-                        if (log.isDebugEnabled())
-                            log.debug("RemoveSetData job failed and set data node left, will retry: " + e);
-
-                        continue;
-                    }
-                    else
-                        throw e;
-                }
-
-                Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
-
-                try {
-                    cctx.closures().callAsyncNoFailover(BROADCAST,
-                        new RemoveSetDataCallable(cctx.name(), id, topVer),
-                        affNodes,
-                        true,
-                        0, false).get();
-                }
-                catch (IgniteCheckedException e) {
-                    if (e.hasCause(ClusterTopologyCheckedException.class)) {
-                        if (log.isDebugEnabled())
-                            log.debug("RemoveSetData job failed, will retry: " + e);
-
-                        continue;
-                    }
-                    else if (!pingNodes(affNodes)) {
-                        if (log.isDebugEnabled())
-                            log.debug("RemoveSetData job failed and set data node left, will retry: " + e);
-
-                        continue;
-                    }
-                    else
-                        throw e;
-                }
-
-                if (topVer.equals(cctx.topologyVersionFuture().get()))
+                // Separated cache will be destroyed after the set is blocked.
+                if (separated)
                     break;
             }
-        }
-        else {
-            blockSet(id);
+            catch (IgniteCheckedException e) {
+                if (e.hasCause(ClusterTopologyCheckedException.class)) {
+                    if (log.isDebugEnabled())
+                        log.debug("RemoveSetData job failed, will retry: " + e);
 
-            cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO);
+                    continue;
+                }
+                else if (!pingNodes(nodes)) {
+                    if (log.isDebugEnabled())
+                        log.debug("RemoveSetData job failed and set data node left, will retry: " + e);
+
+                    continue;
+                }
+                else
+                    throw e;
+            }
+
+            Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
+
+            try {
+                cctx.closures().callAsync(
+                    BROADCAST,
+                    new RemoveSetDataCallable(cctx.name(), id, topVer),
+                    options(affNodes)
+                        .withFailoverDisabled()
+                        .asSystemTask()
+                ).get();
+            }
+            catch (IgniteCheckedException e) {
+                if (e.hasCause(ClusterTopologyCheckedException.class)) {
+                    if (log.isDebugEnabled())
+                        log.debug("RemoveSetData job failed, will retry: " + e);
+
+                    continue;
+                }
+                else if (!pingNodes(affNodes)) {
+                    if (log.isDebugEnabled())
+                        log.debug("RemoveSetData job failed and set data node left, will retry: " + e);
+
+                    continue;
+                }
+                else
+                    throw e;
+            }
+
+            if (topVer.equals(cctx.topologyVersionFuture().get()))
+                break;
         }
     }
 

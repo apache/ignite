@@ -30,21 +30,17 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -74,15 +70,6 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
 
     /** */
     private boolean failOnWrite;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -468,126 +455,6 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccPessimisticOnePhaseCommit() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-
-        failOnWrite = true;
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
-    @Test
-    public void testMvccPessimisticOnePhaseCommitWithNearCache() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setNearConfiguration(new NearCacheConfiguration<>());
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-
-        failOnWrite = true;
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccPessimisticOnePhaseCommitFullSync() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-
-        failOnWrite = true;
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
-    @Test
-    public void testMvccPessimisticOnePhaseCommitFullSyncWithNearCache() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 1).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setNearConfiguration(new NearCacheConfiguration<>());
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-
-        failOnWrite = true;
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccPessimistic() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-
-        failOnWrite = true;
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
-    @Test
-    public void testMvccPessimisticWithNearCache() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(PRIMARY_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setNearConfiguration(new NearCacheConfiguration<>());
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-
-        failOnWrite = true;
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccPessimisticFullSync() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-
-        failOnWrite = true;
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
-    @Test
-    public void testMvccPessimisticFullSyncWithNearCache() throws Exception {
-        CacheConfiguration ccfg = cacheConfiguration(FULL_SYNC, 2).setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
-            .setNearConfiguration(new NearCacheConfiguration<>());
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-
-        failOnWrite = true;
-
-        doTestInvokeTest(ccfg, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
      * @param ccfg Cache configuration.
      * @throws Exception If failed.
      */
@@ -610,10 +477,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
         try {
             // Explicit tx.
             for (int i = 0; i < ITERATION_CNT; i++) {
-                if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
-                    checkExplicitMvccInvoke(cln, clnCache, txConcurrency, txIsolation);
-                else
-                    checkExplicitTxInvoke(cln, clnCache, txConcurrency, txIsolation);
+                checkExplicitTxInvoke(cln, clnCache, txConcurrency, txIsolation);
 
                 assertNull(cln.transactions().tx());
 
@@ -627,10 +491,7 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
 
             // Explicit tx.
             for (int i = 0; i < ITERATION_CNT; i++) {
-                if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
-                    checkExplicitMvccInvoke(cln, clnCache, txConcurrency, txIsolation);
-                else
-                    checkExplicitTxInvoke(cln, clnCache, txConcurrency, txIsolation);
+                checkExplicitTxInvoke(cln, clnCache, txConcurrency, txIsolation);
 
                 assertNull(cln.transactions().tx());
 
@@ -679,26 +540,6 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
 
             GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    tx.commit();
-
-                    return null;
-                }
-            }, UnsupportedOperationException.class);
-        }
-    }
-
-    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
-    private void checkExplicitMvccInvoke(Ignite node, IgniteCache cache, TransactionConcurrency txConcurrency,
-        TransactionIsolation txIsolation) {
-        try (final Transaction tx = node.transactions().txStart(txConcurrency, txIsolation)) {
-            cache.put(KEY, WRONG_VALUE);
-
-            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    cache.invoke(KEY, createEntryProcessor());
-
-                    fail("Should never happened.");
-
                     tx.commit();
 
                     return null;

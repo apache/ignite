@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.mem.MemoryAllocator;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -87,12 +88,6 @@ public class DataStorageConfiguration implements Serializable {
         (long)(DFLT_DATA_REGION_FRACTION * U.getTotalMemoryAvailable()),
         DFLT_DATA_REGION_INITIAL_SIZE);
 
-    /** Default initial size of a memory chunk for the system cache (40 MB). */
-    private static final long DFLT_SYS_REG_INIT_SIZE = 40L * 1024 * 1024;
-
-    /** Default max size of a memory chunk for the system cache (100 MB). */
-    private static final long DFLT_SYS_REG_MAX_SIZE = 100L * 1024 * 1024;
-
     /** Default memory page size. */
     public static final int DFLT_PAGE_SIZE = 4 * 1024;
 
@@ -111,7 +106,8 @@ public class DataStorageConfiguration implements Serializable {
     /** Lock default wait time, 10 sec. */
     public static final int DFLT_LOCK_WAIT_TIME = 10 * 1000;
 
-    /** */
+    /** @deprecated Will be removed in upcoming releases. */
+    @Deprecated
     public static final boolean DFLT_METRICS_ENABLED = false;
 
     /** Default amount of sub intervals to calculate rate-based metric. */
@@ -168,11 +164,8 @@ public class DataStorageConfiguration implements Serializable {
     /** Default change data capture directory. */
     public static final String DFLT_WAL_CDC_PATH = "db/wal/cdc";
 
-    /** Default path (relative to working directory) of binary metadata folder */
-    public static final String DFLT_BINARY_METADATA_PATH = "db/binary_meta";
-
-    /** Default path (relative to working directory) of marshaller mappings folder */
-    public static final String DFLT_MARSHALLER_PATH = "db/marshaller";
+    /** Default change data capture directory maximum size. */
+    public static final long DFLT_CDC_WAL_DIRECTORY_MAX_SIZE = 0;
 
     /** Default write throttling enabled. */
     public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
@@ -195,11 +188,11 @@ public class DataStorageConfiguration implements Serializable {
     /** Value used to indicate the use of half of the {@link #getMaxWalArchiveSize}. */
     public static final long HALF_MAX_WAL_ARCHIVE_SIZE = -1;
 
-    /** Initial size of a memory chunk reserved for system cache. */
-    private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
+    /** Default value for {@link #writeRecoveryDataOnCheckpoint} property. */
+    public static final boolean DFLT_WRITE_RECOVERY_DATA_ON_CP = false;
 
-    /** Maximum size of a memory chunk reserved for system cache. */
-    private long sysRegionMaxSize = DFLT_SYS_REG_MAX_SIZE;
+    /** Default compression algorithm for checkpoint recovery data. */
+    public static final DiskPageCompression DFLT_CP_RECOVERY_DATA_COMRESSION = DiskPageCompression.SKIP_GARBAGE;
 
     /** Memory page size. */
     private int pageSize = IgniteSystemProperties.getInteger(
@@ -207,6 +200,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Concurrency level. */
     private int concLvl;
+
+    /** Configuration of default data region. */
+    private SystemDataRegionConfiguration sysDataRegConf = new SystemDataRegionConfiguration();
 
     /** Configuration of default data region. */
     private DataRegionConfiguration dfltDataRegConf = new DataRegionConfiguration();
@@ -217,6 +213,16 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Directory where index and partition files are stored. */
     private String storagePath;
+
+    /** 
+     * Additional directories where index and partition files are stored.
+     * User may want to use dedicated storage for cache is server has several physical disks.
+     * Spreading load across several disks can improve performance.
+     *
+     * @see CacheConfiguration#setStoragePaths(String...)
+     */
+    @IgniteExperimental
+    private String[] extraStoragePaths;
 
     /** Checkpoint frequency. */
     private long checkpointFreq = DFLT_CHECKPOINT_FREQ;
@@ -249,14 +255,16 @@ public class DataStorageConfiguration implements Serializable {
     private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
 
     /** Change Data Capture path. */
-    @IgniteExperimental
     private String cdcWalPath = DFLT_WAL_CDC_PATH;
 
-    /** Change Data Capture enabled flag. */
-    @IgniteExperimental
-    private boolean cdcEnabled;
+    /** Change Data Capture directory size limit. */
+    private long cdcWalDirMaxSize = DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
 
-    /** Metrics enabled flag. */
+    /**
+     * Metrics enabled flag.
+     * @deprecated Will be removed in upcoming releases.
+     */
+    @Deprecated
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
 
     /** Wal mode. */
@@ -303,13 +311,10 @@ public class DataStorageConfiguration implements Serializable {
      */
     private long walAutoArchiveAfterInactivity = -1;
 
-    /** Time interval (in milliseconds) for force archiving of incompletely WAL segment. */
-    @IgniteExperimental
+    /** Time interval (in milliseconds) after last log of data change for force archiving of incompletely WAL segment. */
     private long walForceArchiveTimeout = -1;
 
-    /**
-     * If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled.
-     */
+    /** If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled. */
     private boolean writeThrottlingEnabled = DFLT_WRITE_THROTTLING_ENABLED;
 
     /**
@@ -348,6 +353,22 @@ public class DataStorageConfiguration implements Serializable {
     /** Minimum size of wal archive folder, in bytes. */
     private long minWalArchiveSize = HALF_MAX_WAL_ARCHIVE_SIZE;
 
+    /** Default memory allocator for all data regions. */
+    @Nullable private MemoryAllocator memoryAllocator = null;
+
+    /**
+     * Mode for storing page recovery data.
+     * If {@code true}, page recovery data will be written during checkpoint.
+     * If {@code false}, WAL physical records will be used to store page recovery data.
+     */
+    private boolean writeRecoveryDataOnCheckpoint = DFLT_WRITE_RECOVERY_DATA_ON_CP;
+
+    /** Compression algorithm for checkpoint recovery data. */
+    private DiskPageCompression cpRecoveryDataCompression = DFLT_CP_RECOVERY_DATA_COMRESSION;
+
+    /** Compression level for checkpoint recovery data. */
+    private Integer cpRecoveryDataCompressionLevel;
+
     /**
      * Creates valid durable memory configuration with all default values.
      */
@@ -359,23 +380,29 @@ public class DataStorageConfiguration implements Serializable {
      * Initial size of a data region reserved for system cache.
      *
      * @return Size in bytes.
+     * @deprecated use {@link SystemDataRegionConfiguration#getInitialSize}.
      */
+    @Deprecated
     public long getSystemRegionInitialSize() {
-        return sysRegionInitSize;
+        if (sysDataRegConf == null)
+            sysDataRegConf = new SystemDataRegionConfiguration();
+
+        return sysDataRegConf.getInitialSize();
     }
 
     /**
      * Sets initial size of a data region reserved for system cache.
      *
-     * Default value is {@link #DFLT_SYS_REG_INIT_SIZE}
-     *
      * @param sysRegionInitSize Size in bytes.
      * @return {@code this} for chaining.
+     * @deprecated use {@link SystemDataRegionConfiguration#setInitialSize(long)}.
      */
+    @Deprecated
     public DataStorageConfiguration setSystemRegionInitialSize(long sysRegionInitSize) {
-        A.ensure(sysRegionInitSize > 0, "System region initial size can not be less zero.");
+        if (sysDataRegConf == null)
+            sysDataRegConf = new SystemDataRegionConfiguration();
 
-        this.sysRegionInitSize = sysRegionInitSize;
+        sysDataRegConf.setInitialSize(sysRegionInitSize);
 
         return this;
     }
@@ -384,24 +411,30 @@ public class DataStorageConfiguration implements Serializable {
      * Maximum data region size reserved for system cache.
      *
      * @return Size in bytes.
+     * @deprecated use {@link SystemDataRegionConfiguration#getMaxSize()}.
      */
+    @Deprecated
     public long getSystemRegionMaxSize() {
-        return sysRegionMaxSize;
+        if (sysDataRegConf == null)
+            sysDataRegConf = new SystemDataRegionConfiguration();
+
+        return sysDataRegConf.getMaxSize();
     }
 
     /**
      * Sets maximum data region size reserved for system cache. The total size should not be less than 10 MB
      * due to internal data structures overhead.
      *
-     * Default value is {@link #DFLT_SYS_REG_MAX_SIZE}.
-     *
      * @param sysRegionMaxSize Maximum size in bytes for system cache data region.
      * @return {@code this} for chaining.
+     * @deprecated use {@link SystemDataRegionConfiguration#setMaxSize(long)}.
      */
+    @Deprecated
     public DataStorageConfiguration setSystemRegionMaxSize(long sysRegionMaxSize) {
-        A.ensure(sysRegionMaxSize > 0, "System region max size can not be less zero.");
+        if (sysDataRegConf == null)
+            sysDataRegConf = new SystemDataRegionConfiguration();
 
-        this.sysRegionMaxSize = sysRegionMaxSize;
+        sysDataRegConf.setMaxSize(sysRegionMaxSize);
 
         return this;
     }
@@ -421,6 +454,7 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @param pageSize Page size in bytes. Supported values are: {@code 1024}, {@code 2048}, {@code 4096}, {@code 8192}
      * and {@code 16384}. If value is not set (or zero), {@link #DFLT_PAGE_SIZE} ({@code 4096}) will be used.
+     * @return {@code this} for chaining.
      * @see #MIN_PAGE_SIZE
      * @see #MAX_PAGE_SIZE
      */
@@ -451,6 +485,7 @@ public class DataStorageConfiguration implements Serializable {
      * Sets data regions configurations.
      *
      * @param dataRegionConfigurations Data regions configurations.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setDataRegionConfigurations(DataRegionConfiguration... dataRegionConfigurations) {
         this.dataRegions = dataRegionConfigurations;
@@ -475,6 +510,7 @@ public class DataStorageConfiguration implements Serializable {
      * If value is not positive, the number of available CPUs will be used.
      *
      * @param concLvl Mapping table concurrency level.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setConcurrencyLevel(int concLvl) {
         this.concLvl = concLvl;
@@ -491,9 +527,10 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Overrides configuration of default data region which is created automatically.
+     * Overrides configuration of default data region which has been created automatically.
      *
      * @param dfltDataRegConf Default data region configuration.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setDefaultDataRegionConfiguration(DataRegionConfiguration dfltDataRegConf) {
         this.dfltDataRegConf = dfltDataRegConf;
@@ -502,20 +539,64 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Returns a path the root directory where the Persistent Store will persist data and indexes.
+     * Configuration of system data region.
+     *
+     * @return Configuration of system data region.
+     */
+    public SystemDataRegionConfiguration getSystemDataRegionConfiguration() {
+        return sysDataRegConf;
+    }
+
+    /**
+     * Overrides configuration of system data region which has been created automatically.
+     *
+     * @param sysDataRegConf System data region configuration.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setSystemDataRegionConfiguration(SystemDataRegionConfiguration sysDataRegConf) {
+        this.sysDataRegConf = sysDataRegConf;
+
+        return this;
+    }
+
+    /**
+     * @return A path the root directory where the Persistent Store will persist data and indexes.
      */
     public String getStoragePath() {
         return storagePath;
     }
 
     /**
+     * @return Additional directories where index and partition files are stored.
+     */
+    @IgniteExperimental
+    public String[] getExtraStoragePaths() {
+        return extraStoragePaths;
+    }
+
+    /**
      * Sets a path to the root directory where the Persistent Store will persist data and indexes.
-     * By default the Persistent Store's files are located under Ignite work directory.
+     * By default, the Persistent Store's files are located under Ignite work directory.
      *
      * @param persistenceStorePath Persistence store path.
+     * @return {@code this} for chaining.
      */
+    @IgniteExperimental
     public DataStorageConfiguration setStoragePath(String persistenceStorePath) {
         this.storagePath = persistenceStorePath;
+
+        return this;
+    }
+
+    /**
+     * Sets a paths to the root directories where the Persistent Store can persist data and indexes.
+     * By default, {@link #getStoragePath()} used.
+     *
+     * @param extraStoragePaths Extra storage paths where persistent data can be stored.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setExtraStoragePaths(String... extraStoragePaths) {
+        this.extraStoragePaths = extraStoragePaths;
 
         return this;
     }
@@ -531,7 +612,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets the checkpoint frequency which is a minimal interval when the dirty pages will be written
-     * to the Persistent Store. If the rate is high, checkpoint will be triggered more frequently.
+     * to the Persistent Store. Checkpoint will be triggered more frequently the lower the value you use.
      *
      * If value is not positive, {@link #DFLT_CHECKPOINT_FREQ} will be used.
      *
@@ -717,6 +798,8 @@ public class DataStorageConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalPath(String walStorePath) {
+        A.notNull(walStorePath, "WAL");
+
         this.walPath = walStorePath;
 
         return this;
@@ -739,6 +822,8 @@ public class DataStorageConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalArchivePath(String walArchivePath) {
+        A.notNull(walArchivePath, "WAL archive");
+
         this.walArchivePath = walArchivePath;
 
         return this;
@@ -750,7 +835,6 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return CDC directory.
      */
-    @IgniteExperimental
     public String getCdcWalPath() {
         return cdcWalPath;
     }
@@ -762,34 +846,36 @@ public class DataStorageConfiguration implements Serializable {
      * @param cdcWalPath CDC directory.
      * @return {@code this} for chaining.
      */
-    @IgniteExperimental
     public DataStorageConfiguration setCdcWalPath(String cdcWalPath) {
+        A.notNull(cdcWalPath, "CDC WAL");
+
         this.cdcWalPath = cdcWalPath;
 
         return this;
     }
 
     /**
-     * Sets flag indicating whether CDC enabled.
+     * Sets the {@link #getCdcWalPath CDC directory} maximum size in bytes.
      *
-     * @param cdcEnabled CDC enabled flag.
+     * @return CDC directory maximum size in bytes.
      */
-    @IgniteExperimental
-    public DataStorageConfiguration setCdcEnabled(boolean cdcEnabled) {
-        this.cdcEnabled = cdcEnabled;
-
-        return this;
+    public long getCdcWalDirectoryMaxSize() {
+        return cdcWalDirMaxSize;
     }
 
     /**
-     * Gets flag indicating whether CDC is enabled.
-     * Default value is {@code false}.
+     * Sets the CDC directory maximum size in bytes. Zero or negative means no limit. Creation of segment CDC link
+     * will be skipped when the total size of CDC files in the {@link #getCdcWalPath directory} exceeds the limit.
+     * The CDC application will log an error due to a gap in wal files sequence. Note that cache changes will be lost.
+     * Default is no limit.
      *
-     * @return Metrics enabled flag.
+     * @param cdcWalDirMaxSize CDC directory maximum size in bytes.
+     * @return {@code this} for chaining.
      */
-    @IgniteExperimental
-    public boolean isCdcEnabled() {
-        return cdcEnabled;
+    public DataStorageConfiguration setCdcWalDirectoryMaxSize(long cdcWalDirMaxSize) {
+        this.cdcWalDirMaxSize = cdcWalDirMaxSize;
+
+        return this;
     }
 
     /**
@@ -797,7 +883,9 @@ public class DataStorageConfiguration implements Serializable {
      * Default value is {@link #DFLT_METRICS_ENABLED}.
      *
      * @return Metrics enabled flag.
+     * @deprecated Will be removed in upcoming releases.
      */
+    @Deprecated
     public boolean isMetricsEnabled() {
         return metricsEnabled;
     }
@@ -806,7 +894,10 @@ public class DataStorageConfiguration implements Serializable {
      * Sets flag indicating whether persistence metrics collection is enabled.
      *
      * @param metricsEnabled Metrics enabled flag.
+     * @return {@code this} for chaining.
+     * @deprecated Will be removed in upcoming releases.
      */
+    @Deprecated
     public DataStorageConfiguration setMetricsEnabled(boolean metricsEnabled) {
         this.metricsEnabled = metricsEnabled;
 
@@ -814,7 +905,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Gets flag indicating whether write throttling is enabled.
+     * @return  Flag indicating whether write throttling is enabled.
      */
     public boolean isWriteThrottlingEnabled() {
         return writeThrottlingEnabled;
@@ -824,6 +915,7 @@ public class DataStorageConfiguration implements Serializable {
      * Sets flag indicating whether write throttling is enabled.
      *
      * @param writeThrottlingEnabled Write throttling enabled flag.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWriteThrottlingEnabled(boolean writeThrottlingEnabled) {
         this.writeThrottlingEnabled = writeThrottlingEnabled;
@@ -848,6 +940,7 @@ public class DataStorageConfiguration implements Serializable {
      * hits will be tracked.
      *
      * @param metricsRateTimeInterval Time interval in milliseconds.
+     * @return {@code this} for chaining.
      * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
     @Deprecated
@@ -873,6 +966,7 @@ public class DataStorageConfiguration implements Serializable {
      * Sets the number of sub-intervals to split the {@link #getMetricsRateTimeInterval()} into to track the update history.
      *
      * @param metricsSubIntervalCnt The number of sub-intervals for history tracking.
+     * @return {@code this} for chaining.
      * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
     @Deprecated
@@ -897,6 +991,7 @@ public class DataStorageConfiguration implements Serializable {
      * Different type provides different guarantees for consistency. See {@link WALMode} for details.
      *
      * @param walMode Wal mode.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalMode(WALMode walMode) {
         if (walMode == WALMode.DEFAULT)
@@ -922,6 +1017,7 @@ public class DataStorageConfiguration implements Serializable {
      * Each thread which write to wal have thread local buffer for serialize recode before write in wal.
      *
      * @param walTlbSize Thread local buffer size (in bytes).
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalThreadLocalBufferSize(int walTlbSize) {
         this.walTlbSize = walTlbSize;
@@ -944,6 +1040,7 @@ public class DataStorageConfiguration implements Serializable {
      * If value isn't positive it calculation will be based on {@link #getWalSegmentSize()}.
      *
      * @param walBuffSize WAL buffer size(in bytes).
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalBufferSize(int walBuffSize) {
         this.walBuffSize = walBuffSize;
@@ -966,6 +1063,7 @@ public class DataStorageConfiguration implements Serializable {
      * all other WAL modes.
      *
      * @param walFlushFreq WAL flush frequency, in milliseconds.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalFlushFrequency(long walFlushFreq) {
         this.walFlushFreq = walFlushFreq;
@@ -974,7 +1072,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Property that allows to trade latency for throughput in {@link WALMode#FSYNC} mode.
+     * @return Property that allows to trade latency for throughput in {@link WALMode#FSYNC} mode.
      * It limits minimum time interval between WAL fsyncs. First thread that initiates WAL fsync will wait for
      * this number of nanoseconds, another threads will just wait fsync of first thread (similar to CyclicBarrier).
      * Total throughput should increase under load as total WAL fsync rate will be limited.
@@ -990,6 +1088,7 @@ public class DataStorageConfiguration implements Serializable {
      * Total throughput should increase under load as total WAL fsync rate will be limited.
      *
      * @param walFsyncDelayNanos Wal fsync delay, in nanoseconds.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalFsyncDelayNanos(long walFsyncDelayNanos) {
         walFsyncDelay = walFsyncDelayNanos;
@@ -1012,6 +1111,7 @@ public class DataStorageConfiguration implements Serializable {
      * disk (for one reading), during go ahead wal.
      *
      * @param walRecordIterBuffSize Wal record iterator buffer size.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalRecordIteratorBufferSize(int walRecordIterBuffSize) {
         this.walRecordIterBuffSize = walRecordIterBuffSize;
@@ -1020,7 +1120,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Gets flag that enforces writing full page to WAL on every change (instead of delta record).
+     * @return  Flag that enforces writing full page to WAL on every change (instead of delta record).
      * Can be used for debugging purposes: every version of page will be present in WAL.
      * Note that WAL will take several times more space in this mode.
      */
@@ -1034,6 +1134,7 @@ public class DataStorageConfiguration implements Serializable {
      * Note that WAL will take several times more space in this mode.
      *
      * @param alwaysWriteFullPages Always write full pages flag.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setAlwaysWriteFullPages(boolean alwaysWriteFullPages) {
         this.alwaysWriteFullPages = alwaysWriteFullPages;
@@ -1056,6 +1157,7 @@ public class DataStorageConfiguration implements Serializable {
      * which is used for data storage files read/write operations
      *
      * @param fileIOFactory File I/O factory
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setFileIOFactory(FileIOFactory fileIOFactory) {
         this.fileIOFactory = fileIOFactory;
@@ -1086,12 +1188,11 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * @param walForceArchiveTimeout time in millis to run auto archiving segment (even if incomplete) after last
-     * record logging.<br> Positive value enables incomplete segment archiving after timeout (inactivity).<br> Zero or
-     * negative  value disables auto archiving.
-     * @return current configuration instance for chaining
+     * @param walForceArchiveTimeout Time in millis after last data change logged to run segment auto archivation
+     * (even if incomplete).<br> Positive value enables incomplete segment archivation after timeout.<br>
+     * Zero or negative value disables forcefull auto archiving.
+     * @return current configuration instance for chaining.
      */
-    @IgniteExperimental
     public DataStorageConfiguration setWalForceArchiveTimeout(long walForceArchiveTimeout) {
         this.walForceArchiveTimeout = walForceArchiveTimeout;
 
@@ -1099,9 +1200,9 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * @return time in millis to run auto archiving WAL segment (even if incomplete) after last record log
+     * @return time interval (in milliseconds) after last log of data change
+     * for force archiving of incompletely WAL segment.
      */
-    @IgniteExperimental
     public long getWalForceArchiveTimeout() {
         return walForceArchiveTimeout;
     }
@@ -1119,6 +1220,7 @@ public class DataStorageConfiguration implements Serializable {
      * This property defines order of writing pages to disk storage during checkpoint.
      *
      * @param checkpointWriteOrder Checkpoint write order.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setCheckpointWriteOrder(CheckpointWriteOrder checkpointWriteOrder) {
         this.checkpointWriteOrder = checkpointWriteOrder;
@@ -1137,6 +1239,7 @@ public class DataStorageConfiguration implements Serializable {
      * Sets flag indicating whether WAL compaction is enabled.
      *
      * @param walCompactionEnabled Wal compaction enabled flag.
+     * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalCompactionEnabled(boolean walCompactionEnabled) {
         this.walCompactionEnabled = walCompactionEnabled;
@@ -1278,7 +1381,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setDefragmentationThreadPoolSize(int defragmentationThreadPoolSize) {
-        A.ensure(defragmentationThreadPoolSize > 1, "Defragmentation thread pool size must be greater or equal to 1.");
+        A.ensure(defragmentationThreadPoolSize > 0, "Defragmentation thread pool size must be greater or equal to 1.");
 
         this.defragmentationThreadPoolSize = defragmentationThreadPoolSize;
 
@@ -1318,6 +1421,93 @@ public class DataStorageConfiguration implements Serializable {
         }
 
         this.minWalArchiveSize = walArchiveMinSize;
+
+        return this;
+    }
+
+    /**
+     * @return Memory allocator instance.
+     */
+    @Nullable public MemoryAllocator getMemoryAllocator() {
+        return memoryAllocator;
+    }
+
+    /**
+     * Sets default memory allocator for all memory regions. If not specified, default, based on {@code Unsafe}
+     * allocator will be used. Allocator can be overrided for data region using
+     * {@link DataRegionConfiguration#setMemoryAllocator(MemoryAllocator)}
+     *
+     * @param allocator Memory allocator instance.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setMemoryAllocator(MemoryAllocator allocator) {
+        memoryAllocator = allocator;
+
+        return this;
+    }
+
+    /**
+     * @return Flag defining mode for storing page recovery data. If {@code true}, recovery data will be written
+     * during checkpoint, if {@code false}, WAL physical records will be used to store recovery data.
+     */
+    public boolean isWriteRecoveryDataOnCheckpoint() {
+        return writeRecoveryDataOnCheckpoint;
+    }
+
+    /**
+     * Sets mode for storing page recovery data.
+     *
+     * @param writeRecoveryDataOnCheckpoint If {@code true}, page recovery data will be written during checkpoint,
+     *        if {@code false}, WAL physical records will be used to store page recovery data.
+     *        Default is {@link #DFLT_WRITE_RECOVERY_DATA_ON_CP}.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setWriteRecoveryDataOnCheckpoint(boolean writeRecoveryDataOnCheckpoint) {
+        this.writeRecoveryDataOnCheckpoint = writeRecoveryDataOnCheckpoint;
+
+        return this;
+    }
+
+    /**
+     * Gets compression algorithm for checkpoint recovery data.
+     *
+     * @return Page compression algorithm.
+     */
+    public DiskPageCompression getCheckpointRecoveryDataCompression() {
+        return cpRecoveryDataCompression == null ? DFLT_CP_RECOVERY_DATA_COMRESSION : cpRecoveryDataCompression;
+    }
+
+    /**
+     * Sets compression algorithm for checkpoint recovery data.
+     *
+     * @param cpRecoveryDataCompression Compression algorithm.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setCheckpointRecoveryDataCompression(DiskPageCompression cpRecoveryDataCompression) {
+        this.cpRecoveryDataCompression = cpRecoveryDataCompression;
+
+        return this;
+    }
+
+    /**
+     * Gets {@link #getCheckpointRecoveryDataCompression()} algorithm specific compression level.
+     *
+     * @return Checkpoint recovery data compression level or {@code null} for default.
+     */
+    public Integer getCheckpointRecoveryDataCompressionLevel() {
+        return cpRecoveryDataCompressionLevel;
+    }
+
+    /**
+     * Sets {@link #setCheckpointRecoveryDataCompression(DiskPageCompression)} algorithm specific compression level.
+     *
+     * @param cpRecoveryDataCompressionLevel Checkpoint recovery data compression level or {@code null} to use default.
+     *      {@link DiskPageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
+     *      {@link DiskPageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setCheckpointRecoveryDataCompressionLevel(Integer cpRecoveryDataCompressionLevel) {
+        this.cpRecoveryDataCompressionLevel = cpRecoveryDataCompressionLevel;
 
         return this;
     }

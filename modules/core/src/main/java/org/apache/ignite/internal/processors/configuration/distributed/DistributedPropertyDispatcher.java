@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Dispatcher of distributed properties.
@@ -39,4 +40,13 @@ public interface DistributedPropertyDispatcher {
      * @param prop Property to attach to processor.
      */
     <T extends Serializable> DistributedProperty<T> registerProperty(DistributedChangeableProperty<T> prop);
+
+    /**
+     * Get property by name.
+     *
+     * @param name Property name
+     * @return Property.
+     * @param <T> Property type.
+     */
+    public @Nullable <T extends Serializable> DistributedChangeableProperty<T> property(String name);
 }

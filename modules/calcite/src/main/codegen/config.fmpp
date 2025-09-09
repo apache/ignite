@@ -1,0 +1,519 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to you under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+data: {
+  # Data declarations for this parser.
+  #
+  # Default declarations are in default_config.fmpp; if you do not include a
+  # declaration ('imports' or 'nonReservedKeywords', for example) in this file,
+  # FMPP will use the declaration from default_config.fmpp.
+  parser: {
+    # Generated parser implementation class package and name
+    package: "org.apache.ignite.internal.processors.query.calcite.sql.generated",
+    class: "IgniteSqlParserImpl",
+
+    # List of additional classes and packages to import.
+    # Example: "org.apache.calcite.sql.*", "java.util.List".
+    imports: [
+      "java.util.UUID",
+      "org.apache.calcite.sql.SqlCreate",
+      "org.apache.calcite.sql.SqlDrop",
+      "org.apache.calcite.sql.SqlLiteral",
+      "org.apache.calcite.schema.ColumnStrategy",
+      "org.apache.ignite.internal.processors.query.calcite.util.IgniteResource",
+      "org.apache.ignite.lang.IgniteUuid",
+      "org.apache.calcite.sql.ddl.SqlDdlNodes",
+      "org.apache.ignite.internal.processors.query.calcite.sql.*",
+      "org.apache.ignite.internal.processors.query.calcite.sql.stat.*",
+    ]
+
+    # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is
+    # not a reserved keyword, add it to the 'nonReservedKeywords' section.
+    keywords: [
+      "IF"
+      "TEMPLATE"
+      "BACKUPS"
+      "AFFINITY_KEY"
+      "ATOMICITY"
+      "WRITE_SYNCHRONIZATION_MODE"
+      "CACHE_GROUP"
+      "CACHE_NAME"
+      "DATA_REGION"
+#     "KEY_TYPE" // already presented in Calcite
+      "VALUE_TYPE"
+      "ENCRYPTED"
+      "INDEX"
+      "PARALLEL"
+      "INLINE_SIZE"
+      "LOGGING"
+      "NOLOGGING"
+      "PASSWORD"
+      "KILL"
+      "SCAN"
+      "CONTINUOUS"
+      "SERVICE"
+      "COMPUTE"
+      "ASYNC"
+      "QUERY",
+      "STATISTICS",
+      "REFRESH",
+      "ANALYZE",
+      "MAX_CHANGED_PARTITION_ROWS_PERCENT",
+      "TOTAL"
+    ]
+
+    # List of non-reserved keywords to add;
+    # items in this list become non-reserved.
+    nonReservedKeywordsToAdd: [
+      # Keywords introduced by Ignite
+      "TEMPLATE"
+      "BACKUPS"
+      "AFFINITY_KEY"
+      "ATOMICITY"
+      "WRITE_SYNCHRONIZATION_MODE"
+      "CACHE_GROUP"
+      "CACHE_NAME"
+      "DATA_REGION"
+#     "KEY_TYPE" // already presented in Calcite
+      "VALUE_TYPE"
+      "ENCRYPTED"
+      "PARALLEL"
+      "INLINE_SIZE"
+      "LOGGING"
+      "NOLOGGING"
+      "PASSWORD"
+      "KILL"
+      "SCAN"
+      "CONTINUOUS"
+      "SERVICE"
+      "COMPUTE"
+      "ASYNC"
+      "QUERY"
+      "STATISTICS"
+      "REFRESH"
+      "ANALYZE"
+      "MAX_CHANGED_PARTITION_ROWS_PERCENT"
+      "TOTAL"
+
+      # Keywords reserved by Calcite, but not required to be reserved in Ignite.
+      "ABS"
+      "ALLOCATE"
+      "ALLOW"
+      "ARE"
+      "ARRAY_MAX_CARDINALITY"
+      "ASENSITIVE"
+      "ASOF"
+      "AT"
+      "ATOMIC"
+      "AUTHORIZATION"
+      "AVG"
+      "BEGIN"
+      "BEGIN_FRAME"
+      "BEGIN_PARTITION"
+      "BIGINT"
+      "BINARY"
+      "BIT"
+      "BLOB"
+      "BOOLEAN"
+      "CALL"
+      "CALLED"
+      "CARDINALITY"
+      "CASCADED"
+      "CEIL"
+      "CEILING"
+      "CHAR"
+      "CHARACTER"
+      "CHARACTER_LENGTH"
+      "CHAR_LENGTH"
+      "CHECK"
+      "CLASSIFIER"
+      "CLOB"
+      "CLOSE"
+      "COALESCE"
+      "COLLATE"
+      "COLLECT"
+      "COMMIT"
+      "CONDITION"
+      "CONNECT"
+      "CONTAINS"
+      "CONVERT"
+      "CORR"
+      "CORRESPONDING"
+      "COUNT"
+      "COVAR_POP"
+      "COVAR_SAMP"
+      "CUBE"
+      "CUME_DIST"
+      "CURRENT"
+      "CURRENT_CATALOG"
+      "CURRENT_DEFAULT_TRANSFORM_GROUP"
+      "CURRENT_PATH"
+      "CURRENT_ROLE"
+      "CURRENT_ROW"
+      "CURRENT_TRANSFORM_GROUP_FOR_TYPE"
+      "CURSOR"
+      "CYCLE"
+      "DATE"
+      "DATETIME"
+      "DAY"
+      "DEALLOCATE"
+      "DEC"
+      "DECIMAL"
+      "DECLARE"
+      "DEFINE"
+      "DENSE_RANK"
+      "DEREF"
+      "DESCRIBE"
+      "DETERMINISTIC"
+      "DISALLOW"
+      "DISCONNECT"
+      "DOUBLE"
+      "DYNAMIC"
+      "EACH"
+      "ELEMENT"
+      "EMPTY"
+      "END"
+      "END_EXEC"
+      "END_FRAME"
+      "END_PARTITION"
+      "EQUALS"
+      "ESCAPE"
+      "EVERY"
+      "EXEC"
+      "EXECUTE"
+      "EXP"
+      "EXTEND"
+      "EXTERNAL"
+      "EXTRACT"
+      "FILTER"
+      "FIRST_VALUE"
+      "FLOAT"
+      "FLOOR"
+      "FOREIGN"
+      "FRAME_ROW"
+      "FREE"
+      "FUNCTION"
+      "FUSION"
+      "GET"
+      "GLOBAL"
+      "GRANT"
+      "GROUPING"
+      "GROUPS"
+      "HOLD"
+      "HOUR"
+      "IDENTITY"
+      "IMPORT"
+      "INDICATOR"
+      "INITIAL"
+      "INOUT"
+      "INSENSITIVE"
+      "INT"
+      "INTEGER"
+      "INTERSECTION"
+      "JSON_ARRAY"
+      "JSON_ARRAYAGG"
+      "JSON_EXISTS"
+      "JSON_OBJECT"
+      "JSON_OBJECTAGG"
+      "JSON_QUERY"
+      "JSON_SCOPE"
+      "JSON_VALUE"
+      "LAG"
+      "LANGUAGE"
+      "LARGE"
+      "LAST_VALUE"
+      "LATERAL"
+      "LEAD"
+      "LIKE_REGEX"
+      "LN"
+      "LOCAL"
+      "LOWER"
+      "MATCH"
+      "MATCHES"
+      "MATCH_CONDITION"
+      "MATCH_NUMBER"
+      "MATCH_RECOGNIZE"
+      "MAX"
+      "MEASURE"
+      "MEASURES"
+      "MEMBER"
+      "METHOD"
+      "MIN"
+      "MINUTE"
+      "MOD"
+      "MODIFIES"
+      "MODULE"
+      "MONTH"
+      "MULTISET"
+      "NATIONAL"
+      "NCHAR"
+      "NCLOB"
+      "NEW"
+      "NEXT"
+      "NO"
+      "NONE"
+      "NORMALIZE"
+      "NTH_VALUE"
+      "NTILE"
+      "NULLIF"
+      "NUMERIC"
+      "OCCURRENCES_REGEX"
+      "OCTET_LENGTH"
+      "OF"
+      "OLD"
+      "OMIT"
+      "ONE"
+      "ONLY"
+      "OPEN"
+      "ORDINAL"
+      "OUT"
+      "OVER"
+      "OVERLAPS"
+      "OVERLAY"
+      "PARAMETER"
+      "PATTERN"
+      "PER"
+      "PERCENT"
+      "PERCENTILE_CONT"
+      "PERCENTILE_DISC"
+      "PERCENT_RANK"
+      "PERIOD"
+      "PERMUTE"
+      "PORTION"
+      "POSITION"
+      "POSITION_REGEX"
+      "POWER"
+      "PRECEDES"
+      "PRECISION"
+      "PREPARE"
+      "PREV"
+      "PROCEDURE"
+      "QUALIFY"
+      "RANGE"
+      "RANK"
+      "READS"
+      "REAL"
+      "RECURSIVE"
+      "REF"
+      "REFERENCES"
+      "REFERENCING"
+      "REGR_AVGX"
+      "REGR_AVGY"
+      "REGR_COUNT"
+      "REGR_INTERCEPT"
+      "REGR_R2"
+      "REGR_SLOPE"
+      "REGR_SXX"
+      "REGR_SXY"
+      "REGR_SYY"
+      "RELEASE"
+      "RESET"
+      "RESULT"
+      "RETURN"
+      "RETURNS"
+      "REVOKE"
+      "ROLLBACK"
+      "ROLLUP"
+      "ROWS"
+      "ROW_NUMBER"
+      "RUNNING"
+      "SAFE_CAST"
+      "SAFE_OFFSET"
+      "SAFE_ORDINAL"
+      "SAVEPOINT"
+      "SCOPE"
+      "SCROLL"
+      "SEARCH"
+      "SECOND"
+      "SEEK"
+      "SENSITIVE"
+      "SESSION_USER"
+      "SHOW"
+      "SIMILAR"
+      "SKIP_"
+      "SMALLINT"
+      "SPECIFIC"
+      "SPECIFICTYPE"
+      "SQL"
+      "SQLEXCEPTION"
+      "SQLSTATE"
+      "SQLWARNING"
+      "SQRT"
+      "START"
+      "STATIC"
+      "STDDEV_POP"
+      "STDDEV_SAMP"
+      "STREAM"
+      "SUBMULTISET"
+      "SUBSET"
+      "SUBSTRING"
+      "SUBSTRING_REGEX"
+      "SUCCEEDS"
+      "SUM"
+      "SYSTEM"
+      "SYSTEM_TIME"
+      "SYSTEM_USER"
+      "TABLESAMPLE"
+      "TIME"
+      "TIMESTAMP"
+      "TIMEZONE_HOUR"
+      "TIMEZONE_MINUTE"
+      "TINYINT"
+      "TRANSLATE"
+      "TRANSLATE_REGEX"
+      "TRANSLATION"
+      "TREAT"
+      "TRIGGER"
+      "TRIM"
+      "TRIM_ARRAY"
+      "TRUNCATE"
+      "TRY_CAST"
+      "UESCAPE"
+      "UNIQUE"
+      "UNKNOWN"
+      "UPPER"
+      "UPSERT"
+      "UUID"
+      "VALUE"
+      "VALUE_OF"
+      "VARBINARY"
+      "VARIANT"
+      "VARCHAR"
+      "VARYING"
+      "VAR_POP"
+      "VAR_SAMP"
+      "VERSIONING"
+      "WHENEVER"
+      "WIDTH_BUCKET"
+      "WINDOW"
+      "WITHIN"
+      "WITHOUT"
+      "YEAR"
+      "MONDAY"
+      "TUESDAY"
+      "WEDNESDAY"
+      "THURSDAY"
+      "FRIDAY"
+      "SATURDAY"
+      "SUNDAY"
+    ]
+
+    # List of non-reserved keywords to remove;
+    # items in this list become reserved.
+    nonReservedKeywordsToRemove: [
+    ]
+
+    # List of additional join types. Each is a method with no arguments.
+    # Example: "LeftSemiJoin".
+    joinTypes: [
+ #     "LeftSemiJoin"
+    ]
+
+    # List of methods for parsing builtin function calls.
+    # Return type of method implementation should be "SqlNode".
+    # Example: "DateFunctionCall()".
+    builtinFunctionCallMethods: [
+  #     "DateFunctionCall()"
+   #    "DateaddFunctionCall()"
+    ]
+
+    # List of methods for parsing custom SQL statements.
+    # Return type of method implementation should be 'SqlNode'.
+    # Example: "SqlShowDatabases()", "SqlShowTables()".
+    statementParserMethods: [
+      "SqlAlterTable()",
+      "SqlAlterUser()",
+      "SqlKillScanQuery()",
+      "SqlKillContinuousQuery()",
+      "SqlKillService()",
+      "SqlKillTransaction()",
+      "SqlKillComputeTask()",
+      "SqlKillQuery()",
+      "SqlCommitTransaction()",
+      "SqlRollbackTransaction()"
+      "SqlStatisticsAnalyze()"
+      "SqlStatisticsRefresh()"
+      "SqlStatisticsDrop()"
+    ]
+
+    # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
+    # Each must accept arguments "(SqlParserPos pos, boolean replace)".
+    # Example: "SqlCreateForeignSchema".
+    createStatementParserMethods: [
+      "SqlCreateTable",
+      "SqlCreateIndex",
+      "SqlCreateUser",
+      "SqlCreateView"
+    ]
+
+    # List of methods for parsing extensions to "DROP" calls.
+    # Each must accept arguments "(SqlParserPos pos)".
+    # Example: "SqlDropSchema".
+    dropStatementParserMethods: [
+      "SqlDropTable",
+      "SqlDropIndex",
+      "SqlDropUser",
+      "SqlDropView"
+    ]
+
+    # List of methods for parsing extensions to "ALTER <scope>" calls.
+    # Where scope is SYSTEM or SESSION.
+    # Each must accept arguments "(SqlParserPos pos, String scope)".
+    alterStatementParserMethods: [
+    ]
+
+    # List of methods for parsing custom literals.
+    # Return type of method implementation should be "SqlNode".
+    # Example: ParseJsonLiteral().
+    literalParserMethods: [
+    ]
+
+    # List of methods for parsing custom data types.
+    # Return type of method implementation should be "SqlTypeNameSpec".
+    # Example: SqlParseTimeStampZ().
+    dataTypeParserMethods: [
+    ]
+
+    # Binary operators tokens.
+    # Example: "< INFIX_CAST: \"::\" >".
+    binaryOperatorsTokens: [
+      "< INFIX_CAST: \"::\" >"
+    ]
+
+    # Binary operators initialization.
+    # Example: "InfixCast".
+    extraBinaryExpressions: [
+      "InfixCast"
+    ]
+
+    # List of files in @includes directory that have parser method
+    # implementations for parsing custom SQL statements, literals or types
+    # given as part of "statementParserMethods", "literalParserMethods" or
+    # "dataTypeParserMethods".
+    # Example: "parserImpls.ftl".
+    implementationFiles: [
+      "parserImpls.ftl"
+    ]
+
+    includePosixOperators: true
+    includeCompoundIdentifier: true
+    includeBraces: true
+    includeAdditionalDeclarations: false
+  }
+}
+
+freemarkerLinks: {
+  includes: includes/
+}

@@ -198,15 +198,6 @@ namespace ignite
                     break;
                 }
 
-                case OperationCallback::COMPUTE_JOB_EXECUTE:
-                {
-                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
-
-                    env->Get()->ComputeJobExecute(mem);
-
-                    break;
-                }
-
                 case OperationCallback::COMPUTE_JOB_DESTROY:
                 {
                     env->Get()->ComputeJobDestroy(val);
@@ -319,6 +310,15 @@ namespace ignite
 
             switch (type)
             {
+                case OperationCallback::COMPUTE_JOB_EXECUTE:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val1);
+
+                    env->Get()->ComputeJobExecute(mem);
+
+                    break;
+                }
+
                 case OperationCallback::COMPUTE_JOB_EXECUTE_LOCAL:
                 {
                     env->Get()->ComputeJobExecuteLocal(val1);
@@ -743,7 +743,7 @@ namespace ignite
 
         void IgniteEnvironment::OnStartCallback(int64_t memPtr, jobject proc)
         {
-            this->proc = jni::JavaGlobalRef(*ctx.Get(), proc);
+            this->proc = jni::JavaGlobalRef(ctx, proc);
 
             InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
             InteropInputStream stream(&mem);

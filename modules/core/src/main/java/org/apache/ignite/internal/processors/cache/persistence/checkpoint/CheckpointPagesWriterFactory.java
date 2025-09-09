@@ -21,12 +21,14 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
@@ -34,11 +36,11 @@ import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 /**
@@ -47,11 +49,11 @@ import org.jsr166.ConcurrentLinkedHashMap;
  * It holds all dependency which is needed for creation of checkpoint writer and recovery checkpoint writer.
  */
 public class CheckpointPagesWriterFactory {
+    /** Context. */
+    private final GridKernalContext ctx;
+
     /** Logger. */
     private final IgniteLogger log;
-
-    /** Snapshot manager. */
-    private final IgniteCacheSnapshotManager snapshotMgr;
 
     /** Data storage metrics. */
     private final DataStorageMetricsImpl persStoreMetrics;
@@ -69,8 +71,8 @@ public class CheckpointPagesWriterFactory {
     private final CheckpointPagesWriter.CheckpointPageWriter checkpointPageWriter;
 
     /**
+     * @param ctx Context.
      * @param logger Logger.
-     * @param snapshotMgr Snapshot manager.
      * @param checkpointPageWriter Checkpoint page writer.
      * @param persStoreMetrics Persistence metrics.
      * @param throttlingPolicy Throttling policy.
@@ -78,15 +80,15 @@ public class CheckpointPagesWriterFactory {
      * @param pageMemoryGroupResolver Page memory resolver.
      */
     CheckpointPagesWriterFactory(
+        GridKernalContext ctx,
         Function<Class<?>, IgniteLogger> logger,
-        IgniteCacheSnapshotManager snapshotMgr,
         CheckpointPagesWriter.CheckpointPageWriter checkpointPageWriter,
         DataStorageMetricsImpl persStoreMetrics,
         PageMemoryImpl.ThrottlingPolicy throttlingPolicy,
         ThreadLocal<ByteBuffer> threadBuf,
         IgniteThrowableFunction<Integer, PageMemoryEx> pageMemoryGroupResolver
     ) {
-        this.snapshotMgr = snapshotMgr;
+        this.ctx = ctx;
         this.log = logger.apply(getClass());
         this.persStoreMetrics = persStoreMetrics;
         this.threadBuf = threadBuf;
@@ -105,7 +107,7 @@ public class CheckpointPagesWriterFactory {
      * @param shutdownNow Checker of stop operation.
      * @return Instance of page checkpint writer.
      */
-    CheckpointPagesWriter build(
+    Runnable buildCheckpointPagesWriter(
         CheckpointMetricsTracker tracker,
         GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> cpPages,
         ConcurrentLinkedHashMap<PageStore, LongAdder> updStores,
@@ -120,7 +122,6 @@ public class CheckpointPagesWriterFactory {
             updStores,
             doneWriteFut,
             beforePageWrite,
-            snapshotMgr,
             log,
             persStoreMetrics,
             threadBuf,
@@ -133,13 +134,45 @@ public class CheckpointPagesWriterFactory {
     }
 
     /**
+     * @param recoveryDataFile File to write recovery data.
+     * @param cpPages List of pages to write.
+     * @param cacheGrpIds Set of cache groups to process (cache groups with WAL enabled).
+     * @param doneWriteFut Write done future.
+     * @param workProgressDispatcher Work progress dispatcher.
+     * @param curCpProgress Current checkpoint data.
+     * @param shutdownNow Checker of stop operation.
+     * @return Instance of page checkpint writer.
+     */
+    Runnable buildRecoveryDataWriter(
+        CheckpointRecoveryFile recoveryDataFile,
+        GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> cpPages,
+        Set<Integer> cacheGrpIds,
+        CountDownFuture doneWriteFut,
+        WorkProgressDispatcher workProgressDispatcher,
+        CheckpointProgressImpl curCpProgress,
+        BooleanSupplier shutdownNow
+    ) {
+        return new RecoveryDataWriter(
+            ctx,
+            recoveryDataFile,
+            cpPages,
+            cacheGrpIds,
+            doneWriteFut,
+            workProgressDispatcher,
+            log,
+            curCpProgress,
+            shutdownNow
+        );
+    }
+
+    /**
      * @param pages List of pages to write.
      * @param updStores Updated page store storage.
      * @param writePagesError Error storage.
      * @param cpPagesCnt Count of checkpointed pages.
      * @return Instance of page checkpint writer.
      */
-    Runnable buildRecovery(
+    Runnable buildRecoveryFinalizer(
         GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> pages,
         Collection<PageStore> updStores,
         AtomicReference<Throwable> writePagesError,
@@ -176,7 +209,7 @@ public class CheckpointPagesWriterFactory {
 
                     // Write page content to page store via pageStoreWriter.
                     // Tracker is null, because no need to track checkpoint metrics on recovery.
-                    pageMem.checkpointWritePage(res.getValue(), tmpWriteBuf, pageStoreWriter, null);
+                    pageMem.checkpointWritePage(res.getValue(), tmpWriteBuf, pageStoreWriter, null, false);
 
                     // Add number of handled pages.
                     pagesWritten++;

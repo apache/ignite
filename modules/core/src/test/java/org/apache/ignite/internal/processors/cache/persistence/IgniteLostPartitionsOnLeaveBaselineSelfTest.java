@@ -21,6 +21,7 @@ import java.util.Arrays;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -87,7 +88,7 @@ public class IgniteLostPartitionsOnLeaveBaselineSelfTest extends GridCommonAbstr
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        ((TcpDiscoverySpi) cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         return cfg;
     }
@@ -136,7 +137,7 @@ public class IgniteLostPartitionsOnLeaveBaselineSelfTest extends GridCommonAbstr
             final IgniteEx gridFirst = startGrid(0);
             startGrid(1);
 
-            gridFirst.cluster().active(true);
+            gridFirst.cluster().state(ClusterState.ACTIVE);
 
             gridFirst.getOrCreateCaches(Arrays.asList(
                 cacheConfiguration("cache-no-persistence", PARTITIONED, ATOMIC, "no-persistence"),
@@ -160,7 +161,8 @@ public class IgniteLostPartitionsOnLeaveBaselineSelfTest extends GridCommonAbstr
 
             assertTrue("List of lost partitions for cache with persistence should not be empty.",
                 !cachePersistence.context().topology().lostPartitions().isEmpty());
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }

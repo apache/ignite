@@ -29,6 +29,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -38,7 +39,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -46,6 +51,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 
 /**
  *
@@ -115,12 +122,12 @@ public class CachePartitionLossWithPersistenceTest extends GridCommonAbstractTes
     @Test
     public void testResetOnLesserTopologyAfterRestart() throws Exception {
         IgniteEx crd = startGrids(5);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         stopAllGrids();
 
         crd = startGrids(2);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         resetBaselineTopology();
 
@@ -175,7 +182,7 @@ public class CachePartitionLossWithPersistenceTest extends GridCommonAbstractTes
         lossPlc = READ_WRITE_SAFE;
 
         IgniteEx crd = startGrids(2);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         startGrid(2);
         resetBaselineTopology();
@@ -201,7 +208,7 @@ public class CachePartitionLossWithPersistenceTest extends GridCommonAbstractTes
 
         final Collection<Integer> lostParts = crd.cache(DEFAULT_CACHE_NAME).lostPartitions();
 
-        assertEquals(PARTS_CNT, cachex.context().topology().localPartitions().size() + lostParts.size());
+        assertEquals(PARTS_CNT, cachex.context().topology().localPartitionsNumber() + lostParts.size());
 
         assertTrue(lostParts.contains(part));
 
@@ -221,6 +228,10 @@ public class CachePartitionLossWithPersistenceTest extends GridCommonAbstractTes
             });
         }
 
+        // Check that all lost partitions have the same state on all cluster nodes.
+        for (Integer lostPart : lostParts)
+            checkLostPartitionAcrossCluster(DEFAULT_CACHE_NAME, lostPart);
+
         if (partResetMode == 0)
             crd.resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
 
@@ -228,8 +239,13 @@ public class CachePartitionLossWithPersistenceTest extends GridCommonAbstractTes
 
         final Collection<Integer> g2LostParts = g2.cache(DEFAULT_CACHE_NAME).lostPartitions();
 
-        if (partResetMode != 0)
+        if (partResetMode != 0) {
+            // Check that all lost partitions have the same state on all cluster nodes.
+            for (Integer lostPart : lostParts)
+                checkLostPartitionAcrossCluster(DEFAULT_CACHE_NAME, lostPart);
+
             assertEquals(lostParts, g2LostParts);
+        }
 
         if (partResetMode == 1)
             crd.resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));
@@ -259,6 +275,60 @@ public class CachePartitionLossWithPersistenceTest extends GridCommonAbstractTes
         for (int p = 0; p < PARTS_CNT; p++) {
             for (Ignite ignite : G.allGrids())
                 assertEquals("Partition " + p, 0, ignite.cache(DEFAULT_CACHE_NAME).get(p));
+        }
+    }
+
+    /**
+     * Checks partition states on all nodes.
+     *
+     * @param cacheName Cache name to check.
+     * @param partId Partition to check.
+     * @return {@code true} if partition state of the given partition equals to {@code state} on all nodes.
+     */
+    public static void checkLostPartitionAcrossCluster(String cacheName, int partId) {
+        for (Ignite grid : G.allGrids()) {
+            IgniteEx g = (IgniteEx)grid;
+
+            boolean affNode = CU.affinityNode(
+                g.localNode(),
+                g.cache(cacheName).getConfiguration(CacheConfiguration.class).getNodeFilter());
+
+            // skip non affinity nodes
+            if (!affNode)
+                continue;
+
+            GridDhtPartitionTopology top = g.context().cache().cacheGroup(CU.cacheId(cacheName)).topology();
+
+            GridDhtLocalPartition p = top.localPartition(partId);
+
+            if (p != null) {
+                GridDhtPartitionState actualState = p.state();
+
+                // check lost partitions
+                if (!top.lostPartitions().contains(partId)) {
+                    fail("Unexpected partition state [partId=" + partId + ", nodeId=" + g.localNode().id() +
+                        ", actualPartState=" + actualState + ", expectedPartState=" + LOST + ", markedAsLost=false]");
+                }
+
+                // check actual partition state
+                if (actualState != LOST && actualState != EVICTED) {
+                    fail("Unexpected partition state [partId=" + partId + ", nodeId=" + g.localNode().id() +
+                        ", actualPartState=" + actualState + ", expectedPartState=" + LOST + ", markedAsLost=true]");
+                }
+
+                // check node2part mapping
+                for (Ignite node : G.allGrids()) {
+                    IgniteEx n = (IgniteEx)node;
+
+                    GridDhtPartitionState s = top.partitionState(n.localNode().id(), partId);
+
+                    if (s != LOST && s != EVICTED) {
+                        fail("Unexpected partition state [partId=" + partId + ", nodeId=" + g.localNode().id() +
+                            ", node2partNodeId=" + n.localNode().id() +
+                            ", node2partState=" + s + ", expectedPartState=" + LOST + ", markedAsLost=true]");
+                    }
+                }
+            }
         }
     }
 }

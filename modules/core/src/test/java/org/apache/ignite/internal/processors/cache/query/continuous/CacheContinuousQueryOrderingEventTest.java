@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.CacheException;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -55,17 +54,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -95,8 +91,6 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         MemoryEventStorageSpi storeSpi = new MemoryEventStorageSpi();
         storeSpi.setExpireCount(100);
@@ -158,36 +152,6 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     @Test
     public void testTxOnheapWithoutBackupFullSync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, FULL_SYNC);
-
-        doOrderingTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxOnheapTwoBackup() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
-
-        doOrderingTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxOnheapWithoutBackup() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, PRIMARY_SYNC);
-
-        doOrderingTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxOnheapWithoutBackupFullSync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
 
         doOrderingTest(ccfg, false);
     }
@@ -285,36 +249,6 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxOnheapTwoBackupAsync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT, PRIMARY_SYNC);
-
-        doOrderingTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxOnheapAsync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, PRIMARY_SYNC);
-
-        doOrderingTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxOnheapAsyncFullSync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
-
-        doOrderingTest(ccfg, true);
-    }
-
-    /**
      * @param ccfg Cache configuration.
      * @param async Async filter.
      * @throws Exception If failed.
@@ -324,6 +258,8 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         final boolean async)
         throws Exception {
         ignite(0).createCache(ccfg);
+
+        awaitCacheOnClient(grid(NODES - 1), ccfg.getName());
 
         List<QueryCursor<?>> qries = new ArrayList<>();
 
@@ -418,10 +354,6 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
                                     tx.commit();
 
                                 committed = true;
-                            }
-                            catch (CacheException e) {
-                                assertTrue(e.getCause() instanceof TransactionSerializationException);
-                                assertEquals(atomicityMode(cache), TRANSACTIONAL_SNAPSHOT);
                             }
                             finally {
                                 if (tx != null)
@@ -705,7 +637,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            QueryTestValue that = (QueryTestValue) o;
+            QueryTestValue that = (QueryTestValue)o;
 
             return val1.equals(that.val1) && val2.equals(that.val2);
         }

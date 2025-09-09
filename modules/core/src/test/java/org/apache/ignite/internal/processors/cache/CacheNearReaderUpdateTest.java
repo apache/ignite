@@ -40,13 +40,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -72,19 +70,11 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
         return cfg;
-    }
-
-    /** */
-    @Before
-    public void beforeCacheNearReaderUpdateTest() {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */
@@ -264,7 +254,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
 
                     if (getNode.configuration().isClientMode() ||
                         cache.getConfiguration(CacheConfiguration.class).getNearConfiguration() != null)
-                    assertNotNull(getNode.cache(cacheName).localPeek(key));
+                        assertNotNull(getNode.cache(cacheName).localPeek(key));
                 }
 
                 checkValue(key, val, cacheName);
@@ -333,9 +323,6 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         int backups,
         boolean storeEnabled,
         boolean nearCache) {
-        if (storeEnabled)
-            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);

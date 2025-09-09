@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeatur
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -41,7 +40,7 @@ import org.apache.ignite.plugin.security.SecurityException;
  * Sql query request.
  */
 @SuppressWarnings("unchecked")
-public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
+public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest implements ClientTxAwareRequest {
     /** Query. */
     private final SqlFieldsQuery qry;
 
@@ -60,7 +59,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
      * @param reader Reader.
      * @param protocolCtx Protocol context.
      */
-    public ClientCacheSqlFieldsQueryRequest(BinaryRawReaderEx reader,
+    public ClientCacheSqlFieldsQueryRequest(BinaryReaderEx reader,
         ClientProtocolContext protocolCtx) {
         super(reader);
 
@@ -77,7 +76,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
         boolean enforceJoinOrder = reader.readBoolean();
         boolean collocated = reader.readBoolean();
         boolean lazy = reader.readBoolean();
-        int timeout = (int) reader.readLong();
+        int timeout = (int)reader.readLong();
         includeFieldNames = reader.readBoolean();
 
         SqlFieldsQuery qry = stmtType == JdbcStatementType.ANY_STATEMENT_TYPE
@@ -111,11 +110,13 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
 
                 for (int i = 0; i < partCnt; i++)
                     partitions[i] = reader.readInt();
-            } else
+            }
+            else
                 partitions = null;
 
             updateBatchSize = reader.readInt();
-        } else {
+        }
+        else {
             partitions = null;
             updateBatchSize = null;
         }
@@ -165,13 +166,8 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest imp
 
             SecurityException securityEx = X.cause(e, SecurityException.class);
 
-            if (securityEx != null) {
-                throw new IgniteClientException(
-                    ClientStatus.SECURITY_VIOLATION,
-                    "Client is not authorized to perform this operation",
-                    securityEx
-                );
-            }
+            if (securityEx != null)
+                throw IgniteClientException.wrapAuthorizationExeption(securityEx);
 
             throw e;
         }

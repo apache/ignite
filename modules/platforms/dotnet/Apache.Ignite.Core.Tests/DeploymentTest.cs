@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Compute;
@@ -143,6 +144,8 @@ namespace Apache.Ignite.Core.Tests
             // Start a node and make sure it works properly
             var exePath = Path.Combine(dllFolder, "Apache.Ignite.exe");
 
+            Assert.IsTrue(File.Exists(exePath));
+
             var args = new List<string>
             {
                 "-springConfigUrl=" + springFile,
@@ -157,9 +160,15 @@ namespace Apache.Ignite.Core.Tests
                 args.Add("-jvmClasspath=" + string.Join(";", Directory.GetFiles(jarFolder)));
             }
 
-            var proc = IgniteProcess.Start(exePath, string.Empty, args: args.ToArray());
+            var reader = new ListDataReader();
+            var proc = IgniteProcess.Start(exePath, string.Empty, reader, args.ToArray());
 
             Assert.IsNotNull(proc);
+
+            if (proc.WaitForExit(300))
+            {
+                Assert.Fail("Node failed to start: " + string.Join("\n", reader.GetOutput()));
+            }
 
             VerifyNodeStarted(exePath);
         }
@@ -197,11 +206,22 @@ namespace Apache.Ignite.Core.Tests
             }
 
             // Copy .NET binaries
-            foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly, GetType().Assembly})
+            foreach (var type in new[]
             {
+                typeof(IgniteRunner), typeof(Ignition), GetType(), typeof(ConfigurationManager)
+            })
+            {
+                var asm = type.Assembly;
                 Assert.IsNotNull(asm.Location);
                 File.Copy(asm.Location, Path.Combine(folder, Path.GetFileName(asm.Location)));
             }
+
+            // ReSharper disable once AssignNullToNotNullAttribute
+            var cfgMan = Path.Combine(
+                Path.GetDirectoryName(typeof(Ignition).Assembly.Location),
+                "System.Configuration.ConfigurationManager.dll");
+
+            File.Copy(cfgMan, Path.Combine(folder, Path.GetFileName(cfgMan)));
         }
 
         /// <summary>

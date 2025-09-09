@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
@@ -64,7 +65,7 @@ public class QueryJoinWithDifferentNodeFiltersTest extends AbstractIndexingCommo
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setIndexedTypes(Integer.class, Person.class)
-            );
+        );
 
         if (getTestIgniteInstanceName(0).equals(igniteInstanceName) || getTestIgniteInstanceName(1).equals(igniteInstanceName))
             cfg.setUserAttributes(F.asMap("DATA", "true"));
@@ -94,7 +95,7 @@ public class QueryJoinWithDifferentNodeFiltersTest extends AbstractIndexingCommo
 
         Ignite client = startClientGrid("client");
 
-        client.cluster().active(true);
+        client.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = client.cache(CACHE_NAME);
         IgniteCache<Object, Object> cache2 = client.cache(CACHE_NAME_2);

@@ -24,6 +24,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
  * Wraps Person class.
  */
 public class PersonWrapper {
+    /** */
     public static class Person implements Serializable {
         /** */
         @QuerySqlField

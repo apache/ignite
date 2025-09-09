@@ -34,6 +34,9 @@ namespace Apache.Ignite.Core.Tests
         /** */
         private const string ClassPlatformStartIgniteUtils = "org/apache/ignite/platform/PlatformStartIgniteUtils";
 
+        /** */
+        private const string ClassPlatformTestUtils = "org/apache/ignite/platform/PlatformTestUtils";
+
         /// <summary>
         /// Suspend Ignite threads for the given grid.
         /// </summary>
@@ -56,10 +59,11 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="file">Executable name.</param>
         /// <param name="arg1">Argument.</param>
         /// <param name="arg2">Argument.</param>
+        /// <param name="envVars">Environment variables. Pairs are separated by |, key and value by #.</param>
         /// <param name="workDir">Work directory.</param>
         /// <param name="waitForOutput">A string to look for in the output.</param>
         public static unsafe void StartProcess(
-            string file, string arg1, string arg2, string workDir, string waitForOutput)
+            string file, string arg1, string arg2, string envVars, string workDir, string waitForOutput)
         {
             Debug.Assert(file != null);
             Debug.Assert(arg1 != null);
@@ -70,20 +74,22 @@ namespace Apache.Ignite.Core.Tests
             using (var cls = env.FindClass(ClassPlatformProcessUtils))
             {
                 var methodId = env.GetStaticMethodId(cls, "startProcess",
-                    "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+                    "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
 
-                using (var fileRef = env.NewStringUtf(file))
-                using (var arg1Ref = env.NewStringUtf(arg1))
-                using (var arg2Ref = env.NewStringUtf(arg2))
-                using (var workDirRef = env.NewStringUtf(workDir))
-                using (var waitForOutputRef = env.NewStringUtf(waitForOutput))
+                using (var fileRef = env.NewString(file))
+                using (var arg1Ref = env.NewString(arg1))
+                using (var arg2Ref = env.NewString(arg2))
+                using (var envRef = env.NewString(envVars))
+                using (var workDirRef = env.NewString(workDir))
+                using (var waitForOutputRef = env.NewString(waitForOutput))
                 {
-                    var methodArgs = stackalloc long[5];
+                    var methodArgs = stackalloc long[6];
                     methodArgs[0] = fileRef.Target.ToInt64();
                     methodArgs[1] = arg1Ref.Target.ToInt64();
                     methodArgs[2] = arg2Ref.Target.ToInt64();
-                    methodArgs[3] = workDirRef.Target.ToInt64();
-                    methodArgs[4] = waitForOutputRef == null ? 0 : waitForOutputRef.Target.ToInt64();
+                    methodArgs[3] = envRef.Target.ToInt64();
+                    methodArgs[4] = workDirRef.Target.ToInt64();
+                    methodArgs[5] = waitForOutputRef == null ? 0 : waitForOutputRef.Target.ToInt64();
 
                     env.CallStaticVoidMethod(cls, methodId, methodArgs);
                 }
@@ -117,6 +123,16 @@ namespace Apache.Ignite.Core.Tests
             CallStringMethod(ClassPlatformStartIgniteUtils, "stop", "(Ljava/lang/String;)V", name);
         }
 
+        public static int GetJavaMajorVersion()
+        {
+            return CallIntMethod(ClassPlatformTestUtils, "majorJavaVersion", "()I");
+        }
+
+        public static void Println(string str)
+        {
+            CallStringMethod(ClassPlatformTestUtils, "println", "(Ljava/lang/String;)V", str);
+        }
+
         /** */
         private static unsafe void CallStringMethod(string className, string methodName, string methodSig, string arg)
         {
@@ -124,7 +140,7 @@ namespace Apache.Ignite.Core.Tests
             using (var cls = env.FindClass(className))
             {
                 var methodId = env.GetStaticMethodId(cls, methodName, methodSig);
-                using (var gridNameRef = env.NewStringUtf(arg))
+                using (var gridNameRef = env.NewString(arg))
                 {
                     var args = stackalloc long[1];
                     args[0] = gridNameRef.Target.ToInt64();
@@ -154,6 +170,17 @@ namespace Apache.Ignite.Core.Tests
                 var methodId = env.GetStaticMethodId(cls, methodName, methodSig);
                 var res = env.CallStaticObjectMethod(cls, methodId);
                 return env.JStringToString(res.Target);
+            }
+        }
+
+        /** */
+        private static unsafe int CallIntMethod(string className, string methodName, string methodSig)
+        {
+            var env = Jvm.Get().AttachCurrentThread();
+            using (var cls = env.FindClass(className))
+            {
+                var methodId = env.GetStaticMethodId(cls, methodName, methodSig);
+                return env.CallStaticIntMethod(cls, methodId);
             }
         }
     }

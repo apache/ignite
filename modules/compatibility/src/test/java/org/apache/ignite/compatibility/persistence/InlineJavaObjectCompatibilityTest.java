@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -31,13 +30,21 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.compatibility.IgniteReleasedVersion;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_12_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_6_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
+import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 
 /**
  * Tests that upgrade version on persisted inline index is successfull.
@@ -67,37 +74,20 @@ public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilit
     /** Test run configurations: Ignite version, Inline size configuration. */
     @Parameterized.Parameters(name = "ver={0}, cfgInlineSize={1}")
     public static Collection<Object[]> runConfig() {
-        return Arrays.asList(new Object[][] {
-            /** 2.6.0 is a last version where POJO inlining isn't enabled. */
-            {"2.6.0", false},
-            {"2.6.0", true},
-
-            {"2.7.0", false},
-            {"2.7.0", true},
-
-            {"2.7.6", false},
-            {"2.7.6", true},
-
-            {"2.8.0", false},
-            {"2.8.0", true},
-
-            {"2.8.1", false},
-            {"2.8.1", true},
-
-            {"2.9.0", false},
-            {"2.9.0", true},
-
-            {"2.9.1", false},
-            {"2.9.1", true},
-
-            {"2.10.0", false},
-            {"2.10.0", true}
-        });
+        /** 2.6.0 is a last version where POJO inlining isn't enabled. */
+        return cartesianProduct(since(VER_2_6_0), F.asList(false, true));
     }
 
     /** */
     @Test
     public void testQueryOldInlinedIndex() throws Exception {
+        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
+
+        if (majorJavaVer > 11) {
+            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
+                VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) < 0);
+        }
+
         PostStartupClosure closure = cfgInlineSize ? new PostStartupClosureSized() : new PostStartupClosure();
         String idxName = cfgInlineSize ? INDEX_SIZED_NAME : INDEX_NAME;
 
@@ -277,7 +267,7 @@ public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilit
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object other) {
-            return val == ((EntityValue) other).val;
+            return val == ((EntityValue)other).val;
         }
 
         /** Enable comparison of EntityValue objects by the {@link #val} field. */

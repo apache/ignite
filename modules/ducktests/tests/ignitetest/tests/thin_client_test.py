@@ -25,7 +25,6 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 
-# pylint: disable=W0223
 class ThinClientTest(IgniteTest):
     """
     cluster - cluster size.
@@ -49,7 +48,7 @@ class ThinClientTest(IgniteTest):
 
         ignite = IgniteService(self.test_context, server_config, 1)
 
-        addresses = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
+        addresses = [ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)]
 
         thin_clients = IgniteApplicationService(self.test_context,
                                                 IgniteThinClientConfiguration(addresses=addresses,

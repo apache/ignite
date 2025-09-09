@@ -27,7 +27,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpi;
@@ -220,8 +219,8 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            registry.registerExtension(MessageFactory.class, new MessageFactoryProvider() {
-                @Override public void registerAll(IgniteMessageFactory factory) {
+            registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
+                @Override public void registerAll(MessageFactory factory) {
                     factory.register(DIRECT_TYPE, GridIoUserMessage::new);
                 }
             });

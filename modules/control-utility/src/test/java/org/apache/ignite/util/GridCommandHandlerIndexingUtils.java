@@ -149,14 +149,13 @@ public class GridCommandHandlerIndexingUtils {
     public static void createAndFillCache(
         Ignite ignite,
         String cacheName,
-        String grpName,
+        @Nullable String grpName,
         @Nullable String dataRegionName,
         Map<QueryEntity, Function<Random, Object>> qryEntities,
         int cnt
     ) {
         requireNonNull(ignite);
         requireNonNull(cacheName);
-        requireNonNull(grpName);
         requireNonNull(qryEntities);
 
         ignite.createCache(new CacheConfiguration<>()
@@ -264,10 +263,10 @@ public class GridCommandHandlerIndexingUtils {
 
         GridCacheContext<K, V> cacheCtx = internalCache.context();
 
-        GridDhtLocalPartition locPart = cacheCtx.topology().localPartitions().get(partId);
+        GridDhtLocalPartition locPart = cacheCtx.topology().localPartition(partId);
         GridIterator<CacheDataRow> cacheDataGridIter = cacheCtx.group().offheap().partitionIterator(locPart.id());
 
-        GridQueryProcessor qryProcessor = internalCache.context().kernalContext().query();
+        GridQueryProcessor qryProc = internalCache.context().kernalContext().query();
 
         while (cacheDataGridIter.hasNextX()) {
             CacheDataRow cacheDataRow = cacheDataGridIter.nextX();
@@ -278,7 +277,7 @@ public class GridCommandHandlerIndexingUtils {
             cacheCtx.shared().database().checkpointReadLock();
 
             try {
-                qryProcessor.remove(cacheCtx, cacheDataRow);
+                qryProc.remove(cacheCtx, cacheDataRow);
             }
             finally {
                 cacheCtx.shared().database().checkpointReadUnlock();
@@ -298,8 +297,8 @@ public class GridCommandHandlerIndexingUtils {
         final Ignite ignite,
         final String cacheName,
         final String grpName,
-        final Collection<QueryEntity> entities)
-    {
+        final Collection<QueryEntity> entities
+    ) {
         assert nonNull(ignite);
         assert nonNull(cacheName);
 

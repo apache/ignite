@@ -219,6 +219,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     @Test
     public void testManyTables() {
         Ignite ignite = ignite(0);
@@ -228,7 +229,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         queryProcessor(ignite).querySqlFields(new SqlFieldsQuery(
             "INSERT INTO Person(ID, NAME) VALUES (1, 'Ed'), (2, 'Ann'), (3, 'Emma')"), true);
 
-        SqlFieldsQuery selectQuery = new SqlFieldsQuery(
+        SqlFieldsQuery selectQry = new SqlFieldsQuery(
             "SELECT P1.NAME " +
             "FROM PERSON P1 " +
             "JOIN PERSON P2 ON P1.ID = P2.ID " +
@@ -240,7 +241,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
             "JOIN PERSON P8 ON P1.ID = P8.ID " +
             "ORDER BY P1.NAME")
             .setDistributedJoins(true).setEnforceJoinOrder(false);
-        List<List<?>> res = queryProcessor(ignite).querySqlFields(selectQuery, true).getAll();
+        List<List<?>> res = queryProcessor(ignite).querySqlFields(selectQry, true).getAll();
 
         assertEquals(3, res.size());
         assertThat(res.get(0).get(0), is("Ann"));

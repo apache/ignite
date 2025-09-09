@@ -23,6 +23,7 @@ import java.nio.file.OpenOption;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,6 +35,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.containsBinaryMetaPath;
 
 /**
  *
@@ -89,7 +92,7 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
 
         FailingFileIOFactory.setUnluckyConsistentId(ignite1.localNode().consistentId().toString());
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         final IgniteCache cache = ignite0.cache(DEFAULT_CACHE_NAME);
 
@@ -131,7 +134,7 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             if (unluckyConsistentId.get() != null
                 && file.getAbsolutePath().contains(unluckyConsistentId.get())
-                && file.getAbsolutePath().contains(DataStorageConfiguration.DFLT_BINARY_METADATA_PATH))
+                && containsBinaryMetaPath(file))
                 throw new IOException("No space left on device");
 
             return delegateFactory.create(file, modes);

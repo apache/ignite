@@ -147,8 +147,8 @@ public abstract class JdbcAbstractBenchmark extends IgniteAbstractBenchmark {
             }
         }
 
-        for (String query : queries) {
-            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+        for (String qry : queries) {
+            try (PreparedStatement stmt = conn.prepareStatement(qry)) {
                 stmt.executeUpdate();
             }
         }

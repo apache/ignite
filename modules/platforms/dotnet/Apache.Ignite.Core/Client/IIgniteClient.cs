@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Client
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Compute;
     using Apache.Ignite.Core.Client.Datastream;
+    using Apache.Ignite.Core.Client.DataStructures;
     using Apache.Ignite.Core.Client.Services;
     using Apache.Ignite.Core.Client.Transactions;
 
@@ -189,5 +190,46 @@ namespace Apache.Ignite.Core.Client
         /// <param name="options">Data streamer options.</param>
         /// <returns>Data streamer.</returns>
         IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, DataStreamerClientOptions<TK, TV> options);
+
+        /// <summary>
+        /// Gets an atomic long with the specified name.
+        /// Creates a new atomic long if it does not exist and <paramref name="create"/> is true.
+        /// </summary>
+        /// <param name="name">Name of the atomic long.</param>
+        /// <param name="initialValue">
+        /// Initial value for the atomic long. Ignored if <paramref name="create"/> is false.
+        /// </param>
+        /// <param name="create">Flag indicating whether atomic long should be created if it does not exist.</param>
+        /// <returns>Atomic long instance with the specified name,
+        /// or null if it does not exist and <paramref name="create"/> is <c>false</c>.</returns>
+        IAtomicLongClient GetAtomicLong(string name, long initialValue, bool create);
+
+        /// <summary>
+        /// Gets an atomic long with the specified name.
+        /// Creates a new atomic long if it does not exist and <paramref name="create"/> is true.
+        /// </summary>
+        /// <param name="name">Name of the atomic long.</param>
+        /// <param name="configuration">Configuration.</param>
+        /// <param name="initialValue">
+        /// Initial value for the atomic long. Ignored if <paramref name="create"/> is false.
+        /// </param>
+        /// <param name="create">Flag indicating whether atomic long should be created if it does not exist.</param>
+        /// <returns>Atomic long instance with the specified name,
+        /// or null if it does not exist and <paramref name="create"/> is <c>false</c>.</returns>
+        IAtomicLongClient GetAtomicLong(
+            string name,
+            AtomicClientConfiguration configuration,
+            long initialValue,
+            bool create);
+
+        /// <summary>
+        /// Gets or creates an Ignite set with the specified name.
+        /// </summary>
+        /// <param name="name">Name.</param>
+        /// <param name="configuration">Configuration. When null, gets and existing set by name;
+        /// otherwise, creates a new set with the specified configuration.</param>
+        /// <typeparam name="T">Element type.</typeparam>
+        /// <returns>Ignite set.</returns>
+        IIgniteSetClient<T> GetIgniteSet<T>(string name, CollectionClientConfiguration configuration);
     }
 }

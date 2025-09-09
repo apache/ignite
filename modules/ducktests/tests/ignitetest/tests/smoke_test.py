@@ -19,7 +19,7 @@ This module contains smoke tests that checks that services work
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.spark import SparkService
+from ignitetest.services.kafka.kafka import KafkaService, KafkaSettings
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.zk.zookeeper import ZookeeperService
@@ -28,7 +28,6 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
 
-# pylint: disable=W0223
 class SmokeServicesTest(IgniteTest):
     """
     Tests services implementations
@@ -68,15 +67,6 @@ class SmokeServicesTest(IgniteTest):
         app.stop()
         ignite.stop()
 
-    @cluster(num_nodes=2)
-    def test_spark_start_stop(self):
-        """
-        Test that SparkService correctly start and stop
-        """
-        spark = SparkService(self.test_context, num_nodes=2)
-        spark.start()
-        spark.stop()
-
     @cluster(num_nodes=3)
     def test_zk_start_stop(self):
         """
@@ -84,4 +74,21 @@ class SmokeServicesTest(IgniteTest):
         """
         zookeeper = ZookeeperService(self.test_context, num_nodes=3)
         zookeeper.start()
+        zookeeper.stop()
+
+    @cluster(num_nodes=6)
+    def test_kafka_start_stop(self):
+        """
+        Test that KafkaService correctly start and stop
+        """
+        zookeeper = ZookeeperService(self.test_context, num_nodes=3)
+        zookeeper.start()
+
+        kafka_settings = KafkaSettings(zookeeper_connection_string=zookeeper.connection_string())
+        kafka = KafkaService(self.test_context, num_nodes=3, settings=kafka_settings)
+        kafka.start()
+
+        kafka.create_topic("topic")
+
+        kafka.stop()
         zookeeper.stop()

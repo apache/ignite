@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
@@ -46,9 +46,6 @@ import org.jetbrains.annotations.Nullable;
  * Parent of all cache messages.
  */
 public abstract class GridCacheMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Maximum number of cache lookup indexes. */
     public static final int MAX_CACHE_MSG_LOOKUP_INDEX = 7;
 
@@ -62,30 +59,29 @@ public abstract class GridCacheMessage implements Message {
     private static final long NULL_MSG_ID = -1;
 
     /** ID of this message. */
+    @Order(value = 0, method = "messageId")
     private long msgId = NULL_MSG_ID;
 
     /** */
     @GridToStringInclude
+    @Order(value = 1, method = "deployInfo")
     private GridDeploymentInfoBean depInfo;
 
     /** */
     @GridToStringInclude
+    @Order(value = 2, method = "lastAffinityChangedTopologyVersion")
     private @Nullable AffinityTopologyVersion lastAffChangedTopVer;
 
     /** */
-    @GridDirectTransient
     protected boolean addDepInfo;
 
     /** Force addition of deployment info regardless of {@code addDepInfo} flag value.*/
-    @GridDirectTransient
     protected boolean forceAddDepInfo;
 
     /** */
-    @GridDirectTransient
     private IgniteCheckedException err;
 
     /** */
-    @GridDirectTransient
     private boolean skipPrepare;
 
     /**
@@ -175,7 +171,7 @@ public abstract class GridCacheMessage implements Message {
      *
      * @param msgId New message ID.
      */
-    void messageId(long msgId) {
+    public void messageId(long msgId) {
         this.msgId = msgId;
     }
 
@@ -275,8 +271,16 @@ public abstract class GridCacheMessage implements Message {
      * @return Preset deployment info.
      * @see GridCacheDeployable#deployInfo()
      */
-    public GridDeploymentInfo deployInfo() {
+    public GridDeploymentInfoBean deployInfo() {
         return depInfo;
+    }
+
+    /**
+     * @param depInfo Preset deployment info.
+     * @see GridCacheDeployable#deployInfo()
+     */
+    public void deployInfo(GridDeploymentInfoBean depInfo) {
+        this.depInfo = depInfo;
     }
 
     /**
@@ -286,7 +290,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -298,7 +302,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -435,15 +439,17 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     protected final void unmarshalTx(Iterable<IgniteTxEntry> txEntries,
-        boolean near,
         GridCacheSharedContext ctx,
         ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;
 
         if (txEntries != null) {
-            for (IgniteTxEntry e : txEntries)
-                e.unmarshal(ctx, near, ldr);
+            for (IgniteTxEntry e : txEntries) {
+                e.prepareUnmarshal(ctx, topologyVersion(), false);
+
+                e.unmarshal(ctx, false, ldr);
+            }
         }
     }
 
@@ -586,9 +592,8 @@ public abstract class GridCacheMessage implements Message {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public final void finishUnmarshalCacheObjects(@Nullable List<? extends CacheObject> col,
         GridCacheContext ctx,
-        ClassLoader ldr)
-        throws IgniteCheckedException
-    {
+        ClassLoader ldr
+    ) throws IgniteCheckedException {
         if (col == null)
             return;
 
@@ -610,9 +615,8 @@ public abstract class GridCacheMessage implements Message {
      */
     protected final void finishUnmarshalCacheObjects(@Nullable Collection<? extends CacheObject> col,
         GridCacheContext ctx,
-        ClassLoader ldr)
-        throws IgniteCheckedException
-    {
+        ClassLoader ldr
+    ) throws IgniteCheckedException {
         if (col == null)
             return;
 
@@ -656,21 +660,17 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @return Logger.
      */
-    public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+    public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.messageLogger();
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        // TODO: Safe to remove only after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -678,19 +678,19 @@ public abstract class GridCacheMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("depInfo", depInfo))
+                if (!writer.writeMessage(depInfo))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeAffinityTopologyVersion("lastAffChangedTopVer", lastAffChangedTopVer))
+                if (!writer.writeAffinityTopologyVersion(lastAffChangedTopVer))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("msgId", msgId))
+                if (!writer.writeLong(msgId))
                     return false;
 
                 writer.incrementState();
@@ -702,14 +702,12 @@ public abstract class GridCacheMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        // TODO: Safe to remove only after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
 
         switch (reader.state()) {
             case 0:
-                depInfo = reader.readMessage("depInfo");
+                depInfo = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -717,7 +715,7 @@ public abstract class GridCacheMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                lastAffChangedTopVer = reader.readAffinityTopologyVersion("lastAffChangedTopVer");
+                lastAffChangedTopVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -725,7 +723,7 @@ public abstract class GridCacheMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                msgId = reader.readLong("msgId");
+                msgId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -734,7 +732,7 @@ public abstract class GridCacheMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(GridCacheMessage.class);
+        return true;
     }
 
     /**

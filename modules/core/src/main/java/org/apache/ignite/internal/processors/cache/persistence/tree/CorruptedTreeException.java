@@ -18,58 +18,64 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree;
 
 import java.util.Arrays;
-import org.apache.ignite.internal.processors.cache.persistence.AbstractCorruptedPersistenceException;
-import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.processors.cache.persistence.CorruptedDataStructureException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Exception to distinguish {@link BPlusTree} tree broken invariants.
  */
-public class CorruptedTreeException extends AbstractCorruptedPersistenceException {
-    /** */
+public class CorruptedTreeException extends CorruptedDataStructureException {
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param msg Message.
-     * @param cause Cause.
-     * @param grpId Group id of potentially corrupted pages.
-     * @param grpName Group name of potentially corrupted pages.
-     * @param pageIds Potentially corrupted pages.
+     * Constructor.
+     *
+     * @param msg     Message.
+     * @param cause   Cause.
+     * @param grpName Cache group name.
+     * @param grpId   Cache group id.
+     * @param pageIds PageId's that can be corrupted.
      */
-    public CorruptedTreeException(String msg, @Nullable Throwable cause, int grpId, String grpName, long... pageIds) {
-        this(msg, null, null, grpName, cause, toPagesArray(grpId, pageIds));
+    public CorruptedTreeException(String msg, @Nullable Throwable cause, String grpName, int grpId, long... pageIds) {
+        this(msg, null, null, grpName, cause, grpId, pageIds);
     }
 
     /**
-     * @param msg Message.
-     * @param cause Cause.
-     * @param grpId Group id of potentially corrupted pages.
-     * @param grpName Group name of potentially corrupted pages.
+     * Constructor.
+     *
+     * @param msg       Message.
+     * @param cause     Cause.
+     * @param grpName   Group name of potentially corrupted pages.
      * @param cacheName Cache name.
      * @param indexName Index name.
-     * @param pageIds Potentially corrupted pages.
+     * @param grpId     Cache group id.
+     * @param pageIds   PageId's that can be corrupted.
      */
     public CorruptedTreeException(
         String msg,
         @Nullable Throwable cause,
-        int grpId,
         String grpName,
         String cacheName,
         String indexName,
+        int grpId,
         long... pageIds
     ) {
-        this(msg, cacheName, indexName, grpName, cause, toPagesArray(grpId, pageIds));
+        this(msg, cacheName, indexName, grpName, cause, grpId, pageIds);
     }
 
     /**
-     * @param msg Message.
+     * Constructor.
+     *
+     * @param msg       Message.
      * @param cacheName Cache name.
      * @param indexName Index name.
-     * @param grpName Cache group name.
-     * @param cause Cause.
-     * @param pages (groupId, pageId) pairs for pages that might be corrupted.
+     * @param grpName   Cache group name.
+     * @param cause     Cause.
+     * @param grpId     Cache group id.
+     * @param pageIds   PageId's that can be corrupted.
      */
     public CorruptedTreeException(
         String msg,
@@ -77,30 +83,46 @@ public class CorruptedTreeException extends AbstractCorruptedPersistenceExceptio
         String indexName,
         String grpName,
         @Nullable Throwable cause,
-        T2<Integer, Long>... pages
+        int grpId,
+        long... pageIds
     ) {
-        super(getMsg(msg, cacheName, indexName, grpName, pages), cause, pages);
+        super(getMsg(msg, cacheName, indexName, grpName, grpId, pageIds), cause, grpId, pageIds);
     }
 
-    /** */
-    private static String getMsg(String msg, String cacheName, String indexName, String grpName, T2<Integer, Long>... pages) {
-        GridStringBuilder stringBuilder = new GridStringBuilder("B+Tree is corrupted [")
-            .a("pages(groupId, pageId)=").a(Arrays.toString(pages));
+    /**
+     * Creates {@link CorruptedTreeException} error message.
+     *
+     * @param msg       Message.
+     * @param cacheName Cache name.
+     * @param indexName Index name.
+     * @param grpName   Cache group name.
+     * @param grpId     Cache group id.
+     * @param pageIds   PageId's that can be corrupted.
+     * @return Error message.
+     */
+    private static String getMsg(
+        String msg,
+        @Nullable String cacheName,
+        @Nullable String indexName,
+        @Nullable String grpName,
+        int grpId,
+        long... pageIds
+    ) {
+        SB sb = new SB("B+Tree is corrupted [groupId=");
 
-        if (cacheName != null) {
-            stringBuilder
-                .a(", cacheId=").a(CU.cacheId(cacheName))
-                .a(", cacheName=").a(cacheName);
-        }
+        sb.a(grpId).a(", pageIds=").a(Arrays.toString(pageIds));
+
+        if (cacheName != null)
+            sb.a(", cacheId=").a(CU.cacheId(cacheName)).a(", cacheName=").a(cacheName);
 
         if (indexName != null)
-            stringBuilder.a(", indexName=").a(indexName);
+            sb.a(", indexName=").a(indexName);
 
         if (grpName != null)
-            stringBuilder.a(", groupName=").a(grpName);
+            sb.a(", groupName=").a(grpName);
 
-        stringBuilder.a(", msg=").a(msg).a("]");
+        sb.a(", msg=").a(msg).a(']');
 
-        return stringBuilder.toString();
+        return sb.toString();
     }
 }

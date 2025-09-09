@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -37,9 +36,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -71,9 +68,6 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     /** */
     private static final long TEST_TIME = 60_000;
 
-    /** */
-    private boolean forceServerMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -98,8 +92,6 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
 
             cfg.setCacheConfiguration(ccfgs);
         }
-        else
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(forceServerMode);
 
         return cfg;
     }
@@ -144,44 +136,13 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that in case of exchange history exhaustion
-     * (refer to javadoc at {@link #testClientReconnectOnExchangeHistoryExhaustion()} for more info about it)
-     * clients with forceServerMode=true flag don't try to reconnect to the cluster and stop.
-     *
-     * @throws Exception If failed
-     */
-    @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, value = "1")
-    public void testClientInForceServerModeStopsOnExchangeHistoryExhaustion() throws Exception {
-        startGrids(SRV_CNT);
-
-        forceServerMode = true;
-
-        int clientNodes = 24;
-
-        try {
-            startClientGridsMultiThreaded(SRV_CNT, clientNodes);
-        }
-        catch (IgniteCheckedException e) {
-            //Ignored: it is expected to get exception here
-        }
-
-        awaitPartitionMapExchange();
-
-        int topSize = G.allGrids().size();
-
-        assertTrue("Actual size: " + topSize, topSize < SRV_CNT + clientNodes);
-    }
-
-    /**
      * Verifies basic cache operations from all clients.
      */
     private void verifyCacheOperationsOnClients() {
         for (int i = SRV_CNT; i < SRV_CNT + CLIENTS_CNT; i++) {
             IgniteEx cl = grid(i);
 
-            if (!forceServerMode)
-                assertTrue(cl.localNode().isClient());
+            assertTrue(cl.localNode().isClient());
 
             for (int j = 0; j < CACHES; j++) {
                 IgniteCache<Object, Object> cache = cl.cache("cache-" + j);
@@ -207,10 +168,10 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHES; i++) {
             cacheName = "cache-" + i;
 
-            Affinity<Object> refAffinity = refSrv.affinity(cacheName);
+            Affinity<Object> refAff = refSrv.affinity(cacheName);
 
             for (int j = 0; j < PARTITIONS_CNT; j++) {
-                ClusterNode refAffNode = refAffinity.mapPartitionToNode(j);
+                ClusterNode refAffNode = refAff.mapPartitionToNode(j);
 
                 assertNotNull("Affinity node for " + j + " partition is null", refAffNode);
 

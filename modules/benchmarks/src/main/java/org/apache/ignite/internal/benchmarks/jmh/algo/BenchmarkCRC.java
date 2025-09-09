@@ -62,7 +62,7 @@ public class BenchmarkCRC {
         /** */
         @Setup
         public void setup() {
-            new Random().ints(BUF_LEN, Byte.MIN_VALUE, Byte.MAX_VALUE).forEach(k -> bb.put((byte) k));
+            new Random().ints(BUF_LEN, Byte.MIN_VALUE, Byte.MAX_VALUE).forEach(k -> bb.put((byte)k));
         }
     }
 

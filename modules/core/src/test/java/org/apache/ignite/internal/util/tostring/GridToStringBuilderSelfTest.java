@@ -22,6 +22,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTI
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.compact;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.identity;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.joinToString;
 
 /**
  * Tests for {@link GridToStringBuilder}.
@@ -290,7 +292,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     private <T, V> void testArr(V v, int limit) throws Exception {
-        T[] arrOf = (T[]) Array.newInstance(v.getClass(), limit + 1);
+        T[] arrOf = (T[])Array.newInstance(v.getClass(), limit + 1);
         Arrays.fill(arrOf, v);
         T[] arr = Arrays.copyOf(arrOf, limit);
 
@@ -453,9 +455,9 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         Map strMap = new TreeMap<>();
         List strList = new ArrayList<>(limit + 1);
 
-        TestClass1 testClass = new TestClass1();
-        testClass.strMap = strMap;
-        testClass.strListIncl = strList;
+        TestClass1 testCls = new TestClass1();
+        testCls.strMap = strMap;
+        testCls.strListIncl = strList;
 
         Map m = new TreeMap();
         m.put("m", strMap);
@@ -471,7 +473,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             strList.add("e");
         }
 
-        checkColAndMap(testClass);
+        checkColAndMap(testCls);
     }
 
     /**
@@ -595,22 +597,18 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
     /**
      * Checking that method
-     * {@link GridToStringBuilder#compact(Collection, Function) compact} works
+     * {@link GridToStringBuilder#toStringSortedDistinct(Collection)} works
      * correctly for {@link Integer}.
      */
     @Test
-    public void testCompactIntegers() {
+    public void testSortedDistinctIntegers() {
         List<Integer> emptyList = emptyList();
-        List<Integer> intList = asList(1, 2, 3, 9, 8, 7, 12);
+        List<Integer> intList = asList(12, 1, 7, 2, 3, 9, 8, 7, 12);
 
-        String compactStr = "[1-3, 7-9, 12]";
+        String sortedDistinctStr = "[1,2,3,7,8,9,12]";
 
-        Function<Integer, Integer> nextVal = i -> i + 1;
-
-        checkCompact(emptyList, intList, nextVal, compactStr);
-
-        assertEquals("[]", compact(emptyList));
-        assertEquals(compactStr, compact(intList));
+        assertEquals("[]", S.toStringSortedDistinct(emptyList));
+        assertEquals(sortedDistinctStr, S.toStringSortedDistinct(intList));
     }
 
     /**
@@ -663,6 +661,30 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     ) {
         assertEquals("[]", compact(emptyCol, nextNum));
         assertEquals(compactStr, compact(numCol, nextNum));
+    }
+
+    /**
+     * Test string joiner.
+     *
+     * @see GridToStringBuilder#joinToString(Iterable, String, String, int, int)
+     */
+    @Test
+    public void testJoin() {
+        String trunc = "...";
+        String sep = ",";
+
+        assertEquals("", joinToString(Collections.emptyList(), sep, trunc, 0, 0));
+        assertEquals("", joinToString(null, sep, trunc, 0, 0));
+        assertEquals("a,b,c", joinToString(asList("a", "b", "c"), sep, trunc, 0, 3));
+        assertEquals("a,b,c", joinToString(asList("a", "b", "c"), sep, trunc, 5, 0));
+        assertEquals("a,b,c", joinToString(asList("a", "b", "c"), sep, trunc, 5, 3));
+        assertEquals("a,b,c", joinToString(asList("a", "b", "c"), sep, trunc, 0, 0));
+        assertEquals("a,b,c...", joinToString(asList("a", "b", "c", "d", "e"), sep, trunc, 0, 3));
+        assertEquals("a,b,c...", joinToString(asList("a", "b", "c", "d", "e"), sep, trunc, 5, 0));
+        assertEquals("a,b,c", joinToString(asList("a", "b", "c", "d", "e"), sep, null, 5, 0));
+        assertEquals("a,b,c", joinToString(asList("a", "b", "c", "d", "e"), sep, null, 0, 3));
+        assertEquals("abcde", joinToString(asList("a", "b", "c", "d", "e"), null, trunc, 5, 0));
+        assertEquals("abcde", joinToString(asList("a", "b", "c", "d", "e"), null, trunc, 0, 5));
     }
 
     /**

@@ -25,6 +25,7 @@ import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
  *
  */
 public class ZookeeperNodeStart {
+    /** */
     public static void main(String[] args) throws Exception {
         try {
             IgniteConfiguration cfg = new IgniteConfiguration();

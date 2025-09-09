@@ -27,10 +27,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcThinFeature;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 
 /**
  * Holds JDBC connection properties.
@@ -55,213 +57,218 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private HostAndPortRange[] addrs;
 
     /** Schema name. Hidden property. Is used to set default schema name part of the URL. */
-    private StringProperty schema = new StringProperty(PROP_SCHEMA,
+    private final StringProperty schema = new StringProperty(PROP_SCHEMA,
         "Schema name of the connection", "PUBLIC", null, false, null);
 
     /** Distributed joins property. */
-    private BooleanProperty distributedJoins = new BooleanProperty(
+    private final BooleanProperty distributedJoins = new BooleanProperty(
         "distributedJoins", "Enable distributed joins", false, false);
 
     /** Enforce join order property. */
-    private BooleanProperty enforceJoinOrder = new BooleanProperty(
+    private final BooleanProperty enforceJoinOrder = new BooleanProperty(
         "enforceJoinOrder", "Enable enforce join order", false, false);
 
     /** Collocated property. */
-    private BooleanProperty collocated = new BooleanProperty(
+    private final BooleanProperty collocated = new BooleanProperty(
         "collocated", "Enable collocated query", false, false);
 
     /** Replicated only property. */
-    private BooleanProperty replicatedOnly = new BooleanProperty(
+    private final BooleanProperty replicatedOnly = new BooleanProperty(
         "replicatedOnly", "Specify if the all queries contain only replicated tables", false, false);
 
     /** Auto close server cursor property. */
-    private BooleanProperty autoCloseServerCursor = new BooleanProperty(
+    private final BooleanProperty autoCloseServerCursor = new BooleanProperty(
         "autoCloseServerCursor", "Enable auto close server cursors when last piece of result set is retrieved. " +
         "If the server-side cursor is already closed, you may get an exception when trying to call " +
         "`ResultSet.getMetadata()` method.", false, false);
 
     /** TCP no delay property. */
-    private BooleanProperty tcpNoDelay = new BooleanProperty(
+    private final BooleanProperty tcpNoDelay = new BooleanProperty(
         "tcpNoDelay", "TCP no delay flag", true, false);
 
     /** Lazy query execution property. */
-    private BooleanProperty lazy = new BooleanProperty(
-        "lazy", "Enable lazy query execution", false, false);
+    private final BooleanProperty lazy = new BooleanProperty(
+        "lazy", "Enable lazy query execution", DFLT_LAZY, false);
 
     /** Socket send buffer size property. */
-    private IntegerProperty socketSendBuffer = new IntegerProperty(
+    private final IntegerProperty socketSendBuffer = new IntegerProperty(
         "socketSendBuffer", "Socket send buffer size",
         DFLT_SOCK_BUFFER_SIZE, false, 0, Integer.MAX_VALUE);
 
     /** Socket receive buffer size property. */
-    private IntegerProperty socketReceiveBuffer = new IntegerProperty(
+    private final IntegerProperty socketReceiveBuffer = new IntegerProperty(
         "socketReceiveBuffer", "Socket send buffer size",
         DFLT_SOCK_BUFFER_SIZE, false, 0, Integer.MAX_VALUE);
 
     /** Executes update queries on ignite server nodes flag. */
-    private BooleanProperty skipReducerOnUpdate = new BooleanProperty(
+    private final BooleanProperty skipReducerOnUpdate = new BooleanProperty(
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
 
-    /** Nested transactions handling strategy. */
-    private StringProperty nestedTxMode = new StringProperty(
-        "nestedTransactionsMode", "Way to handle nested transactions", NestedTxMode.ERROR.name(),
-        new String[] { NestedTxMode.COMMIT.name(), NestedTxMode.ERROR.name(), NestedTxMode.IGNORE.name() },
-        false, new PropertyValidator() {
-        private static final long serialVersionUID = 0L;
-
-        @Override public void validate(String mode) throws SQLException {
-            if (!F.isEmpty(mode)) {
-                try {
-                    NestedTxMode.valueOf(mode.toUpperCase());
-                }
-                catch (IllegalArgumentException e) {
-                    throw new SQLException("Invalid nested transactions handling mode, allowed values: " +
-                        Arrays.toString(nestedTxMode.choices), SqlStateCode.CLIENT_CONNECTION_FAILED);
-                }
-            }
-        }
-    });
-
     /** SSL: Use SSL connection to Ignite node. */
-    private StringProperty sslMode = new StringProperty("sslMode",
+    private final StringProperty sslMode = new StringProperty("sslMode",
         "The SSL mode of the connection", SSL_MODE_DISABLE,
         new String[] {SSL_MODE_DISABLE, SSL_MODE_REQUIRE}, false, null);
 
     /** SSL: Client certificate key store url. */
-    private StringProperty sslProtocol = new StringProperty("sslProtocol",
+    private final StringProperty sslProtocol = new StringProperty("sslProtocol",
         "SSL protocol name", null, null, false, null);
 
     /** SSL: Supported SSL cipher suites. */
-    private StringProperty sslCipherSuites = new StringProperty("sslCipherSuites",
+    private final StringProperty sslCipherSuites = new StringProperty("sslCipherSuites",
         "Supported SSL ciphers", null,
         null, false, null);
 
     /** SSL: Key algorithm name. */
-    private StringProperty sslKeyAlgorithm = new StringProperty("sslKeyAlgorithm",
+    private final StringProperty sslKeyAlgorithm = new StringProperty("sslKeyAlgorithm",
         "SSL key algorithm name", null, null, false, null);
 
     /** SSL: Client certificate key store url. */
-    private StringProperty sslClientCertificateKeyStoreUrl =
+    private final StringProperty sslClientCertificateKeyStoreUrl =
         new StringProperty("sslClientCertificateKeyStoreUrl",
             "Client certificate key store URL",
             null, null, false, null);
 
     /** SSL: Client certificate key store password. */
-    private StringProperty sslClientCertificateKeyStorePassword =
+    private final StringProperty sslClientCertificateKeyStorePassword =
         new StringProperty("sslClientCertificateKeyStorePassword",
             "Client certificate key store password",
             null, null, false, null);
 
     /** SSL: Client certificate key store type. */
-    private StringProperty sslClientCertificateKeyStoreType =
+    private final StringProperty sslClientCertificateKeyStoreType =
         new StringProperty("sslClientCertificateKeyStoreType",
             "Client certificate key store type",
             null, null, false, null);
 
     /** SSL: Trusted certificate key store url. */
-    private StringProperty sslTrustCertificateKeyStoreUrl =
+    private final StringProperty sslTrustCertificateKeyStoreUrl =
         new StringProperty("sslTrustCertificateKeyStoreUrl",
             "Trusted certificate key store URL", null, null, false, null);
 
     /** SSL Trusted certificate key store password. */
-    private StringProperty sslTrustCertificateKeyStorePassword =
+    private final StringProperty sslTrustCertificateKeyStorePassword =
         new StringProperty("sslTrustCertificateKeyStorePassword",
             "Trusted certificate key store password", null, null, false, null);
 
     /** SSL: Trusted certificate key store type. */
-    private StringProperty sslTrustCertificateKeyStoreType =
+    private final StringProperty sslTrustCertificateKeyStoreType =
         new StringProperty("sslTrustCertificateKeyStoreType",
             "Trusted certificate key store type",
             null, null, false, null);
 
     /** SSL: Trust all certificates. */
-    private BooleanProperty sslTrustAll = new BooleanProperty("sslTrustAll",
+    private final BooleanProperty sslTrustAll = new BooleanProperty("sslTrustAll",
         "Trust all certificates", false, false);
 
     /** SSL: Custom class name that implements Factory&lt;SSLSocketFactory&gt;. */
-    private StringProperty sslFactory = new StringProperty("sslFactory",
+    private final StringProperty sslFactory = new StringProperty("sslFactory",
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
 
     /** Custom class name that implements Factory&lt;Map&lt;String, String&gt;&gt; which returns user attributes. */
-    private StringProperty userAttrsFactory = new StringProperty("userAttributesFactory",
+    private final StringProperty userAttrsFactory = new StringProperty("userAttributesFactory",
         "Custom class name that implements Factory<Map<String, String>> (user attributes)", null, null, false, null);
 
     /** User name to authenticate the client on the server side. */
-    private StringProperty user = new StringProperty(
+    private final StringProperty user = new StringProperty(
         "user", "User name to authenticate the client on the server side", null, null, false, null);
 
     /** User's password. */
-    private StringProperty passwd = new StringProperty(
+    private final StringProperty passwd = new StringProperty(
         "password", "User's password", null, null, false, null);
 
     /** Data page scan flag. */
-    private BooleanProperty dataPageScanEnabled = new BooleanProperty("dataPageScanEnabled",
+    private final BooleanProperty dataPageScanEnabled = new BooleanProperty("dataPageScanEnabled",
         "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
         null, false);
 
     /** Partition awareness flag. */
-    private BooleanProperty partitionAwareness = new BooleanProperty(
+    private final BooleanProperty partitionAwareness = new BooleanProperty(
         "partitionAwareness",
         "Whether jdbc thin partition awareness is enabled.",
         false, false);
 
     /** Update batch size (the size of internal batches are used for INSERT/UPDATE/DELETE operation). */
-    private IntegerProperty updateBatchSize = new IntegerProperty("updateBatchSize",
+    private final IntegerProperty updateBatchSize = new IntegerProperty("updateBatchSize",
         "Update bach size (the size of internal batches are used for INSERT/UPDATE/DELETE operation). " +
             "Set to 1 to prevent deadlock on update where keys sequence are different " +
             "in several concurrent updates.", null, false, 1, Integer.MAX_VALUE);
 
     /** Partition awareness SQL cache size. */
-    private IntegerProperty partitionAwarenessSQLCacheSize = new IntegerProperty("partitionAwarenessSQLCacheSize",
+    private final IntegerProperty partitionAwarenessSQLCacheSize = new IntegerProperty("partitionAwarenessSQLCacheSize",
         "The size of sql cache that is used within partition awareness optimization.",
         1_000, false, 1, Integer.MAX_VALUE);
 
     /** Partition awareness partition distributions cache size. */
-    private IntegerProperty partitionAwarenessPartDistributionsCacheSize = new IntegerProperty(
+    private final IntegerProperty partitionAwarenessPartDistributionsCacheSize = new IntegerProperty(
         "partitionAwarenessPartitionDistributionsCacheSize",
         "The size of partition distributions cache that is used within partition awareness optimization.",
         1_000, false, 1, Integer.MAX_VALUE);
 
     /** Query timeout. */
-    private IntegerProperty qryTimeout = new IntegerProperty("queryTimeout",
+    private final IntegerProperty qryTimeout = new IntegerProperty("queryTimeout",
         "Sets the number of seconds the driver will wait for a <code>Statement</code> object to execute." +
             " Zero means there is no limits.",
         null, false, 0, Integer.MAX_VALUE);
 
     /** JDBC connection timeout. */
-    private IntegerProperty connTimeout = new IntegerProperty("connectionTimeout",
+    private final IntegerProperty connTimeout = new IntegerProperty("connectionTimeout",
         "Sets the number of milliseconds JDBC client will waits for server to response." +
             " Zero means there is no limits.",
         0, false, 0, Integer.MAX_VALUE);
 
     /** Disabled features. */
-    private StringProperty disabledFeatures = new StringProperty("disabledFeatures",
-        "Sets enumeration of features to force disable its.", null, null, false, new PropertyValidator() {
-        @Override public void validate(String val) throws SQLException {
-            if (val == null)
-                return;
+    private final StringProperty disabledFeatures = new StringProperty("disabledFeatures",
+        "Sets enumeration of features to force disable its.",
+        null,
+        null,
+        false,
+        new PropertyValidator() {
+            @Override public void validate(String val) throws SQLException {
+                if (val == null)
+                    return;
 
-            String[] features = val.split("\\W+");
+                String[] features = val.split("\\W+");
 
-            for (String f : features) {
-                try {
-                    JdbcThinFeature.valueOf(f.toUpperCase());
-                }
-                catch (IllegalArgumentException e) {
-                    throw new SQLException("Unknown feature: " + f);
+                for (String f : features) {
+                    try {
+                        JdbcThinFeature.valueOf(f.toUpperCase());
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new SQLException("Unknown feature: " + f);
+                    }
                 }
             }
-        }
-    });
+        });
 
     /** Keep binary objects in binary form. */
-    private BooleanProperty keepBinary = new BooleanProperty("keepBinary",
+    private final BooleanProperty keepBinary = new BooleanProperty("keepBinary",
         "Whether to keep binary objects in binary form.", false, false);
 
+    /** Use specified SQL query engine for a connection. */
+    private final StringProperty qryEngine = new StringProperty("queryEngine",
+        "Use specified SQL query engine for a connection.", null, null, false, null);
+
+    /** Transaction concurrency. */
+    private final StringProperty transactionConcurrency = new StringProperty("transactionConcurrency",
+        "Transaction concurrencty level.",
+        TransactionConcurrency.OPTIMISTIC.name(),
+        new String[]{TransactionConcurrency.OPTIMISTIC.name(), TransactionConcurrency.PESSIMISTIC.name()},
+        false,
+        null
+    );
+
+    /** JDBC transaction timeout. */
+    private final IntegerProperty transactionTimeout = new IntegerProperty("transactionTimeout",
+        "Sets the number of milliseconds for server-side transaction timeout. Zero means there is no limits.",
+        0, false, 0, Integer.MAX_VALUE);
+
+    /** Transaction label. */
+    private final StringProperty transactionLabel = new StringProperty("transactionLabel", "Transaction label.", null, null, false, null);
+
     /** Properties array. */
-    private final ConnectionProperty[] propsArray = {
+    private final ConnectionProperty[] propsArr = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
-        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, nestedTxMode,
+        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
         sslMode, sslCipherSuites, sslProtocol, sslKeyAlgorithm,
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
@@ -269,14 +276,18 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         userAttrsFactory,
         user, passwd,
         dataPageScanEnabled,
-            partitionAwareness,
+        partitionAwareness,
         updateBatchSize,
-            partitionAwarenessSQLCacheSize,
-            partitionAwarenessPartDistributionsCacheSize,
+        partitionAwarenessSQLCacheSize,
+        partitionAwarenessPartDistributionsCacheSize,
         qryTimeout,
         connTimeout,
         disabledFeatures,
-        keepBinary
+        keepBinary,
+        qryEngine,
+        transactionConcurrency,
+        transactionTimeout,
+        transactionLabel
     };
 
     /** {@inheritDoc} */
@@ -553,16 +564,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public String nestedTxMode() {
-        return nestedTxMode.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void nestedTxMode(String val) {
-        nestedTxMode.setValue(val);
-    }
-
-    /** {@inheritDoc} */
     @Override public void setUsername(String name) {
         user.setValue(name);
     }
@@ -685,6 +686,46 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         this.keepBinary.setValue(keepBinary);
     }
 
+    /** {@inheritDoc} */
+    @Override public String getQueryEngine() {
+        return qryEngine.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setQueryEngine(String qryEngine) {
+        this.qryEngine.setValue(qryEngine);
+    }
+
+    /** {@inheritDoc} */
+    @Override public TransactionConcurrency getTransactionConcurrency() {
+        return TransactionConcurrency.valueOf(transactionConcurrency.value());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTransactionConcurrency(String transactionConcurrency) {
+        this.transactionConcurrency.setValue(transactionConcurrency);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTransactionTimeout() {
+        return transactionTimeout.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTransactionTimeout(int transactionTimeout) throws SQLException {
+        this.transactionTimeout.setValue(transactionTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getTransactionLabel() {
+        return transactionLabel.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTransactionLabel(String transactionLabel) {
+        this.transactionLabel.setValue(transactionLabel);
+    }
+
     /**
      * @param url URL connection.
      * @param props Environment properties.
@@ -696,8 +737,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         if (!F.isEmpty(url))
             parseUrl(url, props0);
 
-        for (ConnectionProperty aPropsArray : propsArray)
-            aPropsArray.init(props0);
+        for (ConnectionProperty aPropsArr : propsArr)
+            aPropsArr.init(props0);
 
         if (!F.isEmpty(props.getProperty("user"))) {
             setUsername(props.getProperty("user"));
@@ -735,18 +776,18 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         // Determine mode - semicolon or ampersand.
         int semicolonPos = url.indexOf(";");
         int slashPos = url.indexOf("/");
-        int queryPos = url.indexOf("?");
+        int qryPos = url.indexOf("?");
 
         boolean semicolonMode;
 
-        if (semicolonPos == -1 && slashPos == -1 && queryPos == -1)
+        if (semicolonPos == -1 && slashPos == -1 && qryPos == -1)
             // No special char -> any mode could be used, choose semicolon for simplicity.
             semicolonMode = true;
         else {
             if (semicolonPos != -1) {
                 // Use semicolon mode if it appears earlier than slash or query.
                 semicolonMode =
-                    (slashPos == -1 || semicolonPos < slashPos) && (queryPos == -1 || semicolonPos < queryPos);
+                    (slashPos == -1 || semicolonPos < slashPos) && (qryPos == -1 || semicolonPos < qryPos);
             }
             else
                 // Semicolon is not found.
@@ -916,10 +957,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      * @return Driver's properties info array.
      */
     public DriverPropertyInfo[] getDriverPropertyInfo() {
-        DriverPropertyInfo[] infos = new DriverPropertyInfo[propsArray.length];
+        DriverPropertyInfo[] infos = new DriverPropertyInfo[propsArr.length];
 
-        for (int i = 0; i < propsArray.length; ++i)
-            infos[i] = propsArray[i].getDriverPropertyInfo();
+        for (int i = 0; i < propsArr.length; ++i)
+            infos[i] = propsArr[i].getDriverPropertyInfo();
 
         return infos;
     }
@@ -930,7 +971,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     public Properties storeToProperties() {
         Properties props = new Properties();
 
-        for (ConnectionProperty prop : propsArray) {
+        for (ConnectionProperty prop : propsArr) {
             if (prop.valueObject() != null)
                 props.setProperty(PROP_PREFIX + prop.getName(), prop.valueObject());
         }
@@ -1172,7 +1213,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         protected Number val;
 
         /** Allowed value range. */
-        private Number[] range;
+        private final Number[] range;
 
         /**
          * @param name Name.

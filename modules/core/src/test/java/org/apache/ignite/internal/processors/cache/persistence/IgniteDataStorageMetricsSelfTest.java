@@ -17,22 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.ToLongFunction;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -42,16 +48,20 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -61,8 +71,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -74,7 +86,16 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     private static final String GROUP1 = "grp1";
 
     /** */
+    private static final String GROUP2 = "grp2";
+
+    /** */
     private static final String NO_PERSISTENCE = "no-persistence";
+
+    /** */
+    private static final String PERSISTENCE_REGION_1 = "persistence-1";
+
+    /** */
+    private static final String PERSISTENCE_REGION_2 = "persistence-2";
 
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
@@ -104,12 +125,19 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                 .setMaxSize(maxRegionSize)
                 .setPersistenceEnabled(true)
                 .setMetricsEnabled(true)
-                .setName("dflt-plc"))
-            .setDataRegionConfigurations(new DataRegionConfiguration()
-                .setMaxSize(maxRegionSize)
-                .setPersistenceEnabled(false)
-                .setMetricsEnabled(true)
-                .setName(NO_PERSISTENCE))
+                .setName(PERSISTENCE_REGION_1)
+                .setCdcEnabled(true))
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                    .setMaxSize(maxRegionSize)
+                    .setPersistenceEnabled(true)
+                    .setMetricsEnabled(true)
+                    .setName(PERSISTENCE_REGION_2),
+                new DataRegionConfiguration()
+                    .setMaxSize(maxRegionSize)
+                    .setPersistenceEnabled(false)
+                    .setMetricsEnabled(true)
+                    .setName(NO_PERSISTENCE))
             .setWalMode(WALMode.LOG_ONLY)
             .setMetricsEnabled(true);
 
@@ -119,6 +147,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(
             cacheConfiguration(GROUP1, "cache", PARTITIONED, ATOMIC, 1, null),
+            cacheConfiguration(GROUP2, "cache2", PARTITIONED, ATOMIC, 1, PERSISTENCE_REGION_2),
             cacheConfiguration(null, "cache-np", PARTITIONED, ATOMIC, 1, NO_PERSISTENCE));
 
         cfg.setGridLogger(listeningLog);
@@ -175,20 +204,23 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     public void testPersistenceMetrics() throws Exception {
         final IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         try {
             IgniteCache<Object, Object> cache = ig.cache("cache");
+            IgniteCache<Object, Object> cache2 = ig.cache("cache2");
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 10; i++) {
                 cache.put(i, new Person("first-" + i, "last-" + i));
+                cache2.put(i, new Person("first-" + i, "last-" + i));
+            }
 
             IgniteCache<Object, Object> cacheNp = ig.cache("cache-np");
 
             for (int i = 0; i < 10; i++)
                 cacheNp.put(i, new Person("first-" + i, "last-" + i));
 
-            DataRegionMetrics memMetrics = ig.dataRegionMetrics("dflt-plc");
+            DataRegionMetrics memMetrics = ig.dataRegionMetrics(PERSISTENCE_REGION_1);
 
             assertNotNull(memMetrics);
             assertTrue(memMetrics.getDirtyPages() > 0);
@@ -204,14 +236,27 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             assertTrue(waitForCondition(new PAX() {
                 @Override public boolean applyx() {
-                    DataStorageMetrics pMetrics = ig.dataStorageMetrics();
+                    MetricRegistry pMetrics = ig.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
                     assertNotNull(pMetrics);
 
-                    return pMetrics.getLastCheckpointTotalPagesNumber() != 0 &&
-                        pMetrics.getLastCheckpointDataPagesNumber() != 0;
+                    return pMetrics.<LongMetric>findMetric("LastCheckpointTotalPagesNumber").value() != 0 &&
+                        pMetrics.<LongMetric>findMetric("LastCheckpointDataPagesNumber").value() != 0;
                 }
             }, 10_000));
+
+            Collection<MetricRegistry> grpRegs = F.viewReadOnly(ig.context().cache().cacheGroups(),
+                ctx -> ig.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, ctx.cacheOrGroupName())));
+
+            ToLongFunction<String> sumByGrps = metric -> grpRegs.stream()
+                .map(grpReg -> grpReg.<LongMetric>findMetric(metric).value()).mapToLong(v -> v)
+                .sum();
+
+            long storageSize = dsMetricRegistry(ig).<LongMetric>findMetric("StorageSize").value();
+            long sparseStorageSize = dsMetricRegistry(ig).<LongMetric>findMetric("SparseStorageSize").value();
+
+            assertEquals(sumByGrps.applyAsLong("StorageSize"), storageSize);
+            assertEquals(sumByGrps.applyAsLong("SparseStorageSize"), sparseStorageSize);
         }
         finally {
             stopAllGrids();
@@ -227,16 +272,18 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             "checkpointListenersExecuteTime=(\\d+)ms, " +
             "checkpointLockHoldTime=(\\d+)ms, " +
             "walCpRecordFsyncDuration=(\\d+)ms, " +
-            "writeCheckpointEntryDuration=(\\d+)ms, " +
-            "splitAndSortCpPagesDuration=(\\d+)ms");
+            "splitAndSortCpPagesDuration=(\\d+)ms, " +
+            "writeRecoveryDataDuration=(\\d+)ms, " +
+            "writeCheckpointEntryDuration=(\\d+)ms, ");
 
         AtomicLong expLastCpBeforeLockDuration = new AtomicLong();
         AtomicLong expLastCpLockWaitDuration = new AtomicLong();
-        AtomicLong expLastCpListenersExecuteDuration = new AtomicLong();
+        AtomicLong expLastCpListenersExecDuration = new AtomicLong();
         AtomicLong expLastCpLockHoldDuration = new AtomicLong();
         AtomicLong expLastCpWalRecordFsyncDuration = new AtomicLong();
-        AtomicLong expLastCpWriteEntryDuration = new AtomicLong();
         AtomicLong expLastCpSplitAndSortPagesDuration = new AtomicLong();
+        AtomicLong expLastCpRecoveryDataWriteDuration = new AtomicLong();
+        AtomicLong expLastCpWriteEntryDuration = new AtomicLong();
         AtomicInteger cpCnt = new AtomicInteger();
 
         listeningLog.registerListener(s -> {
@@ -247,11 +294,12 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             expLastCpBeforeLockDuration.set(Long.parseLong(matcher.group(1)));
             expLastCpLockWaitDuration.set(Long.parseLong(matcher.group(2)));
-            expLastCpListenersExecuteDuration.set(Long.parseLong(matcher.group(3)));
+            expLastCpListenersExecDuration.set(Long.parseLong(matcher.group(3)));
             expLastCpLockHoldDuration.set(Long.parseLong(matcher.group(4)));
             expLastCpWalRecordFsyncDuration.set(Long.parseLong(matcher.group(5)));
-            expLastCpWriteEntryDuration.set(Long.parseLong(matcher.group(6)));
-            expLastCpSplitAndSortPagesDuration.set(Long.parseLong(matcher.group(7)));
+            expLastCpSplitAndSortPagesDuration.set(Long.parseLong(matcher.group(6)));
+            expLastCpRecoveryDataWriteDuration.set(Long.parseLong(matcher.group(7)));
+            expLastCpWriteEntryDuration.set(Long.parseLong(matcher.group(8)));
             cpCnt.incrementAndGet();
         });
 
@@ -264,22 +312,24 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         db.checkpointReadLock();
 
         try {
-            waitForCondition(() -> cpCnt.get() > 0, getTestTimeout());
+            assertTrue(waitForCondition(() -> cpCnt.get() > 0, 5_000L));
 
             MetricRegistry mreg = node.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
             AtomicLongMetric lastCpBeforeLockDuration = mreg.findMetric("LastCheckpointBeforeLockDuration");
             AtomicLongMetric lastCpLockWaitDuration = mreg.findMetric("LastCheckpointLockWaitDuration");
-            AtomicLongMetric lastCpListenersExecuteDuration = mreg.findMetric("LastCheckpointListenersExecuteDuration");
+            AtomicLongMetric lastCpListenersExecDuration = mreg.findMetric("LastCheckpointListenersExecuteDuration");
             AtomicLongMetric lastCpLockHoldDuration = mreg.findMetric("LastCheckpointLockHoldDuration");
             AtomicLongMetric lastCpWalRecordFsyncDuration = mreg.findMetric("LastCheckpointWalRecordFsyncDuration");
             AtomicLongMetric lastCpWriteEntryDuration = mreg.findMetric("LastCheckpointWriteEntryDuration");
             AtomicLongMetric lastCpSplitAndSortPagesDuration =
                 mreg.findMetric("LastCheckpointSplitAndSortPagesDuration");
+            AtomicLongMetric lastCpRecoveryDataWriteDuration =
+                mreg.findMetric("LastCheckpointRecoveryDataWriteDuration");
 
             HistogramMetric cpBeforeLockHistogram = mreg.findMetric("CheckpointBeforeLockHistogram");
             HistogramMetric cpLockWaitHistogram = mreg.findMetric("CheckpointLockWaitHistogram");
-            HistogramMetric cpListenersExecuteHistogram = mreg.findMetric("CheckpointListenersExecuteHistogram");
+            HistogramMetric cpListenersExecHistogram = mreg.findMetric("CheckpointListenersExecuteHistogram");
             HistogramMetric cpMarkHistogram = mreg.findMetric("CheckpointMarkHistogram");
             HistogramMetric cpLockHoldHistogram = mreg.findMetric("CheckpointLockHoldHistogram");
             HistogramMetric cpPagesWriteHistogram = mreg.findMetric("CheckpointPagesWriteHistogram");
@@ -289,11 +339,11 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             HistogramMetric cpSplitAndSortPagesHistogram = mreg.findMetric("CheckpointSplitAndSortPagesHistogram");
             HistogramMetric cpHistogram = mreg.findMetric("CheckpointHistogram");
 
-            waitForCondition(() -> cpCnt.get() == Arrays.stream(cpHistogram.value()).sum(), getTestTimeout());
+            assertTrue(waitForCondition(() -> cpCnt.get() == Arrays.stream(cpHistogram.value()).sum(), 5_000));
 
             assertEquals(cpCnt.get(), Arrays.stream(cpBeforeLockHistogram.value()).sum());
             assertEquals(cpCnt.get(), Arrays.stream(cpLockWaitHistogram.value()).sum());
-            assertEquals(cpCnt.get(), Arrays.stream(cpListenersExecuteHistogram.value()).sum());
+            assertEquals(cpCnt.get(), Arrays.stream(cpListenersExecHistogram.value()).sum());
             assertEquals(cpCnt.get(), Arrays.stream(cpMarkHistogram.value()).sum());
             assertEquals(cpCnt.get(), Arrays.stream(cpLockHoldHistogram.value()).sum());
             assertEquals(cpCnt.get(), Arrays.stream(cpPagesWriteHistogram.value()).sum());
@@ -304,11 +354,12 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             assertEquals(expLastCpBeforeLockDuration.get(), lastCpBeforeLockDuration.value());
             assertEquals(expLastCpLockWaitDuration.get(), lastCpLockWaitDuration.value());
-            assertEquals(expLastCpListenersExecuteDuration.get(), lastCpListenersExecuteDuration.value());
+            assertEquals(expLastCpListenersExecDuration.get(), lastCpListenersExecDuration.value());
             assertEquals(expLastCpLockHoldDuration.get(), lastCpLockHoldDuration.value());
             assertEquals(expLastCpWalRecordFsyncDuration.get(), lastCpWalRecordFsyncDuration.value());
-            assertEquals(expLastCpWriteEntryDuration.get(), lastCpWriteEntryDuration.value());
             assertEquals(expLastCpSplitAndSortPagesDuration.get(), lastCpSplitAndSortPagesDuration.value());
+            assertEquals(expLastCpRecoveryDataWriteDuration.get(), lastCpRecoveryDataWriteDuration.value());
+            assertEquals(expLastCpWriteEntryDuration.get(), lastCpWriteEntryDuration.value());
         }
         finally {
             db.checkpointReadUnlock();
@@ -346,9 +397,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         long exp = walMgr(n).lastWritePointer().fileOffset() - HEADER_RECORD_SIZE;
 
-        assertEquals(exp, dbMgr(n).persistentStoreMetrics().getWalWrittenBytes());
-        assertEquals(exp, dsMetricsMXBean(n).getWalWrittenBytes());
-        assertEquals(exp, ((LongAdderMetric)dsMetricRegistry(n).findMetric("WalWrittenBytes")).value());
+        assertEquals(exp, dsMetricRegistry(n).<LongAdderMetric>findMetric("WalWrittenBytes").value());
     }
 
     /**
@@ -389,6 +438,140 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         assertCorrectWalCompressedBytesMetrics(n1);
+    }
+
+    /**
+     * Check whether WAL is reporting correct usage when archiving was not needed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWalTotalSizeWithoutArchivingPerfomed() throws Exception {
+        IgniteEx n = startGrid(
+            0,
+            (Consumer<IgniteConfiguration>)cfg -> cfg.getDataStorageConfiguration().setWalSegmentSize((int)(2 * U.MB))
+        );
+
+        n.cluster().state(ACTIVE);
+
+        populateCache(n);
+
+        disableWal(n, true);
+
+        checkWalArchiveAndTotalSize(n, true);
+    }
+
+    /**
+     * Check whether WAL is reporting correct usage when archiving is performed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWalTotalSizeWithArchive() throws Exception {
+        IgniteEx n = startGrid(
+            0,
+            (Consumer<IgniteConfiguration>)cfg -> cfg.getDataStorageConfiguration().setWalSegmentSize((int)(2 * U.MB))
+        );
+
+        n.cluster().state(ACTIVE);
+
+        while (walMgr(n).lastArchivedSegment() < 3)
+            n.cache("cache").put(ThreadLocalRandom.current().nextLong(), new byte[(int)(32 * U.KB)]);
+
+        disableWal(n, true);
+
+        checkWalArchiveAndTotalSize(n, true);
+    }
+
+    /**
+     * Check whether Wal is reporting correct usage when WAL Archive is turned off.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWalTotalSizeWithArchiveTurnedOff() throws Exception {
+        IgniteEx n = startGrid(
+            0,
+            (Consumer<IgniteConfiguration>)cfg -> cfg.getDataStorageConfiguration()
+                .setWalArchivePath(cfg.getDataStorageConfiguration().getWalPath()).setWalSegmentSize((int)(2 * U.MB))
+        );
+
+        n.cluster().state(ACTIVE);
+
+        populateCache(n);
+
+        disableWal(n, true);
+
+        checkWalArchiveAndTotalSize(n, false);
+    }
+
+    /**
+     * Populates a cache w/32 KB of data.
+     *
+     * @param igniteEx Node.
+     */
+    private void populateCache(IgniteEx igniteEx) {
+        for (int i = 0; i < 10; i++)
+            igniteEx.cache("cache").put(ThreadLocalRandom.current().nextLong(), new byte[(int)(32 * U.KB)]);
+    }
+
+    /**
+     * Check the state of wal archive, and whether the total size of
+     * wal (and possibly wal archive) match what is expected.
+     *
+     * @param igniteEx Node.
+     * @param hasWalArchive Whether wal archiving is enabled.
+     * @throws Exception If failed.
+     */
+    private void checkWalArchiveAndTotalSize(IgniteEx igniteEx, boolean hasWalArchive) throws Exception {
+        FileWriteAheadLogManager walMgr = walMgr(igniteEx);
+
+        NodeFileTree ft = igniteEx.context().pdsFolderResolver().fileTree();
+
+        assertEquals(ft.walArchiveEnabled(), hasWalArchive);
+
+        //Wait to avoid race condition where new segments(and corresponding .tmp files) are created after totalSize has been calculated.
+        if (ft.walArchiveEnabled()) {
+            int expWalWorkSegements = igniteEx.configuration().getDataStorageConfiguration().getWalSegments();
+
+            assertTrue(waitForCondition(() -> walFiles(ft.wal()).length == expWalWorkSegements, 3000l));
+
+            assertTrue(waitForCondition(() -> walMgr.lastArchivedSegment() == walMgr.currentSegment() - 1, 3000l));
+        }
+
+        long totalSize = FileWriteAheadLogManager.totalSize(walFiles(ft.wal()));
+
+        if (ft.walArchiveEnabled())
+            totalSize += FileWriteAheadLogManager.totalSize(walFiles(ft.walArchive()));
+
+        assertEquals(totalSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("WalTotalSize").value());
+
+        long lastArchivedSegIdx = dsMetricRegistry(igniteEx).<LongGauge>findMetric("LastArchivedSegment").value();
+
+        if (ft.walArchiveEnabled()) {
+            long cdcWalArchiveSegments = walFiles(igniteEx.context().pdsFolderResolver().fileTree().walCdc()).length;
+
+            // Count of segments = LastArchivedSegmentIndex + 1
+            assertEquals(cdcWalArchiveSegments, lastArchivedSegIdx + 1);
+        }
+        else
+            assertEquals(-1, lastArchivedSegIdx);
+    }
+
+    /**
+     * List of all relevant wal files descriptors in a given directory.
+     *
+     * @param filesDir Directory where the wal files are located.
+     * @return List of relevant file descriptors
+     * @throws IgniteException If failed.
+     */
+    private FileDescriptor[] walFiles(final File filesDir) throws IgniteException {
+        try {
+            return FileWriteAheadLogManager.loadFileDescriptors(filesDir);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -450,16 +633,6 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Getting data storage MXBean.
-     *
-     * @param n Node.
-     * @return MXBean.
-     */
-    private DataStorageMetricsMXBean dsMetricsMXBean(IgniteEx n) {
-        return getMxBean(n.name(), "Persistent Store", "DataStorageMetrics", DataStorageMetricsMXBean.class);
-    }
-
-    /**
      * Check that the metric of the total size compressed segment is working correctly.
      *
      * @param n Node.
@@ -468,8 +641,6 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         long exp = Arrays.stream(walMgr(n).walArchiveFiles()).filter(FileDescriptor::isCompressed)
             .mapToLong(fd -> fd.file().length()).sum();
 
-        assertEquals(exp, dbMgr(n).persistentStoreMetrics().getWalCompressedBytes());
-        assertEquals(exp, dsMetricsMXBean(n).getWalCompressedBytes());
-        assertEquals(exp, ((LongAdderMetric)dsMetricRegistry(n).findMetric("WalCompressedBytes")).value());
+        assertEquals(exp, dsMetricRegistry(n).<LongAdderMetric>findMetric("WalCompressedBytes").value());
     }
 }

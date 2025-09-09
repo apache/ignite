@@ -20,32 +20,27 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.events.BaselineEventsLocalTest;
 import org.apache.ignite.events.BaselineEventsRemoteTest;
 import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
-import org.apache.ignite.internal.commandline.indexreader.IgniteIndexReaderTest;
 import org.apache.ignite.internal.processors.security.GridCommandHandlerSslWithSecurityTest;
 import org.apache.ignite.util.GridCommandHandlerBrokenIndexTest;
+import org.apache.ignite.util.GridCommandHandlerCheckIncrementalSnapshotTest;
 import org.apache.ignite.util.GridCommandHandlerCheckIndexesInlineSizeTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
-import org.apache.ignite.util.GridCommandHandlerDefragmentationTest;
-import org.apache.ignite.util.GridCommandHandlerIndexForceRebuildTest;
-import org.apache.ignite.util.GridCommandHandlerIndexListTest;
-import org.apache.ignite.util.GridCommandHandlerIndexRebuildStatusTest;
+import org.apache.ignite.util.GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest;
+import org.apache.ignite.util.GridCommandHandlerIncompatibleSslConfigTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassWithSSLTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingWithSSLTest;
-import org.apache.ignite.util.GridCommandHandlerInterruptCommandTest;
+import org.apache.ignite.util.GridCommandHandlerLegacyClientTest;
 import org.apache.ignite.util.GridCommandHandlerMetadataTest;
-import org.apache.ignite.util.GridCommandHandlerPropertiesTest;
 import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
-import org.apache.ignite.util.GridCommandHandlerTracingConfigurationTest;
-import org.apache.ignite.util.GridCommandHandlerWithSSLTest;
-import org.apache.ignite.util.KillCommandsCommandShTest;
-import org.apache.ignite.util.MetricCommandTest;
-import org.apache.ignite.util.PerformanceStatisticsCommandTest;
-import org.apache.ignite.util.SystemViewCommandTest;
+import org.apache.ignite.util.GridCommandHandlerWithSslFactoryTest;
+import org.apache.ignite.util.GridCommandHandlerWithSslTest;
+import org.apache.ignite.util.GridPersistenceCommandsTest;
+import org.apache.ignite.util.KillCommandsControlShTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -57,10 +52,13 @@ import org.junit.runners.Suite;
     CommandHandlerParsingTest.class,
 
     GridCommandHandlerTest.class,
-    GridCommandHandlerWithSSLTest.class,
+    GridCommandHandlerWithSslTest.class,
+    GridCommandHandlerWithSslFactoryTest.class,
+    GridCommandHandlerIncompatibleSslConfigTest.class,
     GridCommandHandlerClusterByClassTest.class,
     GridCommandHandlerClusterByClassWithSSLTest.class,
     GridCommandHandlerSslTest.class,
+    GridPersistenceCommandsTest.class,
 
     GridCommandHandlerSslWithSecurityTest.class,
 
@@ -71,29 +69,16 @@ import org.junit.runners.Suite;
     GridCommandHandlerIndexingClusterByClassWithSSLTest.class,
     GridCommandHandlerIndexingCheckSizeTest.class,
     GridCommandHandlerCheckIndexesInlineSizeTest.class,
-    GridCommandHandlerInterruptCommandTest.class,
     GridCommandHandlerMetadataTest.class,
+    GridCommandHandlerCheckIncrementalSnapshotTest.class,
+    GridCommandHandlerLegacyClientTest.class,
 
-    KillCommandsCommandShTest.class,
+    KillCommandsControlShTest.class,
 
     BaselineEventsLocalTest.class,
     BaselineEventsRemoteTest.class,
 
-    GridCommandHandlerIndexForceRebuildTest.class,
-    GridCommandHandlerIndexListTest.class,
-    GridCommandHandlerIndexRebuildStatusTest.class,
-
-    GridCommandHandlerTracingConfigurationTest.class,
-
-    GridCommandHandlerPropertiesTest.class,
-
-    GridCommandHandlerDefragmentationTest.class,
-
-    SystemViewCommandTest.class,
-    MetricCommandTest.class,
-    PerformanceStatisticsCommandTest.class,
-
-    IgniteIndexReaderTest.class
+    GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest.class
 })
 public class IgniteControlUtilityTestSuite {
 }

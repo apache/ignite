@@ -67,7 +67,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -76,7 +75,6 @@ import static javax.cache.event.EventType.CREATED;
 import static javax.cache.event.EventType.EXPIRED;
 import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -106,17 +104,8 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     private static AtomicBoolean serialized = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         if (lsnrCfg != null)
@@ -131,10 +120,10 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
-        eventSpi.setExpireCount(50);
+        MemoryEventStorageSpi evtSpi = new MemoryEventStorageSpi();
+        evtSpi.setExpireCount(50);
 
-        cfg.setEventStorageSpi(eventSpi);
+        cfg.setEventStorageSpi(evtSpi);
 
         return cfg;
     }
@@ -457,9 +446,6 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      */
     @Test
     public void testSerialization() throws Exception {
-        if (cacheMode() == LOCAL)
-            return;
-
         AtomicBoolean serialized = new AtomicBoolean();
 
         NonSerializableListener lsnr = new NonSerializableListener(serialized);
@@ -678,9 +664,6 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
             IgniteCache<Object, Object> cache = grid.cache(DEFAULT_CACHE_NAME);
 
             log.info("Check filter for listener in configuration.");
-
-            if (cacheMode() == LOCAL)
-                cache.putAll(vals);
 
             checkFilter(cache, vals);
         }
@@ -1517,7 +1500,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            ListenerTestValue that = (ListenerTestValue) o;
+            ListenerTestValue that = (ListenerTestValue)o;
 
             return val1.equals(that.val1) && val2.equals(that.val2);
         }

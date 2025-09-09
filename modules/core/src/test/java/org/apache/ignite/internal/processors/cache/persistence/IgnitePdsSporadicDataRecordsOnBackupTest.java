@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -34,14 +35,15 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -114,10 +116,10 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
-        String nodeFolderName0 = ig0.context().pdsFolderResolver().resolveFolders().folderName();
-        String nodeFolderName1 = ig1.context().pdsFolderResolver().resolveFolders().folderName();
+        NodeFileTree ft0 = ig0.context().pdsFolderResolver().fileTree();
+        NodeFileTree ft1 = ig1.context().pdsFolderResolver().fileTree();
 
         IgniteCache<Integer, Long> cache = grid(0).cache(TX_CACHE_NAME);
 
@@ -132,11 +134,11 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
 
         txLoadFut.get();
 
-        grid(0).cluster().active(false);
+        grid(0).cluster().state(ClusterState.INACTIVE);
 
         stopAllGrids();
 
-        assertEquals(0, findSporadicDataRecords(nodeFolderName0) + findSporadicDataRecords(nodeFolderName1));
+        assertEquals(0, findSporadicDataRecords(ft0) + findSporadicDataRecords(ft1));
     }
 
     /**
@@ -145,19 +147,14 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
      *
      * @throws IgniteCheckedException If failed.
      */
-    private long findSporadicDataRecords(String nodeFolderName) throws IgniteCheckedException {
-        File dbDir = new File(U.defaultWorkDirectory(), "db");
-        File commonWalDir = new File(dbDir, "wal");
-        File walDir = new File(commonWalDir, nodeFolderName);
-        File walArchiveDir = new File(new File(commonWalDir, "archive"), nodeFolderName);
-
-        assertTrue(walDir.exists());
-        assertTrue(walArchiveDir.exists());
+    private long findSporadicDataRecords(NodeFileTree ft) throws IgniteCheckedException {
+        assertTrue(ft.wal().exists());
+        assertTrue(ft.walArchive().exists());
 
         IteratorParametersBuilder params = new IteratorParametersBuilder();
 
         params.bufferSize(1024 * 1024);
-        params.filesOrDirs(walDir, walArchiveDir);
+        params.filesOrDirs(ft.wal(), ft.walArchive());
         params.filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
 
         int cacheId = CU.cacheId(TX_CACHE_NAME);
@@ -172,11 +169,13 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
 
                 DataRecord rec = (DataRecord)walEntry.get2();
 
-                createOpCnt += rec.writeEntries()
-                    .stream()
-                    .filter(e ->
-                        e.cacheId() == cacheId && GridCacheOperation.CREATE == e.op() && e.nearXidVersion() == null)
-                    .count();
+                Predicate<DataEntry> filter =
+                    e -> e.cacheId() == cacheId && GridCacheOperation.CREATE == e.op() && e.nearXidVersion() == null;
+
+                for (int i = 0; i < rec.entryCount(); i++) {
+                    if (filter.test(rec.get(i)))
+                        createOpCnt++;
+                }
             }
         }
 

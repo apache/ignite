@@ -17,9 +17,20 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import java.util.Collection;
+import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
+
 /**
  * REFRESH STATISTICS Command.
  */
 public class SqlRefreshStatitsicsCommand extends SqlStatisticsCommands {
+    /** */
+    public SqlRefreshStatitsicsCommand() {
+        // No-op.
+    }
 
+    /** */
+    public SqlRefreshStatitsicsCommand(Collection<StatisticsTarget> targets) {
+        super(targets);
+    }
 }

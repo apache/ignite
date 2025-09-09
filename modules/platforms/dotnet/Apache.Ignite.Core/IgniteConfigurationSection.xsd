@@ -25,7 +25,6 @@
 
     <xs:simpleType name="cacheMode" final="restriction">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="Local" />
             <xs:enumeration value="Replicated" />
             <xs:enumeration value="Partitioned" />
         </xs:restriction>
@@ -1126,13 +1125,6 @@
                                 <xs:documentation>Whether client does not try to reconnect after server detected client node failure.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="forceServerMode" type="xs:boolean">
-                            <xs:annotation>
-                                <xs:documentation>
-                                    Whether TcpDiscoveryspi is started in server mode regardless of IgniteConfiguration.ClientMode setting.
-                                </xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
                         <xs:attribute name="ipFinderCleanFrequency" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>IP finder clean frequency.</xs:documentation>
@@ -1371,13 +1363,6 @@
                                 </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="deadlockTimeout" type="xs:string">
-                            <xs:annotation>
-                                <xs:documentation>
-                                    Timeout before starting deadlock detection. TimeSpan.Zero for disabling deadlock detection.
-                                </xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="logger" minOccurs="0">
@@ -1577,6 +1562,11 @@
                                     <xs:attribute name="maxActiveComputeTasksPerConnection" type="xs:int">
                                         <xs:annotation>
                                             <xs:documentation>Active compute tasks per connection limit. Or 0 if compute grid functionality is disabled for thin clients.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="sendServerExceptionStackTraceToClient" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>Whether to send full server exception stack trace to clients.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                 </xs:complexType>
@@ -1924,6 +1914,23 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="systemDataRegionConfiguration">
+                                <xs:annotation>
+                                    <xs:documentation>System data region configuration.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="initialSize" type="xs:long">
+                                        <xs:annotation>
+                                            <xs:documentation>Initial size of system data region.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="maxSize" type="xs:long">
+                                        <xs:annotation>
+                                            <xs:documentation>Maximum size of system data region.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
                         </xs:all>
                         <xs:attribute name="storagePath" type="xs:string">
                             <xs:annotation>
@@ -2042,12 +2049,12 @@
                         </xs:attribute>
                         <xs:attribute name="systemRegionInitialSize" type="xs:int">
                             <xs:annotation>
-                                <xs:documentation>Initial size of a memory region reserved for system needs.</xs:documentation>
+                                <xs:documentation>Initial size of a memory region reserved for system needs. Obsolete, use systemDataRegionConfiguration</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="systemRegionMaxSize" type="xs:int">
                             <xs:annotation>
-                                <xs:documentation>Maximum size of a memory region reserved for system needs.</xs:documentation>
+                                <xs:documentation>Maximum size of a memory region reserved for system needs. Obsolete, use systemDataRegionConfiguration</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="concurrencyLevel" type="xs:int">
@@ -2378,14 +2385,6 @@
                     <xs:documentation>System-wide local address or host for all Ignite components to bind to. If provided it will override all default local bind settings within Ignite.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="isDaemon" type="xs:boolean">
-                <xs:annotation>
-                    <xs:documentation>
-                        Whether this node should be a daemon node. Daemon nodes are the usual grid nodes that participate in topology but not visible on the main APIs.
-                        Daemon nodes are used primarily for management and monitoring functionality.
-                    </xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
             <xs:attribute name="springConfigUrl" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>URL to Spring configuration file.</xs:documentation>
@@ -2493,16 +2492,6 @@
             <xs:attribute name="authenticationEnabled" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Whether user authentication is enabled for the cluster.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="mvccVacuumFrequency" type="xs:long">
-                <xs:annotation>
-                    <xs:documentation>Time interval between MVCC vacuum runs in milliseconds.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="mvccVacuumThreadCount" type="xs:int">
-                <xs:annotation>
-                    <xs:documentation>Number of MVCC vacuum threads.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="sqlQueryHistorySize" type="xs:int">

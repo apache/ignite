@@ -43,7 +43,7 @@ public final class JdbcResultWithIo {
      * @return Response.
      */
     public <R extends JdbcResult> R response() {
-        return (R) res;
+        return (R)res;
     }
 
     /**

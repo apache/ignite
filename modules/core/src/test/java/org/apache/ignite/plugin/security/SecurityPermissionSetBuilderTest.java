@@ -75,31 +75,32 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
         final SecurityPermissionSetBuilder permsBuilder = new SecurityPermissionSetBuilder();
 
         assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        permsBuilder.appendCachePermissions("cache", ADMIN_VIEW);
-                        return null;
-                    }
-                }, IgniteException.class,
-                "you can assign permission only start with [CACHE_], but you try ADMIN_VIEW"
+                @Override public Object call() throws Exception {
+                    permsBuilder.appendCachePermissions("cache", ADMIN_VIEW);
+                    return null;
+                }
+            }, IgniteException.class,
+            "you can assign permission only start with [CACHE_], but you try ADMIN_VIEW"
         );
 
         assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        permsBuilder.appendTaskPermissions("task", CACHE_READ, JOIN_AS_SERVER);
-                        return null;
-                    }
-                }, IgniteException.class,
-                "you can assign permission only start with [TASK_], but you try CACHE_READ"
+                @Override public Object call() throws Exception {
+                    permsBuilder.appendTaskPermissions("task", CACHE_READ, JOIN_AS_SERVER);
+                    return null;
+                }
+            }, IgniteException.class,
+            "you can assign permission only start with [TASK_], but you try CACHE_READ"
         );
 
         assertThrows(log, new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        permsBuilder.appendSystemPermissions(TASK_EXECUTE, CACHE_PUT);
-                        return null;
-                    }
-                }, IgniteException.class,
-                "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, " +
-                    "JOIN_AS_SERVER, CHANGE_STATISTICS, REFRESH_STATISTICS], but you try TASK_EXECUTE"
+                @Override public Object call() throws Exception {
+                    permsBuilder.appendSystemPermissions(TASK_EXECUTE, CACHE_PUT);
+                    return null;
+                }
+            }, IgniteException.class,
+            "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, " +
+                "JOIN_AS_SERVER, CHANGE_STATISTICS, REFRESH_STATISTICS, SQL_VIEW_CREATE, SQL_VIEW_DROP], " +
+                "but you try TASK_EXECUTE"
         );
 
         assertThrows(log, new Callable<Object>() {
@@ -109,7 +110,8 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                 }
             }, IgniteException.class,
             "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, " +
-                "JOIN_AS_SERVER, CHANGE_STATISTICS, REFRESH_STATISTICS], but you try SERVICE_INVOKE"
+                "JOIN_AS_SERVER, CHANGE_STATISTICS, REFRESH_STATISTICS, SQL_VIEW_CREATE, SQL_VIEW_DROP], " +
+                "but you try SERVICE_INVOKE"
         );
 
         permsBuilder

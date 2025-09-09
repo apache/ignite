@@ -20,11 +20,8 @@ package org.apache.ignite.marshaller;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -33,21 +30,9 @@ import org.junit.Test;
  * Multi-JVM test for dynamic proxy serialization.
  */
 public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static Callable<Marshaller> marshFactory;
-
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(marshFactory.call());
-
-        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -60,12 +45,6 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
      */
     @Test
     public void testBinaryMarshaller() throws Exception {
-        marshFactory = new Callable<Marshaller>() {
-            @Override public Marshaller call() throws Exception {
-                return new BinaryMarshaller();
-            }
-        };
-
         doTestMarshaller();
     }
 
@@ -74,12 +53,6 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
      */
     @Test
     public void testToBinary() throws Exception {
-        marshFactory = new Callable<Marshaller>() {
-            @Override public Marshaller call() throws Exception {
-                return new BinaryMarshaller();
-            }
-        };
-
         Ignite ignite = startGrid(0);
 
         MyProxy p = create();
@@ -94,12 +67,6 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
      */
     @Test
     public void testBinaryField() throws Exception {
-        marshFactory = new Callable<Marshaller>() {
-            @Override public Marshaller call() throws Exception {
-                return new BinaryMarshaller();
-            }
-        };
-
         Ignite ignite = startGrids(2);
 
         BinaryObject bo = ignite.binary().builder("ProxyWrapper").setField("proxy", create()).build();
@@ -160,6 +127,7 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
         /** */
         private final BinaryObject bo;
 
+        /** */
         public FieldTestCallable(BinaryObject bo) {
             this.bo = bo;
         }

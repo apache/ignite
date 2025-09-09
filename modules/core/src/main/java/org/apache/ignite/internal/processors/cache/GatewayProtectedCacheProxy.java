@@ -41,6 +41,7 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -50,12 +51,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalState;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.TransactionException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -106,7 +106,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      */
     public void setCacheManager(org.apache.ignite.cache.CacheManager cacheMgr) {
         if (delegate instanceof IgniteCacheProxyImpl)
-            ((IgniteCacheProxyImpl) delegate).setCacheManager(cacheMgr);
+            ((IgniteCacheProxyImpl)delegate).setCacheManager(cacheMgr);
     }
 
     /** {@inheritDoc} */
@@ -144,8 +144,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            MvccUtils.verifyMvccOperationSupport(delegate.context(), "withExpiryPolicy");
-
             return new GatewayProtectedCacheProxy<>(delegate, opCtx.withExpiryPolicy(plc), lock);
         }
         finally {
@@ -176,21 +174,13 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
-        if (context().atomic() && !opCtx.allowedAtomicOpsInTx() && context().tm().tx() != null) {
-            throw new IllegalStateException("Enabling atomic operations during active transaction is not allowed. " +
-                "Enable atomic operations before transaction start.");
-        }
+    @Override public IgniteCache<K, V> withApplicationAttributes(Map<String, String> appAttrs) {
+        A.notNull(appAttrs, "application attributes");
 
         CacheOperationGate opGate = onEnter();
 
         try {
-            boolean allowed = opCtx.allowedAtomicOpsInTx();
-
-            if (allowed)
-                return this;
-
-            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setAllowAtomicOpsInTx(), lock);
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setApplicationAttributes(appAttrs), lock);
         }
         finally {
             onLeave(opGate);
@@ -232,37 +222,29 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withReadRepair() {
+    @Override public IgniteCache<K, V> withReadRepair(ReadRepairStrategy strategy) {
+        A.notNull(strategy, "strategy");
+
         CacheOperationGate opGate = onEnter();
 
         try {
-            if (context().mvccEnabled()) {
-                throw new UnsupportedOperationException(
-                    "The TRANSACTIONAL_SNAPSHOT mode is incompatible with the read-repair feature.");
-            }
-
             if (context().isNear())
                 throw new UnsupportedOperationException("Read-repair is incompatible with near caches.");
 
             if (context().readThrough()) {
-                // Read Repair get operation produces different versions for same entries loaded via readThrough feature.
+                // Entries loaded via readThrough feature have inconsistent versions by design.
                 throw new UnsupportedOperationException("Read-repair is incompatible with caches that use readThrough.");
             }
-
-            if (context().isLocal())
-                throw new UnsupportedOperationException("Read-repair is incompatible with local caches.");
 
             if (context().config().getBackups() == 0) {
                 throw new UnsupportedOperationException("Read-repair is suitable only in case " +
                     "at least 1 backup configured for cache.");
             }
 
-            boolean readRepair = opCtx.readRepair();
-
-            if (readRepair)
+            if (opCtx.readRepairStrategy() == strategy)
                 return this;
 
-            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setReadRepair(true), lock);
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setReadRepairStrategy(strategy), lock);
         }
         finally {
             onLeave(opGate);
@@ -279,7 +261,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            return new GatewayProtectedCacheProxy<>((IgniteCacheProxy<K1, V1>) delegate, opCtx.keepBinary(), lock);
+            return new GatewayProtectedCacheProxy<>((IgniteCacheProxy<K1, V1>)delegate, opCtx.keepBinary(), lock);
         }
         finally {
             onLeave(opGate);
@@ -1412,17 +1394,17 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         if (!onEnterIfNoStop(gate))
             return;
 
-        IgniteFuture<?> destroyFuture;
+        IgniteFuture<?> destroyFut;
 
         try {
-            destroyFuture = delegate.destroyAsync();
+            destroyFut = delegate.destroyAsync();
         }
         finally {
             onLeave(gate);
         }
 
-        if (destroyFuture != null)
-            destroyFuture.get();
+        if (destroyFut != null)
+            destroyFut.get();
     }
 
     /** {@inheritDoc} */
@@ -1437,17 +1419,17 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         if (!onEnterIfNoStop(gate))
             return;
 
-        IgniteFuture<?> closeFuture;
+        IgniteFuture<?> closeFut;
 
         try {
-            closeFuture = closeAsync();
+            closeFut = closeAsync();
         }
         finally {
             onLeave(gate);
         }
 
-        if (closeFuture != null)
-            closeFuture.get();
+        if (closeFut != null)
+            closeFut.get();
     }
 
     /** {@inheritDoc} */
@@ -1500,30 +1482,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
         try {
             return delegate.localMetrics();
-        }
-        finally {
-            onLeave(opGate);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean mxBean() {
-        CacheOperationGate opGate = onEnter();
-
-        try {
-            return delegate.mxBean();
-        }
-        finally {
-            onLeave(opGate);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean localMxBean() {
-        CacheOperationGate opGate = onEnter();
-
-        try {
-            return delegate.localMxBean();
         }
         finally {
             onLeave(opGate);
@@ -1608,8 +1566,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      * @return Cache Gateway.
      */
     @Nullable private GridCacheGateway<K, V> gate() {
-        GridCacheContext<K, V> cacheContext = delegate.context();
-        return cacheContext != null ? cacheContext.gate() : null;
+        GridCacheContext<K, V> cacheCtx = delegate.context();
+        return cacheCtx != null ? cacheCtx.gate() : null;
     }
 
     /**
@@ -1625,14 +1583,14 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         boolean isCacheProxy = delegate instanceof IgniteCacheProxyImpl;
 
         if (isCacheProxy)
-            ((IgniteCacheProxyImpl) delegate).checkRestart();
+            ((IgniteCacheProxyImpl)delegate).checkRestart();
 
         if (gate == null)
             throw new IllegalStateException("Gateway is unavailable. Probably cache has been destroyed, but proxy is not closed.");
 
         if (isCacheProxy && tryRestart && gate.isStopped() &&
             context().kernalContext().gateway().getState() == GridKernalState.STARTED) {
-            IgniteCacheProxyImpl proxyImpl = (IgniteCacheProxyImpl) delegate;
+            IgniteCacheProxyImpl proxyImpl = (IgniteCacheProxyImpl)delegate;
 
             try {
                 IgniteCacheProxy<K, V> proxy = context().kernalContext().cache().publicJCache(context().name());
@@ -1642,7 +1600,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
                     return gate();
                 }
-            } catch (IgniteCheckedException ignore) {
+            }
+            catch (IgniteCheckedException ignore) {
                 // Opportunity didn't work out.
             }
         }
@@ -1664,7 +1623,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             boolean isCacheProxy = delegate instanceof IgniteCacheProxyImpl;
 
             if (isCacheProxy)
-                ((IgniteCacheProxyImpl) delegate).checkRestart(true);
+                ((IgniteCacheProxyImpl)delegate).checkRestart(true);
 
             throw e; // If we reached this line.
         }
@@ -1741,16 +1700,16 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        delegate = (IgniteCacheProxy<K, V>) in.readObject();
+        delegate = (IgniteCacheProxy<K, V>)in.readObject();
 
         lock = in.readBoolean();
 
-        opCtx = (CacheOperationContext) in.readObject();
+        opCtx = (CacheOperationContext)in.readObject();
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object another) {
-        GatewayProtectedCacheProxy anotherProxy = (GatewayProtectedCacheProxy) another;
+        GatewayProtectedCacheProxy anotherProxy = (GatewayProtectedCacheProxy)another;
 
         return delegate.equals(anotherProxy.delegate);
     }

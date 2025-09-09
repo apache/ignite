@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -33,6 +35,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
@@ -200,6 +203,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteMetrics metrics() {
+        checkIgnite();
+
+        return g.metrics();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteServices services() {
         checkIgnite();
 
@@ -305,13 +315,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Override public DataStorageMetrics dataStorageMetrics() {
-        checkIgnite();
-
-        return g.dataStorageMetrics();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteEncryption encryption() {
         checkIgnite();
 
@@ -331,6 +334,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
+    @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
+        checkIgnite();
+
+        return g.withApplicationAttributes(attrs);
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<MemoryMetrics> memoryMetrics() {
         return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }
@@ -338,11 +348,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
         return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
-        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /** {@inheritDoc} */
@@ -518,8 +523,8 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
         @Nullable T initVal,
-        boolean create)
-    {
+        boolean create
+    ) {
         checkIgnite();
 
         return g.atomicReference(name, initVal, create);
@@ -537,8 +542,8 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
         @Nullable T initVal,
         @Nullable S initStamp,
-        boolean create)
-    {
+        boolean create
+    ) {
         checkIgnite();
 
         return g.atomicStamped(name, initVal, initStamp, create);
@@ -556,8 +561,8 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
         int cnt,
         boolean autoDel,
-        boolean create)
-    {
+        boolean create
+    ) {
         checkIgnite();
 
         return g.countDownLatch(name, cnt, autoDel, create);
@@ -567,8 +572,8 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     @Nullable @Override public IgniteSemaphore semaphore(String name,
         int cnt,
         boolean failoverSafe,
-        boolean create)
-    {
+        boolean create
+    ) {
         checkIgnite();
 
         return g.semaphore(name, cnt,
@@ -579,8 +584,8 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     @Nullable @Override public IgniteLock reentrantLock(String name,
         boolean failoverSafe,
         boolean fair,
-        boolean create)
-    {
+        boolean create
+    ) {
         checkIgnite();
 
         return g.reentrantLock(name, failoverSafe, fair, create);
@@ -589,8 +594,8 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         int cap,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg
+    ) {
         checkIgnite();
 
         return g.queue(name, cap, cfg);
@@ -598,8 +603,8 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg
+    ) {
         checkIgnite();
 
         return g.set(name, cfg);
@@ -614,14 +619,14 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     @Override public boolean active() {
         checkIgnite();
 
-        return g.active();
+        return g.cluster().state().active();
     }
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
         checkIgnite();
 
-        g.active(active);
+        g.cluster().state(active ? ClusterState.ACTIVE : ClusterState.INACTIVE);
     }
 
     /** {@inheritDoc} */

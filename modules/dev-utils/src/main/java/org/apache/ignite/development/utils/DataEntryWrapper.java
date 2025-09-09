@@ -25,10 +25,10 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.development.utils.ProcessSensitiveData.HASH;
 import static org.apache.ignite.development.utils.ProcessSensitiveData.HIDE;
@@ -41,7 +41,7 @@ class DataEntryWrapper extends DataEntry {
     /**
      * Source DataEntry.
      */
-    @Nullable private final DataEntry source;
+    private final DataEntry source;
 
     /** Strategy for the processing of sensitive data. */
     private final ProcessSensitiveData sensitiveData;
@@ -77,23 +77,28 @@ class DataEntryWrapper extends DataEntry {
     /** {@inheritDoc} */
     @Override public String toString() {
         final String keyStr;
-        final String valueStr;
+        final String valStr;
         if (source instanceof UnwrapDataEntry) {
             final UnwrapDataEntry unwrappedDataEntry = (UnwrapDataEntry)this.source;
 
             keyStr = toString(unwrappedDataEntry.unwrappedKey(), this.source.key());
 
-            valueStr = toString(unwrappedDataEntry.unwrappedValue(), this.source.value());
+            valStr = toString(unwrappedDataEntry.unwrappedValue(), this.source.value());
+        }
+        else if (source instanceof RecordDataV1Serializer.EncryptedDataEntry) {
+            keyStr = "<encrypted>";
+
+            valStr = "<encrypted>";
         }
         else {
             keyStr = toString(null, this.source.key());
 
-            valueStr = toString(null, this.source.value());
+            valStr = toString(null, this.source.value());
         }
 
         return new SB(this.source.getClass().getSimpleName())
             .a("[k = ").a(keyStr)
-            .a(", v = [").a(valueStr).a("]")
+            .a(", v = [").a(valStr).a("]")
             .a(", super = [").a(S.toString(DataEntry.class, source)).a("]]")
             .toString();
     }

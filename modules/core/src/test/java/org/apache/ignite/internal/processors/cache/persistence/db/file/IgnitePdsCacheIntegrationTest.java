@@ -29,6 +29,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -78,8 +79,6 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setMarshaller(null);
-
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setCompactFooter(false);
@@ -111,7 +110,7 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
         try {
             IgniteEx ig = grid(0);
 
-            ig.active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             checkPutGetSql(ig, true);
         }
@@ -128,7 +127,7 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
         try {
             IgniteEx ig = grid(0);
 
-            ig.active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             checkPutGetSql(ig, false);
         }
@@ -147,7 +146,7 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
         try {
             final IgniteEx grid = grid(0);
 
-            grid.active(true);
+            grid.cluster().state(ClusterState.ACTIVE);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {

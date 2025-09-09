@@ -39,9 +39,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public static final int INVALID_PART_FLAG_MASK = 0x1;
 
     /** */
@@ -67,7 +64,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     private byte flags;
 
     /**
-     * Empty constructor required for {@link Message}.
+     * Empty constructor.
      */
     public GridNearSingleGetResponse() {
         // No-op.
@@ -96,7 +93,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
         this.addDepInfo = addDepInfo;
 
         if (invalidPartitions)
-            flags = (byte)(flags | INVALID_PART_FLAG_MASK);
+            flags |= INVALID_PART_FLAG_MASK;
     }
 
     /**
@@ -136,7 +133,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
      *
      */
     public void setContainsValue() {
-        flags = (byte)(flags | CONTAINS_VAL_FLAG_MASK);
+        flags |= CONTAINS_VAL_FLAG_MASK;
     }
 
     /**
@@ -154,14 +151,14 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (res != null) {
-            GridCacheContext cctx = ctx.cacheContext(cacheId);
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
             if (res instanceof CacheObject)
-                prepareMarshalCacheObject((CacheObject) res, cctx);
+                prepareMarshalCacheObject((CacheObject)res, cctx);
             else if (res instanceof CacheVersionedValue)
                 ((CacheVersionedValue)res).prepareMarshal(cctx.cacheObjectContext());
             else if (res instanceof GridCacheEntryInfo)
@@ -173,11 +170,11 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (res != null) {
-            GridCacheContext cctx = ctx.cacheContext(cacheId());
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId());
 
             if (res instanceof CacheObject)
                 ((CacheObject)res).finishUnmarshal(cctx.cacheObjectContext(), ldr);
@@ -199,7 +196,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -207,31 +204,31 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong(futId))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage("res", res))
+                if (!writer.writeMessage(res))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
@@ -245,15 +242,12 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -261,7 +255,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
                 reader.incrementState();
 
             case 5:
-                flags = reader.readByte("flags");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -269,7 +263,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
                 reader.incrementState();
 
             case 6:
-                futId = reader.readLong("futId");
+                futId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -277,7 +271,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
                 reader.incrementState();
 
             case 7:
-                res = reader.readMessage("res");
+                res = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -285,7 +279,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
                 reader.incrementState();
 
             case 8:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -294,7 +288,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
         }
 
-        return reader.afterMessageRead(GridNearSingleGetResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -305,11 +299,6 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     /** {@inheritDoc} */
     @Override public short directType() {
         return 117;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 9;
     }
 
     /** {@inheritDoc} */

@@ -37,13 +37,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -51,6 +51,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.jackson.IgniteBinaryObjectJsonDeserializer;
+import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -172,7 +174,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         this.hnd = hnd;
         this.authChecker = authChecker;
         this.log = ctx.log(getClass());
-        this.jsonMapper = new GridJettyObjectMapper(ctx);
+        this.jsonMapper = new IgniteObjectMapper(ctx);
 
         // Init default page and favicon.
         try {
@@ -257,6 +259,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
     }
 
+    /** */
     private static <T extends Enum<T>> @Nullable T enumValue(
         String key,
         Map<String, String> params,
@@ -451,12 +454,12 @@ public class GridJettyRestHandler extends AbstractHandler {
                 throw new IllegalStateException("Received null result from handler: " + hnd);
 
             if (getAllAsArray && cmd == GridRestCommand.CACHE_GET_ALL) {
-                List<Object> resKeyValue = new ArrayList<>();
+                List<Object> resKeyVal = new ArrayList<>();
 
                 for (Map.Entry<Object, Object> me : ((Map<Object, Object>)cmdRes.getResponse()).entrySet())
-                    resKeyValue.add(new IgniteBiTuple<>(me.getKey(), me.getValue()));
+                    resKeyVal.add(new IgniteBiTuple<>(me.getKey(), me.getValue()));
 
-                cmdRes.setResponse(resKeyValue);
+                cmdRes.setResponse(resKeyVal);
             }
 
             byte[] sesTok = cmdRes.sessionTokenBytes();
@@ -722,7 +725,6 @@ public class GridJettyRestHandler extends AbstractHandler {
             }
 
             case DATA_REGION_METRICS:
-            case DATA_STORAGE_METRICS:
             case NAME:
             case VERSION:
             case PROBE: {
@@ -929,7 +931,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         restReq.command(cmd);
 
-        Object certs = req.getAttribute("javax.servlet.request.X509Certificate");
+        Object certs = req.getAttribute("jakarta.servlet.request.X509Certificate");
 
         if (certs instanceof X509Certificate[])
             restReq.certificates((X509Certificate[])certs);

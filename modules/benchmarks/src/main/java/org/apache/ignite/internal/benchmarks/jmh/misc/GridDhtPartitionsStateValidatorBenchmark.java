@@ -27,12 +27,12 @@ import com.google.common.collect.Sets;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsStateValidator;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
@@ -91,7 +91,7 @@ public class GridDhtPartitionsStateValidatorBenchmark extends JmhAbstractBenchma
          * @return Message with specified {@code countersMap} and {@code sizeMap}.
          */
         private GridDhtPartitionsSingleMessage from(
-            @Nullable Map<Integer, T2<Long, Long>> countersMap,
+            @Nullable CachePartitionPartialCountersMap countersMap,
             @Nullable Map<Integer, Long> sizesMap
         ) {
             GridDhtPartitionsSingleMessage msg = new GridDhtPartitionsSingleMessage();
@@ -115,30 +115,32 @@ public class GridDhtPartitionsStateValidatorBenchmark extends JmhAbstractBenchma
 
             Mockito.when(topologyMock.partitions()).thenReturn(PARTS);
 
-            List<GridDhtLocalPartition> localPartitions = Lists.newArrayList();
+            List<GridDhtLocalPartition> locPartitions = Lists.newArrayList();
 
-            Map<Integer, T2<Long, Long>> updateCountersMap = new HashMap<>();
+            CachePartitionPartialCountersMap cntrMap = new CachePartitionPartialCountersMap(PARTS);
 
             Map<Integer, Long> cacheSizesMap = new HashMap<>();
 
-            IntStream.range(0, PARTS).forEach(k -> { localPartitions.add(partitionMock(k, k + 1, k + 1));
+            IntStream.range(0, PARTS).forEach(k -> {
+                locPartitions.add(partitionMock(k, k + 1, k + 1));
                 long us = k > 20 && k <= 30 ? 0 : k + 2L;
-                updateCountersMap.put(k, new T2<>(k + 2L, us));
-                cacheSizesMap.put(k, us); });
+                cntrMap.add(k, k + 2L, us);
+                cacheSizesMap.put(k, us);
+            });
 
-            Mockito.when(topologyMock.localPartitions()).thenReturn(localPartitions);
-            Mockito.when(topologyMock.currentLocalPartitions()).thenReturn(localPartitions);
+            Mockito.when(topologyMock.localPartitions()).thenReturn(locPartitions);
+            Mockito.when(topologyMock.currentLocalPartitions()).thenReturn(locPartitions);
 
             // Form single messages map.
-            Map<UUID, GridDhtPartitionsSingleMessage> messages = new HashMap<>();
+            Map<UUID, GridDhtPartitionsSingleMessage> msgs = new HashMap<>();
 
             for (int n = 0; n < NODES; ++n) {
                 UUID remoteNode = UUID.randomUUID();
 
-                messages.put(remoteNode, from(updateCountersMap, cacheSizesMap));
+                msgs.put(remoteNode, from(cntrMap, cacheSizesMap));
             }
 
-            messages.put(ignoreNode, from(updateCountersMap, cacheSizesMap));
+            msgs.put(ignoreNode, from(cntrMap, cacheSizesMap));
 
             validator = new GridDhtPartitionsStateValidator(cctxMock);
         }

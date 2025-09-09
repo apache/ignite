@@ -1,3 +1,33 @@
+apache-ignite (2.16.0-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.16.0
+
+ -- Nikita Amelchev <namelchev@apache.org>  Wed, 22 Nov 2023 19:00:00 +0300
+
+apache-ignite (2.15.0-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.15.0
+
+ -- Alexey Plekhanov <alexpl@apache.org>  Thu, 20 Apr 2023 11:00:00 +0300
+
+apache-ignite (2.14.0-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.14.0
+
+ -- Taras Ledkov <tledkov@apache.org>  Fri, 09 Sep 2022 16:00:00 +0300
+
+apache-ignite (2.13.0-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.13.0
+
+ -- Nikita Amelchev <namelchev@apache.org>  Thu, 07 Apr 2022 22:00:00 +0300
+
+apache-ignite (2.12.0-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.12.0
+
+ -- Nikita Amelchev <namelchev@apache.org>  Thu, 21 Oct 2021 22:00:00 +0300
+
 apache-ignite (2.11.0-1) unstable; urgency=low
 
   * Updated Apache Ignite to version 2.11.0
@@ -69,4 +99,3 @@ apache-ignite (2.4.0-1) unstable; urgency=low
   * Initial package release
 
  -- Petr Ivanov <mr.weider@gmail.com>  Wed, 17 Jan 2018 12:00:00 +0300
-

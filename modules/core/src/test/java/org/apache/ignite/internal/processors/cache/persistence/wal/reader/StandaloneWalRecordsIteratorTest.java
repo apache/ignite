@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -43,11 +44,11 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -97,11 +98,16 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
      *
      */
     private String createWalFiles() throws Exception {
+        return createWalFiles(1);
+    }
+
+    /** */
+    private String createWalFiles(int segRecCnt) throws Exception {
         IgniteEx ig = (IgniteEx)startGrid();
 
         String archiveWalDir = getArchiveWalDirPath(ig);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCacheDatabaseSharedManager sharedMgr = ig.context().cache().context().database();
 
@@ -112,7 +118,10 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
             sharedMgr.checkpointReadLock();
 
             try {
-                walMgr.log(new SnapshotRecord(i, false), RolloverType.NEXT_SEGMENT);
+                for (int j = 0; j < segRecCnt - 1; j++)
+                    walMgr.log(new SnapshotRecord(i * segRecCnt + j, false));
+
+                walMgr.log(new SnapshotRecord(i * segRecCnt + segRecCnt - 1, false), RolloverType.NEXT_SEGMENT);
             }
             finally {
                 sharedMgr.checkpointReadUnlock();
@@ -142,6 +151,121 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
             "All WAL files must be closed at least ones!",
             CountedFileIO.getCountOpenedWalFiles() <= CountedFileIO.getCountClosedWalFiles()
         );
+    }
+
+    /** */
+    @Test
+    public void testNoNextIfLowBoundInTheEnd() throws Exception {
+        String dir = createWalFiles(3);
+
+        WALIterator iter = createWalIterator(dir, null, null, false);
+
+        assertFalse(iter.lastRead().isPresent());
+        assertTrue(iter.hasNext());
+
+        while (iter.hasNext()) {
+            IgniteBiTuple<WALPointer, WALRecord> curr = iter.next();
+
+            assertEquals("Last read should point to the current record", curr.get1(), iter.lastRead().get());
+        }
+
+        iter.close();
+
+        iter = createWalIterator(dir, iter.lastRead().get().next(), null, false);
+
+        assertFalse(iter.lastRead().isPresent());
+
+        assertFalse(iter.hasNext());
+
+        iter.close();
+    }
+
+    /** */
+    @Test
+    public void testNextRecordReturnedForLowBounds() throws Exception {
+        String dir = createWalFiles(3);
+
+        WALIterator iter = createWalIterator(dir, null, null, false);
+
+        IgniteBiTuple<WALPointer, WALRecord> prev = iter.next();
+
+        assertEquals("Last read should point to the current record", prev.get1(), iter.lastRead().get());
+
+        iter.close();
+
+        iter = createWalIterator(dir, iter.lastRead().get().next(), null, false);
+
+        assertFalse(iter.lastRead().isPresent());
+        assertTrue(iter.hasNext());
+
+        while (iter.hasNext()) {
+            IgniteBiTuple<WALPointer, WALRecord> cur = iter.next();
+
+            assertEquals("Last read should point to the current record", cur.get1(), iter.lastRead().get());
+
+            assertFalse(
+                "Should read next record[prev=" + prev.get1() + ", cur=" + cur.get1() + ']',
+                prev.get1().equals(cur.get1())
+            );
+
+            prev = cur;
+
+            iter.close();
+
+            iter = createWalIterator(dir, iter.lastRead().get().next(), null, false);
+
+            assertFalse(iter.lastRead().isPresent());
+        }
+
+        iter.close();
+    }
+
+    /** */
+    @Test
+    public void testLastRecordFiltered() throws Exception {
+        String dir = createWalFiles();
+
+        WALIterator iter = createWalIterator(dir, null, null, false);
+
+        IgniteBiTuple<WALPointer, WALRecord> lastRec = null;
+
+        // Search for the last record.
+        while (iter.hasNext())
+            lastRec = iter.next();
+
+        iter.close();
+
+        assertNotNull(lastRec);
+
+        WALPointer lastPointer = iter.lastRead().get();
+
+        WALRecord.RecordType lastRecType = lastRec.get2().type();
+
+        // Iterating and filter out last record.
+        iter = createWalIterator(dir, null, null, false, (type, ptr) -> type != lastRecType);
+
+        assertTrue(iter.hasNext());
+
+        while (iter.hasNext()) {
+            lastRec = iter.next();
+
+            assertNotNull(lastRec.get2().type()); // Type is null for filtered records.
+
+            assertTrue(lastRec.get2().type() != lastRecType);
+        }
+
+        iter.close();
+
+        assertNotNull(lastRec);
+
+        assertEquals(
+            "LastRead should point to the last WAL Record even it filtered",
+            lastPointer,
+            iter.lastRead().get()
+        );
+
+        // Record on `lastPointer` is filtered so.
+        assertEquals("Last returned record should be before lastPointer", -1, lastRec.get1().compareTo(lastPointer));
     }
 
     /**
@@ -256,14 +380,29 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         return new IgniteWalIteratorFactory(log).resolveWalFiles(params.filesOrDirs(walDir));
     }
 
+    /** */
+    private WALIterator createWalIterator(
+        String walDir,
+        WALPointer lowBound,
+        WALPointer highBound,
+        boolean strictCheck
+    ) throws IgniteCheckedException {
+        return createWalIterator(walDir, lowBound, highBound, strictCheck, null);
+    }
+
     /**
      * @param walDir Wal directory.
      * @param lowBound Low bound.
      * @param highBound High bound.
      * @param strictCheck Strict check.
      */
-    private WALIterator createWalIterator(String walDir, WALPointer lowBound, WALPointer highBound, boolean strictCheck)
-                    throws IgniteCheckedException {
+    private WALIterator createWalIterator(
+        String walDir,
+        WALPointer lowBound,
+        WALPointer highBound,
+        boolean strictCheck,
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> filter
+    ) throws IgniteCheckedException {
         IteratorParametersBuilder params = new IteratorParametersBuilder();
 
         params.ioFactory(new RandomAccessFileIOFactory()).
@@ -273,8 +412,11 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         if (lowBound != null)
             params.from(lowBound);
 
-        if (lowBound != null)
+        if (highBound != null)
             params.to(highBound);
+
+        if (filter != null)
+            params.filter(filter);
 
         return new IgniteWalIteratorFactory(log).iterator(params);
     }
@@ -284,14 +426,9 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
      *
      * @param ignite instance of Ignite.
      * @return path to directory with WAL archive.
-     * @throws IgniteCheckedException if error occur.
      */
-    private String getArchiveWalDirPath(Ignite ignite) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(
-            U.defaultWorkDirectory(),
-            ignite.configuration().getDataStorageConfiguration().getWalArchivePath(),
-            false
-        ).getAbsolutePath();
+    private String getArchiveWalDirPath(Ignite ignite) {
+        return ((IgniteEx)ignite).context().pdsFolderResolver().fileTree().walArchive().getAbsolutePath();
     }
 
     /**
@@ -316,16 +453,16 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         /** Wal close counter. */
         private static final AtomicInteger WAL_CLOSE_COUNTER = new AtomicInteger();
 
-        /** File name. */
-        private final String fileName;
+        /** File. */
+        private final File file;
 
         /** */
         public CountedFileIO(File file, OpenOption... modes) throws IOException {
             super(file, modes);
 
-            fileName = file.getName();
+            this.file = file;
 
-            if (FileWriteAheadLogManager.WAL_NAME_PATTERN.matcher(fileName).matches())
+            if (NodeFileTree.walSegment(file))
                 WAL_OPEN_COUNTER.incrementAndGet();
         }
 
@@ -333,7 +470,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         @Override public void close() throws IOException {
             super.close();
 
-            if (FileWriteAheadLogManager.WAL_NAME_PATTERN.matcher(fileName).matches())
+            if (NodeFileTree.walSegment(file))
                 WAL_CLOSE_COUNTER.incrementAndGet();
         }
 
@@ -341,12 +478,16 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
          *
          * @return number of opened files.
          */
-        public static int getCountOpenedWalFiles() { return WAL_OPEN_COUNTER.get(); }
+        public static int getCountOpenedWalFiles() {
+            return WAL_OPEN_COUNTER.get();
+        }
 
         /**
          *
          * @return number of closed files.
          */
-        public static int getCountClosedWalFiles() { return WAL_CLOSE_COUNTER.get(); }
+        public static int getCountClosedWalFiles() {
+            return WAL_CLOSE_COUNTER.get();
+        }
     }
 }

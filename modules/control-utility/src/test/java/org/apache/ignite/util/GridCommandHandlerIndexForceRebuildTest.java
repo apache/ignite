@@ -25,20 +25,30 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -53,7 +63,8 @@ import org.junit.Test;
 import static java.lang.String.valueOf;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.util.IgniteUtils.max;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -62,6 +73,7 @@ import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.breakSqlInd
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.complexIndexEntity;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillThreeFieldsEntryCache;
+import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.personEntity;
 
 /**
  * Test for --cache indexes_force_rebuild command. Uses single cluster per suite.
@@ -106,10 +118,13 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        ListeningTestLogger testLog = new ListeningTestLogger(log);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        return super.getConfiguration(igniteInstanceName)
-            .setGridLogger(testLog);
+        cfg.setGridLogger(new ListeningTestLogger(log));
+
+        cfg.setBuildIndexThreadPoolSize(max(2, cfg.getBuildIndexThreadPoolSize()));
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -146,13 +161,15 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         IgniteEx ignite = grid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         createAndFillCache(ignite, CACHE_NAME_1_1, GRP_NAME_1);
         createAndFillCache(ignite, CACHE_NAME_1_2, GRP_NAME_1);
         createAndFillCache(ignite, CACHE_NAME_2_1, GRP_NAME_2);
 
         createAndFillThreeFieldsEntryCache(ignite, CACHE_NAME_NO_GRP, null, Collections.singletonList(complexIndexEntity()));
+
+        assertTrue(grid(LAST_NODE_NUM).context().config().getBuildIndexThreadPoolSize() > 1);
     }
 
     /**
@@ -169,7 +186,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         String cacheNamesOutputStr = testOut.toString();
 
-        assertTrue(cacheNamesOutputStr.contains("WARNING: Indexes rebuild was not started for any cache. Check command input."));
+        assertTrue(cacheNamesOutputStr.contains(CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED_SINGLE));
 
         testOut.reset();
 
@@ -179,7 +196,76 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         String grpNamesOutputStr = testOut.toString();
 
-        assertTrue(grpNamesOutputStr.contains("WARNING: Indexes rebuild was not started for any cache. Check command input."));
+        assertTrue(grpNamesOutputStr.contains(CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED_SINGLE));
+    }
+
+    /**
+     * Test the command output on a cache with node filter.
+     */
+    @Test
+    public void testWithNodeFilter() throws Exception {
+        injectTestSystemOut();
+
+        try {
+            grid(1).createCache(new CacheConfiguration<>("cacheWithNodeFilter")
+                .setNodeFilter(n -> n.consistentId().toString().endsWith("1"))
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setBackups(1)
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                .setQueryEntities(Collections.singletonList(personEntity())));
+
+            for (int i = 0; i < 100; ++i)
+                grid(1).cache("cacheWithNodeFilter").put(i, new Person(i * 10, "Name_" + 1));
+
+            assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild", "--all-nodes", "--cache-names",
+                "cacheWithNodeFilter"));
+
+            String cacheNamesOutputStr = testOut.toString();
+
+            validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
+                grid(1).localNode().id().toString());
+
+            validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+                grid(LAST_NODE_NUM).localNode().id().toString());
+            validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+                grid(0).localNode().id().toString());
+
+            validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
+                grid(0).localNode().id().toString());
+            validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
+                grid(LAST_NODE_NUM).localNode().id().toString());
+
+            waitForIndexesRebuild(grid(1));
+        }
+        finally {
+            grid(LAST_NODE_NUM).destroyCache("cacheWithNodeFilter");
+
+            awaitPartitionMapExchange();
+        }
+    }
+
+    /**
+     * Checks error messages when trying to rebuild indexes for non-existent cache of group on several nodes
+     * using '--node-ids'.
+     */
+    @Test
+    public void testEmptyResultTwoNodes() {
+        injectTestSystemOut();
+
+        String nids = grid(LAST_NODE_NUM).localNode().id().toString() + ',' + grid(0).localNode().id().toString();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild", "--node-ids", nids,
+            "--cache-names", CACHE_NAME_NON_EXISTING));
+
+        String cacheNamesOutputStr = testOut.toString();
+
+        assertFalse(cacheNamesOutputStr.contains(CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED));
+        assertFalse(cacheNamesOutputStr.contains(CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED_SINGLE));
+
+        validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
+            grid(LAST_NODE_NUM).localNode().id().toString());
+        validateMultiNodeOutput(cacheNamesOutputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_NOT_STARTED,
+            grid(0).localNode().id().toString());
     }
 
     /**
@@ -239,7 +325,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             validateOutputIndicesRebuildWasStarted(outputStr, F.asMap(GRP_NAME_1, F.asList(CACHE_NAME_1_1)));
 
-            assertEquals("Unexpected number of lines in output.", 19, outputStr.split("\n").length);
+            assertEquals("Unexpected number of lines in output.", 8 + commandHandlerExtraLines(), outputStr.split("\n").length);
 
             // Index rebuild must be triggered only for cache1_1 and only on node3.
             assertFalse(cache1Listeners[0].check());
@@ -258,6 +344,84 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             }
 
             assertTrue(waitForIndexesRebuild(grid(LAST_NODE_NUM)));
+        }
+    }
+
+    /**
+     * Checks output of index rebuilding launched on several nodes using '--nodes-ids'.
+     */
+    @Test
+    public void testIndexRebuildOutputTwoNodes() throws Exception {
+        blockRebuildIdx.put(CACHE_NAME_2_1, new GridFutureAdapter<>());
+
+        injectTestSystemOut();
+
+        try {
+            triggerIndexRebuild(LAST_NODE_NUM, Collections.singletonList(CACHE_NAME_2_1));
+
+            assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild",
+                "--node-ids", grid(LAST_NODE_NUM).localNode().id().toString() + ',' + grid(0).localNode().id().toString(),
+                "--cache-names", CACHE_NAME_1_1 + ',' + CACHE_NAME_2_1 + ',' + CACHE_NAME_NON_EXISTING));
+
+            String outputStr = testOut.toString();
+
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND, CACHE_NAME_NON_EXISTING);
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+                grid(LAST_NODE_NUM).localNode().id().toString());
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND,
+                grid(0).localNode().id().toString());
+
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILDING, CACHE_NAME_2_1);
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILDING,
+                grid(LAST_NODE_NUM).localNode().id().toString());
+
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED, CACHE_NAME_1_1);
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
+                grid(LAST_NODE_NUM).localNode().id().toString());
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
+                grid(0).localNode().id().toString());
+        }
+        finally {
+            blockRebuildIdx.remove(CACHE_NAME_2_1);
+
+            assertTrue(waitForIndexesRebuild(grid(LAST_NODE_NUM)));
+        }
+    }
+
+    /**
+     * Checks output of index rebuilding launched on all nodes using '--all-nodes'.
+     */
+    @Test
+    public void testIndexRebuildAllNodes() throws IgniteInterruptedCheckedException {
+        injectTestSystemOut();
+
+        LogListener[] cacheLsnrs = new LogListener[GRIDS_NUM];
+
+        try {
+            for (int i = 0; i < GRIDS_NUM; i++)
+                cacheLsnrs[i] = installRebuildCheckListener(grid(i), CACHE_NAME_1_1);
+
+            assertEquals(EXIT_CODE_OK, execute("--cache", "indexes_force_rebuild", "--all-nodes",
+                "--cache-names", CACHE_NAME_1_1));
+
+            String outputStr = testOut.toString();
+
+            validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED, CACHE_NAME_1_1);
+
+            for (int i = 0; i < GRIDS_NUM; i++) {
+                validateMultiNodeOutput(outputStr, CacheIndexesForceRebuildCommand.PREF_REBUILD_STARTED,
+                    grid(i).localNode().id().toString());
+            }
+
+            for (Ignite ig : G.allGrids())
+                waitForIndexesRebuild((IgniteEx)ig);
+
+            for (LogListener lsnr : cacheLsnrs)
+                assertTrue(lsnr.check());
+        }
+        finally {
+            for (int i = 0; i < GRIDS_NUM; i++)
+                removeLogListener(grid(i), cacheLsnrs[i]);
         }
     }
 
@@ -304,7 +468,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
                 )
             );
 
-            assertEquals("Unexpected number of lines in outputStr.", 20, outputStr.split("\n").length);
+            assertEquals("Unexpected number of lines in outputStr.", 9 + commandHandlerExtraLines(), outputStr.split("\n").length);
 
             assertFalse(cache1Listeners[0].check());
             assertFalse(cache1Listeners[1].check());
@@ -507,25 +671,25 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      */
     @Test
     public void testSequentialForceRebuildIndexes() throws Exception {
-        IgniteEx grid = grid(0);
+        Collection<IgniteEx> grids = Collections.singletonList(grid(0));
 
         injectTestSystemOut();
 
         String outputStr;
 
-        forceRebuildIndices(F.asList(CACHE_NAME_1_1), grid);
+        forceRebuildIndices(F.asList(CACHE_NAME_1_1), grids);
 
         outputStr = testOut.toString();
 
         validateOutputIndicesRebuildWasStarted(outputStr, F.asMap(GRP_NAME_1, F.asList(CACHE_NAME_1_1)));
 
-        assertFalse(outputStr.contains("WARNING: These caches have indexes rebuilding in progress:"));
+        assertFalse(outputStr.contains(CacheIndexesForceRebuildCommand.PREF_REBUILDING));
 
-        forceRebuildIndices(F.asList(CACHE_NAME_1_1), grid);
+        forceRebuildIndices(F.asList(CACHE_NAME_1_1), grids);
 
         validateOutputIndicesRebuildWasStarted(outputStr, F.asMap(GRP_NAME_1, F.asList(CACHE_NAME_1_1)));
 
-        assertFalse(outputStr.contains("WARNING: These caches have indexes rebuilding in progress:"));
+        assertFalse(outputStr.contains(CacheIndexesForceRebuildCommand.PREF_REBUILDING));
     }
 
     /**
@@ -534,11 +698,11 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @param outputStr CLI {@code control.sh} utility output.
      * @param cacheNames Cache names to print.
      */
-    private void validateOutputCacheNamesNotFound(String outputStr, String... cacheNames) {
+    private static void validateOutputCacheNamesNotFound(String outputStr, String... cacheNames) {
         assertContains(
             log,
             outputStr,
-            "WARNING: These caches were not found:" + U.nl() + makeStringListWithIndent(cacheNames)
+            CacheIndexesForceRebuildCommand.PREF_CACHES_NOT_FOUND + U.nl() + makeStringListWithIndent(cacheNames)
         );
     }
 
@@ -552,7 +716,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         assertContains(
             log,
             outputStr,
-            "WARNING: These cache groups were not found:" + U.nl() + makeStringListWithIndent(cacheGrps)
+            CacheIndexesForceRebuildCommand.PREF_GROUPS_NOT_FOUND + U.nl() + makeStringListWithIndent(cacheGrps)
         );
     }
 
@@ -561,27 +725,31 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @param strings List of strings.
      * @return Formated text.
      */
-    private String makeStringListWithIndent(String... strings) {
+    private static String makeStringListWithIndent(String... strings) {
         return INDENT + String.join(U.nl() + INDENT, strings);
     }
 
     /**
      * Makes formatted text for given caches.
      *
+     * @param header Output header.
      * @param cacheGroputToNames Cache groups mapping to non-existing cache names.
-     * @return Text for CLI print output for given caches.
+     * @return CLI output pattern for given caches.
      */
-    private String makeStringListForCacheGroupsAndNames(Map<String, List<String>> cacheGroputToNames) {
-        SB sb = new SB();
+    private static Pattern makePatternForCacheGroupsAndNames(String header, Map<String, List<String>> cacheGroputToNames) {
+        GridStringBuilder sb = new SB(header).a("\\n");
 
         for (Map.Entry<String, List<String>> entry : cacheGroputToNames.entrySet()) {
             String cacheGrp = entry.getKey();
 
             for (String cacheName : entry.getValue())
-                sb.a(INDENT).a("groupName=").a(cacheGrp).a(", cacheName=").a(cacheName).a(U.nl());
+                sb.a(INDENT)
+                    .a("groupName=").a(cacheGrp)
+                    .a(", cacheName=").a(cacheName)
+                    .a(", indexBuildPartitionsLeftCount=(\\d+), totalPartitionsCount=(\\d+), progress=(\\d+)%\\n");
         }
 
-        return sb.toString();
+        return Pattern.compile(sb.toString());
     }
 
     /**
@@ -590,14 +758,13 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @param outputStr CLI {@code control.sh} utility output.
      * @param cacheGroputToNames Cache groups mapping to non-existing cache names.
      */
-    private void validateOutputIndicesRebuildingInProgress(String outputStr, Map<String, List<String>> cacheGroputToNames) {
-        String caches = makeStringListForCacheGroupsAndNames(cacheGroputToNames);
-
-        assertContains(
-            log,
-            outputStr,
-            "WARNING: These caches have indexes rebuilding in progress:" + U.nl() + caches
+    private static void validateOutputIndicesRebuildingInProgress(String outputStr, Map<String, List<String>> cacheGroputToNames) {
+        Pattern pattern = makePatternForCacheGroupsAndNames(
+            "WARNING: These caches have indexes rebuilding in progress:",
+            cacheGroputToNames
         );
+
+        assertTrue(pattern.matcher(outputStr).find());
     }
 
     /**
@@ -607,13 +774,41 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @param cacheGroputToNames Cache groups mapping to non-existing cache names.
      */
     private void validateOutputIndicesRebuildWasStarted(String outputStr, Map<String, List<String>> cacheGroputToNames) {
-        String caches = makeStringListForCacheGroupsAndNames(cacheGroputToNames);
-
-        assertContains(
-            log,
-            outputStr,
-            "Indexes rebuild was started for these caches:" + U.nl() + caches
+        Pattern pattern = makePatternForCacheGroupsAndNames(
+            "Indexes rebuild was started for these caches:",
+            cacheGroputToNames
         );
+
+        assertTrue(pattern.matcher(outputStr).find());
+    }
+
+    /**
+     * Validates the multi-node command output. Searches for the passed prefix/header and the target strings below it.
+     *
+     * @param outputStr The output.
+     * @param prefix    Prefix or header to search.
+     * @param targetStr Target string to search after {@code prefix}.
+     */
+    static void validateMultiNodeOutput(String outputStr, String prefix, String targetStr) {
+        String[] lines = outputStr.split(U.nl());
+
+        for (int i = 0, heraderIdx = -1; i < lines.length; ++i) {
+            String line = lines[i];
+
+            if (heraderIdx < 0) {
+                if (line.contains(prefix))
+                    heraderIdx = i;
+
+                continue;
+            }
+
+            // Search next line after the header.
+            if (i == heraderIdx + 1 && line.contains(targetStr))
+                return;
+        }
+
+        throw new IllegalStateException("Target string '" + targetStr + "' not found after header '" + prefix
+            + "' in the command output.");
     }
 
     /**
@@ -625,9 +820,11 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @throws Exception if failed.
      */
     private void triggerIndexRebuild(int igniteIdx, Collection<String> excludedCacheNames) throws Exception {
+        NodeFileTree ft = grid(2).context().pdsFolderResolver().fileTree();
+
         stopGrid(igniteIdx);
 
-        GridTestUtils.deleteIndexBin(getTestIgniteInstanceName(2));
+        GridTestUtils.deleteIndexBin(ft);
 
         IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
         final IgniteEx ignite = startGrid(igniteIdx);
@@ -651,8 +848,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @throws IgniteInterruptedCheckedException if failed.
      */
     private boolean waitForIndexesRebuild(IgniteEx ignite, long timeout, Collection<String> excludedCacheNames)
-        throws IgniteInterruptedCheckedException
-    {
+        throws IgniteInterruptedCheckedException {
         return GridTestUtils.waitForCondition(
             () -> ignite.context().cache().publicCaches()
                 .stream()
@@ -766,21 +962,24 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * Force rebuilds indices for chosen caches, and waits until rebuild process is complete.
      *
      * @param cacheNames Cache names need indices to rebuild.
-     * @param grid Ignite node.
+     * @param grids Ignite nodes.
      * @throws Exception If failed.
      */
-    private void forceRebuildIndices(Iterable<String> cacheNames, IgniteEx grid) throws Exception {
+    private void forceRebuildIndices(Iterable<String> cacheNames, Collection<IgniteEx> grids) throws Exception {
         String cacheNamesArg = String.join(",", cacheNames);
 
         assertEquals(
             EXIT_CODE_OK,
             execute(
                 "--cache", "indexes_force_rebuild",
-                "--node-id", grid.localNode().id().toString(),
+                grids.size() == 1 ? "--node-id" : "--node-ids",
+                grids.size() == 1 ? grids.iterator().next().localNode().id().toString()
+                    : grids.stream().map(g -> g.localNode().id().toString()).collect(Collectors.joining(",")),
                 "--cache-names", cacheNamesArg
             )
         );
 
-        waitForIndexesRebuild(grid, getTestTimeout(), Collections.emptyList());
+        for (IgniteEx g : grids)
+            waitForIndexesRebuild(g, getTestTimeout(), Collections.emptyList());
     }
 }

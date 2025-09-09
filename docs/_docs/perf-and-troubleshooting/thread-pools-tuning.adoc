@@ -60,6 +60,14 @@ The data streamer pool processes all messages and requests coming from `IgniteDa
 
 The default pool size is `max(8, total number of cores)`. Use `IgniteConfiguration.setDataStreamerThreadPoolSize(...)` or a similar API from your programming language to change the pool size.
 
+== Snapshot Pool
+
+The snapshot pool is used for processing all the cluster operations related to taking or restoring Apache Ignite snapshots.
+
+The default pool size is `4` (see the `IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE`).
+Use `IgniteConfiguration.setSnapshotThreadPoolSize(...)` to change the pool size.
+
+
 == Creating Custom Thread Pool
 
 It is possible to configure a custom thread pool for compute tasks.

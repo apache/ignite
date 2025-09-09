@@ -49,7 +49,8 @@ public class GridKernalConcurrentAccessStopSelfTest extends GridCommonAbstractTe
                 @Override public boolean apply(Event evt) {
                     try {
                         Thread.sleep(2000);
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InterruptedException e) {
                         e.printStackTrace();
                     }
 

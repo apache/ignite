@@ -334,18 +334,22 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
                 assertEquals(expParts, parts);
             });
 
-            SpanId execSpan = checkChildSpan(SQL_QRY_EXECUTE, execReqSpan);
+            SpanId pagePrepareSpan = checkChildSpan(SQL_PAGE_PREPARE, execReqSpan);
 
-            List<SpanId> distrLookupReqSpans = findChildSpans(SQL_IDX_RANGE_REQ, execSpan);
+            preparedRows += parseInt(getAttribute(pagePrepareSpan, SQL_PAGE_ROWS));
 
-            for (SpanId span : distrLookupReqSpans) {
-                idxRangeReqRows += parseInt(getAttribute(span, SQL_IDX_RANGE_ROWS));
+            List<SpanId> distLookupReqSpans = findChildSpans(SQL_IDX_RANGE_REQ, pagePrepareSpan);
+
+            for (SpanId span : distLookupReqSpans) {
+                String rowsAttr = getAttribute(span, SQL_IDX_RANGE_ROWS);
+
+                if (rowsAttr != null)
+                    idxRangeReqRows += parseInt(rowsAttr);
 
                 checkChildSpan(SQL_IDX_RANGE_RESP, span);
             }
 
-            preparedRows += parseInt(getAttribute(checkChildSpan(SQL_PAGE_PREPARE, execReqSpan), SQL_PAGE_ROWS));
-
+            checkChildSpan(SQL_QRY_EXECUTE, execReqSpan);
             checkChildSpan(SQL_PAGE_RESP, execReqSpan);
         }
 
@@ -417,7 +421,6 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
      * @throws Exception If failed.
      */
     @Test
-    @SuppressWarnings("Convert2MethodRef")
     public void testNextPageRequestFailure() throws Exception {
         String prsnTable = createTableAndPopulate(Person.class, PARTITIONED, 1);
 
@@ -729,6 +732,8 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
                 .setQueryParallelism(qryParallelism)
                 .setSqlSchema(TEST_SCHEMA)
         );
+
+        awaitCacheOnClient(grid(GRID_CNT), cache.getName());
 
         for (int i = 0; i < TEST_TABLE_POPULATION; i++)
             cache.put(keyCntr.getAndIncrement(), cls == Organization.class ? new Organization(i, i) : new Person(i, i));

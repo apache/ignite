@@ -113,10 +113,15 @@ public class RecoveryDebug implements AutoCloseable {
 
         append("Data record\n");
 
-        for (DataEntry dataEntry : rec.writeEntries())
+        int entryCnt = rec.entryCount();
+
+        for (int i = 0; i < entryCnt; i++) {
+            DataEntry dataEntry = rec.get(i);
+
             append("\t" + dataEntry.op() + " " + dataEntry.nearXidVersion() +
                 (unwrapKeyValue ? " " + dataEntry.key() + " " + dataEntry.value() : "") + "\n"
             );
+        }
 
         return this;
     }

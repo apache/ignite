@@ -30,6 +30,7 @@ import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.EternalExpiryPolicy;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -54,7 +55,7 @@ public class DiagnosticLogForPartitionStatesTest extends GridCommonAbstractTest 
     private static final String ANY_MSG = "";
 
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, GridAbstractTest.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -165,7 +166,7 @@ public class DiagnosticLogForPartitionStatesTest extends GridCommonAbstractTest 
 
         IgniteEx node2 = startGrid(1);
 
-        node1.cluster().active(true);
+        node1.cluster().state(ClusterState.ACTIVE);
 
         List<IgniteCache<Integer, Integer>> caches = cfgs.stream()
             .map(cfg -> node1.getOrCreateCache(cfg)).collect(Collectors.toList());

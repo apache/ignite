@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
@@ -39,9 +40,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -164,9 +165,8 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
         assertEquals(obj, cache.withKeepBinary().get(1));
 
         grid(0).context().query()
-                .querySqlFields(
-                new SqlFieldsQuery(SQL_TEXT).setSchema(DEFAULT_CACHE_NAME), true)
-                .getAll();
+            .querySqlFields(new SqlFieldsQuery(SQL_TEXT).setSchema(DEFAULT_CACHE_NAME), true)
+            .getAll();
     }
 
     /** */
@@ -246,7 +246,7 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
     }
 
     /** */
-    private void assertThrows(GridTestUtils.RunnableX runx, String msg) {
+    private void assertThrows(RunnableX runx, String msg) {
         try {
             runx.runx();
         }
@@ -301,7 +301,7 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            return obj instanceof Person && F.eq(((Person) obj).name, name);
+            return obj instanceof Person && Objects.equals(((Person)obj).name, name);
         }
     }
 

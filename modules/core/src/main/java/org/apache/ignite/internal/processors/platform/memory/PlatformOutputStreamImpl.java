@@ -60,8 +60,13 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeByteArray(byte[] val, int off, int len) {
+        copyAndShift(val, GridUnsafe.BYTE_ARR_OFF + off, len);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeBoolean(boolean val) {
-        writeByte(val ? (byte) 1 : (byte) 0);
+        writeByte(val ? (byte)1 : (byte)0);
     }
 
     /** {@inheritDoc} */
@@ -234,7 +239,7 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteBoolean(boolean val) {
-        unsafeWriteByte(val ? (byte) 1 : (byte) 0);
+        unsafeWriteByte(val ? (byte)1 : (byte)0);
     }
 
     /** {@inheritDoc} */

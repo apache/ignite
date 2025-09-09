@@ -22,11 +22,13 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
@@ -35,7 +37,7 @@ import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cdc.CdcLoader.loadCdc;
+import static org.apache.ignite.internal.cdc.CdcLoader.loadCdc;
 import static org.apache.ignite.internal.cdc.CdcMain.ERR_MSG;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -121,7 +123,7 @@ public class CdcConfigurationTest extends GridCommonAbstractTest {
         public CountDownLatch startLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override public void start() {
+        @Override public void start(MetricRegistry mreg) {
             springString2 = ctx.getBean("springString2", String.class);
 
             startLatch.countDown();
@@ -130,6 +132,26 @@ public class CdcConfigurationTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onEvents(Iterator<CdcEvent> events) {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTypes(Iterator<BinaryType> types) {
+            // No-Op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMappings(Iterator<TypeMapping> mappings) {
+            // No-Op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
+            // No-Op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheDestroy(Iterator<Integer> caches) {
+            // No-Op.
         }
 
         /** {@inheritDoc} */

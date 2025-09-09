@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -34,14 +33,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -77,15 +75,6 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
     /** 2KB value size in bytes. */
     private static int TWO_KB_VAL_SIZE;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(createMarshaller());
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -172,37 +161,11 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             }
 
             @Override public JdkMarshaller jdkMarshaller() {
-                return new JdkMarshaller();
+                return Marshallers.jdk();
             }
         });
 
         return marsh;
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testLocal() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        IgniteCache<Integer, Value> cache = createCache(false, LOCAL);
-
-        try {
-            cache.put(1, new Value(new byte[1024]));
-            cache.put(2, new Value(new byte[2048]));
-
-            GridCacheAdapter<Integer, Value> internalCache = internalCache(cache);
-
-            // All values are stored in PageMemory, cache entry size shouldn't depend on value size
-            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(internalCache.entryEx(0)),
-                internalCache.entryEx(0).memorySize());
-            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(internalCache.entryEx(1)),
-                internalCache.entryEx(1).memorySize());
-            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(internalCache.entryEx(2)),
-                internalCache.entryEx(2).memorySize());
-        }
-        finally {
-            ignite(0).destroyCache(cache.getName());
-        }
     }
 
     /** @throws Exception If failed. */
@@ -232,8 +195,6 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testPartitionedNearEnabled() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
-
         IgniteCache<Integer, Value> cache = createCache(true, PARTITIONED);
 
         try {

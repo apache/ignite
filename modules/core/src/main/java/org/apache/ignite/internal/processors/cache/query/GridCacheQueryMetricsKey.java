@@ -21,7 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -93,7 +93,7 @@ class GridCacheQueryMetricsKey implements Externalizable {
 
         GridCacheQueryMetricsKey oth = (GridCacheQueryMetricsKey)obj;
 
-        return oth.type() == type && F.eq(oth.queryClass(), cls) && F.eq(oth.clause(), clause);
+        return oth.type() == type && Objects.equals(oth.queryClass(), cls) && Objects.equals(oth.clause(), clause);
     }
 
     /** {@inheritDoc} */

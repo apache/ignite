@@ -35,7 +35,6 @@ class DucktestsService(Service, metaclass=ABCMeta):
 
         super().start(**kwargs)
 
-    # pylint: disable=W0221
     def stop(self, force_stop=False, **kwargs):
         if self.stopped:
             return
@@ -44,7 +43,6 @@ class DucktestsService(Service, metaclass=ABCMeta):
 
         super().stop(force_stop=force_stop, **kwargs)
 
-    # pylint: disable=W0221
     def stop_node(self, node, force_stop=False, **kwargs):
         super().stop_node(node, force_stop=force_stop, **kwargs)
 
@@ -55,4 +53,4 @@ class DucktestsService(Service, metaclass=ABCMeta):
         self.stop(force_stop=True)
 
     def clean_node(self, node, **kwargs):
-        assert self.stopped
+        pass

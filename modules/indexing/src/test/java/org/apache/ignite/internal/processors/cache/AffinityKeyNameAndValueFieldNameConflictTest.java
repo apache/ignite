@@ -78,7 +78,8 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
             entity.addQueryField("name", String.class.getName(), null);
 
             ccfg.setQueryEntities(F.asList(entity));
-        } else {
+        }
+        else {
             CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(keyCls);
             cfg.setCacheKeyConfiguration(keyCfg);
 
@@ -158,10 +159,10 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
 
         personCache.put(keyProducer.apply(1, "o1"), new Person("p1"));
 
-        SqlFieldsQuery query =
+        SqlFieldsQuery qry =
             new SqlFieldsQuery("select * from \"" + PERSON_CACHE + "\"." + Person.class.getSimpleName() + " it where it.name=?");
 
-        List<List<?>> result = personCache.query(query.setArgs(keyFieldSpecified ? "o1" : "p1")).getAll();
+        List<List<?>> result = personCache.query(qry.setArgs(keyFieldSpecified ? "o1" : "p1")).getAll();
 
         assertEquals(1, result.size());
 

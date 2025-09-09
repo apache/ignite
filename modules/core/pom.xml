@@ -25,40 +25,16 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
-        <version>1</version>
-        <relativePath>../../parent</relativePath>
+        <artifactId>ignite-parent-internal</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-core</artifactId>
-    <version>2.12.0-SNAPSHOT</version>
-    <url>http://ignite.apache.org</url>
-
-    <repositories>
-        <repository>
-            <id>ignite-binaries-test-repo</id>
-            <url>file://${basedir}/src/test/binaries/repo</url>
-        </repository>
-    </repositories>
 
     <properties>
         <ignite.update.notifier.product>apache-ignite</ignite.update.notifier.product>
-
-        <!-- Imports:
-                - com.sun.jmx.mbeanserver => only used from TCKMBeanServerBuilder which has no usages within Ignite's
-                  runtime codebase. Therefore, it's likely that code will not be hit during normal operation and we exclude it.
-                - javax.enterprise.util is optional.
-        -->
-        <osgi.import.package>
-            javax.enterprise.util;resolution:=optional,
-            !com.sun.jmx.mbeanserver,
-            *
-        </osgi.import.package>
-        <osgi.export.package>
-            org.apache.ignite.*,
-            org.jsr166.*;version=1.0.0;
-            {local-packages}
-        </osgi.export.package>
+        <ignite.generated.source.path>${project.build.directory}/generated-sources/communication</ignite.generated.source.path>
     </properties>
 
     <dependencies>
@@ -75,10 +51,39 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
-            <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-commons</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-binary-api</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-binary-impl</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-codegen2</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-grid-unsafe</artifactId>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -166,14 +171,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>ignite-shmem</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -195,20 +194,6 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>${commons.io.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite.binary</groupId>
-            <artifactId>test1</artifactId>
-            <version>1.1</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite.binary</groupId>
-            <artifactId>test2</artifactId>
-            <version>1.1</version>
             <scope>test</scope>
         </dependency>
 
@@ -239,6 +224,13 @@
             <version>${hamcrest.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.google.testing.compile</groupId>
+            <artifactId>compile-testing</artifactId>
+            <version>0.21.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -265,6 +257,17 @@
             <testResource>
                 <directory>src/test/resources</directory>
             </testResource>
+            <testResource>
+                <directory>src/test/config</directory>
+                <includes>
+                    <include>log4j2-test.xml</include>
+                    <include>tests.properties</include>
+                </includes>
+                <!-- Hide the test logger configuration from the log4j autoconfigurator
+                     in case the user starts Ignite with test.jar on the classpath. -->
+                <targetPath>${project.build.testOutputDirectory}/test/config</targetPath>
+            </testResource>
+
         </testResources>
 
         <plugins>
@@ -283,14 +286,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.3.2</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.ignite</groupId>
-                        <artifactId>ignite-tools</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
+
                 <executions>
                     <execution>
                         <phase>process-classes</phase>
@@ -329,18 +325,68 @@
                 </executions>
             </plugin>
 
-            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>2.8.2</version>
                 <configuration>
                     <skip>false</skip>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <artifactSet>
+                                <includes>
+                                    <include>${groupId}:ignite-commons</include>
+                                    <include>${groupId}:ignite-binary-api</include>
+                                    <include>${groupId}:ignite-binary-impl</include>
+                                    <include>${groupId}:ignite-grid-unsafe</include>
+                                </includes>
+                            </artifactSet>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.4.0</version>
+                <executions>
+                    <execution>
+                        <id>add-generated-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${ignite.generated.source.path}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <generatedSourcesDirectory>${ignite.generated.source.path}</generatedSourcesDirectory>
+                    <annotationProcessors>
+                        <annotationProcessor>org.apache.ignite.internal.MessageProcessor</annotationProcessor>
+                    </annotationProcessors>
                 </configuration>
             </plugin>
         </plugins>
@@ -357,7 +403,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
+
                         <inherited>false</inherited>
                         <executions>
                             <execution>

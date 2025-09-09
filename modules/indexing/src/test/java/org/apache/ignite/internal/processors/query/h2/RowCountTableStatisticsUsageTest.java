@@ -48,6 +48,7 @@ public class RowCountTableStatisticsUsageTest extends TableStatisticsAbstractTes
         });
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         Ignite node = startGridsMultiThreaded(2);
 

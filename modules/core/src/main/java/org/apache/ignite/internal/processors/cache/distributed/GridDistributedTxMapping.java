@@ -18,13 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -40,16 +34,9 @@ import org.jetbrains.annotations.Nullable;
  * Transaction node mapping.
  */
 public class GridDistributedTxMapping {
-    /** */
-    private static final AtomicReferenceFieldUpdater<GridDistributedTxMapping, Set> BACKUPS_FIELD_UPDATER
-        = AtomicReferenceFieldUpdater.newUpdater(GridDistributedTxMapping.class, Set.class, "backups");
-
     /** Mapped node. */
     @GridToStringExclude
     private final ClusterNode primary;
-
-    /** Mapped backup nodes. */
-    private volatile Set<UUID> backups;
 
     /** Entries. */
     @GridToStringInclude
@@ -57,9 +44,6 @@ public class GridDistributedTxMapping {
 
     /** Explicit lock flag. */
     private boolean explicitLock;
-
-    /** Query update flag. */
-    private boolean queryUpdate;
 
     /** DHT version. */
     private GridCacheVersion dhtVer;
@@ -145,20 +129,6 @@ public class GridDistributedTxMapping {
         assert nearEntries > 0;
 
         return F.view(entries, CU.FILTER_NEAR_CACHE_ENTRY);
-    }
-
-    /**
-     * @return {@code True} if mapping was created for a query update.
-     */
-    public boolean queryUpdate() {
-        return queryUpdate;
-    }
-
-    /**
-     * Sets query update flag to {@code true}.
-     */
-    public void markQueryUpdate() {
-        queryUpdate = true;
     }
 
     /**
@@ -263,7 +233,7 @@ public class GridDistributedTxMapping {
      * @param keys Keys to evict readers for.
      */
     public void evictReaders(@Nullable Collection<IgniteTxKey> keys) {
-        if (keys == null || keys.isEmpty())
+        if (F.isEmpty(keys))
             return;
 
         evictReaders(keys, entries);
@@ -274,15 +244,10 @@ public class GridDistributedTxMapping {
      * @param entries Entries to check.
      */
     private void evictReaders(Collection<IgniteTxKey> keys, @Nullable Collection<IgniteTxEntry> entries) {
-        if (entries == null || entries.isEmpty())
+        if (F.isEmpty(entries))
             return;
 
-        for (Iterator<IgniteTxEntry> it = entries.iterator(); it.hasNext();) {
-            IgniteTxEntry entry = it.next();
-
-            if (keys.contains(entry.txKey()))
-                it.remove();
-        }
+        entries.removeIf(entry -> keys.contains(entry.txKey()));
     }
 
     /**
@@ -292,26 +257,6 @@ public class GridDistributedTxMapping {
      */
     public boolean empty() {
         return entries.isEmpty();
-    }
-
-    /**
-     * @param newBackups Backups to be added to this mapping.
-     */
-    public void addBackups(Collection<UUID> newBackups) {
-        if (newBackups == null)
-            return;
-
-        if (backups == null)
-            BACKUPS_FIELD_UPDATER.compareAndSet(this, null, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-
-        backups.addAll(newBackups);
-    }
-
-    /**
-     * @return Mapped backup nodes.
-     */
-    public Set<UUID> backups() {
-        return backups != null ? backups : Collections.emptySet();
     }
 
     /** {@inheritDoc} */

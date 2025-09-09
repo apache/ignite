@@ -51,18 +51,15 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -100,8 +97,6 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setSystemThreadPoolSize(SYSTEM_POOL_SIZE);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         MemoryEventStorageSpi storeSpi = new MemoryEventStorageSpi();
         storeSpi.setExpireCount(100);
@@ -238,96 +233,6 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxTwoBackupsFilter() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
-
-        doTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxTwoBackupsFilterPrimary() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT, PRIMARY_SYNC);
-
-        doTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxReplicatedFilter() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
-
-        doTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxTwoBackup() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
-
-        doTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxReplicated() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 2, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
-
-        doTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxReplicatedPrimary() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 2, TRANSACTIONAL_SNAPSHOT, PRIMARY_SYNC);
-
-        doTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxOneBackupFilter() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
-
-        doTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxOneBackupFilterPrimary() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT, PRIMARY_SYNC);
-
-        doTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMvccTxOneBackup() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT, FULL_SYNC);
-
-        doTest(ccfg, true);
-    }
-
-    /**
      * @param ccfg Cache configuration.
      * @throws Exception If failed.
      */
@@ -415,10 +320,6 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
                                     tx.commit();
 
                                 committed = true;
-                            }
-                            catch (Exception e) {
-                                assertTrue(e.getCause() instanceof TransactionSerializationException);
-                                assertEquals(ccfg.getAtomicityMode(), TRANSACTIONAL_SNAPSHOT);
                             }
                             finally {
                                 if (tx != null)
@@ -598,11 +499,6 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
 
                         committed = true;
                     }
-                    catch (Exception ex) {
-                        assertTrue(ex.getCause() instanceof TransactionSerializationException);
-                        assertEquals(cache.getConfiguration(CacheConfiguration.class).getAtomicityMode(),
-                            TRANSACTIONAL_SNAPSHOT);
-                    }
                     finally {
                         if (tx != null)
                             tx.close();
@@ -693,11 +589,6 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
                                     tx.commit();
 
                                 committed = true;
-                            }
-                            catch (Exception ex) {
-                                assertTrue(ex.getCause() instanceof TransactionSerializationException);
-                                assertEquals(cache.getConfiguration(CacheConfiguration.class).getAtomicityMode(),
-                                    TRANSACTIONAL_SNAPSHOT);
                             }
                             finally {
                                 if (tx != null)
@@ -818,7 +709,7 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            QueryTestValue that = (QueryTestValue) o;
+            QueryTestValue that = (QueryTestValue)o;
 
             return val1.equals(that.val1) && val2.equals(that.val2);
         }

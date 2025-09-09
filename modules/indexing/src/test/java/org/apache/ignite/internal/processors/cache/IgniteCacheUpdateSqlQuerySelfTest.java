@@ -223,13 +223,13 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
                 ).setArgs(5, new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6})
             ).getAll();
 
-            AllTypes res = (AllTypes) cache.get(2L);
+            AllTypes res = (AllTypes)cache.get(2L);
 
             assertNotNull(res);
 
             assertEquals(new BigDecimal(301.0).doubleValue(), res.bigDecimalCol.doubleValue());
             assertEquals(50.0, res.doubleCol);
-            assertEquals(2L, (long) res.longCol);
+            assertEquals(2L, (long)res.longCol);
             assertTrue(res.booleanCol);
             assertEquals("3.141592653589793", res.strCol);
             assertTrue(Arrays.equals(new byte[] {0, 1}, res.primitiveBytesCol));
@@ -281,13 +281,13 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
             cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"innerLongCol\" = 5"));
 
-            AllTypes res = (AllTypes) cache.get(2L);
+            AllTypes res = (AllTypes)cache.get(2L);
 
             assertNotNull(res);
 
             assertEquals(new BigDecimal(301.0).doubleValue(), res.bigDecimalCol.doubleValue());
             assertEquals(3.01, res.doubleCol);
-            assertEquals(2L, (long) res.longCol);
+            assertEquals(2L, (long)res.longCol);
             assertFalse(res.booleanCol);
 
             assertEquals("2", res.strCol);
@@ -462,6 +462,12 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         Byte[] bytesCol;
 
         /**
+         * Data bytes array.
+         */
+        @QuerySqlField
+        Person[] personCol;
+
+        /**
          * Data bytes primitive array.
          */
         @QuerySqlField
@@ -531,7 +537,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
 
-                InnerType innerType = (InnerType) o;
+                InnerType innerType = (InnerType)o;
 
                 if (innerLongCol != null ? !innerLongCol.equals(innerType.innerLongCol) : innerType.innerLongCol != null)
                     return false;
@@ -581,22 +587,22 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
                 this.innerTypeCol = null;
             }
             this.intCol = key.intValue();
-            this.bytesCol = new Byte[(int) (key % 10)];
-            this.intsCol = new Integer[(int) (key % 10)];
-            this.primitiveBytesCol = new byte[(int) (key % 10)];
-            this.primitiveIntsCol = new int[(int) (key % 10)];
+            this.bytesCol = new Byte[(int)(key % 10)];
+            this.intsCol = new Integer[(int)(key % 10)];
+            this.primitiveBytesCol = new byte[(int)(key % 10)];
+            this.primitiveIntsCol = new int[(int)(key % 10)];
             //this.bytesCol = new Byte[10];
             int b = 0;
             for (int j = 0; j < bytesCol.length; j++) {
                 if (b == 256)
                     b = 0;
-                bytesCol[j] = (byte) b;
-                primitiveBytesCol[j] = (byte) b;
+                bytesCol[j] = (byte)b;
+                primitiveBytesCol[j] = (byte)b;
                 intsCol[j] = b;
                 primitiveIntsCol[j] = b;
                 b++;
             }
-            this.shortCol = (short) (((1000 * key) % 50000) - 25000);
+            this.shortCol = (short)(((1000 * key) % 50000) - 25000);
 
             dateCol = new Date();
         }
@@ -611,7 +617,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            AllTypes allTypes = (AllTypes) o;
+            AllTypes allTypes = (AllTypes)o;
 
             if (Double.compare(allTypes.doubleCol, doubleCol) != 0) return false;
             if (booleanCol != allTypes.booleanCol) return false;
@@ -638,7 +644,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             long temp;
             res = longCol != null ? longCol.hashCode() : 0;
             temp = Double.doubleToLongBits(doubleCol);
-            res = 31 * res + (int) (temp ^ (temp >>> 32));
+            res = 31 * res + (int)(temp ^ (temp >>> 32));
             res = 31 * res + (strCol != null ? strCol.hashCode() : 0);
             res = 31 * res + (booleanCol ? 1 : 0);
             res = 31 * res + (dateCol != null ? dateCol.hashCode() : 0);
@@ -647,7 +653,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
             res = 31 * res + intCol;
             res = 31 * res + (bigDecimalCol != null ? bigDecimalCol.hashCode() : 0);
             res = 31 * res + Arrays.hashCode(bytesCol);
-            res = 31 * res + (int) shortCol;
+            res = 31 * res + (int)shortCol;
             res = 31 * res + (innerTypeCol != null ? innerTypeCol.hashCode() : 0);
             res = 31 * res + (enumCol != null ? enumCol.hashCode() : 0);
             return res;

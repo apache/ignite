@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,15 +34,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT cache unlock request.
  */
 public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Near keys. */
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> nearKeys;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtUnlockRequest() {
         // No-op.
@@ -80,14 +76,14 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);
@@ -106,7 +102,7 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -114,7 +110,7 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
         switch (writer.state()) {
             case 9:
-                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -128,15 +124,12 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 9:
-                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
+                nearKeys = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -145,16 +138,11 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
         }
 
-        return reader.afterMessageRead(GridDhtUnlockRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 36;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 10;
     }
 }

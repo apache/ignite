@@ -104,6 +104,8 @@ public class PagePartitionCountersIO extends PageIO {
      * @param partMetaPageId Next counters page ID.
      */
     public void setNextCountersPageId(long pageAddr, long partMetaPageId) {
+        assertPageType(pageAddr);
+
         PageUtils.putLong(pageAddr, NEXT_COUNTERS_PAGE_OFF, partMetaPageId);
     }
 
@@ -116,6 +118,7 @@ public class PagePartitionCountersIO extends PageIO {
     public int writeCacheSizes(int pageSize, long pageAddr, byte[] cacheSizes, int itemsOff) {
         assert cacheSizes != null;
         assert cacheSizes.length % ITEM_SIZE == 0 : cacheSizes.length;
+        assertPageType(pageAddr);
 
         int cap = getCapacity(pageSize);
 
@@ -179,6 +182,8 @@ public class PagePartitionCountersIO extends PageIO {
      * @param last Last.
      */
     private void setLastFlag(long pageAddr, boolean last) {
+        assertPageType(pageAddr);
+
         PageUtils.putByte(pageAddr, LAST_FLAG_OFF, last ? LAST_FLAG : ~LAST_FLAG);
     }
 
@@ -196,6 +201,7 @@ public class PagePartitionCountersIO extends PageIO {
      */
     private void setCount(long pageAddr, int cnt) {
         assert cnt >= 0 && cnt <= Short.MAX_VALUE : cnt;
+        assertPageType(pageAddr);
 
         PageUtils.putShort(pageAddr, CNT_OFF, (short)cnt);
     }
@@ -204,7 +210,7 @@ public class PagePartitionCountersIO extends PageIO {
      * @param pageSize Page size.
      * @return Maximum number of items which can be stored in buffer.
      */
-    private int getCapacity(int pageSize) {
+    public int getCapacity(int pageSize) {
         return (pageSize - ITEMS_OFF) / ITEM_SIZE;
     }
 
@@ -223,5 +229,10 @@ public class PagePartitionCountersIO extends PageIO {
             sb.a("\n\t\t").a(e.getKey()).a("=").a(e.getValue());
 
         sb.a("\n\t}\n]");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return (getCapacity(pageSize) - getCount(pageAddr)) * ITEM_SIZE;
     }
 }

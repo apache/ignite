@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -437,9 +438,9 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         IgniteEx node2 = startClientNoCache(2);
 
-        GridCacheContext<Object, Object> context0 = node2.context().cache().context().cacheContext(CU.cacheId(CACHE_NAME));
+        GridCacheContext<Object, Object> ctx0 = node2.context().cache().context().cacheContext(CU.cacheId(CACHE_NAME));
         node2.cache(CACHE_NAME);
-        GridCacheContext<Object, Object> context = node2.context().cache().context().cacheContext(CU.cacheId(CACHE_NAME));
+        GridCacheContext<Object, Object> ctx = node2.context().cache().context().cacheContext(CU.cacheId(CACHE_NAME));
         GridCacheAdapter<Object, Object> entries = node2.context().cache().internalCache(CACHE_NAME);
         assertTrue(entries.active());
 
@@ -614,7 +615,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
 
-        if (filterNodeName != null && F.eq(name, filterNodeName))
+        if (filterNodeName != null && Objects.equals(name, filterNodeName))
             cfg.setUserAttributes(Collections.singletonMap("AFF_NODE", true));
 
         IgniteEx res = (IgniteEx)Ignition.start(cfg);
@@ -693,6 +694,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("unused")
     private static class KeyClass2 {
+        /** */
         @QuerySqlField
         private String keyField2;
     }
@@ -702,6 +704,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("unused")
     private static class ValueClass2 {
+        /** */
         @QuerySqlField
         private String valField2;
     }

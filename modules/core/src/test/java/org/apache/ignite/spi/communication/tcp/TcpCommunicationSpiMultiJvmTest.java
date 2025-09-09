@@ -213,14 +213,14 @@ public class TcpCommunicationSpiMultiJvmTest extends GridCommonAbstractTest {
         AtomicBoolean cacheCreatedAndLoaded = new AtomicBoolean(false);
 
         GridTestUtils.runAsync(() -> {
-                IgniteCache<Object, Object> cache = ig.getOrCreateCache(DEFAULT_CACHE_NAME);
+            IgniteCache<Object, Object> cache = ig.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-                for (int i = 0; i < 100; i++) {
-                    cache.put(i, i);
-                }
+            for (int i = 0; i < 100; i++) {
+                cache.put(i, i);
+            }
 
-                cacheCreatedAndLoaded.set(true);
-            }, "start_cache_thread");
+            cacheCreatedAndLoaded.set(true);
+        }, "start_cache_thread");
 
         return cacheCreatedAndLoaded;
     }

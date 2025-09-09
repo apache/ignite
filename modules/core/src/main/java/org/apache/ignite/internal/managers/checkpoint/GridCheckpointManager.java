@@ -32,7 +32,6 @@ import org.apache.ignite.events.CheckpointEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.GridTaskSessionInternal;
-import org.apache.ignite.internal.SkipDaemon;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -59,7 +58,6 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 /**
  * This class defines a checkpoint manager.
  */
-@SkipDaemon
 @SuppressWarnings({"deprecation"})
 public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     /** Max closed topics to store. */
@@ -83,7 +81,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     public GridCheckpointManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getCheckpointSpi());
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         if (enabled()) {
             keyMap = new ConcurrentHashMap<>();
@@ -121,9 +119,6 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
         GridIoManager comm = ctx.io();
 
         if (comm != null)
@@ -157,9 +152,8 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
         Object state,
         ComputeTaskSessionScope scope,
         long timeout,
-        boolean override)
-        throws IgniteCheckedException
-    {
+        boolean override
+    ) throws IgniteCheckedException {
         if (!enabled())
             return false;
 
@@ -469,10 +463,10 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
             if (!enabled())
                 return;
 
-            IgniteUuid sesId = req.getSessionId();
+            IgniteUuid sesId = req.sessionId();
 
             if (closedSess.contains(sesId)) {
-                getSpi(req.getCheckpointSpi()).removeCheckpoint(req.getKey());
+                getSpi(req.checkpointSpi()).removeCheckpoint(req.key());
 
                 return;
             }
@@ -483,7 +477,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                 GridTaskSessionImpl ses = ctx.session().getSession(sesId);
 
                 if (ses == null) {
-                    getSpi(req.getCheckpointSpi()).removeCheckpoint(req.getKey());
+                    getSpi(req.checkpointSpi()).removeCheckpoint(req.key());
 
                     return;
                 }
@@ -494,13 +488,13 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                     keys = old;
             }
 
-            keys.add(req.getKey());
+            keys.add(req.key());
 
             // Double check.
             if (closedSess.contains(sesId)) {
                 keyMap.remove(sesId, keys);
 
-                getSpi(req.getCheckpointSpi()).removeCheckpoint(req.getKey());
+                getSpi(req.checkpointSpi()).removeCheckpoint(req.key());
             }
         }
     }

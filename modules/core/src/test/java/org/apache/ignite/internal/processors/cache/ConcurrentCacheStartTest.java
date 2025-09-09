@@ -36,7 +36,7 @@ public class ConcurrentCacheStartTest extends GridCommonAbstractTest {
     @Test
     public void test() throws Exception {
         try {
-            final IgniteEx ignite = (IgniteEx) startGrids(4);
+            final IgniteEx ignite = (IgniteEx)startGrids(4);
 
             for (int k = 0; k < 100; k++) {
                 final String cacheName = "cache" + k;

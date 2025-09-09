@@ -157,21 +157,6 @@ namespace ignite
             else
                 res.clear();
         }
-
-        std::string HexDump(const void* data, size_t count)
-        {
-            std::stringstream  dump;
-            size_t cnt = 0;
-            for(const uint8_t* p = (const uint8_t*)data, *e = (const uint8_t*)data + count; p != e; ++p)
-            {
-                if (cnt++ % 16 == 0)
-                {
-                    dump << std::endl;
-                }
-                dump << std::hex << std::setfill('0') << std::setw(2) << (int)*p << " ";
-            }
-            return dump.str();
-        }
     }
 }
 

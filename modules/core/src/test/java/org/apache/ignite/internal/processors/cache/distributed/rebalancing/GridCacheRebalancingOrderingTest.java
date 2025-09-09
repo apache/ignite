@@ -57,7 +57,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -119,12 +118,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (isFirstGrid(igniteInstanceName)) {
-            assert cfg.getDiscoverySpi() instanceof TcpDiscoverySpi : cfg.getDiscoverySpi();
-
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        }
-        else
+        if (!isFirstGrid(igniteInstanceName))
             cfg.setServiceConfiguration(getServiceConfiguration());
 
         cfg.setCacheConfiguration(getCacheConfiguration());
@@ -166,11 +160,6 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 1000 * 60 * 5;
     }
@@ -182,8 +171,8 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
      * @return the key
      */
     private static IntegerKey ensureKey(Object key) {
-        Object converted = key instanceof BinaryObject ? ((BinaryObject) key).deserialize() : key;
-        return converted instanceof IntegerKey ? (IntegerKey) converted : null;
+        Object converted = key instanceof BinaryObject ? ((BinaryObject)key).deserialize() : key;
+        return converted instanceof IntegerKey ? (IntegerKey)converted : null;
     }
 
     /**
@@ -213,9 +202,9 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
      * @return Map of partition number to randomly generated key.
      */
     private Map<Integer, IntegerKey> generateKeysForPartitions(Ignite ignite, IgniteCache<IntegerKey, Integer> cache) {
-        Affinity<IntegerKey> affinity = ignite.affinity(cache.getName());
+        Affinity<IntegerKey> aff = ignite.affinity(cache.getName());
 
-        int parts = affinity.partitions();
+        int parts = aff.partitions();
 
         Map<Integer, IntegerKey> keyMap = new HashMap<>(parts);
 
@@ -225,7 +214,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
             do {
                 IntegerKey key = new IntegerKey(RANDOM.nextInt(10000));
 
-                if (affinity.partition(key) == i) {
+                if (aff.partition(key) == i) {
                     keyMap.put(i, key);
                     found = true;
                 }
@@ -233,13 +222,13 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         }
 
         // Sanity check.
-        if (keyMap.size() != affinity.partitions())
+        if (keyMap.size() != aff.partitions())
             throw new IllegalStateException("Inconsistent partition count");
 
         for (int i = 0; i < parts; i++) {
             IntegerKey key = keyMap.get(i);
 
-            if (affinity.partition(key) != i)
+            if (aff.partition(key) != i)
                 throw new IllegalStateException("Inconsistent partition");
         }
 
@@ -271,9 +260,9 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEvents() throws Exception {
-        Ignite ignite = startClientGrid(0);
-
         ServerStarter srvStarter = startServers();
+
+        Ignite ignite = startClientGrid(0);
 
         IgniteCache<IntegerKey, Integer> cache = ignite.cache(TEST_CACHE_NAME);
 
@@ -285,13 +274,13 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
 
         for (Map.Entry<Integer, IntegerKey> entry : keyMap.entrySet()) {
             Integer part = entry.getKey();
-            int affinity = entry.getValue().getKey();
+            int aff = entry.getValue().getKey();
             int cnt = RANDOM.nextInt(10) + 1;
 
             Set<IntegerKey> keys = new HashSet<>(cnt);
 
             for (int i = 0; i < cnt; i++) {
-                IntegerKey key = new IntegerKey(RANDOM.nextInt(10000), affinity);
+                IntegerKey key = new IntegerKey(RANDOM.nextInt(10000), aff);
                 keys.add(key);
                 cache.put(key, RANDOM.nextInt());
             }
@@ -306,7 +295,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
             X.println(entry.getKey() + ": " + entry.getValue());
 
         // Validate keys across all partitions.
-        Affinity<IntegerKey> affinity = ignite.affinity(cache.getName());
+        Affinity<IntegerKey> aff = ignite.affinity(cache.getName());
 
         Map<IntegerKey, KeySetValidator> validatorMap = new HashMap<>(partMap.size());
 
@@ -327,12 +316,12 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
             for (Map.Entry<IntegerKey, EntryProcessorResult<KeySetValidator.Result>> result : results.entrySet()) {
                 try {
                     if (result.getValue().get() == KeySetValidator.Result.RETRY)
-                        retries.add(affinity.partition(result.getKey()));
+                        retries.add(aff.partition(result.getKey()));
                 }
                 catch (Exception e) {
                     X.println("!!! " + e.getMessage());
                     e.printStackTrace();
-                    failures.add(affinity.partition(result.getKey()));
+                    failures.add(aff.partition(result.getKey()));
                 }
             }
 
@@ -383,7 +372,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
 
                 IgniteCache<IntegerKey, Integer> cache = ignite.cache(TEST_CACHE_NAME);
 
-                Affinity<IntegerKey> affinity = ignite.affinity(TEST_CACHE_NAME);
+                Affinity<IntegerKey> aff = ignite.affinity(TEST_CACHE_NAME);
 
                 Set<IntegerKey> exp = this.keys;
 
@@ -391,9 +380,9 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
 
                 IntegerKey key = entry.getKey();
 
-                int part = affinity.partition(key);
+                int part = aff.partition(key);
 
-                String ownership = affinity.isPrimary(ignite.cluster().localNode(), key) ? "primary" : "backup";
+                String ownership = aff.isPrimary(ignite.cluster().localNode(), key) ? "primary" : "backup";
 
                 // Wait for the local listener to sync past events.
                 if (!observer.getIgniteLocalSyncListener().isSynced()) {
@@ -512,7 +501,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
                 return false;
 
             if (IntegerKey.class.equals(o.getClass())) {
-                IntegerKey that = (IntegerKey) o;
+                IntegerKey that = (IntegerKey)o;
                 return this.val == that.val;
             }
 
@@ -522,12 +511,12 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             int val = this.val;
-            Integer affinity = this.affinity;
+            Integer aff = this.affinity;
 
-            if (val == affinity)
+            if (val == aff)
                 return String.valueOf(val);
 
-            return "IntKey [val=" + val + ", aff=" + affinity + ']';
+            return "IntKey [val=" + val + ", aff=" + aff + ']';
         }
 
         /** {@inheritDoc} */
@@ -596,15 +585,15 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
                             },
                             this.causes);
 
-                        for (Event event : evts) {
+                        for (Event evt : evts) {
                             // Events returned from localQuery() are ordered by increasing local ID. Update the sync ID
                             // within a finally block to avoid applying duplicate events if the delegate listener
                             // throws an exception while processing the event.
                             try {
-                                applyInternal(event);
+                                applyInternal(evt);
                             }
                             finally {
-                                this.syncedId = event.localOrder();
+                                this.syncedId = evt.localOrder();
                             }
                         }
 
@@ -693,7 +682,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         private final ConcurrentMap<Integer, Set<IntegerKey>> loadingMap = new ConcurrentHashMap<>();
 
         /** */
-        private final IgnitePredicate<Event> pred = (IgnitePredicate<Event>) new IgnitePredicate<Event>() {
+        private final IgnitePredicate<Event> pred = (IgnitePredicate<Event>)new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
                 // Handle:
                 // EVT_CACHE_OBJECT_PUT
@@ -701,7 +690,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
                 // EVT_CACHE_OBJECT_REMOVED
                 // EVT_CACHE_REBALANCE_OBJECT_UNLOADED
                 if (evt instanceof CacheEvent) {
-                    CacheEvent cacheEvt = (CacheEvent) evt;
+                    CacheEvent cacheEvt = (CacheEvent)evt;
                     int part = cacheEvt.partition();
 
                     // Oonly handle events for the test cache.
@@ -731,7 +720,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
                 // EVT_CACHE_REBALANCE_PART_UNLOADED
                 // EVT_CACHE_REBALANCE_PART_DATA_LOST
                 else if (evt instanceof CacheRebalancingEvent) {
-                    CacheRebalancingEvent rebalancingEvt = (CacheRebalancingEvent) evt;
+                    CacheRebalancingEvent rebalancingEvt = (CacheRebalancingEvent)evt;
 
                     int part = rebalancingEvt.partition();
 

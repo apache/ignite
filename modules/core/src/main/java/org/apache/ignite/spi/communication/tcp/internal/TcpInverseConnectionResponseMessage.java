@@ -17,10 +17,8 @@
 
 package org.apache.ignite.spi.communication.tcp.internal;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Inverse connection response message sent by client node as a response to
@@ -31,9 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAwareMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
+    @Order(value = 0, method = "connectionIndex")
     private int connIdx;
 
     /** */
@@ -50,27 +46,11 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
         return connIdx;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt("connIdx", connIdx))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
+    /**
+     * @param connIdx New connection index.
+     */
+    public void connectionIndex(int connIdx) {
+        this.connIdx = connIdx;
     }
 
     /** {@inheritDoc} */
@@ -79,34 +59,8 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                connIdx = reader.readInt("connIdx");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(TcpInverseConnectionResponseMessage.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 177;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

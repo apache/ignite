@@ -27,12 +27,12 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -51,8 +51,8 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -64,7 +64,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 
 /**
@@ -155,49 +154,6 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If test failed.
-     */
-    @Test
-    public void testNodeInvalidatedWhenPersistenceIsCorrupted() throws Exception {
-        Ignite ignite = startGrid(0);
-
-        startGrid(1);
-
-        ignite.cluster().active(true);
-
-        awaitPartitionMapExchange();
-
-        IgniteCache<Integer, String> cache1 = ignite.cache(CACHE_NAME1);
-
-        for (int i = 0; i < 100; ++i)
-            cache1.put(i, String.valueOf(i));
-
-        forceCheckpoint();
-
-        cache1.put(2, "test");
-
-        String nodeName = ignite.name().replaceAll("\\.", "_");
-
-        stopAllGrids();
-
-        U.delete(file(String.format("db/%s/cache-%s/part-2.bin", nodeName, CACHE_NAME1)));
-
-        startGrid(1);
-
-        try {
-            startGrid(0);
-        }
-        catch (IgniteCheckedException ex) {
-            if (X.hasCause(ex, StorageException.class, IOException.class))
-                return; // Success;
-
-            throw ex;
-        }
-
-        waitFailure(StorageException.class);
-    }
-
-    /**
      * Test node invalidation when page CRC is wrong and page not found in wal.
      *
      * @throws Exception In case of fail
@@ -208,23 +164,22 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
+
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
         stopGrid(0);
 
         System.setProperty(IGNITE_PDS_SKIP_CRC, "false");
 
-        File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
-        File walDir = new File(dbDir, "wal");
-
-        U.delete(walDir);
+        U.delete(ft.wal());
 
         try {
             startGrid(0);
 
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
         }
         catch (Exception e) {
             // No-op.
@@ -240,7 +195,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     public void testMetaStorageCorruption() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         MetaStorage metaStorage = ignite.context().cache().context().database().metaStorage();
 
@@ -252,7 +207,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
         }
         catch (Exception e) {
             // No-op.
@@ -268,7 +223,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     public void testCacheMetaCorruption() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteInternalCache cache = ignite.cachex(CACHE_NAME1);
 
@@ -280,14 +235,14 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         corruptTreeRoot(ignite, (PageMemoryEx)cache.context().dataRegion().pageMemory(), grpId, partId);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         stopGrid(0);
 
         try {
             startGrid(0);
 
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             cache.put(1, 1);
         }
@@ -352,26 +307,20 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
             return null;
         });
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteInternalCache<Integer, Integer> cache = ignite0.cachex(CACHE_NAME1);
 
         cache.put(1, 1);
 
-        ignite0.cluster().active(false);
+        ignite0.cluster().state(ClusterState.INACTIVE);
 
-        FilePageStoreManager storeMgr = ((FilePageStoreManager)ignite0.context().cache().context().pageStore());
-
-        File workDir = storeMgr.workDir();
-        File metaStoreDir = new File(workDir, MetaStorage.METASTORAGE_CACHE_NAME.toLowerCase());
-        File metaStoreFile = new File(metaStoreDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, 0));
-
-        readOnlyFile.set(metaStoreFile);
+        readOnlyFile.set(ignite0.context().pdsFolderResolver().fileTree().metaStoragePartition(0));
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    ignite0.cluster().active(true);
+                    ignite0.cluster().state(ClusterState.ACTIVE);
                 }
                 catch (Exception ignore) {
                     // No-op.
@@ -391,7 +340,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     public void testCheckpointFailure() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         forceCheckpoint(); // Trigger empty checkpoint to make sure initial checkpoint on node start will finish.
 
@@ -453,14 +402,14 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     public void testWalFsyncWriteHeaderFailure() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.cache(CACHE_NAME1).put(0, 0);
 
         failingFileIOFactory.createClosure((file, options) -> {
             FileIO delegate = failingFileIOFactory.delegateFactory().create(file, options);
 
-            if (file.getName().endsWith(".wal")) {
+            if (NodeFileTree.walSegment(file)) {
                 return new FileIODecorator(delegate) {
                     @Override public int write(ByteBuffer srcBuf) throws IOException {
                         throw new IOException("No space left on device");

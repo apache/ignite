@@ -22,13 +22,12 @@ import java.util.Collection;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -82,9 +81,9 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
     @Override public ClientListenerRequest decode(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream stream = new BinaryHeapInputStream(msg.payload());
+        BinaryInputStream stream = BinaryStreams.inputStream(msg.payload());
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), stream, ctx.config().getClassLoader(), true);
+        BinaryReaderEx reader = BinaryUtils.reader(marsh.context(), stream, ctx.config().getClassLoader(), true);
 
         byte cmd = reader.readByte();
 
@@ -140,16 +139,14 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 break;
             }
 
-            case OdbcRequest.STREAMING_BATCH:
-            {
+            case OdbcRequest.STREAMING_BATCH: {
                 String schema = reader.readString();
 
                 int num = reader.readInt();
 
                 ArrayList<OdbcQuery> queries = new ArrayList<>(num);
 
-                for (int i = 0; i < num; ++i)
-                {
+                for (int i = 0; i < num; ++i) {
                     OdbcQuery qry = new OdbcQuery();
                     qry.readBinary(reader);
 
@@ -165,18 +162,18 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             }
 
             case OdbcRequest.QRY_FETCH: {
-                long queryId = reader.readLong();
+                long qryId = reader.readLong();
                 int pageSize = reader.readInt();
 
-                res = new OdbcQueryFetchRequest(queryId, pageSize);
+                res = new OdbcQueryFetchRequest(qryId, pageSize);
 
                 break;
             }
 
             case OdbcRequest.QRY_CLOSE: {
-                long queryId = reader.readLong();
+                long qryId = reader.readLong();
 
-                res = new OdbcQueryCloseRequest(queryId);
+                res = new OdbcQueryCloseRequest(qryId);
 
                 break;
             }
@@ -204,27 +201,27 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
             case OdbcRequest.META_PARAMS: {
                 String schema = reader.readString();
-                String sqlQuery = reader.readString();
+                String sqlQry = reader.readString();
 
-                res = new OdbcQueryGetParamsMetaRequest(schema, sqlQuery);
+                res = new OdbcQueryGetParamsMetaRequest(schema, sqlQry);
 
                 break;
             }
 
             case OdbcRequest.META_RESULTSET: {
                 String schema = reader.readString();
-                String sqlQuery = reader.readString();
+                String sqlQry = reader.readString();
 
-                res = new OdbcQueryGetResultsetMetaRequest(schema, sqlQuery);
+                res = new OdbcQueryGetResultsetMetaRequest(schema, sqlQry);
 
                 break;
             }
 
             case OdbcRequest.MORE_RESULTS: {
-                long queryId = reader.readLong();
+                long qryId = reader.readLong();
                 int pageSize = reader.readInt();
 
-                res = new OdbcQueryMoreResultsRequest(queryId, pageSize);
+                res = new OdbcQueryMoreResultsRequest(qryId, pageSize);
 
                 break;
             }
@@ -242,7 +239,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param paramNum Number of parameters in a row
      * @return Parameters array.
      */
-    @NotNull private static Object[] readParameterRow(BinaryReaderExImpl reader, int paramNum) {
+    @NotNull private static Object[] readParameterRow(BinaryReaderEx reader, int paramNum) {
         Object[] params = new Object[paramNum];
 
         for (int i = 0; i < paramNum; ++i)
@@ -260,14 +257,17 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         OdbcResponse msg = (OdbcResponse)msg0;
 
         // Creating new binary writer
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(marsh.context(), new BinaryHeapOutputStream(INIT_CAP),
-            BinaryThreadLocalContext.get().schemaHolder(), null);
+        BinaryWriterEx writer = BinaryUtils.writer(
+            marsh.context(),
+            BinaryStreams.outputStream(INIT_CAP)
+        );
 
         // Writing status.
         if (ver.compareTo(OdbcConnectionContext.VER_2_1_5) < 0) {
-            writer.writeByte((byte) (msg.status() == ClientListenerResponse.STATUS_SUCCESS ?
+            writer.writeByte((byte)(msg.status() == ClientListenerResponse.STATUS_SUCCESS ?
                 ClientListenerResponse.STATUS_SUCCESS : ClientListenerResponse.STATUS_FAILED));
-        } else
+        }
+        else
             writer.writeInt(msg.status());
 
         if (msg.status() != ClientListenerResponse.STATUS_SUCCESS) {
@@ -281,7 +281,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         if (res0 == null)
             return new ClientMessage(writer.array());
         else if (res0 instanceof OdbcQueryExecuteResult) {
-            OdbcQueryExecuteResult res = (OdbcQueryExecuteResult) res0;
+            OdbcQueryExecuteResult res = (OdbcQueryExecuteResult)res0;
 
             if (log.isDebugEnabled())
                 log.debug("Resulting query ID: " + res.queryId());
@@ -295,7 +295,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             writeAffectedRows(writer, res.affectedRows());
         }
         else if (res0 instanceof OdbcQueryExecuteBatchResult) {
-            OdbcQueryExecuteBatchResult res = (OdbcQueryExecuteBatchResult) res0;
+            OdbcQueryExecuteBatchResult res = (OdbcQueryExecuteBatchResult)res0;
 
             writer.writeBoolean(res.errorMessage() == null);
             writeAffectedRows(writer, res.affectedRows());
@@ -309,14 +309,14 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             }
         }
         else if (res0 instanceof OdbcStreamingBatchResult) {
-            OdbcStreamingBatchResult res = (OdbcStreamingBatchResult) res0;
+            OdbcStreamingBatchResult res = (OdbcStreamingBatchResult)res0;
 
             writer.writeString(res.error());
             writer.writeInt(res.status());
             writer.writeLong(res.order());
         }
         else if (res0 instanceof OdbcQueryFetchResult) {
-            OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;
+            OdbcQueryFetchResult res = (OdbcQueryFetchResult)res0;
 
             if (log.isDebugEnabled())
                 log.debug("Resulting query ID: " + res.queryId());
@@ -343,7 +343,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             }
         }
         else if (res0 instanceof OdbcQueryMoreResultsResult) {
-            OdbcQueryMoreResultsResult res = (OdbcQueryMoreResultsResult) res0;
+            OdbcQueryMoreResultsResult res = (OdbcQueryMoreResultsResult)res0;
 
             if (log.isDebugEnabled())
                 log.debug("Resulting query ID: " + res.queryId());
@@ -370,7 +370,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             }
         }
         else if (res0 instanceof OdbcQueryCloseResult) {
-            OdbcQueryCloseResult res = (OdbcQueryCloseResult) res0;
+            OdbcQueryCloseResult res = (OdbcQueryCloseResult)res0;
 
             if (log.isDebugEnabled())
                 log.debug("Resulting query ID: " + res.getQueryId());
@@ -378,14 +378,14 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             writer.writeLong(res.getQueryId());
         }
         else if (res0 instanceof OdbcQueryGetColumnsMetaResult) {
-            OdbcQueryGetColumnsMetaResult res = (OdbcQueryGetColumnsMetaResult) res0;
+            OdbcQueryGetColumnsMetaResult res = (OdbcQueryGetColumnsMetaResult)res0;
 
             Collection<OdbcColumnMeta> columnsMeta = res.meta();
 
             writeResultsetMeta(writer, columnsMeta);
         }
         else if (res0 instanceof OdbcQueryGetTablesMetaResult) {
-            OdbcQueryGetTablesMetaResult res = (OdbcQueryGetTablesMetaResult) res0;
+            OdbcQueryGetTablesMetaResult res = (OdbcQueryGetTablesMetaResult)res0;
 
             Collection<OdbcTableMeta> tablesMeta = res.meta();
 
@@ -397,14 +397,14 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 tableMeta.writeBinary(writer);
         }
         else if (res0 instanceof OdbcQueryGetParamsMetaResult) {
-            OdbcQueryGetParamsMetaResult res = (OdbcQueryGetParamsMetaResult) res0;
+            OdbcQueryGetParamsMetaResult res = (OdbcQueryGetParamsMetaResult)res0;
 
             byte[] typeIds = res.typeIds();
 
             SqlListenerUtils.writeObject(writer, typeIds, true);
         }
         else if (res0 instanceof OdbcQueryGetResultsetMetaResult) {
-            OdbcQueryGetResultsetMetaResult res = (OdbcQueryGetResultsetMetaResult) res0;
+            OdbcQueryGetResultsetMetaResult res = (OdbcQueryGetResultsetMetaResult)res0;
 
             writeResultsetMeta(writer, res.columnsMetadata());
         }
@@ -419,7 +419,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param writer Writer.
      * @param meta Metadata
      */
-    private void writeResultsetMeta(BinaryWriterExImpl writer, Collection<OdbcColumnMeta> meta) {
+    private void writeResultsetMeta(BinaryWriterEx writer, Collection<OdbcColumnMeta> meta) {
         assert meta != null;
 
         writer.writeInt(meta.size());
@@ -445,20 +445,20 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param writer Writer to use.
      * @param affectedRows Affected rows.
      */
-    private void writeAffectedRows(BinaryWriterExImpl writer, long[] affectedRows) {
+    private void writeAffectedRows(BinaryWriterEx writer, long[] affectedRows) {
         if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) < 0) {
             long summ = 0;
 
-            for (Long value : affectedRows)
-                summ += value == null ? 0 : value;
+            for (Long val : affectedRows)
+                summ += val == null ? 0 : val;
 
             writer.writeLong(summ);
         }
         else {
             writer.writeInt(affectedRows.length);
 
-            for (long value : affectedRows)
-                writer.writeLong(value);
+            for (long val : affectedRows)
+                writer.writeLong(val);
         }
     }
 }

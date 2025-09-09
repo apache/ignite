@@ -51,6 +51,8 @@
         url: installation/kubernetes/gke-deployment
   - title: VMWare
     url: installation/vmware-installation
+  - title: Version Upgrade
+    url: installation/upgrades
 - title: Setting Up
   items:
     - title: Understanding Configuration
@@ -147,6 +149,8 @@
       url: persistence/disk-compression
     - title: Tuning Persistence
       url: persistence/persistence-tuning
+    - title: Change Data Capture
+      url: persistence/change-data-capture
 - title: Cluster Snapshots
   url: snapshots/snapshots
 - title: Configuring Caches
@@ -177,10 +181,10 @@
       url: key-value-api/basic-cache-operations
     - title: Working with Binary Objects
       url: key-value-api/binary-objects
-    - title: Using Scan Queries
-      url: key-value-api/using-scan-queries
+    - title: Using Cache Queries
+      url: key-value-api/using-cache-queries
     - title: Read Repair
-      url: read-repair
+      url: key-value-api/read-repair
 - title: Performing Transactions
   url: key-value-api/transactions
 - title: Working with SQL
@@ -215,8 +219,10 @@
           url: SQL/ODBC/data-types
         - title: Error Codes
           url: SQL/ODBC/error-codes
-    - title: Multiversion Concurrency Control
-      url: transactions/mvcc
+    - title: SQL Statistics
+      url: SQL/sql-statistics
+    - title: Calcite-based SQL Engine
+      url: SQL/sql-calcite
 - title: SQL Reference
   url: sql-reference/sql-reference-overview
   items:
@@ -242,6 +248,8 @@
       url: sql-reference/system-functions
     - title: Data Types
       url: sql-reference/data-types
+    - title: Optimizer Hints
+      url: sql-reference/hints
 - title: Distributed Computing
   items:
     - title: Distributed Computing API
@@ -362,14 +370,14 @@
       url: data-structures/atomic-types
     - title: CountDownLatch 
       url: data-structures/countdownlatch
-    - title: Atomic Sequence 
-      url: data-structures/atomic-sequence
     - title:  Semaphore 
       url: data-structures/semaphore
     - title: ID Generator
       url: data-structures/id-generator
 - title: Distributed Locks
   url: distributed-locks
+- title: Session Context
+  url: session-context
 - title: REST API
   url: restapi
 - title: .NET Specific
@@ -426,18 +434,16 @@
       url: monitoring-metrics/cluster-id
     - title: Cluster States
       url: monitoring-metrics/cluster-states
-    - title: Metrics
-      items: 
-        - title: Configuring Metrics
-          url: monitoring-metrics/configuring-metrics
-        - title: JMX Metrics
-          url: monitoring-metrics/metrics
-    - title: New Metrics System 
+    - title: Metrics System 
       items:
         - title: Introduction 
           url: monitoring-metrics/new-metrics-system
+        - title: Configuring Metrics
+          url: monitoring-metrics/configuring-metrics
         - title: Metrics
           url: monitoring-metrics/new-metrics
+        - title: Custom Metrics
+          url: monitoring-metrics/custom-metrics
     - title: System Views
       url: monitoring-metrics/system-views
     - title: Performance Statistics
@@ -454,10 +460,10 @@
   items:
     - title: Control Script
       url: tools/control-script
-    - title: Visor CMD
-      url: tools/visor-cmd
     - title: GridGain Control Center
       url: tools/gg-control-center
+    - title: Platform V Grid Center
+      url: tools/grid-center
     - title: SQLLine
       url: tools/sqlline
     - title: Tableau
@@ -466,9 +472,13 @@
       url: tools/informatica
     - title: Pentaho
       url: tools/pentaho
+    - title: Index Reader
+      url: tools/index-reader
 - title: Security
   url: security
-  items: 
+  items:
+    - title: Security Model
+      url: security/security-model
     - title: Authentication
       url: security/authentication
     - title: SSL/TLS 
@@ -509,8 +519,6 @@
           url: extensions-and-integrations/ignite-for-spark/spark-shell
         - title: Troubleshooting
           url: extensions-and-integrations/ignite-for-spark/troubleshooting
-    - title: Hibernate L2 Cache
-      url: extensions-and-integrations/hibernate-l2-cache
     - title: MyBatis L2 Cache
       url: extensions-and-integrations/mybatis-l2-cache
     - title: Streaming
@@ -545,10 +553,22 @@
           url: extensions-and-integrations/cassandra/usage-examples
         - title: DDL Generator
           url: extensions-and-integrations/cassandra/ddl-generator
+    - title: Change Data Capture
+      items:
+        - title: Overview
+          url: extensions-and-integrations/change-data-capture/overview
+        - title: Ignite to Ignite Replication
+          url: extensions-and-integrations/change-data-capture/ignite-to-ignite
+        - title: Ignite to Kafka Replication
+          url: extensions-and-integrations/change-data-capture/ignite-to-kafka
+        - title: Ignite to PostgreSQL Replication
+          url: extensions-and-integrations/change-data-capture/ignite-to-postgresql
     - title: PHP PDO
       url: extensions-and-integrations/php-pdo
     - title: Performance Statistics
       url: extensions-and-integrations/performance-statistics
+    - title: ZooKeeper IP Finder
+      url: extensions-and-integrations/zookeeper-ip-finder-ext
 - title: Plugins
   url: plugins
 - title: Performance and Troubleshooting

@@ -47,7 +47,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.stream.StreamReceiver;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
@@ -92,18 +91,15 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             });
         }
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
         marshErrBytes = U.marshal(marsh, new IgniteCheckedException("Failed to marshal response error, " +
             "see node log for details."));
 
-        flusher = new IgniteThread(new GridWorker(ctx.igniteInstanceName(), "grid-data-loader-flusher", log) {
+        flusher = U.newThread(new GridWorker(ctx.igniteInstanceName(), "grid-data-loader-flusher", log) {
             @Override protected void body() throws InterruptedException {
                 while (!isCancelled()) {
                     DataStreamerImpl<K, V> ldr = flushQ.take();
@@ -136,9 +132,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (ctx.config().isDaemon())
-            return;
-
         if (!ctx.clientNode())
             ctx.io().removeMessageListener(TOPIC_DATASTREAM);
 

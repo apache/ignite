@@ -159,7 +159,7 @@ public class ReducePartitionMapper {
     private static boolean hasMovingPartitions(GridCacheContext<?, ?> cctx) {
         assert cctx != null;
 
-        return !cctx.isLocal() && cctx.topology().hasMovingPartitions();
+        return cctx.topology().hasMovingPartitions();
     }
 
     /**
@@ -202,15 +202,15 @@ public class ReducePartitionMapper {
         Set<ClusterNode> nodes;
 
         // Explicit partitions mapping is not applicable to replicated cache.
-        final AffinityAssignment topologyAssignment = cctx.affinity().assignment(topVer);
+        final AffinityAssignment topAssignment = cctx.affinity().assignment(topVer);
 
         if (cctx.isReplicated()) {
             // Mutable collection needed for this particular case.
             nodes = isReplicatedOnly && cacheIds.size() > 1 ?
-                new HashSet<>(topologyAssignment.nodes()) : topologyAssignment.nodes();
+                new HashSet<>(topAssignment.nodes()) : topAssignment.nodes();
         }
         else
-            nodes = topologyAssignment.primaryPartitionNodes();
+            nodes = topAssignment.primaryPartitionNodes();
 
         return narrowToCaches(cctx, nodes, cacheIds, topVer, null, isReplicatedOnly);
     }
@@ -266,9 +266,6 @@ public class ReducePartitionMapper {
             GridCacheContext<?, ?> extraCctx = cacheContext(cacheIds.get(i));
 
             String extraCacheName = extraCctx.name();
-
-            if (extraCctx.isLocal())
-                continue; // No consistency guaranties for local caches.
 
             if (isReplicatedOnly && !extraCctx.isReplicated())
                 throw new CacheException("Queries running on replicated cache should not contain JOINs " +
@@ -335,7 +332,7 @@ public class ReducePartitionMapper {
                 IntArray partIds = mapping.get(prim);
 
                 if (partIds == null) {
-                    partIds = new IntArray();
+                    partIds = new IntArray(parts.length);
 
                     mapping.put(prim, partIds);
                 }
@@ -358,15 +355,15 @@ public class ReducePartitionMapper {
         final GridCacheContext<?, ?> cctx, @Nullable final int[] parts) {
 
         // Explicit partitions mapping is not applicable to replicated cache.
-        final AffinityAssignment topologyAssignment = cctx.affinity().assignment(topVer);
+        final AffinityAssignment topAssignment = cctx.affinity().assignment(topVer);
 
         if (cctx.isReplicated())
-            return topologyAssignment.nodes();
+            return topAssignment.nodes();
 
         if (parts == null)
-            return topologyAssignment.primaryPartitionNodes();
+            return topAssignment.primaryPartitionNodes();
 
-        List<List<ClusterNode>> assignment = topologyAssignment.assignment();
+        List<List<ClusterNode>> assignment = topAssignment.assignment();
 
         Set<ClusterNode> nodes = new HashSet<>();
 
@@ -397,7 +394,7 @@ public class ReducePartitionMapper {
             for (Integer cacheId : cacheIds) {
                 GridCacheContext<?, ?> extraCctx = cacheContext(cacheId);
 
-                if (extraCctx.isReplicated() || extraCctx.isLocal())
+                if (extraCctx.isReplicated())
                     continue;
 
                 int parts = extraCctx.affinity().partitions();
@@ -449,7 +446,7 @@ public class ReducePartitionMapper {
                 if (cctx == extraCctx)
                     continue;
 
-                if (extraCctx.isReplicated() || extraCctx.isLocal())
+                if (extraCctx.isReplicated())
                     continue;
 
                 for (int p = 0, parts = extraCctx.affinity().partitions(); p < parts; p++) {
@@ -584,9 +581,6 @@ public class ReducePartitionMapper {
         for (; i < cacheIds.size(); i++) {
             GridCacheContext<?, ?> extraCctx = cacheContext(cacheIds.get(i));
 
-            if (extraCctx.isLocal())
-                continue;
-
             if (!extraCctx.isReplicated())
                 throw new CacheException("Queries running on replicated cache should not contain JOINs " +
                     "with tables in partitioned caches [replicatedCache=" + cctx.name() + ", " +
@@ -703,10 +697,7 @@ public class ReducePartitionMapper {
         for (int i = 0; i < cacheIds.size(); i++) {
             GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(i));
 
-            if (i == 0 && cctx.isLocal())
-                throw new CacheException("Cache is LOCAL: " + cctx.name());
-
-            if (!cctx.isReplicated() && !cctx.isLocal())
+            if (!cctx.isReplicated())
                 return cctx;
         }
 

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -75,40 +76,31 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
             return keyWrapped();
         }
 
-        switch (col) {
-            case QueryUtils.KEY_COL:
-                return keyWrapped();
+        if (desc.isKeyColumn(col))
+            return keyWrapped();
+        else if (desc.isValueColumn(col))
+            return valueWrapped();
 
-            case QueryUtils.VAL_COL:
-                return valueWrapped();
-
-            default:
-                if (desc.isKeyAliasColumn(col))
-                    return keyWrapped();
-                else if (desc.isValueAliasColumn(col))
-                    return valueWrapped();
-
-                return getValue0(col - QueryUtils.DEFAULT_COLUMNS_COUNT);
-        }
+        return getValue0(col - QueryUtils.DEFAULT_COLUMNS_COUNT);
     }
 
     /**
-     * Get real column value.
+     * Get real field value.
      *
-     * @param col Adjusted column index (without default columns).
+     * @param fieldIdx Field index.
      * @return Value.
      */
-    private Value getValue0(int col) {
-        Value v = getCached(col);
+    private Value getValue0(int fieldIdx) {
+        Value v = getCached(fieldIdx);
 
         if (v != null)
             return v;
 
-        Object res = desc.columnValue(row.key(), row.value(), col);
+        Object res = desc.getFieldValue(row.key(), row.value(), fieldIdx);
 
-        v = res == null ? ValueNull.INSTANCE : wrap(res, desc.fieldType(col));
+        v = res == null ? ValueNull.INSTANCE : wrap(res, desc.fieldType(fieldIdx));
 
-        setCached(col, v);
+        setCached(fieldIdx, v);
 
         return v;
     }
@@ -171,7 +163,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
      */
     private Value wrap(Object val, int type) {
         try {
-            return H2Utils.wrap(desc.indexing().objectContext(), val, type);
+            return H2Utils.wrap(desc.context().kernalContext().query().objectContext(), val, type);
         }
         catch (ClassCastException e) {
             throw new IgniteSQLException("Failed to wrap object into H2 Value. " + e.getMessage(),
@@ -247,46 +239,6 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccCoordinatorVersion() {
-        return row.mvccCoordinatorVersion();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long mvccCounter() {
-        return row.mvccCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int mvccOperationCounter() {
-        return row.mvccOperationCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte mvccTxState() {
-        return row.mvccTxState();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newMvccCoordinatorVersion() {
-        return row.newMvccCoordinatorVersion();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newMvccCounter() {
-        return row.newMvccCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int newMvccOperationCounter() {
-        return row.newMvccOperationCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte newMvccTxState() {
-        return row.newMvccTxState();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean indexSearchRow() {
         return false;
     }
@@ -308,11 +260,6 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public int size() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int headerSize() {
         throw new UnsupportedOperationException();
     }
 
@@ -339,7 +286,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
                 try {
                     v = getValue(i);
 
-                    if (!desc.isKeyValueOrVersionColumn(i))
+                    if (!(desc.isKeyColumn(i) || desc.isValueColumn(i)))
                         sb.a(v == null ? "nil" : (S.includeSensitive() ? v.getString() : "data hidden"));
                 }
                 catch (Exception e) {
@@ -356,7 +303,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
     /**
      * @return H2 row descriptor.
      */
-    public GridH2RowDescriptor getDesc() {
+    public GridQueryRowDescriptor getDesc() {
         return desc;
     }
 }

@@ -45,15 +45,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientData;
-import org.apache.ignite.internal.client.GridClientDataConfiguration;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
-import org.apache.ignite.testframework.GridTestUtils.RunnableX;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -64,7 +57,6 @@ import org.junit.runners.Parameterized;
 
 import static com.google.common.collect.ImmutableSet.of;
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -178,7 +170,7 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
     /** Tests cache event security context in case operation is initiated from the {@link IgniteClient}. */
     @Test
     public void testIgniteClient() throws Exception {
-        operationInitiatorLogin = "thin_client";
+        operationInitiatorLogin = THIN_CLIENT_LOGIN;
 
         ClientConfiguration cfg = new ClientConfiguration()
             .setAddresses(Config.SERVER)
@@ -198,15 +190,10 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
             checkEvents(cli, k -> cache.removeAsync(k).get(), true, EVT_CACHE_OBJECT_REMOVED);
 
             checkEvents(cli, k -> cache.remove(k, "val"), true, EVT_CACHE_OBJECT_REMOVED);
-
-            // TODO Add test case inside transaction after resolving IGNITE-14317.
-            checkEvents(k -> cache.removeAsync(k, "val").get(), true, EVT_CACHE_OBJECT_REMOVED);
+            checkEvents(cli, k -> cache.removeAsync(k, "val").get(), true, EVT_CACHE_OBJECT_REMOVED);
 
             checkEvents(cli, k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
             checkEvents(cli, k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
-
-            checkEvents(cli, k -> cache.removeAll(), true, EVT_CACHE_OBJECT_REMOVED);
-            checkEvents(cli, k -> cache.removeAllAsync().get(), true, EVT_CACHE_OBJECT_REMOVED);
 
             checkEvents(cli, k -> cache.putIfAbsent(k, "val"), false, EVT_CACHE_OBJECT_PUT);
             checkEvents(cli, k -> cache.putIfAbsentAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
@@ -236,59 +223,12 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
         }
     }
 
-    /** Tests cache event security context in case operation is initiated from the {@link GridClient}. */
-    @Test
-    public void testGridClient() throws Exception {
-        Assume.assumeTrue(txIsolation == null && txConcurrency == null);
-
-        operationInitiatorLogin = "grid_client";
-
-        GridClientConfiguration cfg = new GridClientConfiguration()
-            .setServers(singletonList("127.0.0.1:11211"))
-            .setDataConfigurations(singletonList(new GridClientDataConfiguration().setName(cacheName)))
-            .setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(new SecurityCredentials(operationInitiatorLogin, "")));
-
-        try (GridClient cli = GridClientFactory.start(cfg)) {
-            GridClientData cache = cli.data(cacheName);
-
-            checkEvents(k -> cache.put(k, "val"), false, EVT_CACHE_OBJECT_PUT);
-            checkEvents(k -> cache.putAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);
-
-            checkEvents(k -> cache.putAll(singletonMap(k, "val")), false, EVT_CACHE_OBJECT_PUT);
-            checkEvents(k -> cache.putAllAsync(singletonMap(k, "val")).get(), false, EVT_CACHE_OBJECT_PUT);
-
-            checkEvents(cache::remove, true, EVT_CACHE_OBJECT_REMOVED);
-            checkEvents(k -> cache.removeAsync(k).get(), true, EVT_CACHE_OBJECT_REMOVED);
-
-            checkEvents(k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
-            checkEvents(k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
-
-            checkEvents(cache::get, true, EVT_CACHE_OBJECT_READ);
-            checkEvents(k -> cache.getAsync(k).get(), true, EVT_CACHE_OBJECT_READ);
-
-            checkEvents(k -> cache.getAll(of(k)), true, EVT_CACHE_OBJECT_READ);
-            checkEvents(k -> cache.getAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_READ);
-
-            checkEvents(k -> cache.replace(k, "val"), true, EVT_CACHE_OBJECT_PUT);
-            checkEvents(k -> cache.replaceAsync(k, "val").get(), true, EVT_CACHE_OBJECT_PUT);
-
-            checkEvents(k -> cache.append(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-            checkEvents(k -> cache.appendAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-
-            checkEvents(k -> cache.prepend(k, "val"), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-            checkEvents(k -> cache.prependAsync(k, "val").get(), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);
-
-            checkEvents(k -> cache.cas(k, "new_val", "val"), true, EVT_CACHE_OBJECT_PUT);
-            checkEvents(k -> cache.casAsync(k, "new_val", "val").get(), true, EVT_CACHE_OBJECT_PUT);
-        }
-    }
-
     /** Tests cache event security context in case operation is initiated from the REST client. */
     @Test
     public void testRestClient() throws Exception {
         Assume.assumeTrue(txIsolation == null && txConcurrency == null);
 
-        operationInitiatorLogin = "rest_client";
+        operationInitiatorLogin = REST_CLIENT_LOGIN;
 
         checkEvents(k -> sendRestRequest(CACHE_PUT, k, "val", null), false, EVT_CACHE_OBJECT_PUT);
         checkEvents(k -> sendRestRequest(CACHE_PUT_ALL, k, "val", null), false, EVT_CACHE_OBJECT_PUT);
@@ -339,15 +279,10 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
         checkEvents(ignite, k -> cache.removeAsync(k).get(), true, EVT_CACHE_OBJECT_REMOVED);
 
         checkEvents(ignite, k -> cache.remove(k, "val"), true, EVT_CACHE_OBJECT_REMOVED);
-
-        // TODO Add test case inside transaction after resolving IGNITE-14317.
-        checkEvents(k -> cache.removeAsync(k, "val").get(), true, EVT_CACHE_OBJECT_REMOVED);
+        checkEvents(ignite, k -> cache.removeAsync(k, "val").get(), true, EVT_CACHE_OBJECT_REMOVED);
 
         checkEvents(ignite, k -> cache.removeAll(of(k)), true, EVT_CACHE_OBJECT_REMOVED);
         checkEvents(ignite, k -> cache.removeAllAsync(of(k)).get(), true, EVT_CACHE_OBJECT_REMOVED);
-
-        checkEvents(ignite, k -> cache.removeAll(), true, EVT_CACHE_OBJECT_REMOVED);
-        checkEvents(ignite, k -> cache.removeAllAsync().get(), true, EVT_CACHE_OBJECT_REMOVED);
 
         checkEvents(ignite, k -> cache.putIfAbsent(k, "val"), false, EVT_CACHE_OBJECT_PUT);
         checkEvents(ignite, k -> cache.putIfAbsentAsync(k, "val").get(), false, EVT_CACHE_OBJECT_PUT);

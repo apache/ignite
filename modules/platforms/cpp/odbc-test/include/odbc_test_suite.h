@@ -119,6 +119,16 @@ namespace ignite
              *
              * @param from Index to start from.
              * @param to Index to stop.
+             * @param merge Set to true to use merge instead of insert.
+             * @return Execution result.
+             */
+            SQLRETURN InsertTestBatchNoCheck(int from, int to, bool merge = false);
+
+            /**
+             * Insert requested number of TestType values in a batch.
+             *
+             * @param from Index to start from.
+             * @param to Index to stop.
              * @param expectedToAffect Expected number of affected records.
              * @param merge Set to true to use merge instead of insert.
              * @return Records inserted.

@@ -47,6 +47,11 @@ public class DummyPageIO extends PageIO implements CompactablePageIO {
     }
 
     /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public void compactPage(ByteBuffer page, ByteBuffer out, int pageSize) {
         copyPage(page, out, pageSize);
     }

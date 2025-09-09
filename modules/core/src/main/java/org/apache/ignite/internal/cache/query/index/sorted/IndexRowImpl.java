@@ -20,7 +20,6 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
@@ -74,15 +73,8 @@ public class IndexRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexKey[] keys() {
-        int keysCnt = rowHnd.indexKeyDefinitions().size();
-
-        IndexKey[] keys = new IndexKey[keysCnt];
-
-        for (int i = 0; i < keysCnt; ++i)
-            keys[i] = key(i);
-
-        return keys;
+    @Override public int keysCount() {
+        return rowHnd.indexKeyDefinitions().size();
     }
 
     /** {@inheritDoc} */
@@ -129,8 +121,8 @@ public class IndexRowImpl implements IndexRow {
         sb.a(" ][ ");
 
         if (v != null) {
-            for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT, cnt = rowHnd.indexKeyDefinitions().size(); i < cnt; i++) {
-                if (i != QueryUtils.DEFAULT_COLUMNS_COUNT)
+            for (int i = 0, cnt = rowHnd.indexKeyDefinitions().size(); i < cnt; i++) {
+                if (i != 0)
                     sb.a(", ");
 
                 try {
@@ -150,27 +142,7 @@ public class IndexRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccCoordinatorVersion() {
-        return cacheRow.mvccCoordinatorVersion();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long mvccCounter() {
-        return cacheRow.mvccCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int mvccOperationCounter() {
-        return cacheRow.mvccOperationCounter();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte mvccTxState() {
-        return cacheRow.mvccTxState();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean indexSearchRow() {
+    @Override public boolean indexPlainRow() {
         return false;
     }
 }

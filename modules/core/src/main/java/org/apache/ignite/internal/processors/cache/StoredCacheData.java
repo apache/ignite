@@ -20,11 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
@@ -34,7 +37,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
  * This class is {@link Serializable} and is intended to be read-written with {@link JdkMarshaller}
  * in order to be serialization wise agnostic to further additions or removals of fields.
  */
-public class StoredCacheData implements Serializable {
+public class StoredCacheData implements Serializable, CdcCacheEvent {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,6 +54,15 @@ public class StoredCacheData implements Serializable {
 
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheConfigurationEnrichment;
+
+    /**
+     * Encryption key. {@code Null} if encryption is disabled.
+     * <p>
+     * To restore an encrypted snapshot, we have to read the keys it was encrypted with. The better place for the is
+     * Metastore. But it is currently unreadable as simple structure. Once it is done, we should move snapshot
+     * encryption keys there.
+     */
+    private GroupKeyEncrypted grpKeyEncrypted;
 
     /**
      * Constructor.
@@ -72,6 +84,7 @@ public class StoredCacheData implements Serializable {
         this.qryEntities = cacheData.qryEntities;
         this.sql = cacheData.sql;
         this.cacheConfigurationEnrichment = cacheData.cacheConfigurationEnrichment;
+        this.grpKeyEncrypted = cacheData.grpKeyEncrypted;
     }
 
     /**
@@ -91,7 +104,7 @@ public class StoredCacheData implements Serializable {
     /**
      * @return Query entities.
      */
-    public Collection<QueryEntity> queryEntities() {
+    @Override public Collection<QueryEntity> queryEntities() {
         return qryEntities;
     }
 
@@ -116,6 +129,20 @@ public class StoredCacheData implements Serializable {
         this.sql = sql;
 
         return this;
+    }
+
+    /**
+     * @return Ciphered encryption key for this cache or cache group. {@code Null} if not encrypted.
+     */
+    public GroupKeyEncrypted groupKeyEncrypted() {
+        return grpKeyEncrypted;
+    }
+
+    /**
+     * @param grpKeyEncrypted Ciphered encryption key for this cache or cache group.
+     */
+    public void groupKeyEncrypted(GroupKeyEncrypted grpKeyEncrypted) {
+        this.grpKeyEncrypted = grpKeyEncrypted;
     }
 
     /**
@@ -158,23 +185,18 @@ public class StoredCacheData implements Serializable {
         return this;
     }
 
-    /**
-     * @param enricher Cache configuration enricher.
-     * @return Cache data with fully enriched cache configuration.
-     */
-    public StoredCacheData withOldCacheConfig(CacheConfigurationEnricher enricher) {
-        if (cacheConfigurationEnrichment == null)
-            return this;
-
-        ccfg = enricher.enrichFully(ccfg, cacheConfigurationEnrichment);
-
-        cacheConfigurationEnrichment = null;
-
-        return this;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StoredCacheData.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return CU.cacheId(ccfg.getName());
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<?, ?> configuration() {
+        return ccfg;
     }
 }

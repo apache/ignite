@@ -1950,6 +1950,27 @@ BOOST_AUTO_TEST_CASE(TestConnectionTimeoutQuery)
     InsertTestStrings(10, false);
 }
 
+BOOST_AUTO_TEST_CASE(TestConnectionTimeoutQueryExpires)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PAGE_SIZE=500000");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, reinterpret_cast<SQLPOINTER>(1), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    SQLCHAR req[] = "select delay(5000)";
+
+    ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+
+    std::string error = GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt);
+    std::string pattern = "HYT01: Receive operation timed out";
+
+    if (error.substr(0, pattern.size()) != pattern)
+        BOOST_FAIL("'" + error + "' does not match '" + pattern + "'");
+}
+
 BOOST_AUTO_TEST_CASE(TestConnectionTimeoutBatch)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");

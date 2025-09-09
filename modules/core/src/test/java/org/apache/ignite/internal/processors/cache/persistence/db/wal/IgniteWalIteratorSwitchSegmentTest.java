@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
@@ -64,6 +65,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -151,40 +153,20 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      * @throws Exception If some thing failed.
      */
     private void checkInvariantSwitchSegmentSize(int serVer) throws Exception {
-        GridKernalContext kctx = new StandaloneGridKernalContext(
-            log, null, null) {
+        GridKernalContext kctx = new StandaloneGridKernalContext(log, null) {
             @Override public IgniteCacheObjectProcessor cacheObjects() {
                 return new CacheObjectBinaryProcessorImpl(this);
             }
         };
 
         RecordSerializer serializer = new RecordSerializerFactoryImpl(
-            new GridCacheSharedContext<>(
-                kctx,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                new IgniteCacheDatabaseSharedManager() {
+            GridCacheSharedContext.builder()
+                .setDatabaseManager(new IgniteCacheDatabaseSharedManager(kctx) {
                     @Override public int pageSize() {
                         return DataStorageConfiguration.DFLT_PAGE_SIZE;
                     }
-                },
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null)
+                })
+                .build(kctx, null)
         ).createSerializer(serVer);
 
         SwitchSegmentRecord switchSegmentRecord = new SwitchSegmentRecord();
@@ -277,7 +259,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         // If switchSegmentRecordSize more that 1, it mean that invariant is broke.
         // Filling tail some garbage. Simulate tail garbage on rotate segment in WAL work directory.
         if (switchSegmentRecordSize > 1) {
-            File seg = new File(workDir + ARCHIVE_SUB_DIR + "/0000000000000000.wal");
+            File seg = GridTestUtils.<NodeFileTree>getFieldValue(walMgr, "ft").walArchiveSegment(0);
 
             FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
@@ -402,9 +384,11 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
 
         fut.get();
 
+        NodeFileTree ft = getFieldValue(walMgr, "ft");
+
         //should started iteration from work directory but finish from archive directory.
-        assertEquals(workDir + WORK_SUB_DIR + File.separator + "0000000000000000.wal", startedSegmentPath.get());
-        assertEquals(workDir + ARCHIVE_SUB_DIR + File.separator + "0000000000000000.wal", finishedSegmentPath.get());
+        assertEquals(ft.walSegment(0).getAbsolutePath(), startedSegmentPath.get());
+        assertEquals(ft.walArchiveSegment(0).getAbsolutePath(), finishedSegmentPath.get());
 
         Assert.assertEquals("Not all records read during iteration.", recordsToWrite, actualRecords.get());
     }
@@ -422,22 +406,23 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         String workDir
     ) throws IgniteCheckedException {
 
-        GridKernalContext kctx = new StandaloneGridKernalContext(
-            log, null, null
-        ) {
+        GridKernalContext kctx = new StandaloneGridKernalContext(log, null) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
-                cfg.setDataStorageConfiguration(
-                    new DataStorageConfiguration()
-                        .setWalSegmentSize(SEGMENT_SIZE)
-                        .setWalRecordIteratorBufferSize(SEGMENT_SIZE / 2)
-                        .setWalMode(WALMode.FSYNC)
-                        .setWalPath(workDir + WORK_SUB_DIR)
-                        .setWalArchivePath(workDir + ARCHIVE_SUB_DIR)
-                        .setFileIOFactory(new RandomAccessFileIOFactory())
-                );
+                DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
+                if (dsCfg == null)
+                    dsCfg = new DataStorageConfiguration();
+
+                dsCfg.setWalSegmentSize(SEGMENT_SIZE)
+                    .setWalRecordIteratorBufferSize(SEGMENT_SIZE / 2)
+                    .setWalMode(WALMode.FSYNC)
+                    .setWalPath(workDir + WORK_SUB_DIR)
+                    .setWalArchivePath(workDir + ARCHIVE_SUB_DIR)
+                    .setFileIOFactory(new RandomAccessFileIOFactory());
+
+                cfg.setDataStorageConfiguration(dsCfg);
                 cfg.setEventStorageSpi(new NoopEventStorageSpi());
 
                 return cfg;
@@ -456,29 +441,12 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
 
         GridTestUtils.setFieldValue(walMgr, "serializerVer", serVer);
 
-        GridCacheSharedContext<?, ?> ctx = new GridCacheSharedContext<>(
-            kctx,
-            null,
-            null,
-            null,
-            null,
-            walMgr,
-            new WalStateManager(kctx),
-            new GridCacheDatabaseSharedManager(kctx),
-            null,
-            null,
-            null,
-            null,
-            null,
-            new GridCacheIoManager(),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
+        GridCacheSharedContext<?, ?> ctx = GridCacheSharedContext.builder()
+            .setWalManager(walMgr)
+            .setWalStateManager(new WalStateManager(kctx))
+            .setDatabaseManager(new GridCacheDatabaseSharedManager(kctx))
+            .setIoManager(new GridCacheIoManager())
+            .build(kctx, null);
 
         walMgr.start(ctx);
 

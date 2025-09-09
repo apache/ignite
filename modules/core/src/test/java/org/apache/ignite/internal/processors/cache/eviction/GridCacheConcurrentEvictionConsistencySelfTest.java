@@ -35,13 +35,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheEvictableEntryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -66,8 +63,6 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
@@ -75,25 +70,13 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setCacheMode(LOCAL);
-
-        cc.setWriteSynchronizationMode(FULL_SYNC);
-
         cc.setNearConfiguration(null);
-
         cc.setEvictionPolicy(plc);
         cc.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(cc);
 
         return c;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
@@ -105,7 +88,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @Test
-    public void testPolicyConsistencyFifoLocalTwoKeys() throws Exception {
+    public void testPolicyConsistencyFifoTwoKeys() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(1);
 
@@ -121,7 +104,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @Test
-    public void testPolicyConsistencyLruLocalTwoKeys() throws Exception {
+    public void testPolicyConsistencyLruTwoKeys() throws Exception {
         LruEvictionPolicy<Object, Object> plc = new LruEvictionPolicy<>();
         plc.setMaxSize(1);
 
@@ -137,7 +120,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @Test
-    public void testPolicyConsistencySortedLocalTwoKeys() throws Exception {
+    public void testPolicyConsistencySortedTwoKeys() throws Exception {
         SortedEvictionPolicy<Object, Object> plc = new SortedEvictionPolicy<>();
         plc.setMaxSize(1);
 
@@ -153,7 +136,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @Test
-    public void testPolicyConsistencyFifoLocalFewKeys() throws Exception {
+    public void testPolicyConsistencyFifoFewKeys() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
 
@@ -168,7 +151,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @Test
-    public void testPolicyConsistencyLruLocalFewKeys() throws Exception {
+    public void testPolicyConsistencyLruFewKeys() throws Exception {
         LruEvictionPolicy<Object, Object> plc = new LruEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
 
@@ -183,7 +166,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @Test
-    public void testPolicyConsistencySortedLocalFewKeys() throws Exception {
+    public void testPolicyConsistencySortedFewKeys() throws Exception {
         SortedEvictionPolicy<Object, Object> plc = new SortedEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
 
@@ -198,7 +181,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @Test
-    public void testPolicyConsistencyFifoLocal() throws Exception {
+    public void testPolicyConsistencyFifo() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
 
@@ -213,7 +196,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @Test
-    public void testPolicyConsistencyLruLocal() throws Exception {
+    public void testPolicyConsistencyLru() throws Exception {
         LruEvictionPolicy<Object, Object> plc = new LruEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
 
@@ -228,7 +211,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @Test
-    public void testPolicyConsistencySortedLocal() throws Exception {
+    public void testPolicyConsistencySorted() throws Exception {
         SortedEvictionPolicy<Object, Object> plc = new SortedEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
 
@@ -259,21 +242,14 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
                             int j = rnd.nextInt(keyCnt);
 
-                            while (true) {
-                                try (Transaction tx = ignite.transactions().txStart()) {
-                                    // Put or remove?
-                                    if (rnd.nextBoolean())
-                                        cache.put(j, j);
-                                    else
-                                        cache.remove(j);
+                            try (Transaction tx = ignite.transactions().txStart()) {
+                                // Put or remove?
+                                if (rnd.nextBoolean())
+                                    cache.put(j, j);
+                                else
+                                    cache.remove(j);
 
-                                    tx.commit();
-
-                                    break;
-                                }
-                                catch (Exception e) {
-                                    MvccFeatureChecker.assertMvccWriteConflict(e);
-                                }
+                                tx.commit();
                             }
 
                             if (i != 0 && i % 5000 == 0)

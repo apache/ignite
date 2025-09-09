@@ -23,15 +23,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -96,7 +94,7 @@ public class SqlTwoCachesInGroupWithSameEntryTest extends AbstractIndexingCommon
     public void test() throws Exception {
         IgniteEx ign = startGrid(0);
 
-        ign.cluster().active(true);
+        ign.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache cache0 = ign.createCache(new CacheConfiguration<>("cache0")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
@@ -116,8 +114,8 @@ public class SqlTwoCachesInGroupWithSameEntryTest extends AbstractIndexingCommon
         }
 
         if (useOnlyPkHashIndex) {
-            for (GridH2Table t : ((IgniteH2Indexing)grid(0).context().query().getIndexing()).schemaManager().dataTables())
-                GridTestUtils.setFieldValue(t, "rebuildFromHashInProgress", 1);
+            grid(0).context().query().schemaManager().markIndexRebuild("cache0", true);
+            grid(0).context().query().schemaManager().markIndexRebuild("cache1", true);
         }
 
         assertEquals(KEYS, cache0.size());

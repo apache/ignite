@@ -246,7 +246,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
                         final Class<?> clazz = root.loadClass("org.apache.ignite.p2p.GridP2PLocalDeploymentSelfTest$TestClosure");
 
                         ignite.compute().
-                            call((IgniteCallable) clazz.getDeclaredConstructor(ClassLoader.class).newInstance(root));
+                            call((IgniteCallable)clazz.getDeclaredConstructor(ClassLoader.class).newInstance(root));
                     }
 
                     return null;
@@ -260,7 +260,8 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             }, 5, TimeUnit.SECONDS);
 
             fut.get();
-        } finally {
+        }
+        finally {
             stopAllGrids();
 
             System.clearProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL);
@@ -364,7 +365,9 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             /**
              * @param nodeId Node ID for node this job is supposed to execute on.
              */
-            public DeployementTestJob(UUID nodeId) { super(nodeId); }
+            public DeployementTestJob(UUID nodeId) {
+                super(nodeId);
+            }
 
             /** {@inheritDoc} */
             @Override public Serializable execute() {

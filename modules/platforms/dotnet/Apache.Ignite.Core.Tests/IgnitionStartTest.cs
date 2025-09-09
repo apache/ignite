@@ -114,7 +114,8 @@ namespace Apache.Ignite.Core.Tests
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = "default"
-                    }
+                    },
+                    SystemDataRegionConfiguration = new SystemDataRegionConfiguration()
                 };
 
                 AssertExtensions.ReflectionEqual(dsCfg, resCfg.DataStorageConfiguration,

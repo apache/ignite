@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -200,9 +201,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         GridCacheVersion ver,
         GridCacheVersion dhtVer,
         UUID primaryNodeId,
-        AffinityTopologyVersion topVer)
-        throws GridCacheEntryRemovedException
-    {
+        AffinityTopologyVersion topVer
+    ) throws GridCacheEntryRemovedException {
         assert dhtVer != null;
 
         cctx.versions().onReceived(primaryNodeId, dhtVer);
@@ -214,7 +214,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
             primaryNode(primaryNodeId, topVer);
 
-            if (!F.eq(this.dhtVer, dhtVer)) {
+            if (!Objects.equals(this.dhtVer, dhtVer)) {
                 value(val);
 
                 this.ver = ver;
@@ -245,8 +245,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         long expireTime,
         long ttl,
         UUID primaryNodeId,
-        AffinityTopologyVersion topVer)
-    {
+        AffinityTopologyVersion topVer
+    ) {
         assert dhtVer != null;
 
         cctx.versions().onReceived(primaryNodeId, dhtVer);
@@ -256,7 +256,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         try {
             if (!obsolete()) {
                 // Don't set DHT version to null until we get a match from DHT remote transaction.
-                if (F.eq(this.dhtVer, dhtVer))
+                if (Objects.equals(this.dhtVer, dhtVer))
                     this.dhtVer = null;
 
                 // If we are here, then we already tried to evict this entry.
@@ -265,7 +265,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                     if (!markObsolete(cctx.cache().nextVersion())) {
                         value(val);
 
-                        ttlAndExpireTimeExtras((int) ttl, expireTime);
+                        ttlAndExpireTimeExtras((int)ttl, expireTime);
 
                         primaryNode(primaryNodeId, topVer);
                     }
@@ -398,8 +398,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         try {
             checkObsolete();
 
-                if (cctx.statisticsEnabled())
-                    cctx.cache().metrics0().onRead(false);
+            if (cctx.statisticsEnabled())
+                cctx.cache().metrics0().onRead(false);
 
             boolean ret = false;
 
@@ -473,7 +473,13 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected WALPointer logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr) {
+    @Override protected WALPointer logTxUpdate(
+        IgniteInternalTx tx,
+        CacheObject val,
+        GridCacheVersion writeVer,
+        long expireTime,
+        long updCntr
+    ) {
         return null;
     }
 

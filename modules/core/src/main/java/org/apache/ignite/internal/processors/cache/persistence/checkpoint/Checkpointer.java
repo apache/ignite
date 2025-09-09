@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -34,6 +37,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.LongJVMPauseDetector;
@@ -44,11 +48,11 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
@@ -63,7 +67,6 @@ import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -75,7 +78,6 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
-import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointReadWriteLock.CHECKPOINT_RUNNER_THREAD_PREFIX;
@@ -107,8 +109,9 @@ public class Checkpointer extends GridWorker {
         "checkpointListenersExecuteTime=%dms, " +
         "checkpointLockHoldTime=%dms, " +
         "walCpRecordFsyncDuration=%dms, " +
-        "writeCheckpointEntryDuration=%dms, " +
         "splitAndSortCpPagesDuration=%dms, " +
+        "writeRecoveryDataDuration=%dms, " +
+        "writeCheckpointEntryDuration=%dms, " +
         "%s" +
         "pages=%d, " +
         "reason='%s']";
@@ -135,9 +138,6 @@ public class Checkpointer extends GridWorker {
     /** Failure processor. */
     private final FailureProcessor failureProcessor;
 
-    /** Snapshot manager. */
-    private final IgniteCacheSnapshotManager snapshotMgr;
-
     /** Metrics. */
     private final DataStorageMetricsImpl persStoreMetrics;
 
@@ -153,6 +153,9 @@ public class Checkpointer extends GridWorker {
 
     /** Factory for the creation of page-write workers. */
     private final CheckpointPagesWriterFactory checkpointPagesWriterFactory;
+
+    /** Storage for checkpoint recovery files. */
+    @Nullable private final CheckpointRecoveryFileStorage checkpointRecoveryFileStorage;
 
     /** The number of IO-bound threads which will write pages to disk. */
     private final int checkpointWritePageThreads;
@@ -178,6 +181,9 @@ public class Checkpointer extends GridWorker {
     /** Performance statistics processor. */
     private final PerformanceStatisticsProcessor psproc;
 
+    /** Write recovery data during checkpoint. */
+    private final boolean writeRecoveryData;
+
     /** For testing only. */
     private GridFutureAdapter<Void> enableChangeApplied;
 
@@ -191,7 +197,6 @@ public class Checkpointer extends GridWorker {
      * @param logger Logger.
      * @param detector Long JVM pause detector.
      * @param failureProcessor Failure processor.
-     * @param snapshotManager Snapshot manager.
      * @param dsMetrics Data storage metrics.
      * @param cacheProcessor Cache processor.
      * @param checkpoint Implementation of checkpoint.
@@ -207,11 +212,11 @@ public class Checkpointer extends GridWorker {
         Function<Class<?>, IgniteLogger> logger,
         LongJVMPauseDetector detector,
         FailureProcessor failureProcessor,
-        IgniteCacheSnapshotManager snapshotManager,
         DataStorageMetricsImpl dsMetrics,
         GridCacheProcessor cacheProcessor,
         CheckpointWorkflow checkpoint,
         CheckpointPagesWriterFactory factory,
+        @Nullable CheckpointRecoveryFileStorage checkpointRecoveryFileStorage,
         long checkpointFrequency,
         int checkpointWritePageThreads,
         Supplier<Integer> cpFreqDeviation
@@ -220,7 +225,6 @@ public class Checkpointer extends GridWorker {
         this.pauseDetector = detector;
         this.checkpointFreq = checkpointFrequency;
         this.failureProcessor = failureProcessor;
-        this.snapshotMgr = snapshotManager;
         this.checkpointWorkflow = checkpoint;
         this.checkpointPagesWriterFactory = factory;
         this.persStoreMetrics = dsMetrics;
@@ -228,7 +232,10 @@ public class Checkpointer extends GridWorker {
         this.checkpointWritePageThreads = Math.max(checkpointWritePageThreads, 1);
         this.checkpointWritePagesPool = initializeCheckpointPool();
         this.cpFreqDeviation = cpFreqDeviation;
-        this.psproc = cacheProcessor.context().kernalContext().performanceStatistics();
+        GridKernalContext ctx = cacheProcessor.context().kernalContext();
+        this.psproc = ctx.performanceStatistics();
+        this.writeRecoveryData = ctx.config().getDataStorageConfiguration().isWriteRecoveryDataOnCheckpoint();
+        this.checkpointRecoveryFileStorage = checkpointRecoveryFileStorage;
 
         scheduledCp = new CheckpointProgressImpl(nextCheckpointInterval());
     }
@@ -260,7 +267,7 @@ public class Checkpointer extends GridWorker {
 
                 if (skipCheckpointOnNodeStop && (isCancelled() || shutdownNow)) {
                     if (log.isInfoEnabled())
-                        log.warning("Skipping last checkpoint because node is stopping.");
+                        log.info("Skipping last checkpoint because node is stopping.");
 
                     return;
                 }
@@ -273,7 +280,7 @@ public class Checkpointer extends GridWorker {
                     this.enableChangeApplied = null;
                 }
 
-                if (checkpointsEnabled)
+                if (checkpointsEnabled && !shutdownNow)
                     doCheckpoint();
                 else {
                     synchronized (this) {
@@ -294,7 +301,7 @@ public class Checkpointer extends GridWorker {
             throw t;
         }
         finally {
-            if (err == null && !(isCancelled))
+            if (err == null && !(isCancelled.get()))
                 err = new IllegalStateException("Thread is terminated unexpectedly: " + name());
 
             if (err instanceof OutOfMemoryError)
@@ -382,29 +389,6 @@ public class Checkpointer extends GridWorker {
     }
 
     /**
-     * @param snapshotOperation Snapshot operation.
-     */
-    public IgniteInternalFuture wakeupForSnapshotCreation(SnapshotOperation snapshotOperation) {
-        GridFutureAdapter<Object> ret;
-
-        synchronized (this) {
-            scheduledCp.nextCpNanos(System.nanoTime());
-
-            scheduledCp.reason("snapshot");
-
-            scheduledCp.nextSnapshot(true);
-
-            scheduledCp.snapshotOperation(snapshotOperation);
-
-            ret = scheduledCp.futureFor(LOCK_RELEASED);
-
-            notifyAll();
-        }
-
-        return ret;
-    }
-
-    /**
      *
      */
     private void doCheckpoint() {
@@ -416,7 +400,56 @@ public class Checkpointer extends GridWorker {
             startCheckpointProgress();
 
             try {
-                chp = checkpointWorkflow.markCheckpointBegin(lastCpTs, curCpProgress, tracker, this);
+                chp = checkpointWorkflow.markCheckpointBegin(lastCpTs, curCpProgress, tracker, this,
+                    writeRecoveryData);
+
+                tracker.onMarkEnd();
+
+                currentProgress().initCounters(chp.pagesSize);
+
+                long recoveryDataSize = 0;
+
+                try {
+                    if (checkpointRecoveryFileStorage != null && chp.hasDelta()) {
+                        checkpointRecoveryFileStorage.clear();
+
+                        if (writeRecoveryData) {
+                            if (log.isInfoEnabled()) {
+                                log.info(String.format("Checkpoint recovery data write started [" +
+                                        "checkpointId=%s, " +
+                                        "startPtr=%s, " +
+                                        "pages=%d, " +
+                                        "checkpointBeforeLockTime=%dms, " +
+                                        "checkpointLockWait=%dms, " +
+                                        "checkpointListenersExecuteTime=%dms, " +
+                                        "checkpointLockHoldTime=%dms, " +
+                                        "walCpRecordFsyncDuration=%dms, " +
+                                        "splitAndSortCpPagesDuration=%dms, " +
+                                        "reason='%s']",
+                                    chp.cpEntry == null ? "" : chp.cpEntry.checkpointId(),
+                                    chp.cpEntry == null ? "" : chp.cpEntry.checkpointMark(),
+                                    chp.pagesSize,
+                                    tracker.beforeLockDuration(),
+                                    tracker.lockWaitDuration(),
+                                    tracker.listenersExecuteDuration(),
+                                    tracker.lockHoldDuration(),
+                                    tracker.walCpRecordFsyncDuration(),
+                                    tracker.splitAndSortCpPagesDuration(),
+                                    chp.progress.reason()
+                                ));
+                            }
+
+                            recoveryDataSize = writeRecoveryData(chp);
+                        }
+                    }
+                }
+                finally {
+                    tracker.onWriteRecoveryDataEnd(recoveryDataSize);
+                }
+
+                checkpointWorkflow.storeBeginMarker(chp);
+
+                tracker.onCpMarkerStoreEnd();
             }
             catch (Exception e) {
                 if (curCpProgress != null)
@@ -430,30 +463,28 @@ public class Checkpointer extends GridWorker {
 
             updateHeartbeat();
 
-            currentProgress().initCounters(chp.pagesSize);
-
             if (chp.hasDelta()) {
                 if (log.isInfoEnabled()) {
                     long possibleJvmPauseDur = possibleLongJvmPauseDuration(tracker);
 
-                    if (log.isInfoEnabled())
-                        log.info(
-                            String.format(
-                                CHECKPOINT_STARTED_LOG_FORMAT,
-                                chp.cpEntry == null ? "" : chp.cpEntry.checkpointId(),
-                                chp.cpEntry == null ? "" : chp.cpEntry.checkpointMark(),
-                                tracker.beforeLockDuration(),
-                                tracker.lockWaitDuration(),
-                                tracker.listenersExecuteDuration(),
-                                tracker.lockHoldDuration(),
-                                tracker.walCpRecordFsyncDuration(),
-                                tracker.writeCheckpointEntryDuration(),
-                                tracker.splitAndSortCpPagesDuration(),
-                                possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms, " : "",
-                                chp.pagesSize,
-                                chp.progress.reason()
-                            )
-                        );
+                    log.info(
+                        String.format(
+                            CHECKPOINT_STARTED_LOG_FORMAT,
+                            chp.cpEntry == null ? "" : chp.cpEntry.checkpointId(),
+                            chp.cpEntry == null ? "" : chp.cpEntry.checkpointMark(),
+                            tracker.beforeLockDuration(),
+                            tracker.lockWaitDuration(),
+                            tracker.listenersExecuteDuration(),
+                            tracker.lockHoldDuration(),
+                            tracker.walCpRecordFsyncDuration(),
+                            tracker.splitAndSortCpPagesDuration(),
+                            tracker.recoveryDataWriteDuration(),
+                            tracker.writeCheckpointEntryDuration(),
+                            possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms, " : "",
+                            chp.pagesSize,
+                            chp.progress.reason()
+                        )
+                    );
                 }
 
                 if (!writePages(tracker, chp.cpPages, chp.progress, this, this::isShutdownNow))
@@ -476,8 +507,6 @@ public class Checkpointer extends GridWorker {
                 tracker.onFsyncStart();
             }
 
-            snapshotMgr.afterCheckpointPageWritten();
-
             int destroyedPartitionsCnt = destroyEvictedPartitions();
 
             // Must mark successful checkpoint only if there are no exceptions or interrupts.
@@ -488,12 +517,14 @@ public class Checkpointer extends GridWorker {
             if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
                 if (log.isInfoEnabled()) {
                     log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
-                            "walSegmentsCovered=%s, markDuration=%dms, pagesWrite=%dms, fsync=%dms, total=%dms]",
+                            "walSegmentsCovered=%s, markDuration=%dms, recoveryWrite=%dms, pagesWrite=%dms, " +
+                            "fsync=%dms, total=%dms]",
                         chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
                         chp.pagesSize,
                         chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
                         walRangeStr(chp.walSegsCoveredRange),
                         tracker.markDuration(),
+                        tracker.recoveryDataWriteDuration(),
                         tracker.pagesWriteDuration(),
                         tracker.fsyncDuration(),
                         tracker.totalDuration()));
@@ -510,6 +541,62 @@ public class Checkpointer extends GridWorker {
     }
 
     /**
+     * Writes data required for storage recovery in case of crash during write pages phase.
+     *
+     * @param cp Current checkpoint.
+     * @return Size of written recovery data.
+     */
+    long writeRecoveryData(Checkpoint cp) throws IgniteCheckedException {
+        IgniteThreadPoolExecutor pageWritePool = checkpointWritePagesPool;
+
+        int threads = pageWritePool == null ? 1 : pageWritePool.getMaximumPoolSize();
+
+        // Cache group to process: cache groups with enabled WAL and reserved system group placeholders (without context).
+        Set<Integer> cacheGrpIds = new HashSet<>(cp.cpRecord.cacheGroupStates().keySet());
+        cacheGrpIds.add(MetaStorage.METASTORAGE_CACHE_ID);
+
+        CountDownFuture doneFut = new CountDownFuture(threads);
+        List<File> files = new ArrayList<>(threads);
+
+        for (int i = 0; i < threads; i++) {
+            CheckpointRecoveryFile file = checkpointRecoveryFileStorage.create(cp.cpEntry.timestamp(), cp.cpEntry.checkpointId(), i);
+            files.add(file.file());
+
+            Runnable write = checkpointPagesWriterFactory.buildRecoveryDataWriter(
+                file,
+                cp.cpPages,
+                cacheGrpIds,
+                doneFut,
+                this,
+                cp.progress,
+                this::isShutdownNow
+            );
+
+            if (pageWritePool == null)
+                write.run();
+            else {
+                try {
+                    pageWritePool.execute(write);
+                }
+                catch (RejectedExecutionException ignore) {
+                    // Run the task synchronously.
+                    write.run();
+                }
+            }
+        }
+
+        // Wait and check for errors.
+        doneFut.get();
+
+        long recoveryDataSize = 0;
+
+        for (File file : files)
+            recoveryDataSize += file.length();
+
+        return recoveryDataSize;
+    }
+
+    /**
      * @param workProgressDispatcher Work progress dispatcher.
      * @param tracker Checkpoint metrics tracker.
      * @param cpPages List of pages to write.
@@ -523,6 +610,8 @@ public class Checkpointer extends GridWorker {
         WorkProgressDispatcher workProgressDispatcher,
         BooleanSupplier shutdownNow
     ) throws IgniteCheckedException {
+        cpPages.rewind();
+
         IgniteThreadPoolExecutor pageWritePool = checkpointWritePagesPool;
 
         int checkpointWritePageThreads = pageWritePool == null ? 1 : pageWritePool.getMaximumPoolSize();
@@ -535,7 +624,7 @@ public class Checkpointer extends GridWorker {
         tracker.onPagesWriteStart();
 
         for (int i = 0; i < checkpointWritePageThreads; i++) {
-            Runnable write = checkpointPagesWriterFactory.build(
+            Runnable write = checkpointPagesWriterFactory.buildCheckpointPagesWriter(
                 tracker,
                 cpPages,
                 updStores,
@@ -614,6 +703,7 @@ public class Checkpointer extends GridWorker {
                 tracker.walCpRecordFsyncDuration(),
                 tracker.writeCheckpointEntryDuration(),
                 tracker.splitAndSortCpPagesDuration(),
+                tracker.recoveryDataWriteDuration(),
                 tracker.totalDuration(),
                 tracker.checkpointStartTime(),
                 chp.pagesSize,
@@ -622,6 +712,8 @@ public class Checkpointer extends GridWorker {
         }
 
         if (persStoreMetrics.metricsEnabled()) {
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cacheProcessor.context().database();
+
             persStoreMetrics.onCheckpoint(
                 tracker.beforeLockDuration(),
                 tracker.lockWaitDuration(),
@@ -633,11 +725,15 @@ public class Checkpointer extends GridWorker {
                 tracker.walCpRecordFsyncDuration(),
                 tracker.writeCheckpointEntryDuration(),
                 tracker.splitAndSortCpPagesDuration(),
+                tracker.recoveryDataWriteDuration(),
                 tracker.totalDuration(),
                 tracker.checkpointStartTime(),
                 chp.pagesSize,
                 tracker.dataPagesWritten(),
-                tracker.cowPagesWritten()
+                tracker.cowPagesWritten(),
+                tracker.recoveryDataSize(),
+                dbMgr.forAllPageStores(PageStore::size),
+                dbMgr.forAllPageStores(PageStore::getSparseSize)
             );
         }
     }
@@ -826,7 +922,7 @@ public class Checkpointer extends GridWorker {
         catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
 
-            isCancelled = true;
+            isCancelled.set(true);
         }
     }
 
@@ -887,7 +983,7 @@ public class Checkpointer extends GridWorker {
             log.debug("Cancelling grid runnable: " + this);
 
         // Do not interrupt runner thread.
-        isCancelled = true;
+        isCancelled.set(true);
 
         synchronized (this) {
             notifyAll();
@@ -915,7 +1011,7 @@ public class Checkpointer extends GridWorker {
     public void shutdownNow() {
         shutdownNow = true;
 
-        if (!isCancelled)
+        if (!isCancelled.get())
             cancel();
     }
 
@@ -928,7 +1024,7 @@ public class Checkpointer extends GridWorker {
 
         assert runner() == null : "Checkpointer is running.";
 
-        new IgniteThread(this).start();
+        U.newThread(this).start();
     }
 
     /**

@@ -24,8 +24,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-13}
 
 # Image name to run nodes
-JDK_VERSION="${JDK_VERSION:-8}"
-IMAGE_PREFIX="ducker-ignite-openjdk"
+JDK_VERSION="${JDK_VERSION:-11}"
+IMAGE_PREFIX="ducker-ignite-eclipse-temurin"
 
 ###
 # DuckerTest parameters are specified with options to the script
@@ -75,8 +75,11 @@ The options are as follows:
 -t|--tc-paths
     Path to ducktests. Must be relative path to 'IGNITE/modules/ducktests/tests' directory
 
+--subnet
+    Subnet to assign nodes IP addresses, like --subnet 172.20.0.0/16
+
 --jdk
-    Set jdk version to build, default is 8
+    Set jdk version to build, default is 11
 
 --image
     Set custom docker image to run tests on.
@@ -124,6 +127,7 @@ while [[ $# -ge 1 ]]; do
         -t|--tc-paths) TC_PATHS="$2"; shift 2;;
         -n|--num-nodes) IGNITE_NUM_CONTAINERS="$2"; shift 2;;
         -j|--max-parallel) MAX_PARALLEL="$2"; shift 2;;
+        --subnet) SUBNET="--subnet $2"; shift 2;;
         --jdk) JDK_VERSION="$2"; shift 2;;
         --image) IMAGE_NAME="$2"; shift 2;;
         -f|--force) FORCE=$1; shift;;
@@ -133,7 +137,7 @@ done
 
 if [ -z "$IMAGE_NAME" ]; then
     IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION"
-    "$SCRIPT_DIR"/ducker-ignite build -j "openjdk:$JDK_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
+    "$SCRIPT_DIR"/ducker-ignite build -j "eclipse-temurin:$JDK_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
 else
     echo "[WARN] Used non-default image $IMAGE_NAME. Be sure you use actual version of the image. " \
          "Otherwise build it with 'ducker-ignite build' command"
@@ -146,8 +150,8 @@ fi
 
 # Up cluster if nothing is running
 if "$SCRIPT_DIR"/ducker-ignite ssh | grep -q '(none)'; then
-    # do not quote FORCE as bash recognize "" as input param instead of image name
-    "$SCRIPT_DIR"/ducker-ignite up $FORCE -n "$IGNITE_NUM_CONTAINERS" "$IMAGE_NAME" || die "ducker-ignite up failed"
+    # do not quote FORCE and SUBNET as bash recognize "" as input param instead of image name
+    "$SCRIPT_DIR"/ducker-ignite up $FORCE $SUBNET -n "$IGNITE_NUM_CONTAINERS" "$IMAGE_NAME" || die "ducker-ignite up failed"
 fi
 
 DUCKTAPE_OPTIONS="--globals '$GLOBALS'"
@@ -160,5 +164,5 @@ if [[ -n "$MAX_PARALLEL" ]]; then
   DUCKTAPE_OPTIONS="$DUCKTAPE_OPTIONS --max-parallel $MAX_PARALLEL"
 fi
 
-"$SCRIPT_DIR"/ducker-ignite test "$TC_PATHS" "$DUCKTAPE_OPTIONS" \
+"$SCRIPT_DIR"/ducker-ignite test $TC_PATHS "$DUCKTAPE_OPTIONS" \
   || die "ducker-ignite test failed"

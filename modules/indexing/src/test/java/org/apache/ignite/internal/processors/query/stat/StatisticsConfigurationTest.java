@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -33,12 +32,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,6 +57,13 @@ import static org.apache.ignite.internal.processors.query.stat.StatisticsUsageSt
 public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     /** Columns to check.*/
     private static final String[] COLUMNS = {"A", "B", "C"};
+
+    /** Listener which catches client-side statistics store warning. */
+    private LogListener obsolescenceLsnr = LogListener
+        .matches("Unable to save statistics obsolescence info on non server node.").build();
+
+    /** Logger which tries to catch client-side statistics store warning. */
+    private final ListeningTestLogger obsolescenceAwareLog = new ListeningTestLogger(log(), obsolescenceLsnr);
 
     /** Lazy mode. */
     @Parameterized.Parameter(value = 0)
@@ -95,7 +103,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
                 assertNotNull("Column: " + col, colStat);
 
                 assertTrue("Column: " + col, colStat.distinct() > 0);
-                assertTrue("Column: " + col, colStat.max().getInt() > 0);
+                assertTrue("Column: " + col, colStat.max().intValue() > 0);
                 assertTrue("Column: " + col, colStat.total() == stat.rowCount());
             }
         }
@@ -110,7 +118,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
                         new DataRegionConfiguration()
                             .setPersistenceEnabled(persist)
                     )
-            );
+            ).setGridLogger(obsolescenceAwareLog);
     }
 
     /** {@inheritDoc} */
@@ -171,13 +179,15 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
         stopGrid(0);
 
         startGrid(0);
+
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
     }
@@ -197,13 +207,52 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
         stopGrid(1);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
+    }
+
+    /**
+     * Start client node and check no store related errors in log.
+     *
+     * @throws Exception In case of errors.
+     */
+    @Test
+    public void checkClientNode() throws Exception {
+        startGridAndChangeBaseline(0);
+
+        createSmallTable(null);
+
+        IgniteEx client = startClientGrid("cli");
+
+        awaitPartitionMapExchange();
+
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
+
+        sql("delete from small");
+
+        for (int i = 0; i < 1000; i++)
+            sql(String.format("INSERT INTO small(a, b, c) VALUES(%d, %d, %d)", i, i, i % 10));
+
+        StatisticsObjectConfiguration smallCfg = statisticsMgr(0).statisticConfiguration().config(SMALL_KEY);
+
+        statisticsMgr(client).refreshStatistics(SMALL_TARGET);
+
+        Thread.sleep(100);
+
+        StatisticsObjectConfiguration smallCfg2 = statisticsMgr(0).statisticConfiguration().config(SMALL_KEY);
+
+        assertNotSame(smallCfg.columns().get("A").version(), smallCfg2.columns().get("A").version());
+
+        client.cluster().state(ClusterState.INACTIVE);
+
+        client.cluster().state(ClusterState.ACTIVE);
+
+        assertFalse(obsolescenceLsnr.check(TIMEOUT));
     }
 
     /**
@@ -215,39 +264,49 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
      */
     @Test
     public void updateStatisticsOnChangeTopology() throws Exception {
+        log.info("Starting server 0 node");
         startGridAndChangeBaseline(0);
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Starting client cli node");
         startClientGrid("cli");
+
+        log.info("Starting server 1 node");
         startGridAndChangeBaseline(1);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Starting server 2 node");
         startGridAndChangeBaseline(2);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Starting server 2 node");
         startGridAndChangeBaseline(3);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Stoppping server 0 node");
         stopGridAndChangeBaseline(0);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Stopping server 2 node");
         stopGridAndChangeBaseline(2);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Stopping server 3 node");
         stopGridAndChangeBaseline(3);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        log.info("Starting server 3 node");
         startGridAndChangeBaseline(3);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
@@ -255,12 +314,12 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
     /**
      * Check drop statistics.
-     * - Create statistic for a table;
-     * - Check statistics on all nodes of the cluster;
-     * - Drop stat for one columns
-     * - Check that statistic is dropped for specified column on all nodes of the cluster;
-     * - Re-create statistics
-     * - Check statistics on all nodes of the cluster;
+     * 1. Create statistic for a table;
+     * 2. Check statistics on all nodes of the cluster;
+     * 3. Drop stat for one column;
+     * 4. Check that statistic is dropped for specified column on all nodes of the cluster;
+     * 5. Re-create statistics;
+     * 6. Check statistics on all nodes of the cluster;
      */
     @Test
     public void dropUpdate() throws Exception {
@@ -270,17 +329,23 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        // 1. Create statistic for a table;
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
+        // 2. Check statistics on all nodes of the cluster;
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
+        // 3. Drop stat for one column;
         statisticsMgr(0).dropStatistics(new StatisticsTarget("PUBLIC", "SMALL", "A"));
 
+        // 4. Check that statistic is dropped for specified column on all nodes of the cluster;
         waitForStats(SCHEMA, "SMALL", TIMEOUT,
             (stats) -> stats.forEach(s -> assertNull(s.columnStatistics("A"))));
 
-        collectStatistics(new StatisticsTarget(SCHEMA, "SMALL", "A"));
+        // 5. Re-create statistics;
+        collectStatistics(StatisticsType.GLOBAL, new StatisticsTarget(SCHEMA, "SMALL", "A"));
 
+        // 6. Check statistics on all nodes of the cluster;
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
     }
 
@@ -304,7 +369,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
@@ -330,6 +395,50 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     }
 
     /**
+     * Checks orphan records cleanup on activation doesn't lead to grid hanging.
+     * - Start the grid, create table and collect statistics.
+     * - Ensure statistics for the table exists.
+     * - Disable StatisticsManagerConfiguration to prevent configuration changes in metastorage.
+     * - Drop table.
+     * - Re-activate the grid.
+     * - Ensures statistics for the table was dropped as well.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testOrphanDataCleanup() throws Exception {
+        startGrids(2);
+
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
+        createSmallTable(null);
+
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
+
+        waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
+
+        // Stop StatisticsConfigurationManager with all it's listeners, so metastorage won't be updated.
+        statisticsMgr(0).statisticConfiguration().stop();
+        statisticsMgr(1).statisticConfiguration().stop();
+
+        dropSmallTable(null);
+
+        waitForStats(SCHEMA, "SMALL", TIMEOUT, (stats) -> stats.forEach(s -> assertNotNull(s)));
+
+        checkStatisticsInMetastore(grid(0).context().cache().context().database(), TIMEOUT,
+                SCHEMA, "SMALL", (s -> assertNotNull(s.data().get("A"))));
+
+        // Restarts StatisticsConfigurationManager and trigger cleanup of orphan record in metastorage.
+        grid(0).cluster().state(ClusterState.INACTIVE);
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
+        waitForStats(SCHEMA, "SMALL", TIMEOUT, (stats) -> stats.forEach(s -> assertNull(s)));
+
+        checkStatisticsInMetastore(grid(0).context().cache().context().database(), TIMEOUT,
+                SCHEMA, "SMALL", (s -> assertNull(s.data().get("A"))));
+    }
+
+    /**
      * Check drop statistics when table is dropped.
      */
     @Test
@@ -341,7 +450,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         createSmallTable(null);
         createSmallTable("_A");
 
-        collectStatistics(
+        collectStatistics(StatisticsType.GLOBAL,
             new StatisticsTarget(SCHEMA, "SMALL"),
             new StatisticsTarget(SCHEMA, "SMALL_A"));
 
@@ -349,10 +458,6 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         waitForStats(SCHEMA, "SMALL_A", TIMEOUT, checkTotalRows, checkColumStats);
 
         dropSmallTable(null);
-
-        // TODO: remove after fix IGNITE-14814
-        if (persist)
-            statisticsMgr(0).dropStatistics(SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, (stats) -> stats.forEach(s -> assertNull(s)));
 
@@ -375,7 +480,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
@@ -410,7 +515,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         createSmallTable(null);
 
-        collectStatistics(SMALL_TARGET);
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
@@ -489,14 +594,16 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
      * @return {@code true} if all commands pass successfully, {@code false} - otherwise.
      */
     private boolean executeStatisticsConfigurationCommands(IgniteEx ign) throws IgniteInterruptedCheckedException {
-        IgniteH2Indexing indexing = (IgniteH2Indexing)ign.context().query().getIndexing();
-        IgniteStatisticsManager statMgr = indexing.statsManager();
+        IgniteStatisticsManager statMgr = statisticsMgr(ign);
 
         int success = 0;
+
         try {
             statMgr.collectStatistics(buildDefaultConfigurations(SMALL_TARGET));
+
             success++;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             if (!(e instanceof IgniteException && e.getMessage().contains("while statistics usage state is OFF.")))
                 fail("Unknown error: " + e);
         }
@@ -507,7 +614,8 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         try {
             statMgr.refreshStatistics(SMALL_TARGET);
             success++;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             if (!(e instanceof IgniteException && e.getMessage().contains("while statistics usage state is OFF.")))
                 fail("Unknown error: " + e);
         }
@@ -515,7 +623,8 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         try {
             statMgr.dropStatistics(SMALL_TARGET);
             success++;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             if (!(e instanceof IgniteException && e.getMessage().contains("while statistics usage state is OFF.")))
                 fail("Unknown error: " + e);
         }
@@ -625,7 +734,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     @NotNull private List<ObjectStatisticsImpl> statisticsAllNodes(String schema, String objName) {
         List<IgniteStatisticsManager> mgrs = G.allGrids().stream()
             .filter(ign -> !((IgniteEx)ign).context().clientNode())
-            .map(ign -> ((IgniteH2Indexing)((IgniteEx)ign).context().query().getIndexing()).statsManager())
+            .map(ign -> ((IgniteEx)ign).context().query().statsManager())
             .collect(Collectors.toList());
 
         return mgrs.stream()

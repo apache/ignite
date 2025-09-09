@@ -71,7 +71,7 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
      * @return Next exponential backoff timeout.
      */
     public static long backoffTimeout(long timeout, long maxTimeout) {
-        return (long) Math.min(timeout * DLFT_BACKOFF_COEFF, maxTimeout);
+        return (long)Math.min(timeout * DLFT_BACKOFF_COEFF, maxTimeout);
     }
 
     /**
@@ -112,7 +112,8 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
             currTimeout = backoffTimeout(currTimeout, maxTimeout);
 
             return Math.min(prevTimeout, remainingTime);
-        } else
+        }
+        else
             return Math.min(timeout, remainingTime);
     }
 

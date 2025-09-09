@@ -43,6 +43,7 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -62,35 +63,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      */
     static {
         if (!IgniteSystemProperties.getBoolean(IGNITE_JETTY_LOG_NO_OVERRIDE)) {
-            // See also https://www.eclipse.org/jetty/documentation/9.4.x/configuring-logging.html
+            // See also https://www.eclipse.org/jetty/documentation/jetty-9/index.html#configuring-jetty-logging
             // It seems that using system properties should be fine.
             System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
             System.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
             System.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
-
-            try {
-                Class<?> logCls = Class.forName("org.apache.log4j.Logger");
-
-                String ctgrJetty = "org.eclipse.jetty";                         // WARN for this category.
-                String ctgrJettyUtil = "org.eclipse.jetty.util.log";            // ERROR for this...
-                String ctgrJettyUtilComp = "org.eclipse.jetty.util.component";  // ...and this.
-
-                Object logJetty = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJetty);
-                Object logJettyUtil = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJettyUtil);
-                Object logJettyUtilComp = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJettyUtilComp);
-
-                Class<?> lvlCls = Class.forName("org.apache.log4j.Level");
-
-                Object warnLvl = lvlCls.getField("WARN").get(null);
-                Object errLvl = lvlCls.getField("ERROR").get(null);
-
-                logJetty.getClass().getMethod("setLevel", lvlCls).invoke(logJetty, warnLvl);
-                logJettyUtil.getClass().getMethod("setLevel", lvlCls).invoke(logJetty, errLvl);
-                logJettyUtilComp.getClass().getMethod("setLevel", lvlCls).invoke(logJetty, errLvl);
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
         }
     }
 
@@ -299,7 +276,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             XmlConfiguration cfg;
 
             try {
-                cfg = new XmlConfiguration(cfgUrl);
+                Resource rsrc = Resource.newResource(cfgUrl);
+
+                cfg = new XmlConfiguration(rsrc);
             }
             catch (FileNotFoundException e) {
                 throw new IgniteSpiException("Failed to find configuration file: " + cfgUrl, e);

@@ -30,12 +30,10 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -44,39 +42,42 @@ import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
+import org.h2.index.Index;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.Row;
 import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.CompareMode;
@@ -100,11 +101,9 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.sql.ResultSetMetaData.columnNullableUnknown;
-import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_COL;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 
@@ -159,44 +158,16 @@ public class H2Utils {
     }
 
     /**
-     * @param cols Columns list.
-     * @param col Column to find.
-     * @return {@code true} If found.
-     */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    public static boolean containsColumn(List<IndexColumn> cols, IndexColumn col) {
-        for (int i = cols.size() - 1; i >= 0; i--) {
-            if (equals(cols.get(i), col))
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Check whether columns list contains key or key alias column.
-     *
-     * @param desc Row descriptor.
-     * @param cols Columns list.
-     * @return Result.
-     */
-    public static boolean containsKeyColumn(GridH2RowDescriptor desc, List<IndexColumn> cols) {
-        for (int i = cols.size() - 1; i >= 0; i--) {
-            if (desc.isKeyColumn(cols.get(i).column.getColumnId()))
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Prepare SQL statement for CREATE TABLE command.
      *
      * @param tbl Table descriptor.
      * @return SQL.
      */
     public static String tableCreateSql(H2TableDescriptor tbl) {
-        GridQueryProperty keyProp = tbl.type().property(KEY_FIELD_NAME);
+        String keyFieldName = tbl.type().keyFieldName();
+        GridQueryProperty keyByNameProp = (keyFieldName == null) ? null : tbl.type().property(keyFieldName);
+        GridQueryProperty keyProp = (keyByNameProp == null) ? tbl.type().property(KEY_FIELD_NAME) : keyByNameProp;
+
         GridQueryProperty valProp = tbl.type().property(VAL_FIELD_NAME);
 
         String keyType = dbTypeFromClass(tbl.type().keyClass(),
@@ -238,8 +209,8 @@ public class H2Utils {
      * @param ifNotExists Quietly skip index creation if it exists.
      * @return Statement string.
      */
-    public static String indexCreateSql(String fullTblName, GridH2IndexBase h2Idx, boolean ifNotExists) {
-        boolean spatial = F.eq(SPATIAL_IDX_CLS, h2Idx.getClass().getName());
+    public static String indexCreateSql(String fullTblName, Index h2Idx, boolean ifNotExists) {
+        boolean spatial = Objects.equals(SPATIAL_IDX_CLS, h2Idx.getClass().getName());
 
         GridStringBuilder sb = new SB("CREATE ")
             .a(spatial ? "SPATIAL " : "")
@@ -292,43 +263,37 @@ public class H2Utils {
     }
 
     /**
-     * @param desc Row descriptor.
-     * @param cols Columns list.
-     * @param keyCol Primary key column.
-     * @param affCol Affinity key column.
-     * @return The same list back.
-     */
-    public static List<IndexColumn> treeIndexColumns(GridH2RowDescriptor desc, List<IndexColumn> cols,
-        IndexColumn keyCol, IndexColumn affCol) {
-        assert keyCol != null;
-
-        if (!containsKeyColumn(desc, cols))
-            cols.add(keyCol);
-
-        if (affCol != null && !containsColumn(cols, affCol))
-            cols.add(affCol);
-
-        return cols;
-    }
-
-    /**
      * Create spatial index.
      *
      * @param tbl Table.
-     * @param idxName Index name.
+     * @param idxDesc Index descriptor.
      * @param cols Columns.
      */
     @SuppressWarnings("ConstantConditions")
-    public static GridH2IndexBase createSpatialIndex(GridH2Table tbl, String idxName, List<IndexColumn> cols) {
+    public static GridH2IndexBase createSpatialIndex(GridH2Table tbl, IndexDescriptor idxDesc, List<IndexColumn> cols) {
         try {
             Class<?> fctCls = Class.forName(SPATIAL_IDX_FACTORY_CLS);
 
-            Method fctMethod = fctCls.getMethod("createIndex", GridH2Table.class, String.class, List.class);
+            Method fctMethod = fctCls.getMethod("createIndex", GridH2Table.class, IndexDescriptor.class, List.class);
 
-            return (GridH2IndexBase) fctMethod.invoke(null, tbl, idxName, cols);
+            return (GridH2IndexBase)fctMethod.invoke(null, tbl, idxDesc, cols);
         }
         catch (Exception e) {
             throw new IgniteException("Failed to instantiate: " + SPATIAL_IDX_CLS, e);
+        }
+    }
+
+    /**
+     * Check if spatial indexes are enabled.
+     */
+    public static boolean checkSpatialIndexEnabled() {
+        try {
+            Class.forName(SPATIAL_IDX_FACTORY_CLS);
+
+            return true;
+        }
+        catch (Exception e) {
+            return false;
         }
     }
 
@@ -486,12 +451,12 @@ public class H2Utils {
      * Convert value to column's expected type by means of H2.
      *
      * @param val Source value.
-     * @param idx Row descriptor.
+     * @param coCtx Cache object context.
      * @param type Expected column type to convert to.
      * @return Converted object.
      * @throws IgniteCheckedException if failed.
      */
-    public static Object convert(Object val, IgniteH2Indexing idx, int type) throws IgniteCheckedException {
+    public static Object convert(Object val, CacheObjectValueContext coCtx, int type) throws IgniteCheckedException {
         if (val == null)
             return null;
 
@@ -500,7 +465,7 @@ public class H2Utils {
         if (objType == type)
             return val;
 
-        Value h2Val = wrap(idx.objectContext(), val, objType);
+        Value h2Val = wrap(coCtx, val, objType);
 
         return h2Val.convertTo(type).getObject();
     }
@@ -526,28 +491,15 @@ public class H2Utils {
     }
 
     /**
-     * Add only new columns to destination list.
+     * Check that given cache is not started and start it for such case.
      *
-     * @param dest List of index columns to add new elements from src list.
-     * @param src List of IndexColumns to add to dest list.
-     */
-    public static void addUniqueColumns(List<IndexColumn> dest, List<IndexColumn> src) {
-        for (IndexColumn col : src) {
-            if (!containsColumn(dest, col))
-                dest.add(col);
-        }
-    }
-
-    /**
-     * Check that given table has not started cache and start it for such case.
-     *
-     * @param tbl Table to check on not started cache.
+     * @param cacheInfo Cache context info.
      * @return {@code true} in case not started and has been started.
      */
     @SuppressWarnings({"ConstantConditions", "UnusedReturnValue"})
-    public static boolean checkAndStartNotStartedCache(GridKernalContext ctx, GridH2Table tbl) {
-        if (tbl != null && tbl.isCacheLazy()) {
-            String cacheName = tbl.cacheInfo().config().getName();
+    public static boolean checkAndStartNotStartedCache(GridKernalContext ctx, GridCacheContextInfo<?, ?> cacheInfo) {
+        if (cacheInfo != null && !cacheInfo.isCacheContextInited()) {
+            String cacheName = cacheInfo.config().getName();
 
             try {
                 Boolean res = ctx.cache().dynamicStartCache(null, cacheName, null, false, true, true).get();
@@ -564,6 +516,7 @@ public class H2Utils {
 
     /**
      * Wraps object to respective {@link Value}.
+     *
      *
      * @param obj Object.
      * @param type Value type.
@@ -631,7 +584,7 @@ public class H2Utils {
             case Value.JAVA_OBJECT:
                 return ValueJavaObject.getNoCopy(obj, null, null);
             case Value.ARRAY:
-                Object[] arr = (Object[])obj;
+                Object[] arr = BinaryUtils.rawArrayFromBinary(obj);
 
                 Value[] valArr = new Value[arr.length];
 
@@ -649,33 +602,6 @@ public class H2Utils {
         }
 
         throw new IgniteCheckedException("Failed to wrap value[type=" + type + ", value=" + obj + "]");
-    }
-
-    /**
-     * Validates properties described by query types.
-     *
-     * @param type Type descriptor.
-     * @throws IgniteCheckedException If validation failed.
-     */
-    @SuppressWarnings("CollectionAddAllCanBeReplacedWithConstructor")
-    public static void validateTypeDescriptor(GridQueryTypeDescriptor type)
-        throws IgniteCheckedException {
-        assert type != null;
-
-        Collection<String> names = new HashSet<>();
-
-        names.addAll(type.fields().keySet());
-
-        if (names.size() < type.fields().size())
-            throw new IgniteCheckedException("Found duplicated properties with the same name [keyType=" +
-                type.keyClass().getName() + ", valueType=" + type.valueClass().getName() + "]");
-
-        String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [type=" + type.name() + "]";
-
-        for (String name : names) {
-            if (name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME))
-                throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
-        }
     }
 
     /**
@@ -732,7 +658,7 @@ public class H2Utils {
             if (star == 0)
                 qry = qry.substring(1).trim();
             else if (star > 0) {
-                if (F.eq('.', qry.charAt(star - 1))) {
+                if (Objects.equals('.', qry.charAt(star - 1))) {
                     t = qry.substring(0, star - 1);
 
                     qry = qry.substring(star + 1).trim();
@@ -833,6 +759,8 @@ public class H2Utils {
                 stmt.setObject(idx, obj, Types.JAVA_OBJECT);
             else if (obj instanceof BigDecimal)
                 stmt.setObject(idx, obj, Types.DECIMAL);
+            else if (BinaryUtils.isBinaryArray(obj))
+                stmt.setObject(idx, BinaryUtils.rawArrayFromBinary(obj));
             else
                 stmt.setObject(idx, obj);
         }
@@ -852,7 +780,9 @@ public class H2Utils {
             if (cmp.compare(arr[i], arr[i + 1]) <= 0)
                 break;
 
-            U.swap(arr, i, i + 1);
+            Z tmp = arr[i];
+            arr[i] = arr[i + 1];
+            arr[i + 1] = tmp;
         }
     }
 
@@ -874,52 +804,17 @@ public class H2Utils {
 
         if (!F.isEmpty(tbls)) {
             for (QueryTable tblKey : tbls) {
-                GridH2Table tbl = idx.schemaManager().dataTable(tblKey.schema(), tblKey.table());
+                TableDescriptor tbl = idx.kernalContext().query().schemaManager().table(tblKey.schema(), tblKey.table());
 
                 if (tbl != null) {
-                    checkAndStartNotStartedCache(idx.kernalContext(), tbl);
+                    checkAndStartNotStartedCache(idx.kernalContext(), tbl.cacheInfo());
 
-                    caches0.add(tbl.cacheId());
+                    caches0.add(tbl.cacheInfo().cacheId());
                 }
             }
         }
 
         return caches0.isEmpty() ? Collections.emptyList() : new ArrayList<>(caches0);
-    }
-
-    /**
-     * Collect MVCC enabled flag.
-     *
-     * @param idx Indexing.
-     * @param cacheIds Cache IDs.
-     * @return {@code True} if indexing is enabled.
-     */
-    public static boolean collectMvccEnabled(IgniteH2Indexing idx, List<Integer> cacheIds) {
-        if (cacheIds.isEmpty())
-            return false;
-
-        GridCacheSharedContext sharedCtx = idx.kernalContext().cache().context();
-
-        GridCacheContext cctx0 = null;
-
-        boolean mvccEnabled = false;
-
-        for (int i = 0; i < cacheIds.size(); i++) {
-            Integer cacheId = cacheIds.get(i);
-
-            GridCacheContext cctx = sharedCtx.cacheContext(cacheId);
-
-            assert cctx != null;
-
-            if (i == 0) {
-                mvccEnabled = cctx.mvccEnabled();
-                cctx0 = cctx;
-            }
-            else if (cctx.mvccEnabled() != mvccEnabled)
-                MvccUtils.throwAtomicityModesMismatchException(cctx0.config(), cctx.config());
-        }
-
-        return mvccEnabled;
     }
 
     /**
@@ -945,7 +840,10 @@ public class H2Utils {
 
             GridCacheContext cctx = sharedCtx.cacheContext(cacheId);
 
-            assert cctx != null;
+            if (cctx == null) {
+                throw new IgniteSQLException("Failed to find cache [cacheId=" + cacheId + ']',
+                    IgniteQueryErrorCode.TABLE_NOT_FOUND);
+            }
 
             if (!cctx.isPartitioned())
                 continue;
@@ -974,62 +872,27 @@ public class H2Utils {
     }
 
     /**
-     * Create list of index columns. Where possible _KEY columns will be unwrapped.
-     *
-     * @param tbl GridH2Table instance
-     * @param idxCols List of index columns.
-     *
-     * @return Array of key and affinity columns. Key's, if it possible, splitted into simple components.
+     * @return Query engine name.
      */
-    @NotNull public static IndexColumn[] unwrapKeyColumns(GridH2Table tbl, IndexColumn[] idxCols) {
-        ArrayList<IndexColumn> keyCols = new ArrayList<>();
+    public static String queryEngine() {
+        return IndexingQueryEngineConfiguration.ENGINE_NAME;
+    }
 
-        boolean isSql = tbl.rowDescriptor().tableDescriptor().sql();
+    /**
+     * @param stmnt Statement to print.
+     * @return SQL query where constant replaced with '?' char.
+     * @see GridSqlConst#getSQL()
+     * @see QueryUtils#includeSensitive()
+     */
+    public static String sqlWithoutConst(GridSqlStatement stmnt) {
+        QueryUtils.INCLUDE_SENSITIVE_TL.set(false);
 
-        if (!isSql)
-            return idxCols;
-
-        GridQueryTypeDescriptor type = tbl.rowDescriptor().type();
-
-        for (IndexColumn idxCol : idxCols) {
-            if (idxCol.column.getColumnId() == KEY_COL) {
-                if (QueryUtils.isSqlType(type.keyClass())) {
-                    int altKeyColId = tbl.rowDescriptor().getAlternativeColumnId(QueryUtils.KEY_COL);
-
-                    //Remap simple key to alternative column.
-                    IndexColumn idxKeyCol = new IndexColumn();
-
-                    idxKeyCol.column = tbl.getColumn(altKeyColId);
-                    idxKeyCol.columnName = idxKeyCol.column.getName();
-                    idxKeyCol.sortType = idxCol.sortType;
-
-                    keyCols.add(idxKeyCol);
-                }
-                else {
-                    boolean added = false;
-
-                    for (String propName : type.fields().keySet()) {
-                        GridQueryProperty prop = type.property(propName);
-
-                        if (prop.key()) {
-                            added = true;
-
-                            Column col = tbl.getColumn(propName);
-
-                            keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
-                        }
-                    }
-
-                    // If key is object but the user has not specified any particular columns,
-                    // we have to fall back to whole-key index.
-                    if (!added)
-                        keyCols.add(idxCol);
-                }
-            } else
-                keyCols.add(idxCol);
+        try {
+            return stmnt.getSQL();
         }
-
-        return keyCols.toArray(new IndexColumn[0]);
+        finally {
+            QueryUtils.INCLUDE_SENSITIVE_TL.set(true);
+        }
     }
 
     /**
@@ -1092,8 +955,8 @@ public class H2Utils {
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            ValueRuntimeSimpleObject<?> object = (ValueRuntimeSimpleObject<?>)o;
-            return Objects.equals(val, object.val);
+            ValueRuntimeSimpleObject<?> obj = (ValueRuntimeSimpleObject<?>)o;
+            return Objects.equals(val, obj.val);
         }
 
         /** {@inheritDoc} */

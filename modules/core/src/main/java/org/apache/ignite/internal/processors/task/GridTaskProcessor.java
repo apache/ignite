@@ -19,12 +19,13 @@ package org.apache.ignite.internal.processors.task;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
@@ -38,6 +39,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskMapAsync;
 import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -55,8 +57,10 @@ import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
+import org.apache.ignite.internal.events.ManagementTaskEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -65,8 +69,13 @@ import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalk
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.platform.compute.PlatformFullTask;
+import org.apache.ignite.internal.processors.task.monitor.ComputeGridMonitor;
+import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatus;
+import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatusSnapshot;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
@@ -82,11 +91,11 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyMap;
 import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -98,11 +107,9 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TASK_NAME;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
 /**
  * This class defines task processor.
@@ -119,10 +126,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
     /** Wait for 5 seconds to allow discovery to take effect (best effort). */
     private static final long DISCO_TIMEOUT = 5000;
-
-    /** */
-    private static final Map<GridTaskThreadContextKey, Object> EMPTY_ENUM_MAP =
-        new EnumMap<>(GridTaskThreadContextKey.class);
 
     /** */
     private final Marshaller marsh;
@@ -143,9 +146,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     private final LongAdderMetric execTasks;
 
     /** */
-    private final ThreadLocal<Map<GridTaskThreadContextKey, Object>> thCtx = new ThreadLocal<>();
-
-    /** */
     private final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
     /** Internal metadata cache. */
@@ -160,16 +160,29 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     private final boolean isPersistenceEnabled;
 
     /**
+     * Task statuses update monitors.
+     * Guarded by {@link #lock}.
+     */
+    private final Collection<ComputeGridMonitor> taskStatusMonitors = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Snapshots of task statuses.
+     * Mapping: {@link ComputeTaskSession#getId} -> task status.
+     * Guarded by {@link #lock}.
+     */
+    private final ConcurrentMap<IgniteUuid, ComputeTaskStatusSnapshot> taskStatusSnapshots = new ConcurrentHashMap<>();
+
+    /**
      * @param ctx Kernal context.
      */
     public GridTaskProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         discoLsnr = new TaskDiscoveryListener();
 
-        MetricRegistry sysreg = ctx.metric().registry(SYS_METRICS);
+        MetricRegistryImpl sysreg = ctx.metric().registry(SYS_METRICS);
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
@@ -189,6 +202,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         ctx.io().addMessageListener(TOPIC_TASK_CANCEL, new TaskCancelMessageListener());
         ctx.io().addMessageListener(TOPIC_TASK, new JobMessageListener(true));
 
+        ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
+
         if (log.isDebugEnabled())
             log.debug("Started task processor.");
     }
@@ -198,8 +213,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (!active)
             return;
 
-        tasksMetaCache = ctx.security().enabled() && !ctx.isDaemon() ?
-            ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
+        tasksMetaCache = ctx.security().enabled() ? ctx.cache().utilityCache() : null;
 
         startLatch.countDown();
     }
@@ -209,7 +223,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         IgniteClientDisconnectedCheckedException err = disconnectedError(reconnectFut);
 
         for (GridTaskWorker<?, ?> worker : tasks.values())
-            worker.finishTask(null, err, false);
+            worker.finishTask(null, err, false, false);
     }
 
     /**
@@ -288,7 +302,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     Throwable ex =
                         new ComputeTaskCancelledCheckedException("Task cancelled due to stopping of the grid: " + task);
 
-                    task.finishTask(null, ex, false);
+                    task.finishTask(null, ex, false, false);
                 }
             }
 
@@ -339,52 +353,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     }
 
     /**
-     * Sets the thread-local context value.
-     *
-     * @param key Key.
-     * @param val Value.
-     */
-    public void setThreadContext(GridTaskThreadContextKey key, Object val) {
-        assert key != null;
-        assert val != null;
-
-        Map<GridTaskThreadContextKey, Object> map = thCtx.get();
-
-        // NOTE: access to 'map' is always single-threaded since it's held
-        // in a thread local.
-        if (map == null)
-            thCtx.set(map = new EnumMap<>(GridTaskThreadContextKey.class));
-
-        map.put(key, val);
-    }
-
-    /**
-     * Sets the thread-local context value, if it is not null.
-     *
-     * @param key Key.
-     * @param val Value.
-     */
-    public void setThreadContextIfNotNull(GridTaskThreadContextKey key, @Nullable Object val) {
-        if (val != null)
-            setThreadContext(key, val);
-    }
-
-    /**
-     * Gets thread-local context value for a given {@code key}.
-     *
-     * @param key Thread-local context key.
-     * @return Thread-local context value associated with given {@code key} - or {@code null}
-     *      if value with given {@code key} doesn't exist.
-     */
-    @Nullable public <T> T getThreadContext(GridTaskThreadContextKey key) {
-        assert (key != null);
-
-        Map<GridTaskThreadContextKey, Object> map = thCtx.get();
-
-        return map == null ? null : (T)map.get(key);
-    }
-
-    /**
      * Gets currently used deployments.
      *
      * @return Currently used deployments.
@@ -425,19 +393,22 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
-        return execute(taskCls, arg, null);
+        return execute(taskCls, arg, options());
     }
 
     /**
      * @param taskCls Task class.
      * @param arg Optional execution argument.
-     * @param execName Name of the custom executor.
+     * @param opts Task execution options.
      * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskInternalFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg,
-        @Nullable String execName) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(
+        Class<? extends ComputeTask<T, R>> taskCls, 
+        @Nullable T arg,
+        TaskExecutionOptions opts
+    ) {
         assert taskCls != null;
 
         lock.readLock();
@@ -446,8 +417,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskCls);
 
-            return startTask(null, taskCls, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg,
-                false, execName);
+            return startTask(null, taskCls, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, opts);
         }
         finally {
             lock.readUnlock();
@@ -462,52 +432,25 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
-        return execute(task, arg, false, null);
+        return execute(task, arg, options());
     }
 
     /**
      * @param task Actual task.
      * @param arg Optional task argument.
-     * @param execName Name of the custom executor.
+     * @param opts Task execution options.
      * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, String execName) {
-        return execute(task, arg, false, execName);
-    }
-
-    /**
-     * @param task Actual task.
-     * @param arg Optional task argument.
-     * @param sys If {@code true}, then system pool will be used.
-     * @return Task future.
-     * @param <T> Task argument type.
-     * @param <R> Task return value type.
-     */
-    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
-        return execute(task, arg, sys, null);
-    }
-
-    /**
-     * @param task Actual task.
-     * @param arg Optional task argument.
-     * @param sys If {@code true}, then system pool will be used.
-     * @param execName Name of the custom executor.
-     * @return Task future.
-     * @param <T> Task argument type.
-     * @param <R> Task return value type.
-     */
-    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys,
-        @Nullable String execName) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, TaskExecutionOptions opts) {
         lock.readLock();
 
         try {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + task);
 
-            return startTask(null, null, task, IgniteUuid.fromUuid(ctx.localNodeId()), arg,
-                sys, execName);
+            return startTask(null, null, task, IgniteUuid.fromUuid(ctx.localNodeId()), arg, opts);
         }
         finally {
             lock.readUnlock();
@@ -546,18 +489,18 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(String taskName, @Nullable T arg) {
-        return execute(taskName, arg, null);
+        return execute(taskName, arg, options());
     }
 
     /**
      * @param taskName Task name.
      * @param arg Optional execution argument.
-     * @param execName Name of the custom executor.
+     * @param opts Task execution options.
      * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskInternalFuture<R> execute(String taskName, @Nullable T arg, @Nullable String execName) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(String taskName, @Nullable T arg, @Nullable TaskExecutionOptions opts) {
         assert taskName != null;
 
         lock.readLock();
@@ -566,8 +509,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskName);
 
-            return startTask(taskName, null, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg,
-                false, execName);
+            return startTask(taskName, null, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, opts);
         }
         finally {
             lock.readUnlock();
@@ -578,10 +520,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param taskName Task name.
      * @param taskCls Task class.
      * @param task Task.
-     * @param sesId Task session ID.
      * @param arg Optional task argument.
-     * @param sys If {@code true}, then system pool will be used.
-     * @param execName Name of the custom executor.
+     * @param opts Task execution options.
      * @return Task future.
      */
     private <T, R> ComputeTaskInternalFuture<R> startTask(
@@ -590,36 +530,15 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         @Nullable ComputeTask<T, R> task,
         IgniteUuid sesId,
         @Nullable T arg,
-        boolean sys,
-        @Nullable String execName) {
+        TaskExecutionOptions opts
+    ) {
         assert sesId != null;
 
-        String taskClsName;
+        authorizeUserTask(taskName, taskCls, task, opts);
 
-        if (task != null) {
-            if (task instanceof GridPeerDeployAware)
-                taskClsName = ((GridPeerDeployAware)task).deployClass().getName();
-            else
-                taskClsName = task.getClass().getName();
-        }
-        else
-            taskClsName = taskCls != null ? taskCls.getName() : taskName;
+        assert opts.timeout() >= 0;
 
-        // Get values from thread-local context.
-        Map<GridTaskThreadContextKey, Object> map = thCtx.get();
-
-        if (map == null)
-            map = EMPTY_ENUM_MAP;
-        else
-            // Reset thread-local context.
-            thCtx.set(null);
-
-        if (map.get(TC_SKIP_AUTH) == null)
-            ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE);
-
-        Long timeout = (Long)map.get(TC_TIMEOUT);
-
-        long timeout0 = timeout == null || timeout == 0 ? Long.MAX_VALUE : timeout;
+        long timeout0 = opts.timeout() == 0 ? Long.MAX_VALUE : opts.timeout();
 
         long startTime = U.currentTimeMillis();
 
@@ -673,7 +592,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     throw new IgniteDeploymentCheckedException("Failed to auto-deploy task " +
                         "(was task (re|un)deployed?): " + taskCls);
 
-                taskName = taskName(dep, taskCls, map);
+                taskName = taskName(dep, taskCls, opts);
             }
             catch (IgniteCheckedException e) {
                 taskName = taskCls.getName();
@@ -713,7 +632,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     throw new IgniteDeploymentCheckedException("Failed to auto-deploy task " +
                         "(was task (re|un)deployed?): " + cls);
 
-                taskName = taskName(dep, taskCls, map);
+                taskName = taskName(dep, taskCls, opts);
             }
             catch (IgniteCheckedException e) {
                 taskName = task.getClass().getName();
@@ -727,17 +646,18 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (log.isDebugEnabled())
             log.debug("Task deployment: " + dep);
 
-        boolean fullSup = dep != null && taskCls != null &&
-            dep.annotation(taskCls, ComputeTaskSessionFullSupport.class) != null;
+        boolean fullSup = (dep != null && taskCls != null &&
+            dep.annotation(taskCls, ComputeTaskSessionFullSupport.class) != null) ||
+            (task instanceof PlatformFullTask && ((PlatformFullTask)task).taskSessionFullSupport());
 
         Collection<UUID> top = null;
 
-        final IgnitePredicate<ClusterNode> topPred = (IgnitePredicate<ClusterNode>)map.get(TC_SUBGRID_PREDICATE);
+        final IgnitePredicate<ClusterNode> topPred = opts.projectionPredicate();
 
         if (topPred == null) {
-            final Collection<ClusterNode> nodes = (Collection<ClusterNode>)map.get(TC_SUBGRID);
+            final Collection<ClusterNode> nodes = opts.projection();
 
-            top = nodes != null ? F.nodeIds(nodes) : null;
+            top = nodes != null ? nodeIds(nodes) : null;
         }
 
         boolean internal = false;
@@ -758,11 +678,13 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             topPred,
             startTime,
             endTime,
-            Collections.<ComputeJobSibling>emptyList(),
-            Collections.emptyMap(),
+            Collections.emptyList(),
+            emptyMap(),
             fullSup,
             internal,
-            execName);
+            opts.executor(),
+            ctx.security().securityContext()
+        );
 
         ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
 
@@ -790,7 +712,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     task,
                     dep,
                     new TaskEventListener(),
-                    map,
+                    opts,
                     securitySubjectId(ctx));
 
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
@@ -798,18 +720,19 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
 
                 if (ctx.event().isRecordable(EVT_MANAGEMENT_TASK_STARTED) && dep.visorManagementTask(task, taskCls)) {
-                    VisorTaskArgument visorTaskArgument = (VisorTaskArgument)arg;
+                    VisorTaskArgument visorTaskArg = (VisorTaskArgument)arg;
 
-                    Event evt = new TaskEvent(
+                    Event evt = new ManagementTaskEvent(
                         ctx.discovery().localNode(),
-                        visorTaskArgument != null && visorTaskArgument.getArgument() != null
-                            ? visorTaskArgument.getArgument().toString() : "[]",
+                        visorTaskArg != null && visorTaskArg.getArgument() != null
+                            ? visorTaskArg.getArgument().toString() : "[]",
                         EVT_MANAGEMENT_TASK_STARTED,
                         ses.getId(),
-                        taskCls == null ? null : taskCls.getSimpleName(),
-                        "VisorManagementTask",
+                        taskName,
+                        taskCls == null ? null : taskCls.getName(),
                         false,
-                        securitySubjectId(ctx)
+                        securitySubjectId(ctx),
+                        visorTaskArg
                     );
 
                     ctx.event().record(evt);
@@ -819,7 +742,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     if (dep.annotation(taskCls, ComputeTaskMapAsync.class) != null) {
                         try {
                             // Start task execution in another thread.
-                            if (sys)
+                            if (opts.isSystemTask())
                                 ctx.pools().getSystemExecutorService().execute(taskWorker);
                             else
                                 ctx.pools().getExecutorService().execute(taskWorker);
@@ -883,15 +806,14 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      *
      * @param dep Deployment.
      * @param cls Class.
-     * @param map Thread context map.
+     * @param opts Task execution options.
      * @return Task name.
      * @throws IgniteCheckedException If {@link @ComputeTaskName} annotation is found, but has empty value.
      */
-    private String taskName(GridDeployment dep, Class<?> cls,
-        Map<GridTaskThreadContextKey, Object> map) throws IgniteCheckedException {
+    private String taskName(GridDeployment dep, Class<?> cls, TaskExecutionOptions opts) throws IgniteCheckedException {
         assert dep != null;
         assert cls != null;
-        assert map != null;
+        assert opts != null;
 
         String taskName;
 
@@ -905,7 +827,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     " cannot be empty for class: " + cls);
         }
         else
-            taskName = map.containsKey(TC_TASK_NAME) ? (String)map.get(TC_TASK_NAME) : cls.getName();
+            taskName = opts.name().orElse(cls.getName());
 
         return taskName;
     }
@@ -917,9 +839,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @throws IgniteCheckedException If failed.
      */
     private void saveTaskMetadata(String taskName) throws IgniteCheckedException {
-        if (ctx.isDaemon())
-            return;
-
         assert ctx.security().enabled();
 
         int nameHash = taskName.hashCode();
@@ -937,7 +856,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (existingName == null)
             existingName = tasksMetaCache.getAndPutIfAbsent(key, taskName);
 
-        if (existingName != null && !F.eq(existingName, taskName))
+        if (existingName != null && !Objects.equals(existingName, taskName))
             throw new IgniteCheckedException("Task name hash collision for security-enabled node " +
                 "[taskName=" + taskName +
                 ", existing taskName=" + existingName + ']');
@@ -995,7 +914,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param ses Task session.
      * @throws IgniteCheckedException If send to any of the jobs failed.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "BusyWait"})
+    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     private void sendSessionAttributes(Map<?, ?> attrs, GridTaskSessionImpl ses)
         throws IgniteCheckedException {
         assert attrs != null;
@@ -1034,7 +953,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
                 UUID nodeId = sib.nodeId();
 
-                if (!nodeId.equals(locNodeId) && !sib.isJobDone() && !rcvrs.contains(nodeId))
+                if (!nodeId.equals(locNodeId) && !sib.isJobDone())
                     rcvrs.add(nodeId);
             }
         }
@@ -1053,6 +972,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             ctx.event().record(evt);
         }
 
+        notifyTaskStatusMonitors(ComputeTaskStatus.snapshot(ses), false);
+
         IgniteCheckedException ex = null;
 
         // Every job gets an individual message to keep track of ghost requests.
@@ -1061,8 +982,12 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
             UUID nodeId = sib.nodeId();
 
-            // Pair can be null if job is finished.
-            if (rcvrs.remove(nodeId)) {
+            if (locNodeId.equals(nodeId)) {
+                // Local job notification.
+                ctx.job().onChangeTaskAttributes(ses.getId(), s.getJobId(), attrs);
+            }
+            else if (rcvrs.remove(nodeId)) {
+                // Pair can be null if job is finished.
                 ClusterNode node = ctx.discovery().node(nodeId);
 
                 // Check that node didn't change (it could happen in case of failover).
@@ -1071,9 +996,10 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
                     GridTaskSessionRequest req = new GridTaskSessionRequest(
                         ses.getId(),
-                        null,
+                        s.getJobId(),
                         loc ? null : U.marshal(marsh, attrs),
-                        attrs);
+                        attrs
+                    );
 
                     // Make sure to go through IO manager always, since order
                     // should be preserved here.
@@ -1208,8 +1134,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * Handles user cancellation.
      *
      * @param sesId Session ID.
+     * @return Whether task was cancelled by this call.
      */
-    public void onCancelled(IgniteUuid sesId) {
+    public boolean cancel(IgniteUuid sesId) {
         assert sesId != null;
 
         lock.readLock();
@@ -1221,17 +1148,17 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 U.warn(log, "Attempt to cancel task while stopping grid (will ignore): " + sesId
                     + tryResolveTaskName(task));
 
-                return;
+                return false;
             }
 
             if (task == null) {
                 if (log.isDebugEnabled())
                     log.debug("Attempt to cancel unknown task (was task already reduced?): " + sesId);
 
-                return;
+                return false;
             }
 
-            task.finishTask(null, new ComputeTaskCancelledCheckedException("Task was cancelled."), true);
+            return task.cancelTask();
         }
         finally {
             lock.readUnlock();
@@ -1245,7 +1172,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        onKernalStop(true);
+        // No-op.
     }
 
     /**
@@ -1274,6 +1201,17 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             // Register for timeout notifications.
             if (worker.endTime() < Long.MAX_VALUE)
                 ctx.timeout().addTimeoutObject(worker);
+
+            GridTaskSessionImpl ses = worker.getSession();
+
+            notifyTaskStatusMonitors(ComputeTaskStatus.snapshot(ses), false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onJobsMapped(GridTaskWorker<?, ?> worker) {
+            GridTaskSessionImpl ses = worker.getSession();
+
+            notifyTaskStatusMonitors(ComputeTaskStatus.snapshot(ses), false);
         }
 
         /** {@inheritDoc} */
@@ -1317,7 +1255,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         }
 
         /** {@inheritDoc} */
-        @Override public void onTaskFinished(GridTaskWorker<?, ?> worker) {
+        @Override public void onTaskFinished(GridTaskWorker<?, ?> worker, @Nullable Throwable err) {
             GridTaskSessionImpl ses = worker.getSession();
 
             if (ses.isFullSupport()) {
@@ -1366,6 +1304,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     U.currentTimeMillis() - ses.getStartTime(),
                     worker.affPartId());
             }
+
+            notifyTaskStatusMonitors(ComputeTaskStatus.onFinishTask(worker.getSession(), err), true);
         }
     }
 
@@ -1471,13 +1411,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 }
 
                 try {
-                    Object topic = req.topic();
-
-                    if (topic == null) {
-                        assert req.topicBytes() != null;
-
-                        topic = U.unmarshal(marsh, req.topicBytes(), U.resolveClassLoader(ctx.config()));
-                    }
+                    Object topic = TOPIC_JOB_SIBLINGS.topic(req.sessionId(), req.topicId());
 
                     boolean loc = ctx.localNodeId().equals(nodeId);
 
@@ -1551,5 +1485,138 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         return task != null && task.getSession() != null
             ? ", task name: " + task.getSession().getTaskName()
             : "";
+    }
+
+    /**
+     * Subscription to update the status of tasks.
+     *
+     * <p>NOTE: {@link ComputeGridMonitor#processStatusSnapshots} will be called only on subscription,
+     * then only {@link ComputeGridMonitor#processStatusChange} will be called.
+     *
+     * @param monitor Task status update monitor.
+     * @throws NodeStoppingException If the node is stopped.
+     */
+    public void listenStatusUpdates(ComputeGridMonitor monitor) throws NodeStoppingException {
+        lock.writeLock();
+
+        try {
+            if (stopping)
+                throw new NodeStoppingException("Failed to add monitor due to grid shutdown: " + monitor);
+
+            taskStatusMonitors.add(monitor);
+
+            try {
+                monitor.processStatusSnapshots(taskStatusSnapshots.values());
+            }
+            catch (Throwable t) {
+                log.error("Error processing snapshots of task statuses: " + monitor, t);
+            }
+        }
+        finally {
+            lock.writeUnlock();
+        }
+    }
+
+    /**
+     * Unsubscribe to update the status of tasks.
+     *
+     * @param monitor Task status update monitor.
+     */
+    public void stopListenStatusUpdates(ComputeGridMonitor monitor) {
+        lock.writeLock();
+
+        try {
+            taskStatusMonitors.remove(monitor);
+        }
+        finally {
+            lock.writeUnlock();
+        }
+    }
+
+    /**
+     * Guarded by {@link #lock} for atomic update of the {@link #taskStatusSnapshots}
+     * and notifying {@link #taskStatusMonitors} about task changes.
+     *
+     * @param snapshotChanges Changes to task status.
+     * @param remove {@code True} if it is necessary to remove the {@code snapshotChanges} from
+     *      {@link #taskStatusSnapshots}, otherwise it will be updated.
+     */
+    private void notifyTaskStatusMonitors(ComputeTaskStatusSnapshot snapshotChanges, boolean remove) {
+        lock.readLock();
+
+        try {
+            if (remove)
+                taskStatusSnapshots.remove(snapshotChanges.sessionId());
+            else
+                taskStatusSnapshots.put(snapshotChanges.sessionId(), snapshotChanges);
+
+            for (ComputeGridMonitor monitor : taskStatusMonitors) {
+                try {
+                    monitor.processStatusChange(snapshotChanges);
+                }
+                catch (Throwable t) {
+                    log.error("Error processing task status diff: " + monitor, t);
+                }
+            }
+        }
+        finally {
+            lock.readUnlock();
+        }
+    }
+
+    /**
+     * Collects statistics on jobs locally, only for those jobs that have
+     * already sent a response or are being executed locally.
+     *
+     * @param sesId Task session ID.
+     * @return Job statistics for the task. Mapping: Job status -> count of jobs.
+     */
+    public Map<ComputeJobStatusEnum, Long> jobStatuses(IgniteUuid sesId) {
+        GridTaskWorker<?, ?> taskWorker = tasks.get(sesId);
+
+        if (taskWorker == null)
+            return emptyMap();
+        else
+            return taskWorker.jobStatuses();
+    }
+
+    /** */
+    private void authorizeUserTask(
+        @Nullable String taskName,
+        @Nullable Class<?> taskCls,
+        @Nullable ComputeTask<?, ?> task,
+        TaskExecutionOptions opts
+    ) {
+        taskCls = resolveTaskClass(taskName, taskCls, task);
+
+        if (taskCls == null || !ctx.security().isSystemType(taskCls)) {
+            assert opts.isPublicRequest();
+
+            ctx.security().authorize(taskCls == null ? taskName : taskCls.getName(), TASK_EXECUTE);
+        }
+    }
+
+    /**
+     * @return Class of the task which is about to execute. {@code null} means that the user is requesting a task
+     * execution by its name, and  corresponding to this name task class was not found by the default classloader on
+     * the local node.
+     */
+    private Class<?> resolveTaskClass(@Nullable String taskName, @Nullable Class<?> taskCls, @Nullable ComputeTask<?, ?> task) {
+        if (taskCls != null)
+            return taskCls;
+
+        if (task != null)
+            return task.getClass();
+
+        if (taskName != null) {
+            try {
+                return U.forName(taskName, U.gridClassLoader());
+            }
+            catch (ClassNotFoundException ignored) {
+                // No-op.
+            }
+        }
+
+        return null;
     }
 }

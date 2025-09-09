@@ -15,6 +15,9 @@
 = Services
 
 :javaFile: {javaCodeDir}/services/ServiceExample.java
+:javaEchoServiceFile: {javaCodeDir}/services/EchoServiceImpl.java
+:javaServiceInterceptorFile: {javaCodeDir}/services/EchoServiceAccessInterceptor.java
+
 
 == Overview
 A service is a piece of functionality that can be deployed to an Ignite cluster and execute specific operations.
@@ -45,9 +48,9 @@ Refer to a service example implementation in the Apache Ignite link:{githubUrl}/
 A service implements the javadoc:org.apache.ignite.services.Service[Service] interface.
 The `Service` interface has three methods:
 
-* `init(ServiceContext)`: this method is called by Ignite before the service is deployed (and before the `execute()` method is called)
-* `execute(ServiceContext)`: starts execution of the service
-* `cancel(ServiceContext)`:  cancels service execution
+* `init()`: this method is called by Ignite before the service is deployed (and before the `execute()` method is called)
+* `execute()`: starts execution of the service
+* `cancel()`:  cancels service execution
 
 //The service must be available in the classpash of all server nodes. *TODO: deployment options*
 
@@ -231,6 +234,22 @@ tab:C++[]
 //== Accessing Services from Compute Tasks
 // TODO the @ServiceResource annotation
 
+== Service Awareness [[service_awareness]]
+For link:../thin-clients/java-thin-client.adoc#java_thin_client[Java Thin Client] you can activate Service Awareness.
+To do that, enable link:../thin-clients/java-thin-client.adoc#partition_awareness[Partition Awareness].
+
+Without Service Awareness, the invocation requests are sent to a random node. If it has no service
+instance deployed, the request is redirected to a different node. This additional network hop adds overhead.
+
+With Service Awareness, the thin client knows where service instances are deployed and sends the request to the correct node.
+
+[NOTE]
+====
+The service topology is updated asynchronously starting with the first service invocation.
+Thus, some invocation redirects are still possible.
+====
+
+
 == Un-deploying Services
 
 To undeploy a service, use the `IgniteServices.cancel(serviceName)` or `IgniteServices.cancelAll()` methods.
@@ -261,6 +280,107 @@ Use the following procedure to redeploy the service:
 
 In this way, you don't have to stop the server nodes, so you don't interrupt the operation of your cluster.
 
+== Service Statistics
+
+You can measure durations of your service's methods. If you want this analytics, enable service statistics in the
+service configuration. Service statistics are collected under name "Services" in
+link:monitoring-metrics/new-metrics-system.adoc[metrics], in
+link:monitoring-metrics/system-views.adoc[system views], and in JMX.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=start-with-statistics, indent=0]
+----
+tab:C#/.NET[]
+tab:C++[]
+--
+
+[NOTE]
+====
+You should be aware:
+
+1. Direct references to the services like `IgniteServices.service(name)` corrupt the statistics. Use the proxies
+instead (`IgniteServices.serviceProxy(...)`).
+2. Overloaded service methods have the same metric by the method name.
+3. Service statistics do not take in account serialization and network issues.
+4. Service statistics slows down the invocations of service methods. It's not
+an issue for real jobs like working with a DB or a cache.
+====
+
+== Service Middleware
+
+WARNING: This feature is experimental and may change in future releases.
+
+[CAUTION]
+====
+This feature may affect performance of service execution.
+====
+
+Apache Ignite allows users to implement custom middleware logic for their services and provides the following features:
+
+1. Ability to implicitly pass custom immutable parameters from proxy to service (similar to request headers).
+2. Ability to define custom interceptor for service method calls.
+
+=== Service Call Context
+This feature allows users to implicilty pass parameters to any service method without service re-deployment.
+
+The user can create context and bind it to the service proxy. After that, each call to the proxy method will also implicitly pass context parameters to the service.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=service-call-context-create, indent=0]
+----
+tab:C#/.NET[]
+--
+
+The user can read the `call context` using the `currentCallContext` method of `ServiceContext`.
+
+NOTE: Service call context is only accessible from the current thread during the execution of a service method.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaEchoServiceFile}[tags=service-call-context-read, indent=0]
+----
+tab:C#/.NET[]
+--
+
+=== Service Interceptor
+This feature allows users to intercept the call to any service method except
+lifecycle methods (`init()`, `execute()` and `cancel()`).
+
+The user can specify one or more interceptors in the `ServiceConfiguration`. They are deployed with the service using the same class loader.
+
+Each interceptor invokes the next interceptor in the chain using a delegated call, the last interceptor calls the service method.
+So, the interceptor specified first in the configuration is the last interceptor processing the result of the service method execution.
+
+image::images/service-intercept--order.png[invocation order]
+
+[CAUTION]
+====
+An incorrect interceptor implementation can lead to undefined behaviour of the service execution.
+====
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaServiceInterceptorFile}[tags=service-call-interceptor, indent=0]
+----
+tab:C#/.NET[]
+--
+
+=== Complete Example
+link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/servicegrid/ServiceMiddlewareExample.java[ServiceMiddlewareExample.java, window=_blank]
 
 // TODO: add how to  call java services from .NET
 

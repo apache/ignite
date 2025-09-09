@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -71,12 +72,12 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.affinity.GridAffinityUtils.affinityJob;
 import static org.apache.ignite.internal.processors.affinity.GridAffinityUtils.unmarshall;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * Data affinity processor.
@@ -306,9 +307,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     public <K> List<ClusterNode> mapKeyToPrimaryAndBackups(String cacheName,
         K key,
-        AffinityTopologyVersion topVer)
-        throws IgniteCheckedException
-    {
+        AffinityTopologyVersion topVer
+    ) throws IgniteCheckedException {
         assert cacheName != null;
 
         A.notNull(key, "key");
@@ -413,6 +413,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         assert cacheName != null;
 
+        if (topVer == null)
+            topVer = ctx.cache().context().exchange().readyAffinityVersion();
+
         IgniteInternalFuture<AffinityInfo> locFetchFut = localAffinityInfo(cacheName, topVer);
 
         if (locFetchFut != null)
@@ -432,10 +435,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<AffinityInfo> localAffinityInfo(
         String cacheName,
-        @Nullable AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
-        if (topVer == null)
-            topVer = ctx.cache().context().exchange().readyAffinityVersion();
+        assert topVer != null;
 
         AffinityAssignmentKey key = new AffinityAssignmentKey(cacheName, topVer);
 
@@ -496,10 +498,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<AffinityInfo> remoteAffinityInfo(
         String cacheName,
-        @Nullable AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer
     ) {
-        if (topVer == null)
-            topVer = ctx.discovery().topologyVersionEx();
+        assert topVer != null;
 
         AffinityAssignmentKey key = new AffinityAssignmentKey(cacheName, topVer);
 
@@ -514,9 +515,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             return new GridFinishedFuture<>((AffinityInfo)null);
         }
-
-        if (desc.cacheConfiguration().getCacheMode() == LOCAL)
-            return new GridFinishedFuture<>(new IgniteCheckedException("Failed to map keys for LOCAL cache: " + cacheName));
 
         AffinityFuture fut0 = new AffinityFuture(cacheName, topVer, cacheNodes);
 
@@ -611,7 +609,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private IgniteInternalFuture<AffinityInfo> affinityInfoFromNode(String cacheName, AffinityTopologyVersion topVer, ClusterNode n) {
         IgniteInternalFuture<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>> fut = ctx.closure()
-            .callAsyncNoFailover(BROADCAST, affinityJob(cacheName, topVer), F.asList(n), true/*system pool*/, 0, false);
+            .callAsync(
+                BROADCAST,
+                affinityJob(cacheName, topVer),
+                options(F.asList(n))
+                    .withFailoverDisabled()
+                    .asSystemTask()
+            );
 
         return fut.chain(
             new CX1<IgniteInternalFuture<GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment>>, AffinityInfo>() {
@@ -813,7 +817,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             AffinityAssignmentKey that = (AffinityAssignmentKey)o;
 
-            return topVer.equals(that.topVer) && F.eq(cacheName, that.cacheName);
+            return topVer.equals(that.topVer) && Objects.equals(cacheName, that.cacheName);
         }
 
         /** {@inheritDoc} */

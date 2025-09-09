@@ -25,6 +25,9 @@ import java.util.UUID;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -146,6 +149,7 @@ public interface ClientCache<K, V> {
      * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
      *
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return The number of all entries cached across all nodes.
      */
     public int size(CachePeekMode... peekModes) throws ClientException;
 
@@ -634,12 +638,16 @@ public interface ClientCache<K, V> {
     /**
      * Clears entry with specified key from the cache.
      * In contrast to {@link #remove(Object)}, this method does not notify event listeners and cache writers.
+     *
+     * @param key Cache entry key to clear.
      */
     public void clear(K key) throws ClientException;
 
     /**
      * Clears entry with specified key from the cache asynchronously.
      * In contrast to {@link #removeAsync(Object)}, this method does not notify event listeners and cache writers.
+     *
+     * @param key Cache entry key to clear.
      * @return Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> clearAsync(K key) throws ClientException;
@@ -647,15 +655,152 @@ public interface ClientCache<K, V> {
     /**
      * Clears entries with specified keys from the cache.
      * In contrast to {@link #removeAll(Set)}, this method does not notify event listeners and cache writers.
+     *
+     * @param keys Cache entry keys to clear.
      */
     public void clearAll(Set<? extends K> keys) throws ClientException;
 
     /**
      * Clears entries with specified keys from the cache asynchronously.
      * In contrast to {@link #removeAllAsync(Set)}, this method does not notify event listeners and cache writers.
+     *
+     * @param keys Cache entry keys to clear.
      * @return Future representing pending completion of the operation.
      */
     public IgniteClientFuture<Void> clearAllAsync(Set<? extends K> keys) throws ClientException;
+
+    /**
+     * Invokes an {@link EntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
+     * the provided key. If an {@link javax.cache.Cache.Entry} does not exist for the specified key,
+     * an attempt is made to load it (if a loader is configured) or a surrogate
+     * {@link javax.cache.Cache.Entry}, consisting of the key with a null value is used instead.
+     * <p>
+     * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
+     * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
+     * the same.
+     * <p>
+     *
+     * @param key The key to the entry.
+     * @param entryProc The {@link EntryProcessor} to invoke.
+     * @param arguments Additional arguments to pass to the {@link EntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
+     * @return The result of the processing, if any, defined by the {@link EntryProcessor} implementation.
+     * @throws NullPointerException If key or {@link EntryProcessor} is null.
+     * @throws EntryProcessorException If an exception is thrown by the {@link
+     *                                 EntryProcessor}, a Caching Implementation
+     *                                 must wrap any {@link Exception} thrown
+     *                                 wrapped in an {@link EntryProcessorException}.
+     * @throws ClientException If operation is failed.
+     */
+    public <T> T invoke(
+        K key,
+        EntryProcessor<K, V, T> entryProc,
+        Object... arguments
+    ) throws EntryProcessorException, ClientException;
+
+    /**
+     * Asynchronously invokes an {@link EntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
+     * the provided key. If an {@link javax.cache.Cache.Entry} does not exist for the specified key,
+     * an attempt is made to load it (if a loader is configured) or a surrogate
+     * {@link javax.cache.Cache.Entry}, consisting of the key with a null value is used instead.
+     * <p>
+     * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
+     * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
+     * the same.
+     * <p>
+     *
+     * @param key The key to the entry.
+     * @param entryProc The {@link EntryProcessor} to invoke.
+     * @param arguments Additional arguments to pass to the {@link EntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
+     * @return Future representing pending completion of the operation.
+     * @throws NullPointerException If key or {@link EntryProcessor} is null.
+     * @throws ClientException If operation is failed.
+     */
+    public <T> IgniteClientFuture<T> invokeAsync(
+        K key,
+        EntryProcessor<K, V, T> entryProc,
+        Object... arguments
+    ) throws ClientException;
+
+    /**
+     * Invokes each {@link EntryProcessor} against the set of {@link javax.cache.Cache.Entry}s specified by
+     * the set of keys.
+     * <p>
+     * If an {@link javax.cache.Cache.Entry} does not exist for the specified key, an attempt is made
+     * to load it (if a loader is configured) or a surrogate {@link javax.cache.Cache.Entry},
+     * consisting of the key and a value of null is provided.
+     * <p>
+     * The order that the entries for the keys are processed is undefined.
+     * Implementations may choose to process the entries in any order, including
+     * concurrently. Furthermore there is no guarantee implementations will
+     * use the same {@link EntryProcessor} instance to process each entry, as
+     * the case may be in a non-local cache topology.
+     * <p>
+     * The result of executing the {@link EntryProcessor} is returned as a
+     * {@link Map} of {@link EntryProcessorResult}s, one result per key. Should the
+     * {@link EntryProcessor} or Caching implementation throw an exception, the
+     * exception is wrapped and re-thrown when a call to
+     * {@link javax.cache.processor.EntryProcessorResult#get()} is made.
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
+     *
+     * @param keys The set of keys for entries to proces.
+     * @param entryProc The EntryProcessor to invoke.
+     * @param args Additional arguments to pass to the {@link EntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
+     * @return The map of {@link EntryProcessorResult}s of the processing per key,
+     *      if any, defined by the {@link EntryProcessor} implementation.  No mappings
+     *      will be returned for {@link EntryProcessor}s that return a
+     *      <code>null</code> value for a key.
+     * @throws NullPointerException If keys or {@link EntryProcessor} is null.
+     * @throws ClientException If operation is failed.
+     */
+    public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+        Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProc,
+        Object... args
+    ) throws ClientException;
+
+    /**
+     * Asynchronously invokes each {@link EntryProcessor} against the set of {@link javax.cache.Cache.Entry}s
+     * specified by the set of keys.
+     * <p>
+     * If an {@link javax.cache.Cache.Entry} does not exist for the specified key, an attempt is made
+     * to load it (if a loader is configured) or a surrogate {@link javax.cache.Cache.Entry},
+     * consisting of the key and a value of null is provided.
+     * <p>
+     * The order that the entries for the keys are processed is undefined.
+     * Implementations may choose to process the entries in any order, including
+     * concurrently. Furthermore there is no guarantee implementations will
+     * use the same {@link EntryProcessor} instance to process each entry, as
+     * the case may be in a non-local cache topology.
+     * <p>
+     * The result of executing the {@link EntryProcessor} is returned in the future as a
+     * {@link Map} of {@link EntryProcessorResult}s, one result per key. Should the
+     * {@link EntryProcessor} or Caching implementation throw an exception, the
+     * exception is wrapped and re-thrown when a call to
+     * {@link javax.cache.processor.EntryProcessorResult#get()} is made.
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
+     *
+     * @param keys The set of keys for entries to proces.
+     * @param entryProc The EntryProcessor to invoke.
+     * @param args Additional arguments to pass to the {@link EntryProcessor}.
+     * @param <T> Type of the cache entry processing result.
+     * @return Future representing pending completion of the operation.
+     * @throws NullPointerException If keys or {@link EntryProcessor} is null.
+     * @throws ClientException If operation is failed.
+     */
+    public <T> IgniteClientFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProc,
+        Object... args
+    ) throws ClientException;
 
     /**
      * Returns cache that will operate with binary objects.
@@ -682,7 +827,7 @@ public interface ClientCache<K, V> {
      * (which will be stored in binary format), you should acquire following projection
      * to avoid deserialization:
      * <pre>
-     * CacheClient<Integer, BinaryObject> prj = cache.withKeepBinary();
+     * CacheClient&lt;Integer, BinaryObject&gt; prj = cache.withKeepBinary();
      *
      * // Value is not deserialized and returned in binary format.
      * BinaryObject po = prj.get(1);
@@ -692,6 +837,8 @@ public interface ClientCache<K, V> {
      * if default marshaller is used.
      * If not, this method is no-op and will return current cache.
      *
+     * @param <K1> Client cache key type.
+     * @param <V1> Client cache value type.
      * @return New cache instance for binary objects.
      */
     public <K1, V1> ClientCache<K1, V1> withKeepBinary();
@@ -700,6 +847,9 @@ public interface ClientCache<K, V> {
      * Returns cache with the specified expired policy set. This policy will be used for each operation invoked on
      * the returned cache.
      *
+     * @param expirePlc Expiration policy.
+     * @param <K1> Client cache key type.
+     * @param <V1> Client cache value type.
      * @return Cache instance with the specified expiry policy set.
      */
     public <K1, V1> ClientCache<K1, V1> withExpirePolicy(ExpiryPolicy expirePlc);
@@ -712,6 +862,7 @@ public interface ClientCache<K, V> {
      * notified about client disconnected event via {@link ClientDisconnectListener} interface if you need it.
      *
      * @param qry Query.
+     * @param <R> Query result type.
      * @return Cursor.
      */
     public <R> QueryCursor<R> query(Query<R> qry);
@@ -724,6 +875,7 @@ public interface ClientCache<K, V> {
      *
      * @param qry Query.
      * @param disconnectListener Listener of client disconnected event.
+     * @param <R> Query result type.
      * @return Cursor.
      */
     public <R> QueryCursor<R> query(ContinuousQuery<K, V> qry, ClientDisconnectListener disconnectListener);

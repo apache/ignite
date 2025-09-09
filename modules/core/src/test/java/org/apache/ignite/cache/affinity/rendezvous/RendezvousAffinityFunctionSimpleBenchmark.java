@@ -549,9 +549,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
                 affPrev = affCur;
             }
 
-            double goldenChangeAffinity = (double)aff1.partitions() / nodesCnt * (backups + 1);
+            double goldenChangeAff = (double)aff1.partitions() / nodesCnt * (backups + 1);
             info(String.format("Test %d nodes. Golden: %.1f; %s: %.1f; %s: %.1f;",
-                nodesCnt, goldenChangeAffinity,
+                nodesCnt, goldenChangeAff,
                 aff0.getClass().getSimpleName(),
                 (double)diffCnt0 / (MAX_EXPERIMENTS - 1),
                 aff1.getClass().getSimpleName(),
@@ -900,7 +900,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
                     if (nodeHashBytes == null) {
                         Object nodeHash = resolveNodeHash(node);
 
-                        byte[] nodeHashBytes0 = U.marshal(ignite.configuration().getMarshaller(), nodeHash);
+                        byte[] nodeHashBytes0 = U.marshal(marshaller(ignite), nodeHash);
 
                         // Add 4 bytes for partition bytes.
                         nodeHashBytes = new byte[nodeHashBytes0.length + 4];

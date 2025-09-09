@@ -177,6 +177,7 @@ public class MemoryConfiguration implements Serializable {
      * Default value is {@link #DFLT_PAGE_SIZE}
      *
      * @param pageSize Page size in bytes.
+     * @return {@code this} for chaining.
      */
     public MemoryConfiguration setPageSize(int pageSize) {
         A.ensure(pageSize >= 1024 && pageSize <= 16 * 1024, "Page size must be between 1kB and 16kB.");
@@ -202,6 +203,7 @@ public class MemoryConfiguration implements Serializable {
      * Sets memory policies configurations.
      *
      * @param memPlcs Memory policies configurations.
+     * @return {@code this} for chaining.
      */
     public MemoryConfiguration setMemoryPolicies(MemoryPolicyConfiguration... memPlcs) {
         this.memPlcs = memPlcs;
@@ -247,6 +249,7 @@ public class MemoryConfiguration implements Serializable {
      * Sets the number of concurrent segments in Ignite internal page mapping tables.
      *
      * @param concLvl Mapping table concurrency level.
+     * @return {@code this} for chaining.
      */
     public MemoryConfiguration setConcurrencyLevel(int concLvl) {
         this.concLvl = concLvl;
@@ -273,6 +276,7 @@ public class MemoryConfiguration implements Serializable {
      * without having to use more verbose syntax of MemoryPolicyConfiguration elements.
      *
      * @param dfltMemPlcSize Size of default memory policy overridden by user.
+     * @return {@code this} for chaining.
      */
     public MemoryConfiguration setDefaultMemoryPolicySize(long dfltMemPlcSize) {
         this.dfltMemPlcSize = dfltMemPlcSize;
@@ -299,6 +303,7 @@ public class MemoryConfiguration implements Serializable {
      * If nothing is specified by user, it is set to {@link #DFLT_MEM_PLC_DEFAULT_NAME} value.
      *
      * @param dfltMemPlcName Name of a memory policy to be used as default one.
+     * @return {@code this} for chaining.
      */
     public MemoryConfiguration setDefaultMemoryPolicyName(String dfltMemPlcName) {
         this.dfltMemPlcName = dfltMemPlcName;

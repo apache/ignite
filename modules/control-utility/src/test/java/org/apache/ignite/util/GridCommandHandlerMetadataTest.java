@@ -22,15 +22,9 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -38,15 +32,11 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.client.ClientCacheConfiguration;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
@@ -167,9 +157,15 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
      */
     @Test
     public void testMetadataForInternalClassesIsNotRegistered() {
-        IgniteCache<Object, Object> dfltCache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> dfltCache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME).withKeepBinary();
 
-        dfltCache.put(1, new TestValue());
+        String typeName = TestValue.class.getName() + commandHandler;
+
+        BinaryObjectBuilder bldr = grid(0).binary().builder(typeName);
+
+        bldr.setField("val", 3);
+
+        dfltCache.put(1, bldr.build());
 
         Collection<BinaryType> metadata = crd.context().cacheObjects().metadata();
 
@@ -177,7 +173,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         assertEquals(metadata.toString(), 1, metadata.size());
 
-        assertContains(log, testOut.toString(), "typeName=" + TestValue.class.getTypeName());
+        assertContains(log, testOut.toString(), "typeName=" + typeName);
 
         grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
@@ -185,7 +181,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         assertEquals(metadata.toString(), 1, metadata.size());
 
-        assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", TestValue.class.getTypeName()));
+        assertEquals(EXIT_CODE_OK, execute("--meta", "remove", "--typeName", typeName));
 
         metadata = crd.context().cacheObjects().metadata();
 
@@ -259,24 +255,27 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
      * - checks error code and command output.
      */
     @Test
-    public void testInvalidArguments() {
+    public void testInvalidArguments() throws Exception {
         String out;
+
+        String inDirName = Files.createTempDirectory(getClass().getSimpleName()
+            + " _inDir_" + UUID.randomUUID()).toFile().getAbsolutePath();
+        String outDirName = Files.createTempDirectory(getClass().getSimpleName()
+            + " _outDir_" + UUID.randomUUID()).toFile().getAbsolutePath();
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove"));
         out = testOut.toString();
-        assertContains(log, out, "Check arguments.");
-        assertContains(log, out, "Type to remove is not specified");
-        assertContains(log, out, "Please add one of the options: --typeName <type_name> or --typeId <type_id>");
+        assertContains(log, out, "Check arguments. One of [--typeName, --typeId] required");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove", "--typeId", "0", "--out", "target"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove", "--typeId", "0", "--out", outDirName));
         out = testOut.toString();
         assertContains(log, out, "Check arguments.");
-        assertContains(log, out, "Cannot write to output file target.");
+        assertContains(log, out, "Cannot write to output file " + outDirName);
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "update", "--in", "target"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "update", "--in", inDirName));
         out = testOut.toString();
         assertContains(log, out, "Check arguments.");
-        assertContains(log, out, "Cannot read metadata from target");
+        assertContains(log, out, "Cannot read metadata from " + inDirName);
     }
 
     /**
@@ -333,101 +332,11 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
             String out = testOut.toString();
 
-            assertContains(log, out, "Failed to execute metadata command='update'");
+            assertContains(log, out, "Failed to perform operation.");
             assertContains(log, out, "Type 'Type0' with typeId 110843958 has a " +
                 "different/incorrect type for field 'fld'.");
             assertContains(log, out, "Expected 'String' but 'int' was provided. " +
                 "The type of an existing field can not be changed");
-        }
-        finally {
-            if (Files.exists(typeFile))
-                Files.delete(typeFile);
-        }
-    }
-
-    /**
-     * Check the all thin connections are dropped on the command '--meta remove' and '--meta update'.
-     * Steps:
-     * - opens thin client connection.
-     * - creates Type0 on thin client side.
-     * - removes type by cmd line util.
-     * - executes any command on thin client to detect disconnect.
-     * - creates Type0 on thin client side with other type of field (checks the type was removed).
-     */
-    @Test
-    public void testDropThinConnectionsOnRemove() throws Exception {
-        Path typeFile = FS.getPath("type0.bin");
-
-        try (IgniteClient cli = Ignition.startClient(clientConfiguration())) {
-            createType(cli.binary(), "Type0", 1);
-
-            assertEquals(EXIT_CODE_OK, execute("--meta", "remove",
-                "--typeName", "Type0",
-                "--out", typeFile.toString()));
-
-            // Executes command to check disconnect / reconnect.
-            GridTestUtils.assertThrows(log, () ->
-                    cli.createCache(new ClientCacheConfiguration().setName("test")),
-                Exception.class, null);
-
-            createType(cli.binary(), "Type0", "str");
-        }
-        finally {
-            if (Files.exists(typeFile))
-                Files.delete(typeFile);
-        }
-    }
-
-    /**
-     * Check the all thin connections are dropped on the command '--meta remove' and '--meta update'.
-     * Steps:
-     * - opens JDBC thin client connection.
-     * - executes: CREATE TABLE test(id INT PRIMARY KEY, objVal OTHER).
-     * - inserts the instance of the 'TestValue' class to the table.
-     * - removes the type 'TestValue' by cmd line.
-     * - executes any command on JDBC driver to detect disconnect.
-     * - checks metadata on client side. It must be empty.
-     */
-    @Test
-    public void testDropJdbcThinConnectionsOnRemove() throws Exception {
-        Path typeFile = FS.getPath("type0.bin");
-
-        try (Connection conn = DriverManager.getConnection(jdbcThinUrl())) {
-            try (final Statement stmt = conn.createStatement()) {
-                stmt.execute("CREATE TABLE test(id INT PRIMARY KEY, objVal OTHER)");
-
-                try (PreparedStatement pstmt = conn.prepareStatement("INSERT INTO test(id, objVal) VALUES (?, ?)")) {
-                    pstmt.setInt(1, 0);
-                    pstmt.setObject(2, new TestValue());
-
-                    pstmt.execute();
-                }
-
-                stmt.execute("DELETE FROM test WHERE id >= 0");
-            }
-
-            HashMap<Integer, BinaryType> metasOld = GridTestUtils.getFieldValue(conn, "metaHnd", "cache", "metas");
-
-            assertFalse(metasOld.isEmpty());
-
-            assertEquals(EXIT_CODE_OK, execute("--meta", "remove",
-                "--typeName", TestValue.class.getName(),
-                "--out", typeFile.toString()));
-
-            // Executes any command to check disconnect.
-            GridTestUtils.assertThrows(log, () -> {
-                    try (Statement stmt = conn.createStatement()) {
-                        stmt.execute("SELECT * FROM test");
-                    }
-
-                    return null;
-                },
-                SQLException.class, "Failed to communicate with Ignite cluster");
-
-            HashMap<Integer, BinaryType> metas = GridTestUtils.getFieldValue(conn, "metaHnd", "cache", "metas");
-
-            assertNotSame(metasOld, metas);
-            assertTrue(metas.isEmpty());
         }
         finally {
             if (Files.exists(typeFile))
@@ -685,8 +594,8 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
         for (String fldName : t.fieldNames())
             assertContains(log, cmdOut, "name=" + fldName + ", type=" + t.fieldTypeName(fldName));
 
-        for (BinarySchema s : ((BinaryTypeImpl)t).metadata().schemas())
-            assertContains(log, cmdOut, "schemaId=0x" + Integer.toHexString(s.schemaId()).toUpperCase());
+        for (int schemaId : (((BinaryTypeImpl)t).metadata().schemaIds()))
+            assertContains(log, cmdOut, "schemaId=0x" + Integer.toHexString(schemaId).toUpperCase());
     }
 
     /**
@@ -712,7 +621,8 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
     /** */
     protected ClientConfiguration clientConfiguration() {
         return new ClientConfiguration()
-            .setAddresses("127.0.0.1:10800");
+            .setAddressesFinder(() -> new String[] {"127.0.0.1:10800"})
+            .setPartitionAwarenessEnabled(false);
     }
 
     /** */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.filehandle;
 
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -31,10 +32,12 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -58,32 +61,20 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.util.IgniteUtils.findField;
 import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
+import static org.apache.ignite.internal.util.IgniteUtils.jdkVersion;
+import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
 
 /**
  * File handle for one log segment.
  */
 @SuppressWarnings("SignalWithoutCorrespondingAwait")
 class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle {
-    /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
-    private static final Method force0 = findNonPublicMethod(
-        MappedByteBuffer.class, "force0",
-        java.io.FileDescriptor.class, long.class, long.class
-    );
+    /** Memory mapped buffer fsync operation runner. */
+    private static final MMapFSyncer FSYNCER = pickFsyncer();
 
     /** {@link FileWriteHandleImpl#written} atomic field updater. */
     private static final AtomicLongFieldUpdater<FileWriteHandleImpl> WRITTEN_UPD =
         AtomicLongFieldUpdater.newUpdater(FileWriteHandleImpl.class, "written");
-
-    /** {@link MappedByteBuffer#mappingOffset()}. */
-    private static final Method mappingOffset = findNonPublicMethod(MappedByteBuffer.class, "mappingOffset");
-
-    /** {@link MappedByteBuffer#mappingAddress(long)}. */
-    private static final Method mappingAddress = findNonPublicMethod(
-        MappedByteBuffer.class, "mappingAddress", long.class
-    );
-
-    /** {@link MappedByteBuffer#fd} */
-    private static final Field fd = findField(MappedByteBuffer.class, "fd");
 
     /** Page size. */
     private static final int PAGE_SIZE = GridUnsafe.pageSize();
@@ -236,11 +227,17 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
             SegmentedRingByteBuffer.WriteSegment seg;
 
-            // Buffer can be in open state in case of resuming with different serializer version.
-            if (rec.type() == SWITCH_SEGMENT_RECORD && !resume)
-                seg = buf.offerSafe(rec.size());
-            else
-                seg = buf.offer(rec.size());
+            try {
+                // Buffer can be in open state in case of resuming with different serializer version.
+                if (rec.type() == SWITCH_SEGMENT_RECORD && !resume)
+                    seg = buf.offerSafe(rec.size());
+                else
+                    seg = buf.offer(rec.size());
+            }
+            catch (IgniteException e) {
+                // WAL record size is greater than the buffer's capacity.
+                throw new IgniteCheckedException(e);
+            }
 
             WALPointer ptr = null;
 
@@ -410,14 +407,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                     if (segs != null) {
                         assert segs.size() == 1;
 
-                        SegmentedRingByteBuffer.ReadSegment seg = segs.get(0);
-
-                        int off = seg.buffer().position();
-                        int len = seg.buffer().limit() - off;
-
-                        fsync((MappedByteBuffer)buf.buf, off, len);
-
-                        seg.release();
+                        fsyncReadSegment(segs.get(0), false);
                     }
                 }
                 else
@@ -444,23 +434,8 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      * @param off Offset.
      * @param len Length.
      */
-    private void fsync(MappedByteBuffer buf, int off, int len) throws IgniteCheckedException {
-        try {
-            long mappedOff = (Long)mappingOffset.invoke(buf);
-
-            assert mappedOff == 0 : mappedOff;
-
-            long addr = (Long)mappingAddress.invoke(buf, mappedOff);
-
-            long delta = (addr + off) % PAGE_SIZE;
-
-            long alignedAddr = (addr + off) - delta;
-
-            force0.invoke(buf, fd.get(buf), alignedAddr, len + delta);
-        }
-        catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IgniteCheckedException(e);
-        }
+    private static void fsync(MappedByteBuffer buf, int off, int len) throws IgniteCheckedException {
+        FSYNCER.fsync(buf, off, len);
     }
 
     /** {@inheritDoc} */
@@ -480,64 +455,65 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
             try {
                 flushOrWait(null);
 
-                try {
-                    RecordSerializer backwardSerializer = new RecordSerializerFactoryImpl(cctx)
-                        .createSerializer(serializerVer);
+                RecordSerializer backwardSerializer = new RecordSerializerFactoryImpl(cctx)
+                    .createSerializer(serializerVer);
 
-                    SwitchSegmentRecord segmentRecord = new SwitchSegmentRecord();
+                SwitchSegmentRecord segmentRecord = new SwitchSegmentRecord();
 
-                    int switchSegmentRecSize = backwardSerializer.size(segmentRecord);
+                int switchSegmentRecSize = backwardSerializer.size(segmentRecord);
 
-                    if (rollOver && written + switchSegmentRecSize < maxWalSegmentSize) {
-                        segmentRecord.size(switchSegmentRecSize);
+                if (rollOver && written + switchSegmentRecSize < maxWalSegmentSize) {
+                    segmentRecord.size(switchSegmentRecSize);
 
-                        WALPointer segRecPtr = addRecord(segmentRecord);
+                    WALPointer segRecPtr = addRecord(segmentRecord);
 
-                        if (segRecPtr != null) {
-                            fsync(segRecPtr);
+                    if (segRecPtr != null) {
+                        fsync(segRecPtr);
 
-                            switchSegmentRecordOffset = segRecPtr.fileOffset() + switchSegmentRecSize;
-                        }
-                    }
-
-                    if (mmap) {
-                        List<SegmentedRingByteBuffer.ReadSegment> segs = buf.poll(maxWalSegmentSize);
-
-                        if (segs != null) {
-                            assert segs.size() == 1;
-
-                            segs.get(0).release();
-                        }
-                    }
-
-                    // Do the final fsync.
-                    if (mode != WALMode.NONE) {
-                        if (mmap)
-                            ((MappedByteBuffer)buf.buf).force();
-                        else
-                            fileIO.force();
-
-                        lastFsyncPos = written;
-                    }
-
-                    if (mmap) {
-                        try {
-                            fileIO.close();
-                        }
-                        catch (IOException ignore) {
-                            // No-op.
-                        }
+                        switchSegmentRecordOffset = segRecPtr.fileOffset() + switchSegmentRecSize;
                     }
                     else {
-                        walWriter.close();
-
-                        if (!rollOver)
-                            buf.free();
+                        if (log.isDebugEnabled())
+                            log.debug("Not enough space in wal segment to write segment switch");
                     }
                 }
-                catch (IOException e) {
-                    throw new StorageException("Failed to close WAL write handle [idx=" + getSegmentId() + "]", e);
+                else {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Not enough space in wal segment to write segment switch, written="
+                            + written + ", switchSegmentRecSize=" + switchSegmentRecSize);
+                    }
                 }
+
+                // Unconditional flush (tail of the buffer)
+                flushOrWait(null);
+
+                if (mmap) {
+                    List<SegmentedRingByteBuffer.ReadSegment> segs = buf.poll(maxWalSegmentSize);
+
+                    if (segs != null) {
+                        assert segs.size() == 1;
+
+                        fsyncReadSegment(segs.get(0), true);
+                    }
+                }
+
+                // Do the final fsync.
+                if (mode != WALMode.NONE) {
+                    if (mmap)
+                        ((MappedByteBuffer)buf.buf).force();
+                    else
+                        walWriter.force();
+
+                    lastFsyncPos = written;
+                }
+
+                if (mmap)
+                    U.closeQuiet(fileIO);
+                else
+                    walWriter.close();
+
+                if (!mmap && !rollOver)
+                    buf.free();
 
                 if (log.isDebugEnabled())
                     log.debug("Closed WAL write handle [idx=" + getSegmentId() + "]");
@@ -553,6 +529,36 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         }
         else
             return false;
+    }
+
+    /**
+     * Make fsync for part of the WAL segment file. And collect it to {@link CdcManager} if enabled.
+     *
+     * @param seg Part of the WAL segment file.
+     * @param onlyCdc If {@code true} then skip actual fsync. TODO: IGNITE-20732
+     */
+    private void fsyncReadSegment(SegmentedRingByteBuffer.ReadSegment seg, boolean onlyCdc) throws IgniteCheckedException {
+        int off = seg.buffer().position();
+        int len = seg.buffer().limit() - off;
+
+        if (!onlyCdc)
+            fsync((MappedByteBuffer)buf.buf, off, len);
+
+        if (cctx.cdc() != null && cctx.cdc().enabled()) {
+            try {
+                ByteBuffer cdcBuf = buf.buf.asReadOnlyBuffer();
+                cdcBuf.position(off);
+                cdcBuf.limit(off + len);
+                cdcBuf.order(buf.buf.order());
+
+                cctx.cdc().collect(cdcBuf);
+            }
+            catch (Throwable cdcErr) {
+                U.error(log, "Error happened during CDC data collection.", cdcErr);
+            }
+        }
+
+        seg.release();
     }
 
     /**
@@ -608,5 +614,138 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
     /** {@inheritDoc} */
     @Override public int getSwitchSegmentRecordOffset() {
         return switchSegmentRecordOffset;
+    }
+
+    /**
+     * Interface for performing {@link MappedByteBuffer} fsync.
+     */
+    private interface MMapFSyncer {
+        /** {@link MappedByteBuffer#fd} */
+        static final Field fd = findField(MappedByteBuffer.class, "fd");
+
+        /**
+         * Performs fsync.
+         *
+         * @param buf Mmapped byte buffer.
+         * @param index Index of the syncing segment in the buffer.
+         * @param len Length of the syncing segment part.
+         * @throws IgniteCheckedException If failed.
+         */
+        void fsync(MappedByteBuffer buf, int index, int len) throws IgniteCheckedException;
+    }
+
+    /**
+     * @return FSyncer suitable for the current JRE.
+     */
+    private static MMapFSyncer pickFsyncer() {
+        int javaVer = majorJavaVersion(jdkVersion());
+
+        if (javaVer >= 15)
+            return new JDK15FSyncer();
+
+        return new LegacyFSyncer();
+    }
+
+    /**
+     * Runs fsync operation on JRE15 and higher using MappedMemoryUtils which provides aligned fsync.
+     */
+    private static class JDK15FSyncer implements MMapFSyncer {
+        /** {@link MappedByteBuffer#address}. */
+        private static final Field address = findField(MappedByteBuffer.class, "address");
+
+        /**
+         * A flag true if this buffer is mapped against non-volatile
+         * memory using one of the extended FileChannel.MapMode modes.
+         */
+        private static final Field isSync = findField(MappedByteBuffer.class, "isSync");
+
+        /**
+         * Mapped memory utils class. For compatibility reasons it might only be accessed via
+         * {@link Class#forName(String)}.
+         */
+        private final Class<?> mappedMemoryUtils;
+
+        /**
+         * MappedMemoryUtils#force method.
+         */
+        private final Method force;
+
+        /** Constructor. */
+        public JDK15FSyncer() {
+            try {
+                mappedMemoryUtils = Class.forName("java.nio.MappedMemoryUtils");
+
+                force = findNonPublicMethod(
+                    mappedMemoryUtils,
+                    "force",
+                    FileDescriptor.class,
+                    long.class, // Address
+                    boolean.class, // Is sync?
+                    long.class, // Index
+                    long.class // Length
+                );
+            }
+            catch (ClassNotFoundException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void fsync(MappedByteBuffer buf, int index, int len) throws IgniteCheckedException {
+            try {
+                boolean isSync = (boolean)JDK15FSyncer.isSync.get(buf);
+                long addr = (long)JDK15FSyncer.address.get(buf);
+
+                assert addr % PAGE_SIZE == 0 : "Buffer's address is not aligned: " + addr;
+
+                // Don't need to align manually as MappedMemoryUtils does the alignment
+                force.invoke(mappedMemoryUtils, fd.get(buf), addr, isSync, index, len);
+            }
+            catch (IllegalAccessException | InvocationTargetException e) {
+                throw new IgniteCheckedException(e);
+            }
+        }
+    }
+
+    /**
+     * Runs fsync on pre-java15 JVMs that don't offer a possibility to fsync mapped byte buffers in an aligned way.
+     */
+    private static class LegacyFSyncer implements MMapFSyncer {
+        /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
+        private static final Method force0 = findNonPublicMethod(
+            MappedByteBuffer.class, "force0",
+            java.io.FileDescriptor.class, long.class, long.class
+        );
+
+        /** {@link MappedByteBuffer#mappingOffset()}. */
+        private static final Method mappingOffset = findNonPublicMethod(MappedByteBuffer.class, "mappingOffset");
+
+        /** {@link MappedByteBuffer#mappingAddress(long)}. */
+        private static final Method mappingAddress = findNonPublicMethod(
+            MappedByteBuffer.class, "mappingAddress", long.class
+        );
+
+        /** {@inheritDoc} */
+        @Override public void fsync(MappedByteBuffer buf, int index, int len) throws IgniteCheckedException {
+            try {
+                long mappedOff = (Long)mappingOffset.invoke(buf);
+
+                assert mappedOff == 0 : mappedOff;
+
+                long addr = (Long)mappingAddress.invoke(buf, mappedOff);
+
+                long alignmentDelta = (addr + index) % PAGE_SIZE;
+
+                // Given an alignment delta calculate the largest page aligned address
+                // of the mapping less than or equal to the address of the buffer
+                // element identified by the index.
+                long alignedAddr = (addr + index) - alignmentDelta;
+
+                force0.invoke(buf, fd.get(buf), alignedAddr, len + alignmentDelta);
+            }
+            catch (IllegalAccessException | InvocationTargetException e) {
+                throw new IgniteCheckedException(e);
+            }
+        }
     }
 }

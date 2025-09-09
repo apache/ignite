@@ -43,7 +43,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -71,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -87,8 +85,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ENCRYPTION_MGR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_GEN_ENC_KEY;
-import static org.apache.ignite.internal.IgniteFeatures.CACHE_GROUP_KEY_CHANGE;
-import static org.apache.ignite.internal.IgniteFeatures.MASTER_KEY_CHANGE;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_FINISH;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_PREPARE;
@@ -139,11 +135,6 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  */
 public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements EncryptionCacheKeyProvider,
     MetastorageLifecycleListener, IgniteChangeGlobalStateSupport, IgniteEncryption, PartitionsExchangeAware {
-    /**
-     * Cache encryption introduced in this Ignite version.
-     */
-    private static final IgniteProductVersion CACHE_ENCRYPTION_SINCE = IgniteProductVersion.fromString("2.7.0");
-
     /** Prefix for a master key name. */
     public static final String MASTER_KEY_NAME_PREFIX = "encryption-master-key-name";
 
@@ -255,7 +246,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 while (futsIter.hasNext()) {
                     GenerateEncryptionKeyFuture fut = futsIter.next().getValue();
 
-                    if (!F.eq(leftNodeId, fut.nodeId()))
+                    if (!Objects.equals(leftNodeId, fut.nodeId()))
                         return;
 
                     try {
@@ -310,6 +301,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 }
             }
         });
+
+        ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
 
         prepareMKChangeProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_PREPARE, this::prepareMasterKeyChange,
             this::finishPrepareMasterKeyChange);
@@ -423,7 +416,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "Master key change is in progress! Node join is rejected.");
         }
 
-        if (node.isClient() || node.isDaemon())
+        if (node.isClient())
             return null;
 
         res = validateNode(node);
@@ -449,12 +442,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             return new IgniteNodeValidationResult(ctx.localNodeId(),
                 "Master key digest differs! Node join is rejected. [node=" + node.id() + "]",
                 "Master key digest differs! Node join is rejected.");
-        }
-
-        if (!IgniteFeatures.nodeSupports(node, CACHE_GROUP_KEY_CHANGE)) {
-            return new IgniteNodeValidationResult(ctx.localNodeId(),
-                "Joining node doesn't support multiple encryption keys for single group [node=" + node.id() + "]",
-                "Joining node doesn't support multiple encryption keys for single group.");
         }
 
         if (F.isEmpty(nodeEncKeys.knownKeys)) {
@@ -489,7 +476,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 break;
             }
 
-            if (rmtKeyEncrypted == null || F.eq(locEncKey.key(), getSpi().decryptKey(rmtKeyEncrypted.key())))
+            if (rmtKeyEncrypted == null || Objects.equals(locEncKey.key(), getSpi().decryptKey(rmtKeyEncrypted.key())))
                 continue;
 
             // The remote node should not rotate the cache key to the current one
@@ -656,7 +643,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 grpKeys.addKey(grpId, key);
 
                 writeGroupKeysToMetaStore(grpId, grpKeys.getAll(grpId));
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to write cache group encryption key [grpId=" + grpId + ']', e);
             }
         }
@@ -665,18 +653,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> changeMasterKey(String masterKeyName) {
         if (ctx.clientNode()) {
-            return new IgniteFinishedFutureImpl<>(new UnsupportedOperationException("Client and daemon nodes can not " +
+            return new IgniteFinishedFutureImpl<>(new UnsupportedOperationException("Client nodes can not " +
                 "perform this operation."));
-        }
-
-        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), MASTER_KEY_CHANGE)) {
-            return new IgniteFinishedFutureImpl<>(new IllegalStateException("Not all nodes in the cluster support " +
-                "the master key change process."));
         }
 
         // WAL is unavailable for write on the inactive cluster. Master key change will not be logged and group keys
         // can be partially re-encrypted in case of node stop without the possibility of recovery.
-        if (!ctx.state().clusterState().active()) {
+        if (!ctx.state().clusterState().state().active()) {
             return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
                 "The cluster is inactive."));
         }
@@ -690,12 +673,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         try {
             digest = masterKeyDigest(masterKeyName);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
                 "Unable to get the master key digest.", e));
         }
 
-        MasterKeyChangeRequest request = new MasterKeyChangeRequest(UUID.randomUUID(), encryptKeyName(masterKeyName),
+        MasterKeyChangeRequest req = new MasterKeyChangeRequest(UUID.randomUUID(), encryptKeyName(masterKeyName),
             digest);
 
         synchronized (opsMux) {
@@ -715,9 +699,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                     "The previous change was not completed."));
             }
 
-            masterKeyChangeFut = new KeyChangeFuture(request.requestId());
+            masterKeyChangeFut = new KeyChangeFuture(req.requestId());
 
-            prepareMKChangeProc.start(request.requestId(), request);
+            prepareMKChangeProc.start(req.requestId(), req);
 
             return new IgniteFutureImpl<>(masterKeyChangeFut);
         }
@@ -726,7 +710,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** {@inheritDoc} */
     @Override public String getMasterKeyName() {
         if (ctx.clientNode())
-            throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
+            throw new UnsupportedOperationException("Client nodes can not perform this operation.");
 
         return withMasterKeyChangeReadLock(() -> getSpi().getMasterKeyName());
     }
@@ -816,6 +800,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
+     * @return {@code True} If reencryption is active in the cluster.
+     */
+    public boolean reencryptionInProgress() {
+        return grpKeyChangeProc.inProgress() || !reencryptGroups.isEmpty();
+    }
+
+    /**
      * @return Re-encryption rate limit in megabytes per second ({@code 0} - unlimited).
      */
     public double getReencryptionRate() {
@@ -861,15 +852,16 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      *
      * @param grpId Cache group ID.
      * @param encKey Encryption key
+     * @param encKeyId Key id to use. If {@code null}, {@link #INITIAL_KEY_ID} is used.
      */
-    public void setInitialGroupKey(int grpId, @Nullable byte[] encKey) {
+    public void setInitialGroupKey(int grpId, @Nullable byte[] encKey, @Nullable Integer encKeyId) {
         if (encKey == null || ctx.clientNode())
             return;
 
         removeGroupKey(grpId);
 
         withMasterKeyChangeReadLock(() -> {
-            addGroupKey(grpId, new GroupKeyEncrypted(INITIAL_KEY_ID, encKey));
+            addGroupKey(grpId, new GroupKeyEncrypted(encKeyId == null ? INITIAL_KEY_ID : encKeyId, encKey));
 
             return null;
         });
@@ -1242,10 +1234,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         for (int grpId : grpIds) {
             IgniteInternalFuture<?> fut = pageScanner.schedule(grpId);
 
-            fut.listen(f -> {
-                if (f.isCancelled() || f.error() != null) {
+            fut.listen(() -> {
+                if (fut.isCancelled() || fut.error() != null) {
                     log.warning("Reencryption " +
-                        (f.isCancelled() ? "cancelled" : "failed") + " [grp=" + grpId + "]", f.error());
+                        (fut.isCancelled() ? "cancelled" : "failed") + " [grp=" + grpId + "]", fut.error());
 
                     return;
                 }
@@ -1338,22 +1330,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
-        }
-    }
-
-    /**
-     * Checks cache encryption supported by all nodes in cluster.
-     *
-     * @throws IgniteCheckedException If check fails.
-     */
-    public void checkEncryptedCacheSupported() throws IgniteCheckedException {
-        Collection<ClusterNode> nodes = ctx.grid().cluster().nodes();
-
-        for (ClusterNode node : nodes) {
-            if (CACHE_ENCRYPTION_SINCE.compareTo(node.version()) > 0) {
-                throw new IgniteCheckedException("All nodes in cluster should be 2.7.0 or greater " +
-                    "to create encrypted cache! [nodeId=" + node.id() + "]");
-            }
         }
     }
 
@@ -1488,7 +1464,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 grpKeys.setGroupKeys(entry.getKey(), entry.getValue());
 
             restoredFromWAL = true;
-        } catch (IgniteSpiException e) {
+        }
+        catch (IgniteSpiException e) {
             log.warning("Unable to apply group keys from WAL record [masterKeyName=" + rec.getMasterKeyName() + ']', e);
         }
     }
@@ -1515,6 +1492,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (masterKeyChangeRequest != null) {
             return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
                 "The previous change was not completed."));
+        }
+
+        if (ctx.cache().context().snapshotMgr().isSnapshotCreating()
+            || ctx.cache().context().snapshotMgr().isRestoring()) {
+            return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. Snapshot operation " +
+                "is in progress."));
         }
 
         masterKeyChangeRequest = req;
@@ -1551,7 +1534,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPrepareMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
+    private void finishPrepareMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
         if (!err.isEmpty()) {
             if (masterKeyChangeRequest != null && masterKeyChangeRequest.requestId().equals(id))
                 masterKeyChangeRequest = null;
@@ -1572,7 +1555,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (masterKeyChangeRequest == null || !masterKeyChangeRequest.equals(req))
             return new GridFinishedFuture<>(new IgniteException("Unknown master key change was rejected."));
 
-        if (!ctx.state().clusterState().active()) {
+        if (!ctx.state().clusterState().state().active()) {
             masterKeyChangeRequest = null;
 
             return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
@@ -1596,7 +1579,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPerformMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
+    private void finishPerformMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
         completeMasterKeyChangeFuture(id, err);
     }
 
@@ -1604,7 +1587,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param reqId Request id.
      * @param err Exception.
      */
-    private void completeMasterKeyChangeFuture(UUID reqId, Map<UUID, Exception> err) {
+    private void completeMasterKeyChangeFuture(UUID reqId, Map<UUID, Throwable> err) {
         synchronized (opsMux) {
             boolean isInitiator = masterKeyChangeFut != null && masterKeyChangeFut.id().equals(reqId);
 
@@ -1612,7 +1595,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 return;
 
             if (!F.isEmpty(err)) {
-                Exception e = err.values().stream().findFirst().get();
+                Throwable e = err.values().stream().findFirst().get();
 
                 masterKeyChangeFut.onDone(e);
             }
@@ -1701,9 +1684,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 getSpi().setMasterKeyName(masterKeyName);
 
                 digest = getSpi().masterKeyDigest();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new IgniteException("Unable to set master key locally [masterKeyName=" + masterKeyName + ']', e);
-            } finally {
+            }
+            finally {
                 getSpi().setMasterKeyName(curName);
             }
         }

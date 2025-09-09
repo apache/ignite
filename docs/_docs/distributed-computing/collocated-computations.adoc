@@ -66,7 +66,7 @@ include::code-snippets/cpp/src/affinity_run.cpp[tag=affinity-run,indent=0]
 
 == Colocating by Partition
 
-The `affinityCall(Collection<String> cacheNames, int partId, IgniteRunnable job)` and `affinityRun(Collection<String> cacheNames, int partId, IgniteRunnable job)` send a given task to the node where the partition with a given ID is located. This is useful when you need to retrieve objects for multiple keys and you know that the keys belong to the same partition. In this case, you can create one task instead of multiple task for each key.
+The `affinityCall(Collection<String> cacheNames, int partId, IgniteCallable job)` and `affinityRun(Collection<String> cacheNames, int partId, IgniteRunnable job)` send a given task to the node where the partition with a given ID is located. This is useful when you need to retrieve objects for multiple keys and you know that the keys belong to the same partition. In this case, you can create one task instead of multiple task for each key.
 
 For example, let's say you want to calculate the arithmetic mean of a specific field for a specific subset of keys.
 If you want to distribute the computation, you can group the keys by partitions and send each group of keys to the node where the partition is located to get the values.
@@ -105,7 +105,7 @@ tab:C++[unsupported]
 ====
 [discrete]
 === Performance Considerations
-Colocated computations yield performance benefits when the amount of the data you want to process is sufficiently large. In some cases, when the amount of data is small, a link:key-value-api/using-scan-queries[scan query] may perform better.
+Colocated computations yield performance benefits when the amount of the data you want to process is sufficiently large. In some cases, when the amount of data is small, a link:key-value-api/using-cache-queries[scan query] may perform better.
 
 ====
 

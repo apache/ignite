@@ -29,20 +29,18 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.NoOpFailureHandler;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
+/** */
 public class IgnitePdsWithTtlTest2 extends GridCommonAbstractTest {
     /** */
     public static AtomicBoolean handleFired = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
-
         super.beforeTest();
 
         cleanPersistenceDir();
@@ -129,6 +127,7 @@ public class IgnitePdsWithTtlTest2 extends GridCommonAbstractTest {
         assertFalse(handleFired.get());
     }
 
+    /** */
     private class CustomStopNodeOrHaltFailureHandler extends NoOpFailureHandler {
         /** {@inheritDoc} */
         @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
