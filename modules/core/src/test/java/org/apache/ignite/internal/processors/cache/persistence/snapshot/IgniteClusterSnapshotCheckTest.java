@@ -124,7 +124,7 @@ import static org.junit.Assume.assumeFalse;
  * Cluster-wide snapshot check procedure tests.
  */
 public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
-    /** Default cache partitions number. */
+    /** The default cache partitions number. */
     protected static final int CACHE_PARTS_CNT = 16;
 
     /** Map of intermediate compute task results collected prior performing reduce operation on them. */
@@ -612,8 +612,11 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         // From a baseline, non-baseline and client (0,1 - servers, 2 - baseline, 3 - client).
         for (int initiator : F.asList(1, 2, 3)) {
+            // Check partitions hashes.
             for (boolean fullCheck : F.asList(true, false)) {
+                // Invoke all the snapshot handlers.
                 for (boolean allHandlers : F.asList(false, true)) {
+                    // Restore snapshot instead of just checking.
                     for (boolean restore : F.asList(false, true)) {
                         // The all-handlers-task currently fails on client because it has no snapshot handlers. Thus,
                         // a 'handlers mismatch configuration' error occures.
@@ -621,8 +624,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                         if (initiator > 2 && (allHandlers || restore))
                             continue;
                         // On the restoration, all the snapshot checking handlers are always invoked for a non-incremental snapshot.
-                        // Incremental snapsot doesn't support snapshot handlers.
-                        if (restore && !allHandlers || incremental && allHandlers)
+                        // Incremental snapsot doesn't support snapshot handlers and do not check partitions.
+                        if (restore && !allHandlers || incremental && (allHandlers || fullCheck))
                             continue;
 
                         if (log.isInfoEnabled()) {
@@ -657,7 +660,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         int... stoppedNodes
     ) throws Exception {
         assert !restore || allHandlers;
-        assert !incremental || (!allHandlers && stoppedNodes.length == 0);
+        assert !incremental || (!allHandlers && stoppedNodes.length == 0 && !fullCheck);
 
         Set<Integer> stoppedNodes0 = Collections.emptySet();
         int coordId = 0;
@@ -689,13 +692,18 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
             long mills = System.currentTimeMillis();
 
-            if (restore)
-                fut2 = snp(grid(initiator)).restoreSnapshot(SNAPSHOT_NAME, null, null, incremental ? 1 : 0, fullCheck);
-            else
-                fut1 = snp(grid(initiator)).checkSnapshot(SNAPSHOT_NAME, null, null, allHandlers, incremental ? 1 : 0, fullCheck);
+            if (restore) {
+                fut2 = snp(grid(initiator)).restoreSnapshot(SNAPSHOT_NAME, null, null, incremental ? 1 : 0,
+                    fullCheck);
 
-            assertTrue(fut1 == null || !fut1.isDone());
-            assertTrue(fut2 == null || !fut2.isDone());
+                assertTrue(!fut2.isDone());
+            }
+            else {
+                fut1 = snp(grid(initiator)).checkSnapshot(SNAPSHOT_NAME, null, null, allHandlers, incremental ? 1 : 0,
+                    fullCheck);
+
+                assertTrue(!fut1.isDone());
+            }
 
             discoSpi(grid(coordId)).waitBlocked(getTestTimeout());
 
@@ -706,7 +714,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 MetricRegistry mreg = grid(i).context().metric().registry(metricName(SNAPSHOT_CHECK_METRIC, SNAPSHOT_NAME));
 
                 // Clients and non-baseline nodes doesn't have data and doesn't run snapshots.
-                if (grid(i).localNode().isClient() || !baseline.contains(grid(i).localNode().consistentId())) {
+                if (!baseline.contains(grid(i).localNode().consistentId())) {
                     assertFalse(mreg.iterator().hasNext());
 
                     continue;
@@ -719,6 +727,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 if (incremental) {
                     assertEquals(1, mreg.<IntMetric>findMetric("incrementIndex").value());
 
+                    // Full-snapshot metrics aren't expected.
                     assertNull(mreg.<BooleanMetric>findMetric("checkPartitions"));
                     assertNull(mreg.<BooleanMetric>findMetric("processedPartitions"));
                     assertNull(mreg.<BooleanMetric>findMetric("snapshotPartsToProcess"));
@@ -733,6 +742,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     assertTrue(mreg.<IntMetric>findMetric("incrementIndex").value() < 1);
                     assertEquals(fullCheck, mreg.<BooleanMetric>findMetric("checkPartitions").value());
 
+                    // Incremental snapshot metrics aren't expected.
                     assertNull(mreg.<IntMetric>findMetric("totalWalSegments"));
                     assertNull(mreg.<IntMetric>findMetric("processedWalSegments"));
 
@@ -759,7 +769,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 MetricRegistry mreg = grid(i).context().metric().registry(metricName(SNAPSHOT_CHECK_METRIC, SNAPSHOT_NAME));
 
                 // Clients and non-baseline nodes doesn't have data and doesn't run snapshots.
-                if (grid(i).localNode().isClient() || !baseline.contains(grid(i).localNode().consistentId())) {
+                if (!baseline.contains(grid(i).localNode().consistentId())) {
                     assertFalse(mreg.iterator().hasNext());
 
                     continue;
@@ -771,7 +781,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     int walSegmentsDetected = mreg.<IntMetric>findMetric("totalWalSegments").value();
 
                     assertTrue(walSegmentsDetected > 0);
-
                     assertEquals(walSegmentsDetected, mreg.<IntMetric>findMetric("processedWalSegments").value());
                 }
                 else {
@@ -800,9 +809,12 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         finally {
             discoSpi(grid(coordId)).unblock();
 
-            if (fut1 != null)
+            if (fut1 != null) {
+                assert fut2 == null;
+
                 fut1.get(getTestTimeout());
-            if (fut2 != null)
+            }
+            else
                 fut2.get(getTestTimeout());
         }
 

@@ -93,10 +93,10 @@ public class IncrementalSnapshotVerificationTask {
 
     /** */
     public IncrementalSnapshotVerificationTaskResult execute(
-        @Nullable Consumer<Integer> totalSegsCnsmr,
-        @Nullable Consumer<Integer> checkedSegsCnsmr
+        @Nullable Consumer<Integer> totalCnsmr,
+        @Nullable Consumer<Integer> checkedCnsmr
     ) {
-        return job.execute0(totalSegsCnsmr, checkedSegsCnsmr);
+        return job.execute0(totalCnsmr, checkedCnsmr);
     }
 
     /** */
@@ -138,8 +138,8 @@ public class IncrementalSnapshotVerificationTask {
          * @return Map containing calculated transactions hash for every remote node in the cluster.
          */
         public IncrementalSnapshotVerificationTaskResult execute0(
-            @Nullable Consumer<Integer> totalSegsCnsmr,
-            @Nullable Consumer<Integer> checkedSegsCnsmr
+            @Nullable Consumer<Integer> totalCnsmr,
+            @Nullable Consumer<Integer> checkedCnsmr
         ) throws IgniteException {
             try {
                 if (log.isInfoEnabled()) {
@@ -165,13 +165,13 @@ public class IncrementalSnapshotVerificationTask {
                     ignite.context().cache().context(), sft, incIdx, txCaches.keySet()
                 ) {
                     @Override void totalWalSegments(int segCnt) {
-                        if (totalSegsCnsmr != null)
-                            totalSegsCnsmr.accept(segCnt);
+                        if (totalCnsmr != null)
+                            totalCnsmr.accept(segCnt);
                     }
 
                     @Override void processedWalSegments(int segCnt) {
-                        if (checkedSegsCnsmr != null)
-                            checkedSegsCnsmr.accept(segCnt);
+                        if (checkedCnsmr != null)
+                            checkedCnsmr.accept(segCnt);
 
                         procSegCnt.set(segCnt);
                     }

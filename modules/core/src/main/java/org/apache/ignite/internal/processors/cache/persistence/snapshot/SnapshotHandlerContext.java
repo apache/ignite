@@ -48,7 +48,7 @@ public class SnapshotHandlerContext {
     /** Consumer of total work units per handler type. */
     private final BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> totalCnsmr;
 
-    /** Consumer of work units progress per handler type. */
+    /** Consumer of processed work unit per handler type. */
     private final BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> progressCnsmr;
 
     /**
@@ -60,7 +60,7 @@ public class SnapshotHandlerContext {
      * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
      * @param check If {@code true}, calculates and compares partition hashes. Otherwise, only basic snapshot validation is launched.
      * @param totalCnsmr Consumer of total work units per handler type.
-     * @param progressCnsmr Consumer of work units progress per handler type.
+     * @param progressCnsmr Consumer of processed work unit per handler type.
      */
     public SnapshotHandlerContext(
         SnapshotMetadata metadata,
@@ -128,7 +128,7 @@ public class SnapshotHandlerContext {
         return totalCnsmr;
     }
 
-    /** @return Consumer of work units progress per handler type. */
+    /** @return Consumer of processed work unit per handler type. */
     public @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> progressConsumer() {
         return progressCnsmr;
     }

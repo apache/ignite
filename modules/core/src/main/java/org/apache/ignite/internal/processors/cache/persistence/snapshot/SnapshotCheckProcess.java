@@ -317,11 +317,8 @@ public class SnapshotCheckProcess {
             workingFut = partitionsHashesFuture(ctx);
 
         workingFut.whenComplete((res, err) -> {
-            if (err != null) {
-                unregisterMetrics(ctx.req.snapshotName());
-
+            if (err != null)
                 phaseFut.onDone(err);
-            }
             else
                 phaseFut.onDone(res);
         });
@@ -584,6 +581,7 @@ public class SnapshotCheckProcess {
         ClusterNode locNode = kctx.cluster().get().localNode();
         List<SnapshotMetadata> locMetas = clusterMetas.get(locNode);
 
+        // Might be empty due to a cache's node filter.
         if (F.isEmpty(locMetas))
             return Collections.emptyList();
 
@@ -718,15 +716,11 @@ public class SnapshotCheckProcess {
                 "The number of checked WAL segments in the incremental snapshot on current node.");
         }
         else {
-            mreg.register("checkPartitions", ctx.req::fullCheck,
-                "Shows whether full validation of snapshot partitions is enabled.");
-            mreg.register("totalPartitions", ctx.totalCounter::get,
-                "The total number of partitions to check on current node.");
-            mreg.register("processedPartitions", ctx.checkedCounter::get,
-                "The number of checked partitions on current node.");
+            mreg.register("checkPartitions", ctx.req::fullCheck, "Shows whether full validation of snapshot partitions is enabled.");
+            mreg.register("totalPartitions", ctx.totalCounter::get, "The total number of partitions to check on current node.");
+            mreg.register("processedPartitions", ctx.checkedCounter::get, "The number of checked partitions on current node.");
 
             // Node can hold and process another nodes' snapshot data.
-            // Only entire snapshot supports checking and restoring on other topology. Incremental snapshot doesn't.
             mreg.register("snapshotPartsToProcess", () -> ctx.metas == null ? -1 : ctx.metas.size(),
                 "Number of parts (nodes data) of snapshot to check on current node.");
             mreg.register("processedSnapshotParts", ctx.checkedSnapshotParts::get,
@@ -758,21 +752,23 @@ public class SnapshotCheckProcess {
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
-        /** Common counter of total units of work to process on current node. */
+        /** Common counter of total work units to process on current node. */
         @GridToStringExclude
         private final AtomicInteger totalCounter = new AtomicInteger(-1);
 
-        /** Common counter of checked units of work on current node. */
+        /** Common counter of checked work units on current node. */
         @GridToStringExclude
         private final AtomicInteger checkedCounter = new AtomicInteger(0);
 
-        /** Number of checked snapshot parts (nodes data). */
+        /** Number of checked snapshot parts (nodes data/consistent ids) on current node. {@code Null} for incremental snapshots. */
         @GridToStringExclude
-        private final AtomicInteger checkedSnapshotParts = new AtomicInteger(0);
+        @Nullable private final AtomicInteger checkedSnapshotParts;
 
         /** Creates operation context. */
         private SnapshotCheckContext(SnapshotCheckProcessRequest req) {
             this.req = req;
+
+            checkedSnapshotParts = req.incrementalIndex() > 0 ? null : new AtomicInteger(0);
         }
 
         /** {@inheritDoc} */

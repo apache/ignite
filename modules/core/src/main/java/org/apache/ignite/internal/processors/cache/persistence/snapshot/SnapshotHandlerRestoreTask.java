@@ -62,9 +62,9 @@ public class SnapshotHandlerRestoreTask {
     /** */
     public Map<String, SnapshotHandlerResult<Object>> execute(
         @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> totalCnsmr,
-        @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> processedPartCnsmr
+        @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> processedCnsmr
     ) {
-        return job.execute0(totalCnsmr, processedPartCnsmr);
+        return job.execute0(totalCnsmr, processedCnsmr);
     }
 
     /** */
@@ -138,13 +138,13 @@ public class SnapshotHandlerRestoreTask {
         /** */
         public Map<String, SnapshotHandlerResult<Object>> execute0(
             @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> totalCnsmr,
-            @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> processedPartCnsmr
+            @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> processedCnsmr
         ) {
             try {
                 IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
                 SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.meta());
-                SnapshotHandlerContext hndCnt = new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false, check,
-                    totalCnsmr, processedPartCnsmr);
+                SnapshotHandlerContext hndCnt = new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false,
+                    check, totalCnsmr, processedCnsmr);
 
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE, hndCnt);
             }

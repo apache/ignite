@@ -116,9 +116,9 @@ public class SnapshotChecker {
                 if (SnapshotPartitionsVerifyHandler.class == hndCls)
                     totalCnsmr.accept(totalCnt);
             },
-            processedPartCnsmr == null ? null : (hndCls, progressCnt) -> {
+            processedPartCnsmr == null ? null : (hndCls, partId) -> {
                 if (SnapshotPartitionsVerifyHandler.class == hndCls)
-                    processedPartCnsmr.accept(progressCnt);
+                    processedPartCnsmr.accept(partId);
             }
         ));
     }

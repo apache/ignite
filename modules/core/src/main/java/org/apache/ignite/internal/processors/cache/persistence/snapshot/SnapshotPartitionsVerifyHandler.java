@@ -150,6 +150,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                 partFiles.add(part);
 
+                // We could set it later. But we do here a bit of storage access. Theoretically, can be slow.
+                // Makes setting the total work units number smoother.
                 if (opCtx.totalConsumer() != null)
                     opCtx.totalConsumer().accept(getClass(), 1);
 
@@ -191,7 +193,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         SnapshotMetadata meta,
         Set<File> partFiles,
         boolean punchHoleEnabled,
-        @Nullable Consumer<Integer> checkedPartCnsmr
+        @Nullable Consumer<Integer> checkedCnsmr
     ) throws IgniteCheckedException {
         Map<PartitionKey, PartitionHashRecord> res = new ConcurrentHashMap<>(partFiles.size(), 1.0f);
 
@@ -315,8 +317,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                         throw new IgniteCheckedException(e);
                     }
                     finally {
-                        if (checkedPartCnsmr != null)
-                            checkedPartCnsmr.accept(partId);
+                        if (checkedCnsmr != null)
+                            checkedCnsmr.accept(partId);
                     }
 
                     return null;
