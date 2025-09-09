@@ -21,9 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.OpenOption;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -89,10 +87,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
@@ -127,34 +123,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** Any node failed. */
     private boolean failed;
 
-    /** */
-    @Parameterized.Parameter(2)
-    public int snpThreadPoolSz;
-
-    /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}, snpThreadPoolSz={2}")
-    public static Collection<Object[]> params() {
-        Collection<Object[]> res = new ArrayList<>();
-
-        for (int pollSz : F.asList(DFLT_SNAPSHOT_THREAD_POOL_SIZE, 1)) {
-            for (Object[] superParSet : AbstractSnapshotSelfTest.params()) {
-                Object[] pars = new Object[superParSet.length + 1];
-
-                System.arraycopy(superParSet, 0, pars, 0, superParSet.length);
-                pars[pars.length - 1] = pollSz;
-
-                res.add(pars);
-            }
-        }
-
-        return res;
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setFailureHandler((ignite, ctx) -> failed = true)
-            .setSnapshotThreadPoolSize(snpThreadPoolSz);
+        return super.getConfiguration(igniteInstanceName).setFailureHandler((ignite, ctx) -> failed = true);
     }
 
     /** @throws Exception If fails. */
