@@ -103,8 +103,10 @@ import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
@@ -136,10 +138,38 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** Optional cache name to be created on demand. */
     private static final String OPTIONAL_CACHE_NAME = "CacheName";
 
+    /** */
+    @Parameterized.Parameter(2)
+    public int snpThrdPoolSz;
+
+    /** Parameters. */
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}, snpThrdPoolSz={2}")
+    public static Collection<Object[]> params() {
+        Collection<Object[]> res = new ArrayList<>();
+
+        for (int pullSz : F.asList(DFLT_SNAPSHOT_THREAD_POOL_SIZE, 1)) {
+            for (Object[] superParSet : AbstractSnapshotSelfTest.params()) {
+                Object[] pars = new Object[superParSet.length + 1];
+
+                System.arraycopy(superParSet, 0, pars, 0, superParSet.length);
+                pars[pars.length - 1] = pullSz;
+
+                res.add(pars);
+            }
+        }
+
+        return res;
+    }
+
     /** Cleanup data of task execution results if need. */
     @Before
     public void beforeCheck() {
         jobResults.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setSnapshotThreadPoolSize(snpThrdPoolSz);
     }
 
     /** {@inheritDoc} */
