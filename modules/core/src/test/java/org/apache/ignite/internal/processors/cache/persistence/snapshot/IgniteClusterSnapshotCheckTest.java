@@ -571,18 +571,41 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testSnapshotMetricsEntireTopology() throws Exception {
-        doTestSnapshotMetricsAllRuns(true);
+        doTestSnapshotMetricsAllRuns(true, false);
     }
 
     /** */
     @Test
     public void testSnapshotMetricsLesserTopology() throws Exception {
-        doTestSnapshotMetricsAllRuns(false);
+        doTestSnapshotMetricsAllRuns(false, false);
     }
 
     /** */
-    private void doTestSnapshotMetricsAllRuns(boolean entireTop) throws Exception {
-        prepareGridsAndSnapshot(3, 2, 1, true);
+    @Test
+    public void testIncrementalSnapshotMetrics() throws Exception {
+        assumeFalse(encryption);
+
+        doTestSnapshotMetricsAllRuns(true, true);
+    }
+
+    /** */
+    private void doTestSnapshotMetricsAllRuns(boolean entireTop, boolean incremental) throws Exception {
+        assert entireTop || !incremental : "Incremental snapshot supports only entire topology";
+
+        prepareGridsAndSnapshot(3, 2, 1, false);
+
+        if (incremental) {
+            try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+                for (int i = 0; i < 100; ++i)
+                    ds.addData(i, i);
+            }
+
+            grid(1).snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get();
+        }
+
+        grid(1).destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
 
         if (!entireTop)
             stopGrid(0);
@@ -597,20 +620,21 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                         // Also, snapshot restoration isn't allowed from clients.
                         if (initiator > 2 && (allHandlers || restore))
                             continue;
-
                         // On the restoration, all the snapshot checking handlers are always invoked for a non-incremental snapshot.
-                        if (restore && !allHandlers)
+                        // Incremental snapsot doesn't support snapshot handlers.
+                        if (restore && !allHandlers || incremental && allHandlers)
                             continue;
 
                         if (log.isInfoEnabled()) {
-                            log.info("Testing snapshot metrics with the parameters: entireTop=" + entireTop + "initiator=" + initiator
-                                + ", fullCheck=" + fullCheck + ", allHandlers=" + allHandlers + ", restore=" + restore);
+                            log.info("Testing snapshot metrics with the parameters: entireTop=" + entireTop
+                                + "initiator=" + initiator + ", fullCheck=" + fullCheck + ", allHandlers=" + allHandlers
+                                + ", restore=" + restore + ", incremental=" + incremental);
                         }
 
                         if (entireTop)
-                            doTestSnapshotMetricsCertainRun(initiator, fullCheck, allHandlers, restore);
+                            doTestSnapshotMetricsCertainRun(initiator, incremental, fullCheck, allHandlers, restore);
                         else
-                            doTestSnapshotMetricsCertainRun(initiator, fullCheck, allHandlers, restore, 0);
+                            doTestSnapshotMetricsCertainRun(initiator, incremental, fullCheck, allHandlers, restore, 0);
 
                         if (restore) {
                             grid(1).destroyCache(DEFAULT_CACHE_NAME);
@@ -626,12 +650,14 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** */
     private void doTestSnapshotMetricsCertainRun(
         int initiator,
+        boolean incremental,
         boolean fullCheck,
         boolean allHandlers,
         boolean restore,
         int... stoppedNodes
     ) throws Exception {
         assert !restore || allHandlers;
+        assert !incremental || (!allHandlers && stoppedNodes.length == 0);
 
         Set<Integer> stoppedNodes0 = Collections.emptySet();
         int coordId = 0;
@@ -664,9 +690,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             long mills = System.currentTimeMillis();
 
             if (restore)
-                fut2 = snp(grid(initiator)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, fullCheck);
+                fut2 = snp(grid(initiator)).restoreSnapshot(SNAPSHOT_NAME, null, null, incremental ? 1 : 0, fullCheck);
             else
-                fut1 = snp(grid(initiator)).checkSnapshot(SNAPSHOT_NAME, null, null, allHandlers, 0, fullCheck);
+                fut1 = snp(grid(initiator)).checkSnapshot(SNAPSHOT_NAME, null, null, allHandlers, incremental ? 1 : 0, fullCheck);
 
             assertTrue(fut1 == null || !fut1.isDone());
             assertTrue(fut2 == null || !fut2.isDone());
@@ -688,19 +714,34 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
                 assertTrue(mreg.iterator().hasNext());
 
-                assertTrue(mreg.<IntMetric>findMetric("incrementIndex").value() < 1);
-                assertEquals(fullCheck, mreg.<BooleanMetric>findMetric("checkPartitions").value());
                 assertTrue(mreg.<LongMetric>findMetric("startTime").value() > mills);
 
-                // Initial metrics, aren't set yet.
-                assertEquals(0, mreg.<IntMetric>findMetric("processedPartitions").value());
-                assertEquals(-1, mreg.<IntMetric>findMetric("snapshotPartsToProcess").value());
-                assertEquals(0, mreg.<IntMetric>findMetric("processedSnapshotParts").value());
-                assertEquals(-1, mreg.<IntMetric>findMetric("totalPartitions").value());
+                if (incremental) {
+                    assertEquals(1, mreg.<IntMetric>findMetric("incrementIndex").value());
 
-                // Incremental snapshot metrics aren't expected.
-                assertNull(mreg.<IntMetric>findMetric("totalWalSegments"));
-                assertNull(mreg.<IntMetric>findMetric("processedWalSegments"));
+                    assertNull(mreg.<BooleanMetric>findMetric("checkPartitions"));
+                    assertNull(mreg.<BooleanMetric>findMetric("processedPartitions"));
+                    assertNull(mreg.<BooleanMetric>findMetric("snapshotPartsToProcess"));
+                    assertNull(mreg.<BooleanMetric>findMetric("processedSnapshotParts"));
+                    assertNull(mreg.<BooleanMetric>findMetric("totalPartitions"));
+
+                    // Initial metrics, aren't set yet.
+                    assertEquals(-1, mreg.<IntMetric>findMetric("totalWalSegments").value());
+                    assertEquals(0, mreg.<IntMetric>findMetric("processedWalSegments").value());
+                }
+                else {
+                    assertTrue(mreg.<IntMetric>findMetric("incrementIndex").value() < 1);
+                    assertEquals(fullCheck, mreg.<BooleanMetric>findMetric("checkPartitions").value());
+
+                    assertNull(mreg.<IntMetric>findMetric("totalWalSegments"));
+                    assertNull(mreg.<IntMetric>findMetric("processedWalSegments"));
+
+                    // Initial metrics, aren't set yet.
+                    assertEquals(0, mreg.<IntMetric>findMetric("processedPartitions").value());
+                    assertEquals(-1, mreg.<IntMetric>findMetric("snapshotPartsToProcess").value());
+                    assertEquals(0, mreg.<IntMetric>findMetric("processedSnapshotParts").value());
+                    assertEquals(-1, mreg.<IntMetric>findMetric("totalPartitions").value());
+                }
             }
 
             discoSpi(grid(coordId)).blockNextAndRelease(msg -> msg instanceof FullMessage
@@ -726,24 +767,35 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
                 assertTrue(mreg.iterator().hasNext());
 
-                int snpPartsDetected = mreg.<IntMetric>findMetric("processedSnapshotParts").value();
+                if (incremental) {
+                    int walSegmentsDetected = mreg.<IntMetric>findMetric("totalWalSegments").value();
 
-                assertTrue(snpPartsDetected > 0);
+                    assertTrue(walSegmentsDetected > 0);
 
-                totalSnpPartsDetected += snpPartsDetected;
+                    assertEquals(walSegmentsDetected, mreg.<IntMetric>findMetric("processedWalSegments").value());
+                }
+                else {
+                    int snpPartsDetected = mreg.<IntMetric>findMetric("processedSnapshotParts").value();
 
-                assertEquals(snpPartsDetected, mreg.<IntMetric>findMetric("snapshotPartsToProcess").value());
+                    assertTrue(snpPartsDetected > 0);
 
-                if (snpPartsDetected > 1)
-                    moreThatOneSnpPartProcessed = true;
+                    totalSnpPartsDetected += snpPartsDetected;
 
-                // Parts + metastorage.
-                assertEquals(snpPartsDetected * (CACHE_PARTS_CNT + 1), mreg.<IntMetric>findMetric("processedPartitions").value());
-                assertEquals(snpPartsDetected * (CACHE_PARTS_CNT + 1), mreg.<IntMetric>findMetric("totalPartitions").value());
+                    assertEquals(snpPartsDetected, mreg.<IntMetric>findMetric("snapshotPartsToProcess").value());
+
+                    if (snpPartsDetected > 1)
+                        moreThatOneSnpPartProcessed = true;
+
+                    // Partitions + metastorage.
+                    assertEquals(snpPartsDetected * (CACHE_PARTS_CNT + 1), mreg.<IntMetric>findMetric("processedPartitions").value());
+                    assertEquals(snpPartsDetected * (CACHE_PARTS_CNT + 1), mreg.<IntMetric>findMetric("totalPartitions").value());
+                }
             }
 
-            assertEquals(baseline.size(), totalSnpPartsDetected);
-            assertTrue(stoppedNodes0.isEmpty() || moreThatOneSnpPartProcessed);
+            if (!incremental) {
+                assertEquals(baseline.size(), totalSnpPartsDetected);
+                assertTrue(stoppedNodes0.isEmpty() || moreThatOneSnpPartProcessed);
+            }
         }
         finally {
             discoSpi(grid(coordId)).unblock();
