@@ -149,6 +149,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     continue;
 
                 partFiles.add(part);
+
+                if (opCtx.totalConsumer() != null)
+                    opCtx.totalConsumer().accept(getClass(), 1);
+
+                if (!opCtx.check() && opCtx.progressConsumer() != null)
+                    opCtx.progressConsumer().accept(getClass(), partId);
             }
 
             if (parts.isEmpty())
@@ -171,9 +177,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
             return Collections.emptyMap();
         }
-
-        if (opCtx.totalConsumer() != null)
-            opCtx.totalConsumer().accept(getClass(), partFiles.size());
 
         return meta.dump()
             ? checkDumpFiles(opCtx, partFiles)

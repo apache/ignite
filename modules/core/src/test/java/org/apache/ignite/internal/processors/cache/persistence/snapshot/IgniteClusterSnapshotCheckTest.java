@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
@@ -47,6 +48,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -94,6 +96,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.BooleanMetric;
+import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
@@ -102,7 +108,9 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckProcess.SNAPSHOT_CHECK_METRIC;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
@@ -116,6 +124,9 @@ import static org.junit.Assume.assumeFalse;
  * Cluster-wide snapshot check procedure tests.
  */
 public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
+    /** Default cache partitions number. */
+    protected static final int CACHE_PARTS_CNT = 16;
+
     /** Map of intermediate compute task results collected prior performing reduce operation on them. */
     private final Map<Class<?>, Map<PartitionKey, List<PartitionHashRecord>>> jobResults = new ConcurrentHashMap<>();
 
@@ -129,6 +140,11 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     @Before
     public void beforeCheck() {
         jobResults.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
+        return super.txCacheConfig(ccfg).setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTS_CNT));
     }
 
     /** @throws Exception If fails. */
@@ -550,6 +566,206 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         assertNotNull(res.metas());
         assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found");
         assertNotContains(log, b.toString(), "Failed to read page (CRC validation failed)");
+    }
+
+    /** */
+    @Test
+    public void testSnapshotMetricsEntireTopology() throws Exception {
+        doTestSnapshotMetricsAllRuns(true);
+    }
+
+    /** */
+    @Test
+    public void testSnapshotMetricsLesserTopology() throws Exception {
+        doTestSnapshotMetricsAllRuns(false);
+    }
+
+    /** */
+    private void doTestSnapshotMetricsAllRuns(boolean entireTop) throws Exception {
+        prepareGridsAndSnapshot(3, 2, 1, true);
+
+        if (!entireTop)
+            stopGrid(0);
+
+        // From a baseline, non-baseline and client (0,1 - servers, 2 - baseline, 3 - client).
+        for (int initiator : F.asList(1, 2, 3)) {
+            for (boolean fullCheck : F.asList(true, false)) {
+                for (boolean allHandlers : F.asList(false, true)) {
+                    for (boolean restore : F.asList(false, true)) {
+                        // The all-handlers-task currently fails on client because it has no snapshot handlers. Thus,
+                        // a 'handlers mismatch configuration' error occures.
+                        // Also, snapshot restoration isn't allowed from clients.
+                        if (initiator > 2 && (allHandlers || restore))
+                            continue;
+
+                        // On the restoration, all the snapshot checking handlers are always invoked for a non-incremental snapshot.
+                        if (restore && !allHandlers)
+                            continue;
+
+                        if (log.isInfoEnabled()) {
+                            log.info("Testing snapshot metrics with the parameters: entireTop=" + entireTop + "initiator=" + initiator
+                                + ", fullCheck=" + fullCheck + ", allHandlers=" + allHandlers + ", restore=" + restore);
+                        }
+
+                        if (entireTop)
+                            doTestSnapshotMetricsCertainRun(initiator, fullCheck, allHandlers, restore);
+                        else
+                            doTestSnapshotMetricsCertainRun(initiator, fullCheck, allHandlers, restore, 0);
+
+                        if (restore) {
+                            grid(1).destroyCache(DEFAULT_CACHE_NAME);
+
+                            awaitPartitionMapExchange();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** */
+    private void doTestSnapshotMetricsCertainRun(
+        int initiator,
+        boolean fullCheck,
+        boolean allHandlers,
+        boolean restore,
+        int... stoppedNodes
+    ) throws Exception {
+        assert !restore || allHandlers;
+
+        Set<Integer> stoppedNodes0 = Collections.emptySet();
+        int coordId = 0;
+
+        if (stoppedNodes.length > 0) {
+            stoppedNodes0 = IntStream.of(stoppedNodes).boxed().collect(Collectors.toSet());
+
+            for (int i = 0; i < G.allGrids().size(); ++i) {
+                if (stoppedNodes0.contains(i))
+                    continue;
+
+                coordId = i;
+
+                break;
+            }
+        }
+
+        assert U.isLocalNodeCoordinator(grid(coordId).context().discovery());
+
+        Set<Object> baseline = grid(coordId).cluster().currentBaselineTopology().stream().map(BaselineNode::consistentId)
+            .collect(Collectors.toSet());
+
+        IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> fut1 = null;
+        IgniteFuture<?> fut2 = null;
+
+        try {
+            discoSpi(grid(coordId)).block(msg -> msg instanceof FullMessage
+                && ((FullMessage<?>)msg).type() == CHECK_SNAPSHOT_METAS.ordinal());
+
+            long mills = System.currentTimeMillis();
+
+            if (restore)
+                fut2 = snp(grid(initiator)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, fullCheck);
+            else
+                fut1 = snp(grid(initiator)).checkSnapshot(SNAPSHOT_NAME, null, null, allHandlers, 0, fullCheck);
+
+            assertTrue(fut1 == null || !fut1.isDone());
+            assertTrue(fut2 == null || !fut2.isDone());
+
+            discoSpi(grid(coordId)).waitBlocked(getTestTimeout());
+
+            for (int i = 0; i < G.allGrids().size(); ++i) {
+                if (stoppedNodes0.contains(i))
+                    continue;
+
+                MetricRegistry mreg = grid(i).context().metric().registry(metricName(SNAPSHOT_CHECK_METRIC, SNAPSHOT_NAME));
+
+                // Clients and non-baseline nodes doesn't have data and doesn't run snapshots.
+                if (grid(i).localNode().isClient() || !baseline.contains(grid(i).localNode().consistentId())) {
+                    assertFalse(mreg.iterator().hasNext());
+
+                    continue;
+                }
+
+                assertTrue(mreg.iterator().hasNext());
+
+                assertTrue(mreg.<IntMetric>findMetric("incrementIndex").value() < 1);
+                assertEquals(fullCheck, mreg.<BooleanMetric>findMetric("checkPartitions").value());
+                assertTrue(mreg.<LongMetric>findMetric("startTime").value() > mills);
+
+                // Initial metrics, aren't set yet.
+                assertEquals(0, mreg.<IntMetric>findMetric("processedPartitions").value());
+                assertEquals(-1, mreg.<IntMetric>findMetric("snapshotPartsToProcess").value());
+                assertEquals(0, mreg.<IntMetric>findMetric("processedSnapshotParts").value());
+                assertEquals(-1, mreg.<IntMetric>findMetric("totalPartitions").value());
+
+                // Incremental snapshot metrics aren't expected.
+                assertNull(mreg.<IntMetric>findMetric("totalWalSegments"));
+                assertNull(mreg.<IntMetric>findMetric("processedWalSegments"));
+            }
+
+            discoSpi(grid(coordId)).blockNextAndRelease(msg -> msg instanceof FullMessage
+                && ((FullMessage<?>)msg).type() == CHECK_SNAPSHOT_PARTS.ordinal());
+
+            discoSpi(grid(coordId)).waitBlocked(getTestTimeout());
+
+            int totalSnpPartsDetected = 0;
+            boolean moreThatOneSnpPartProcessed = false;
+
+            for (int i = 0; i < G.allGrids().size(); ++i) {
+                if (stoppedNodes0.contains(i))
+                    continue;
+
+                MetricRegistry mreg = grid(i).context().metric().registry(metricName(SNAPSHOT_CHECK_METRIC, SNAPSHOT_NAME));
+
+                // Clients and non-baseline nodes doesn't have data and doesn't run snapshots.
+                if (grid(i).localNode().isClient() || !baseline.contains(grid(i).localNode().consistentId())) {
+                    assertFalse(mreg.iterator().hasNext());
+
+                    continue;
+                }
+
+                assertTrue(mreg.iterator().hasNext());
+
+                int snpPartsDetected = mreg.<IntMetric>findMetric("processedSnapshotParts").value();
+
+                assertTrue(snpPartsDetected > 0);
+
+                totalSnpPartsDetected += snpPartsDetected;
+
+                assertEquals(snpPartsDetected, mreg.<IntMetric>findMetric("snapshotPartsToProcess").value());
+
+                if (snpPartsDetected > 1)
+                    moreThatOneSnpPartProcessed = true;
+
+                // Parts + metastorage.
+                assertEquals(snpPartsDetected * (CACHE_PARTS_CNT + 1), mreg.<IntMetric>findMetric("processedPartitions").value());
+                assertEquals(snpPartsDetected * (CACHE_PARTS_CNT + 1), mreg.<IntMetric>findMetric("totalPartitions").value());
+            }
+
+            assertEquals(baseline.size(), totalSnpPartsDetected);
+            assertTrue(stoppedNodes0.isEmpty() || moreThatOneSnpPartProcessed);
+        }
+        finally {
+            discoSpi(grid(coordId)).unblock();
+
+            if (fut1 != null)
+                fut1.get(getTestTimeout());
+            if (fut2 != null)
+                fut2.get(getTestTimeout());
+        }
+
+        for (int i = 0; i < G.allGrids().size(); ++i) {
+            if (stoppedNodes0.contains(i))
+                continue;
+
+            int i0 = i;
+
+            waitForCondition(() -> {
+                MetricRegistry mreg = grid(i0).context().metric().registry(metricName(SNAPSHOT_CHECK_METRIC, SNAPSHOT_NAME));
+
+                return !mreg.iterator().hasNext();
+            }, getTestTimeout());
+        }
     }
 
     /** */

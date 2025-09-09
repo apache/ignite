@@ -105,13 +105,22 @@ public class SnapshotChecker {
         SnapshotMetadata meta,
         SnapshotFileTree sft,
         @Nullable Collection<String> grps,
-        boolean check
+        boolean check,
+        @Nullable Consumer<Integer> totalCnsmr,
+        @Nullable Consumer<Integer> processedPartCnsmr
     ) {
         // The handlers use or may use the same snapshot pool. If it is configured with 1 thread, launching waiting task in
         // the same pool might block it.
-        return CompletableFuture.supplyAsync(() ->
-            new SnapshotHandlerRestoreTask(kctx.grid(), log, sft, grps, check).execute()
-        );
+        return CompletableFuture.supplyAsync(() -> new SnapshotHandlerRestoreTask(kctx.grid(), log, sft, grps, check).execute(
+            totalCnsmr == null ? null : (hndCls, totalCnt) -> {
+                if (SnapshotPartitionsVerifyHandler.class == hndCls)
+                    totalCnsmr.accept(totalCnt);
+            },
+            processedPartCnsmr == null ? null : (hndCls, progressCnt) -> {
+                if (SnapshotPartitionsVerifyHandler.class == hndCls)
+                    processedPartCnsmr.accept(progressCnt);
+            }
+        ));
     }
 
     /** Launches local partitions checking. */
@@ -122,7 +131,7 @@ public class SnapshotChecker {
         boolean forCreation,
         boolean checkParts,
         @Nullable Consumer<Integer> totalCnsmr,
-        @Nullable Consumer<Integer> checkedCnsmr
+        @Nullable Consumer<Integer> checkedPartCnsmr
     ) {
         return CompletableFuture.supplyAsync(() -> {
             SnapshotHandlerContext hctx = new SnapshotHandlerContext(
@@ -132,14 +141,8 @@ public class SnapshotChecker {
                 sft,
                 false,
                 checkParts,
-                totalCnsmr == null ? null : (hndCls, totalCnt) -> {
-                    if (hndCls == SnapshotPartitionsVerifyHandler.class)
-                        totalCnsmr.accept(totalCnt);
-                },
-                checkedCnsmr == null ? null : (hndCls, processedCnt) -> {
-                    if (hndCls == SnapshotPartitionsVerifyHandler.class)
-                        checkedCnsmr.accept(processedCnt);
-                }
+                totalCnsmr == null ? null : (hndCls, totalCnt) -> totalCnsmr.accept(totalCnt),
+                checkedPartCnsmr == null ? null : (hndCls, partId) -> checkedPartCnsmr.accept(partId)
             );
 
             try {

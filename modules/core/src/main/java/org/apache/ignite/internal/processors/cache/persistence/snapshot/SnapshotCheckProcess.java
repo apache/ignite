@@ -300,6 +300,8 @@ public class SnapshotCheckProcess {
         if (F.isEmpty(ctx.metas))
             return new GridFinishedFuture<>();
 
+        ctx.totalCounter.set(0);
+
         GridFutureAdapter<SnapshotCheckResponse> phaseFut = new GridFutureAdapter<>();
 
         CompletableFuture<SnapshotCheckResponse> workingFut;
@@ -329,8 +331,6 @@ public class SnapshotCheckProcess {
 
     /** @return A composed future of increment checks for each consistent id regarding {@link SnapshotCheckContext#metas}. */
     private CompletableFuture<SnapshotCheckResponse> incrementalFuture(SnapshotCheckContext ctx) {
-        ctx.totalCounter.set(0);
-
         // Incremental snapshots do not support working on other topology. Only single meta and snapshot part can be processed.
         SnapshotMetadata meta = ctx.metas.get(0);
 
@@ -362,10 +362,8 @@ public class SnapshotCheckProcess {
         CompletableFuture<SnapshotCheckResponse> composedFut = new CompletableFuture<>();
         AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
 
-        ctx.totalCounter.set(0);
-
         for (SnapshotMetadata meta : ctx.metas) {
-            // Run asynchronously to calculate metric 'total partitions' faster.
+            // Run asynchronously to calculate the metric 'total partitions' faster.
             kctx.pools().getSnapshotExecutorService().submit(() -> {
                 CompletableFuture<Map<PartitionKey, PartitionHashRecord>> metaFut = snpChecker.checkPartitions(
                     meta,
@@ -407,17 +405,28 @@ public class SnapshotCheckProcess {
         AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
 
         for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> metaFut = snpChecker.invokeCustomHandlers(meta,
-                ctx.locFileTree.get(meta.consistentId()), ctx.req.groups(), ctx.req.fullCheck());
+            // Run asynchronously to calculate the metric 'total partitions' faster.
+            kctx.pools().getSnapshotExecutorService().submit(() -> {
+                CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> metaFut = snpChecker.invokeCustomHandlers(
+                    meta,
+                    ctx.locFileTree.get(meta.consistentId()),
+                    ctx.req.groups(),
+                    ctx.req.fullCheck(),
+                    ctx.totalCounter::addAndGet,
+                    processedPart -> ctx.checkedCounter.incrementAndGet()
+                );
 
-            metaFut.whenComplete((res, err) -> {
-                if (err != null)
-                    exceptions.put(meta.consistentId(), err);
-                else if (!F.isEmpty(res))
-                    perMetaResults.put(meta.consistentId(), res);
+                metaFut.whenComplete((res, err) -> {
+                    ctx.checkedSnapshotParts.incrementAndGet();
 
-                if (metasProcessed.decrementAndGet() == 0)
-                    composedFut.complete(new SnapshotCheckResponse(perMetaResults, exceptions));
+                    if (err != null)
+                        exceptions.put(meta.consistentId(), err);
+                    else if (!F.isEmpty(res))
+                        perMetaResults.put(meta.consistentId(), res);
+
+                    if (metasProcessed.decrementAndGet() == 0)
+                        composedFut.complete(new SnapshotCheckResponse(perMetaResults, exceptions));
+                });
             });
         }
 
@@ -465,11 +474,11 @@ public class SnapshotCheckProcess {
                 + "' has already started [ctx=" + ctx + ']'));
         }
 
-        registerMetrics(ctx);
-
         // Excludes non-baseline initiator.
         if (!baseline(kctx.localNodeId()))
             return new GridFinishedFuture<>();
+
+        registerMetrics(ctx);
 
         Collection<Integer> grpIds = F.isEmpty(req.groups()) ? null : F.viewReadOnly(req.groups(), CU::cacheId);
 

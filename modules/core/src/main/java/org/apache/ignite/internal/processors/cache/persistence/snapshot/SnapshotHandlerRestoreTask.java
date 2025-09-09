@@ -24,12 +24,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot restore operation handling task.
@@ -58,8 +60,11 @@ public class SnapshotHandlerRestoreTask {
     }
 
     /** */
-    public Map<String, SnapshotHandlerResult<Object>> execute() {
-        return job.execute0();
+    public Map<String, SnapshotHandlerResult<Object>> execute(
+        @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> totalCnsmr,
+        @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> processedPartCnsmr
+    ) {
+        return job.execute0(totalCnsmr, processedPartCnsmr);
     }
 
     /** */
@@ -131,13 +136,17 @@ public class SnapshotHandlerRestoreTask {
         }
 
         /** */
-        public Map<String, SnapshotHandlerResult<Object>> execute0() {
+        public Map<String, SnapshotHandlerResult<Object>> execute0(
+            @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> totalCnsmr,
+            @Nullable BiConsumer<Class<? extends SnapshotHandler<?>>, Integer> processedPartCnsmr
+        ) {
             try {
                 IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
                 SnapshotMetadata meta = snpMgr.readSnapshotMetadata(sft.meta());
+                SnapshotHandlerContext hndCnt = new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false, check,
+                    totalCnsmr, processedPartCnsmr);
 
-                return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
-                    new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), sft, false, check, null, null));
+                return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE, hndCnt);
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);
