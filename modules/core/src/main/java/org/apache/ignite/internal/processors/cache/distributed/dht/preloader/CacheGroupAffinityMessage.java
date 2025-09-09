@@ -40,11 +40,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheGroupAffinityMessage implements Message {
     /** */
-    @Order(0)
+    @Order(value = 0, method = "assignments")
     private List<GridLongList> assigns;
 
     /** */
-    @Order(1)
+    @Order(value = 1, method = "idealAssignments")
     private List<GridLongList> idealAssigns;
 
     /** */
@@ -237,28 +237,28 @@ public class CacheGroupAffinityMessage implements Message {
     /**
      * @return Assignment.
      */
-    public List<GridLongList> assigns() {
+    public List<GridLongList> assignments() {
         return assigns;
     }
 
     /**
      * @param assigns Assignment.
      */
-    public void assigns(List<GridLongList> assigns) {
+    public void assignments(List<GridLongList> assigns) {
         this.assigns = assigns;
     }
 
     /**
      * @return Ideal assignment.
      */
-    public List<GridLongList> idealAssigns() {
+    public List<GridLongList> idealAssignments() {
         return idealAssigns;
     }
 
     /**
      * @param idealAssigns Ideal assignment.
      */
-    public void idealAssigns(List<GridLongList> idealAssigns) {
+    public void idealAssignments(List<GridLongList> idealAssigns) {
         this.idealAssigns = idealAssigns;
     }
 
