@@ -30,7 +30,6 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -197,8 +196,6 @@ import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.LOOPBACK_PROBLEM;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.RING_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.STOPPING;
-import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage.STATUS_OK;
-import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage.STATUS_RECON;
 
 /**
  *
@@ -682,34 +679,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             log.info("Finished node ping [nodeId=" + nodeId + ", res=" + res + ", time=" + (end - start) + "ms]");
 
         return res;
-    }
-
-    /**
-     * Creates new instance of {@link TcpDiscoveryStatusCheckMessage} trying to choose most optimal constructor.
-     *
-     * @param creatorNode Creator node. It can be null when message will be sent from coordinator to creator node,
-     * in this case it will not contain creator node addresses as it will be discarded by creator; otherwise,
-     * this parameter must not be null.
-     * @param creatorNodeId Creator node id.
-     * @param failedNodeId Failed node id.
-     * @return <code>null</code> if <code>creatorNode</code> is null and we cannot retrieve creator node from ring
-     * by <code>creatorNodeId</code>, and new instance of {@link TcpDiscoveryStatusCheckMessage} in other cases.
-     */
-    private @Nullable TcpDiscoveryStatusCheckMessage createTcpDiscoveryStatusCheckMessage(
-        @Nullable TcpDiscoveryNode creatorNode,
-        UUID creatorNodeId,
-        UUID failedNodeId
-    ) {
-        TcpDiscoveryNode crd = resolveCoordinator();
-
-        if (creatorNode == null)
-            return new TcpDiscoveryStatusCheckMessage(creatorNodeId, null, failedNodeId);
-
-        return new TcpDiscoveryStatusCheckMessage(
-            creatorNode.id(),
-            spi.getEffectiveNodeAddresses(creatorNode, crd != null && U.sameMacs(creatorNode, crd)),
-            failedNodeId
-        );
     }
 
     /**
@@ -2952,17 +2921,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Output stream. */
         private OutputStream out;
 
-        /** Last time status message has been sent. */
-        private long lastTimeStatusMsgSentNanos;
-
-        /** Incoming metrics check frequency. */
-        private long metricsCheckFreq = 3 * spi.metricsUpdateFreq + 50;
-
         /** Last time metrics update message has been sent. */
         private long lastTimeMetricsUpdateMsgSentNanos = System.nanoTime() - U.millisToNanos(spi.metricsUpdateFreq);
-
-        /** */
-        private long lastRingMsgTimeNanos;
 
         /** */
         private List<DiscoveryDataPacket> joiningNodesDiscoDataList;
@@ -3211,11 +3171,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (debugMode)
                 debugLog(msg, "Processing message [cls=" + msg.getClass().getSimpleName() + ", id=" + msg.id() + ']');
 
-            boolean ensured = spi.ensured(msg);
-
-            if (!locNode.id().equals(msg.senderNodeId()) && ensured)
-                lastRingMsgTimeNanos = System.nanoTime();
-
             if (locNode.internalOrder() == 0) {
                 boolean proc = false;
 
@@ -3333,8 +3288,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             checkConnection();
 
             sendMetricsUpdateMessage();
-
-            checkMetricsReceiving();
 
             checkPendingCustomMessages();
 
@@ -6234,24 +6187,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             msgWorker.addMessage(msg);
 
             lastTimeMetricsUpdateMsgSentNanos = System.nanoTime();
-        }
-
-        /**
-         * Checks the last time a metrics update message received. If the time is bigger than {@code metricsCheckFreq}
-         * than {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
-         */
-        private void checkMetricsReceiving() {
-            if (lastTimeStatusMsgSentNanos < locNode.lastUpdateTimeNanos())
-                lastTimeStatusMsgSentNanos = locNode.lastUpdateTimeNanos();
-
-            long updateTimeNanos = Math.max(lastTimeStatusMsgSentNanos, lastRingMsgTimeNanos);
-
-            if (U.millisSinceNanos(updateTimeNanos) < metricsCheckFreq)
-                return;
-
-            msgWorker.addMessage(createTcpDiscoveryStatusCheckMessage(locNode, locNode.id(), null));
-
-            lastTimeStatusMsgSentNanos = System.nanoTime();
         }
 
         /**

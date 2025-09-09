@@ -26,6 +26,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
 /**
  * Message used to check whether a node is still connected to the topology.
+ * This message is sent to the node which directly replies to the sender without message re-translation to the coordinator.
  */
 public class TcpDiscoveryConnectionCheckMessage extends TcpDiscoveryAbstractMessage implements Externalizable {
     /** */
