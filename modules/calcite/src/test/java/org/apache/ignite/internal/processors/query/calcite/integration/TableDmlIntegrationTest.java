@@ -683,18 +683,18 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
         assertThrows(
             "insert into my_table values (?, null, null)",
             IgniteSQLException.class,
-            "Expected collection type List, component types: Integer",
+            "Expected collection type: List, expected component types: Integer",
             F.asList(1, "str", 3)
         );
         assertThrows(
             "insert into my_table values (ARRAY['wrongValType'], null, null)",
             IgniteSQLException.class,
-            "Expected collection type List, component types: Integer"
+            "Expected collection type: List, expected component types: Integer"
         );
         assertThrows(
             "insert into my_table values (ARRAY[1,2], ARRAY[1,2], null)",
             IgniteSQLException.class,
-            "Expected collection type List, component types: String"
+            "Expected collection type: List, expected component types: String"
         );
         assertThrows(
             "insert into my_table values (ARRAY[1,2], null, ARRAY[1,2])",
