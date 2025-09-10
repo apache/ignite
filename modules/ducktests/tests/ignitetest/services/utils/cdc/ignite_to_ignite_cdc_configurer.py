@@ -32,7 +32,6 @@ class IgniteToIgniteCdcConfigurer(CdcConfigurer):
         target_cluster_client_config = dst_cluster.config._replace(
             client_mode=True,
             ssl_params=None,
-            plugins=[],
             ext_beans=[],
             data_storage=None,
         )
