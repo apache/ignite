@@ -116,7 +116,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeMessage(futIds))
+                if (!writer.writeGridLongList(futIds))
                     return false;
 
                 writer.incrementState();
@@ -135,7 +135,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
 
         switch (reader.state()) {
             case 4:
-                futIds = reader.readMessage();
+                futIds = reader.readGridLongList();
 
                 if (!reader.isLastRead())
                     return false;

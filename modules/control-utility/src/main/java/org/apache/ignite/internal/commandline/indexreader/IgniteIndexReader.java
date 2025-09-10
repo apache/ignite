@@ -492,7 +492,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     io.getBucketsData(addr, data);
 
                     for (Map.Entry<Integer, GridLongList> e : data.entrySet()) {
-                        List<Long> listIds = LongStream.of(e.getValue().array())
+                        List<Long> listIds = LongStream.of(e.getValue().arrayCopy())
                             .map(IgniteIndexReader::normalizePageId)
                             .boxed()
                             .collect(toList());
