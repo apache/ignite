@@ -72,7 +72,10 @@ class CdcConfigurer:
         beans = self.get_cdc_beans(src_cluster, dst_cluster, cdc_params, ctx)
 
         src_cluster.config = src_cluster.config._replace(
-            ext_beans=beans
+            ext_beans=[
+                *src_cluster.config.ext_beans,
+                *beans
+            ]
         )
 
         return ctx
@@ -88,24 +91,19 @@ class CdcConfigurer:
         :param ctx CDC context.
         :return: list of beans
         """
-        cdc_configuration = cdc_params.cdc_configuration
+        if cdc_params.cdc_configuration.metric_exporter_spi is None:
+            if src_cluster.config.metric_exporters is None:
+                src_cluster.config.metric_exporters = set()
 
-        if cdc_configuration.metric_exporter_spi is not None:
-            metric_exporter_spi = cdc_configuration.metric_exporter_spi
-        else:
-            metric_exporter_spi = {}
+        src_cluster.config.metric_exporters.add("org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi")
 
-        if "org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi" not in metric_exporter_spi:
-            cdc_configuration = cdc_configuration._replace(
-                metric_exporter_spi={
-                    *metric_exporter_spi,
-                    "org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"
-                }
-            )
+        cdc_params.cdc_configuration = cdc_params.cdc_configuration._replace(
+            metric_exporter_spi = src_cluster.config.metric_exporters
+        )
 
         ctx.ignite_cdc = IgniteCdcUtility(src_cluster)
 
-        return [("ignite_cdc.j2", cdc_configuration)]
+        return [("ignite_cdc.j2", cdc_params.cdc_configuration)]
 
     def start_ignite_cdc(self, ctx):
         """
