@@ -813,7 +813,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         pageIds.add(pageId);
 
-        return pageIds.array();
+        return pageIds.arrayCopy();
     }
 
     /**

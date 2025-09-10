@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -34,6 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.lang.Integer.MAX_VALUE;
@@ -285,6 +287,11 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean writeGridLongList(@Nullable GridLongList ll) {
+            return writeField(GridLongList.class);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean writeMessage(Message val) {
             return writeField(Message.class);
         }
@@ -533,6 +540,13 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public KeyCacheObject readKeyCacheObject() {
             readField(KeyCacheObject.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridLongList readGridLongList() {
+            readField(GridLongList.class);
 
             return null;
         }

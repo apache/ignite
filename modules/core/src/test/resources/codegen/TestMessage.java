@@ -73,6 +73,9 @@ public class TestMessage implements Message {
     @Order(value = 13)
     private CacheObject cacheObject;
 
+    @Order(value = 14)
+    private long[] longArr;
+
     public int id() {
         return id;
     }
@@ -184,6 +187,15 @@ public class TestMessage implements Message {
     public void cacheObject(CacheObject cacheObject) {
         this.cacheObject = cacheObject;
     }
+
+    public long[] longArr() {
+        return longArr;
+    }
+
+    public void longArr(long[] longArr) {
+        this.longArr = longArr;
+    }
+
 
     public short directType() {
         return 0;

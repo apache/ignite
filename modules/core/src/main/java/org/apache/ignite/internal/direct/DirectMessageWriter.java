@@ -28,6 +28,7 @@ import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -299,6 +300,15 @@ public class DirectMessageWriter implements MessageWriter {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeKeyCacheObject(obj);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeGridLongList(@Nullable GridLongList ll) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        stream.writeGridLongList(ll);
 
         return stream.lastFinished();
     }
