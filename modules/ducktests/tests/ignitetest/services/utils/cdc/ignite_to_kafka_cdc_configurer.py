@@ -24,33 +24,32 @@ from ignitetest.utils.bean import BeanRef, Bean
 
 class KafkaCdcParams(CdcParams):
     def __init__(self,
-                 caches,
-                 kafka,
-                 kafka_partitions=16,
+                 kafka = None,
+                 kafka_partitions=None,
                  kafka_request_timeout=None,
-                 topic="ignite",
-                 metadata_topic="ignite-metadata",
-                 kafka_to_ignite_client_type=IgniteServiceType.NODE,
-                 kafka_to_ignite_nodes=2,
-                 kafka_to_ignite_thread_count=8,
+                 topic=None,
+                 metadata_topic=None,
+                 kafka_to_ignite_client_type=None,
+                 kafka_to_ignite_nodes=None,
+                 kafka_to_ignite_thread_count=None,
                  kafka_to_ignite_max_batch_size=None,
                  kafka_to_ignite_metadata_consumer_group=None,
                  kafka_to_ignite_kafka_consumer_poll_timeout=None,
                  kafka_to_ignite_kafka_request_timeout=None,
                  kafka_retention_ms=None,
                  **kwargs):
-        super().__init__(caches, **kwargs)
+        super().__init__(**kwargs)
 
         self.kafka = kafka
-        self.kafka_partitions = kafka_partitions
+        self.kafka_partitions = kafka_partitions if kafka_partitions is not None else 16
         self.kafka_request_timeout = kafka_request_timeout
-        self.topic = topic
-        self.metadata_topic = metadata_topic
+        self.topic = topic if topic is not None else "ignite"
+        self.metadata_topic = metadata_topic if metadata_topic is not None else "ignite-metadata"
         self.kafka_retention_ms = kafka_retention_ms
 
-        self.kafka_to_ignite_client_type = kafka_to_ignite_client_type
-        self.kafka_to_ignite_nodes = kafka_to_ignite_nodes
-        self.kafka_to_ignite_thread_count = kafka_to_ignite_thread_count
+        self.kafka_to_ignite_client_type = kafka_to_ignite_client_type if kafka_to_ignite_client_type is not None else IgniteServiceType.NODE
+        self.kafka_to_ignite_nodes = kafka_to_ignite_nodes if kafka_to_ignite_nodes is not None else 2
+        self.kafka_to_ignite_thread_count = kafka_to_ignite_thread_count if kafka_to_ignite_thread_count is not None else 8
         self.kafka_to_ignite_max_batch_size = kafka_to_ignite_max_batch_size
         self.kafka_to_ignite_metadata_consumer_group = kafka_to_ignite_metadata_consumer_group
         self.kafka_to_ignite_kafka_consumer_poll_timeout = kafka_to_ignite_kafka_consumer_poll_timeout
