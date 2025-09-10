@@ -17,42 +17,42 @@
 
 package org.apache.ignite.internal.direct.stream;
 
- import java.lang.reflect.Array;
- import java.nio.ByteBuffer;
- import java.util.ArrayList;
- import java.util.BitSet;
- import java.util.Collection;
- import java.util.Iterator;
- import java.util.List;
- import java.util.Map;
- import java.util.RandomAccess;
- import java.util.UUID;
- import org.apache.ignite.IgniteCheckedException;
- import org.apache.ignite.IgniteException;
- import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
- import org.apache.ignite.internal.processors.cache.CacheObject;
- import org.apache.ignite.internal.processors.cache.KeyCacheObject;
- import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
- import org.apache.ignite.internal.util.GridLongList;
- import org.apache.ignite.internal.util.GridUnsafe;
- import org.apache.ignite.internal.util.tostring.GridToStringExclude;
- import org.apache.ignite.internal.util.typedef.internal.S;
- import org.apache.ignite.internal.util.typedef.internal.U;
- import org.apache.ignite.lang.IgniteUuid;
- import org.apache.ignite.plugin.extensions.communication.Message;
- import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
- import org.apache.ignite.plugin.extensions.communication.MessageFactory;
- import org.apache.ignite.plugin.extensions.communication.MessageReader;
- import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.RandomAccess;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
- import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
- import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
- import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
- import static org.apache.ignite.internal.util.GridUnsafe.DOUBLE_ARR_OFF;
- import static org.apache.ignite.internal.util.GridUnsafe.FLOAT_ARR_OFF;
- import static org.apache.ignite.internal.util.GridUnsafe.INT_ARR_OFF;
- import static org.apache.ignite.internal.util.GridUnsafe.LONG_ARR_OFF;
- import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
+import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.DOUBLE_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.FLOAT_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.INT_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.LONG_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
 
 /**
  * Direct marshalling I/O stream.
@@ -1509,8 +1509,7 @@ public class DirectByteBufferStream {
     public GridLongList readGridLongList() {
         long[] arr = readLongArray();
 
-
-        return arr != null ? new GridLongList(arr): null;
+        return arr != null ? new GridLongList(arr) : null;
     }
 
     /**
@@ -2073,7 +2072,7 @@ public class DirectByteBufferStream {
 
                 break;
 
-            case LONG_LIST:
+            case GRID_LONG_LIST:
                 writeGridLongList((GridLongList)val);
 
                 break;
@@ -2173,7 +2172,7 @@ public class DirectByteBufferStream {
             case CACHE_OBJECT:
                 return readCacheObject();
 
-            case LONG_LIST:
+            case GRID_LONG_LIST:
                 return readGridLongList();
 
             case MSG:

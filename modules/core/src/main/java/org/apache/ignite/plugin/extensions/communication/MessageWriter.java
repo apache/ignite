@@ -261,7 +261,13 @@ public interface MessageWriter {
      */
     public boolean writeKeyCacheObject(KeyCacheObject obj);
 
-    boolean writeGridLongList(@Nullable GridLongList ll);
+    /**
+     * Writes {@link GridLongList}.
+     *
+     * @param ll Grid long list.
+     * @return Whether value was fully written.
+     */
+    public boolean writeGridLongList(@Nullable GridLongList ll);
 
     /**
      * Writes array of objects.

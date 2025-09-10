@@ -259,19 +259,19 @@ public class CacheGroupAffinityMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection(assigns, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(assigns, MessageCollectionItemType.GRID_LONG_LIST))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMap(assignsDiff, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
+                if (!writer.writeMap(assignsDiff, MessageCollectionItemType.INT, MessageCollectionItemType.GRID_LONG_LIST))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection(idealAssigns, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(idealAssigns, MessageCollectionItemType.GRID_LONG_LIST))
                     return false;
 
                 writer.incrementState();
@@ -287,7 +287,7 @@ public class CacheGroupAffinityMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                assigns = reader.readCollection(MessageCollectionItemType.MSG);
+                assigns = reader.readCollection(MessageCollectionItemType.GRID_LONG_LIST);
 
                 if (!reader.isLastRead())
                     return false;
@@ -295,7 +295,7 @@ public class CacheGroupAffinityMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                assignsDiff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+                assignsDiff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.GRID_LONG_LIST, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -303,7 +303,7 @@ public class CacheGroupAffinityMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                idealAssigns = reader.readCollection(MessageCollectionItemType.MSG);
+                idealAssigns = reader.readCollection(MessageCollectionItemType.GRID_LONG_LIST);
 
                 if (!reader.isLastRead())
                     return false;

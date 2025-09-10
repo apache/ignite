@@ -211,7 +211,12 @@ public interface MessageReader {
      */
     public KeyCacheObject readKeyCacheObject();
 
-    GridLongList readGridLongList();
+    /**
+     * Reads {@link GridLongList}.
+     *
+     * @return Grid long list.
+     */
+    public GridLongList readGridLongList();
 
     /**
      * Reads array of objects.
