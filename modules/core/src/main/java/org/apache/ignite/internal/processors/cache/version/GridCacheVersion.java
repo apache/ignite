@@ -21,11 +21,15 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.codegen.GridCacheVersionSerializer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Grid unique version.
@@ -54,6 +58,8 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     /** Order. */
     @Order(2)
     private long order;
+
+    private static final GridCacheVersionSerializer serializer = new GridCacheVersionSerializer();
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -250,6 +256,16 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
         res = 31 * res + (int)(order ^ (order >>> 32));
 
         return res;
+    }
+
+    /** */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        return serializer.writeTo(this, buf, writer);
+    }
+
+    /** */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        return serializer.readFrom(this, buf, reader);
     }
 
     /** {@inheritDoc} */
