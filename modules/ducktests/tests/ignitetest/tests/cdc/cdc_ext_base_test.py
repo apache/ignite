@@ -30,6 +30,8 @@ class CdcExtBaseTest(IgniteTest):
     def start_active_passive(self, src_cluster, dst_cluster, cdc_configurer, cdc_params):
         enable_cdc(src_cluster)
 
+        setup_conflict_resolver(dst_cluster, "2", cdc_params)
+
         ctx = cdc_configurer.configure_source_cluster(src_cluster, dst_cluster, cdc_params)
 
         dst_cluster.start()
