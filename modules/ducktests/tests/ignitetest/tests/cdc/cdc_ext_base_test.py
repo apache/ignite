@@ -17,9 +17,11 @@ import os
 import difflib
 from copy import copy
 
+from ignitetest.services.kafka.kafka import KafkaSettings, KafkaService
 from ignitetest.services.utils.cdc.cdc_configurer import CdcParams
 from ignitetest.services.utils.cdc.ignite_to_kafka_cdc_configurer import IgniteToKafkaCdcConfigurer
 from ignitetest.services.utils.control_utility import ControlUtility
+from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
 from ignitetest.utils.bean import Bean
 from ignitetest.utils.ignite_test import IgniteTest
 
@@ -100,8 +102,7 @@ class CdcExtBaseTest(IgniteTest):
         else:
             return True
 
-    @staticmethod
-    def dump_partitions(ignite):
+    def dump_partitions(self, ignite):
         """
         Dump partitions info skipping the cluster-specific fields.
 
@@ -122,6 +123,23 @@ class CdcExtBaseTest(IgniteTest):
             f"{processed_dump_filename}")
 
         return ignite.nodes[0].account.ssh_output(f"cat {processed_dump_filename}").decode("utf-8")
+
+    def start_kafka(self, kafka_nodes, zk_nodes=1):
+        zk_settings = ZookeeperSettings()
+        zk = ZookeeperService(self.test_context, zk_nodes, settings=zk_settings)
+
+        kafka_settings = KafkaSettings(zookeeper_connection_string=zk.connection_string())
+        kafka = KafkaService(self.test_context, kafka_nodes, settings=kafka_settings)
+
+        zk.start_async()
+        kafka.start()
+
+        return zk, kafka
+
+    def stop_kafka(self, zk, kafka):
+        kafka.stop(force_stop=False, allow_fail=True)
+
+        zk.stop(force_stop=False)
 
 
 def enable_cdc(cluster):

@@ -20,7 +20,6 @@ from ducktape.mark import defaults
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.kafka.kafka import KafkaSettings, KafkaService
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.cdc.cdc_configurer import CdcParams
 from ignitetest.services.utils.cdc.ignite_to_ignite_cdc_configurer import IgniteToIgniteCdcConfigurer
@@ -31,7 +30,6 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, 
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster, TcpDiscoverySpi, TcpDiscoveryVmIpFinder
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
-from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
 from ignitetest.tests.cdc.cdc_ext_base_test import CdcExtBaseTest
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -69,12 +67,12 @@ class CdcExtTest(CdcExtBaseTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(pds=[True, False], mode=["active-active", "active-passive"])
     def cdc_ignite_to_kafka_to_ignite_test(self, ignite_version, pds, mode):
-        zk, kafka = start_kafka(self.test_context, 1)
+        zk, kafka = self.start_kafka(kafka_nodes=1)
 
         res = self.run(ignite_version, pds, mode, IgniteToKafkaCdcConfigurer(),
                        KafkaCdcParams(caches=[CACHE_NAME], kafka=kafka))
 
-        stop_kafka(zk, kafka)
+        self.stop_kafka(zk, kafka)
 
         return res
 
@@ -82,7 +80,7 @@ class CdcExtTest(CdcExtBaseTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(pds=[True, False], mode=["active-active", "active-passive"])
     def cdc_ignite_to_kafka_to_ignite_client_test(self, ignite_version, pds, mode):
-        zk, kafka = start_kafka(self.test_context, 1)
+        zk, kafka = self.start_kafka(kafka_nodes=1)
 
         res = self.run(ignite_version, pds, mode, IgniteToKafkaCdcConfigurer(),
                        KafkaCdcParams(
@@ -91,7 +89,7 @@ class CdcExtTest(CdcExtBaseTest):
                            kafka_to_ignite_client_type=IgniteServiceType.THIN_CLIENT
                        ))
 
-        stop_kafka(zk, kafka)
+        self.stop_kafka(zk, kafka)
 
         return res
 
@@ -216,22 +214,3 @@ def ignite_config(ignite_version, pds, ignite_instance_name):
         )
 
     return config
-
-
-def start_kafka(test_context, kafka_nodes, zk_nodes=1):
-    zk_settings = ZookeeperSettings()
-    zk = ZookeeperService(test_context, zk_nodes, settings=zk_settings)
-
-    kafka_settings = KafkaSettings(zookeeper_connection_string=zk.connection_string())
-    kafka = KafkaService(test_context, kafka_nodes, settings=kafka_settings)
-
-    zk.start_async()
-    kafka.start()
-
-    return zk, kafka
-
-
-def stop_kafka(zk, kafka):
-    kafka.stop(force_stop=False, allow_fail=True)
-
-    zk.stop(force_stop=False)
