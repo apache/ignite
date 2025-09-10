@@ -110,7 +110,7 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeCollection(nearKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(nearKeys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -129,7 +129,7 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
         switch (reader.state()) {
             case 8:
-                nearKeys = reader.readCollection(MessageCollectionItemType.MSG);
+                nearKeys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;
