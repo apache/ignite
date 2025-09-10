@@ -44,6 +44,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
@@ -866,7 +867,7 @@ public class DirectByteBufferStream {
     /**
      * @param val Value.
      */
-    public void writeGridLongList(GridLongList val) {
+    public void writeGridLongList(@Nullable GridLongList val) {
         if (val != null)
             writeLongArray(val.array(), val.size());
         else

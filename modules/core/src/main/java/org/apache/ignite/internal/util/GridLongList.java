@@ -180,24 +180,10 @@ public class GridLongList implements Externalizable {
     }
 
     /**
-     * @param idx New size.
-     */
-    public void size(int idx) {
-        this.idx = idx;
-    }
-
-    /**
      * @return Array.
      */
     public long[] array() {
         return arr;
-    }
-
-    /**
-     * @param arr New array.
-     */
-    public void array(long[] arr) {
-        this.arr = arr;
     }
 
     /**
