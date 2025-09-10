@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
+import org.apache.ignite.internal.codegen.CacheGroupAffinityMessageSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
 import org.apache.ignite.internal.codegen.GenerateEncryptionKeyRequestSerializer;
 import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
@@ -330,7 +331,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)125, GridNearAtomicSingleUpdateRequest::new);
         factory.register((short)126, GridNearAtomicSingleUpdateInvokeRequest::new);
         factory.register((short)127, GridNearAtomicSingleUpdateFilterRequest::new);
-        factory.register((short)128, CacheGroupAffinityMessage::new);
+        factory.register((short)128, CacheGroupAffinityMessage::new, new CacheGroupAffinityMessageSerializer());
         factory.register((short)129, WalStateAckMessage::new, new WalStateAckMessageSerializer());
         factory.register((short)130, UserManagementOperationFinishedMessage::new, new UserManagementOperationFinishedMessageSerializer());
         factory.register((short)131, UserAuthenticateRequestMessage::new, new UserAuthenticateRequestMessageSerializer());
