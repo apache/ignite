@@ -20,15 +20,13 @@ package org.apache.ignite.internal;
 import java.lang.String;
 import java.util.UUID;
 import java.util.BitSet;
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 public class TestMessage implements Message {
     @Order(0)
@@ -74,7 +72,7 @@ public class TestMessage implements Message {
     private CacheObject cacheObject;
 
     @Order(value = 14)
-    private long[] longArr;
+    private GridLongList gridLongList;
 
     public int id() {
         return id;
@@ -188,12 +186,12 @@ public class TestMessage implements Message {
         this.cacheObject = cacheObject;
     }
 
-    public long[] longArr() {
-        return longArr;
+    public GridLongList gridLongList() {
+        return gridLongList;
     }
 
-    public void longArr(long[] longArr) {
-        this.longArr = longArr;
+    public void gridLongList(GridLongList gridLongList) {
+        this.gridLongList = gridLongList;
     }
 
 

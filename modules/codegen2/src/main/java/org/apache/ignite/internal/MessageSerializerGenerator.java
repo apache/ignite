@@ -571,6 +571,9 @@ class MessageSerializerGenerator {
             if (sameType(type, "org.apache.ignite.internal.processors.cache.CacheObject"))
                 return "CACHE_OBJECT";
 
+            if (sameType(type, "org.apache.ignite.internal.util.GridLongList"))
+                return "GRID_LONG_LIST";
+
             PrimitiveType primitiveType = unboxedType(type);
 
             if (primitiveType != null)

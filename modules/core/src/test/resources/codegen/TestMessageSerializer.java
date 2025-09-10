@@ -131,7 +131,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeLongArray(msg.longArr()))
+                if (!writer.writeGridLongList(msg.gridLongList()))
                     return false;
 
                 writer.incrementState();
@@ -261,7 +261,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 14:
-                msg.longArr(reader.readLongArray());
+                msg.gridLongList(reader.readGridLongList());
 
                 if (!reader.isLastRead())
                     return false;
