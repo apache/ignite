@@ -283,7 +283,7 @@ public abstract class PagesList extends DataStructure {
                     Stripe[] old = getBucket(bucket);
                     assert old == null;
 
-                    long[] upd = e.getValue().array();
+                    long[] upd = e.getValue().arrayCopy();
 
                     Stripe[] tails = new Stripe[upd.length];
 

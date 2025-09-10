@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -209,6 +210,8 @@ public interface MessageReader {
      * @return Key cache object.
      */
     public KeyCacheObject readKeyCacheObject();
+
+    GridLongList readGridLongList();
 
     /**
      * Reads array of objects.
