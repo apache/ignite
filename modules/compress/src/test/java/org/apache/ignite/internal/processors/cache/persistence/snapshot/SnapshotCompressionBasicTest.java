@@ -205,7 +205,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                 locEvts.clear();
             }
 
-            waitDestruction();
+            awaitPartitionMapExchange();
         }
     }
 
@@ -227,7 +227,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                     "these groups please start Ignite with ignite-compress"
             );
 
-            waitDestruction();
+            awaitPartitionMapExchange();
         }
     }
 
@@ -263,7 +263,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                 locEvts.clear();
             }
 
-            waitDestruction();
+            awaitPartitionMapExchange();
         }
     }
 
@@ -503,17 +503,6 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(name);
-        }
-    }
-
-    /** */
-    private void waitDestruction() {
-        try {
-            // Wait for caches to be completely destroyed
-            Thread.sleep(1000L);
-        }
-        catch (InterruptedException e) {
-            log.info(e.getMessage());
         }
     }
 }
