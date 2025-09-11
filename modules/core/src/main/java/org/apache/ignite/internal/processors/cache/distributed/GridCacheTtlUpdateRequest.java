@@ -211,13 +211,13 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeCollection(keys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(keys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection(nearKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(nearKeys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -260,7 +260,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
 
         switch (reader.state()) {
             case 4:
-                keys = reader.readCollection(MessageCollectionItemType.MSG);
+                keys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -268,7 +268,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 5:
-                nearKeys = reader.readCollection(MessageCollectionItemType.MSG);
+                nearKeys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;

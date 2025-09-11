@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache information sent in discovery data to joining node.
@@ -47,19 +48,25 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
     private final Map<String, Map<UUID, Boolean>> clientNodesMap;
 
     /** */
-    private Collection<String> restartingCaches;
+    private final Collection<String> restartingCaches;
+
+    /** */
+    @Nullable private final ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData;
 
     /**
      * @param caches Started caches.
      * @param templates Configured templates.
      * @param cacheGrps Started cache groups.
      * @param clientNodesMap Information about cache client nodes.
+     * @param restartingCaches Collection of cache names that is being restarted.
+     * @param clusterCacheGrpRecoveryData Cluster cache group recovery data.
      */
     public CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
         Map<String, CacheData> templates,
         Map<Integer, CacheGroupData> cacheGrps,
         Map<String, Map<UUID, Boolean>> clientNodesMap,
-        Collection<String> restartingCaches
+        Collection<String> restartingCaches,
+        @Nullable ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData
     ) {
         assert caches != null;
         assert templates != null;
@@ -71,6 +78,7 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
         this.cacheGrps = cacheGrps;
         this.clientNodesMap = clientNodesMap;
         this.restartingCaches = restartingCaches;
+        this.clusterCacheGrpRecoveryData = clusterCacheGrpRecoveryData;
     }
 
     /**
@@ -78,6 +86,11 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
      */
     Map<Integer, CacheGroupData> cacheGroups() {
         return cacheGrps;
+    }
+
+    /** */
+    @Nullable ClusterCacheGroupRecoveryData clusterCacheGroupRecoveryData() {
+        return clusterCacheGrpRecoveryData;
     }
 
     /**
