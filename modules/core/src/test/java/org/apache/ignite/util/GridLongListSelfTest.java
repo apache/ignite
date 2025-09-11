@@ -130,249 +130,46 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationDefaultConstructor() {
-        MessageWriter writer = new DirectMessageWriter(null);
-
-        ByteBuffer buf = ByteBuffer.allocate(4096);
-        
-        writer.setBuffer(buf);
-
-        GridLongList ll = new GridLongList();
-
-        {
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(1 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            ll.add(2L);
-            ll.add(4L);
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(17 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            ll.remove();
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(9 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            ll.remove();
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(1 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            for (int i = 0; i < 300; i++)
-                ll.add(i);
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(300, ll.size());
-
-            Assert.assertEquals(2402 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            ll.clear();
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(1 /* array */, buf.position());
-        }
+        testSerialization(new GridLongList(), 0);
     }
 
     /** */
     @Test
     public void testSerializationConstructorWithSize() {
-        MessageWriter writer = new DirectMessageWriter(null);
-
-        ByteBuffer buf = ByteBuffer.allocate(4096);
-
-        writer.setBuffer(buf);
-
-        GridLongList ll = new GridLongList(5);
-
-        {
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(1 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            ll.add(2L);
-            ll.add(4L);
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(17 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            ll.remove();
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(9 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            ll.remove();
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(1 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            for (int i = 0; i < 300; i++)
-                ll.add(i);
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(300, ll.size());
-
-            Assert.assertEquals(2402 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            ll.clear();
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(1 /* array */, buf.position());
-        }
+        testSerialization(new GridLongList(5), 0);
     }
 
     /** */
     @Test
     public void testSerializationConstructorWithZeroSize() {
-        MessageWriter writer = new DirectMessageWriter(null);
-
-        ByteBuffer buf = ByteBuffer.allocate(4096);
-
-        writer.setBuffer(buf);
-
-        GridLongList ll = new GridLongList(0);
-
-        {
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(1 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            ll.add(2L);
-            ll.add(4L);
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(17 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            ll.remove();
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(9 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            ll.remove();
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(1 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            for (int i = 0; i < 300; i++)
-                ll.add(i);
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(300, ll.size());
-
-            Assert.assertEquals(2402 /* array */, buf.position());
-        }
-
-        {
-            writer.reset();
-            buf.clear();
-
-            ll.clear();
-
-            Assert.assertTrue(writer.writeGridLongList(ll));
-
-            Assert.assertEquals(1 /* array */, buf.position());
-        }
+        testSerialization(new GridLongList(0), 0);
     }
 
     /** */
     @Test
     public void testSerializationCopyConstructor() {
+        testSerialization(asList(1L, 2L, 3L),  3);
+    }
+
+    /**
+     * @param ll Grid long list.
+     * @param initSz Initial size of list.
+     */
+    private static void testSerialization(GridLongList ll, int initSz) {
         MessageWriter writer = new DirectMessageWriter(null);
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
         writer.setBuffer(buf);
 
-        GridLongList ll = asList(1L, 2L, 3L);
+        // Items size in bytes + length (1 byte for up to Byte.MAX_VALUE elements,
+        // 2 bytes up to Short.MAX_VALUE elements), etc.
+        int sz = initSz * 8 + 1;
 
         {
             Assert.assertTrue(writer.writeGridLongList(ll));
 
-            Assert.assertEquals(25 /* array */, buf.position());
+            Assert.assertEquals(sz /* array */, buf.position());
         }
 
         {
@@ -384,7 +181,7 @@ public class GridLongListSelfTest {
 
             Assert.assertTrue(writer.writeGridLongList(ll));
 
-            Assert.assertEquals(41 /* array */, buf.position());
+            Assert.assertEquals(sz += 16 /* array */, buf.position());
         }
 
         {
@@ -395,7 +192,18 @@ public class GridLongListSelfTest {
 
             Assert.assertTrue(writer.writeGridLongList(ll));
 
-            Assert.assertEquals(33 /* array */, buf.position());
+            Assert.assertEquals(sz -= 8 /* array */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.remove();
+
+            Assert.assertTrue(writer.writeGridLongList(ll));
+
+            Assert.assertEquals(sz -= 8 /* array */, buf.position());
         }
 
         {
@@ -407,7 +215,11 @@ public class GridLongListSelfTest {
 
             Assert.assertTrue(writer.writeGridLongList(ll));
 
-            Assert.assertEquals(2434 /* array */, buf.position());
+            Assert.assertEquals(300 + initSz, ll.size());
+
+            sz += 8 * 300 + 1;
+
+            Assert.assertEquals(sz /* array */, buf.position());
         }
 
         {
