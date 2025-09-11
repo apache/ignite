@@ -113,8 +113,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         testConflictVersions("2.18.0", "2.17.3", "2.16.0", true);
     }
 
-    /**
-     */
+    /** */
     @Test
     public void testTwoCompatibleVersions() throws Exception {
         testCompatibleVersions("2.18.0", "2.17.0", false);
@@ -123,8 +122,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         testCompatibleVersions("2.21.0", "2.21.1", false);
     }
 
-    /**
-     */
+    /** */
     @Test
     public void testThreeCompatibleVersions() throws Exception {
         testCompatibleVersions("2.18.0", "2.18.2", "2.17.0", false);
@@ -139,8 +137,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         testCompatibleVersions("2.18.1", "2.18.2", "2.18.3", false);
     }
 
-    /**
-     */
+    /** */
     @Test
     public void testTwoCompatibleVersionsWithClient() throws Exception {
         testCompatibleVersions("2.18.0", "2.17.0", true);
@@ -149,8 +146,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         testCompatibleVersions("2.21.0", "2.21.1", true);
     }
 
-    /**
-     */
+    /** */
     @Test
     public void testThreeCompatibleVersionsWithClients() throws Exception {
         testCompatibleVersions("2.18.0", "2.18.2", "2.17.0", true);
