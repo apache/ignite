@@ -36,7 +36,7 @@ class CdcConfiguration(NamedTuple):
 
 
 class CdcParams:
-    def __init__(self, caches, max_batch_size=None, only_primary=None,
+    def __init__(self, caches=None, max_batch_size=None, only_primary=None,
                  conflict_resolve_field=None, cdc_configuration=None):
         self.caches = caches
         self.max_batch_size = max_batch_size
