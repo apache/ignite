@@ -17,27 +17,27 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>, Message {
+public class DataStreamerEntry implements Message {
     /** */
     @GridToStringInclude
+    @Order(value = 0, method = "entryKey")
     protected KeyCacheObject key;
 
     /** */
     @GridToStringInclude
+    @Order(value = 1, method = "value")
     protected CacheObject val;
 
     /**
@@ -56,23 +56,32 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
         this.val = val;
     }
 
-    /** {@inheritDoc} */
-    @Override public KeyCacheObject getKey() {
+    /**
+     * @return Key.
+     */
+    public KeyCacheObject entryKey() {
         return key;
     }
 
-    /** {@inheritDoc} */
-    @Override public CacheObject getValue() {
+    /**
+     * @param key Key.
+     */
+    public void entryKey(KeyCacheObject key) {
+        this.key = key;
+    }
+
+    /**
+     * @return Value.
+     */
+    public CacheObject value() {
         return val;
     }
 
-    /** {@inheritDoc} */
-    @Override public CacheObject setValue(CacheObject val) {
-        CacheObject old = this.val;
-
+    /**
+     * @param val Cache Value.
+     */
+    public void value(CacheObject val) {
         this.val = val;
-
-        return old;
     }
 
     /**
@@ -98,61 +107,6 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeKeyCacheObject(key))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeCacheObject(val))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                key = reader.readKeyCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                val = reader.readCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
