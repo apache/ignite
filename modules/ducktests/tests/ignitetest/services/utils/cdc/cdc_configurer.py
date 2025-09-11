@@ -98,7 +98,7 @@ class CdcConfigurer:
         src_cluster.config.metric_exporters.add("org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi")
 
         cdc_params.cdc_configuration = cdc_params.cdc_configuration._replace(
-            metric_exporter_spi = src_cluster.config.metric_exporters
+            metric_exporter_spi=src_cluster.config.metric_exporters
         )
 
         ctx.ignite_cdc = IgniteCdcUtility(src_cluster)

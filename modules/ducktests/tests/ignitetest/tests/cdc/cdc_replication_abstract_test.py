@@ -332,6 +332,7 @@ class CdcReplicationAbstractTest(IgniteTest):
 
         return config
 
+
 def enable_cdc(cluster):
     cluster.config = cluster.config._replace(
         data_storage=cluster.config.data_storage._replace(
