@@ -250,6 +250,20 @@ public class GridLongListSelfTest {
         Assert.assertEquals(10, buf.position());
     }
 
+    /** */
+    @Test
+    public void testSerializationOfNullValue() {
+        MessageWriter writer = new DirectMessageWriter(null);
+
+        ByteBuffer buf = ByteBuffer.allocate(4096);
+
+        writer.setBuffer(buf);
+
+        Assert.assertTrue(writer.writeGridLongList(null));
+
+        Assert.assertEquals(1, buf.position());
+    }
+
     /**
      * @param vals Values.
      * @return List from values.
