@@ -48,7 +48,6 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -59,12 +58,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Class is responsible to create and manage instances of distributed latches {@link Latch}.
  */
 public class ExchangeLatchManager {
-    /**
-     * Exchange latch V2 protocol introduces following optimization: Joining nodes are explicitly excluded from possible
-     * latch participants.
-     */
-    public static final IgniteProductVersion PROTOCOL_V2_VERSION_SINCE = IgniteProductVersion.fromString("2.5.3");
-
     /** Logger. */
     private final IgniteLogger log;
 
@@ -296,12 +289,7 @@ public class ExchangeLatchManager {
      * @return Collection of alive server nodes with latch functionality.
      */
     private Collection<ClusterNode> getLatchParticipants(AffinityTopologyVersion topVer) {
-        List<ClusterNode> participantNodes = new ArrayList<>(aliveNodesForTopologyVer(topVer));
-
-        if (canSkipJoiningNodes(topVer))
-            return excludeJoinedNodes(participantNodes, topVer);
-
-        return participantNodes;
+        return excludeJoinedNodes(new ArrayList<>(aliveNodesForTopologyVer(topVer)), topVer);
     }
 
     /**
@@ -334,23 +322,7 @@ public class ExchangeLatchManager {
         if (applicableNodes.isEmpty())
             return null;
 
-        if (canSkipJoiningNodes(topVer))
-            applicableNodes = excludeJoinedNodes(applicableNodes, topVer);
-
-        return applicableNodes.get(0);
-    }
-
-    /**
-     * Checks that latch manager can use V2 protocol and skip joining nodes from latch participants.
-     *
-     * @param topVer Topology version.
-     * @throws IgniteException If nodes for the given {@code topVer} cannot be found in the discovery history.
-     */
-    public boolean canSkipJoiningNodes(AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> applicableNodes = aliveNodesForTopologyVer(topVer);
-
-        return applicableNodes.stream()
-            .allMatch(node -> node.version().compareTo(PROTOCOL_V2_VERSION_SINCE) >= 0);
+        return excludeJoinedNodes(applicableNodes, topVer).get(0);
     }
 
     /**

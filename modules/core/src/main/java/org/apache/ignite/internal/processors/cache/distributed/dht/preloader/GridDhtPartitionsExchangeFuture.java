@@ -1627,8 +1627,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         timeBag.finishGlobalStage("Preloading notification");
 
         // Skipping wait on local join is available when all cluster nodes have the same protocol.
-        boolean skipWaitOnLocJoin = localJoinExchange()
-            && cctx.exchange().latch().canSkipJoiningNodes(initialVersion());
+        boolean skipWaitOnLocJoin = localJoinExchange();
 
         if (context().exchangeFreeSwitch() && isBaselineNodeFailed())
             waitPartitionRelease(null, false, false);
@@ -1979,10 +1978,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         releaseLatch.countDown();
-
-        // For compatibility with old version where joining nodes are not waiting for latch.
-        if (localJoinExchange() && !cctx.exchange().latch().canSkipJoiningNodes(initialVersion()))
-            return;
 
         try {
             String troubleshootingHint;
