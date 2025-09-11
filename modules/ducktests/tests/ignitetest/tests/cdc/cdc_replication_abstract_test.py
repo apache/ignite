@@ -307,7 +307,7 @@ class CdcReplicationAbstractTest(IgniteTest):
             client_mode=True,
             data_storage=None,
             # plugins=[],
-            # ext_beans=[],
+            ext_beans=[],
             discovery_spi=from_ignite_cluster(ignite)
         )
 
