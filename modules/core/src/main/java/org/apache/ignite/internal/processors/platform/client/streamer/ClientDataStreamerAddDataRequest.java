@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
 import java.util.Collection;
+import java.util.Map;
+
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -65,7 +67,7 @@ public class ClientDataStreamerAddDataRequest extends ClientDataStreamerRequest 
 
         try {
             if (entries != null)
-                dataStreamer.addData(entries);
+                dataStreamer.addData((Map<KeyCacheObject, CacheObject>)entries);
 
             if ((flags & FLUSH) != 0)
                 dataStreamer.flush();
