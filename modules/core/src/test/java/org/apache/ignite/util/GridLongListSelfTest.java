@@ -148,7 +148,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationCopyConstructor() {
-        testSerialization(asList(1L, 2L, 3L),  3);
+        testSerialization(asList(1L, 2L, 3L), 3);
     }
 
     /**
