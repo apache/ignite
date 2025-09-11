@@ -16,7 +16,7 @@
 import os
 import difflib
 import json
-from copy import copy
+from copy import copy, deepcopy
 from time import sleep
 
 from ignitetest.services.ignite import IgniteService
@@ -85,8 +85,15 @@ class CdcReplicationAbstractTest(IgniteTest):
         src_cluster.config.discovery_spi.prepare_on_start(cluster=src_cluster)
         dst_cluster.config.discovery_spi.prepare_on_start(cluster=dst_cluster)
 
+        src_config_orig = deepcopy(src_cluster.config)
+
         src_ctx = cdc_configurer.configure_source_cluster(src_cluster, dst_cluster, src_cdc_params)
+        src_config_cdc_configured = deepcopy(src_cluster.config)
+
+        src_cluster.config = src_config_orig
         dst_ctx = cdc_configurer.configure_source_cluster(dst_cluster, src_cluster, dst_cdc_params)
+
+        src_cluster.config = src_config_cdc_configured
 
         src_cluster.start()
         ControlUtility(src_cluster).activate()
@@ -209,12 +216,15 @@ class CdcReplicationAbstractTest(IgniteTest):
     def run_active_passive(self, src_cluster, dst_cluster, cdc_configurer, cdc_params, do_load=None):
         cdc_params.kafka_to_ignite_nodes = 2
 
+        src_cluster_config = deepcopy(src_cluster.config)
+        dst_cluster_config = deepcopy(dst_cluster.config)
+
         src_ctx = self.setup_active_passive(src_cluster, dst_cluster, cdc_configurer, cdc_params)
 
         if do_load is None:
-            self.do_load_active_passive(src_cluster, dst_cluster)
+            self.do_load_active_passive(src_cluster, dst_cluster, src_cluster_config, dst_cluster_config)
         else:
-            do_load(src_cluster, dst_cluster)
+            do_load(src_cluster, dst_cluster, src_cluster_config, dst_cluster_config)
 
         cdc_configurer.wait_cdc(src_ctx, no_new_events_period_secs=10, timeout_sec=300)
 
@@ -225,12 +235,15 @@ class CdcReplicationAbstractTest(IgniteTest):
     def run_active_active(self, src_cluster, dst_cluster, cdc_configurer, cdc_params, do_load=None):
         cdc_params.kafka_to_ignite_nodes = 1
 
+        src_cluster_config = deepcopy(src_cluster.config)
+        dst_cluster_config = deepcopy(dst_cluster.config)
+
         src_ctx, dst_ctx = self.setup_active_active(src_cluster, dst_cluster, cdc_configurer, cdc_params)
 
         if do_load is None:
-            self.do_load_active_active(src_cluster, dst_cluster)
+            self.do_load_active_active(src_cluster, dst_cluster, src_cluster_config, dst_cluster_config)
         else:
-            do_load(src_cluster, dst_cluster)
+            do_load(src_cluster, dst_cluster, src_cluster_config, dst_cluster_config)
 
         cdc_configurer.wait_cdc(src_ctx, no_new_events_period_secs=10, timeout_sec=300)
         cdc_configurer.wait_cdc(dst_ctx, no_new_events_period_secs=10, timeout_sec=300)
@@ -242,10 +255,11 @@ class CdcReplicationAbstractTest(IgniteTest):
 
         return cdc_streamer_metrics
 
-    def do_load_active_active(self, src_cluster, dst_cluster):
+    def do_load_active_active(self, src_cluster, dst_cluster,
+                              src_cluster_config, dst_cluster_config):
         client1 = IgniteApplicationService(
             self.test_context,
-            self.client_config(src_cluster),
+            self.client_config(src_cluster, src_cluster_config),
             java_class_name=JAVA_CLIENT_CLASS_NAME,
             num_nodes=1,
             params={"cacheName": TEST_CACHE_NAME, "pacing": 1, "clusterCnt": 2, "clusterIdx": 0, "range": RANGE},
@@ -253,7 +267,7 @@ class CdcReplicationAbstractTest(IgniteTest):
 
         client2 = IgniteApplicationService(
             self.test_context,
-            self.client_config(dst_cluster),
+            self.client_config(dst_cluster, dst_cluster_config),
             java_class_name=JAVA_CLIENT_CLASS_NAME,
             num_nodes=1,
             params={"cacheName": TEST_CACHE_NAME, "pacing": 1, "clusterCnt": 2, "clusterIdx": 1, "range": RANGE},
@@ -273,10 +287,11 @@ class CdcReplicationAbstractTest(IgniteTest):
         assert int(client2.extract_result("putCnt")) > 0
         assert int(client2.extract_result("removeCnt")) > 0
 
-    def do_load_active_passive(self, src_cluster, dst_cluster):
+    def do_load_active_passive(self, src_cluster, dst_cluster,
+                               src_cluster_config, dst_cluster_config):
         client = IgniteApplicationService(
             self.test_context,
-            self.client_config(src_cluster),
+            self.client_config(src_cluster, src_cluster_config),
             java_class_name=JAVA_CLIENT_CLASS_NAME,
             num_nodes=1,
             params={"cacheName": TEST_CACHE_NAME, "pacing": 5, "clusterCnt": 1, "clusterIdx": 0, "range": RANGE},
@@ -302,8 +317,8 @@ class CdcReplicationAbstractTest(IgniteTest):
     def modules(self):
         return ["cdc-ext"]
 
-    def client_config(self, ignite):
-        return ignite.config._replace(
+    def client_config(self, ignite, config):
+        return config._replace(
             client_mode=True,
             data_storage=None,
             # plugins=[],
