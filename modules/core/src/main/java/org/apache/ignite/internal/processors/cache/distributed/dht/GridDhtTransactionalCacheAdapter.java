@@ -146,8 +146,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearUnlockRequest.class,
             (CI2<UUID, GridNearUnlockRequest>)this::processNearUnlockRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtUnlockRequest.class,
-            (CI2<UUID, GridDhtUnlockRequest>)this::processDhtUnlockRequest);
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDistributedUnlockRequest.class,
+            (CI2<UUID, GridDistributedUnlockRequest>)this::processDistributedUnlockRequest);
 
         ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtForceKeysRequest.class,
             new MessageHandler<GridDhtForceKeysRequest>() {
@@ -579,11 +579,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    private void processDhtUnlockRequest(UUID nodeId, GridDhtUnlockRequest req) {
+    private void processDistributedUnlockRequest(UUID nodeId, GridDistributedUnlockRequest req) {
         clearLocks(nodeId, req);
-
-        if (isNearEnabled(cacheCfg))
-            near().clearLocks(nodeId, req);
     }
 
     /**
@@ -1670,7 +1667,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             List<KeyCacheObject> keyBytes = entry.getValue();
 
-            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
+            GridDistributedUnlockRequest req = new GridDistributedUnlockRequest(ctx.cacheId(), keyBytes.size(),
                 ctx.deploymentEnabled());
 
             req.version(dhtVer);
@@ -1678,12 +1675,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             try {
                 for (KeyCacheObject key : keyBytes)
                     req.addKey(key);
-
-                keyBytes = nearMap.get(n);
-
-                if (keyBytes != null)
-                    for (KeyCacheObject key : keyBytes)
-                        req.addNearKey(key);
 
                 req.completedVersions(committed, rolledback);
 
@@ -1705,15 +1696,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (!dhtMap.containsKey(n)) {
                 List<KeyCacheObject> keyBytes = entry.getValue();
 
-                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
+                GridDistributedUnlockRequest req = new GridDistributedUnlockRequest(ctx.cacheId(), keyBytes.size(),
                     ctx.deploymentEnabled());
 
                 req.version(dhtVer);
 
                 try {
-                    for (KeyCacheObject key : keyBytes)
-                        req.addNearKey(key);
-
                     req.completedVersions(committed, rolledback);
 
                     ctx.io().send(n, req, ctx.ioPolicy());
