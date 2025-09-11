@@ -38,7 +38,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
@@ -112,7 +111,6 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -1714,127 +1712,127 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddedMessage}. */
     @Test
     public void testJoiningNodeFailsOnNodeAdded() throws Exception {
-        doTestJoiningNodeFails(false, false, false, TcpDiscoveryNodeAddedMessage.class);
+        doTestJoiningNodeFails(false, false, TcpDiscoveryNodeAddedMessage.class);
 
         stopAllGrids();
 
         // Wait before the test timeout.
-        doTestJoiningNodeFails(false, false, true, TcpDiscoveryNodeAddedMessage.class);
+        doTestJoiningNodeFails(false, true, TcpDiscoveryNodeAddedMessage.class);
     }
 
 
-    /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddedMessage} . */
+    /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddedMessage} with no connection recovery timeut. */
     @Test
     public void testJoiningNodeFailsOnNodeAddedNoRecoveryTimeout() throws Exception {
-        doTestJoiningNodeFails(true, false, false, TcpDiscoveryNodeAddedMessage.class);
+        doTestJoiningNodeFails(true, false, TcpDiscoveryNodeAddedMessage.class);
 
         stopAllGrids();
 
         // Wait before the test timeout.
-        doTestJoiningNodeFails(true, false, true, TcpDiscoveryNodeAddedMessage.class);
+        doTestJoiningNodeFails(true, true, TcpDiscoveryNodeAddedMessage.class);
     }
 
-//
-//    /** Tests failure of a joining node after {@link TcpDiscoveryNodeAddFinishedMessage}. */
-//    @Test
-//    public void testJoiningNodeFailsOnNodeAddFinished() throws Exception {
-//        AtomicInteger passedMsgs = new AtomicInteger();
-//
-//        doTestJoiningNodeFails(
-//            false,
-//            msg -> {
-//                if (msg instanceof TcpDiscoveryNodeAddedMessage || msg instanceof TcpDiscoveryNodeAddFinishedMessage)
-//                    passedMsgs.incrementAndGet();
-//
-//                return passedMsgs.get() >= 2;
-//            },
-//            true
-//        );
-//    }
-//
-//    /**
-//     * Tests failure of a joining node after {@link TcpDiscoveryNodeAddFinishedMessage} with
-//     * no {@link TcpDiscoverySpi#getConnectionRecoveryTimeout()}.
-//     */
-//    @Test
-//    public void testJoiningNodeFailsOnNodeAddFinishedWithNoRecoveryTimeout() throws Exception {
-//        AtomicInteger passedMsgs = new AtomicInteger();
-//
-//        doTestJoiningNodeFails(
-//            true,
-//            msg -> {
-//                if (msg instanceof TcpDiscoveryNodeAddedMessage || msg instanceof TcpDiscoveryNodeAddFinishedMessage)
-//                    passedMsgs.incrementAndGet();
-//
-//                return passedMsgs.get() >= 2;
-//            },
-//            true
-//        );
-//    }
+    /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddFinishedMessage}. */
+    @Test
+    public void testJoiningNodeFailsOnNodeAddedFinished() throws Exception {
+        doTestJoiningNodeFails(false, false,
+            TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
 
-    /** */
+        stopAllGrids();
+
+        // Wait before the test timeout.
+        doTestJoiningNodeFails(false, true,
+            TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+    }
+
+    /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddFinishedMessage} with no connection recovery timeut. */
+    @Test
+    public void testJoiningNodeFailsOnNodeAddedFinishedNoRecoveryTimeout() throws Exception {
+        doTestJoiningNodeFails(true, false,
+            TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+
+        stopAllGrids();
+
+        // Wait before the test timeout.
+        doTestJoiningNodeFails(true, true,
+            TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+    }
+
+    /** Main routine of joining node failure test. */
     private void doTestJoiningNodeFails(
         boolean noConnRecoverTimeout,
-        boolean failsAfterJoin,
-        boolean doWaitBeforeTestTimeout,
-        Class<? extends TcpDiscoveryAbstractMessage>... msgsToFail
+        boolean doWaitBeforeTimeoutRaising,
+        Class<? extends TcpDiscoveryAbstractMessage>... msgsBeforeFail
     ) throws Exception {
-        assert msgsToFail.length > 0;
+        assert msgsBeforeFail.length > 0;
 
         if (noConnRecoverTimeout)
             connectionRecoveryTimeout = 0;
 
         startGridsMultiThreaded(2);
 
-        AtomicInteger msgToFail = new AtomicInteger(msgsToFail.length);
+        AtomicInteger msgToFail = new AtomicInteger(msgsBeforeFail.length);
 
         nodeSpi.set(new TcpDiscoverySpi() {
-            @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
-                long timeout) throws IOException, IgniteCheckedException {
-                for (Class<? extends TcpDiscoveryAbstractMessage> msgType : msgsToFail) {
-                    if (msgType == msg.getClass()) {
-                        msgToFail.decrementAndGet();
+            private void checkMessage(@Nullable TcpDiscoveryAbstractMessage msg, long timeout) throws SocketTimeoutException {
+                if (msg != null) {
+                    for (Class<? extends TcpDiscoveryAbstractMessage> msgType : msgsBeforeFail) {
+                        if (msgType == msg.getClass()) {
+                            msgToFail.decrementAndGet();
 
-                        break;
+                            break;
+                        }
                     }
                 }
 
                 if (msgToFail.get() <= 0) {
-                    if (doWaitBeforeTestTimeout)
-                        U.sleep(timeout);
+                    if (doWaitBeforeTimeoutRaising) {
+                        try {
+                            U.sleep(timeout);
+                        }
+                        catch (IgniteInterruptedCheckedException ignored) {
+                            // No-op.
+                        }
+                    }
 
                     throw new SocketTimeoutException("TestTimeout");
                 }
+            }
+
+            @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout)
+                throws IOException, IgniteCheckedException {
+                checkMessage(msg, timeout);
 
                 super.writeToSocket(sock, out, msg, timeout);
             }
+
+            @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
+                long timeout) throws IOException {
+                checkMessage(null, timeout);
+
+                super.writeToSocket(msg, sock, res, timeout);
+            }
         });
 
-        if (failsAfterJoin) {
-            Ignite ignite2 = startGrid(2);
+        try {
+            startGrid(2);
 
-            waitForCondition(() -> {
-                for (int i = 0; i < 2; ++i) {
-                    if (grid(i).cluster().nodes().size() != 2)
-                        return false;
-                }
-
-                return true;
-            }, getTestTimeout());
-
-            waitNodeStop(ignite2.name());
+            throw new IllegalStateException("An exception on malfunctionol node start is expected.");
         }
-        else {
-            assertThrowsAnyCause(
-                null,
-                () -> {
-                    startGrid(2);
-                    return null;
-                },
-                IgniteSpiException.class,
-                "Unable to connect to next nodes in a ring"
-            );
+        catch (Exception ignored) {
+            // No-op.
         }
+
+        waitForCondition(() -> {
+            for (int i = 0; i < 2; ++i) {
+                if (grid(i).cluster().nodes().size() != 2)
+                    return false;
+            }
+
+            return true;
+        }, getTestTimeout());
+
+        waitNodeStop(getTestIgniteInstanceName(2));
 
         tryCreateCache(2);
     }

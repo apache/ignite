@@ -1744,6 +1744,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * Writes response to the socket.
      *
+     * @param msg Received message.
      * @param sock Socket.
      * @param res Integer response.
      * @param timeout Socket timeout.
