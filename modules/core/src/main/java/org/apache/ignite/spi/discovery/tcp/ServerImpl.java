@@ -1078,8 +1078,18 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         tracing.messages().beforeSend(joinReqMsg);
 
+        boolean ringFailedAtJoin = false;
+
         while (true) {
-            if (!sendJoinRequestMessage(joinReqMsg)) {
+            if (!ringFailedAtJoin && !sendJoinRequestMessage(joinReqMsg)) {
+                synchronized (mux) {
+                    if (spiState == RING_FAILED){
+                        ringFailedAtJoin = true;
+
+                        continue;
+                    }
+                }
+
                 if (log.isDebugEnabled())
                     log.debug("Join request message has not been sent (local node is the first in the topology).");
 
@@ -3395,6 +3405,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                         debugLog(msg, "No next node in topology.");
 
                     if (ring.hasRemoteNodes() && !(msg instanceof TcpDiscoveryConnectionCheckMessage)) {
+                        // Successfully found remote nodes, but failed to connect to any at the last stage.
+                        if (state == CONNECTING || (state == CONNECTED && (msg instanceof TcpDiscoveryNodeAddFinishedMessage) &&
+                            ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId().equals(locNodeId))) {
+                            segmentLocalNodeOnSendFail(failedNodes);
+
+                            return;
+                        }
+
                         msg.senderNodeId(locNodeId);
 
                         addMessage(msg, true);
