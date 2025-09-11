@@ -26,6 +26,7 @@ from ignitetest.utils.version import DEV_BRANCH, LATEST
 
 WAL_FORCE_ARCHIVE_TIMEOUT_MS = 100
 
+
 class CdcReplicationTest(CdcReplicationAbstractTest):
     """
     CDC replication tests.
