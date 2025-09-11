@@ -40,9 +40,6 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
     @SystemProperty(value = "Enables version check for rolling upgrade.")
     public static final String IGNITE_ROLLING_UPGRADE_VERSION_CHECK = "IGNITE.ROLLING.UPGRADE.VERSION.CHECK";
 
-    /** */
-    private static final int MAX_MINOR_DIFF = 1;
-
     /**
      * @param ctx Kernal context.
      */
@@ -92,7 +89,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
      * A remote version is considered allowed for joining if:
      * <ul>
      *   <li>It exactly matches the local version; or</li>
-     *   <li>It has the same major version as the local node and the difference in minor versions is within {@link #MAX_MINOR_DIFF}.</li>
+     *   <li>It has the same major version as the local node and the minor versions differ by at most one.</li>
      * </ul>
      * @param locVer Local version.
      */
