@@ -102,7 +102,8 @@ class KafkaToIgniteService(IgniteService):
     def __get_config(target_cluster, client_type):
         if client_type == IgniteServiceType.NODE:
             return target_cluster.config._replace(
-                client_mode=True
+                client_mode=True,
+                data_storage=None
             )
         else:
             addresses = [target_cluster.nodes[0].account.hostname + ":" +

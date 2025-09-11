@@ -71,8 +71,6 @@ class IgniteToKafkaCdcConfigurer(CdcConfigurer):
         return ctx
 
     def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params: KafkaCdcParams, ctx):
-        beans = super().get_cdc_beans(src_cluster, dst_cluster, cdc_params, ctx)
-
         ctx.kafka_to_ignite = KafkaToIgniteService(
             dst_cluster.context,
             cdc_params.kafka,
@@ -82,6 +80,8 @@ class IgniteToKafkaCdcConfigurer(CdcConfigurer):
             merge_with_default=True,
             modules=dst_cluster.modules
         )
+
+        beans = super().get_cdc_beans(src_cluster, dst_cluster, cdc_params, ctx)
 
         beans.append((
             "ignite_to_kafka_cdc_streamer.j2",
