@@ -339,6 +339,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * @return {@code this} For chaining.
      * @deprecated Use {@link #setPageSize(int)} instead.
      */
+    @Deprecated
     public SqlFieldsQuery setLazy(boolean lazy) {
         this.lazy = lazy;
 
@@ -353,6 +354,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * @return Lazy flag.
      * @deprecated Use {@link #getPageSize()} instead.
      */
+    @Deprecated
     public boolean isLazy() {
         return lazy;
     }
