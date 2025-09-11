@@ -24,7 +24,7 @@ from ignitetest.utils.bean import BeanRef, Bean
 
 class KafkaCdcParams(CdcParams):
     def __init__(self,
-                 kafka = None,
+                 kafka=None,
                  kafka_partitions=None,
                  kafka_request_timeout=None,
                  topic=None,
@@ -47,9 +47,11 @@ class KafkaCdcParams(CdcParams):
         self.metadata_topic = metadata_topic if metadata_topic is not None else "ignite-metadata"
         self.kafka_retention_ms = kafka_retention_ms
 
-        self.kafka_to_ignite_client_type = kafka_to_ignite_client_type if kafka_to_ignite_client_type is not None else IgniteServiceType.NODE
+        self.kafka_to_ignite_client_type = kafka_to_ignite_client_type \
+            if kafka_to_ignite_client_type is not None else IgniteServiceType.NODE
         self.kafka_to_ignite_nodes = kafka_to_ignite_nodes if kafka_to_ignite_nodes is not None else 2
-        self.kafka_to_ignite_thread_count = kafka_to_ignite_thread_count if kafka_to_ignite_thread_count is not None else 8
+        self.kafka_to_ignite_thread_count = kafka_to_ignite_thread_count \
+            if kafka_to_ignite_thread_count is not None else 8
         self.kafka_to_ignite_max_batch_size = kafka_to_ignite_max_batch_size
         self.kafka_to_ignite_metadata_consumer_group = kafka_to_ignite_metadata_consumer_group
         self.kafka_to_ignite_kafka_consumer_poll_timeout = kafka_to_ignite_kafka_consumer_poll_timeout
