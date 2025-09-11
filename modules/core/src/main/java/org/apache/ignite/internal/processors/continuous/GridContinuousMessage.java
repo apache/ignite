@@ -139,11 +139,6 @@ public class GridContinuousMessage implements Message {
         this.dataBytes = dataBytes;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
     /**
      * @return Future ID for synchronous event notification.
      */

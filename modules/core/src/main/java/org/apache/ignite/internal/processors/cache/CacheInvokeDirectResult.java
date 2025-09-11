@@ -178,11 +178,6 @@ public class CacheInvokeDirectResult implements Message, Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 93;
     }

@@ -65,11 +65,6 @@ public class NodeIdMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         assert nodeIdBytes.length == MESSAGE_SIZE;
 
