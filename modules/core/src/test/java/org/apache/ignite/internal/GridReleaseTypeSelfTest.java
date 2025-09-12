@@ -309,11 +309,11 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     }
 
     /** Tests that starting a node with rejected version fails with remote rejection. */
-    private void testConflictVersions(String acceptedVer, String rejVer, boolean withClient) {
+    private void testConflictVersions(String acceptedVer, String rejVer, boolean isClient) {
         ThrowableSupplier<IgniteEx, Exception> sup = () -> {
             IgniteEx ign = startGrid(0, acceptedVer, false);
 
-            startGrid(1, rejVer, withClient);
+            startGrid(1, rejVer, isClient);
 
             return ign;
         };
@@ -324,13 +324,13 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     }
 
     /** Checks that the third grid is not compatible. */
-    private void testConflictVersions(String acceptedVer1, String acceptedVer2, String rejVer, boolean withClients) {
+    private void testConflictVersions(String acceptedVer1, String acceptedVer2, String rejVer, boolean isClient) {
         ThrowableSupplier<IgniteEx, Exception> sup = () -> {
             IgniteEx ign = startGrid(0, acceptedVer1, false);
 
-            startGrid(1, acceptedVer2, withClients);
+            startGrid(1, acceptedVer2, isClient);
 
-            startGrid(2, rejVer, withClients);
+            startGrid(2, rejVer, isClient);
 
             return ign;
         };
@@ -348,9 +348,9 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     }
 
     /** Tests two compatible grids. */
-    private void testCompatibleVersions(String acceptedVer1, String acceptedVer2, boolean withClient) throws Exception {
+    private void testCompatibleVersions(String acceptedVer1, String acceptedVer2, boolean isClient) throws Exception {
         startGrid(0, acceptedVer1, false);
-        startGrid(1, acceptedVer2, withClient);
+        startGrid(1, acceptedVer2, isClient);
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 2, getTestTimeout()));
 
@@ -362,11 +362,11 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         String acceptedVer1,
         String acceptedVer2,
         String acceptedVer3,
-        boolean withClients
+        boolean isClient
     ) throws Exception {
         startGrid(0, acceptedVer1, false);
-        startGrid(1, acceptedVer2, withClients);
-        startGrid(2, acceptedVer3, withClients);
+        startGrid(1, acceptedVer2, isClient);
+        startGrid(2, acceptedVer3, isClient);
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
 
