@@ -75,7 +75,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     private int msgSize;
 
     /** Estimated keys count. */
-    private long estimatedKeysCnt = -1;
+    private long estimatedKeysCnt;
 
     /** Estimated keys count per cache in case the message is for shared group. */
     @GridDirectMap(keyType = int.class, valueType = long.class)
@@ -97,6 +97,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         this.rebalanceId = rebalanceId;
         this.topVer = topVer;
         this.addDepInfo = addDepInfo;
+        estimatedKeysCnt = -1L;
     }
 
     /**
@@ -446,7 +447,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      * @param cnt Keys count to add.
      */
     public void addEstimatedKeysCount(long cnt) {
-        this.estimatedKeysCnt += cnt;
+        estimatedKeysCnt += cnt;
     }
 
     /**
