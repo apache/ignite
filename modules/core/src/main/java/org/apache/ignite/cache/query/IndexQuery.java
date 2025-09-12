@@ -138,6 +138,7 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @return List of criteria for this index query.
      */
+    @Nullable
     public List<IndexQueryCriterion> getCriteria() {
         return criteria;
     }
