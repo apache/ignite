@@ -27,7 +27,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -50,7 +49,6 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     private static final long serialVersionUID = 0L;
 
     /** Context. */
-    @GridDirectTransient
     private BinaryContext ctx;
 
     /** Type ID. */
@@ -63,7 +61,6 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     private int ord;
 
     /** Value bytes. */
-    @GridDirectTransient
     private byte[] valBytes;
 
     /**
