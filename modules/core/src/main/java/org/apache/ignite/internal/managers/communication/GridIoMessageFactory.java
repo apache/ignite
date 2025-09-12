@@ -38,6 +38,7 @@ import org.apache.ignite.internal.codegen.GridDhtTxOnePhaseCommitAckRequestSeria
 import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;
+import org.apache.ignite.internal.codegen.GridQueryCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryFailResponseSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillResponseSerializer;
@@ -316,7 +317,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)102, CacheVersionedValue::new, new CacheVersionedValueSerializer());
         factory.register((short)103, GridCacheRawVersionedEntry::new);
         factory.register((short)104, GridCacheVersionEx::new, new GridCacheVersionExSerializer());
-        factory.register((short)106, GridQueryCancelRequest::new);
+        factory.register((short)106, GridQueryCancelRequest::new, new GridQueryCancelRequestSerializer());
         factory.register((short)107, GridQueryFailResponse::new, new GridQueryFailResponseSerializer());
         factory.register((short)108, GridQueryNextPageRequest::new, new GridQueryNextPageRequestSerializer());
         factory.register((short)109, GridQueryNextPageResponse::new, new GridQueryNextPageResponseSerializer());
