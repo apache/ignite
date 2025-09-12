@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Cancel map part of query request.
  */
 public class GridQueryCancelRequest implements Message {
     /** */
+    @Order(value = 0, method = "queryRequestId")
     private long qryReqId;
 
     /**
@@ -51,50 +50,16 @@ public class GridQueryCancelRequest implements Message {
         return qryReqId;
     }
 
+    /**
+     * @param qryReqId Query request ID.
+     */
+    public void queryRequestId(long qryReqId) {
+        this.qryReqId = qryReqId;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridQueryCancelRequest.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeLong(qryReqId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                qryReqId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
