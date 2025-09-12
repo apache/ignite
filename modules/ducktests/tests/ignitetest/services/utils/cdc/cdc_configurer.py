@@ -186,9 +186,9 @@ def last_ignite_cdc_event_time(ignite_cdc):
             mbean = jmx_client.find_mbean('.*name=cdc.*')
 
             return int(next(mbean.LastEventTime).strip())
-        except RemoteCommandError:
-            ignite_cdc.cluster.test_context.logger.warn(
-                "LastEventTime metric wasn't exposed in ignite_cdc, node: " + node.account.hostname)
+        except (StopIteration, RemoteCommandError):
+            ignite_cdc.logger.warn(
+                "Filed to read LastEventTime metric from ignite_cdc, node: " + node.account.hostname)
 
             return -1
 
