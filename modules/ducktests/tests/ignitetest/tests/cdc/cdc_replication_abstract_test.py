@@ -88,7 +88,7 @@ class CdcReplicationAbstractTest(IgniteTest):
         src_config_orig = deepcopy(src_cluster.config)
 
         src_ctx = cdc_configurer.configure_source_cluster(src_cluster, dst_cluster, src_cdc_params)
-        src_config_cdc_configured = deepcopy(src_cluster.config)
+        src_config_cdc_configured = src_cluster.config
 
         src_cluster.config = src_config_orig
         dst_ctx = cdc_configurer.configure_source_cluster(dst_cluster, src_cluster, dst_cdc_params)
