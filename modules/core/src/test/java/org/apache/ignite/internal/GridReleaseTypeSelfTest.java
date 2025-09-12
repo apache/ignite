@@ -33,13 +33,14 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor.IGNITE_ROLLING_UPGRADE_VERSION_CHECK;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Test Rolling Upgrade release types.
  */
-@WithSystemProperty(key = "IGNITE.ROLLING.UPGRADE.VERSION.CHECK", value = "true")
+@WithSystemProperty(key = IGNITE_ROLLING_UPGRADE_VERSION_CHECK, value = "true")
 public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     private String nodeVer;
