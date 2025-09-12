@@ -19,7 +19,6 @@ package org.apache.ignite.internal.binary;
 
 import java.util.Collection;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
 
 /**
  * No-op metadata handler.
@@ -43,34 +42,29 @@ class BinaryNoopMetadataHandler implements BinaryMetadataHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered)
+    @Override public void addMeta(int typeId, BinaryMetadata meta, boolean failIfUnregistered)
         throws BinaryObjectException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+    @Override public void addMetaLocally(int typeId, BinaryMetadata meta, boolean failIfUnregistered)
         throws BinaryObjectException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+    @Override public BinaryMetadata metadata(int typeId) throws BinaryObjectException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
+    @Override public BinaryMetadata metadata(int typeId, int schemaId) throws BinaryObjectException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
+    @Override public Collection<BinaryMetadata> metadata() throws BinaryObjectException {
         return null;
     }
 }

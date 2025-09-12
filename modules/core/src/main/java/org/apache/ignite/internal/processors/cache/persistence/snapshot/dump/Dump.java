@@ -136,7 +136,7 @@ public class Dump implements AutoCloseable {
 
     /** @return Binary types iterator. */
     public Iterator<BinaryType> types() {
-        return cctx.cacheObjects().metadata().iterator();
+        return cctx.cacheObjects().localBinaryTypes().iterator();
     }
 
     /** @return List of snapshot metadata saved in {@link #fileTrees()}. */
