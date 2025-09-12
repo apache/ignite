@@ -53,13 +53,13 @@ class CdcReplicationAbstractTest(IgniteTest):
 
         ctx = cdc_configurer.configure_source_cluster(src_cluster, dst_cluster, cdc_params)
 
-        src_cluster.start()
-        ControlUtility(src_cluster).activate()
-        self.on_src_cluster_start(src_cluster)
-
         dst_cluster.start()
         ControlUtility(dst_cluster).activate()
         self.on_dst_cluster_start(dst_cluster)
+
+        src_cluster.start()
+        ControlUtility(src_cluster).activate()
+        self.on_src_cluster_start(src_cluster)
 
         cdc_configurer.start_ignite_cdc(ctx)
 
