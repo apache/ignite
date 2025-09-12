@@ -68,12 +68,14 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
         for (String propName : keyDefs.keySet()) {
             GridQueryProperty prop;
 
-            if (propName.equals(QueryUtils.KEY_FIELD_NAME) || propName.equals(type.keyFieldName())
-                || propName.equals(type.keyFieldAlias()))
-                prop = new KeyOrValPropertyWrapper(true, propName, type.keyClass());
-            else if (propName.equals(QueryUtils.VAL_FIELD_NAME) || propName.equals(type.valueFieldName())
-                || propName.equals(type.valueFieldAlias()))
-                prop = new KeyOrValPropertyWrapper(false, propName, type.valueClass());
+            if (propName.equals(QueryUtils.KEY_FIELD_NAME))
+                prop = new KeyOrValPropertyWrapper(true, propName, type.keyClass(), null);
+            else if (propName.equals(type.keyFieldName()) || propName.equals(type.keyFieldAlias()))
+                prop = new KeyOrValPropertyWrapper(true, propName, type.keyClass(), type.keyFieldAlias());
+            else if (propName.equals(QueryUtils.VAL_FIELD_NAME))
+                prop = new KeyOrValPropertyWrapper(false, propName, type.valueClass(), null);
+            else if (propName.equals(type.valueFieldName()) || propName.equals(type.valueFieldAlias()))
+                prop = new KeyOrValPropertyWrapper(false, propName, type.valueClass(), type.keyFieldAlias());
             else
                 prop = type.property(propName);
 
@@ -156,8 +158,8 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     /** */
     private class KeyOrValPropertyWrapper extends QueryUtils.KeyOrValProperty {
         /** */
-        public KeyOrValPropertyWrapper(boolean key, String name, Class<?> cls) {
-            super(key, name, cls);
+        public KeyOrValPropertyWrapper(boolean key, String name, Class<?> cls, String alias) {
+            super(key, name, cls, alias);
         }
 
         /** {@inheritDoc} */
