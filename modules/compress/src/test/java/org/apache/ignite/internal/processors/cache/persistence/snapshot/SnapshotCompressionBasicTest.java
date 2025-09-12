@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -203,6 +204,8 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
             finally {
                 locEvts.clear();
             }
+
+            awaitPartitionMapExchange();
         }
     }
 
@@ -223,6 +226,8 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                 "from snapshot '" + snpName + "' are compressed while disk page compression is disabled. To check " +
                     "these groups please start Ignite with ignite-compress"
             );
+
+            awaitPartitionMapExchange();
         }
     }
 
@@ -257,6 +262,8 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
             finally {
                 locEvts.clear();
             }
+
+            awaitPartitionMapExchange();
         }
     }
 
@@ -288,7 +295,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                     continue;
                 }
 
-                NodeFileTree ft = nodeFileTree(dir.toString());
+                NodeFileTree ft = new NodeFileTree(new File(dir.toString()), dir.getFileName().toString());
 
                 U.delete(ft.checkpoint());
                 U.delete(ft.db());
