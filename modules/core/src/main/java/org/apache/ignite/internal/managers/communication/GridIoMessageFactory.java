@@ -60,6 +60,7 @@ import org.apache.ignite.internal.codegen.SnapshotFilesFailureMessageSerializer;
 import org.apache.ignite.internal.codegen.SnapshotFilesRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpInverseConnectionResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.TransactionAttributesAwareRequestSerializer;
+import org.apache.ignite.internal.codegen.TxEntryValueHolderSerializer;
 import org.apache.ignite.internal.codegen.TxLockSerializer;
 import org.apache.ignite.internal.codegen.TxLocksRequestSerializer;
 import org.apache.ignite.internal.codegen.TxLocksResponseSerializer;
@@ -313,7 +314,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)98, CacheEntryPredicateContainsValue::new);
         factory.register((short)99, CacheEntrySerializablePredicate::new);
         factory.register((short)100, IgniteTxEntry::new);
-        factory.register((short)101, TxEntryValueHolder::new);
+        factory.register((short)101, TxEntryValueHolder::new, new TxEntryValueHolderSerializer());
         factory.register((short)102, CacheVersionedValue::new, new CacheVersionedValueSerializer());
         factory.register((short)103, GridCacheRawVersionedEntry::new);
         factory.register((short)104, GridCacheVersionEx::new, new GridCacheVersionExSerializer());
