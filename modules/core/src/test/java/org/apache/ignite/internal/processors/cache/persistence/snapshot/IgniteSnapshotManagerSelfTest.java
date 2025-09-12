@@ -73,7 +73,6 @@ import org.apache.ignite.testframework.LogListener;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static java.util.Objects.nonNull;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
@@ -91,9 +90,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** Listenning logger. */
     private ListeningTestLogger listenLog;
 
-    /** Number of threads being used to perform snapshot operation. */
-    private Integer snapshotThreadPoolSize;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -104,9 +100,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         if (listenLog != null)
             cfg.setGridLogger(listenLog);
-
-        if (nonNull(snapshotThreadPoolSize))
-            cfg.setSnapshotThreadPoolSize(snapshotThreadPoolSize);
 
         return cfg;
     }
@@ -583,8 +576,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotThreadPoolSizeUsage() throws Exception {
-        snapshotThreadPoolSize = 6;
-
         IgniteEx ig = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
 
         createAndCheckSnapshot(ig, SNAPSHOT_NAME, null, TIMEOUT);
@@ -594,7 +585,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         long snpRunningThreads = LongStream.of(tMb.getAllThreadIds()).mapToObj(tMb::getThreadInfo)
             .filter(info -> info.getThreadName().startsWith(SNAPSHOT_RUNNER_THREAD_PREFIX)).count();
 
-        assertEquals(snapshotThreadPoolSize.longValue(), snpRunningThreads);
+        assertEquals(snpThrdPoolSz, snpRunningThreads);
     }
 
     /**
