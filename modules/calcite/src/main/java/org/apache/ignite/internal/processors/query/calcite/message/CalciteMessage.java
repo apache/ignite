@@ -32,9 +32,4 @@ public interface CalciteMessage extends Message {
     @Override default short directType() {
         return type().directType();
     }
-
-    /** {@inheritDoc} */
-    @Override default void onAckReceived() {
-        // No-op.
-    }
 }

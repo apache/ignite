@@ -163,8 +163,4 @@ public class TxLock implements Message {
         return -25;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
 }

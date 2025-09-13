@@ -17,21 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
-/** Represents single job result for {@link IncrementalSnapshotVerificationTask}. */
-class IncrementalSnapshotVerificationTaskResult extends IgniteDataTransferObject {
+/** */
+public class IncrementalSnapshotVerificationTaskResult implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -86,21 +82,5 @@ class IncrementalSnapshotVerificationTaskResult extends IgniteDataTransferObject
     /** */
     public Collection<Exception> exceptions() {
         return exceptions;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, txHashRes);
-        U.writeMap(out, partHashRes);
-        U.writeCollection(out, partiallyCommittedTxs);
-        U.writeCollection(out, exceptions);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        txHashRes = U.readMap(in);
-        partHashRes = U.readMap(in);
-        partiallyCommittedTxs = U.readCollection(in);
-        exceptions = U.readCollection(in);
     }
 }

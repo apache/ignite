@@ -163,7 +163,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         }
 
         switch (writer.state()) {
-            case 21:
+            case 20:
                 if (!writer.writeInt(miniId))
                     return false;
 
@@ -182,7 +182,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             return false;
 
         switch (reader.state()) {
-            case 21:
+            case 20:
                 miniId = reader.readInt();
 
                 if (!reader.isLastRead())

@@ -16,12 +16,10 @@
  */
 package org.apache.ignite.internal.processors.cache.binary;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * As {@link DiscoveryCustomMessage} messages are delivered to client nodes asynchronously
@@ -34,6 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class MetadataRequestMessage implements Message {
     /** */
+    @Order(0)
     private int typeId;
 
     /**
@@ -51,59 +50,22 @@ public class MetadataRequestMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(typeId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                typeId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 80;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        //No-op.
-    }
-
-    /** */
+    /**
+     * @return Type ID.
+     */
     public int typeId() {
         return typeId;
+    }
+
+    /**
+     * @param typeId Type ID.
+     */
+    public void typeId(int typeId) {
+        this.typeId = typeId;
     }
 
     /** {@inheritDoc} */

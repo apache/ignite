@@ -24,6 +24,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -195,6 +197,20 @@ public interface MessageReader {
     public <T extends Message> T readMessage();
 
     /**
+     * Reads {@link CacheObject}.
+     *
+     * @return Cache object.
+     */
+    public CacheObject readCacheObject();
+
+    /**
+     * Reads {@link KeyCacheObject}.
+     *
+     * @return Key cache object.
+     */
+    public KeyCacheObject readKeyCacheObject();
+
+    /**
      * Reads array of objects.
      *
      * @param itemType Array component type.
@@ -222,6 +238,7 @@ public interface MessageReader {
      * @param <M> Type of the red map.
      * @return Map.
      */
+    // TODO: IGNITE-26329 — switch to the new readMap method without the flag parameter
     public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
         MessageCollectionItemType valType, boolean linked);
 

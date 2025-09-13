@@ -30,6 +30,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.processing.FilerException;
@@ -351,6 +352,24 @@ class MessageSerializerGenerator {
             else if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 returnFalseIfWriteFailed(write, "writer.writeAffinityTopologyVersion", getExpr);
 
+            else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+                assert typeArgs.size() == 2;
+
+                imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
+
+                returnFalseIfWriteFailed(write, "writer.writeMap", getExpr,
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
+            }
+
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
+                returnFalseIfWriteFailed(write, "writer.writeKeyCacheObject", getExpr);
+
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
+                returnFalseIfWriteFailed(write, "writer.writeCacheObject", getExpr);
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
 
@@ -464,6 +483,22 @@ class MessageSerializerGenerator {
             else if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 returnFalseIfReadFailed(name, "reader.readAffinityTopologyVersion");
 
+            else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+                assert typeArgs.size() == 2;
+
+                returnFalseIfReadFailed(name, "reader.readMap",
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)), "false");
+            }
+
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
+                returnFalseIfReadFailed(name, "reader.readKeyCacheObject");
+
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
+                returnFalseIfReadFailed(name, "reader.readCacheObject");
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfReadFailed(name, "reader.readMessage");
 
@@ -523,6 +558,12 @@ class MessageSerializerGenerator {
 
             if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 return "AFFINITY_TOPOLOGY_VERSION";
+
+            if (sameType(type, "org.apache.ignite.internal.processors.cache.KeyCacheObject"))
+                return "KEY_CACHE_OBJECT";
+
+            if (sameType(type, "org.apache.ignite.internal.processors.cache.CacheObject"))
+                return "CACHE_OBJECT";
 
             PrimitiveType primitiveType = unboxedType(type);
 
