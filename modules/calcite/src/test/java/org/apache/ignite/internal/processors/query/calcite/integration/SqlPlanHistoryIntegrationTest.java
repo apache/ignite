@@ -537,6 +537,20 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
         checkSqlPlanHistory(3);
     }
 
+    /** Tests that H2 query plans for UNION operations do not contain 'scanCount' suffix. */
+    @Test
+    public void testNoScanCountSuffixForUNION() throws Exception {
+        assumeTrue("ScanCount suffix can only be present in H2 query plans",
+            IndexingQueryEngineConfiguration.ENGINE_NAME.equals(sqlEngine));
+
+        startTestGrid();
+
+        for (int i = 0; i < 10; i++)
+            cacheQuery(new SqlFieldsQuery("SELECT * FROM A.String UNION ALL SELECT * FROM B.String"), "A");
+
+        checkMetrics(getSqlPlanHistory());
+    }
+
     /**
      * @param qry Query.
      */
@@ -740,7 +754,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             assertTrue(plan.lastStartTime().getTime() > 0);
 
             if (loc)
-                assertFalse(plan.plan().contains("/* scanCount"));
+                assertFalse(plan.plan().contains("scanCount"));
         }
     }
 
