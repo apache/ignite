@@ -23,7 +23,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,7 +40,6 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
     /** */
     @GridToStringInclude(sensitive = true)
-    @GridDirectTransient
     protected Object val;
 
     /** */
