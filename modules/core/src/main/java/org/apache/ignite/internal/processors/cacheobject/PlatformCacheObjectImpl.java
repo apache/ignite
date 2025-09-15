@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cacheobject;
 
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -32,7 +30,6 @@ public class PlatformCacheObjectImpl extends CacheObjectImpl {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @GridDirectTransient
     private byte[] arr;
 
     /**
@@ -62,7 +59,7 @@ public class PlatformCacheObjectImpl extends CacheObjectImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         if (valBytes == null)
             valBytes = valueBytesFromArray(ctx);
 

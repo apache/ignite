@@ -24,6 +24,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -273,6 +275,16 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean writeCacheObject(CacheObject obj) {
+            return writeField(CacheObject.class);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean writeKeyCacheObject(KeyCacheObject obj) {
+            return writeField(KeyCacheObject.class);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean writeMessage(Message val) {
             return writeField(Message.class);
         }
@@ -507,6 +519,20 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public <T extends Message> T readMessage() {
             readField(Message.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheObject readCacheObject() {
+            readField(CacheObject.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public KeyCacheObject readKeyCacheObject() {
+            readField(KeyCacheObject.class);
 
             return null;
         }

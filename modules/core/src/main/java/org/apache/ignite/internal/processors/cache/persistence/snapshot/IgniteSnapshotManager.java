@@ -339,6 +339,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Take snapshot operation procedure. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startSnpProc;
 
+    /** Snapshot validation distributed process. */
+    private final SnapshotCheckProcess checkSnpProc;
+
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
 
@@ -438,6 +441,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         marsh = ctx.marshallerContext().jdkMarshaller();
 
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
+
+        checkSnpProc = new SnapshotCheckProcess(ctx);
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
@@ -651,7 +656,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             snpRmtMgr.stop();
 
-            restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."));
+            IgniteCheckedException stopErr = new NodeStoppingException("Node is stopping.");
+
+            restoreCacheGrpProc.interrupt(stopErr);
+            checkSnpProc.interrupt(stopErr);
 
             // Try stop all snapshot processing if not yet.
             for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values())
@@ -1395,6 +1403,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @return {@code True} if checking of a snapshot with specified name is in progress.
+     */
+    public boolean isSnapshotChecking(String snpName) {
+        return checkSnpProc.isSnapshotChecking(snpName);
+    }
+
+    /**
      * Sets the streamer warning flag to current snapshot process if it is active.
      */
     public void streamerWarning() {
@@ -1710,74 +1725,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             "Collection of cache groups names cannot contain null elements.");
         A.ensure(!includeCustomHandlers || incIdx < 1, "Snapshot handlers aren't supported for incremental snapshot.");
 
-        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
-
         if (log.isInfoEnabled()) {
             log.info("The check snapshot procedure started [snpName=" + name + ", snpPath=" + snpPath +
-                ", incIdx=" + incIdx + ", grps=" + grps + ']');
+                ", incIdx=" + incIdx + ", grps=" + grps + ", validateParts=" + check + ']');
         }
 
-        GridKernalContext kctx0 = cctx.kernalContext();
+        IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> res = checkSnpProc.start(
+            name, snpPath, grps, check, incIdx, includeCustomHandlers);
 
-        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-            (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
+        res.listen(lsnr -> {
+            if (log.isInfoEnabled()) {
+                Throwable err = lsnr.error();
 
-        Collection<Integer> grpIds = grps == null ? Collections.emptySet() : F.viewReadOnly(grps, CU::cacheId);
+                boolean success = err == null;
 
-        SnapshotMetadataVerificationTaskArg taskArg = new SnapshotMetadataVerificationTaskArg(name, snpPath, incIdx, grpIds);
-
-        kctx0.task().execute(
-            SnapshotMetadataVerificationTask.class,
-            taskArg,
-            options(bltNodes)
-        ).listen(f0 -> {
-            SnapshotMetadataVerificationTaskResult metasRes = f0.result();
-
-            if (f0.error() == null && F.isEmpty(metasRes.exceptions())) {
-                Map<ClusterNode, List<SnapshotMetadata>> metas = metasRes.meta();
-
-                Class<? extends AbstractSnapshotVerificationTask> cls;
-
-                if (includeCustomHandlers)
-                    cls = SnapshotHandlerRestoreTask.class;
-                else
-                    cls = incIdx > 0 ? IncrementalSnapshotVerificationTask.class : SnapshotPartitionsVerifyTask.class;
-
-                kctx0.task().execute(
-                        cls,
-                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, incIdx, check),
-                        options(new ArrayList<>(metas.keySet()))
-                    ).listen(f1 -> {
-                        if (f1.error() == null)
-                            res.onDone(f1.result());
-                        else if (f1.error() instanceof IgniteSnapshotVerifyException) {
-                            IdleVerifyResult idleRes = IdleVerifyResult.builder()
-                                .exceptions(((IgniteSnapshotVerifyException)f1.error()).exceptions()).build();
-
-                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, idleRes));
-                        }
-                        else
-                            res.onDone(f1.error());
-                    });
-            }
-            else {
-                if (f0.error() == null)
-                    res.onDone(new IgniteSnapshotVerifyException(metasRes.exceptions()));
-                else if (f0.error() instanceof IgniteSnapshotVerifyException) {
-                    IdleVerifyResult idleRes = IdleVerifyResult.builder()
-                        .exceptions(((IgniteSnapshotVerifyException)f0.error()).exceptions()).build();
-
-                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null, idleRes));
-                }
-                else
-                    res.onDone(f0.error());
+                log.info("The check snapshot procedure finished [snpName=" + name + ", success=" + success + ", snpPath=" + snpPath
+                    + ", incIdx=" + incIdx + ", grps=" + grps + (success ? "" : ", err=" + err.getMessage()) + ']');
             }
         });
-
-        if (log.isInfoEnabled()) {
-            res.listen(() -> log.info("The check snapshot procedure finished [snpName=" + name +
-                ", snpPath=" + snpPath + ", incIdx=" + incIdx + ", grps=" + grps + ']'));
-        }
 
         return res;
     }

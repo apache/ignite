@@ -351,6 +351,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                     return false;
             }
 
+            req.cleanup();
+
             if (resCnt0 == mappings.size())
                 onDone();
 

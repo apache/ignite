@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
+class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
     /** */
     private static final Object REMOVED_FIELD_MARKER = new Object();
 
@@ -592,19 +592,13 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         return start;
     }
 
-    /**
-     * @return Object type id.
-     */
-    public int typeId() {
+    /** {@inheritDoc} */
+    @Override public int typeId() {
         return typeId;
     }
 
-    /**
-     * Set known affinity key field name.
-     *
-     * @param affFieldName Affinity key field name.
-     */
-    public void affinityFieldName(String affFieldName) {
+    /** {@inheritDoc} */
+    @Override public void affinityFieldName(String affFieldName) {
         this.affFieldName = affFieldName;
     }
 }

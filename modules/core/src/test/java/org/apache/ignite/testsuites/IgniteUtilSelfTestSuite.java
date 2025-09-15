@@ -60,7 +60,6 @@ import org.apache.ignite.util.GridConcurrentLinkedDequeMultiThreadedTest;
 import org.apache.ignite.util.GridIntListSelfTest;
 import org.apache.ignite.util.GridLogThrottleTest;
 import org.apache.ignite.util.GridLongListSelfTest;
-import org.apache.ignite.util.GridMessageCollectionTest;
 import org.apache.ignite.util.GridPartitionMapSelfTest;
 import org.apache.ignite.util.GridQueueSelfTest;
 import org.apache.ignite.util.GridRandomSelfTest;
@@ -102,7 +101,6 @@ import org.junit.runners.Suite;
     GridIntListSelfTest.class,
     GridArraysSelfTest.class,
     IgniteExceptionRegistrySelfTest.class,
-    GridMessageCollectionTest.class,
     WorkersControlMXBeanTest.class,
     GridConcurrentLinkedDequeMultiThreadedTest.class,
     GridLogThrottleTest.class,
