@@ -188,7 +188,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection(nearEvicted, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(nearEvicted, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -229,7 +229,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
                 reader.incrementState();
 
             case 6:
-                nearEvicted = reader.readCollection(MessageCollectionItemType.MSG);
+                nearEvicted = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;

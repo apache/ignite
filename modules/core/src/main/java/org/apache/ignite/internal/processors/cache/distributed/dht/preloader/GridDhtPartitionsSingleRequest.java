@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Request for single partition info.
  */
 public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMessage {
     /** */
+    @Order(value = 6, method = "restoreExchangeId")
     private GridDhtPartitionExchangeId restoreExchId;
 
     /**
@@ -62,60 +61,20 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
     /**
      * @return ID of current exchange on new coordinator.
      */
-    GridDhtPartitionExchangeId restoreExchangeId() {
+    public GridDhtPartitionExchangeId restoreExchangeId() {
         return restoreExchId;
+    }
+
+    /**
+     * @param restoreExchId ID of current exchange on new coordinator.
+     */
+    public void restoreExchangeId(GridDhtPartitionExchangeId restoreExchId) {
+        this.restoreExchId = restoreExchId;
     }
 
     /** {@inheritDoc} */
     @Override public int handlerId() {
         return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 6:
-                if (!writer.writeMessage(restoreExchId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 6:
-                restoreExchId = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

@@ -125,11 +125,6 @@ public class MetadataResponseMessage implements Message {
         return 81;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
     /**
      * @param bytes Binary metadata bytes.
      */

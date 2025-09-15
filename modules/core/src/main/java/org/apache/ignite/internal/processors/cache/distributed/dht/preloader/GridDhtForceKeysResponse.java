@@ -234,7 +234,7 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeCollection(missedKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(missedKeys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -285,7 +285,7 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
                 reader.incrementState();
 
             case 8:
-                missedKeys = reader.readCollection(MessageCollectionItemType.MSG);
+                missedKeys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;

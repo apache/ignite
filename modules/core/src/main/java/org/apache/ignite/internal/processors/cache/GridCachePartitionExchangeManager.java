@@ -1576,6 +1576,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 m.addPartitionSizes(grp.groupId(), grp.topology().partitionSizes());
             }
+            else if (sndCounters && grp.persistenceEnabled() && exchActions.deactivate())
+                m.addPartitionUpdateCounters(grp.groupId(), grp.topology().localUpdateCounters(true));
         }
 
         for (GridClientPartitionTopology top : clientTops.values()) {

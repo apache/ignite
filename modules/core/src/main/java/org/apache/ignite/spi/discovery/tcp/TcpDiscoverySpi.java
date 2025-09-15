@@ -1589,6 +1589,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             assert addr != null;
 
+            if(locNode.order()==1)
+                log.error("TEST | opening socket to " + addr + ", curOpTimeout: " + timeoutHelper.nextTimeoutChunk(sockTimeout));
+
             sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
 
             writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
@@ -1666,15 +1669,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Writes message to the socket.
+     * Writes response to the socket.
      *
      * @param sock Socket.
-     * @param msg Message.
+     * @param msg Message being processed. Might be {@code null} in cases like an initial connection, a handshake.
      * @param data Raw data to write.
      * @param timeout Socket write timeout.
      * @throws IOException If IO failed or write timed out.
      */
-    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
+    protected void writeToSocket(Socket sock, @Nullable TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
         assert sock != null;
         assert data != null;
 
