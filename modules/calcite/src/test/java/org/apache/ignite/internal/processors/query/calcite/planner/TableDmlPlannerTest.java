@@ -27,6 +27,8 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.junit.Test;
 
+import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
+import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -174,13 +176,18 @@ public class TableDmlPlannerTest extends AbstractPlannerTest {
     @Test
     public void testDuplicatedColumnNames() throws Exception {
         IgniteSchema schema = createSchema(
-            createTable("CITY", IgniteDistributions.random(), "ID", Integer.class, "NAME", String.class),
-            createTable("STREET", IgniteDistributions.random(), "ID", Integer.class, "CITY_ID", Integer.class,
-                "NAME", String.class)
+            createTable("CITY", IgniteDistributions.random(), "ID", INTEGER, "NAME", VARCHAR),
+            createTable("STREET", IgniteDistributions.random(), "ID", INTEGER, "CITY_ID", INTEGER,
+                "NAME", VARCHAR)
         );
 
-        physicalPlan("SELECT NAME, (SELECT NAME FROM CITY WHERE ID = S.CITY_ID LIMIT 1) AS NAME FROM STREET S ORDER BY ID", schema);
-        physicalPlan("SELECT CITY_ID, NAME, NAME FROM STREET ORDER BY ID", schema);
-        physicalPlan("SELECT CITY.NAME, STREET.NAME FROM STREET JOIN CITY ON STREET.CITY_ID = CITY.ID ORDER BY STREET.ID", schema);
+        assertPlan("SELECT NAME, (SELECT NAME FROM CITY WHERE ID = S.CITY_ID LIMIT 1) AS NAME FROM STREET S ORDER BY ID",
+            schema, hasColumns("NAME", "NAME1"));
+
+        assertPlan("SELECT CITY_ID, NAME, NAME FROM STREET ORDER BY ID", schema,
+            hasColumns("CITY_ID", "NAME", "NAME2"));
+
+        assertPlan("SELECT CITY.NAME, STREET.NAME FROM STREET JOIN CITY ON STREET.CITY_ID = CITY.ID ORDER BY STREET.ID",
+            schema, hasColumns("NAME", "NAME1"));
     }
 }
