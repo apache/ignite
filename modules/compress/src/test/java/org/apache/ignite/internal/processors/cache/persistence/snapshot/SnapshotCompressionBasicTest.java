@@ -226,8 +226,6 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                 "from snapshot '" + snpName + "' are compressed while disk page compression is disabled. To check " +
                     "these groups please start Ignite with ignite-compress"
             );
-
-            awaitPartitionMapExchange();
         }
     }
 
