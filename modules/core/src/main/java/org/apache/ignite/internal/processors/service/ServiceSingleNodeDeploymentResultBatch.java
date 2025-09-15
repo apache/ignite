@@ -17,18 +17,13 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
-
-import static org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType.IGNITE_UUID;
-import static org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType.MSG;
 
 /**
  * Batch of service single node deployment result.
@@ -37,10 +32,12 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
  */
 public class ServiceSingleNodeDeploymentResultBatch implements Message {
     /** Deployment process id. */
+    @Order(value = 0, method = "deploymentId")
     @GridToStringInclude
     private ServiceDeploymentProcessId depId;
 
     /** Services deployments results. */
+    @Order(1)
     @GridToStringInclude
     private Map<IgniteUuid, ServiceSingleNodeDeploymentResult> results;
 
@@ -68,63 +65,24 @@ public class ServiceSingleNodeDeploymentResultBatch implements Message {
     }
 
     /**
+     * @param results Services deployments results.
+     */
+    public void results(Map<IgniteUuid, ServiceSingleNodeDeploymentResult> results) {
+        this.results = results;
+    }
+
+    /**
      * @return Deployment process id.
      */
     public ServiceDeploymentProcessId deploymentId() {
         return depId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMessage(depId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeMap(results, IGNITE_UUID, MSG))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                depId = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                results = reader.readMap(IGNITE_UUID, MSG, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
+    /**
+     * @param depId Deployment process id.
+     */
+    public void deploymentId(ServiceDeploymentProcessId depId) {
+        this.depId = depId;
     }
 
     /** {@inheritDoc} */
