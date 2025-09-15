@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -129,8 +131,18 @@ public class H2QueryInfo implements TrackableQuery {
         if (plan == null) {
             String plan0 = stmt.getPlanSQL();
 
-            plan = (plan0 != null) ? planWithoutScanCount(plan0) : "";
+            plan = (plan0 != null) ? cleanPlan(plan0) : "";
         }
+
+        return plan;
+    }
+
+    /**
+     * @param plan Plan.
+     */
+    private String cleanPlan(String plan) {
+        plan = planWithoutScanCount(plan);
+        plan = planWithoutSystemAliases(plan);
 
         return plan;
     }
@@ -276,6 +288,67 @@ public class H2QueryInfo implements TrackableQuery {
             searchFrom = start;
             start = sb.indexOf(startPattern, searchFrom);
         }
+    }
+
+    /**
+     * Normalizes H2 auto-generated numeric aliases (e.g. "_1", "_4") in a plan to make plan history stable
+     * across repeated executions of the same logical query.
+     */
+    private String planWithoutSystemAliases(String plan) {
+        if (plan.indexOf('_') < 0)
+            return plan;
+
+        int n = plan.length();
+
+        Map<String, String> aliasMap = new HashMap<>();
+        StringBuilder out = new StringBuilder(n);
+
+        for (int l = 0; l < n; ) {
+            char c = plan.charAt(l);
+
+            if (c != '_') {
+                out.append(c);
+                ++l;
+                continue;
+            }
+
+            if (l > 0 && plan.charAt(l - 1) != ' ') {
+                out.append(c);
+                ++l;
+                continue;
+            }
+
+            int r = l + 1;
+
+            if (r >= n || !Character.isDigit(plan.charAt(r))) {
+                out.append(c);
+                ++l;
+                continue;
+            }
+
+            while (r < n && Character.isDigit(plan.charAt(r)))
+                ++r;
+
+            if (r < n) {
+                char next = plan.charAt(r);
+
+                if (next != '.' && next != ' ' && next != '\n') {
+                    out.append(c);
+                    ++l;
+                    continue;
+                }
+            }
+
+            String token = plan.substring(l, r);
+
+            String repl = aliasMap.computeIfAbsent(token, k -> "__A" + aliasMap.size());
+
+            out.append(repl);
+
+            l = r;
+        }
+
+        return out.toString();
     }
 
     /**
