@@ -563,12 +563,6 @@ public class GridDhtPartitionDemander {
 
             for (GridCacheContext cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
-                    long keysCnt = grp.sharedGroup() ? supplyMsg.keysForCache(cctx.cacheId()) :
-                        supplyMsg.estimatedKeysCount();
-
-                    if (keysCnt != -1)
-                        cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(keysCnt);
-
                     // Can not be calculated per cache.
                     cctx.cache().metrics0().onRebalanceBatchReceived(supplyMsg.messageSize());
                 }

@@ -154,25 +154,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @param p Partition to clean.
-     */
-    void clean(int p) {
-        if (clean == null)
-            clean = new HashSet<>();
-
-        if (clean.add(p))
-            msgSize += 4;
-    }
-
-    /**
-     * @param p Partition to check.
-     * @return Check result.
-     */
-    boolean isClean(int p) {
-        return clean != null && clean.contains(p);
-    }
-
-    /**
      * @param p Missed partition.
      */
     void missed(int p) {
@@ -193,6 +174,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     /**
      * @return Entries.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     Map<Integer, CacheEntryInfoCollection> infos() {
         if (infos == null)
             infos = new HashMap<>();
@@ -215,7 +197,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    void addEntry0(int p, boolean historical, GridCacheEntryInfo info, GridCacheSharedContext ctx,
+    void addEntry0(int p, boolean historical, GridCacheEntryInfo info, GridCacheSharedContext<?, ?> ctx,
         CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         assert info != null;
         assert info.key() != null : info;
@@ -240,8 +222,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
@@ -436,45 +417,10 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @return Estimated keys count.
-     */
-    public long estimatedKeysCount() {
-        return -1;
-    }
-
-    /**
      * @param cnt Keys count to add.
      */
     public void addEstimatedKeysCount(long cnt) {
-        this.estimatedKeysCnt += cnt;
-    }
-
-    /**
-     * @return Estimated keys count for a given cache ID.
-     */
-    public long keysForCache(int cacheId) {
-        return -1;
-    }
-
-    /**
-     * @param cacheId Cache ID.
-     * @param cnt Keys count.
-     */
-    public void addKeysForCache(int cacheId, long cnt) {
-        assert cacheId != 0 && cnt >= 0;
-
-        if (keysPerCache == null)
-            keysPerCache = new HashMap<>();
-
-        Long cnt0 = keysPerCache.get(cacheId);
-
-        if (cnt0 == null) {
-            keysPerCache.put(cacheId, cnt);
-
-            msgSize += 12;
-        }
-        else
-            keysPerCache.put(cacheId, cnt0 + cnt);
+        estimatedKeysCnt += cnt;
     }
 
     /** {@inheritDoc} */
