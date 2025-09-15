@@ -1917,6 +1917,36 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         tryCreateCache(testNodeIdx);
     }
 
+    /** */
+    @Test
+    public void testCoordinatorFailsOnNodeJoin() throws Exception {
+        AtomicBoolean coordFailed = new AtomicBoolean();
+
+        nodeSpi.set(new TcpDiscoverySpi() {
+            @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
+                long timeout) throws IOException {
+                super.writeToSocket(msg, sock, res, timeout);
+            }
+
+            @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
+                long timeout) throws IOException {
+                super.writeToSocket(sock, msg, data, timeout);
+            }
+
+            @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+                long timeout) throws IOException, IgniteCheckedException {
+                super.writeToSocket(sock, out, msg, timeout);
+            }
+        });
+
+        Ignite coord = startGrid(0);
+
+        startGridsMultiThreaded(2);
+
+        coordFailed.set(true);
+
+    }
+
 //
 //    /**
 //     * Coordinator is added in failed list during node start, but node detected failure dies before
