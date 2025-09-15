@@ -764,11 +764,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridH2QueryRequest.class, this);
     }

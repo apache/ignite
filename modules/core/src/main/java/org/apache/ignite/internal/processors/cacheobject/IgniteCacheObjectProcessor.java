@@ -166,20 +166,20 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
         boolean failIfUnregistered);
 
     /**
-     * @param ctx Cache context.
+     * @param ctx Optional cache context. If {@code null} then skip umarshalling the byte array.
      * @param type Object type.
      * @param bytes Object bytes.
      * @return Cache object.
      */
-    public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes);
+    public CacheObject toCacheObject(@Nullable CacheObjectContext ctx, byte type, byte[] bytes);
 
     /**
-     * @param ctx Cache context.
+     * @param ctx Optional cache context. If {@code null} then skip umarshalling the byte array.
      * @param type Object type.
      * @param bytes Object bytes.
      * @return Cache object.
      */
-    public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException;
+    public KeyCacheObject toKeyCacheObject(@Nullable CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache context.

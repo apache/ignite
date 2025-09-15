@@ -234,11 +234,6 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
 

@@ -154,11 +154,6 @@ public class TxEntryValueHolder implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TxEntryValueHolder.class, this);
     }
@@ -188,7 +183,7 @@ public class TxEntryValueHolder implements Message {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage(hasWriteVal ? val : null))
+                if (!writer.writeCacheObject(hasWriteVal ? val : null))
                     return false;
 
                 writer.incrementState();
@@ -224,7 +219,7 @@ public class TxEntryValueHolder implements Message {
                 reader.incrementState();
 
             case 2:
-                val = reader.readMessage();
+                val = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;

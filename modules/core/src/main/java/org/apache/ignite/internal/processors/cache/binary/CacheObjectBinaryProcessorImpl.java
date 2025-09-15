@@ -180,6 +180,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** Cached affinity key field names. */
     private final ConcurrentHashMap<Integer, T1<BinaryField>> affKeyFields = new ConcurrentHashMap<>();
 
+    /** Dummy {@code CacheObjectValueContext} used for mocking. */
+    private CacheObjectValueContext fakeCacheObjCtx;
+
     /*
      * Static initializer
      */
@@ -326,6 +329,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         if (!ctx.clientNode())
             metadataFileStore.restoreMetadata();
+
+        fakeCacheObjCtx = new CacheObjectContext(ctx, null, null, false, false, false, false, false);
     }
 
     /** {@inheritDoc} */
@@ -1293,10 +1298,19 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
+    @Override public CacheObject toCacheObject(@Nullable CacheObjectContext ctx, byte type, byte[] bytes) {
         switch (type) {
             case CacheObject.TYPE_BINARY:
-                return (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, ctx);
+                CacheObjectValueContext coctx = ctx;
+
+                // CacheObjectContext is actually required only if transformation is enabled.
+                // In this case CacheObjectContext#kernalContext is used only.
+                if (coctx == null && this.ctx.transformer() != null)
+                    coctx = fakeCacheObjCtx;
+
+                return coctx == null
+                    ? (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes)
+                    : (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, coctx);
 
             case CacheObject.TYPE_BINARY_ENUM:
                 return (CacheObject)BinaryUtils.binaryEnum(binaryContext(), bytes);
@@ -1312,7 +1326,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes)
+    @Override public KeyCacheObject toKeyCacheObject(@Nullable CacheObjectContext ctx, byte type, byte[] bytes)
         throws IgniteCheckedException {
         switch (type) {
             case CacheObject.TYPE_BINARY:
@@ -1322,7 +1336,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
 
             case CacheObject.TYPE_REGULAR:
-                return new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);
+                return ctx == null
+                    ? new KeyCacheObjectImpl(null, bytes, -1)
+                    : new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);
