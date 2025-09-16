@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -38,15 +39,18 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public abstract class GridDistributedBaseMessage extends GridCacheIdMessage implements GridCacheDeployable,
     GridCacheVersionable {
     /** Lock or transaction version. */
+    @Order(value = 4, method = "version")
     @GridToStringInclude
     protected GridCacheVersion ver;
 
     /** Committed versions with order higher than one for this message (needed for commit ordering). */
+    @Order(value = 5, method = "committedVersions")
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> committedVers;
 
     /** Rolled back versions with order higher than one for this message (needed for commit ordering). */
+    @Order(value = 6, method = "rolledbackVersions")
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> rolledbackVers;
@@ -124,10 +128,24 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
     }
 
     /**
+     * @param committedVers Committed versions.
+     */
+    public void committedVersions(Collection<GridCacheVersion> committedVers) {
+        this.committedVers = committedVers;
+    }
+
+    /**
      * @return Rolled back versions.
      */
     public Collection<GridCacheVersion> rolledbackVersions() {
         return rolledbackVers == null ? Collections.<GridCacheVersion>emptyList() : rolledbackVers;
+    }
+
+    /**
+     * @param rolledbackVers Rolled back versions.
+     */
+    public void rolledbackVersions(Collection<GridCacheVersion> rolledbackVers) {
+        this.rolledbackVers = rolledbackVers;
     }
 
     /**
@@ -139,6 +157,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        // TODO: Remove #writeTo() after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf, writer))
@@ -177,6 +196,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        // TODO: Remove #readFrom() after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf, reader))

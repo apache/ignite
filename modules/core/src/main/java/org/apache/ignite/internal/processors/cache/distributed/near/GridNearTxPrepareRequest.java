@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
@@ -33,8 +33,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -60,22 +58,28 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     private static final int RECOVERY_FLAG_MASK = 0x40;
 
     /** Future ID. */
+    @Order(value = 20, method = "futureId")
     private IgniteUuid futId;
 
     /** Mini future ID. */
+    @Order(21)
     private int miniId;
 
     /** Topology version. */
+    @Order(value = 22, method = "topologyVersion")
     private AffinityTopologyVersion topVer;
 
     /** Task name hash. */
+    @Order(23)
     private int taskNameHash;
 
     /** */
+    @Order(value = 24, method = "nearFlags")
     @GridToStringExclude
     private byte flags;
 
     /** Transaction label. */
+    @Order(value = 25, method = "txLabel")
     @GridToStringInclude
     @Nullable private String txLbl;
 
@@ -196,6 +200,13 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
+     * @param futId Future ID.
+     */
+    public void futureId(IgniteUuid futId) {
+        this.futId = futId;
+    }
+
+    /**
      * @return Mini future ID.
      */
     public int miniId() {
@@ -214,6 +225,13 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public int taskNameHash() {
         return taskNameHash;
+    }
+
+    /**
+     * @param taskNameHash Task name hash.
+     */
+    public void taskNameHash(int taskNameHash) {
+        this.taskNameHash = taskNameHash;
     }
 
     /**
@@ -238,10 +256,38 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
+     * @param topVer Topology version.
+     */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
+    }
+
+    /**
      * @return Transaction label.
      */
     @Nullable public String txLabel() {
         return txLbl;
+    }
+
+    /**
+     * @param txLbl Transaction label.
+     */
+    public void txLabel(String txLbl) {
+        this.txLbl = txLbl;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte nearFlags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void nearFlags(byte flags) {
+        this.flags = flags;
     }
 
     /**
@@ -301,123 +347,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     private boolean isFlag(int mask) {
         return (flags & mask) != 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 20:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 21:
-                if (!writer.writeIgniteUuid(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
-                if (!writer.writeInt(miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 23:
-                if (!writer.writeInt(taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 25:
-                if (!writer.writeString(txLbl))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 20:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 21:
-                futId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
-                miniId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 23:
-                taskNameHash = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 24:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 25:
-                txLbl = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

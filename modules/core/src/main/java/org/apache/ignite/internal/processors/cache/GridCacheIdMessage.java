@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -28,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public abstract class GridCacheIdMessage extends GridCacheMessage {
     /** Cache ID. */
+    @Order(3)
     @GridToStringInclude
     protected int cacheId;
 
