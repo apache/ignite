@@ -25,7 +25,9 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Communication message writer.
@@ -258,6 +260,14 @@ public interface MessageWriter {
      * @return Whether value was fully written.
      */
     public boolean writeKeyCacheObject(KeyCacheObject obj);
+
+    /**
+     * Writes {@link GridLongList}.
+     *
+     * @param ll Grid long list.
+     * @return Whether value was fully written.
+     */
+    public boolean writeGridLongList(@Nullable GridLongList ll);
 
     /**
      * Writes array of objects.
